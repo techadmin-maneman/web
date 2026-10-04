@@ -63,6 +63,7 @@ import { messageFailedKey } from "../policy/alerts.ts";
 import type { SendResult } from "../providers/messaging.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
+import { isOneOf } from "../lib/one-of.ts";
 
 export const MessagingMessageSchema = z.object({ message_id: z.uuid(), request_id: z.string() });
 export type MessagingMessage = z.infer<typeof MessagingMessageSchema>;
@@ -171,8 +172,7 @@ interface Sendable {
 
 type Content = Sendable | { readonly skip: string };
 
-const isVisitKind = (kind: string): kind is VisitMessageKind =>
-  (VISIT_MESSAGE_KINDS as readonly string[]).includes(kind);
+const isVisitKind = (kind: string): kind is VisitMessageKind => isOneOf(VISIT_MESSAGE_KINDS, kind);
 
 /**
  * Whether staging's allowlist should hold this message back: an automatic kind (ADR 0097), or one about a record

@@ -11,6 +11,7 @@ import { isServed } from "./service-area.ts";
 import { bookableTypes, liveVisitOf, type LiveVisit } from "./scheduling.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { hoursOfWindow, NO_VISITS_CONSENT, type Composed } from "./visit-messages.ts";
+import { isOneOf } from "../lib/one-of.ts";
 
 export type SiteNoticeKind = Extract<
   MessageKind,
@@ -24,8 +25,7 @@ const SITE_NOTICE_KINDS: readonly SiteNoticeKind[] = [
   "address_not_served",
 ];
 
-export const isSiteNoticeKind = (kind: string): kind is SiteNoticeKind =>
-  (SITE_NOTICE_KINDS as readonly string[]).includes(kind);
+export const isSiteNoticeKind = (kind: string): kind is SiteNoticeKind => isOneOf(SITE_NOTICE_KINDS, kind);
 
 /** A notice to a person about themselves; send its ID to the messaging queue once the statement is written. */
 export function siteNotice(

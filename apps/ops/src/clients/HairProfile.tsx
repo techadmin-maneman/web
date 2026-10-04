@@ -21,6 +21,7 @@ import { clients, dispatch, NOT_PERMITTED } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./profile.module.css";
+import { isOneOf } from "../../../../src/lib/one-of.ts";
 
 const copy = clients.profile;
 
@@ -63,7 +64,7 @@ const FIT_ROWS: readonly (Code | Figure)[] = [
   "attachment",
 ];
 
-const isCode = (field: Code | Figure): field is Code => (CODES as readonly string[]).includes(field);
+const isCode = (field: Code | Figure): field is Code => isOneOf(CODES, field);
 
 /** Each list's codes, with their words, in the order they are written. */
 function listOf(field: Exclude<Code, "product">): { value: string; label: string }[] {

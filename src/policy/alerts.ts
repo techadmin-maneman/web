@@ -3,6 +3,7 @@
 // first colon: "crm_lead:<leadId>" is a crm_lead.
 
 import type { Department, Level } from "./access.ts";
+import { isOneOf } from "../lib/one-of.ts";
 
 export const alertKind = (key: string): string => key.split(":", 1)[0] ?? key;
 
@@ -108,5 +109,4 @@ export const markDoneLevel = (kind: string): Level => (kind === "crm_erasure" ? 
 export const SENT_AGAIN_KINDS = ["message_failed", "crm_lead", "crm_erasure"] as const;
 export type SentAgainKind = (typeof SENT_AGAIN_KINDS)[number];
 
-export const maySendAgain = (kind: string): kind is SentAgainKind =>
-  (SENT_AGAIN_KINDS as readonly string[]).includes(kind);
+export const maySendAgain = (kind: string): kind is SentAgainKind => isOneOf(SENT_AGAIN_KINDS, kind);

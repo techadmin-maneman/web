@@ -11,6 +11,7 @@
 
 import { API_BASE_URL, CREDITS_PATH, ENDPOINT_PATHS, POLL_PATH } from "./ailabtools.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
+import { isOneOf } from "../lib/one-of.ts";
 
 export const STUB_API_KEY = "stub-ailab-key";
 export const STUB_RESULT_HOST = "https://ailab-outputs.oss-accelerate.aliyuncs.com";
@@ -124,8 +125,8 @@ function contains(bytes: Uint8Array, text: string): boolean {
 function parseTaskId(taskId: string): { scenario: Scenario; endpoint: "pro" | "premium"; startedAt: number } | null {
   const [prefix, scenario, endpoint, startedAt] = taskId.split(".");
   if (prefix !== "stub" || (endpoint !== "pro" && endpoint !== "premium")) return null;
-  if (scenario !== "ok" && !(SCENARIOS as readonly string[]).includes(scenario ?? "")) return null;
-  return { scenario: scenario as Scenario, endpoint, startedAt: Number(startedAt) };
+  if (scenario !== "ok" && !isOneOf(SCENARIOS, scenario)) return null;
+  return { scenario, endpoint, startedAt: Number(startedAt) };
 }
 
 function error(status: number, code: string, message: string): Response {

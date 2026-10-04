@@ -281,6 +281,14 @@ export const OPS_SETTINGS = [
 
 export type OpsSettingName = (typeof OPS_SETTINGS)[number]["name"];
 
+/**
+ * Each input's value by its name, typed as its committed default is: what the register checks a stored value to be.
+ * A one-number input is any number, not the default's own.
+ */
+export type OpsValues = {
+  -readonly [S in (typeof OPS_SETTINGS)[number] as S["name"]]: S["fallback"] extends number ? number : S["fallback"];
+};
+
 export const settingNamed = (name: string): OpsSetting | undefined =>
   OPS_SETTINGS.find((setting) => setting.name === name);
 

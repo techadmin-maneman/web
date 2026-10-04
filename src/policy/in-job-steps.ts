@@ -6,6 +6,7 @@
 import type { VisitType } from "../config/visit-types.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 import { takesProfile } from "./hair-profile.ts";
+import { isOneOf } from "../lib/one-of.ts";
 
 export const RULES = [
   "Five before photographs: front, top, left, right, hair.",
@@ -61,7 +62,7 @@ const ONE_VISIT_STEPS: readonly JobStep[] = [
 /** The steps this visit type runs, in order. */
 export function stepsFor(type: VisitType, oneVisit = false): JobStep[] {
   if (oneVisit) return [...ONE_VISIT_STEPS];
-  const takesPiece = (PIECE_STEP_TYPES as readonly string[]).includes(type);
+  const takesPiece = isOneOf(PIECE_STEP_TYPES, type);
   const takesAfterPhotos = type !== "consultation";
   return JOB_STEPS.filter((step) => {
     if (step === "piece") return takesPiece;

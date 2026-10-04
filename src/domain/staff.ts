@@ -16,6 +16,7 @@ import {
 } from "../policy/access.ts";
 import type { AccessIdentity } from "../providers/cloudflare-access.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
+import { isOneOf } from "../lib/one-of.ts";
 
 export interface StaffMember extends StaffEntry {
   readonly email: string;
@@ -58,8 +59,8 @@ type GrantRow = { department: string; level: string; geography: string; place: s
 type ModeRow = { enforced: number; set_by: string | null; set_at: string | null };
 type CityRow = { name: string; zone: string | null };
 
-const isDepartment = (value: string): value is Department => (DEPARTMENTS as readonly string[]).includes(value);
-const isLevel = (value: string): value is Level => (LEVELS as readonly string[]).includes(value);
+const isDepartment = (value: string): value is Department => isOneOf(DEPARTMENTS, value);
+const isLevel = (value: string): value is Level => isOneOf(LEVELS, value);
 
 function placeOf(geography: string, place: string | null): Place | null {
   if (geography === "national") return NATIONAL;

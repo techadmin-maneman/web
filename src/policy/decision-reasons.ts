@@ -10,6 +10,8 @@
 // blanked when the client is erased (docs/decisions/0031-access-and-audit.md);
 // the log's entry names the decision, and the decision holds its reason.
 
+import { isOneOf } from "../lib/one-of.ts";
+
 export const RULES = ["Referral review queue: approve or reject, with the reason recorded."] as const;
 
 /** The same rule in the frontend prompt's words, for the two queues that charge a client or grant one credits. */
@@ -35,7 +37,7 @@ export type ReasonedQueue = keyof typeof NEEDS_A_REASON;
 export const REASON_MAX_CHARS = 300;
 
 export const needsReason = (queue: ReasonedQueue, decision: string): boolean =>
-  (NEEDS_A_REASON[queue] as readonly string[]).includes(decision);
+  isOneOf(NEEDS_A_REASON[queue], decision);
 
 /**
  * How long the client's profile shows ops' decision on a change of number, or their rejection of a request to delete

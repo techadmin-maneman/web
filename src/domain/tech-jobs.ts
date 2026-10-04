@@ -48,9 +48,10 @@ import { piecesOf, type Piece } from "./pieces.ts";
 import { bookedMinutes } from "./scheduling.ts";
 import { offeredProducts } from "./services.ts";
 import { firstNameOf } from "../lib/names.ts";
+import { isOneOf } from "../lib/one-of.ts";
 
-/** The statuses a job the technician still has work on can be in. */
-const LIVE = ["scheduled", "dispatched", "in_progress"] as const;
+/** The statuses of a job in the list: still live, or closed today so the technician can see what he did. */
+const SHOWN = ["scheduled", "dispatched", "in_progress", "completed", "terminated"] as const;
 
 export interface JobSummary {
   readonly id: string;
@@ -277,7 +278,7 @@ export async function jobsOn(
     startsAndOutcomesOn(db, technicianId, from, to),
   ]);
   return jobs.results
-    .filter(worthShowing)
+    .filter((row) => isOneOf(SHOWN, row.status))
     .map((row) => summaryOf(row, now, unlockHour, schedule, stateOf(landed.get(row.id) ?? [])));
 }
 
@@ -560,11 +561,6 @@ export async function workableJob(db: D1Database, jobId: string): Promise<Workab
     windowStart: new Date(row.window_start),
     technicianId,
   };
-}
-
-/** A job in the list: still live, or closed today so the technician can see what he did. */
-function worthShowing(row: JobRow): boolean {
-  return (LIVE as readonly string[]).includes(row.status) || row.status === "completed" || row.status === "terminated";
 }
 
 function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSchedule, progress: JobState): JobSummary {
