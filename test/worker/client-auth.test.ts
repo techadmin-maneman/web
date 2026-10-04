@@ -335,7 +335,9 @@ describe("POST /api/auth/verify", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ verified: true, first_name: "Arjun" });
     const cookie = res.headers.get("Set-Cookie") ?? "";
-    expect(cookie).toMatch(/^mm_app=[A-Za-z0-9_-]{43}; Max-Age=7776000; Path=\/; HttpOnly; Secure; SameSite=Lax$/);
+    expect(cookie).toMatch(
+      /^__Host-mm_app=[A-Za-z0-9_-]{43}; Max-Age=7776000; Path=\/; HttpOnly; Secure; SameSite=Lax$/,
+    );
     const token = /mm_app=([^;]+)/.exec(cookie)?.[1] ?? "";
     const stored = await env.DB.prepare("SELECT subject_kind, subject_id FROM sessions WHERE id = ?1")
       .bind(await sha256Hex(token))
@@ -668,9 +670,20 @@ describe("the session", () => {
     expect((await request(app, "/api/me", { headers: { Cookie: cookie } })).headers.get("Set-Cookie")).toBeNull();
     later(31 * 60);
     const res = await request(app, "/api/me", { headers: { Cookie: cookie } });
-    expect(res.headers.get("Set-Cookie")).toMatch(/^mm_app=.*Max-Age=7776000/);
+    expect(res.headers.get("Set-Cookie")).toMatch(/^__Host-mm_app=.*Max-Age=7776000/);
     const row = await env.DB.prepare("SELECT expires_at FROM sessions").first<string>("expires_at");
     expect(row).toBe(new Date(clock.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString());
+  });
+
+  // The cookie took the __Host- prefix in October 2026; a phone still holding the old name stays signed in, and its
+  // next touch hands it the new one.
+  it("is read under its __Host- name, and under its old one until those sessions lapse", async () => {
+    const token = (await loggedIn()).replace(/^mm_app=/, "");
+    expect((await request(app, "/api/me", { headers: { Cookie: `__Host-mm_app=${token}` } })).status).toBe(200);
+    later(61 * 60);
+    const old = await request(app, "/api/me", { headers: { Cookie: `mm_app=${token}` } });
+    expect(old.status).toBe(200);
+    expect(old.headers.get("Set-Cookie")).toMatch(/^__Host-mm_app=/);
   });
 
   it("ends 90 days after its last use", async () => {
@@ -684,7 +697,7 @@ describe("the session", () => {
     const res = await post("/api/auth/logout", {}, { Cookie: cookie });
 
     expect(res.status).toBe(204);
-    expect(res.headers.get("Set-Cookie")).toMatch(/^mm_app=; Max-Age=0; Path=\/; Secure/);
+    expect(res.headers.get("Set-Cookie")).toMatch(/^__Host-mm_app=; Max-Age=0; Path=\/; Secure/);
     expect((await request(app, "/api/me", { headers: { Cookie: cookie } })).status).toBe(401);
     expect(await env.DB.prepare("SELECT revoked_at FROM sessions").first("revoked_at")).not.toBeNull();
   });

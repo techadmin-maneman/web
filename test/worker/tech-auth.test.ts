@@ -137,7 +137,7 @@ describe("POST /api/tech/auth/verify", () => {
 
     expect(answer.status).toBe(200);
     expect(await answer.json()).toEqual({ verified: true, first_name: "Imran", device_id: DEVICE });
-    expect(answer.headers.get("Set-Cookie")).toMatch(/^mm_tech=[A-Za-z0-9_-]{43}; Max-Age=7776000; Path=\/;/);
+    expect(answer.headers.get("Set-Cookie")).toMatch(/^__Host-mm_tech=[A-Za-z0-9_-]{43}; Max-Age=7776000; Path=\/;/);
     const device = await env.DB.prepare(
       "SELECT technician_id, device_id, label, session_id FROM technician_devices",
     ).first<{ technician_id: string; device_id: string; label: string; session_id: string }>();
@@ -301,7 +301,7 @@ describe("a signed-in phone", () => {
     const out = await withCookie(cookie, "/api/tech/auth/logout", "POST");
 
     expect(out.status).toBe(204);
-    expect(out.headers.get("Set-Cookie")).toMatch(/^mm_tech=;/);
+    expect(out.headers.get("Set-Cookie")).toMatch(/^__Host-mm_tech=;/);
     const after = await withCookie(cookie, "/api/tech/me");
     expect(after.status).toBe(401);
     expect(await after.json()).toMatchObject({ error: { code: "session_required" } });

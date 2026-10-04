@@ -8,7 +8,11 @@ import type { AppEnv } from "./context.ts";
 import { findSession, SESSION_TOUCH_MS, SESSION_TTL_MS, touchSession, type Session } from "../domain/sessions.ts";
 import { errorBody } from "./errors.ts";
 
-export const CLIENT_COOKIE = "mm_app";
+/** __Host-: the browser holds it to this host, over HTTPS, at path /, whatever a page sets. */
+export const CLIENT_COOKIE = "__Host-mm_app";
+
+/** Its name until October 2026, still read until every session it names has lapsed (90 days from last use). */
+const OLD_CLIENT_COOKIE = "mm_app";
 
 /** No Domain attribute: the cookie stays on the client app's own host. */
 export function setClientCookie(c: Context<AppEnv>, token: string): void {
@@ -23,11 +27,12 @@ export function setClientCookie(c: Context<AppEnv>, token: string): void {
 
 export function clearClientCookie(c: Context<AppEnv>): void {
   deleteCookie(c, CLIENT_COOKIE, { path: "/", secure: true });
+  deleteCookie(c, OLD_CLIENT_COOKIE, { path: "/", secure: true });
 }
 
 /** The session the request's cookie names, if it is live. */
 export async function clientSessionOf(c: Context<AppEnv>): Promise<Session | null> {
-  const token = getCookie(c, CLIENT_COOKIE);
+  const token = getCookie(c, CLIENT_COOKIE) ?? getCookie(c, OLD_CLIENT_COOKIE);
   if (token === undefined || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
   return findSession(c.env.DB, "client", token, c.var.deps.now());
 }
@@ -43,7 +48,7 @@ export const requireClientSession = createMiddleware<AppEnv>(async (c, next) => 
   const now = c.var.deps.now();
   if (now.getTime() - session.lastSeenAt.getTime() > SESSION_TOUCH_MS) {
     await touchSession(c.env.DB, session, now);
-    const token = getCookie(c, CLIENT_COOKIE);
+    const token = getCookie(c, CLIENT_COOKIE) ?? getCookie(c, OLD_CLIENT_COOKIE);
     if (token !== undefined) setClientCookie(c, token);
   }
   c.set("clientSession", session);
