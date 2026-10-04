@@ -16,12 +16,15 @@ export class ProviderError extends Error {
   readonly code: string;
   /** The vendor refused the record itself; false for a failure of ours, such as a token it would not give. */
   readonly refusal: boolean;
+  /** What the vendor said, in its own words and without its status or code: what an alert to ops quotes. */
+  readonly said: string;
 
-  constructor(status: number, code: string, message: string, refusal = refusesTheRecord(status)) {
+  constructor(status: number, code: string, message: string, refusal = refusesTheRecord(status), said = message) {
     super(message);
     this.status = status;
     this.code = code;
     this.refusal = refusal;
+    this.said = said;
   }
 }
 

@@ -54,7 +54,7 @@ const TURNSTILE_UNAVAILABLE = "turnstile_unavailable";
  */
 async function countUnavailable(c: Context<AppEnv>, detail: string): Promise<void> {
   const { deps, log } = c.var;
-  log.warn("turnstile_unavailable", { detail });
+  log.warn("turnstile_unavailable", { detail, check: "TURNSTILE_SECRET" });
   const now = deps.now();
   const failed = await countOne(c.env.DB, { scope: "turnstile_unavailable", key: "all", window: indiaHour(now) });
   if (failed < UNAVAILABLE_PER_HOUR_TO_ALERT) return;
@@ -62,6 +62,6 @@ async function countUnavailable(c: Context<AppEnv>, detail: string): Promise<voi
     key: TURNSTILE_UNAVAILABLE,
     message:
       `Turnstile could not check ${String(failed)} visitors in the last hour (${detail}), so their bookings, ` +
-      "try-ons and app logins were turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
+      "try-ons and app logins were turned away. Check Cloudflare's status, and the Turnstile secret the API is set up with.",
   });
 }

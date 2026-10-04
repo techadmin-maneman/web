@@ -226,7 +226,8 @@ describe("payments and refunds", () => {
       expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "books_payment_refused", status: 400 }));
       expect(await paymentRow()).toMatchObject({ books_payment_id: null, books_checked_at: NOW.toISOString() });
       expect(told).toEqual([
-        `Books refused payment ${PAYMENT} (Razorpay pay_test41): 400 1002. It is asked again every hour. ${PAYMENTS_TAB}`,
+        `Books refused payment ${PAYMENT} (Razorpay pay_test41), saying "customer inactive". It is asked again every ` +
+          `hour. ${PAYMENTS_TAB}`,
       ]);
 
       await pass(books, "books-customer-9", later(RECHECK_AFTER_MS + 1000));
@@ -395,7 +396,7 @@ describe("payments and refunds", () => {
       expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "books_apply_refused", code: "24016" }));
       expect((await paymentRow())?.books_applied_at).toBe(NOW.toISOString());
       expect(told).toEqual([
-        `Books refused payment ${PAYMENT} against invoice inv-41: 400 24016. Set it against the invoice in Books by hand. ${PAYMENTS_TAB}`,
+        `Books refused payment ${PAYMENT} against invoice inv-41, saying "amount exceeds balance". Set it against the invoice in Books by hand. ${PAYMENTS_TAB}`,
       ]);
     });
 
@@ -608,7 +609,7 @@ describe("payments and refunds", () => {
       await pass(books, "books-customer-9");
       expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "books_refund_refused", status: 400 }));
       expect(told).toEqual([
-        `Books refused refund ${REFUND} (Razorpay rfnd_test7): 400 1. It is asked again every hour. ${PAYMENTS_TAB}`,
+        `Books refused refund ${REFUND} (Razorpay rfnd_test7), saying "Involved account types are not applicable". It is asked again every hour. ${PAYMENTS_TAB}`,
       ]);
 
       refusing = false;
@@ -762,7 +763,7 @@ describe("the pass makes each client's Books customer", () => {
       expect.objectContaining({ event: "books_customer_refused", person_id: PERSON }),
     );
     expect(told).toEqual([
-      `Books refused client ${PERSON}'s customer record: 400 4071. It is asked again every hour. ${CLIENT_PAGE}`,
+      `Books refused client ${PERSON}'s customer record, saying "the stub Books refused upsertCustomer". It is asked again every hour. ${CLIENT_PAGE}`,
     ]);
     expect(await customerRow()).toEqual({ books_customer_id: null, books_checked_at: NOW.toISOString() });
 
@@ -890,7 +891,7 @@ describe("a client's new number or address reaches their Books customer", () => 
       expect.objectContaining({ event: "books_customer_update_refused", person_id: PERSON }),
     );
     expect(told).toEqual([
-      `Books refused client ${PERSON}'s new number or address: 400 4071. It is asked again every hour. ${CLIENT_PAGE}`,
+      `Books refused client ${PERSON}'s new number or address, saying "the stub Books refused updateCustomer". It is asked again every hour. ${CLIENT_PAGE}`,
     ]);
     expect(await changedAt()).toBe(NOW.toISOString());
 

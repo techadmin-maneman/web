@@ -159,9 +159,8 @@ export async function tellOfStorage(db: D1Database, alertOnce: AlertOnce): Promi
   await alertOnce({
     key: `r2_share:${String(mark)}`,
     message:
-      `Phase 2's photographs and referral cards hold ${gigabytes(meter.bytes)} GB in R2, ${OF_THE_SHARE[mark]} their ` +
-      `${String(PHASE_2_SHARE_BYTES / 1e9)} GB share (ADR 0039). Uploads go on past it, on R2's paid storage, as the ` +
-      "owner ruled (open point 151).",
+      `Photos and referral cards use ${gigabytes(meter.bytes)} GB, ${OF_THE_SHARE[mark]} their ` +
+      `${String(PHASE_2_SHARE_BYTES / 1e9)} GB of free storage. Uploads go on past it, on paid storage, as the owner ruled.`,
     link: STORAGE_LINK,
   });
 }
@@ -192,7 +191,7 @@ export async function tellOfDatabaseSize(db: D1Database, alertOnce: AlertOnce, h
     message:
       `The database holds ${megabytes(heldBytes)} MB, ${String(mark)}% of the ` +
       `${megabytes(DATABASE_LIMIT_BYTES)} MB Cloudflare's free plan allows it. Past that every write fails, and ` +
-      'bookings, payments and the console stop with them (docs/runbook.md, "D1 growing").',
+      'bookings, payments and the console stop with them (runbook, "D1 growing").',
     link: STORAGE_LINK,
   });
 }
@@ -207,9 +206,9 @@ export async function roomFor(db: D1Database, alertOnce: AlertOnce, incomingByte
   await alertOnce({
     key: "r2_runaway_ceiling",
     message:
-      `Phase 2's photographs and referral cards hold ${gigabytes(bytes)} GB in R2, past the runaway ceiling of ` +
+      `Photos and referral cards use ${gigabytes(bytes)} GB, past the runaway ceiling of ` +
       `${String(RUNAWAY_CEILING_BYTES / 1e9)} GB, so the technician app's photographs are refused and wait on the ` +
-      'phones. Find what is writing them (docs/runbook.md, "R2 storage growing").',
+      'phones. Find what is writing them (runbook, "R2 storage growing").',
     link: STORAGE_LINK,
   });
   return false;

@@ -115,7 +115,9 @@ describe("telling ops", () => {
     await setMeter(PHASE_2_SHARE_BYTES / 2);
     await tellOfStorage(env.DB, deps.alertOnce);
     await tellOfStorage(env.DB, deps.alertOnce);
-    expect(deps.alerts).toEqual([expect.stringContaining("2.00 GB in R2, half of their 4 GB share")]);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("Photos and referral cards use 2.00 GB, half of their 4 GB of free storage"),
+    ]);
     expect((await readMeter(env.DB)).toldPercent).toBe(50);
   });
 
@@ -129,8 +131,8 @@ describe("telling ops", () => {
     await tellOfStorage(env.DB, deps.alertOnce);
 
     expect(deps.alerts).toHaveLength(3);
-    expect(deps.alerts[1]).toContain("80% of their 4 GB share");
-    expect(deps.alerts[2]).toContain("all of their 4 GB share");
+    expect(deps.alerts[1]).toContain("80% of their 4 GB of free storage");
+    expect(deps.alerts[2]).toContain("all of their 4 GB of free storage");
     expect(deps.alerts[2]).toContain("Uploads go on");
     const { results } = await env.DB.prepare("SELECT key FROM alerts ORDER BY first_seen_at, key").all<{
       key: string;
@@ -141,7 +143,7 @@ describe("telling ops", () => {
   it("tells only the highest mark passed since the last run", async () => {
     await setMeter(PHASE_2_SHARE_BYTES * 0.85);
     await tellOfStorage(env.DB, deps.alertOnce);
-    expect(deps.alerts).toEqual([expect.stringContaining("80% of their 4 GB share")]);
+    expect(deps.alerts).toEqual([expect.stringContaining("80% of their 4 GB of free storage")]);
   });
 
   // OIA-12 of the audit, 2 October 2026: the figure moved from the top of Settings to The console's section of Rules.
