@@ -419,6 +419,8 @@ export interface Fake {
   movedTo: string | null;
   /** Set to make the no-show refuse with `425 too_early_to_close`, as it does before the wait runs. */
   tooEarly: boolean;
+  /** Set to a photograph's slot, as `before-top`, to refuse its file with `422 photo_invalid_file`, as an empty one is. */
+  refusedPhoto: string | null;
   /** What the check-in answers: pass, or a distance outside the radius. */
   checkIn: { passed: boolean; distance_m: number | null };
   /** How long the no-show wait runs from the check-in, in whole minutes, as ops set it. */
@@ -517,6 +519,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     moved: false,
     movedTo: null,
     tooEarly: false,
+    refusedPhoto: null,
     checkIn: { passed: true, distance_m: 40 },
     waitMinutes: 15,
     startsAt: null,
@@ -588,6 +591,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         fake.thumbnails.push(slot.slice(0, -"/small".length));
         return reply(route, 204);
       }
+      if (slot === fake.refusedPhoto) return refuse(route, 422, "photo_invalid_file");
       fake.photos.push(slot);
       return reply(route, 200, { take: randomUUID() });
     }
@@ -835,6 +839,53 @@ export async function leftOnPhone(page: Page, records: readonly object[]): Promi
     });
     db.close();
   }, records);
+}
+
+/** A write of the first job's, as the phone's outbox keeps it: refused, or waiting behind one. */
+export interface LeftWrite {
+  readonly id: string;
+  readonly kind: Step;
+  readonly route: string;
+  readonly body: unknown;
+  readonly refused?: { readonly note: string; readonly fields: readonly string[] };
+}
+
+/** Puts writes straight into the phone's outbox, in order, as a refusal or an older build would have left them. */
+export async function queuedOnPhone(page: Page, writes: readonly LeftWrite[]): Promise<void> {
+  await page.evaluate(
+    async ({ job, left }) => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open("mm-tech");
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error("no store"));
+        };
+      });
+      await new Promise<void>((resolve) => {
+        const transaction = db.transaction("outbox", "readwrite");
+        for (const write of left) {
+          transaction.objectStore("outbox").add({
+            id: write.id,
+            job_id: job,
+            kind: write.kind,
+            path: `/tech/jobs/${job}/${write.route}`,
+            body: write.body,
+            queued_at: Date.now(),
+            state: write.refused === undefined ? "waiting" : "refused",
+            note: write.refused?.note ?? null,
+            fields: write.refused?.fields ?? [],
+          });
+        }
+        transaction.oncomplete = () => {
+          resolve();
+        };
+      });
+      db.close();
+    },
+    { job: JOB_ID, left: writes },
+  );
 }
 
 /** The phone's position, so board B5's check-in can run without a real fix. */
