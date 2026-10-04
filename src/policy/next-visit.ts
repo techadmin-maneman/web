@@ -8,6 +8,7 @@
 // (docs/decisions/0061-ops-editable-inputs.md). These are the committed ones, which stand until ops set another.
 // A day is India's calendar day (src/lib/india-time.ts), and a visit's day is the day in India it started on.
 
+import { windowsFor, type BookingWindow } from "../config/scheduling.ts";
 import { addDays } from "../lib/india-time.ts";
 
 export const RULES = [
@@ -30,7 +31,7 @@ export const NEXT_VISIT_DAY_KEYS = [
   "reminder_before_due",
   // After the due day, the At-risk client task, while nothing is booked (board D2's own group).
   "at_risk_after_due",
-  // After the consultation, the First fit to book task, for a fit asked for and not booked.
+  // After the consultation, the First fit to book task, for a client not fitted since and with nothing booked.
   "first_fit_to_book",
   // How far ahead a visit may be booked in the app, counted from tomorrow.
   "horizon",
@@ -45,7 +46,7 @@ export const NEXT_VISIT_DAYS: NextVisitDays = {
   service_cadence: 30,
   reminder_before_due: 7,
   at_risk_after_due: 7,
-  // A week after the consultation: ours, since nobody has ruled how long a fit asked for may wait to be booked.
+  // A week after the consultation: ours, since nobody has ruled how long a consulted client may wait to be called.
   first_fit_to_book: 7,
   horizon: 45,
   invoice_prompt: 14,
@@ -84,6 +85,13 @@ export const nextVisitType = (serviceDay: string, pieceDueDay: string | null): "
 
 /** The day the app offers a visit on: its due day, or tomorrow once that has passed. */
 export const offeredDay = (dueDay: string, tomorrow: string): string => later(dueDay, tomorrow);
+
+/**
+ * The window the next visit is offered in: the window of the visit it follows (for a first fit, the consultation),
+ * where a visit of its kind can start in it; null where it cannot, as a first fit cannot in the evening.
+ */
+export const offeredWindow = (type: NextVisitType, followedWindow: BookingWindow): BookingWindow | null =>
+  windowsFor(type).includes(followedWindow) ? followedWindow : null;
 
 /** A fitted client's next visit: what it is, the day it fell or falls due, and the day the app offers it on. */
 export interface NextVisitDue {
@@ -159,7 +167,7 @@ export const atRiskFrom = (lastVisitDay: string, days: NextVisitDays): string =>
 export const atRiskIfDoneBy = (today: string, days: NextVisitDays): string =>
   addDays(today, -(days.service_cadence + days.at_risk_after_due));
 
-/** The day a first fit asked for and not booked becomes a First fit to book task. */
+/** The day a client consulted and not fitted, with nothing booked, becomes a First fit to book task. */
 export const firstFitToBookFrom = (consultationDay: string, days: NextVisitDays): string =>
   addDays(consultationDay, days.first_fit_to_book);
 

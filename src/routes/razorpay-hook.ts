@@ -17,7 +17,15 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { paymentsTab, type AlertOnce } from "../domain/alerts.ts";
 import { recordBookingConsents } from "../domain/booking-consents.ts";
-import { paymentStatusOf, recordPayment, recordRefund, recordRefundedPayment } from "../domain/payments.ts";
+import { rupees } from "@maneman/web-kit/money";
+import {
+  keptRefund,
+  otherCaptureOf,
+  paymentStatusOf,
+  recordPayment,
+  recordRefund,
+  recordRefundedPayment,
+} from "../domain/payments.ts";
 import { afterResponse } from "../http/after-response.ts";
 import { bookHold } from "../http/book-hold.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -91,6 +99,39 @@ async function holdLinkPaid(
   log.info("razorpay_hook_hold_link_paid", { hold_id: hold.id });
 }
 
+/**
+ * Tells ops once of a refund Razorpay failed: the client was told their money is on its way back. The client's app
+ * says the refund is being redone, and the Tasks board lists the payment until a refund of it goes through.
+ */
+async function tellIfFailed(db: D1Database, razorpayRefundId: string, alertOnce: AlertOnce): Promise<void> {
+  const kept = await keptRefund(db, razorpayRefundId);
+  if (kept?.status !== "failed") return;
+  await alertOnce({
+    key: `refund_failed:${razorpayRefundId}`,
+    message:
+      `Razorpay failed refund ${razorpayRefundId} of ${rupees(kept.amount)} for payment ${kept.paymentId}. ` +
+      "Refund the payment again from Razorpay's dashboard: the client's app says the refund is being redone.",
+    ...(kept.personId === null ? {} : { link: paymentsTab(kept.personId) }),
+  });
+}
+
+/** Tells ops once of a second payment captured on one order, which nothing here refunds by itself. */
+async function tellIfPaidTwice(db: D1Database, payment: RazorpayPayment, alertOnce: AlertOnce): Promise<void> {
+  const other = await otherCaptureOf(db, payment);
+  if (other === null) return;
+  const personId = await db
+    .prepare("SELECT person_id FROM payments WHERE razorpay_payment_id = ?1")
+    .bind(payment.id)
+    .first<string | null>("person_id");
+  await alertOnce({
+    key: `second_capture:${payment.id}`,
+    message:
+      `Order ${String(payment.order_id)} was paid twice: payment ${payment.id} of ${rupees(payment.amount)} after ` +
+      `${other}. Refund the second from Razorpay's dashboard.`,
+    ...(personId === null ? {} : { link: paymentsTab(personId) }),
+  });
+}
+
 /** The hold a payment was for, from the notes our order gave it. */
 function holdOfNotes(notes: RazorpayPayment["notes"]): string | null {
   if (notes === null || notes === undefined || Array.isArray(notes)) return null;
@@ -108,13 +149,17 @@ async function refundTaken(
   deps: { readonly hashSalt: string; readonly alertOnce: AlertOnce; readonly now: Date },
 ): Promise<boolean> {
   const { refund, paymentEntity } = event;
-  if (await recordRefund(db, refund, deps.now)) return true;
+  if (await recordRefund(db, refund, deps.now)) {
+    await tellIfFailed(db, refund.id, deps.alertOnce);
+    return true;
+  }
   if (paymentEntity === undefined) return false;
   const payment = RazorpayPaymentSchema.parse(paymentEntity);
   if (payment.id !== refund.payment_id) return false;
 
   const personId = await recordRefundedPayment(db, payment, deps.hashSalt, deps.now);
   await recordRefund(db, refund, deps.now);
+  await tellIfFailed(db, refund.id, deps.alertOnce);
   await deps.alertOnce({
     key: `razorpay_refund_unheard:${payment.id}`,
     message:
@@ -179,6 +224,7 @@ export function registerRazorpayHook(app: App): void {
       const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
       const status = paymentStatusOf(event, payment);
       if (status !== null) await recordPayment(db, payment, status, config.settings.ipHashSalt, now);
+      if (status === "captured") await tellIfPaidTwice(db, payment, deps.alertOnce);
       // Paid for a hold in the app: the booking is written now (src/http/book-hold.ts).
       // Only the capture books it: order.paid says the same of the same payment, and the cron books a paid
       // hold that is still waiting (docs/decisions/0068-a-paid-hold-is-kept.md).

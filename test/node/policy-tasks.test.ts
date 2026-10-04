@@ -62,6 +62,8 @@ describe("tasks", () => {
       erasure_request: 7 * 24,
       // The client's app: "within 30 days at the latest" (docs/open-points.md, item 51).
       grievance: 30 * 24,
+      // Money owed back to a client: refunded within the day.
+      payment_to_refund: 24,
     };
     for (const group of TASK_GROUPS) expect(TASK_SLA_HOURS[group], group).toBe(promised[group] ?? 48);
     expect(Object.keys(TASK_SLA_HOURS).sort()).toEqual([...TASK_GROUPS].sort());

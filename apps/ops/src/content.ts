@@ -1628,6 +1628,8 @@ export const tasks = {
     draft_invoice: "Draft invoice",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
     payment_owed: "Payment owed",
+    // PLACEHOLDER: a group the board does not draw: money owed back that no refund has reached.
+    payment_to_refund: "Payment to refund",
   } as Readonly<Record<string, string>>,
   /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */
   visit: (date: string) => `Visit of ${date}`,
@@ -1704,13 +1706,13 @@ export const tasks = {
      */
     withFirstFit: (when: string | null) => (when === null ? "+ first fit" : `+ first fit, ${when.toLowerCase()}`),
     /**
-     * PLACEHOLDER: "Consultation Thu 10 Sep; first fit asked for in the morning". Nothing is booked since the
-     * consultation, and the task goes when the client books.
+     * PLACEHOLDER: "Consultation Thu 10 Sep, morning · not fitted". The window is the consultation's, which the fit
+     * is booked in from the row; none where a fit cannot start in it. The task goes when the client books.
      */
     first_fit_to_book: (consulted: string, when: string | null) =>
       when === null
-        ? `Consultation ${consulted}; first fit asked for`
-        : `Consultation ${consulted}; first fit asked for in the ${when.toLowerCase()}`,
+        ? `Consultation ${consulted} · not fitted`
+        : `Consultation ${consulted}, ${when.toLowerCase()} · not fitted`,
     /**
      * "9 weeks since the last visit · due Sat 19 Sep", as board D2 writes "9 weeks since service": the day the next
      * service fell due, from the cadence ops set. The task goes when the client books.
@@ -1743,6 +1745,9 @@ export const tasks = {
      */
     payment_owed: (product: string, amount: string, link: LinkState) =>
       `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
+    /** PLACEHOLDER: "Rs. 2,000 owed back on pay_Q1x; Razorpay refused the refund": refunded from Razorpay's dashboard. */
+    payment_to_refund: (amount: string, payment: string, why: string) =>
+      `${amount} owed back on ${payment}; ${why === "refund_failed" ? "Razorpay failed the refund" : "Razorpay would not refund it"}`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
     unknown: "Held for review",
   },

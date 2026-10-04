@@ -3165,7 +3165,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed";
+                    group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "payment_to_refund";
                     id: string;
                 };
                 cookie?: never;
@@ -8102,7 +8102,7 @@ export interface components {
             staff: string[];
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed";
+                group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "payment_to_refund";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -8114,7 +8114,7 @@ export interface components {
         Task: {
             /**
              * Format: uuid
-             * @description The queued row's own id, so the task can be reached where it is decided.
+             * @description The queued row's own id, so the task can be reached where it is decided; for a first fit to book, the client's.
              */
             id: string;
             /** @description Null for an erased client, whose record is gone. */
@@ -8132,7 +8132,7 @@ export interface components {
                 /** Format: date-time */
                 starts_at: string;
             };
-            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; for a payment owed, the link's state ("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product. */
+            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's ("any" where a fit cannot start in it); for a payment owed, the link's state ("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product; for a payment to refund, why ("let_go", a hold let go whose refund Razorpay would not make, or "refund_failed"), what is owed back in paise, and the Razorpay payment. */
             detail: string | null;
             /**
              * Format: date-time

@@ -259,13 +259,9 @@ describe("what the app offers next (GET /api/me)", () => {
     expect((await me()).booking.next).toMatchObject({ type: "service", date: "2026-10-25" });
   });
 
-  it("offers the first fit once the consultation is done, in the window the site's request asked for", async () => {
-    await visit("consultation", "2026-09-18T04:30:00.000Z");
-    await env.DB.prepare(
-      "INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES ('f1', ?1, 'afternoon', ?2)",
-    )
-      .bind(PERSON, NOW.toISOString())
-      .run();
+  it("offers the first fit once the consultation is done, in the consultation's window", async () => {
+    // 1:30 pm in India, an afternoon.
+    await visit("consultation", "2026-09-18T08:00:00.000Z");
     const home = await me();
     expect(home.booking.next).toEqual({
       type: "first_fit",
@@ -278,7 +274,7 @@ describe("what the app offers next (GET /api/me)", () => {
     expect(home.prompt).toBeNull();
   });
 
-  it("offers it no sooner than the lead time ops set after the consultation, and no window without a request", async () => {
+  it("offers it no sooner than the lead time ops set after the consultation", async () => {
     await visit("consultation", "2026-09-18T04:30:00.000Z");
     await opsSet({ first_fit_lead: 10 });
     expect((await me()).booking.next).toEqual({
@@ -286,8 +282,14 @@ describe("what the app offers next (GET /api/me)", () => {
       tier: "standard",
       due_on: "2026-09-28",
       date: "2026-09-28",
-      window: null,
+      window: "morning",
     });
+  });
+
+  it("offers it in no window after a consultation in the evening, which a first fit cannot start in", async () => {
+    // 6 pm in India.
+    await visit("consultation", "2026-09-18T12:30:00.000Z");
+    expect((await me()).booking.next).toMatchObject({ type: "first_fit", window: null });
   });
 });
 

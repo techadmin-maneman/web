@@ -1,8 +1,8 @@
-// The next visit the app offers a client, the WhatsApp reminder of it, and a first fit asked for on the site's form
-// (src/policy/next-visit.ts; docs/decisions/0086-the-next-visit-is-offered.md).
+// The next visit the app offers a client, and the WhatsApp reminder of it (src/policy/next-visit.ts;
+// docs/decisions/0086-the-next-visit-is-offered.md).
 //
 // What the app offers, in the booking sheet it opens pre-filled: once the consultation is done, the first fit, from
-// the lead time ops set and in the window the site's request asked for; once a first fit, a service or a replacement
+// the lead time ops set and in the consultation's window; once a first fit, a service or a replacement
 // is done, the next service on its due day and in the last visit's window, or the replacement on the piece's own due
 // day where the piece in wear falls due first. A visit whose due day has passed is offered for tomorrow, and the app
 // says the day it was due. Nothing is offered while a visit is booked, or paid for and still to be booked.
@@ -13,7 +13,7 @@
 // is booked still, checking both as it sends (src/queues/messaging.ts), as the visit messages do.
 
 import { shortDate } from "@maneman/web-kit/dates";
-import { windowsFor, type BookingWindow, type FirstFitWindow } from "../config/scheduling.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
@@ -24,6 +24,7 @@ import {
   nextVisitAfter,
   nextVisitType,
   offeredDay,
+  offeredWindow,
   remindedIfDoneBetween,
   serviceDue,
   type NextVisitDays,
@@ -80,20 +81,14 @@ const FACTS = `SELECT
      AND a.type = 'consultation' AND a.deleted_at IS NULL ORDER BY a.window_start DESC LIMIT 1) AS consulted_start,
   ${BOOKED} AS booked,
   (SELECT MIN(replacement_due_at) FROM pieces WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL
-     AND replacement_due_at IS NOT NULL) AS piece_due,
-  (SELECT preferred_window FROM first_fit_requests WHERE person_id = ?1) AS asked_window`;
+     AND replacement_due_at IS NOT NULL) AS piece_due`;
 
 interface FactsRow {
   last_start: string | null;
   consulted_start: string | null;
   booked: number;
   piece_due: string | null;
-  asked_window: FirstFitWindow | null;
 }
-
-/** The window, where a visit of this kind can start in it. */
-const windowFor = (type: NextVisitType, window: BookingWindow | null): BookingWindow | null =>
-  window !== null && windowsFor(type).includes(window) ? window : null;
 
 /**
  * Whether the client has a visit booked, and what the app offers them next: the next service (or the replacement
@@ -125,21 +120,23 @@ export async function nextVisitFacts(
         tier,
         due_on: next.dueOn,
         date: next.offeredOn,
-        window: windowFor(next.type, schedule.at(last).window),
+        window: offeredWindow(next.type, schedule.at(last).window),
       },
     };
   }
   if (row.consulted_start === null) return { booked, offer: null };
-  const due = firstFitDue(indiaDate(new Date(row.consulted_start)), days);
+  const consulted = new Date(row.consulted_start);
+  const due = firstFitDue(indiaDate(consulted), days);
   const date = offeredDay(due, tomorrow);
+  const [tier, schedule] = await Promise.all([serviceToOffer(db, personId, "first_fit", date), loadSlotSchedule(db)]);
   return {
     booked,
     offer: {
       type: "first_fit",
-      tier: await serviceToOffer(db, personId, "first_fit", date),
+      tier,
       due_on: due,
       date,
-      window: windowFor("first_fit", row.asked_window),
+      window: offeredWindow("first_fit", schedule.at(consulted).window),
     },
   };
 }
