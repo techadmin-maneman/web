@@ -226,7 +226,9 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   await page.getByRole("button", { name: "Add me to the list" }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
-  await expect(page.getByText("Rohit’s invite holds for 12 months after that.")).toBeVisible();
+  // They asked to be told, so they are promised a message, naming the pincode they gave (BK-37).
+  await expect(page.getByText("We’ll message you on WhatsApp when we start coming to 400050.")).toBeVisible();
+  await expect(page.getByText("Rohit’s invite holds for 12 months from when we start coming to 400050.")).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({
     pincode: UNSERVED.pincode,
     contact_consent: true,

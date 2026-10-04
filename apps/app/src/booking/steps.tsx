@@ -697,8 +697,8 @@ function Settled({ hold }: { hold: Hold }) {
 }
 
 /**
- * Board C6: booked. The technician's message the day before is promised only to a client who has
- * switched on WhatsApp about their visits, since it is sent to no one else.
+ * Board C6: booked. The reminder the day before is promised only to a client who has switched on
+ * WhatsApp about their visits, since it is sent to no one else.
  */
 export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boolean; onDone: () => void }) {
   const { hold, moved, reminded, onDone } = props;
@@ -712,7 +712,7 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
       </h2>
       <Icon className={styles.confirmedTick} d={ICONS.tick} size={26} />
       <p className={styles.confirmedTitle}>{when}</p>
-      {reminded && <p className={styles.confirmedLine}>{copy.tellsYou(technician)}</p>}
+      {reminded && <p className={styles.confirmedLine}>{copy.tellsYou}</p>}
       <Settled hold={hold} />
       <ConfirmedNote hold={hold} technician={technician} />
       <button className={styles.done} type="button" onClick={onDone}>

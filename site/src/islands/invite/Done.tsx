@@ -29,8 +29,14 @@ export interface Booking {
 
 type StandingCode = NonNullable<Consultation["discount_code"]>;
 
-/** The waitlist's answer, the landing's or /book's: /book's carries the invite this browser remembered, if any. */
-export type Listing = Pick<ReferralWaitlist, "area" | "credits" | "invite">;
+/**
+ * The waitlist's answer, the landing's or /book's: /book's carries the invite this browser remembered, if any. With it,
+ * the pincode the person gave and whether they asked to be told when we come, which alone earns a promise of a message.
+ */
+export type Listing = Pick<ReferralWaitlist, "area" | "credits" | "invite"> & {
+  readonly pincode: string;
+  readonly alerted: boolean;
+};
 
 /** C4's "Code expired" frame, without "Book anyway": it shows once the booking has been made. */
 function Expired(props: { reward: ReferralReward | null }) {
@@ -119,7 +125,17 @@ export function Listed(props: {
   heading: HeadingRef;
 }) {
   const { listed } = referral;
-  const { area, credits, invite } = props.listing;
+  const { area, credits, invite, pincode, alerted } = props.listing;
+  const lines = [
+    ...(alerted ? [fill(listed.alerted, { pincode })] : []),
+    ...(credits
+      ? [
+          props.name === null
+            ? fill(listed.credits, { pincode })
+            : fill(listed.creditsFrom, { name: props.name, pincode }),
+        ]
+      : []),
+  ];
   return (
     <section class={styles.done}>
       <div class={styles.doneFrame}>
@@ -127,10 +143,7 @@ export function Listed(props: {
         <h1 ref={props.heading} tabIndex={-1} class={styles.frameTitle}>
           {area === null ? listed.titleUnknown : fill(listed.title, { area })}
         </h1>
-        <p class={styles.frameBody}>
-          {listed.body}
-          {credits && ` ${props.name === null ? listed.credits : fill(listed.creditsFrom, { name: props.name })}`}
-        </p>
+        {lines.length > 0 && <p class={styles.frameBody}>{lines.join(" ")}</p>}
       </div>
       <div class={styles.doneAfter}>
         {invite === "expired" && <Expired reward={props.reward} />}

@@ -503,9 +503,9 @@ export const booking = {
     },
     /**
      * PLACEHOLDER: the design never asks. Ticked, it records the client's yes to WhatsApp about their
-     * visits (the purpose the day-before reminder is sent under), on a notice of this line alone.
+     * visits, the reminder, moves and changes among them, on a notice of this line alone.
      */
-    remind: "Remind me on WhatsApp the day before",
+    remind: "Send me visit updates on WhatsApp",
     /**
      * PLACEHOLDER: no board draws them. Booking a visit also agrees to the photograph purposes the client has never
      * decided on, one tap away beneath Pay. With the referral card's lines (profile.referralCards), they are the
@@ -570,7 +570,8 @@ export const booking = {
   },
   confirmed: {
     label: "Confirmed",
-    tellsYou: (name: string) => `${name} messages you the day before.`,
+    /** The board writes "Imran messages you the day before."; the reminder is ours, sent automatically (CP-08). */
+    tellsYou: "We’ll remind you on WhatsApp the day before.",
     paid: "Paid",
     note: (name: string) => `Add a note for ${name}`,
     // PLACEHOLDER from here to the end.
@@ -580,6 +581,8 @@ export const booking = {
   // PLACEHOLDER: the hold's time ran out on the phone after Razorpay had taken the payment, which keeps it.
   paidIn: PAID_IN,
   slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
+  /** The same, for a free visit to a client who has not agreed to WhatsApp about visits: nothing will be sent. */
+  slowQuiet: "This is taking longer than usual. It shows on Home once it’s booked.",
   refunded: "We couldn’t book that visit, so we’re refunding your payment in full.",
   failedToStart: "That didn’t go through. Try again.",
   creditGone: "Your free service visit is already on another booking, so this visit is charged at the price below.",

@@ -33,8 +33,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 const CHECKOUT = "https://checkout.razorpay.com/v1/checkout.js";
-const REMIND = "Remind me on WhatsApp the day before";
-const REMINDED = "Imran messages you the day before.";
+const REMIND = "Send me visit updates on WhatsApp";
+const REMINDED = "We’ll remind you on WhatsApp the day before.";
 /** A first fit and its late fee once GST applies, as it will in production (on staging GST is nothing). */
 const FIRST_FIT = { amount_ex_gst: 3000000, amount: 3540000, gst_percent: 18 };
 const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 };
