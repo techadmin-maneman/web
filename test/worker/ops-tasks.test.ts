@@ -614,6 +614,34 @@ describe("GET /api/tasks", () => {
     });
   });
 
+  // OIA-03, BK-21: "Move it in Dispatch" opened this week's board with no drawer, wherever the job was.
+  it("gives a job on its technician's day off its visit, so the task opens it on the board", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t9', 'fsm-t9', 'Chetan Arora', 'CA', 1, ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
+           fsm_status, fsm_modified_at, synced_at)
+         VALUES (?1, 'fsm-appt-11', ?2, 'service', '2026-09-30T05:00:00.000Z', '2026-09-30T06:30:00.000Z',
+           't9', 'scheduled', 'Scheduled', ?3, ?3)`,
+      ).bind(VISIT, PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+         VALUES ('leave-1', 't9', '2026-09-30', '2026-09-30', 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+
+    expect(tasksIn(await tasks(), "leave_conflict")).toEqual([
+      expect.objectContaining({
+        id: VISIT,
+        // Only a move the client has not heard of carries the mobile.
+        person: { id: PERSON, name: "Rohit Malhotra" },
+        visit: { id: VISIT, starts_at: "2026-09-30T05:00:00.000Z" },
+      }),
+    ]);
+  });
+
   it("counts the tasks whose day has passed, and no others", async () => {
     // Held on the 18th, so due on the 20th: yesterday. The erasure came yesterday and is due on the 27th.
     await heldGrant('["shared_address"]');

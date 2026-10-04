@@ -11287,6 +11287,10 @@ Request body:
             },
             "name": {
               "type": "string"
+            },
+            "mobile": {
+              "type": "string",
+              "description": "On a move the client has not heard of, their mobile, for the call. Left out elsewhere."
             }
           },
           "required": [
@@ -11300,6 +11304,25 @@ Request body:
         }
       ],
       "description": "Null for an erased client, whose record is gone."
+    },
+    "visit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "starts_at"
+      ],
+      "additionalProperties": false,
+      "description": "The visit to come the dispatch board settles the task on, so the task can open it there: a move the client has not heard of, and a job on its technician's day off. Left out for every other group."
     },
     "detail": {
       "anyOf": [
