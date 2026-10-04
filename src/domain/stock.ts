@@ -20,7 +20,6 @@
 
 import { indiaDate } from "../lib/india-time.ts";
 import { countDifference, isLow } from "../policy/stock.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { auditStatement, auditStatementIfWritten, type AuditActor } from "./audit.ts";
 import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
 import { isWithin } from "./places.ts";
@@ -274,68 +273,7 @@ function entry(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Low stock
-// ---------------------------------------------------------------------------
-
-/** One consumable a place holds at or below its level. */
-export interface Low {
-  readonly code: string;
-  readonly name: string;
-  readonly unit: string;
-  readonly held: number;
-  readonly level: number;
-}
-
-/** What a place holds at or below its level, of every consumable still offered that has one. */
-export async function lowAt(db: D1Database, place: Place, today: string): Promise<Low[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT c.code, c.name, c.unit, CASE WHEN ?1 IS NULL THEN c.reorder_central ELSE c.reorder_kit END AS level,
-         COALESCE((SELECT b.quantity FROM stock_balances b
-           WHERE b.consumable_code = c.code AND b.place = COALESCE(?1, 'central')), 0) AS held
-       FROM consumables c
-       WHERE c.retired_date IS NULL OR c.retired_date > ?2
-       ORDER BY c.name COLLATE NOCASE`,
-    )
-    .bind(place, today)
-    .all<{ code: string; name: string; unit: string; level: number | null; held: number }>();
-  return results.flatMap((row) =>
-    row.level !== null && isLow(row.held, row.level) ? [{ ...row, level: row.level }] : [],
-  );
-}
-
-export const lowStockKey = (place: Place) => (place === null ? "low_stock:central" : `low_stock:kit:${place}`);
-
-/**
- * After a movement: one alert for a place that went down and is low, naming
- * all it is low on; the place's alert closed once it is low on nothing. A
- * place that only gained stock is told nothing new. The message carries the
- * technician's ID, never his name (src/domain/alerts.ts).
- */
-export async function tellOfLowStock(
-  db: D1Database,
-  deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert; readonly now: () => Date },
-  places: { readonly touched: readonly Place[]; readonly lowered: readonly Place[] },
-): Promise<void> {
-  const today = indiaDate(deps.now());
-  for (const place of new Set(places.touched)) {
-    const low = await lowAt(db, place, today);
-    const key = lowStockKey(place);
-    if (low.length === 0) {
-      await deps.resolveAlert(key);
-      continue;
-    }
-    if (!places.lowered.includes(place)) continue;
-    const at = place === null ? "the central store" : `technician ${place}'s kit`;
-    const items = low.map((each) => `${each.name} ${String(each.held)} ${each.unit} (level ${String(each.level)})`);
-    await deps.alertOnce({
-      key,
-      message: `Stock is low in ${at}: ${items.join(", ")}. Record a transfer or a delivery on the Stock page.`,
-      link: "/stock",
-    });
-  }
-}
+export { tellOfLowStock } from "./low-stock.ts";
 
 // ---------------------------------------------------------------------------
 // What the Stock screen reads
