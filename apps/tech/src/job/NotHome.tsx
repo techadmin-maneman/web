@@ -30,7 +30,7 @@ import { checkedIn, theWait } from "../lib/progress.ts";
 import { clock, countdown, metres } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
 import { keepClosed, keptArrival } from "../store/jobs.ts";
-import { checkInRefusedAsEarly, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
+import { checkInRefusedAsEarly, events, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
 import { CardFrame } from "./CardFrame.tsx";
 import { firstName } from "./JobCard.tsx";
 import { receiptLine, type ReceiptLine } from "./receipt.ts";
@@ -106,7 +106,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
 
   // Before the earliest check-in the API would refuse one, so the phone does not offer it.
   const notYet = useBefore(Date.parse(job.checkin_from));
-  const saysWhenItOpens = notYet || checkInRefusedAsEarly(job.id);
+  const saysWhenItOpens = notYet || checkInRefusedAsEarly(queued, job.id);
 
   const wait = theWait(job, queued, arrival);
   const now = useNow(here && wait.endsAt !== null);
@@ -146,7 +146,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
       await queue("no_show", job.id, null, job.starts_at);
       await replay();
       // The phone's clock ran ahead of ours: nothing was recorded, and the wait goes on.
-      if (refusedAsEarly(job.id)) return;
+      if (refusedAsEarly(await events(), job.id)) return;
       await keepClosed(job.id);
       go(`/jobs/${job.id}/done`);
     });
@@ -235,7 +235,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
             <Icon className={styles.evidenceIcon} d={receipt.icon} size={20} stroke={STROKE} />
             <span>{receipt.text}</span>
           </p>
-          {refusedAsEarly(job.id) && (
+          {refusedAsEarly(queued, job.id) && (
             <p className={styles.stageWarn} role="alert">
               {copy.waiting.early}
             </p>

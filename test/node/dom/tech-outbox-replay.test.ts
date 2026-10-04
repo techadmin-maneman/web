@@ -17,10 +17,12 @@ import {
   keptJob,
 } from "../../../apps/tech/src/store/jobs.ts";
 import {
+  checkInRefusedAsEarly,
   correct,
   events,
   forget,
   frames,
+  held,
   keepFrame,
   queue,
   refusedAsEarly,
@@ -158,11 +160,16 @@ describe("sending what the phone holds", () => {
     expect(sent.map((call) => call.method)).toEqual(["POST"]);
   });
 
-  it("drops a no-show sent before the wait ran, and the countdown goes on", async () => {
+  it("keeps a no-show sent before the wait ran as early, sends it no more, and the countdown goes on", async () => {
     await queue("no_show", "a", null);
-    api(() => ({ status: 425, json: { error: { code: "too_early_to_close", request_id: "t" } } }));
+    const sent = api(() => ({ status: 425, json: { error: { code: "too_early_to_close", request_id: "t" } } }));
     await replay();
-    expect(await events()).toEqual([]);
+    await replay();
+
+    expect(sent).toHaveLength(1);
+    expect(await events()).toEqual([expect.objectContaining({ kind: "no_show", state: "early" })]);
+    expect(await held()).toEqual([]);
+    expect(await unsentJobs()).toEqual(new Set());
   });
 
   it("keeps what a check-in measured, which no later call gives back", async () => {
@@ -482,18 +489,40 @@ describe("a photograph the API refuses", () => {
   });
 });
 
-describe("a no-show the API says is early", () => {
-  it("is dropped, and the card can tell it was refused rather than sent, until one lands", async () => {
+describe("a step the API says is early", () => {
+  // FLD-46: the card's warning was held in memory, and went with a reload.
+  it("is kept, so the card can tell a no-show was refused rather than sent, until one lands", async () => {
     await queue("no_show", "a", null);
     api(() => ({ status: 425, json: { error: { code: "too_early_to_close", request_id: "t" } } }));
     await replay();
-    expect(await events()).toEqual([]);
-    expect(refusedAsEarly("a")).toBe(true);
+    expect(refusedAsEarly(await events(), "a")).toBe(true);
 
     await queue("no_show", "a", null);
+    expect(refusedAsEarly(await events(), "a")).toBe(true);
     api(() => ({ status: 200, json: { closed: true, wait_ends_at: "t", case_id: null, accepted: null } }));
     await replay();
-    expect(refusedAsEarly("a")).toBe(false);
+    expect(refusedAsEarly(await events(), "a")).toBe(false);
+    expect(await events()).toEqual([]);
+  });
+
+  it("keeps one early refusal a job's step at a time", async () => {
+    const early = () => ({ status: 425, json: { error: { code: "too_early_to_arrive", request_id: "t" } } });
+    await queue("check_in", "a", { lat: 28.39, lng: 77.07 });
+    api(early);
+    await replay();
+    await queue("check_in", "a", { lat: 28.39, lng: 77.07 });
+    await replay();
+
+    expect(await events()).toEqual([expect.objectContaining({ kind: "check_in", state: "early" })]);
+    expect(checkInRefusedAsEarly(await events(), "a")).toBe(true);
+  });
+});
+
+describe("queuing a step", () => {
+  // FLD-46: two screens queuing at once both found nothing waiting, and both added one.
+  it("keeps one when two screens queue the same step at once", async () => {
+    await Promise.all([queue("start", "a", null), queue("start", "a", null)]);
+    expect(await events()).toEqual([expect.objectContaining({ kind: "start", state: "waiting" })]);
   });
 });
 

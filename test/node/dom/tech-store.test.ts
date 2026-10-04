@@ -7,13 +7,16 @@ import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DATABASE,
+  firstIn,
   get,
   onStorageFull,
   open,
   put,
   RECORD_VERSION,
+  STEP_INDEX,
   StorageFull,
   wipe,
+  type StoreName,
 } from "../../../apps/tech/src/store/db.ts";
 
 afterEach(async () => {
@@ -34,8 +37,8 @@ function deletedFromOutside(): Promise<"deleted" | "blocked"> {
   });
 }
 
-/** A database made as the first release made it, at version 1, holding one record. */
-function firstRelease(record: object): Promise<void> {
+/** A database made as the first release made it, at version 1, holding one record in one store. */
+function firstRelease(record: object, name: StoreName = "jobs"): Promise<void> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DATABASE, 1);
     request.onupgradeneeded = () => {
@@ -47,8 +50,8 @@ function firstRelease(record: object): Promise<void> {
     };
     request.onsuccess = () => {
       const db = request.result;
-      const transaction = db.transaction("jobs", "readwrite");
-      transaction.objectStore("jobs").put(record);
+      const transaction = db.transaction(name, "readwrite");
+      transaction.objectStore(name).put(record);
       transaction.oncomplete = () => {
         db.close();
         resolve();
@@ -69,6 +72,12 @@ describe("the phone's store", () => {
   it("opens a store the first release made, and keeps what it held", async () => {
     await firstRelease({ id: "day:2030-09-01", kind: "day", date: "2030-09-01", jobs: [] });
     expect(await get("jobs", "day:2030-09-01")).toMatchObject({ kind: "day", date: "2030-09-01" });
+  });
+
+  it("finds an event the first release queued by its job, kind and state", async () => {
+    const event = { seq: 1, id: "e", job_id: "a", kind: "start", state: "waiting", body: null };
+    await firstRelease(event, "outbox");
+    expect(await firstIn("outbox", STEP_INDEX, ["a", "start", "waiting"])).toEqual(event);
   });
 
   it("marks every record with the version of its shape, so a later build can tell old from new", async () => {

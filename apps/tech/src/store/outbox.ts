@@ -2,20 +2,14 @@
 // with a client-generated event ID, and sent when the phone has signal. Nothing
 // a technician does is lost because a basement had none.
 //
-// The ordering rules are in ./replay.ts; this file is the store and the sending.
+// The ordering rules are in ./replay.ts, and what each refusal means for the round
+// in ./verdict.ts; this file is the store and the sending.
 
 import type { Moved } from "@maneman/web-kit/api";
 import { reportClientError } from "@maneman/web-kit/client-errors";
 import {
-  ALREADY_CLOSED,
   api,
-  type Answer,
-  OUT_OF_ORDER,
   pathFor,
-  SUPERSEDED,
-  TOO_EARLY_TO_ARRIVE,
-  TOO_EARLY_TO_CLOSE,
-  unreachable,
   type Angle,
   type CheckIn,
   type EventBody,
@@ -23,7 +17,7 @@ import {
   type JobState,
   type Phase,
 } from "../api.ts";
-import { add, all, get, put, remove } from "./db.ts";
+import { addUnless, all, firstIn, get, put, remove, STEP_INDEX } from "./db.ts";
 import {
   forgetMarks,
   forgetStartAtCheckIn,
@@ -33,11 +27,12 @@ import {
   keepStartAtCheckIn,
   keptStartAtCheckIn,
 } from "./jobs.ts";
-import { account, nextToSend, type JobAccount, type Queued } from "./replay.ts";
+import { account, nextToSend, type EventState, type JobAccount, type Queued } from "./replay.ts";
 import { uuidv7 } from "./uuidv7.ts";
+import { classify, type Verdict } from "./verdict.ts";
 
 export type { EventKind, JobAccount, Queued };
-export { account } from "./replay.ts";
+export { account, checkInRefusedAsEarly, refusedAsEarly } from "./replay.ts";
 
 /** One photograph waiting on the phone, held until the API confirms its upload. */
 export interface Frame {
@@ -58,24 +53,7 @@ export interface Frame {
 /** Why a replay stopped short, so the screen can say it plainly. */
 export type Stopped = "offline" | "signed-out" | null;
 
-type Refused = Extract<Answer<unknown>, { readonly ok: false }>;
-
-/** A job no longer this technician's, as the API said it: the code, what changed, and whom it went to. */
-interface Gone {
-  readonly kind: "gone";
-  readonly note: string;
-  readonly fields: readonly string[];
-  readonly moved: Moved | null;
-}
-
-/** A photograph the API would not take, as it answered. */
-interface Rejected {
-  readonly kind: "rejected";
-  readonly answer: Refused;
-}
-
-/** Why a photograph could not go up: no signal, signed out, the job gone from the phone, or the file refused. */
-type Trouble = "offline" | "signed-out" | Gone | Rejected;
+type Refusal = Extract<Verdict, { readonly kind: "refused" }>;
 
 export interface Replayed {
   readonly sent: number;
@@ -105,6 +83,9 @@ export async function held(): Promise<JobAccount[]> {
   return account(await events());
 }
 
+/** One of a job's steps in a state, by the outbox's index. */
+const stepIn = (jobId: string, kind: EventKind, state: EventState): IDBValidKey => [jobId, kind, state];
+
 /**
  * Queues one write. The screen calls this and moves on: the job is recorded on
  * the phone whether or not there is signal.
@@ -121,10 +102,9 @@ export async function queue<K extends EventKind>(
   body: EventBody<K>,
   startsAt: string | null = null,
 ): Promise<Queued> {
-  const already = (await events()).find(
-    (event) => event.job_id === jobId && event.kind === kind && event.state === "waiting",
-  );
-  if (already !== undefined) return already;
+  const waiting = stepIn(jobId, kind, "waiting");
+  const already = await firstIn<Queued>("outbox", STEP_INDEX, waiting);
+  if (already !== null) return already;
 
   const event = {
     id: uuidv7(),
@@ -138,9 +118,13 @@ export async function queue<K extends EventKind>(
     note: null,
     fields: [],
   };
-  const seq = await add("outbox", event);
-  changed();
-  return { ...event, seq };
+  const kept = await addUnless("outbox", STEP_INDEX, waiting, event);
+  if (kept.added) {
+    changed();
+    return { ...event, seq: kept.key };
+  }
+  // Another screen queued the same step a moment before this one.
+  return (await get<Queued>("outbox", kept.key)) ?? { ...event, seq: kept.key };
 }
 
 /**
@@ -203,8 +187,8 @@ export function frames(): Promise<Frame[]> {
 
 /** Every job with a write or a photograph that has not reached us: the phone keeps its card until they have. */
 export async function unsentJobs(): Promise<Set<string>> {
-  const held = [...(await events()), ...(await frames())];
-  return new Set(held.map((each) => each.job_id));
+  const unsent = (await events()).filter((event) => event.state !== "early");
+  return new Set([...unsent, ...(await frames())].map((each) => each.job_id));
 }
 
 /** After the technician has read what changed: the job's stopped events go, and its queue can run again. */
@@ -220,9 +204,9 @@ export async function forget(jobId: string): Promise<void> {
   changed();
 }
 
-async function markStopped(
+async function markAs(
   event: Queued,
-  state: "superseded" | "refused",
+  state: Exclude<EventState, "waiting">,
   note: string,
   fields: readonly string[],
   moved: Moved | null = null,
@@ -244,8 +228,9 @@ async function readAgainIfMoved(jobId: string, fields: readonly string[]): Promi
  * A write the API refused: its job stops there for the technician to put right, and the refusal is reported, since
  * nothing else would tell anyone but him.
  */
-async function giveUp(event: Queued, note: string, fields: readonly string[], answer: Refused): Promise<void> {
-  await markStopped(event, "refused", note, fields, null, answer.requestId);
+async function giveUp(event: Queued, refusal: Refusal): Promise<void> {
+  const { answer } = refusal;
+  await markAs(event, "refused", refusal.note, refusal.fields, null, answer.requestId);
   reportClientError({
     kind: "outbox_gave_up",
     message: `${event.kind} refused: ${answer.code}`,
@@ -254,6 +239,21 @@ async function giveUp(event: Queued, note: string, fields: readonly string[], an
     status: answer.status,
     ...(answer.requestId === null ? {} : { request_id: answer.requestId }),
   });
+}
+
+/** The job's step refused as early before this one, if any: one at a time is kept. */
+async function dropEarlier(event: Queued): Promise<void> {
+  const earlier = await firstIn<Queued>("outbox", STEP_INDEX, stepIn(event.job_id, event.kind, "early"));
+  if (earlier !== null) await remove("outbox", earlier.seq);
+}
+
+/**
+ * A check-in before the earliest the job takes one, or a no-show before its wait ran out. Nothing is wrong with the
+ * job: it is kept as early, so the card says so even after a reload, until the technician's next tap lands.
+ */
+async function keepEarly(event: Queued, code: string): Promise<void> {
+  await dropEarlier(event);
+  await markAs(event, "early", code, []);
 }
 
 let running: Promise<Replayed> | null = null;
@@ -278,19 +278,19 @@ export function replay(): Promise<Replayed> {
  * halfway does not send any of them twice. A frame the API refuses does not
  * hold back the others: they go up, so only the refused ones are taken again.
  */
-async function uploadFrames(event: Queued, phase: Phase): Promise<Trouble | null> {
+async function uploadFrames(event: Queued, phase: Phase): Promise<Verdict | null> {
   const inTheOrderTaken = (await frames()).sort((a, b) => a.kept_at - b.kept_at);
-  let firstRefusal: Rejected | null = null;
+  let firstRefusal: Refusal | null = null;
   for (const frame of inTheOrderTaken) {
     if (frame.job_id !== event.job_id || frame.phase !== phase) continue;
-    const trouble = await uploadFrame(frame);
-    if (trouble === null) {
+    const verdict = await uploadFrame(frame);
+    if (verdict === null) {
       await remove("frames", frame.id);
       changed();
       continue;
     }
-    if (!isRejected(trouble)) return trouble;
-    firstRefusal ??= trouble;
+    if (verdict.kind !== "refused") return verdict;
+    firstRefusal ??= verdict;
   }
   return firstRefusal;
 }
@@ -303,13 +303,13 @@ async function uploadFrames(event: Queued, phase: Phase): Promise<Trouble | null
  * angle was taken again meanwhile or it is not small enough, is let go, since
  * the client app then shows the photograph itself.
  */
-async function uploadFrame(frame: Frame): Promise<Trouble | null> {
+async function uploadFrame(frame: Frame): Promise<Verdict | null> {
   const link = await api.uploadLink(frame.job_id, frame.phase, frame.angle);
-  if (!link.ok) return failureOf(link);
+  if (!link.ok) return classify(link);
   let take = frame.take;
   if (take === undefined) {
     const sent = await api.upload(link.body.upload_url, frame.frame);
-    if (!sent.ok) return markIfRefused(frame, failureOf(sent));
+    if (!sent.ok) return markIfRefused(frame, classify(sent));
     // An API from before thumbnails names no take: the photograph goes alone.
     take = sent.body?.take;
     if (take === undefined) return null;
@@ -318,34 +318,14 @@ async function uploadFrame(frame: Frame): Promise<Trouble | null> {
   if (frame.small === undefined) return null;
   const sent = await api.uploadThumbnail(link.body.small_upload_url, take, frame.small);
   if (sent.ok) return null;
-  const trouble = failureOf(sent);
-  return isRejected(trouble) ? null : trouble;
+  const verdict = classify(sent);
+  return verdict.kind === "refused" ? null : verdict;
 }
-
-const isRejected = (trouble: Trouble): trouble is Rejected =>
-  typeof trouble === "object" && trouble.kind === "rejected";
 
 /** A photograph the API would not take is marked, so the capture screen asks for its angle again. */
-async function markIfRefused(frame: Frame, trouble: Trouble): Promise<Trouble> {
-  if (isRejected(trouble)) await put("frames", { ...frame, refused: true } satisfies Frame);
-  return trouble;
-}
-
-/**
- * What a failed call on the way to a write means for the round: wait, sign out,
- * or stop the job. A `409 superseded` is the API saying ops gave the job to
- * someone else, or cancelled it, and whom it went to; `already_closed`, that
- * the job has closed; a 404, that it is no longer on this technician's list.
- * The screens say each as the change it is, not as photographs that would not
- * upload.
- */
-function failureOf(answer: Refused): Trouble {
-  if (unreachable(answer)) return "offline";
-  if (answer.status === 401) return "signed-out";
-  if (answer.code === SUPERSEDED) return { kind: "gone", note: SUPERSEDED, fields: answer.fields, moved: answer.moved };
-  if (answer.code === ALREADY_CLOSED) return { kind: "gone", note: ALREADY_CLOSED, fields: [], moved: null };
-  if (answer.status === 404) return { kind: "gone", note: "not_found", fields: [], moved: null };
-  return { kind: "rejected", answer };
+async function markIfRefused(frame: Frame, verdict: Verdict): Promise<Verdict> {
+  if (verdict.kind === "refused") await put("frames", { ...frame, refused: true } satisfies Frame);
+  return verdict;
 }
 
 /** Where the job stands as a landed write answered: its own progress, or that of the step a check-in or no-show made. */
@@ -356,98 +336,59 @@ function stateIn(body: unknown): JobState | null {
   return { started_at: progress.started_at ?? null, outcome: progress.outcome ?? null };
 }
 
-/**
- * The jobs whose last no-show the API refused as early, so the card can say so
- * and not move to a close-out. A no-show that lands takes its job off.
- */
-const early = new Set<string>();
+/** What a landed write leaves on the phone: the arrival a check-in answered, where the job stands, and no early refusal. */
+async function landed(event: Queued, body: unknown): Promise<void> {
+  // A check-in answers pass or fail with the distance; the job screen shows it.
+  if (event.kind === "check_in") await keepArrival(event.job_id, body as CheckIn);
+  const state = stateIn(body);
+  if (state !== null) await keepLanded(event.job_id, state);
+  await remove("outbox", event.seq);
+  await dropEarlier(event);
+}
 
-export const refusedAsEarly = (jobId: string): boolean => early.has(jobId);
+function phaseOf(kind: EventKind): Phase | null {
+  if (kind === "before_photos") return "before";
+  if (kind === "after_photos") return "after";
+  return null;
+}
 
-/** The jobs whose last check-in the API refused as before the earliest check-in, so the card can say when it opens. */
-const arrivedEarly = new Set<string>();
-
-export const checkInRefusedAsEarly = (jobId: string): boolean => arrivedEarly.has(jobId);
+/** Sends one event, a photograph set's photographs first. Null once it has landed. */
+async function send(event: Queued): Promise<Verdict | null> {
+  const phase = phaseOf(event.kind);
+  if (phase !== null) {
+    const trouble = await uploadFrames(event, phase);
+    // A photograph the API would not take is the set's refusal, whatever its code for the file.
+    if (trouble?.kind === "refused") return { ...trouble, note: "photo_rejected", fields: [] };
+    if (trouble !== null) return trouble;
+  }
+  const answer = await api.send<unknown>(event.path, event.body ?? undefined, {
+    eventId: event.id,
+    startsAt: event.starts_at ?? null,
+  });
+  if (!answer.ok) return classify(answer);
+  await landed(event, answer.body);
+  return null;
+}
 
 async function run(): Promise<Replayed> {
-  let sent = 0;
-  let superseded = 0;
-  let refused = 0;
-
+  const round = { sent: 0, superseded: 0, refused: 0 };
   for (;;) {
     const event = nextToSend(await events());
-    if (event === null) return { sent, superseded, refused, stopped: null };
+    if (event === null) return { ...round, stopped: null };
 
-    if (event.kind === "before_photos" || event.kind === "after_photos") {
-      const phase: Phase = event.kind === "before_photos" ? "before" : "after";
-      const trouble = await uploadFrames(event, phase);
-      if (trouble === "offline" || trouble === "signed-out") {
-        return { sent, superseded, refused, stopped: trouble };
-      }
-      if (trouble?.kind === "rejected") {
-        await giveUp(event, "photo_rejected", [], trouble.answer);
-        refused += 1;
-        changed();
-        continue;
-      }
-      if (trouble !== null) {
-        await markStopped(event, "superseded", trouble.note, trouble.fields, trouble.moved);
-        await readAgainIfMoved(event.job_id, trouble.fields);
-        superseded += 1;
-        changed();
-        continue;
-      }
+    const verdict = await send(event);
+    if (verdict === null) round.sent += 1;
+    else if (verdict.kind === "retry_later") return { ...round, stopped: "offline" };
+    else if (verdict.kind === "signed_out") return { ...round, stopped: "signed-out" };
+    else if (verdict.kind === "too_early") await keepEarly(event, verdict.code);
+    else if (verdict.kind === "superseded") {
+      await markAs(event, "superseded", verdict.note, verdict.fields, verdict.moved);
+      await readAgainIfMoved(event.job_id, verdict.fields);
+      round.superseded += 1;
+    } else {
+      await giveUp(event, verdict);
+      round.refused += 1;
     }
-
-    const answer = await api.send<unknown>(event.path, event.body ?? undefined, {
-      eventId: event.id,
-      startsAt: event.starts_at ?? null,
-    });
-    if (answer.ok) {
-      // A check-in answers pass or fail with the distance; the job screen shows it.
-      if (event.kind === "check_in") {
-        await keepArrival(event.job_id, answer.body as CheckIn);
-        arrivedEarly.delete(event.job_id);
-      }
-      const landed = stateIn(answer.body);
-      if (landed !== null) await keepLanded(event.job_id, landed);
-      if (event.kind === "no_show") early.delete(event.job_id);
-      await remove("outbox", event.seq);
-      sent += 1;
-      changed();
-      continue;
-    }
-    // No signal, or none usable: everything still waiting stays waiting.
-    if (answer.code === "offline") return { sent, superseded, refused, stopped: "offline" };
-    if (answer.status === 401) return { sent, superseded, refused, stopped: "signed-out" };
-    // The job changed underneath the phone, or a step arrived before the one ahead of
-    // it, or the job has closed, or it is no longer this technician's at all.
-    const jobStopped = answer.code === SUPERSEDED || answer.code === OUT_OF_ORDER || answer.code === ALREADY_CLOSED;
-    if (jobStopped || answer.status === 404) {
-      await markStopped(event, "superseded", answer.code, answer.fields, answer.moved);
-      await readAgainIfMoved(event.job_id, answer.fields);
-      superseded += 1;
-      changed();
-      continue;
-    }
-    // The wait has not run out. Nothing is wrong with the job: the countdown goes on.
-    if (answer.code === TOO_EARLY_TO_CLOSE) {
-      early.add(event.job_id);
-      await remove("outbox", event.seq);
-      changed();
-      continue;
-    }
-    // Before the earliest check-in. Nothing is wrong with the job: he taps again once it comes.
-    if (answer.code === TOO_EARLY_TO_ARRIVE && event.kind === "check_in") {
-      arrivedEarly.add(event.job_id);
-      await remove("outbox", event.seq);
-      changed();
-      continue;
-    }
-    // Ours or theirs, and passing: try the whole queue again later.
-    if (answer.status === 429 || answer.status >= 500) return { sent, superseded, refused, stopped: "offline" };
-    await giveUp(event, answer.code, answer.fields, answer);
-    refused += 1;
     changed();
   }
 }

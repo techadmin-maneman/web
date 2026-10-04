@@ -14,6 +14,9 @@ export const DATABASE = "mm-tech";
 export const DAY_CACHE = "mm-tech-day";
 
 export const STORES = ["device", "jobs", "outbox", "frames"] as const;
+
+/** The outbox's index by job, kind and state. */
+export const STEP_INDEX = "step";
 export type StoreName = (typeof STORES)[number];
 
 /**
@@ -22,13 +25,17 @@ export type StoreName = (typeof STORES)[number];
  * none twice. A new step goes at the end, and an old one is never edited: some
  * phone somewhere has not run it yet.
  */
-const UPGRADES: readonly ((db: IDBDatabase) => void)[] = [
+const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => void)[] = [
   // Version 1: the four stores. The outbox's key counts up, so reading it in key order is the order the phone queued them in.
   (db) => {
     db.createObjectStore("device", { keyPath: "key" });
     db.createObjectStore("jobs", { keyPath: "id" });
     db.createObjectStore("outbox", { keyPath: "seq", autoIncrement: true }).createIndex("job", "job_id");
     db.createObjectStore("frames", { keyPath: "id" });
+  },
+  // Version 2: the outbox's events by job, kind and state, so a step is found, and queued once, without reading them all.
+  (_db, upgrade) => {
+    upgrade.objectStore("outbox").createIndex(STEP_INDEX, ["job_id", "kind", "state"]);
   },
 ];
 const VERSION = UPGRADES.length;
@@ -78,7 +85,9 @@ function connect(): Promise<IDBDatabase> {
   return new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DATABASE, VERSION);
     request.onupgradeneeded = (event) => {
-      for (const step of UPGRADES.slice(event.oldVersion)) step(request.result);
+      const upgrade = request.transaction;
+      if (upgrade === null) return;
+      for (const step of UPGRADES.slice(event.oldVersion)) step(request.result, upgrade);
     };
     request.onsuccess = () => {
       const db = request.result;
@@ -122,6 +131,12 @@ export async function get<T>(name: StoreName, key: IDBValidKey): Promise<T | nul
   return found ?? null;
 }
 
+/** The first value an index holds under a key. */
+export async function firstIn<T>(name: StoreName, index: string, key: IDBValidKey): Promise<T | null> {
+  const found = await settle((await store(name, "readonly")).index(index).get(key) as IDBRequest<T | undefined>);
+  return found ?? null;
+}
+
 /** The stores whose last write failed for want of room. The phone is full while any is here. */
 const full = new Set<StoreName>();
 const fullListeners = new Set<(isFull: boolean) => void>();
@@ -148,10 +163,10 @@ function roomIn(name: StoreName, found: boolean): void {
 const isNoRoom = (error: unknown) => error instanceof DOMException && error.name === "QuotaExceededError";
 
 /** One write, settled once it commits. A write the phone has no room for fails as StorageFull. */
-async function write<T>(name: StoreName, act: (target: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+async function write<T>(name: StoreName, act: (target: IDBObjectStore) => Promise<T>): Promise<T> {
   const transaction = (await open()).transaction(name, "readwrite");
   try {
-    const [result] = await Promise.all([settle(act(transaction.objectStore(name))), committed(transaction)]);
+    const [result] = await Promise.all([act(transaction.objectStore(name)), committed(transaction)]);
     roomIn(name, true);
     return result;
   } catch (error) {
@@ -164,21 +179,51 @@ async function write<T>(name: StoreName, act: (target: IDBObjectStore) => IDBReq
 const stamped = (value: object) => ({ ...value, v: RECORD_VERSION });
 
 export async function put(name: StoreName, value: object): Promise<void> {
-  await write(name, (target) => target.put(stamped(value)));
+  await write(name, (target) => settle(target.put(stamped(value))));
 }
 
-/** Adds a value the store keys itself, and answers with the key it was given. */
-export async function add(name: StoreName, value: object): Promise<number> {
-  return Number(await write(name, (target) => target.add(stamped(value))));
+/**
+ * Adds a value the store keys itself, unless the index already holds one under `key`: both in one transaction, so two
+ * screens adding the same thing at once keep one. Answers the key of the value kept, and whether it is the new one.
+ */
+export async function addUnless(
+  name: StoreName,
+  index: string,
+  key: IDBValidKey,
+  value: object,
+): Promise<{ readonly key: number; readonly added: boolean }> {
+  return write(
+    name,
+    (target) =>
+      new Promise((resolve, reject) => {
+        const failed = (request: IDBRequest) => () => {
+          reject(request.error ?? new Error("the phone's store refused the request"));
+        };
+        const found = target.index(index).getKey(key);
+        found.onerror = failed(found);
+        // The add is asked for in the lookup's own callback, while the transaction is certainly still open.
+        found.onsuccess = () => {
+          if (found.result !== undefined) {
+            resolve({ key: Number(found.result), added: false });
+            return;
+          }
+          const added = target.add(stamped(value));
+          added.onerror = failed(added);
+          added.onsuccess = () => {
+            resolve({ key: Number(added.result), added: true });
+          };
+        };
+      }),
+  );
 }
 
 export async function remove(name: StoreName, key: IDBValidKey): Promise<void> {
-  await write(name, (target) => target.delete(key));
+  await write(name, (target) => settle(target.delete(key)));
 }
 
 /** Everything one store holds, gone; the other stores keep theirs. */
 export async function clear(name: StoreName): Promise<void> {
-  await write(name, (target) => target.clear());
+  await write(name, (target) => settle(target.clear()));
 }
 
 /**
