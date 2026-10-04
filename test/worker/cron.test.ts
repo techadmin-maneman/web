@@ -113,6 +113,21 @@ describe("runCronJobs", () => {
     expect(ran).toEqual(["books", "books", "books_without_fsm"]);
   });
 
+  it("asks Razorpay what its webhook missed only where payments are connected", async () => {
+    const { ran, job } = recorder();
+    const jobs = [job("razorpay_catch_up", "payments")];
+    const unpaid: StaticConfig = {
+      ...LOCAL_CONFIG,
+      providers: { ...LOCAL_CONFIG.providers, PAYMENTS_PROVIDER: "none" },
+    };
+
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: unpaid, log: createLogger() });
+    expect(ran).toEqual([]);
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: LOCAL_CONFIG, log: createLogger() });
+    expect(ran).toEqual(["razorpay_catch_up"]);
+    expect(CRON_JOBS.find((each) => each.name === "razorpay_catch_up")?.needs).toBe("payments");
+  });
+
   // LIFE-17: the stub remembers no appointment, so locally the repair read every visit it looked at as one FSM had
   // deleted, and each run took two more off the local mirror.
   it("repairs the FSM mirror only against the real FSM, which is a record; the stub holds none", async () => {

@@ -18,7 +18,7 @@ import { fieldRecord } from "../config/field-record.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
-import { bookUnbookedHolds, confirmBooking, requeueUnbookedHolds } from "../domain/bookings.ts";
+import { bookUnbookedHolds, requeueUnbookedHolds } from "../domain/bookings.ts";
 import { eraseBooksCustomers } from "../domain/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books-invoices.ts";
 import { checkBooksItems } from "../domain/books-items.ts";
@@ -35,17 +35,16 @@ import { queueCreditReminders } from "../domain/credit-reminders.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { sendUnsentLinks } from "../domain/payment-links.ts";
 import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
-import { catchUpWithRazorpay } from "../domain/razorpay-catch-up.ts";
 import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/storage-meter.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "../lib/d1-meter.ts";
-import { failureReason, scrubString, type Logger } from "../log.ts";
+import { scrubString, type Logger } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
-import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { checkDailyAllowances } from "./daily-allowances.ts";
+import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
 import {
@@ -286,53 +285,6 @@ async function paymentLinksJob({ env, deps, log, budget }: CronContext): Promise
   if (sent > 0) log.info("payment_links_sent", { count: sent });
 }
 
-async function razorpayCatchUpJob(context: CronContext): Promise<void> {
-  const { env, deps, config, log, budget } = context;
-  const catchUp = {
-    payments: deps.payments,
-    alertOnce: deps.alertOnce,
-    log,
-    hashSalt: config.settings.ipHashSalt,
-    book: holdBooker(context),
-  };
-  const found = await catchUpWithRazorpay(env.DB, catchUp, budget, deps.now());
-  if (found > 0) log.warn("razorpay_payments_caught_up", { count: found });
-}
-
-/**
- * Sends a hold the cron found paid for to be booked, as the webhook would have: on FSM's queue on its path, else booked
- * in this run. One that fails here is booked by the unbooked holds' pass half an hour on.
- */
-function holdBooker({ env, deps, config, log }: CronContext): (holdId: string) => Promise<void> {
-  const requestId = "razorpay-catch-up";
-  if (fieldRecord(config.providers) === "fsm") {
-    return async (holdId) => {
-      try {
-        await env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);
-      } catch (error) {
-        log.warn("booking_not_queued", { hold_id: holdId, reason: failureReason(error) });
-      }
-    };
-  }
-  const notify = (messageId: string) =>
-    env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
-  const options = {
-    record: "ours",
-    labelAsTest: config.environment !== "production",
-    notify,
-    alertOnce: deps.alertOnce,
-    log,
-  } as const;
-  return async (holdId) => {
-    try {
-      const outcome = await confirmBooking(env.DB, deps.fsm, deps.payments, holdId, deps.now(), options);
-      log.info("booking", { hold_id: holdId, outcome });
-    } catch (error) {
-      log.warn("booking_failed", { hold_id: holdId, reason: failureReason(error) });
-    }
-  };
-}
-
 /** FSM raises the invoice on its path; without it, we raise it in Books. */
 async function invoicesJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const options = { labelAsTest: config.environment !== "production", gst: booksGst(config) };
@@ -429,6 +381,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // Free service visits running out: a month, then a week, before their last day.
   { name: "credit_reminders", needs: "messaging", every: 15, at: 7, run: creditRemindersJob },
   { name: "visit_reminders", needs: "messaging", every: 15, at: 8, run: remindersJob },
+  // A payment Razorpay's webhook never told us of, read from Razorpay.
+  { name: "razorpay_catch_up", needs: "payments", every: 15, at: 8, run: razorpayCatchUpJob },
   // What the client asked for, beside what the board offers them (ADR 0063).
   { name: "asked_windows", needs: "nothing", every: 15, at: 9, run: askedWindowsJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
@@ -437,8 +391,6 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "cancel_refunds", needs: "nothing", every: 15, at: 12, run: cancelRefundsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", every: 15, at: 12, run: erasedFilesJob },
-  // A payment Razorpay's webhook never told us of (docs/decisions/0044-payments-mirror.md).
-  { name: "razorpay_catch_up", needs: "payments", every: 15, at: 12, run: razorpayCatchUpJob },
   { name: "requeue_crm_erasures", needs: "nothing", every: 15, at: 13, run: requeueCrmErasures },
   { name: "requeue_fsm_erasures", needs: "fsm", every: 15, at: 13, run: requeueFsmErasures },
   // An erased client's customer in Books, deleted, or blanked where an invoice names it.
