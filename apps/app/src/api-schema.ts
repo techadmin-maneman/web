@@ -468,7 +468,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The profile: name, number, address, consents, and any number change or deletion under way */
+        /** The profile: name, number, address, consents, any number change or deletion under way, and the latest concerns raised */
         get: {
             parameters: {
                 query?: never;
@@ -2565,6 +2565,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/export.html": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Everything held about the client, as a page to download and read */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description An HTML file, maneman-my-data.html, labelled and in India's time */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/html": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/grievances": {
         parameters: {
             query?: never;
@@ -2574,7 +2619,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Raise a grievance about how the client's data is handled. The same words, still open, are one */
+        /** Raise a grievance about how the client's data is handled. The same words, still open, are one; 5 new ones a day */
         post: {
             parameters: {
                 query?: never;
@@ -2608,6 +2653,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description rate_limited: 5 new grievances a day */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -2623,7 +2677,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2634,6 +2688,11 @@ export interface components {
                     /** @description When ops moved the job to them; null when it was moved in FSM itself */
                     at: string | null;
                 };
+                /**
+                 * Format: date-time
+                 * @description too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one.
+                 */
+                earliest_at?: string;
             };
         };
         Health: {
@@ -2718,7 +2777,7 @@ export interface components {
             first_name: string;
             /** @description For the profile's button: the first letters of the first and last names. */
             initials: string;
-            /** @description A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit. */
+            /** @description A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is on record. Null once one is, and once its day has passed. */
             consultation: {
                 /** Format: date */
                 date: string;
@@ -2734,6 +2793,10 @@ export interface components {
                 window_label: "before noon" | "after four" | null;
                 /** @description Where it is: the saved address (locality, city and pincode), else the booking's city. */
                 place: string;
+                /** @description Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp. */
+                requested: boolean;
+                /** @description The consultation and the first fit in one visit. */
+                one_visit: boolean;
             } | null;
             /** @description The next visit that has not happened, from FSM: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;
@@ -2749,6 +2812,8 @@ export interface components {
                 paid: boolean;
                 /** @description A consultation and fit in one visit. */
                 one_visit: boolean;
+                /** @description Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits. */
+                told: boolean;
             } | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
@@ -2842,6 +2907,8 @@ export interface components {
             ends_at: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
@@ -2932,6 +2999,19 @@ export interface components {
                 /** @description Ops' reason, which they write knowing the client reads it. */
                 reason: string | null;
             } | null;
+            /** @description The client's latest 5 concerns about their data, newest first: every one still open, and those answered within 30 days. */
+            grievances: {
+                /** Format: uuid */
+                id: string;
+                text: string;
+                /** @enum {string} */
+                state: "open" | "resolved";
+                /** Format: date-time */
+                raised_at: string;
+                /** @description Ops' answer, which they write knowing the client reads it; null while open. */
+                response: string | null;
+                answered_at: string | null;
+            }[];
         };
         Address: {
             line1: string;
@@ -3049,6 +3129,8 @@ export interface components {
             ends_at: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
@@ -3108,6 +3190,8 @@ export interface components {
             dispute: ("open" | "refunded" | "upheld") | null;
             /** @description Whether the client may dispute the charge now: one that took something, not disputed yet. */
             disputable: boolean;
+            /** @description When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise. */
+            dispute_closed_at: string | null;
         };
         PhotoTimeline: {
             visits: {

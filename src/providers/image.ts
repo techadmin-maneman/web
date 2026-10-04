@@ -5,6 +5,7 @@
 import type { Endpoint, Preset } from "../config/presets.ts";
 import type { FailureCode, HairColor } from "../config/tryon.ts";
 import type { ImageType } from "../lib/image-bytes.ts";
+import type { Logger } from "../log.ts";
 import { createAilabtoolsProvider } from "./ailabtools.ts";
 import { createStubAilabtoolsFetch, STUB_API_KEY } from "./ailabtools-stub.ts";
 
@@ -51,8 +52,8 @@ export interface ImageProvider {
 /** The real provider when there is an API key; otherwise the stub, which fakes AILabTools' HTTP API. */
 export function createImageProvider(
   apiKey: string | null,
-  deps: { fetch: typeof fetch; now: () => Date },
+  deps: { fetch: typeof fetch; now: () => Date; log: Logger },
 ): ImageProvider {
-  if (apiKey !== null) return createAilabtoolsProvider({ apiKey, fetch: deps.fetch });
-  return createAilabtoolsProvider({ apiKey: STUB_API_KEY, fetch: createStubAilabtoolsFetch(deps.now) });
+  if (apiKey !== null) return createAilabtoolsProvider({ apiKey, fetch: deps.fetch, log: deps.log });
+  return createAilabtoolsProvider({ apiKey: STUB_API_KEY, fetch: createStubAilabtoolsFetch(deps.now), log: deps.log });
 }

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ANGLES } from "../../src/domain/visit-photos.ts";
 import {
   CONSULTATION_PHOTOS_RULE,
+  landsAfterClose,
   PHOTO_ANGLES,
   RULES,
   stepBefore,
@@ -69,9 +70,46 @@ describe("the steps of a job", () => {
     expect(stepBefore("after_photos", "replacement", toConsumables, {})).toBe("piece");
   });
 
+  // FLD-37: a declined one visit's checklist asked for the fit's items, since the choice came after it.
+  it("takes a one visit's choice, at the piece, before its checklist, and then the rest in order", () => {
+    expect(stepsFor("first_fit", true)).toEqual([
+      "before_photos",
+      "piece",
+      "checklist",
+      "consumables",
+      "after_photos",
+      "outcome",
+    ]);
+    const photographed = done("check_in", "start", "before_photos");
+    expect(stepBefore("checklist", "first_fit", photographed, {}, true)).toBe("piece");
+    expect(stepBefore("piece", "first_fit", photographed, {}, true)).toBeNull();
+    // Declined, the visit is a consultation by its close, and its steps stay the one visit's.
+    expect(stepBefore("checklist", "consultation", done("check_in", "start", "before_photos", "piece"), {}, true)).toBe(
+      null,
+    );
+  });
+
   it("closes a no-show from the check-in alone: the job was never started (src/policy/no-show.ts)", () => {
     expect(stepBefore("outcome", "service", done("check_in"), { outcome: "no_show" })).toBeNull();
     expect(stepBefore("outcome", "service", done(), { outcome: "no_show" })).toBe("check_in");
     expect(stepBefore("outcome", "service", done("check_in"), { outcome: "done" })).toBe("start");
+  });
+});
+
+describe("a closed job", () => {
+  const closedAt = new Date("2026-09-21T09:00:00.000Z");
+  const minutesLater = (minutes: number) => new Date(closedAt.getTime() + minutes * 60_000);
+
+  it("takes a corrected checklist or count of what was used for an hour after the close, and nothing after", () => {
+    expect(landsAfterClose("checklist", closedAt, minutesLater(0))).toBe(true);
+    expect(landsAfterClose("consumables", closedAt, minutesLater(59))).toBe(true);
+    expect(landsAfterClose("checklist", closedAt, minutesLater(60))).toBe(false);
+    expect(landsAfterClose("consumables", closedAt, minutesLater(61))).toBe(false);
+  });
+
+  it("takes no other step at all: no second outcome, no check-in, no photographs, no piece", () => {
+    for (const kind of ["check_in", "start", "before_photos", "piece", "after_photos", "outcome"] as const) {
+      expect(landsAfterClose(kind, closedAt, minutesLater(1)), kind).toBe(false);
+    }
   });
 });

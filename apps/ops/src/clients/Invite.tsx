@@ -1,7 +1,8 @@
 // The invite a client came with, under their Payments, beside the credits it
-// grants: its code, who sent it and where its grant stands. A client who came
-// with none may have one attached, for a friend who booked away from the
-// invite's own page: the code and why, under the landing's own rules
+// grants: where its grant stands, and who attached it, if ops did. Who sent it,
+// and its code, head the client's page. A client who came with none may have
+// one attached, for a friend who booked away from the invite's own page: the
+// code and why, under the landing's own rules
 // (docs/decisions/0089-an-invite-is-not-lost.md). No board draws it
 // (docs/fidelity-method.md).
 
@@ -10,7 +11,6 @@ import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type ClientInvite } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
@@ -29,18 +29,6 @@ export type InviteNews = keyof typeof copy.news;
 
 function Details({ invite, news }: { invite: ClientInvite; news: InviteNews | null }) {
   const rows = [
-    { key: copy.code, value: invite.code },
-    {
-      key: copy.from,
-      value:
-        invite.referrer === null ? (
-          copy.erased
-        ) : (
-          <OpsLink className={styles.metaLink} to={`/clients/${invite.referrer.id}`}>
-            {invite.referrer.name}
-          </OpsLink>
-        ),
-    },
     { key: copy.grant, value: copy.grants[invite.grant] },
     { key: copy.since, value: longDate(invite.since) },
     ...(invite.attached === null

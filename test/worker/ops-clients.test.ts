@@ -162,6 +162,42 @@ describe("GET /api/clients/{id}", () => {
     });
   });
 
+  // MON-14: a refund the booking made by itself showed nowhere in the console.
+  it("lists a booking that refunded its payment by itself, and why, and none that ops refunded", async () => {
+    await record();
+    const refundedAt = "2026-09-21T06:43:00.000Z";
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
+         gst_percent, state, expires_at, created_at, updated_at, razorpay_order_id, refunded_at, auto_refund_reason)
+       VALUES ('hold-lapsed', ?1, 'service', '2026-09-22', 'afternoon', 't1', 6, 236000, 200000, 18, 'released', ?2, ?2,
+         ?3, 'order_late', ?3, 'lapsed'),
+              ('hold-by-ops', ?1, 'service', '2026-09-23', 'morning', 't1', 0, 236000, 200000, 18, 'released', ?2, ?2,
+         ?3, NULL, ?3, NULL)`,
+    )
+      .bind(PERSON, "2026-09-21T06:30:00.000Z", refundedAt)
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, method, status,
+         created_at, updated_at)
+       VALUES ('pay-late', ?1, 'order_late', 'pay_late', 236000, 'INR', 'upi', 'refunded', ?2, ?2)`,
+    )
+      .bind(PERSON, "2026-09-21T06:43:00.000Z")
+      .run();
+
+    const body = await (await request(ops, `/api/clients/${PERSON}`)).json<{ auto_refunds: unknown }>();
+    expect(body.auto_refunds).toEqual([
+      {
+        hold_id: "hold-lapsed",
+        type: "service",
+        service: "Service visit",
+        date: "2026-09-22",
+        amount: 236000,
+        reason: "lapsed",
+        refunded_at: refundedAt,
+      },
+    ]);
+  });
+
   it("reads nothing booked and no address for a client with only a record", async () => {
     const body = await (await request(ops, `/api/clients/${PERSON}`)).json();
     expect(body).toMatchObject({
@@ -203,6 +239,159 @@ describe("GET /api/clients/{id}", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS rows FROM audit_log").first<{ rows: number }>()).toEqual({
       rows: 0,
     });
+  });
+});
+
+// MON-16 and OIA-08 of the audit, 2 October 2026: the Payments tab showed neither a payment link nor an invoice, and a
+// client who lost Razorpay's text could not be sent the link again.
+describe("GET /api/clients/{id}, its payment links and invoices", () => {
+  const FIT = "22222222-2222-4222-8222-222222222223";
+  const CONSULTATION = "22222222-2222-4222-8222-222222222224";
+  const ONE_VISIT_LINK = "66666666-6666-4666-8666-666666666661";
+  const PAID_HOLD = "66666666-6666-4666-8666-666666666662";
+  const LAPSED_HOLD = "66666666-6666-4666-8666-666666666663";
+
+  async function finishedVisit(id: string, type: string, start: string, oneVisit: string | null = null) {
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, fsm_status, window_start, window_end,
+         technician_id, service_city, service_pincode, fsm_modified_at, synced_at, one_visit)
+       VALUES (?1, ?2, ?3, ?4, 'natural', 'completed', 'Completed', ?5, ?5, 't1', 'Gurgaon', '122018', ?6, ?6, ?7)`,
+    )
+      .bind(id, `fsm-${id}`, PERSON, type, start, NOW.toISOString(), oneVisit)
+      .run();
+  }
+
+  async function linkHold(id: string, state: "booked" | "released", order: string | null, created: string) {
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, razorpay_order_id, expires_at, created_at, updated_at, pay_by_link,
+         payment_link_id, payment_link_url, reference)
+       VALUES (?1, ?2, 'service', '2026-09-25', 'morning', 't1', 0, 200000, 200000, 0, ?3, ?4, ?5, ?5, ?5, 1,
+         ?6, ?7, ?8)`,
+    )
+      .bind(
+        id,
+        PERSON,
+        state,
+        order,
+        created,
+        `plink_${id}`,
+        `https://rzp.io/i/${id.slice(0, 6)}`,
+        `MM-2026-${id.slice(-4)}`,
+      )
+      .run();
+  }
+
+  beforeEach(async () => {
+    await record();
+    await env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+       VALUES ('first_fit', 'natural', 'Natural hair system', 180, 1, 'ops@localhost', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+  });
+
+  it("lists every payment link, newest first: what it is for, its amount, its address while open, and if paid", async () => {
+    await finishedVisit(FIT, "first_fit", "2026-09-18T04:30:00.000Z", "fitted");
+    await env.DB.prepare(
+      `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, razorpay_link_id,
+         short_url, sent_at, reference, created_at, updated_at)
+       VALUES (?1, ?2, 'natural', 3540000, 3000000, 18, 'plink_fit', 'https://rzp.io/i/fit901', ?3, 'MM-2026-0901',
+         ?3, ?3)`,
+    )
+      .bind(ONE_VISIT_LINK, FIT, "2026-09-18T08:00:00.000Z")
+      .run();
+    await linkHold(PAID_HOLD, "booked", "order_link_1", "2026-09-19T06:00:00.000Z");
+    await env.DB.prepare(
+      `INSERT INTO payments (id, reference, person_id, razorpay_payment_id, razorpay_order_id, amount, currency,
+         method, status, created_at, updated_at)
+       VALUES ('77777777-7777-4777-8777-777777777771', 'MM-2026-0662', ?1, 'pay_link_1', 'order_link_1', 200000,
+         'INR', 'upi', 'captured', ?2, ?2)`,
+    )
+      .bind(PERSON, "2026-09-19T07:15:00.000Z")
+      .run();
+    await linkHold(LAPSED_HOLD, "released", null, "2026-09-17T06:00:00.000Z");
+
+    const body = await (await request(ops, `/api/clients/${PERSON}`)).json<{ payment_links: unknown[] }>();
+    expect(body.payment_links).toEqual([
+      {
+        id: PAID_HOLD,
+        product: "Service visit",
+        visit_date: "2026-09-25",
+        amount: 200000,
+        reference: "MM-2026-6662",
+        short_url: "https://rzp.io/i/666666",
+        sent_at: "2026-09-19T06:00:00.000Z",
+        state: "paid",
+        paid_at: "2026-09-19T07:15:00.000Z",
+      },
+      {
+        id: ONE_VISIT_LINK,
+        product: "Natural hair system",
+        visit_date: "2026-09-18",
+        amount: 3540000,
+        reference: "MM-2026-0901",
+        short_url: "https://rzp.io/i/fit901",
+        sent_at: "2026-09-18T08:00:00.000Z",
+        state: "open",
+        paid_at: null,
+      },
+      expect.objectContaining({ id: LAPSED_HOLD, state: "lapsed", paid_at: null }),
+    ]);
+  });
+
+  // MON-45, PS-47: a one visit's link closes 14 days after Razorpay made it.
+  it("says a one visit's link closed unpaid once its 14 days are up", async () => {
+    await finishedVisit(FIT, "first_fit", "2026-09-04T04:30:00.000Z", "fitted");
+    await env.DB.prepare(
+      `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, razorpay_link_id,
+         short_url, sent_at, reference, created_at, updated_at)
+       VALUES (?1, ?2, 'natural', 3540000, 3000000, 18, 'plink_fit', 'https://rzp.io/i/fit901', ?3, 'MM-2026-0901',
+         ?3, ?3)`,
+    )
+      .bind(ONE_VISIT_LINK, FIT, "2026-09-07T06:30:00.000Z")
+      .run();
+    const body = await (await request(ops, `/api/clients/${PERSON}`)).json<{ payment_links: unknown[] }>();
+    expect(body.payment_links).toEqual([expect.objectContaining({ id: ONE_VISIT_LINK, state: "lapsed" })]);
+  });
+
+  it("says a link Razorpay has not made yet is being made, and one it refused was refused", async () => {
+    await finishedVisit(FIT, "first_fit", "2026-09-18T04:30:00.000Z", "fitted");
+    await env.DB.prepare(
+      `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, created_at, updated_at)
+       VALUES (?1, ?2, 'natural', 3540000, 3000000, 18, ?3, ?3)`,
+    )
+      .bind(ONE_VISIT_LINK, FIT, NOW.toISOString())
+      .run();
+    const making = await (await request(ops, `/api/clients/${PERSON}`)).json<{ payment_links: unknown[] }>();
+    expect(making.payment_links).toEqual([
+      expect.objectContaining({ state: "making", short_url: null, sent_at: null, reference: null }),
+    ]);
+
+    await env.DB.prepare("UPDATE payment_links SET refused_at = ?1").bind(NOW.toISOString()).run();
+    const refused = await (await request(ops, `/api/clients/${PERSON}`)).json<{ payment_links: unknown[] }>();
+    expect(refused.payment_links).toEqual([expect.objectContaining({ state: "refused" })]);
+  });
+
+  it("gives each finished visit sold for a price its invoice's state, and leaves out a free consultation", async () => {
+    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'books-1', invoice_issued_at = ?2 WHERE id = ?1")
+      .bind(VISIT, "2026-09-10T09:00:00.000Z")
+      .run();
+    await finishedVisit(FIT, "first_fit", "2026-09-18T04:30:00.000Z");
+    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'books-2' WHERE id = ?1").bind(FIT).run();
+    await finishedVisit(CONSULTATION, "consultation", "2026-09-05T04:30:00.000Z");
+    const declined = "22222222-2222-4222-8222-222222222225";
+    await finishedVisit(declined, "first_fit", "2026-09-19T04:30:00.000Z", "declined");
+    const toRaise = "22222222-2222-4222-8222-222222222226";
+    await finishedVisit(toRaise, "replacement", "2026-09-20T04:30:00.000Z");
+
+    const body = await (await request(ops, `/api/clients/${PERSON}`)).json<{ invoices: unknown[] }>();
+    expect(body.invoices).toEqual([
+      { visit_id: toRaise, date: "2026-09-20", type: "replacement", state: "to_raise", issued_at: null },
+      { visit_id: FIT, date: "2026-09-18", type: "first_fit", state: "draft", issued_at: null },
+      { visit_id: VISIT, date: "2026-09-10", type: "service", state: "issued", issued_at: "2026-09-10T09:00:00.000Z" },
+    ]);
   });
 });
 

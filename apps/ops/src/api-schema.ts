@@ -224,7 +224,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The client's record: who they are, their address, their visits, their payments, their history and their invite */
+        /** The client's record: who they are, their address, their visits, their money, their history and their invite */
         get: {
             parameters: {
                 query?: never;
@@ -524,7 +524,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -860,7 +860,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -938,7 +938,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -947,7 +947,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before */
+                /** @description taken: nobody chosen is free in that window now, or the technician chosen is not in the caller's cities; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1035,7 +1035,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_changeable: the visit has begun, passed or gone, or is no client's; terms_changed: the notice is not the one shown, so show the terms again */
+                /** @description not_changeable: the visit has begun, passed or gone, is no client's, or is not in the caller's cities; terms_changed: the notice is not the one shown, so show the terms again */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1114,7 +1114,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such visit */
+                /** @description not_found: no such visit in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1201,7 +1201,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1553,7 +1553,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description visit_booked or payment_held: settle what it names first, or say it will be settled today */
+                /** @description visit_booked, payment_held or payment_owed: settle what it names first, or say it will be settled today */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1802,7 +1802,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description visit_booked or payment_held: cancel the visits and refund the payments it names first */
+                /** @description visit_booked, payment_held or payment_owed: cancel the visits, refund the payments and settle the links it names first */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1826,7 +1826,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Referral grants held for review, oldest first */
+        /** Referral grants held for review whose friend is in the caller's cities, oldest first */
         get: {
             parameters: {
                 query?: never;
@@ -1929,7 +1929,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no held grant by that ID */
+                /** @description not_found: no held grant by that ID in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2059,7 +2059,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Who is waiting, by pincode, the longest wait first */
+        /** Who is waiting in the caller's cities, by pincode, the longest wait first */
         get: {
             parameters: {
                 query?: never;
@@ -2143,6 +2143,15 @@ export interface paths {
                         };
                     };
                 };
+                /** @description access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description not_found: we have no such pincode */
                 404: {
                     headers: {
@@ -2167,7 +2176,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The referrers' figures, the busiest first, 50 at a time */
+        /** The figures of the referrers in the caller's cities, the busiest first, 50 at a time */
         get: {
             parameters: {
                 query?: {
@@ -2219,7 +2228,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The dispatch board: seven days of every active technician, with the unassigned tray */
+        /** The dispatch board: seven days of the visits and active technicians in the caller's cities, with the unassigned tray */
         get: {
             parameters: {
                 query?: {
@@ -2239,6 +2248,51 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["DispatchBoard"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dispatch/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The board's version, which the open board asks for every minute: one row, where the board itself is hundreds */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The version now */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DispatchBoardVersion"];
                     };
                 };
                 /** @description access_required */
@@ -2298,7 +2352,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such live job, or one the technician has started or closed, which stays where it is */
+                /** @description not_found: no such live job in the caller's cities, or one the technician has started or closed, which stays where it is */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2349,7 +2403,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchMoved"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: fields names technician_id for one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2367,7 +2421,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such live job */
+                /** @description not_found: no such live job in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2434,7 +2488,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchMoved"];
                     };
                 };
-                /** @description invalid_request, including a move to the technician, day and window the job already has */
+                /** @description invalid_request, including a move to the technician, day and window the job already has, or to a technician not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2452,7 +2506,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such live job */
+                /** @description not_found: no such live job in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2529,7 +2583,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no move of a live visit whose client is still to be told */
+                /** @description not_found: no move of a live visit in the caller's cities whose client is still to be told */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2553,7 +2607,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** No-show cases: undecided first, each with its three facts */
+        /** No-show cases in the caller's cities: undecided first, each with its three facts */
         get: {
             parameters: {
                 query?: {
@@ -2638,7 +2692,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required, or not_permitted: waiving asks Finance MANAGE */
+                /** @description access_required, or not_permitted: waiving asks Finance MANAGE in the case's city */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2647,7 +2701,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such case, or it was ruled on already */
+                /** @description not_found: no such case in the caller's cities, or it was ruled on already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2727,7 +2781,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Active technicians, the phones they have logged in on and their leave, and those switched off */
+        /** Active technicians in the caller's cities, the phones they have logged in on and their leave, and those switched off */
         get: {
             parameters: {
                 query?: never;
@@ -2781,7 +2835,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianId"];
                     };
                 };
-                /** @description invalid_request: no name, not an Indian mobile, or not one of our cities */
+                /** @description invalid_request: no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2823,7 +2877,47 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** A technician's leave that has not ended, each with the jobs still booked on its days */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The leave */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianStandingLeave"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such technician, or he is outside the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
         /** Record leave. Those days are then refused to booking and to the dispatch board alike */
         post: {
@@ -2868,7 +2962,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such active technician */
+                /** @description not_found: no such active technician in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2927,7 +3021,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such leave of that technician's */
+                /** @description not_found: no such leave of that technician's, or he is not in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2987,7 +3081,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such phone of that technician's */
+                /** @description not_found: no such phone of that technician's, or he is not in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3004,6 +3098,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/no-shows/{id}/charge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What charging an undecided no-show would keep of the visit's payment, and refund */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What a charge would do */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NoShowChargePreview"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such case in the caller's cities, or it was ruled on already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/no-shows/decided": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day's rulings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            cases: components["schemas"]["NoShowDecided"][];
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/no-shows/disputes": {
         parameters: {
             query?: never;
@@ -3011,7 +3208,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Disputed no-show charges still to rule on, oldest first, each with its evidence */
+        /** Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence */
         get: {
             parameters: {
                 query?: never;
@@ -3096,7 +3293,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required, or not_permitted: refunding asks Finance MANAGE */
+                /** @description access_required, or not_permitted: refunding asks Finance MANAGE in the dispute's city */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3105,7 +3302,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such dispute, or it was ruled on already */
+                /** @description not_found: no such dispute in the caller's cities, or it was ruled on already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3139,7 +3336,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The groups with something in them, of the caller's own departments once the Staff list is enforced */
+                /** @description The groups with something in them, of the caller's own departments and cities once the Staff list is enforced */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -3181,7 +3378,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
+                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                     id: string;
                 };
                 cookie?: never;
@@ -3219,7 +3416,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such task on the board now; its thing may be done already */
+                /** @description not_found: no such task on the board now in the caller's cities; its thing may be done already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3288,7 +3485,169 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such task on the board now; a follow-up may be booked, or it is closed already */
+                /** @description not_found: no such task on the board now in the caller's cities; a follow-up may be booked, or it is closed already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The open alerts ops have been told of, the longest open first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Of the caller's own departments once the Staff list is enforced */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpenAlerts"];
+                    };
+                };
+                /** @description access_required, or not_permitted: no View in any department */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark an alert done: what it was about is put right */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Closed, under the member of staff who closed it */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description not_permitted: it asks Act in the department the alert's kind belongs to, and Manage for a CRM erasure */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such open alert; it may be closed already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts/{id}/send-again": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send again the message, lead or CRM erasure an alert gave up on, and close the alert */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Sent again, and the alert closed: a new alert follows if it fails again */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: this kind of alert has nothing to send again */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_permitted: it asks Act in the department the alert's kind belongs to */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such open alert; it may be closed already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3312,7 +3671,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A day's money: what was collected, what went back, and each charge kept or ruled on */
+        /** A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on */
         get: {
             parameters: {
                 query?: {
@@ -3400,7 +3759,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianId"];
                     };
                 };
-                /** @description invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities */
+                /** @description invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -3418,7 +3777,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such technician */
+                /** @description not_found: no such technician in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3479,7 +3838,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such technician */
+                /** @description not_found: no such technician in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3547,7 +3906,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such technician */
+                /** @description not_found: no such technician in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -4130,7 +4489,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order or outside_the_day (06:00 to 22:00) */
+                /** @description invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order, half_slot_too_short (under 45 minutes, the last one to the day's end included) or outside_the_day (06:00 to 22:00) */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5393,7 +5752,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is */
+                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5451,7 +5810,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code, from, or to for the place it came from */
+                /** @description invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5509,7 +5868,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is */
+                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5567,7 +5926,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is */
+                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5873,7 +6232,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found */
+                /** @description not_found: no such visit in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -5946,7 +6305,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such visit, or it carries no code */
+                /** @description not_found: no such visit in the caller's cities, or it carries no code */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -6236,7 +6595,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -6247,6 +6606,11 @@ export interface components {
                     /** @description When ops moved the job to them; null when it was moved in FSM itself */
                     at: string | null;
                 };
+                /**
+                 * Format: date-time
+                 * @description too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one.
+                 */
+                earliest_at?: string;
             };
         };
         Health: {
@@ -6331,11 +6695,17 @@ export interface components {
             };
             /** @description Payments and refunds as one list, newest first. */
             payments: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
+            /** @description Every payment link, newest first. */
+            payment_links: components["schemas"]["ClientPaymentLink"][];
+            /** @description Each finished visit sold for a price, with its invoice; the latest visit first. */
+            invoices: components["schemas"]["ClientInvoice"][];
             history: components["schemas"]["ClientRecordHistory"];
             /** @description The invite they came with, or ops attached; null for none. */
             invite: components["schemas"]["ClientInvite"] | null;
             /** @description Bookings FSM refused, waiting for a try or for ops; the soonest visit first. */
             held_bookings: components["schemas"]["HeldBooking"][];
+            /** @description Bookings that refunded their payment by themselves; the latest refund first. */
+            auto_refunds: components["schemas"]["AutoRefund"][];
         };
         ClientAddress: {
             line1: string;
@@ -6375,6 +6745,8 @@ export interface components {
             ends_at: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
@@ -6429,6 +6801,8 @@ export interface components {
             ends_at: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
@@ -6536,6 +6910,8 @@ export interface components {
             dispute: ("open" | "refunded" | "upheld") | null;
             /** @description Whether the client may dispute the charge now: one that took something, not disputed yet. */
             disputable: boolean;
+            /** @description When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise. */
+            dispute_closed_at: string | null;
         };
         RefundEntry: {
             /**
@@ -6584,6 +6960,41 @@ export interface components {
             destination: string | null;
             /** @description normal (5 to 7 working days) or instant. */
             speed: string | null;
+        };
+        ClientPaymentLink: {
+            /** Format: uuid */
+            id: string;
+            /** @description The service it pays for, by its name now. */
+            product: string;
+            /** @description India's date of the visit it pays for; null where the visit has no start. */
+            visit_date: string | null;
+            /** @description In paise, GST included. */
+            amount: number;
+            /** @description As the client reads it on Razorpay's page; null on a link made before links had one. */
+            reference: string | null;
+            /** @description The address Razorpay texted the client; null until Razorpay has made the link. */
+            short_url: string | null;
+            sent_at: string | null;
+            /**
+             * @description making: Razorpay has not made it yet, and it is asked again; open: sent and not paid; paid; refused: Razorpay would not make it, so ops send one by hand; lapsed: closed unpaid.
+             * @enum {string}
+             */
+            state: "making" | "open" | "paid" | "refused" | "lapsed";
+            paid_at: string | null;
+        };
+        ClientInvoice: {
+            /** Format: uuid */
+            visit_id: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /**
+             * @description to_raise: Books holds none yet; draft: Books holds it unsent; issued: sent to the client.
+             * @enum {string}
+             */
+            state: "to_raise" | "draft" | "issued";
+            issued_at: string | null;
         };
         ClientRecordHistory: {
             /** @description Every visit done: a completed visit with a window. */
@@ -6672,6 +7083,28 @@ export interface components {
                 /** @description In paise before GST; null until the visit's price is known. */
                 amount_off: number | null;
             } | null;
+        };
+        AutoRefund: {
+            /** Format: uuid */
+            hold_id: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description Its service's name as it is now. */
+            service: string;
+            /**
+             * Format: date
+             * @description India's day the visit was to be on.
+             */
+            date: string;
+            /** @description In paise, GST included: what Razorpay took, all of which went back; null where it is not on record. */
+            amount: number | null;
+            /**
+             * @description lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun.
+             * @enum {string}
+             */
+            reason: "lapsed" | "not_movable";
+            /** Format: date-time */
+            refunded_at: string;
         };
         ClientPhotos: {
             visits: {
@@ -6825,7 +7258,7 @@ export interface components {
                     /** @description When the window starts that day, in India's time. */
                     start: string;
                     end: string;
-                    /** @description Who is free for the visit, the client's regular technician first. */
+                    /** @description Who in the caller's cities is free for the visit, the client's regular technician first. */
                     technicians: components["schemas"]["FreeTechnician"][];
                 }[];
             }[];
@@ -6970,7 +7403,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -6981,6 +7414,11 @@ export interface components {
                     /** @description When ops moved the job to them; null when it was moved in FSM itself */
                     at: string | null;
                 };
+                /**
+                 * Format: date-time
+                 * @description too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one.
+                 */
+                earliest_at?: string;
             };
             /** @description The invite the client came with first. */
             invite: {
@@ -7184,7 +7622,7 @@ export interface components {
         ErasureRefused: {
             error: {
                 /** @enum {string} */
-                code: "visit_booked" | "payment_held";
+                code: "visit_booked" | "payment_held" | "payment_owed";
                 request_id: string;
             };
             visits: {
@@ -7196,7 +7634,24 @@ export interface components {
                 /** Format: date-time */
                 window_start: string | null;
             }[];
+            /** @description Bookings paid for, or free, that are not yet visits. */
+            bookings: {
+                id: string;
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /** Format: date */
+                date: string;
+                /** @enum {string} */
+                window: "morning" | "afternoon" | "evening";
+            }[];
             payments: {
+                id: string;
+                reference: string | null;
+                /** @description In paise. */
+                amount: number;
+            }[];
+            /** @description Payment links still unpaid: a fitted visit's, or one sent for a booking and still open. */
+            links: {
                 id: string;
                 reference: string | null;
                 /** @description In paise. */
@@ -7204,7 +7659,7 @@ export interface components {
             }[];
         };
         Erasure: {
-            /** @description Erase even with a visit booked or a payment held: only when ops will cancel and refund them today. */
+            /** @description Erase even with a visit or booking still to happen, a payment held or a link unpaid: only when ops will settle them by hand today. Bookings not yet visits are let go, and open payment links cancelled. */
             override_open_bookings?: boolean;
         };
         NumberChangeDecision: {
@@ -7237,13 +7692,15 @@ export interface components {
             launch_on?: string;
         };
         DispatchBoard: {
+            /** @description Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another. */
+            version: number;
             /** Format: date */
             from: string;
             /** @description 7 days, the board's columns. */
             dates: string[];
             /** @description The city the jobs are narrowed to; null for all. */
             city: string | null;
-            /** @description The cities the board can be narrowed to. */
+            /** @description The cities the board can be narrowed to: the caller's. */
             cities: string[];
             technicians: {
                 /** Format: uuid */
@@ -7261,6 +7718,8 @@ export interface components {
                 /** Format: uuid */
                 appointment_id: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+                service: string | null;
                 /** @description First name and last initial. */
                 client: string | null;
                 /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
@@ -7309,6 +7768,8 @@ export interface components {
             /** Format: uuid */
             appointment_id: string;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @description First name and last initial. */
             client: string | null;
             /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
@@ -7353,7 +7814,11 @@ export interface components {
             /** @description Who invited him, by name; null when he came on his own. */
             referred_by: string | null;
         };
-        /** @description Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is. */
+        DispatchBoardVersion: {
+            /** @description Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another. */
+            version: number;
+        };
+        /** @description Each technician's day in the caller's cities with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is. */
         DispatchRoom: {
             /** Format: uuid */
             appointment_id: string;
@@ -7446,7 +7911,7 @@ export interface components {
             technician: string | null;
             /**
              * Format: date-time
-             * @description Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here.
+             * @description Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here, or from the booked start for an arrival before it.
              */
             checked_in_at: string;
             /** @description What the phone itself said, before the bounds; null when it said nothing. */
@@ -7474,6 +7939,8 @@ export interface components {
             message_delivered_at: string | null;
             /** Format: date-time */
             wait_ends_at: string;
+            /** @description The wait ran from a check-in before the booked start, so the case closed before the client's own wait had run: waive it, or give the reason to charge. */
+            closed_early: boolean;
             closed_at: string | null;
             /**
              * Format: date-time
@@ -7526,6 +7993,8 @@ export interface components {
                     /** Format: date-time */
                     last_seen_at: string;
                     revoked_at: string | null;
+                    /** @description Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it. */
+                    signed_in: boolean;
                 }[];
                 /** @description Leave that has not ended yet, soonest first (ADR 0062). */
                 leave: components["schemas"]["TechnicianLeave"][];
@@ -7543,7 +8012,7 @@ export interface components {
                 /** @description Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs. */
                 editable: boolean;
             }[];
-            /** @description The cities a technician may be given, in display order. */
+            /** @description The cities the caller may give a technician, those their Operations MANAGE reaches, in display order. */
             cities: string[];
         };
         TechnicianLeave: {
@@ -7558,18 +8027,37 @@ export interface components {
             to: string;
             note: string | null;
         };
+        TechnicianStandingLeave: {
+            /** @description His leave that has not ended yet, soonest first. */
+            leave: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                from: string;
+                /**
+                 * Format: date
+                 * @description Inclusive: a single day's leave has the same date twice.
+                 */
+                to: string;
+                note: string | null;
+                /** @description The jobs still booked on its days from today on, soonest first. */
+                jobs: components["schemas"]["TechnicianJobOnLeave"][];
+            }[];
+        };
+        /** @description A job booked on a day the technician is away, which the leave moves nowhere: ops move it on the dispatch board, and it waits on the Tasks board until they do. */
+        TechnicianJobOnLeave: {
+            /** Format: uuid */
+            appointment_id: string;
+            /** Format: date-time */
+            starts_at: string;
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            client: string | null;
+        };
         TechnicianLeaveRecorded: {
             /** Format: uuid */
             id: string;
-            /** @description The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch board, and each waits on the Tasks board until they do (OPS-07). */
-            jobs: {
-                /** Format: uuid */
-                appointment_id: string;
-                /** Format: date-time */
-                starts_at: string;
-                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
-                client: string | null;
-            }[];
+            /** @description The jobs already booked on those days, soonest first. */
+            jobs: components["schemas"]["TechnicianJobOnLeave"][];
         };
         TechnicianLeaveRequest: {
             /** Format: date */
@@ -7578,6 +8066,37 @@ export interface components {
             to: string;
             /** @description Why, in ops' words. Never a medical detail. */
             note?: string;
+        };
+        /** @description What charging the case would do, worked out as charging does. */
+        NoShowChargePreview: {
+            /** @description In paise: what was paid for the visit and not refunded. */
+            paid: number;
+            /** @description In paise: what charging keeps of it. The rest is refunded. */
+            kept: number;
+            /** @description Whether charging keeps the credit the visit was paid with. */
+            credit_kept: boolean;
+        };
+        NoShowDecided: {
+            /** Format: uuid */
+            id: string;
+            /** @description Whose visit it was; null once they have been erased. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            visit_date: string | null;
+            /** @enum {string} */
+            decision: "charged" | "waived";
+            /** Format: date-time */
+            decided_at: string;
+            /** @description What a charge took; null for a waiver, and for a charge ruled before it was recorded. */
+            charge: {
+                /** @description In paise: what the charge kept of the visit's payment. */
+                kept: number;
+                /** @description Whether the charge spent the credit the visit used. */
+                credit_spent: boolean;
+            } | null;
         };
         /** @description A disputed charge, with the evidence its no-show was ruled on. */
         NoShowDispute: {
@@ -7599,7 +8118,7 @@ export interface components {
             raised_at: string;
             /**
              * Format: date-time
-             * @description When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at.
+             * @description When ops should have ruled: the Tasks board's allowance for a disputed charge, from raised_at.
              */
             due: string;
             /** @description In paise: what the charge kept of the visit's payment. */
@@ -7634,8 +8153,8 @@ export interface components {
             staff: string[];
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
-                /** @description How many are waiting in the group, all of them. */
+                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
+                /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
                 closable: boolean;
@@ -7654,7 +8173,16 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 name: string;
+                /** @description On a move the client has not heard of, their mobile, for the call. Left out elsewhere. */
+                mobile?: string;
             } | null;
+            /** @description The visit to come the dispatch board settles the task on, so the task can open it there: a move the client has not heard of, and a job on its technician's day off. Left out for every other group. */
+            visit?: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date-time */
+                starts_at: string;
+            };
             /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
             detail: string | null;
             /**
@@ -7681,6 +8209,33 @@ export interface components {
         TaskClosing: {
             /** @description Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased. */
             reason: string;
+        };
+        OpenAlerts: {
+            /** @description How many are open, all of them. */
+            count: number;
+            /** @description The longest open first, at most 50. */
+            alerts: components["schemas"]["OpenAlert"][];
+        };
+        OpenAlert: {
+            /** Format: uuid */
+            id: string;
+            /** @description What went wrong: the alert's key up to its first colon, "crm_lead". */
+            kind: string;
+            /** @description What happened and what to do, with IDs only, as the chat was told. */
+            message: string;
+            /** @description Where in the console to act on it, as a path: "/clients/<personId>". */
+            link: string | null;
+            /** @description How many times it has happened. */
+            count: number;
+            /**
+             * Format: date-time
+             * @description When ops were first told.
+             */
+            told_at: string;
+            /** Format: date-time */
+            last_seen_at: string;
+            /** @description Its work can be sent again from here: a message, a lead to the CRM, or an erasure there. */
+            send_again: boolean;
         };
         /** @description Derived at read time from the payments themselves; no total is kept. */
         OpsDayMoney: {
@@ -7739,7 +8294,7 @@ export interface components {
             mobile: string;
             /** @description Where he mostly works, in ops' words; null for none. */
             zone?: string | null;
-            /** @description The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
+            /** @description The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
             city?: string | null;
         };
         /** @description Only what is sent changes. */
@@ -7750,7 +8305,7 @@ export interface components {
             mobile?: string;
             /** @description Where he mostly works, in ops' words; null for none. */
             zone?: string | null;
-            /** @description The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
+            /** @description The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
             city?: string | null;
         };
         TechnicianDeactivated: {
@@ -7773,7 +8328,7 @@ export interface components {
              * @description Exclusive: the day after the last one counted.
              */
             to: string;
-            /** @description Every active technician, by name, including those who finished nothing. */
+            /** @description Every active technician in the caller's cities, by name, including those who finished nothing. */
             technicians: components["schemas"]["TechnicianWork"][];
         };
         TechnicianWork: {
@@ -7798,8 +8353,6 @@ export interface components {
             name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward";
             title: string;
             note: string;
-            /** @description The module the default lives in. */
-            source: string;
             set_by: string | null;
             set_at: string | null;
             /**
@@ -7833,8 +8386,6 @@ export interface components {
             name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward";
             title: string;
             note: string;
-            /** @description The module the default lives in. */
-            source: string;
             set_by: string | null;
             set_at: string | null;
             /**
@@ -8250,7 +8801,7 @@ export interface components {
                 reorder_kit: number | null;
                 reorder_central: number | null;
             }[];
-            /** @description The central store first, then each active technician's kit, and any other still holding stock. */
+            /** @description The central store first, then each active technician's kit, and any other still holding stock: those in the caller's cities, and the store only with a national grant. */
             places: {
                 /** @description A technician's kit, by the technician's ID; null for the central store. */
                 technician_id: string | null;

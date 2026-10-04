@@ -28,7 +28,9 @@ export {
 } from "./fixtures/clients.ts";
 export { BOARD, MOVED, ROHIT, ROOM, VIKRAM } from "./fixtures/dispatch.ts";
 export {
+  CHARGE_PREVIEW,
   DAY_MONEY,
+  DECIDED,
   DISPUTES,
   DELETION_REQUESTS,
   GRIEVANCES,
@@ -44,7 +46,9 @@ export { CONSUMABLES, IMRAN, JOB_SHEET, SAMEER, STOCK } from "./fixtures/stock.t
 export {
   LEAVE_CANCELLED,
   LEAVE_RECORDED,
+  NO_LEAVE,
   RAVI,
+  SANDEEP_LEAVE,
   SWITCHED_OFF,
   TECHNICIAN_ADDED,
   TECHNICIANS,

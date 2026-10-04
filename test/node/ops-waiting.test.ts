@@ -57,6 +57,18 @@ describe("the counts beside the console's sections", () => {
     expect(waiting.get("/tasks")).toEqual({ count: 3, overdue: true });
   });
 
+  // A disputed charge once had no count anywhere in the navigation (OIA-07).
+  it("counts the disputed charges in No-shows, beside the cases waiting for a decision", () => {
+    const waiting = waitingIn(
+      board([
+        group("no_show_decision", 1, ["2027-09-23T06:00:00.000Z"]),
+        group("no_show_dispute", 2, ["2027-09-21T06:00:00.000Z", "2027-09-24T06:00:00.000Z"]),
+      ]),
+      NOW,
+    );
+    expect(waiting.get("/no-shows")).toEqual({ count: 3, overdue: true });
+  });
+
   it("counts a due date of today as not yet overdue", () => {
     const waiting = waitingIn(board([group("grievance", 1, ["2027-09-22T12:00:00.000Z"])]), NOW);
     expect(waiting.get("/grievances")).toEqual({ count: 1, overdue: false });

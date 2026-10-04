@@ -559,14 +559,14 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     expect(await jobRow(jobId)).toMatchObject({ state: "awaiting_upload", stage: "crown" });
   });
 
-  it("routes an unknown colour to Premium with color=original, and records why", async () => {
+  it("routes an unknown colour to Pro in black, as the owner chose, and records why", async () => {
     const browser = visitor();
     const jobId = await browser.claimed();
     await browser.generate(jobId, { hair_color: "unknown" });
     expect(await jobRow(jobId)).toMatchObject({
-      endpoint: "premium",
-      provider_color: "original",
-      color_route: "premium_original",
+      endpoint: "pro",
+      provider_color: "black",
+      color_route: "pro_black",
     });
   });
 

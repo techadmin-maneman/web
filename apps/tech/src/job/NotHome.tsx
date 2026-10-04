@@ -1,9 +1,10 @@
 // Board B5: the evidence chain, beneath the job's card.
 //
-//   1 · Arrived       the phone's position, checked against the address
+//   1 · Arrived       the phone's position, checked against the address, from the earliest check-in
 //   Check-in failed   how far away it was, and no way to close a no-show from there
-//   2 · Waiting       what is left of the wait, and Close as no-show, dim until it runs out
-//   He appears        the timer stops and the job starts
+//   2 · Waiting       what is left of the wait, from the booked start at the earliest, and Close as no-show,
+//                     dim until it runs out
+//   Client's here     the timer stops and the job starts
 //
 // The stage's one action — I have arrived, then Start job — sits at the foot of
 // the screen where every screen keeps it. Close as no-show is never gold and
@@ -30,7 +31,7 @@ import { checkedIn, theWait } from "../lib/progress.ts";
 import { clock, countdown, metres } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
 import { keepClosed, keptArrival } from "../store/jobs.ts";
-import { queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
+import { checkInRefusedAsEarly, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
 import { CardFrame } from "./CardFrame.tsx";
 import { firstName } from "./JobCard.tsx";
 import styles from "./job.module.css";
@@ -61,6 +62,23 @@ function useNow(running: boolean): number {
   return now;
 }
 
+/** Whether the phone's clock is still before `at`; the screen is drawn again the moment it is not. */
+function useBefore(at: number): boolean {
+  const [before, setBefore] = useState(() => Date.now() < at);
+  useEffect(() => {
+    const left = at - Date.now();
+    setBefore(left > 0);
+    if (left <= 0) return;
+    const opens = setTimeout(() => {
+      setBefore(false);
+    }, left);
+    return () => {
+      clearTimeout(opens);
+    };
+  }, [at]);
+  return before;
+}
+
 /** Board B5's receipt: whether the day-before WhatsApp reached the client, or ops' three facts when none was sent. */
 function evidenceOf(job: Job): string {
   const who = job.client === null ? "" : firstName(job.client.name);
@@ -89,10 +107,15 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
   const here = checkedIn(job, queued) || arrival?.passed === true;
   const failed = !here && arrival?.passed === false;
 
+  // Before the earliest check-in the API would refuse one, so the phone does not offer it.
+  const notYet = useBefore(Date.parse(job.checkin_from));
+  const saysWhenItOpens = notYet || checkInRefusedAsEarly(job.id);
+
   const wait = theWait(job, queued, arrival);
   const now = useNow(here && wait.endsAt !== null);
   const left = wait.endsAt === null ? 0 : wait.endsAt - now;
   const mayClose = wait.confirmed && wait.endsAt !== null && left <= 0;
+  const waitBegun = wait.endsAt === null || wait.endsAt - job.no_show_wait_min * 60_000 <= now;
 
   const arrive = () =>
     once(async () => {
@@ -152,7 +175,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
         variant="gold"
         size="action"
         className={styles.action}
-        disabled={asking}
+        disabled={asking || notYet}
         busy={asking}
         onClick={() => void arrive()}
       >
@@ -168,7 +191,12 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
       {!here && !failed && (
         <section className={styles.stage}>
           <p className={styles.stageLabel}>{copy.arrived.step}</p>
-          <p className={styles.stageBody}>{copy.arrived.body}</p>
+          <p className={styles.stageBody}>{copy.arrived.body(job.checkin_radius_m)}</p>
+          {saysWhenItOpens && (
+            <p className={styles.stageWarn} role="status">
+              {copy.arrived.opensAt(clock(job.checkin_from))}
+            </p>
+          )}
           {noPosition && (
             <p className={styles.stageWarn} role="alert">
               {copy.arrived.noPosition}
@@ -203,7 +231,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
           <p className={styles.stageLabel}>{copy.waiting.step}</p>
           {wait.endsAt !== null && <p className={styles.timer}>{countdown(left)}</p>}
           <p className={styles.stageNote} role="status">
-            {waitLine(wait.confirmed, mayClose, job.no_show_wait_min)}
+            {waitLine(job, { begun: waitBegun, confirmed: wait.confirmed, over: mayClose })}
           </p>
           <p className={styles.evidence}>
             <Icon className={styles.evidenceIcon} d={ICONS.tick} size={20} stroke={STROKE} />
@@ -254,8 +282,9 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
   );
 }
 
-/** What the wait says beneath the timer: how long it runs, that it is over, or that it waits for signal. */
-function waitLine(confirmed: boolean, over: boolean, minutes: number): string {
-  if (!confirmed) return copy.waiting.fromTap;
-  return over ? copy.waiting.over : copy.waiting.left(minutes);
+/** What the wait says beneath the timer: when it starts, how long it runs, that it is over, or that it waits for signal. */
+function waitLine(job: Job, wait: { begun: boolean; confirmed: boolean; over: boolean }): string {
+  if (!wait.begun) return copy.waiting.fromStart(clock(job.starts_at));
+  if (!wait.confirmed) return copy.waiting.fromTap;
+  return wait.over ? copy.waiting.over : copy.waiting.left(job.no_show_wait_min);
 }

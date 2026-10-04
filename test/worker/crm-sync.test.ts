@@ -233,9 +233,25 @@ describe("crm-sync: syncing a lead", () => {
 
     await syncLead(env.DB, deps, log, leadId);
 
+    const personId = await env.DB.prepare("SELECT person_id FROM leads WHERE id = ?1").bind(leadId).first("person_id");
     expect(deps.alerts).toEqual([
-      `Lead ${leadId} did not reach the CRM after 10 attempts: Zoho 401 invalid_code: could not refresh the access token`,
+      `Lead ${leadId} did not reach the CRM after 10 attempts: Zoho 401 invalid_code: could not refresh the access ` +
+        `token. Send it again from Tasks once Zoho is back. http://ops.localhost:4323/clients/${String(personId)}`,
     ]);
+    expect(await openAlertKeys()).toEqual([`crm_lead:${leadId}`]);
+  });
+
+  it("closes the lead's alert once a later try reaches the CRM", async () => {
+    const leadId = await phaseOneLead();
+    await env.DB.prepare("UPDATE leads SET sync_attempts = ? WHERE id = ?")
+      .bind(MAX_SYNC_ATTEMPTS - 1, leadId)
+      .run();
+    await syncLead(env.DB, fakeDependencies({ crm: stubCrmThatFails("Zoho 503") }), log, leadId);
+    await env.DB.prepare("UPDATE leads SET sync_attempts = 0 WHERE id = ?").bind(leadId).run();
+
+    await syncLead(env.DB, fakeDependencies(), log, leadId);
+
+    expect(await openAlertKeys()).toEqual([]);
   });
 });
 
@@ -301,6 +317,11 @@ describe("crm-sync: a try-on", () => {
     expect(crm.calls[0]?.lead).toMatchObject({ leadId: booking, source: "form", contactable: true, tryOn: true });
   });
 });
+
+const openAlertKeys = () =>
+  env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL ORDER BY key")
+    .all<{ key: string }>()
+    .then((answer) => answer.results.map((row) => row.key));
 
 describe("crm-sync: the queue batch", () => {
   function batchOf(bodies: unknown[]) {
@@ -426,6 +447,10 @@ describe("crm-sync: erasing a person", () => {
     expect(deps.alerts).toEqual([
       expect.stringContaining(`Erasing person ${personId} in the CRM failed 10 times`) as string,
     ]);
+    expect(await openAlertKeys()).toEqual([`crm_erasure:${personId}`]);
+
+    await eraseInCrm(env.DB, fakeDependencies(), log, personId);
+    expect(await openAlertKeys()).toEqual([]);
   });
 
   it("does nothing for a person who was never erased", async () => {

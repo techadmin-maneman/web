@@ -188,7 +188,10 @@ export const home = {
   note: "Add a note",
   consultation: {
     label: "Your consultation",
+    labelOneVisit: "Your consultation and fit",
     free: "Free",
+    /** Asked for on the site, not yet booked. */
+    requested: "Requested · we confirm the time on WhatsApp",
   },
   /** Board B1's credit tile: "3 free service visits", and "Use by 2 Oct", or "Use by tonight" on the last day. */
   credits: freeVisitsTile,
@@ -281,6 +284,8 @@ export const visits = {
   none: "Nothing booked yet.",
   /** Board C1: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
+  /** A consultation asked for on the site, which ops have yet to confirm. */
+  requested: "Requested",
   // PLACEHOLDER: a visit that is not this client's, or no longer exists.
   notFound: "We could not find this visit.",
   // PLACEHOLDER: offline, the visits are not kept on the phone.
@@ -349,6 +354,8 @@ export const visits = {
       kept: (amount: string) => `Charged: we kept ${amount} of what you paid.`,
       creditSpent: "Charged: the free service visit it used is spent.",
       dispute: "Dispute this charge",
+      /** PLACEHOLDER: where the button stood, once the days to dispute have passed. */
+      disputeClosed: (day: string) => `The days to dispute this charge ended on ${day}.`,
       disputed: {
         open: "You disputed this charge. We are looking at it.",
         refunded: "We looked at your dispute and refunded the charge.",
@@ -934,8 +941,8 @@ export const profile = {
   // PLACEHOLDER: the design draws the profile with an address already given, and no form.
   noAddress: "No address yet. Add it before you book.",
   addAddress: "Add your address and access notes",
-  // PLACEHOLDER: the design draws no landmark line (ADR 0054).
-  near: (landmark: string) => `Near ${landmark}`,
+  // PLACEHOLDER: the design draws no landmark; the client types it as they like, so it shows as typed.
+  landmark: "Landmark",
   // PLACEHOLDER: an address the client gave ops on the phone, which ops saved for them (ADR 0092).
   givenToOps: (date: string) =>
     `You gave us this address on the phone on ${date}. If anything is wrong, change it here.`,
@@ -1044,8 +1051,15 @@ export const profile = {
     send: "Send",
     cancel: "Not now",
     // Beside support's "Replies within a working day": the 30 days is the most a concern can take, not the usual.
-    sent: "Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest.",
+    sent: "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
     failed: "That did not go through. Please try again.",
+    limited: "You have reached today's limit. Send it tomorrow, or message us on WhatsApp.",
+    // PLACEHOLDER: the client's latest concerns, each with our answer once given.
+    concerns: "Your concerns",
+    concern: (date: string, status: string) => `Your concern of ${date} · ${status}`,
+    waiting: "Awaiting our reply",
+    answered: (date: string) => `Answered ${date}`,
+    answer: (response: string) => `Our answer: ${response}`,
   },
   deletion: {
     label: "Delete your account",

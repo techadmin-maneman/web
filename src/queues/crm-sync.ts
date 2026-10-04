@@ -5,8 +5,8 @@
 // A failed sync is marked `failed`. A lead's first failure goes back on the
 // queue for one more try QUICK_RETRY_DELAY_SECONDS later, so a passing hiccup
 // costs seconds, not minutes. After that the sweeper re-enqueues failed leads
-// every five minutes until MAX_SYNC_ATTEMPTS, then this consumer alerts once.
-// See docs/decisions/0012-zoho-sync.md.
+// every fifteen minutes until MAX_SYNC_ATTEMPTS, then this consumer alerts once,
+// and ops may send it again from Tasks. See docs/decisions/0012-zoho-sync.md.
 
 import { z } from "zod";
 import type { LossExtent, VisitWindow } from "../config/booking.ts";
@@ -15,7 +15,9 @@ import type { Dependencies } from "../dependencies.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { Plan } from "../policy/one-visit.ts";
 import type { CrmLead, LeadSource } from "../providers/crm.ts";
+import { resolveAlertStatement } from "../domain/alerts.ts";
 import { leadNotice } from "../domain/lead-notice.ts";
+import { crmErasureKey, crmLeadKey } from "../policy/alerts.ts";
 import { retryWithBackoff } from "./backoff.ts";
 
 export const MAX_SYNC_ATTEMPTS = 10;
@@ -211,7 +213,8 @@ export async function syncLead(
 
   try {
     const result = await deps.crm.syncLead(toCrmLead(row, await askedPlan(db, row)), row.zoho_lead_id);
-    const at = deps.now().toISOString();
+    const now = deps.now();
+    const at = now.toISOString();
     const [person] = await db.batch([
       db
         .prepare("UPDATE people SET zoho_lead_id = ?1 WHERE id = ?2 RETURNING erased_at")
@@ -224,6 +227,7 @@ export async function syncLead(
           "INSERT INTO events (id, created_at, name, subject_id, payload_json) VALUES (?, ?, 'lead_synced', ?, ?)",
         )
         .bind(crypto.randomUUID(), at, leadId, JSON.stringify({ attempts, created: result.created })),
+      resolveAlertStatement(db, crmLeadKey(leadId), now),
     ]);
     log.info("crm_synced", {
       lead_id: leadId,
@@ -246,9 +250,7 @@ export async function syncLead(
       .bind(description, leadId)
       .run();
     log.error("crm_sync_failed", { lead_id: leadId, attempts, error, duration_ms: Date.now() - started, ...timings });
-    if (attempts >= MAX_SYNC_ATTEMPTS) {
-      await deps.alert(`Lead ${leadId} did not reach the CRM after ${String(attempts)} attempts: ${description}`);
-    }
+    if (attempts >= MAX_SYNC_ATTEMPTS) await alertLeadGivenUp(deps, row, attempts, description);
     return { retrySoon: attempts === 1 };
   }
 }
@@ -267,6 +269,17 @@ async function keepOutOfCrm(db: D1Database, deps: Dependencies, log: Logger, row
   if (closed === null) return;
   log.info("crm_kept_out", { lead_id: row.lead_id });
   await deps.notifyLead(leadNotice(row));
+}
+
+/** Ops are told of a lead the sync gave up on, and may send it again from Tasks. */
+async function alertLeadGivenUp(deps: Dependencies, row: LeadRow, attempts: number, description: string) {
+  await deps.alertOnce({
+    key: crmLeadKey(row.lead_id),
+    message:
+      `Lead ${row.lead_id} did not reach the CRM after ${String(attempts)} attempts: ${description}. ` +
+      "Send it again from Tasks once Zoho is back.",
+    link: `/clients/${row.person_id}`,
+  });
 }
 
 /** What a Phase 2 booking asked for on the lead's day, and the code given for a one visit. */
@@ -327,7 +340,8 @@ function toCrmLead(row: LeadRow, asked: AskedPlan | null): CrmLead {
 
 /**
  * Blanks an erased person's CRM record. Tried again like a lead: once soon,
- * then by the sweeper until MAX_SYNC_ATTEMPTS, then an alert asks for it by hand.
+ * then by the sweeper until MAX_SYNC_ATTEMPTS, then an alert asks ops to send
+ * it again or do it by hand.
  */
 export async function eraseInCrm(
   db: D1Database,
@@ -355,10 +369,13 @@ export async function eraseInCrm(
 
   try {
     const { found } = await deps.crm.erasePerson(personId, person.zoho_lead_id);
-    await db
-      .prepare("UPDATE people SET crm_erased_at = ?2, crm_erasure_error = NULL WHERE id = ?1")
-      .bind(personId, deps.now().toISOString())
-      .run();
+    const now = deps.now();
+    await db.batch([
+      db
+        .prepare("UPDATE people SET crm_erased_at = ?2, crm_erasure_error = NULL WHERE id = ?1")
+        .bind(personId, now.toISOString()),
+      resolveAlertStatement(db, crmErasureKey(personId), now),
+    ]);
     log.info("crm_erased", { person_id: personId, found, attempts });
     return { retrySoon: false };
   } catch (error) {
@@ -366,9 +383,12 @@ export async function eraseInCrm(
     await db.prepare("UPDATE people SET crm_erasure_error = ?2 WHERE id = ?1").bind(personId, description).run();
     log.error("crm_erasure_failed", { person_id: personId, attempts, error });
     if (attempts >= MAX_SYNC_ATTEMPTS) {
-      await deps.alert(
-        `Erasing person ${personId} in the CRM failed ${String(attempts)} times (${description}). Blank the record by hand.`,
-      );
+      await deps.alertOnce({
+        key: crmErasureKey(personId),
+        message:
+          `Erasing person ${personId} in the CRM failed ${String(attempts)} times (${description}). ` +
+          "Send it again from Tasks, or blank the record by hand and mark it done there.",
+      });
     }
     return { retrySoon: attempts === 1 };
   }

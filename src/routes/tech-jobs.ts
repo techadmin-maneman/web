@@ -29,11 +29,12 @@
 //
 // No response here carries an amount.
 //
-// A consultation and fit in one visit runs the first fit's steps, its checklist
-// the consultation's and the fit's; the client chooses the product with the
-// technician, or decides against it, at the piece step, and closing it as done
-// makes it the product's visit, whose payment link Razorpay then texts to the
-// client, or a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// A consultation and fit in one visit runs the first fit's steps, the piece
+// first: the client chooses the product with the technician there, or decides
+// against it, before the checklist, which is the consultation's and the fit's,
+// or the consultation's alone once they decline. Closing it as done makes it
+// the product's visit, whose payment link Razorpay then texts to the client, or
+// a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 //
 // A consultation and a one visit also take the client's hair profile, just
 // before the after photographs. It is not a job event: it lands in its own
@@ -48,15 +49,27 @@ import { fieldRecord, recordOfVisit } from "../config/field-record.ts";
 import { isPieceCode } from "../config/pieces.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
-import { latestArrival, recordArrival } from "../domain/check-ins.ts";
+import {
+  arrivalOfEvent,
+  latestArrival,
+  measureArrival,
+  passedArrivalStatement,
+  recordFailedArrival,
+  type ArrivalInput,
+} from "../domain/check-ins.ts";
 import { allConsumables, offeredForJob, serviceOfJob } from "../domain/consumables.ts";
 import { profileLanded, recordAtVisit } from "../domain/hair-profiles.ts";
 import {
+  answerBeforeLanding,
+  closedAt,
   eventByClientId,
   kindsLanded,
+  landInOrder,
   landJobEvent,
   wasTheirs,
   whatChanged,
+  type EventInput,
+  type JobEvent,
   type Landing,
   type MovedTo,
   type StepRecord,
@@ -64,7 +77,7 @@ import {
 } from "../domain/job-events.ts";
 import { jobRecordOf, type LandingStep } from "../domain/job-record.ts";
 import { pieceLabelTaken, pieceStepOf, type PieceField } from "../domain/pieces.ts";
-import { checklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
+import { checklistOf, declinedChecklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
 import { recordJobUse } from "../domain/job-use.ts";
 import { tellOfLowStock } from "../domain/stock.ts";
 import { roomFor } from "../domain/storage-meter.ts";
@@ -93,8 +106,9 @@ import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import { noShowWaitEnds } from "../policy/no-show.ts";
 import { boundedPhoneTime } from "../policy/phone-clock.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { queueMessage } from "../http/queue-message.ts";
+import { enqueue } from "../queues/enqueue.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 import { arrivalNotice } from "../domain/visit-messages.ts";
 import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "./hair-profile-schemas.ts";
 import { PieceSchema } from "./tech-pieces.ts";
@@ -121,6 +135,14 @@ const EventIdSchema = z
   })
   .openapi({ description: "Every write's headers." });
 
+const ServiceSchema = z
+  .object({
+    tier: z.string().openapi({ description: "Its code, which the hair profile names a first fit's product by." }),
+    name: z.string().openapi({ description: "Its name in the console." }),
+  })
+  .strict()
+  .openapi("TechnicianService");
+
 const JobSummarySchema = z
   .object({
     id: z.uuid(),
@@ -135,10 +157,10 @@ const JobSummarySchema = z
         "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, " +
         "at the piece step.",
     }),
-    product: z.union([z.string(), z.null()]).openapi({
+    service: z.union([ServiceSchema, z.null()]).openapi({
       description:
-        "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, " +
-        "on a one visit until the client chooses, and on a first fit that names none.",
+        "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, " +
+        "say. Null for a kind's standard service, and on a one visit until the client chooses.",
     }),
     sector: z.union([z.string(), z.null()]).openapi({
       description:
@@ -154,8 +176,24 @@ const JobSummarySchema = z
     slots: z
       .union([z.number(), z.null()])
       .openapi({ description: "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type." }),
+    minutes: z
+      .union([z.number().int(), z.null()])
+      .openapi({ description: "How long the visit is booked for, in minutes. Null for an unknown type." }),
     unlocked: z.boolean(),
     unlocks_at: z.iso.datetime(),
+    client_name: z.union([z.string(), z.null()]).openapi({
+      description: "The client's name, from the day before the visit as the card's client is; null until then.",
+    }),
+    progress: z
+      .object({
+        started_at: z.union([z.iso.datetime(), z.null()]),
+        outcome: z.union([z.string(), z.null()]),
+      })
+      .strict()
+      .openapi("TechnicianJobState", {
+        description:
+          "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet.",
+      }),
   })
   .strict()
   .openapi("TechnicianJob");
@@ -169,7 +207,9 @@ const ProgressSchema = z
   .object({
     checked_in_at: z.union([z.iso.datetime(), z.null()]),
     wait_ends_at: z.union([z.iso.datetime(), z.null()]).openapi({
-      description: "When the job may close as a no-show, from the check-in we hold; null before one landed.",
+      description:
+        "When the job may close as a no-show, from the check-in we hold, or from the booked start for one before it; " +
+        "null before one landed.",
     }),
     distance_m: z.union([z.number().int(), z.null()]).openapi({
       description: "How far from the address that check-in was; null when nothing could be measured.",
@@ -240,6 +280,13 @@ const JobDetailSchema = JobSummarySchema.extend({
     description:
       "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it.",
   }),
+  checkin_from: z.iso.datetime().openapi({
+    description:
+      "The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow.",
+  }),
+  checkin_radius_m: z.number().int().openapi({
+    description: "How near the address a check-in must be, in metres, as ops set it.",
+  }),
   pieces: z
     .union([z.array(PieceSchema), z.null()])
     .openapi({ description: "The client's pieces, newest fit first. Null until the day before the visit." }),
@@ -264,6 +311,11 @@ const JobDetailSchema = JobSummarySchema.extend({
   checklist: z
     .array(JobSheetItemSchema)
     .openapi({ description: "This kind of visit's checklist, as ops set it in the console, in its order." }),
+  checklist_if_declined: z.array(JobSheetItemSchema).openapi({
+    description:
+      "On a one visit, the checklist it runs once the client decides against the fit: the consultation's alone. " +
+      "Empty on any other visit.",
+  }),
   partial_reasons: z
     .array(JobSheetItemSchema)
     .openapi({ description: "The reasons a job may be left partly done, as ops set them, in their order." }),
@@ -307,6 +359,19 @@ const JobDetailSchema = JobSummarySchema.extend({
       description:
         "On a one visit, the discount code already on it, so the outcome step asks for none; never what it takes " +
         "off. Null on any other visit, and on a one visit with no code.",
+    }),
+  client_choice: z
+    .union([
+      z.object({ declined: z.literal(true) }).strict(),
+      z
+        .object({ product: z.string().openapi({ description: "The product's tier, from the card's products." }) })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({
+      description:
+        "On a one visit, what the client decided as its piece step recorded it: the product they chose, or that " +
+        "they decided against the fit. Null until the piece step lands, and on any other visit.",
     }),
   profile: z.union([HairProfileSchema, z.null()]).openapi({
     description:
@@ -484,17 +549,21 @@ const ProfileRecordedSchema = z
 /** A step that landed, or had landed before. */
 const RECORDED = { description: "Recorded", ...json(AcceptedSchema) };
 
+const CLOSED = "already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour";
+const PHOTOS_CLOSED = "already_closed: the job has closed, so it takes no more photographs";
+
 /** What every in-job write can be refused with. A route with more to say of a conflict says it after these. */
 const STEP_REFUSALS = {
   400: errorResponse("invalid_request: see error.fields"),
   401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
-  404: errorResponse("not_found: no such job"),
-  409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+  404: errorResponse("not_found: no such job, or never this technician's"),
+  409: errorResponse(`superseded: FSM moved the job; out_of_order: send the step before this one first; ${CLOSED}`),
 };
 
-/** A check-in's or a start's conflict, which may also be on the wrong day. */
+/** A check-in's or a start's conflict, which may also be on the wrong day or too early in it. */
 const DAY_CONFLICT = errorResponse(
-  "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+  `superseded: FSM moved the job; out_of_order: send the step before this one first; ${CLOSED}; ` +
+    "not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
 );
 
 const jobsRoute = createRoute({
@@ -572,7 +641,8 @@ const uploadUrlRoute = createRoute({
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: no such job, or never this technician's"),
     409: errorResponse(
-      "superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom",
+      "superseded: the job was given to another technician or cancelled while its photographs waited; moved names " +
+        `whom; ${PHOTOS_CLOSED}`,
     ),
   },
 });
@@ -595,6 +665,7 @@ const uploadRoute = createRoute({
     200: { description: "Received", ...json(PhotoTakenSchema) },
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: the link is wrong or expired"),
+    409: errorResponse(PHOTOS_CLOSED),
     422: errorResponse("photo_invalid_file: not a JPEG or PNG, or over 2 MB"),
     503: errorResponse("busy: R2 holds past the runaway ceiling; the phone keeps the photograph and sends it later"),
   },
@@ -613,7 +684,8 @@ const smallUploadRoute = createRoute({
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: the link is wrong or expired"),
     409: errorResponse(
-      "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since",
+      "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since; " +
+        PHOTOS_CLOSED,
     ),
     422: errorResponse("photo_invalid_file: not a JPEG, or over 64 KB or 800 px a side"),
     503: errorResponse("busy: R2 holds past the runaway ceiling"),
@@ -662,9 +734,10 @@ const pieceRoute = createRoute({
     202: RECORDED,
     ...STEP_REFUSALS,
     409: errorResponse(
-      "superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already " +
-        "on record, as another client's piece or this client's from an earlier visit, or a piece that came off that " +
-        "is another client's. error.fields names piece_code or old_piece, to correct and send again",
+      `superseded: FSM moved the job; out_of_order: send the step before this one first; ${CLOSED}; ` +
+        "piece_code: a label already on record, as another client's piece or this client's from an earlier visit, " +
+        "or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct " +
+        "and send again",
     ),
   },
 });
@@ -706,7 +779,8 @@ const noShowRoute = createRoute({
     200: { description: "Closed, with the case ops will rule on", ...json(NoShowSchema) },
     ...STEP_REFUSALS,
     409: errorResponse(
-      "superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
+      `superseded: FSM moved the job; out_of_order: send the step before this one first; ${CLOSED}; ` +
+        "already_started: the job was started, so the client was home",
     ),
     425: errorResponse("too_early_to_close: the wait has not run out"),
   },
@@ -728,21 +802,26 @@ export function registerTechJobs(app: App): void {
   app.openapi(jobRoute, async (c) => {
     const { technicianId } = technicianOf(c);
     const inputs = await opsInputs(c);
-    const job = await jobDetail(c.env.DB, {
-      technicianId,
-      jobId: c.req.valid("param").id,
-      now: c.var.deps.now(),
-      unlockHour: inputs.addressUnlockHour,
-      waits: inputs.noShowWaitMin,
-    });
+    // The job sheet and the consumables as ops set them, which the phone keeps with the job for the day.
+    const [job, sheet] = await Promise.all([
+      jobDetail(c.env.DB, {
+        technicianId,
+        jobId: c.req.valid("param").id,
+        now: c.var.deps.now(),
+        unlockHour: inputs.addressUnlockHour,
+        waits: inputs.noShowWaitMin,
+        phoneClock: inputs.phoneClock,
+      }),
+      jobSheet(c.env.DB),
+    ]);
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const type: VisitType = job.type ?? "service";
-    // The job sheet and the consumables as ops set them, which the phone keeps with the job for the day.
-    const sheet = await jobSheet(c.env.DB);
     return c.json(
       {
         ...job,
+        checkin_radius_m: inputs.checkinRadiusM,
         checklist: [...checklistOf(sheet, { type, oneVisit: job.one_visit }).items],
+        checklist_if_declined: job.one_visit ? [...declinedChecklistOf(sheet).items] : [],
         partial_reasons: [...sheet.partialReasons.items],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
       },
@@ -765,8 +844,9 @@ export function registerTechJobs(app: App): void {
     });
   });
 
+  // Nothing is measured or recorded until the check-in may land: the job is his, today's, and as his phone holds it.
+  // One sent again is answered from the check-in it landed as, and tells the client nothing.
   app.openapi(checkinRoute, async (c) => {
-    const { technicianId } = technicianOf(c);
     const { deps, requestId } = c.var;
     const now = deps.now();
     const body = c.req.valid("json");
@@ -777,51 +857,49 @@ export function registerTechJobs(app: App): void {
     const claimed = body.at === undefined ? timeOfUuidV7(eventId) : new Date(body.at);
     const inputs = await opsInputs(c);
     const at = boundedPhoneTime(claimed, { visitStart: job.windowStart, receivedAt: now }, inputs.phoneClock);
-    const arrival = await recordArrival(c.env.DB, {
+    const write = await writeOf(c, job, "check_in", { at: at.toISOString() }, at);
+    const answered = await answerBeforeLanding(c.env.DB, write);
+    if (answered?.kind === "landed") return c.json(await checkInReplayed(c, job, answered.event), 200);
+    if (answered !== null) return c.json(refusalOf(c, refusedOf(c, write, answered)), 409);
+
+    const device = { lat: body.lat, lng: body.lng };
+    const measured = await measureArrival(c.env.DB, { personId: job.personId, device, radiusM: inputs.checkinRadiusM });
+    c.var.log.info("technician_checked_in", {
+      appointment_id: job.id,
+      passed: measured.passed,
+      distance_m: measured.distanceM,
+      radius_m: measured.radiusM,
+    });
+    const arrival: ArrivalInput = {
       appointmentId: job.id,
-      technicianId,
-      personId: job.personId,
-      device: { lat: body.lat, lng: body.lng },
+      technicianId: write.technicianId,
+      device,
       accuracyM: body.accuracy_m ?? null,
       at,
       claimedAt: claimed,
       now,
-      radiusM: inputs.checkinRadiusM,
-    });
-    c.var.log.info("technician_checked_in", {
-      appointment_id: job.id,
-      passed: arrival.passed,
-      distance_m: arrival.distanceM,
-      radius_m: arrival.radiusM,
-    });
-    if (!arrival.passed) {
-      return c.json(
-        {
-          passed: false,
-          distance_m: arrival.distanceM,
-          radius_m: arrival.radiusM,
-          checked_in_at: arrival.at,
-          wait_ends_at: null,
-          accepted: null,
-        },
-        200,
-      );
+      measured,
+    };
+    const answer = { distance_m: measured.distanceM, radius_m: measured.radiusM, checked_in_at: at.toISOString() };
+    if (!measured.passed) {
+      await recordFailedArrival(c.env.DB, arrival);
+      return c.json({ passed: false, ...answer, wait_ends_at: null, accepted: null }, 200);
     }
 
-    const landing = await land(c, job, "check_in", { at: arrival.at, distance_m: arrival.distanceM }, at);
-    if (!landing.ok) return c.json(refusalOf(c, landing), 409);
+    const checkIn: EventInput = { ...write, body: { at: at.toISOString(), distance_m: measured.distanceM } };
+    const landing = await landInOrder(c.env.DB, {
+      ...checkIn,
+      recordedIn: await recordedIn(c, checkIn),
+      withEvent: [passedArrivalStatement(c.env.DB, arrival, eventId)],
+    });
+    if (landing.kind === "landed" && landing.replayed) {
+      return c.json(await checkInReplayed(c, job, landing.event), 200);
+    }
+    const landed = await landedOf(c, checkIn, landing);
+    if (!landed.ok) return c.json(refusalOf(c, landed), 409);
     if (job.personId !== null) await tellOfArrival(c, { personId: job.personId, appointmentId: job.id, arrivedAt: at });
-    return c.json(
-      {
-        passed: true,
-        distance_m: arrival.distanceM,
-        radius_m: arrival.radiusM,
-        checked_in_at: arrival.at,
-        wait_ends_at: noShowWaitEnds({ at, receivedAt: now }, job.type, inputs.noShowWaitMin).toISOString(),
-        accepted: landing.accepted,
-      },
-      200,
-    );
+    const waitEndsAt = noShowWaitEnds({ at, receivedAt: now }, job.windowStart, job.type, inputs.noShowWaitMin);
+    return c.json({ passed: true, ...answer, wait_ends_at: waitEndsAt.toISOString(), accepted: landed.accepted }, 200);
   });
 
   app.openapi(startRoute, (c) => step(c, "start", () => ({})));
@@ -832,14 +910,13 @@ export function registerTechJobs(app: App): void {
     const now = c.var.deps.now();
     const id = c.req.valid("param").id;
     const job = await namedJob(c, id);
-    if (job === null || !(await wasTheirs(c.env.DB, job, technicianId))) {
-      return c.json(errorBody("not_found", c.var.requestId), 404);
-    }
+    if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const superseding = await whatChanged(c.env.DB, job, technicianId, null);
     if (superseding.changed.length > 0) {
       c.var.log.info("upload_link_superseded", { appointment_id: job.id, changed: superseding.changed });
       return c.json(refusalOf(c, superseded(superseding)), 409);
     }
+    if (await hasClosed(c, job.id)) return c.json(errorBody("already_closed", c.var.requestId), 409);
     const { phase, angle } = c.req.valid("json");
     if (!takesPhotoSet(job, phase)) return c.json(errorBody("invalid_request", c.var.requestId, ["phase"]), 400);
     const link = await uploadLink(c.var.config.settings.tryon.linkSigningKey, { appointmentId: id, phase, angle }, now);
@@ -854,6 +931,7 @@ export function registerTechJobs(app: App): void {
     const now = deps.now();
     const slot = await uploadSlot(c, c.req.valid("param").token);
     if (slot === null) return c.json(errorBody("not_found", requestId), 404);
+    if (await hasClosed(c, slot.appointmentId)) return c.json(errorBody("already_closed", requestId), 409);
 
     const bytes = new Uint8Array(await c.req.arrayBuffer());
     if (bytes.byteLength === 0 || bytes.byteLength > MAX_PHOTO_BYTES) {
@@ -872,6 +950,7 @@ export function registerTechJobs(app: App): void {
     const { deps, requestId } = c.var;
     const slot = await uploadSlot(c, c.req.valid("param").token);
     if (slot === null) return c.json(errorBody("not_found", requestId), 404);
+    if (await hasClosed(c, slot.appointmentId)) return c.json(errorBody("already_closed", requestId), 409);
 
     const bytes = new Uint8Array(await c.req.arrayBuffer());
     if (!(await roomFor(c.env.DB, deps.alertOnce, bytes.byteLength))) {
@@ -968,6 +1047,7 @@ export function registerTechJobs(app: App): void {
       c.var.log.info("profile_superseded", { appointment_id: job.id, changed: superseding.changed });
       return c.json(refusalOf(c, superseded(superseding)), 409);
     }
+    if (await hasClosed(c, job.id)) return c.json(errorBody("already_closed", requestId), 409);
     if (!(await kindsLanded(c.env.DB, job.id)).has("start")) {
       return c.json(errorBody("out_of_order", requestId, ["start"]), 409);
     }
@@ -1006,33 +1086,37 @@ export function registerTechJobs(app: App): void {
       },
       async (job) => {
         if (job.oneVisit === null || body.outcome !== "done") return;
-        const { deps, log } = c.var;
-        await closeOneVisit(c.env.DB, { ...deps, log }, job, deps.now());
+        const { deps, log, config } = c.var;
+        await closeOneVisit(c.env.DB, { ...deps, log, messagingSettings: config.settings.messaging }, job, deps.now());
       },
     );
   });
 
+  // A job that changed under the phone is refused before its wait is read. The wait runs from the job's technician's
+  // own check-in, so one given the job after another arrived must arrive himself.
   app.openapi(noShowRoute, async (c) => {
     const { requestId, deps } = c.var;
     const now = deps.now();
     const job = await namedJob(c, c.req.valid("param").id);
     if (job === null) return c.json(errorBody("not_found", requestId), 404);
+    const write = await writeOf(c, job, "outcome", { outcome: "no_show" });
+    const answered = await answerBeforeLanding(c.env.DB, write);
+    if (answered !== null && answered.kind !== "landed") {
+      return c.json(refusalOf(c, refusedOf(c, write, answered)), 409);
+    }
 
-    const readiness = noShowReadiness(
-      await latestArrival(c.env.DB, job.id),
-      job.type,
-      now,
-      (await opsInputs(c)).noShowWaitMin,
-    );
+    const readiness = noShowReadiness(await latestArrival(c.env.DB, job), job, now, (await opsInputs(c)).noShowWaitMin);
     if (readiness.kind === "no_check_in") return c.json(errorBody("out_of_order", requestId), 409);
     if (readiness.kind === "too_early") return c.json(errorBody("too_early_to_close", requestId), 425);
 
-    // The close lands first, so a job started, superseded or moved opens no case.
-    const landing = await land(c, job, "outcome", { outcome: "no_show" });
-    if (!landing.ok) return c.json(refusalOf(c, landing), 409);
+    // The close lands first, so a job started opens no case.
+    const landing = answered ?? (await landInOrder(c.env.DB, { ...write, recordedIn: await recordedIn(c, write) }));
+    const landed = await landedOf(c, write, landing);
+    if (!landed.ok) return c.json(refusalOf(c, landed), 409);
     const caseId = await openNoShowCase(c.env.DB, {
       appointmentId: job.id,
       checkIn: readiness.checkIn,
+      waitStartsAt: readiness.waitStartsAt,
       waitEndsAt: readiness.waitEndsAt,
       now,
     });
@@ -1041,7 +1125,7 @@ export function registerTechJobs(app: App): void {
         closed: true,
         wait_ends_at: readiness.waitEndsAt.toISOString(),
         case_id: caseId,
-        accepted: landing.accepted,
+        accepted: landed.accepted,
       },
       200,
     );
@@ -1049,6 +1133,11 @@ export function registerTechJobs(app: App): void {
 }
 
 type Ctx = Context<AppEnv>;
+
+/** Whether the job has closed: an outcome landed, or ops closed it by hand. */
+async function hasClosed(c: Ctx, appointmentId: string): Promise<boolean> {
+  return (await closedAt(c.env.DB, appointmentId)) !== null;
+}
 
 /** The slot an upload link names, while its job is still this technician's; null for any other link. */
 async function uploadSlot(c: Ctx, token: string): Promise<PhotoSlot | null> {
@@ -1059,11 +1148,14 @@ async function uploadSlot(c: Ctx, token: string): Promise<PhotoSlot | null> {
 }
 
 /**
- * The job a write names. Not narrowed to this technician: a job that moved to
- * someone else is answered `superseded`, with what changed, so the phone can
- * tell him, rather than "not found".
+ * The job a write names, while it is or was this technician's: one moved to someone else is answered `superseded`,
+ * with what changed, so the phone can tell him. Any other job is not found, and nothing of it is answered.
  */
-const namedJob = (c: Ctx, id: string): Promise<WorkableJob | null> => workableJob(c.env.DB, id);
+async function namedJob(c: Ctx, id: string): Promise<WorkableJob | null> {
+  const job = await workableJob(c.env.DB, id);
+  if (job === null) return null;
+  return (await wasTheirs(c.env.DB, job, technicianOf(c).technicianId)) ? job : null;
+}
 
 /**
  * What a step's handler returns: the event's body, the fields that were wrong, or the piece label already on record,
@@ -1180,10 +1272,13 @@ type Landed =
   | { readonly ok: true; readonly accepted: z.infer<typeof AcceptedSchema> }
   | {
       readonly ok: false;
-      readonly code: "superseded" | "out_of_order" | "not_today" | "already_started";
+      readonly code:
+        "superseded" | "out_of_order" | "not_today" | "already_started" | "already_closed" | "too_early_to_arrive";
       readonly fields?: string[];
       /** On a job given to another technician: whom, by first name, and when (docs/open-points.md, item 92). */
       readonly moved?: MovedTo;
+      /** On a check-in or a start too early: the earliest moment the job takes one. */
+      readonly earliest?: Date;
     };
 
 /** The 409 of a job that changed under the phone: what changed, and whom it went to where that is to be said. */
@@ -1193,11 +1288,15 @@ function superseded(superseding: Superseding): Extract<Landed, { ok: false }> {
   return { ok: false, code: "superseded", fields, moved: superseding.moved };
 }
 
-/** A refused write's 409: its code and fields, and, for a job given to another technician, whom and when. */
+/**
+ * A refused write's 409: its code and fields; for a job given to another technician, whom and when; and for a
+ * check-in or a start too early, when the job takes one.
+ */
 function refusalOf(c: Ctx, refused: Extract<Landed, { ok: false }>): ErrorResponse {
   const body = errorBody(refused.code, c.var.requestId, refused.fields);
-  if (refused.moved === undefined) return body;
-  return { error: { ...body.error, moved: refused.moved } };
+  if (refused.moved !== undefined) return { error: { ...body.error, moved: refused.moved } };
+  if (refused.earliest !== undefined) return { error: { ...body.error, earliest_at: refused.earliest.toISOString() } };
+  return body;
 }
 
 /**
@@ -1207,16 +1306,21 @@ function refusalOf(c: Ctx, refused: Extract<Landed, { ok: false }>): ErrorRespon
 async function tellOfArrival(c: Ctx, input: { personId: string; appointmentId: string; arrivedAt: Date }) {
   const messageId = await arrivalNotice(c.env.DB, { ...input, now: c.var.deps.now() });
   if (messageId === null) return;
-  try {
-    await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
-  } catch (error) {
-    c.var.log.warn("message_enqueue_failed", { outbound_message_id: messageId, error });
-  }
+  await queueMessage(c, messageId);
 }
 
-/** Where the step is recorded: by FSM's queue for a visit FSM holds, else in our own database, with the event. */
-async function recordedIn(c: Ctx, job: WorkableJob, step: LandingStep): Promise<StepRecord> {
-  if (recordOfVisit(fieldRecord(c.var.config.providers), job) === "fsm") return { holder: "fsm" };
+/** Where the write's step is recorded: by FSM's queue for a visit FSM holds, else in our own database, with the event. */
+async function recordedIn(c: Ctx, write: EventInput): Promise<StepRecord> {
+  if (recordOfVisit(fieldRecord(c.var.config.providers), write.job) === "fsm") return { holder: "fsm" };
+  const { pieceCycleDays } = await opsInputs(c);
+  const step: LandingStep = {
+    visit: write.job,
+    kind: write.kind,
+    body: write.body,
+    occurredAt: write.occurredAt,
+    cycles: pieceCycleDays,
+    now: write.now,
+  };
   return { holder: "ours", statements: await jobRecordOf(c.env.DB, step) };
 }
 
@@ -1225,61 +1329,113 @@ async function recordedIn(c: Ctx, job: WorkableJob, step: LandingStep): Promise<
  * passed (src/scheduled/sweeper.ts); the event has landed either way.
  */
 async function queueFsmWrite(c: Ctx, jobEventId: string): Promise<void> {
-  try {
-    await c.env.FSM_QUEUE.send({ job_event_id: jobEventId, request_id: c.var.requestId } satisfies FsmSyncMessage);
-  } catch (error) {
-    c.var.log.warn("fsm_enqueue_failed", { job_event_id: jobEventId, error });
-  }
+  const body = { job_event_id: jobEventId, request_id: c.var.requestId } satisfies FsmSyncMessage;
+  await enqueue(c.env.FSM_QUEUE, body, { log: c.var.log, ifLost: "sweeper" });
 }
 
 /**
- * Records one event, and the step's work: on FSM's queue, or in our own database with the event. Its time is the
- * phone's, within bounds: the check-in passes its own, and any other write's comes from its event ID.
+ * The write a request carries: whose, from which phone, its event ID, and the job's start as the phone holds it. Its
+ * time is the phone's, within bounds: the check-in passes its own, and any other write's comes from its event ID.
  */
-async function land(
+async function writeOf(
   c: Ctx,
   job: WorkableJob,
   kind: JobEventKind,
   body: Record<string, unknown>,
   phoneTime?: Date,
-): Promise<Landed> {
+): Promise<EventInput> {
   const { technicianId, deviceRowId } = technicianOf(c);
   const now = c.var.deps.now();
   const eventId = c.req.header(EVENT_ID_HEADER) ?? "";
   const heldStart = c.req.header(JOB_STARTS_AT_HEADER);
-  const { noShowWaitMin, phoneClock, pieceCycleDays } = await opsInputs(c);
+  const { phoneClock } = await opsInputs(c);
   const bounds = { visitStart: job.windowStart, receivedAt: now };
-  const occurredAt = phoneTime ?? boundedPhoneTime(timeOfUuidV7(eventId), bounds, phoneClock);
-  const step = { visit: job, kind, body, occurredAt, cycles: pieceCycleDays, now };
-
-  const landing: Landing = await landJobEvent(c.env.DB, {
+  return {
     job,
     technicianId,
     deviceRowId,
     eventId,
     kind,
     body,
-    occurredAt,
+    occurredAt: phoneTime ?? boundedPhoneTime(timeOfUuidV7(eventId), bounds, phoneClock),
     expectedStart: heldStart === undefined ? null : new Date(heldStart),
     now,
-    recordedIn: await recordedIn(c, job, step),
-  });
-  if (landing.kind === "superseded") {
-    c.var.log.info("job_event_superseded", { appointment_id: job.id, kind, changed: landing.changed });
-    return superseded(landing);
-  }
-  if (landing.kind === "out_of_order") return { ok: false, code: "out_of_order", fields: [landing.needs] };
-  if (landing.kind === "not_today" || landing.kind === "already_started") return { ok: false, code: landing.kind };
+    phoneClock,
+  };
+}
 
+/** Records one event, and the step's work: on FSM's queue, or in our own database with the event. */
+async function land(c: Ctx, job: WorkableJob, kind: JobEventKind, body: Record<string, unknown>): Promise<Landed> {
+  const write = await writeOf(c, job, kind, body);
+  const landing = await landJobEvent(c.env.DB, { ...write, recordedIn: await recordedIn(c, write) });
+  return landedOf(c, write, landing);
+}
+
+type Refusal = Exclude<Landing, { kind: "landed" }>;
+
+/** The 409 of a write that may not land. */
+function refusedOf(c: Ctx, write: EventInput, refusal: Refusal): Extract<Landed, { ok: false }> {
+  if (refusal.kind === "superseded") {
+    c.var.log.info("job_event_superseded", {
+      appointment_id: write.job.id,
+      kind: write.kind,
+      changed: refusal.changed,
+    });
+    return superseded(refusal);
+  }
+  if (refusal.kind === "out_of_order") return { ok: false, code: "out_of_order", fields: [refusal.needs] };
+  if (refusal.kind === "too_early") return { ok: false, code: "too_early_to_arrive", earliest: refusal.earliest };
+  return { ok: false, code: refusal.kind };
+}
+
+/** What landing a write came to: accepted, with where the job stands now, or refused. */
+async function landedOf(c: Ctx, write: EventInput, landing: Landing): Promise<Landed> {
+  if (landing.kind !== "landed") return refusedOf(c, write, landing);
   // A replay landed nothing new, so nothing new goes to FSM either; nor does a step our own database recorded.
   if (!landing.replayed && landing.event.fsmWriteState === "pending") await queueFsmWrite(c, landing.event.id);
+  return { ok: true, accepted: await acceptedOf(c, write.job, landing.event, landing.replayed) };
+}
+
+async function acceptedOf(
+  c: Ctx,
+  job: WorkableJob,
+  event: JobEvent,
+  replayed: boolean,
+): Promise<z.infer<typeof AcceptedSchema>> {
+  const { noShowWaitMin } = await opsInputs(c);
   return {
-    ok: true,
-    accepted: {
-      event_id: landing.event.eventId,
-      replayed: landing.replayed,
-      fsm_write_state: landing.event.fsmWriteState,
-      progress: await progressOf(c.env.DB, job, noShowWaitMin),
-    },
+    event_id: event.eventId,
+    replayed,
+    fsm_write_state: event.fsmWriteState,
+    progress: await progressOf(c.env.DB, job, noShowWaitMin),
+  };
+}
+
+/**
+ * A check-in sent again, answered from the row it landed as, so nothing is measured, recorded or told again. One that
+ * landed before its row named its event is answered from where the job stands.
+ */
+async function checkInReplayed(c: Ctx, job: WorkableJob, event: JobEvent): Promise<z.infer<typeof CheckInSchema>> {
+  const { noShowWaitMin, checkinRadiusM } = await opsInputs(c);
+  const accepted = await acceptedOf(c, job, event, true);
+  const arrival = await arrivalOfEvent(c.env.DB, event.id);
+  if (arrival === null) {
+    const { progress } = accepted;
+    return {
+      passed: true,
+      distance_m: progress.distance_m,
+      radius_m: checkinRadiusM,
+      checked_in_at: event.occurredAt,
+      wait_ends_at: progress.wait_ends_at,
+      accepted,
+    };
+  }
+  return {
+    passed: true,
+    distance_m: arrival.distanceM,
+    radius_m: arrival.radiusM,
+    checked_in_at: arrival.at.toISOString(),
+    wait_ends_at: noShowWaitEnds(arrival, job.windowStart, job.type, noShowWaitMin).toISOString(),
+    accepted,
   };
 }
