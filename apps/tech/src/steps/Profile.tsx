@@ -34,7 +34,7 @@ import {
   type FitForm,
   type HistoryForm,
   type Measurement,
-} from "./profile-form.ts";
+} from "@maneman/web-kit/hair-profile";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";

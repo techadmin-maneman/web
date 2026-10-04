@@ -29,20 +29,10 @@ import {
   type PlainPage,
   type Route,
 } from "./route.ts";
+import { loadOrReload } from "./lib/load-or-reload.ts";
 import { StockScreen } from "./stock/StockScreen.tsx";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
 import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
-
-/**
- * Fetches a section's code. A console left open across a release asks for a file that release removed, so the page
- * loads again, on the new release.
- */
-function loadOrReload<Module>(load: () => Promise<Module>): Promise<Module> {
-  return load().catch((error: unknown) => {
-    window.location.reload();
-    throw error;
-  });
-}
 
 const settingsPanels = () => loadOrReload(() => import("./settings/PanelScreens.tsx"));
 const SettingsScreen = lazy(() =>

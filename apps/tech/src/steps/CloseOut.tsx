@@ -19,7 +19,8 @@
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
-import { useEffect, useState } from "react";
+import { useAsync, valueOr } from "@maneman/ui/useAsync";
+import { useCallback } from "react";
 import type { Job, JobSummary } from "../api.ts";
 import { closeOut as copy, job as jobCopy, oneVisit, titles } from "../content.ts";
 import { STROKE } from "../icons.ts";
@@ -70,16 +71,8 @@ function receiptOf(job: Job): string {
 
 /** Board B5's close: the three facts ops rule on, as the phone knows them. */
 function Evidence({ job }: { job: Job }) {
-  const [measured, setMeasured] = useState<number | null>(null);
-  useEffect(() => {
-    let current = true;
-    void keptArrival(job.id).then((arrival) => {
-      if (current) setMeasured(arrival?.distance_m ?? null);
-    });
-    return () => {
-      current = false;
-    };
-  }, [job.id]);
+  const readArrival = useCallback(() => keptArrival(job.id), [job.id]);
+  const measured = valueOr(useAsync(readArrival)[0], null)?.distance_m ?? null;
 
   const checkedIn = job.progress.checked_in_at;
   const distance = job.progress.distance_m ?? measured;
@@ -100,18 +93,10 @@ export function CloseOut({ id }: { id: string }) {
   const [loaded, retry] = useJob(id, signatureOf(waiting));
   const [day] = useDay(todayInIndia());
   const names = useNames();
-  const [closedAt, setClosedAt] = useState<number | null>(null);
   const heading = useScreen(titles.closeOut);
 
-  useEffect(() => {
-    let current = true;
-    void keptClosed(id).then((at) => {
-      if (current) setClosedAt(at);
-    });
-    return () => {
-      current = false;
-    };
-  }, [id]);
+  const readClosed = useCallback(() => keptClosed(id), [id]);
+  const closedAt = valueOr(useAsync(readClosed)[0], null);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
