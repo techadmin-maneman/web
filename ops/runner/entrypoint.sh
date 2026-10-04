@@ -6,6 +6,7 @@ set -euo pipefail
 cd /home/runner/actions-runner
 if [ ! -f .runner ]; then
   : "${RUNNER_TOKEN:?RUNNER_TOKEN is needed the first time: see docs/runbook.md, The CI runner}"
-  ./config.sh --unattended --replace --url "https://github.com/${REPOSITORY:?}" --token "$RUNNER_TOKEN"     --name "${RUNNER_NAME:-maneman-pc}" --labels maneman --work _work
+  ./config.sh --unattended --replace --url "https://github.com/${REPOSITORY:?}" --token "$RUNNER_TOKEN" \
+    --name "${RUNNER_NAME:-maneman-pc}" --labels maneman --work _work
 fi
 exec ./run.sh

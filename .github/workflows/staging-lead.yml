@@ -22,7 +22,7 @@ permissions:
 jobs:
   lead:
     name: book a test consultation on staging
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: staging
     env:

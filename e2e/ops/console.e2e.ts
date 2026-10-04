@@ -169,6 +169,8 @@ test("says the sign-in has run out when Access turns a call away, and offers the
 // FEO-31: a Ctrl-click was swallowed, so a section could not be opened in a tab of its own.
 test("leaves a click that asks for a new tab to the browser", async ({ page, context }) => {
   await page.goto("/");
+  // Settled on Tasks first: a click while / still sends the page there can land before the link answers it.
+  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
   const opened = context.waitForEvent("page");
   await page.getByRole("link", { name: "Areas" }).click({ modifiers: ["ControlOrMeta"] });
   const tab = await opened;

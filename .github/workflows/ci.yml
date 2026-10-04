@@ -18,9 +18,9 @@
 # pull request, which skips the jobs a browser or a build would run, is still
 # green (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs").
 #
-# Jobs run on GitHub's runners. CI_RUNNER set to "maneman" would send them to the
-# owner's machine, which is retired: on a public repository a fork's pull request
-# would run its code there (docs/runbook.md, "The CI runner").
+# Jobs run on GitHub's runners, named in each job: nothing can send them to the
+# owner's retired machine, where on a public repository a fork's pull request
+# would run its code (docs/runbook.md, "The CI runner").
 name: ci
 
 on:
@@ -38,7 +38,7 @@ concurrency:
 jobs:
   changes:
     name: what changed
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
@@ -121,7 +121,7 @@ jobs:
     name: static checks
     needs: changes
     if: needs.changes.outputs.static-passed != 'true'
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -196,7 +196,7 @@ jobs:
     name: tests (unit, contract, coverage)
     needs: changes
     if: needs.changes.outputs.tests-passed != 'true'
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -212,7 +212,7 @@ jobs:
     name: deployed code on these migrations
     needs: changes
     if: needs.changes.outputs.migrations == 'true' && needs.changes.outputs.suite-passed != 'true'
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -233,7 +233,7 @@ jobs:
     name: build
     needs: changes
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -247,7 +247,7 @@ jobs:
     name: browser tests and Lighthouse
     needs: changes
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -316,7 +316,7 @@ jobs:
     name: smoke (local)
     needs: changes
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -377,9 +377,20 @@ jobs:
     name: full suite
     needs: [changes, old-code-on-new-schema, build, browser, smoke]
     if: ${{ !cancelled() && needs.changes.result == 'success' }}
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .nvmrc
+            scripts/ci-gate.ts
+            scripts/lib/ci-gate.ts
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
       - name: Each job of the full suite passed, or had nothing to do
         env:
           RESULTS: |
@@ -387,20 +398,7 @@ jobs:
             build ${{ needs.build.result }}
             browser ${{ needs.browser.result }}
             smoke ${{ needs.smoke.result }}
-        run: |
-          failed=""
-          while read -r job result; do
-            [ -n "$job" ] || continue
-            echo "$job: $result"
-            case "$result" in
-              success | skipped) ;;
-              *) failed="$failed $job" ;;
-            esac
-          done <<< "$RESULTS"
-          if [ -n "$failed" ]; then
-            echo "::error::these jobs of the full suite did not pass:$failed"
-            exit 1
-          fi
+        run: node scripts/ci-gate.ts "jobs of the full suite"
 
   # The gate: deploy-staging.yml waits for this workflow, and main's protection
   # waits for this job's name (docs/decisions/0008, when the plan allows it).
@@ -409,9 +407,20 @@ jobs:
     name: checks
     needs: [changes, static, tests, old-code-on-new-schema, build, browser, smoke, full-suite]
     if: ${{ !cancelled() }}
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .nvmrc
+            scripts/ci-gate.ts
+            scripts/lib/ci-gate.ts
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
       - name: Every check passed, or had nothing to do
         env:
           RESULTS: |
@@ -423,17 +432,4 @@ jobs:
             browser ${{ needs.browser.result }}
             smoke ${{ needs.smoke.result }}
             full-suite ${{ needs.full-suite.result }}
-        run: |
-          failed=""
-          while read -r job result; do
-            [ -n "$job" ] || continue
-            echo "$job: $result"
-            case "$result" in
-              success | skipped) ;;
-              *) failed="$failed $job" ;;
-            esac
-          done <<< "$RESULTS"
-          if [ -n "$failed" ]; then
-            echo "::error::these checks did not pass:$failed"
-            exit 1
-          fi
+        run: node scripts/ci-gate.ts "checks"

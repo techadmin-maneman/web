@@ -647,34 +647,22 @@ Production runs 268eaa4, of 21 September 2026. The next release carries every mi
 
 ## The CI runner
 
-Where GitHub Actions jobs run is the repository variable `CI_RUNNER`. **Since 2 October 2026 it is `github`** (`gh variable list` shows it): every job runs on GitHub's own runners, and the repository is public, so the minutes are free and the jobs run side by side. Every push to a pull request runs the full suite: the static checks, the unit and contract tests with coverage, the build, every browser-test project and Lighthouse, the deployed code on new migrations and the local smoke. A check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated"), and adding a label starts no run.
+**Every job runs on GitHub's own runners**, `runs-on: ubuntu-latest` in each job of every workflow; since 4 October 2026 no variable can move them (`test/node/ci-workflow.test.ts` holds every workflow to it). The repository is public, so the minutes are free and the jobs run side by side, each on a runner of four cores: the unit tests take four workers, the browser tests three (`vitest.config.ts`, `playwright.config.ts`). Every push to a pull request runs the full suite: the static checks, the unit and contract tests with coverage, the build, every browser-test project and Lighthouse, the deployed code on new migrations and the local smoke. A check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated"), and adding a label starts no run. The last two jobs, "full suite" and "checks", pass only when every job they wait on passed or was skipped (`scripts/ci-gate.ts`).
 
-**The owner's machine is retired.** Its runner, `maneman-runner` (`maneman-pc`, built from `ops/runner/`), was shut down on 2 October 2026. Never set `CI_RUNNER` to `maneman` while the repository is public: a fork's pull request would run its own code on that machine. The rest of this section is for bringing it back on a private repository: the machine must be on, with Docker Desktop running.
+**The owner's machine is retired.** Its runner, `maneman-runner` (`maneman-pc`, built from `ops/runner/`), was shut down on 2 October 2026, and must not come back while the repository is public: a fork's pull request would run its own code on that machine. On a private repository only, it could: the machine on, with Docker Desktop running, the image built and registered once with a token (it lasts an hour), and started again without it, so the token is not left in the container's settings:
 
-- **Check them:** `docker logs --tail 5 maneman-runner` (and `maneman-runner-2`) ends "Listening for Jobs", and GitHub → the repository → Settings → Actions → Runners lists `maneman-pc` and `maneman-pc-2` as Idle or Active.
-- **Set it up again** (a new machine, or after removing it). Build the image, take a registration token (it lasts an hour), and start the container once with it; the registration is kept in the `maneman-runner` volume. Then start it again without the token, so the token is not left in the container's settings:
+```sh
+docker build -t maneman-runner:2.337.0 ops/runner
+token=$(gh api -X POST repos/techadmin-maneman/web/actions/runners/registration-token -q .token)
+docker run -d --name maneman-runner --restart unless-stopped --shm-size=2g \
+  -v maneman-runner:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web -e RUNNER_TOKEN="$token" \
+  maneman-runner:2.337.0
+docker rm -f maneman-runner   # once the logs say "Listening for Jobs"
+docker run -d --name maneman-runner --restart unless-stopped --shm-size=2g \
+  -v maneman-runner:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web maneman-runner:2.337.0
+```
 
-  ```sh
-  docker build -t maneman-runner:2.337.0 ops/runner
-  token=$(gh api -X POST repos/techadmin-maneman/web/actions/runners/registration-token -q .token)
-  docker run -d --name maneman-runner --restart unless-stopped --shm-size=2g     -v maneman-runner:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web -e RUNNER_TOKEN="$token"     maneman-runner:2.337.0
-  docker rm -f maneman-runner   # once the logs say "Listening for Jobs"
-  docker run -d --name maneman-runner --restart unless-stopped --shm-size=2g     -v maneman-runner:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web maneman-runner:2.337.0
-  ```
-
-- **A second runner** is the same, with its own name and volume. `RUNNER_NAME` is what GitHub lists it as; without it the entrypoint registers `maneman-pc`, and `--replace` would take the first one's place instead of joining it:
-
-  ```sh
-  token=$(gh api -X POST repos/techadmin-maneman/web/actions/runners/registration-token -q .token)
-  docker run -d --name maneman-runner-2 --restart unless-stopped --shm-size=2g     -v maneman-runner-2:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web     -e RUNNER_NAME=maneman-pc-2 -e RUNNER_TOKEN="$token" maneman-runner:2.337.0
-  docker rm -f maneman-runner-2   # once the logs say "Listening for Jobs"
-  docker run -d --name maneman-runner-2 --restart unless-stopped --shm-size=2g     -v maneman-runner-2:/home/runner/actions-runner -e REPOSITORY=techadmin-maneman/web     -e RUNNER_NAME=maneman-pc-2 maneman-runner:2.337.0
-  ```
-
-- **One fewer runner:** `docker rm -f maneman-runner-2`, then remove it in Settings → Actions → Runners. Nothing in the workflows names a particular runner, only the `maneman` label they share.
-
-- **Move the jobs back to the machine** (a private repository only): check the runner is listening (above), then `gh variable set CI_RUNNER --body maneman`. `gh variable set CI_RUNNER --body github` sends them to GitHub's runners again.
-- **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
+Then each job's `runs-on` names its label, `[self-hosted, maneman]`, in place of `ubuntu-latest`, and the test above changes with them. A second runner takes its own name and volume (`-e RUNNER_NAME=maneman-pc-2`, `-v maneman-runner-2:…`): without a name the entrypoint registers `maneman-pc`, and `--replace` would take the first one's place.
 
 ## Staying on the free tier
 

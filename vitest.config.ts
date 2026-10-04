@@ -8,10 +8,9 @@ export default defineConfig({
   test: {
     restoreMocks: true,
     /*
-     * Two runners share the owner's twelve-core machine (docs/runbook.md, "The CI runner"), and vitest's default
-     * takes a worker a core: two jobs of tests, or tests beside the browser tests, then took every core and more,
-     * and hooks and wrangler's dev proxy timed out for want of a CPU, not a defect. Playwright is held to three
-     * workers for the same reason (playwright.config.ts).
+     * GitHub's runner for a public repository has four cores (docs/runbook.md, "The CI runner"), and vitest's
+     * default takes a worker a core; past four, hooks and wrangler's dev proxy time out for want of a CPU, not a
+     * defect. Playwright is held to three beside the local mm-api and the four servers (playwright.config.ts).
      */
     maxWorkers: process.env.CI === undefined ? undefined : 4,
     // Vitest's own, and a watchdog that ends a run whose files have stopped reporting (test/stalled-files.ts).

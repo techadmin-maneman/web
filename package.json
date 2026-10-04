@@ -11,6 +11,7 @@
     "node": ">=24.11.0"
   },
   "scripts": {
+    "gen": "npm run types && npm run openapi && npm run schema && npm run adr-index",
     "texts:export": "node scripts/export-texts.ts",
     "dev": "node scripts/ensure-dev-vars.ts && npm run db:local && wrangler dev --env=\"\" --port 8787 --inspector-port 9230 --test-scheduled",
     "dev:all": "node scripts/dev-all.ts",
