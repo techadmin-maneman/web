@@ -665,12 +665,13 @@ describe("the site's form, for a consultation and fit in one visit", () => {
 
   // BK-15 and CP-01: Home said "We are booking your visit", with no price, while the site had said it was booked, and
   // every Home logged consultation_window_unknown.
-  it("shows Home the one visit on its way as itself, priced after the code on its hold", async () => {
+  it("shows Home the one visit booked as itself, priced after the code it was booked with", async () => {
     await make();
     await book({ discount_code: "TENPC" });
     const logs = captureLogs();
     const me = await homeOfBooker();
-    expect(me.being_booked?.one_visit).toEqual({ amount: 2_700_000, from: false, code: "TENPC" });
+    expect(me.being_booked).toBeNull();
+    expect(me.next_visit?.one_visit).toEqual({ amount: 2_700_000, from: false, code: "TENPC" });
     expect(me.consultation).toBeNull();
     expect(logs.lines().filter((line) => line.event === "consultation_window_unknown")).toEqual([]);
   });
