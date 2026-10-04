@@ -104,8 +104,9 @@ import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import { noShowWaitEnds } from "../policy/no-show.ts";
 import { boundedPhoneTime } from "../policy/phone-clock.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { queueMessage } from "../http/queue-message.ts";
+import { enqueue } from "../queues/enqueue.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 import { arrivalNotice } from "../domain/visit-messages.ts";
 import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "./hair-profile-schemas.ts";
 import { PieceSchema } from "./tech-pieces.ts";
@@ -1246,11 +1247,7 @@ function refusalOf(c: Ctx, refused: Extract<Landed, { ok: false }>): ErrorRespon
 async function tellOfArrival(c: Ctx, input: { personId: string; appointmentId: string; arrivedAt: Date }) {
   const messageId = await arrivalNotice(c.env.DB, { ...input, now: c.var.deps.now() });
   if (messageId === null) return;
-  try {
-    await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
-  } catch (error) {
-    c.var.log.warn("message_enqueue_failed", { outbound_message_id: messageId, error });
-  }
+  await queueMessage(c, messageId);
 }
 
 /** Where the write's step is recorded: by FSM's queue for a visit FSM holds, else in our own database, with the event. */
@@ -1273,11 +1270,8 @@ async function recordedIn(c: Ctx, write: EventInput): Promise<StepRecord> {
  * passed (src/scheduled/sweeper.ts); the event has landed either way.
  */
 async function queueFsmWrite(c: Ctx, jobEventId: string): Promise<void> {
-  try {
-    await c.env.FSM_QUEUE.send({ job_event_id: jobEventId, request_id: c.var.requestId } satisfies FsmSyncMessage);
-  } catch (error) {
-    c.var.log.warn("fsm_enqueue_failed", { job_event_id: jobEventId, error });
-  }
+  const body = { job_event_id: jobEventId, request_id: c.var.requestId } satisfies FsmSyncMessage;
+  await enqueue(c.env.FSM_QUEUE, body, { log: c.var.log, ifLost: "sweeper" });
 }
 
 /**

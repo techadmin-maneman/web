@@ -20,6 +20,7 @@ import { json } from "../http/openapi.ts";
 import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../config/crm.ts";
 import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
+import { enqueue } from "../queues/enqueue.ts";
 
 /** The invite a client came with, as their page shows it. */
 export const ClientInviteSchema = z
@@ -106,20 +107,13 @@ function writtenByHand(): string {
 /** Sends the client to the CRM again, which then reads the invite they now carry and notes it (src/queues/crm-sync.ts). */
 async function queueCrmUpdate(c: Context<AppEnv>, personId: string): Promise<void> {
   const { requestId, log, deps } = c.var;
-  try {
-    await c.env.CRM_QUEUE.send({
-      update_person_id: personId,
-      request_id: requestId,
-      invite_attached: true,
-    } satisfies CrmSyncMessage);
-  } catch (error) {
-    log.warn("crm_enqueue_failed", { person_id: personId, error });
-    await deps.alertOnce({
-      key: `crm_contact_update:${personId}`,
-      message: `Client ${personId}'s invite could not be sent on to the CRM. By hand, ${writtenByHand()}.`,
-      link: `/clients/${personId}`,
-    });
-  }
+  const alert = {
+    key: `crm_contact_update:${personId}`,
+    message: `Client ${personId}'s invite could not be sent on to the CRM. By hand, ${writtenByHand()}.`,
+    link: `/clients/${personId}`,
+  };
+  const body = { update_person_id: personId, request_id: requestId, invite_attached: true } satisfies CrmSyncMessage;
+  await enqueue(c.env.CRM_QUEUE, body, { log, ifLost: { alertOnce: deps.alertOnce, alert } });
 }
 
 export function registerOpsClientReferral(app: App): void {
