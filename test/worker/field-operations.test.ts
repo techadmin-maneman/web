@@ -336,7 +336,7 @@ describe("checking in", () => {
       .all();
     expect(rows.results).toEqual([
       { passed: 0, waived_by: null },
-      { passed: 1, waived_by: expect.any(String) },
+      { passed: 1, waived_by: expect.any(String) as string },
     ]);
     expect((await opsPost(`/api/visits/${TODAY_JOB}/let-in`, { reason: "Again" })).status).toBe(409);
     const audited = await env.DB.prepare(
