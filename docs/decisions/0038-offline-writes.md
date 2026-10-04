@@ -7,7 +7,7 @@
 
 The prompt: "Offline writes from the technician app are queued on the device with a client-generated ID, and sent in order when the phone is back online. The server makes each write idempotent on that ID before passing it to FSM." And: "If FSM has changed underneath (for example ops reassigned the job while the phone was offline), the write is rejected with `409 superseded`. The technician sees what changed. Nothing is merged silently."
 
-Two facts from the trial (`docs/decisions/fsm-trial.md`) shape the rest:
+Two facts from the trial (`docs/archive/fsm-trial.md`) shape the rest:
 
 - **FSM offers no idempotency key anywhere.** Deduplication is ours.
 - **The org has no job-sheet template.** `meta/job_sheet_forms` is empty, and the forms are built in FSM's settings, not through the API (`docs/open-points.md`, item 28). There is no job-sheet record to create yet.

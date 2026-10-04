@@ -139,7 +139,7 @@ describe("web-kit money", () => {
 
 describe("web-kit mobile numbers", () => {
   // The technician app kept the first ten digits typed, so "+91 98110 00000" pasted into it became 91981 10000,
-  // a number nobody holds; a pasted +91 is to be read (docs/owner-answers-2026-09-27.md). Both apps read it so.
+  // a number nobody holds; a pasted +91 is to be read (docs/archive/owner-answers-2026-09-27.md). Both apps read it so.
   it.each([
     "+91 98110 00000",
     "+91-98110-00000",

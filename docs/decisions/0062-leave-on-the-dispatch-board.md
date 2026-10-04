@@ -7,7 +7,7 @@
 
 The dispatch board is seven days wide and drew no leave at all, so ops could
 assign work to a technician who was away. The recorded reason was that FSM's
-availability answers at most 48 hours ahead (`docs/decisions/fsm-trial.md`,
+availability answers at most 48 hours ahead (`docs/archive/fsm-trial.md`,
 question 6), which no seven-day board can use.
 
 **That reason is wrong, and it was checked against the org on 24 September 2026**

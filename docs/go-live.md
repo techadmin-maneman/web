@@ -110,7 +110,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 - [ ] Counsel's answers (items 22, 23, 40, 41, 55, 63, 69 and 148).
 - [ ] The org clean of staging's records before production goes live (item 19).
 - [ ] The owner's prices and services in production's console (items 1 and 13); the job sheet's lists, the consumables with their costs, reorder levels and each service's use, and each kit's and the central store's opening count on the Stock page (item 28, ADR 0087).
-- [ ] The texts approved (items 39, 41 and 42), and the engineering the rulings still owe (`docs/implementation-plan-2026-09-27.md`).
+- [ ] The texts approved (items 39, 41 and 42), and the engineering the rulings still owe (`docs/archive/implementation-plan-2026-09-27.md`).
 
 **Provisioning** (RB 7, 11, 11a, 11b, 11c, 12 and 13):
 

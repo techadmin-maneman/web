@@ -1,5 +1,5 @@
 // The next visit, offered in the app and booked by the client (docs/decisions/0086-the-next-visit-is-offered.md;
-// ADR 0025, items 68 and 69; docs/owner-answers-2026-09-27.md, "Booking"). Nothing books a visit for the client and
+// ADR 0025, items 68 and 69; docs/archive/owner-answers-2026-09-27.md, "Booking"). Nothing books a visit for the client and
 // the technician books none: the app offers the first fit once the consultation is done, and the next service
 // once a first fit, a service or a replacement is done; a WhatsApp reminder follows while nothing is booked, and
 // the Tasks board asks ops to step in after that.

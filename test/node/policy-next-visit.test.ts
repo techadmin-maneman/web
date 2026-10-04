@@ -1,5 +1,5 @@
 // The next visit, offered in the app and booked by the client, each rule named by the owner's own words
-// (src/policy/next-visit.ts; ADR 0025, item 69; docs/owner-answers-2026-09-27.md). The days are India's calendar days.
+// (src/policy/next-visit.ts; ADR 0025, item 69; docs/archive/owner-answers-2026-09-27.md). The days are India's calendar days.
 
 import { describe, expect, it } from "vitest";
 import { FIRST_FIT_WINDOWS, windowsFor } from "../../src/config/scheduling.ts";

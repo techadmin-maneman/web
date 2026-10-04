@@ -14,7 +14,7 @@ export const RULES = [
   "a first fit costs a late fee of config LATE_FEE_FIRST_FIT (Rs. 4,000 in the design), with the balance carried over",
   "a replacement's late fee is config LATE_FEE_REPLACEMENT (Rs. 3,000 in the design)",
   "When ops move a visit, the client is never charged.",
-  // The owner, 27 September 2026 (docs/owner-answers-2026-09-27.md, item 71).
+  // The owner, 27 September 2026 (docs/archive/owner-answers-2026-09-27.md, item 71).
   "after a move by ops, the client's notice counts from the visit's time before ops moved it.",
   // The owner, 2 October 2026 (the audit's decision 5).
   "When ops cancel a visit, the client is never charged, unless ops apply the client's late terms, with a reason.",

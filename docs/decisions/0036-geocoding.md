@@ -9,7 +9,7 @@ The prompt: "Addresses are geocoded when a client address is created or edited, 
 
 `addresses` has held `lat`, `lng` and `geocoded_at` since migration 0008, and nothing has filled them.
 
-The FSM trial found something that changes the question (`docs/decisions/fsm-trial.md`, question 4): **FSM geocodes its service addresses itself**, and returns `Service_Latitude` and `Service_Longitude` on the record. An address a client saves in our app is confirmed with them and entered against their FSM contact either way, because FSM is the system of record for clients.
+The FSM trial found something that changes the question (`docs/archive/fsm-trial.md`, question 4): **FSM geocodes its service addresses itself**, and returns `Service_Latitude` and `Service_Longitude` on the record. An address a client saves in our app is confirmed with them and entered against their FSM contact either way, because FSM is the system of record for clients.
 
 ## Decision
 

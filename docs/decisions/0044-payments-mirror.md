@@ -7,7 +7,7 @@
 
 P2-M2 includes "the payments mirror from Razorpay webhooks". The client app's Payments tab (boards E1 to E3) lists what a client paid and what was refunded. The fraud rules of P2-M3 compare how a referrer and a friend paid.
 
-Razorpay is the record of money (`docs/phase2-inputs.md`, section 4). The research found:
+Razorpay is the record of money (`docs/archive/phase2-inputs.md`, section 4). The research found:
 
 - Webhooks are signed: `X-Razorpay-Signature` is the HMAC-SHA256 of the raw body under the webhook secret.
 - They are delivered at least once and not in order, and must be answered within five seconds.
@@ -57,7 +57,7 @@ A client who pays in advance is owed a receipt, then the tax invoice with the pa
 
 **Each captured payment is recorded in Books** as a customer payment (`src/domain/books-sync.ts`).
 
-**Not a retainer invoice.** The backend prompt has FSM carry "the retainer invoice as the prepay record, as the roadmap sets out". FSM raises no retainer invoice, which is a Books document; whether one may carry GST was unclear; and Books offers it only from its Professional plan (`docs/phase2-inputs.md`, section 6). A customer payment records the same money, gives the client a receipt, and settles against the visit's invoice once that is issued (ADR 0056), so the backend records that instead. (Recorded 27 September 2026, ADR 0025, item 56; the CA confirms the receipt serves once GST is on, `docs/open-points.md`, item 9.)
+**Not a retainer invoice.** The backend prompt has FSM carry "the retainer invoice as the prepay record, as the roadmap sets out". FSM raises no retainer invoice, which is a Books document; whether one may carry GST was unclear; and Books offers it only from its Professional plan (`docs/archive/phase2-inputs.md`, section 6). A customer payment records the same money, gives the client a receipt, and settles against the visit's invoice once that is issued (ADR 0056), so the backend records that instead. (Recorded 27 September 2026, ADR 0025, item 56; the CA confirms the receipt serves once GST is on, `docs/open-points.md`, item 9.)
 
 - It goes against the client's Books customer: the FSM contact's `ZBilling_Id`, which FSM's sync fills in. Until the client reaches Books, the payment waits.
 - The mode is "Razorpay"; the reference is ours (MM-2026-0841). On staging the description begins "Staging test:" (`docs/open-points.md`, item 19).

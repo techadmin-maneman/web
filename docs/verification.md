@@ -237,7 +237,7 @@ The site is built from the front-end prompt in four milestones, on staging only.
 
 ### F1: the static port, 21 September 2026
 
-PR #15 put the static port of Mane Man Site v2 on `https://staging.maneman.in`. Each section and state was checked against the design at 390 and 1440 px, pair by pair (`docs/fidelity/`), and each item in `docs/feature-inventory.md` names its evidence.
+PR #15 put the static port of Mane Man Site v2 on `https://staging.maneman.in`. Each section and state was checked against the design at 390 and 1440 px, pair by pair (`docs/fidelity/`), and each item in `docs/archive/feature-inventory.md` names its evidence.
 
 ### F2: booking, 22 September 2026
 
@@ -553,7 +553,7 @@ Four test people were made for this proof, each named "Staging test" with a rand
 - **An invited friend's consultation never reached FSM** (above): fixed here, not yet re-proven on staging.
 - **`referral_attributions.consultation_appointment_id` was never written by anything.** The column has existed since migration 0021 and no code filled it, so ops' record did not name the consultation an invite produced. `confirmBooking` now fills it when it books a consultation, and `test/worker/referrals.test.ts` checks it.
 - **The invite publishes prices the price book does not hold.** The landing at 390 px offers "First fit, from … Standard base ₹25,000" and "Service visit … ₹1,500". The price book has held ₹30,000 and ₹2,000 since 22 September (`SELECT item, amount_ex_gst, valid_from FROM price_book;`), which is what the app charges. The figures come from `site/src/content/site.ts` and nobody reconciles them. This is exactly the risk open point 11 names, on the first page a friend sees. **Fixed 26 September 2026** (ADR 0073): the site and the landing read the price book.
-- **Zoho's token budget is one budget for every proof.** From 07:55 the FSM calls began failing with `Zoho 400 Access Denied: could not refresh the access token`, straight after a `401` on a call the same token had just served. One refresh token mints at most 10 access tokens per 10 minutes (`docs/decisions/fsm-trial.md`), and another proof was running against the same org at the same hour. Nothing in our code is wrong; the budget is shared, and two proofs at once can exhaust it. Recorded as open point 32.
+- **Zoho's token budget is one budget for every proof.** From 07:55 the FSM calls began failing with `Zoho 400 Access Denied: could not refresh the access token`, straight after a `401` on a call the same token had just served. One refresh token mints at most 10 access tokens per 10 minutes (`docs/archive/fsm-trial.md`), and another proof was running against the same org at the same hour. Nothing in our code is wrong; the budget is shared, and two proofs at once can exhaust it. Recorded as open point 32.
 
 ### What staging still cannot prove
 

@@ -22,7 +22,7 @@ export const RULES = [
   "Ops then receive three facts: check-in time, distance, and the delivery receipt of the day-before or arrival WhatsApp to the client (from the BSP's delivery webhook).",
   "A no-show is charged under the 24-hour policy. The charge is applied by ops from the evidence, never automatically.",
   "Whether the wait differs for a first fit is open, so make it config per visit type.",
-  // The owner, 27 September 2026 (docs/owner-answers-2026-09-27.md, item 60).
+  // The owner, 27 September 2026 (docs/archive/owner-answers-2026-09-27.md, item 60).
   "a charged no-show costs, to begin with, what a late cancellation of the same visit costs",
   "the client disputes a charge in the app, and ops rule Refund or Uphold in the console with a reason, and the client is told.",
 ] as const;
@@ -169,7 +169,7 @@ export const withinDisputeWindow = (until: string | null, now: Date): boolean =>
  * payment refunded, its credit returned. The prompt's rule (RULES[3]) says a
  * charge keeps it, as a cancel inside 24 hours does; it says nothing of a
  * waiver, which the owner ruled on 27 September 2026: a waiver refunds the
- * payment and returns the credit (docs/owner-answers-2026-09-27.md). A waiver
+ * payment and returns the credit (docs/archive/owner-answers-2026-09-27.md). A waiver
  * means we accept the fault, so keeping the money would contradict it. Ops set
  * it in the console with every other policy; each ruling keeps what it gave back.
  */

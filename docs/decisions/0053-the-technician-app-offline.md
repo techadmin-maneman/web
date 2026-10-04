@@ -11,7 +11,7 @@ The technician app (`tech.maneman.in`, the Worker `mm-tech`) is used in basement
 - **A session bound to the device.** "The session can be revoked from ops. On revocation, the app wipes its IndexedDB and signs out at its next contact with the backend" (ADR 0029).
 - **Photographs that never touch the phone's gallery.** "Capture through `getUserMedia` into a canvas, not through a file input that may save to the camera roll… Hold the frames in IndexedDB… Re-encode to JPEG so no metadata survives."
 
-The owner ruled on 23 September 2026 that we build our own interface over FSM (`docs/decisions/fsm-licensing.md`), so this is what technicians use.
+The owner ruled on 23 September 2026 that we build our own interface over FSM (`docs/archive/fsm-licensing.md`), so this is what technicians use.
 
 ## Decision
 

@@ -155,7 +155,7 @@ test("once a code is sent, the number can be changed, and a new code asked for a
 });
 
 // The field kept the first ten digits typed, so a number pasted with +91 in front lost its last two
-// (docs/owner-answers-2026-09-27.md).
+// (docs/archive/owner-answers-2026-09-27.md).
 test("a number pasted with +91 or 0 in front becomes its own ten digits, and the code goes to them", async ({
   page,
 }) => {

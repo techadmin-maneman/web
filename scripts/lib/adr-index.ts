@@ -128,9 +128,9 @@ export function adrIndex(files: readonly DecisionFile[], others: readonly Decisi
     "| --- | --- | --- | --- | --- |",
     ...adrs.map((adr) => `| ${link(adr)} | ${adr.title} | ${adr.date} | ${adr.status} | ${changedBy(adr)} |`),
     "",
-    "## Records beside them",
-    "",
-    ...others.map(({ file, text }) => `- [${title(text)}](${file})`),
-    "",
+    // Records that are not decisions, such as a trial's findings, kept beside them; finished ones go to docs/archive/.
+    ...(others.length === 0
+      ? []
+      : ["## Records beside them", "", ...others.map(({ file, text }) => `- [${title(text)}](${file})`), ""]),
   ].join("\n");
 }

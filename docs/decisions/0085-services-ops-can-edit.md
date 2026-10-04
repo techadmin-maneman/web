@@ -12,7 +12,7 @@ The owner asked, on 27 September 2026:
 
 > "I can't remove/edit the set services and prices. Make it editable. Is the price/product synced to all other sources (CRM/FSM)?"
 
-and ruled the same day (`docs/owner-answers-2026-09-27.md`):
+and ruled the same day (`docs/archive/owner-answers-2026-09-27.md`):
 
 > "The price book will keep getting updated. The source of truth needs to be the one entered on the ops dashboard which should then sync to FSM and every other thing." (item 1)
 

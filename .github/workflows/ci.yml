@@ -153,6 +153,8 @@ jobs:
       - name: No dead code in mm-api
         run: npm run check:dead
 
+      - name: Every open point has one number, and every citation names one that exists
+        run: npm run check:open-points
       - name: Every environment redeclares every binding
         run: npm run check:config
       - name: A deliberately broken config is rejected

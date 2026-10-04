@@ -103,7 +103,7 @@ The IDs go in `site/src/lib/analytics-ids.ts`, one set for each environment: a G
 ## Headers, budgets and fonts
 
 - **Headers.** The build writes `_headers`: the content security policy, HSTS, the referrer policy, and the camera allowed on `/try` only. Inline scripts and styles are allowed by hash, computed from the built pages, so nothing needs listing by hand. Never add a `style` attribute or a `data:` URL: the policy refuses both, and the browser tests fail.
-- **Lighthouse.** `npm run lighthouse` audits the local build's `/`, `/try` and `/book` against the budgets, and CI runs it after the browser tests. Reports go to `lighthouse/`.
+- **Lighthouse.** `npm run lighthouse` audits the local build's `/`, `/try`, `/book` and an invite (`/r/PREVIEW1`), and the client app's Home, against their budgets (`scripts/lighthouse.ts`), and CI runs it after the browser tests. Reports go to `lighthouse/`.
 - **Fonts.** ₹ is drawn from a one-glyph file. If the site starts using another character outside latin, add it in `scripts/subset-fonts.ts`, run `npm run fonts`, and take it out of the latin-ext ranges in `packages/brand/fonts.css`.
 
 ## Going live in production

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { adrIndex, readAdr } from "../../scripts/lib/adr-index.ts";
+import { readFileSync } from "node:fs";
+import { adrIndex, readAdr, readDecisions } from "../../scripts/lib/adr-index.ts";
 
 const adr = (file: string, header: string) => ({ file, text: `${header}\n\n## Context\n\nThe reason.\n` });
 
@@ -72,5 +73,13 @@ describe("the index", () => {
     expect(index).toContain("| [0003](0003-c.md) | C | 2026-09-22 | accepted |  |");
     expect(index).toContain("The next free number is 0004.");
     expect(index).toContain("- [The trial](trial.md)");
+  });
+});
+
+// CQ-09: the index said this test failed until it was regenerated, and nothing did.
+describe("the committed index", () => {
+  it("is the index the records' headers make, so a new record or a changed status needs npm run adr-index", () => {
+    const { adrs, others } = readDecisions();
+    expect(readFileSync("docs/decisions/README.md", "utf8")).toBe(adrIndex(adrs, others));
   });
 });

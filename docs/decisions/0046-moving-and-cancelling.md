@@ -13,7 +13,7 @@ P2-M5 includes "reschedule and cancel under the 24-hour policy, refunds, and lat
 
 The designs draw boards C7 (reschedule, both versions) and C8 (cancel, more than 24 hours out, and inside 24 hours for a credit booking).
 
-FSM, tried on the real org on 22 September 2026 (`docs/decisions/fsm-trial.md`):
+FSM, tried on the real org on 22 September 2026 (`docs/archive/fsm-trial.md`):
 
 - An appointment moves through `PUT /Service_Appointments/{id}/actions/reschedule`, with the same ID.
 - A work order cancels through its blueprint's "Cancel" transition, which requires a note. That cancels its appointment too.
