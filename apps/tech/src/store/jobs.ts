@@ -9,7 +9,7 @@
 // to. So is the job's start as the card showed it at check-in, which every
 // later step is sent with.
 
-import type { CheckIn, Job, JobSummary } from "../api.ts";
+import type { CheckIn, Job, JobState, JobSummary } from "../api.ts";
 import { dayAfter } from "../lib/when.ts";
 import { all, get, put, remove } from "./db.ts";
 
@@ -31,7 +31,37 @@ export async function keepDay(date: string, jobs: readonly JobSummary[]): Promis
 
 export async function keptDay(date: string): Promise<readonly JobSummary[] | null> {
   const kept = await get<Kept>("jobs", dayKey(date));
-  return kept !== null && kept.kind === "day" ? kept.jobs : null;
+  return kept !== null && kept.kind === "day" ? kept.jobs.map(rowInTodaysShape) : null;
+}
+
+const NOTHING_LANDED: JobState = { started_at: null, outcome: null };
+
+/** A row an earlier build kept, before the day's list said where each job stood: begun and closed on neither. */
+function rowInTodaysShape(job: JobSummary): JobSummary {
+  const kept = job as Omit<JobSummary, "progress"> & { readonly progress?: JobState };
+  return { ...kept, progress: kept.progress ?? NOTHING_LANDED };
+}
+
+/**
+ * Where a job stands as the API answered a write of its, kept in the day that holds it: the list then says so with no
+ * signal, and before it is next read.
+ */
+export async function keepLanded(jobId: string, state: JobState): Promise<void> {
+  for (const kept of await all<Kept>("jobs")) {
+    if (kept.kind !== "day" || !kept.jobs.some((job) => job.id === jobId)) continue;
+    const jobs = kept.jobs.map((job) => (job.id === jobId ? { ...job, progress: state } : job));
+    await put("jobs", { ...kept, jobs } satisfies Kept);
+  }
+}
+
+/** Where each job of the days the phone holds stood when last heard of, by job. */
+export async function keptStates(): Promise<Map<string, JobState>> {
+  const states = new Map<string, JobState>();
+  for (const kept of await all<Kept>("jobs")) {
+    if (kept.kind !== "day") continue;
+    for (const job of kept.jobs) states.set(job.id, rowInTodaysShape(job).progress);
+  }
+  return states;
 }
 
 export async function keepJob(job: Job): Promise<void> {
@@ -120,10 +150,10 @@ export async function forgetStartAtCheckIn(jobId: string): Promise<void> {
   await remove("jobs", startAtCheckInKey(jobId));
 }
 
-/** Every job the technician closed out on this phone, so the day's list can say so before FSM does. */
-export async function keptClosedJobs(): Promise<Set<string>> {
-  const kept = await all<Kept>("jobs");
-  return new Set(kept.flatMap((record) => (record.kind === "closed" ? [record.job_id] : [])));
+/** A job whose unsent work the technician let go of: its arrival and close-out go too, so only what landed speaks. */
+export async function forgetMarks(jobId: string): Promise<void> {
+  await remove("jobs", arrivalKey(jobId));
+  await remove("jobs", closedKey(jobId));
 }
 
 /** Every day the phone holds, for the screens that say what it is working from. */
@@ -134,7 +164,7 @@ export async function keptDays(): Promise<string[]> {
 /**
  * Each job whose card the phone holds, by its client's name. The day's list
  * carries no name — the API gives a client only with the card, the day before
- * the visit — so a row, the waiting screen and the close-out all read it here.
+ * the visit — so a row and the close-out read it here.
  */
 export async function keptNames(): Promise<Map<string, string>> {
   const names = new Map<string, string>();
@@ -142,6 +172,41 @@ export async function keptNames(): Promise<Map<string, string>> {
     if (kept.kind === "job" && kept.job.client !== null) names.set(kept.job.id, kept.job.client.name);
   }
   return names;
+}
+
+/** What the phone holds of a job whether or not its card is open: when, what and where, and the client once open. */
+export interface HeldJob {
+  readonly starts_at: string;
+  readonly type: JobSummary["type"];
+  readonly one_visit: boolean;
+  readonly sector: string | null;
+  readonly client: string | null;
+}
+
+type Listed = Pick<JobSummary, "starts_at" | "type" | "one_visit" | "sector">;
+
+const heldOf = (job: Listed, client: string | null): HeldJob => ({
+  starts_at: job.starts_at,
+  type: job.type,
+  one_visit: job.one_visit,
+  sector: job.sector,
+  client,
+});
+
+/**
+ * Each job the phone holds, from its card, else from the day's list it is on. A card read again after ops moved the
+ * job carries its new start (apps/tech/src/store/outbox.ts).
+ */
+export async function keptJobs(): Promise<Map<string, HeldJob>> {
+  const kept = await all<Kept>("jobs");
+  const jobs = new Map<string, HeldJob>();
+  for (const record of kept) {
+    if (record.kind === "day") for (const job of record.jobs) jobs.set(job.id, heldOf(job, null));
+  }
+  for (const record of kept) {
+    if (record.kind === "job") jobs.set(record.job.id, heldOf(record.job, record.job.client?.name ?? null));
+  }
+  return jobs;
 }
 
 /** The days and the clients' cards, gone; each job's arrival and close-out stay with the work not yet sent. */

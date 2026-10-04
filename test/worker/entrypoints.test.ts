@@ -24,6 +24,12 @@ function queueBatch(queue: string, bodies: unknown[]) {
   return { queue, messages, ackAll: vi.fn(), retryAll: vi.fn() };
 }
 
+async function booksPaymentOf(paymentId: string): Promise<string | null> {
+  return env.DB.prepare("SELECT books_payment_id FROM payments WHERE id = ?1")
+    .bind(paymentId)
+    .first<string | null>("books_payment_id");
+}
+
 /** What the runbook's first step of a restore writes. */
 async function switchMaintenanceOn(startedAt: string): Promise<void> {
   await env.DB.prepare("INSERT INTO maintenance (id, reason, started_at) VALUES (1, 'restoring D1', ?1)")
@@ -122,6 +128,20 @@ describe("queue handler", () => {
     expect(summary?.d1_queries).toBeGreaterThan(1);
   });
 
+  it("acknowledges an fsm-sync message without reaching FSM, which is off locally", async () => {
+    await markDatabase();
+    const logs = captureLogs();
+    const batch = queueBatch("mm-fsm-sync-local", [{ fsm_id: "fsm-1", request_id: "r" }]);
+
+    await worker.queue(batch as unknown as MessageBatch, env);
+
+    expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
+    expect(batch.messages[0]?.retry).not.toHaveBeenCalled();
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "fsm_message_dropped", kind: "appointment_read" }),
+    );
+  });
+
   it("retries messages from a queue it does not know", async () => {
     await markDatabase();
     const batch = queueBatch("mm-mystery-local", [{}]);
@@ -202,11 +222,7 @@ describe("scheduled handler", () => {
       FSM_QUEUE: fakeQueue(),
     });
     const summary = logs.lines().find((line) => line.event === "cron_run");
-    expect(Object.keys(summary?.d1_rows_read_by_job as object)).toEqual([
-      "unbooked_holds",
-      "release_unfinished_moves",
-      "visit_reminders",
-    ]);
+    expect(Object.keys(summary?.d1_rows_read_by_job as object)).toEqual(["unbooked_holds", "books_sync"]);
   });
 
   it("ends the run with a line saying what it cost D1, and what each job read of it", async () => {
@@ -256,11 +272,8 @@ describe("scheduled handler", () => {
       MESSAGE_QUEUE: fakeQueue(),
       FSM_QUEUE: fakeQueue(),
     });
-    // The stub FSM has no such client in Books yet, so the payment waits its hour.
-    const payment = await env.DB.prepare("SELECT books_checked_at FROM payments WHERE id = 'pay-1'").first<{
-      books_checked_at: string | null;
-    }>();
-    expect(payment?.books_checked_at).not.toBeNull();
+    // Locally FSM is off, so the pass makes the client's customer in the stub Books and records the payment there.
+    expect(await booksPaymentOf("pay-1")).not.toBeNull();
   });
 
   it("runs every other job when one fails, and logs the one that failed", async () => {
@@ -300,9 +313,6 @@ describe("scheduled handler", () => {
       expect.objectContaining({ level: "error", job: "requeue_leads" }),
     ]);
     // The Books pass runs after the job that failed.
-    const payment = await env.DB.prepare("SELECT books_checked_at FROM payments WHERE id = 'pay-1'").first<{
-      books_checked_at: string | null;
-    }>();
-    expect(payment?.books_checked_at).not.toBeNull();
+    expect(await booksPaymentOf("pay-1")).not.toBeNull();
   });
 });

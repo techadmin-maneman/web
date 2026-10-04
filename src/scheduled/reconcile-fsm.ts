@@ -25,7 +25,11 @@ import { PHOTOS_PER_VISIT } from "../domain/visit-photos.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 
-export const PAGE_SIZE = 50;
+/**
+ * Appointments a page. Reading a page of 50 cost a staging run 7 to 12 ms of CPU, past the free plan's 10; 10 still
+ * cover the five minutes' changes between runs, and the 48 runs of a night read 480.
+ */
+export const PAGE_SIZE = 10;
 /** India hours of the nightly pass: from 1 am up to 5 am. */
 const NIGHT_START_HOUR = 1;
 const NIGHT_END_HOUR = 5;

@@ -1,4 +1,4 @@
-// The referral jobs on the five-minute cron (docs/decisions/0048-referrals.md): settle the referrals whose
+// The referral jobs on the cron, every fifteen minutes (docs/decisions/0048-referrals.md): settle the referrals whose
 // friend has been fitted, under the reward ops have set (docs/decisions/0107-referral-rewards-in-the-console.md),
 // close expired credits, and take back the credits of a first fit refunded under the guarantee. Each does a little
 // per pass. Returns the messages to queue.

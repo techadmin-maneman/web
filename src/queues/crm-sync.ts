@@ -5,7 +5,7 @@
 // A failed sync is marked `failed`. A lead's first failure goes back on the
 // queue for one more try QUICK_RETRY_DELAY_SECONDS later, so a passing hiccup
 // costs seconds, not minutes. After that the sweeper re-enqueues failed leads
-// every five minutes until MAX_SYNC_ATTEMPTS, then this consumer alerts once.
+// every fifteen minutes until MAX_SYNC_ATTEMPTS, then this consumer alerts once.
 // See docs/decisions/0012-zoho-sync.md.
 
 import { z } from "zod";
