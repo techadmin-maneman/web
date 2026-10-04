@@ -829,7 +829,7 @@ Indexes:
 
 Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
 
-Made by `0053_balances_and_last_visits.sql`; changed by `0056_task_owners.sql`, `0090_last_visits_unfitted.sql`.
+Made by `0053_balances_and_last_visits.sql`; changed by `0056_task_owners.sql`, `0091_last_visits_unfitted.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
