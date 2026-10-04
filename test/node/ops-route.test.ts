@@ -31,7 +31,7 @@ describe("the ops console's routes", () => {
   it("lists the sections by department, Tasks first", () => {
     expect(namesIn("operations")).toEqual(["Tasks", "Dispatch", "Technicians", "Stock"]);
     expect(namesIn("customer_care")).toEqual(["Clients", "Grievances", "Number changes", "Deletion requests"]);
-    expect(namesIn("finance")).toEqual(["No-shows", "Prices", "Discount codes"]);
+    expect(namesIn("finance")).toEqual(["Payments", "Prices", "Discount codes"]);
     expect(namesIn("growth")).toEqual(["Referrals", "Waitlist", "Service area"]);
     expect(namesIn("admin")).toEqual(["Settings", "Staff"]);
     expect(SECTIONS.map((section) => section.department)).toEqual([
@@ -41,6 +41,12 @@ describe("the ops console's routes", () => {
       ...Array<string>(3).fill("growth"),
       ...Array<string>(2).fill("admin"),
     ]);
+  });
+
+  // MON-16 and OIA-08 of the audit, 2 October 2026: the day's money sat under "No-shows".
+  it("names the money section Payments, at the address it has always had", () => {
+    expect(SECTION_NAMES[routeOf("/no-shows").page]).toBe("Payments");
+    expect(titleOf(routeOf("/no-shows"))).toBe("Payments · Mane Man operations");
   });
 
   it("shows each section to those whose call opening its page is one the API lists", () => {

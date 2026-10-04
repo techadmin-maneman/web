@@ -1,6 +1,7 @@
-// Board D1: the day's money over the charges it was kept on, then each charge a
-// client disputed, with Refund and Uphold, then the queue of cases with the
-// evidence ops rule on, and the ruling. The API is answered from
+// Board D1, the console's Payments: a day's money over the charges it was kept
+// on, today unless ops pick another day, then each charge a client disputed,
+// with Refund and Uphold, then the queue of cases with the evidence ops rule
+// on, and the ruling. The API is answered from
 // e2e/ops/fixtures.ts, since no route can open a case from outside: a
 // technician's phone closes a job as a no-show.
 
@@ -15,6 +16,7 @@ import {
   json,
   NO_SHOW_UNMEASURED,
   NO_SHOWS,
+  TASKS_READ_ON,
   type Answer,
   type Call,
 } from "./fixtures.ts";
@@ -22,8 +24,9 @@ import {
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = "Visit of Sun 19 Sep";
 const SECOND = "Visit of Mon 20 Sep";
-const QUEUE = "Waiting for a decision";
-const MONEY = "Today";
+const QUEUE = "No-shows waiting for a decision";
+/** The fixture's day, which the clock is set to: Wednesday 22 September 2027. */
+const MONEY = "Today, Wed 22 Sep";
 const CASE = NO_SHOWS.cases[0]?.id ?? "";
 const DECIDE: Call = `POST /api/no-shows/${CASE}/decision`;
 const DISPUTE = DISPUTES.disputes[0]?.id ?? "";
@@ -43,6 +46,7 @@ async function open(
     [DECIDE]: decision,
     [RULE]: ruling,
   });
+  await page.clock.setFixedTime(TASKS_READ_ON);
   await page.goto(path);
   await expect(page.getByRole("heading", { name: QUEUE })).toBeVisible();
 }
@@ -57,6 +61,38 @@ const fact = (page: Page, visit: string, name: string) =>
     .getByRole("term")
     .filter({ hasText: new RegExp(`^${name}$`) })
     .locator("+ dd");
+
+// MON-16 and OIA-08 of the audit, 2 October 2026: the money sat under "No-shows", only ever today's.
+test("is the console's Payments, at the address No-shows had", async ({ page }) => {
+  await open(page);
+  await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Payments" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+});
+
+test("shows another day's money when asked, and names the day it is for", async ({ page }) => {
+  const monday = { ...DAY_MONEY, date: "2027-09-20", collected: 1_200_000, charges: [] };
+  const asked: string[] = [];
+  await open(page);
+  await answer(page, {
+    "GET /api/payments": (route) => {
+      const date = new URL(route.request().url()).searchParams.get("date");
+      if (date !== null) asked.push(date);
+      return json(date === "2027-09-20" ? monday : DAY_MONEY)(route);
+    },
+  });
+  await page.getByLabel("Day", { exact: true }).fill("2027-09-20");
+
+  const money = page.getByRole("region", { name: "Mon 20 Sep" });
+  await expect(money.getByRole("heading", { level: 2 })).toHaveText("Mon 20 Sep");
+  await expect(money.getByText("Collected", { exact: true })).toBeVisible();
+  await expect(money.getByText("Rs. 12,000")).toBeVisible();
+  await expect(money.getByText("Rs. 2,360 went back that day")).toBeVisible();
+  await expect(money.getByText("Nothing was charged that day.")).toBeVisible();
+  expect([...new Set(asked)]).toEqual(["2027-09-20"]);
+});
 
 test("heads the day with the board's three figures, as money", async ({ page }) => {
   await open(page);
@@ -173,6 +209,7 @@ test("says so when nothing was charged on the day", async ({ page }) => {
     }),
     "GET /api/no-shows": json(NO_SHOWS),
   });
+  await page.clock.setFixedTime(TASKS_READ_ON);
   await page.goto("/no-shows");
   await expect(page.getByText("Nothing was charged today.")).toBeVisible();
   // A day on which nothing came in is a nought, which is true and not a guess.

@@ -23,7 +23,7 @@ import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { isRefusal } from "../providers/provider-error.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
 import { referenceLink } from "./payments.ts";
 import { priceOf } from "./price-book.ts";
@@ -183,7 +183,7 @@ export async function sendPaymentLink(
     await deps.alertOnce({
       key: refusedKey(visit.appointmentId),
       message: `${notMade(visit, made.kind)} Send the client a link from Razorpay's dashboard with reference ${visit.appointmentId}.`,
-      link: `/clients/${visit.personId}`,
+      link: paymentsTab(visit.personId),
     });
     return made.kind === "unpriced" ? "unpriced" : "unavailable";
   }
@@ -303,7 +303,7 @@ async function refusedOrMadeBefore(
       `Razorpay would not make the payment link of ${rupees(link.amount)} for visit ${visit.appointmentId}: ` +
       `${reason}. Send the client one from Razorpay's dashboard with reference ${visit.appointmentId}, whose ` +
       "payment then finds the visit.",
-    link: `/clients/${visit.personId}`,
+    link: paymentsTab(visit.personId),
   });
   return "refused";
 }
@@ -332,7 +332,7 @@ async function tellFailure(deps: LinkDeps, visit: FittedVisit, reason: string): 
     message:
       `The payment link for visit ${visit.appointmentId} could not be asked of Razorpay ` +
       `${String(FAILURES_BEFORE_ALERT)} times: ${reason}. It is asked again every five minutes.`,
-    link: `/clients/${visit.personId}`,
+    link: paymentsTab(visit.personId),
     after: FAILURES_BEFORE_ALERT,
   });
 }

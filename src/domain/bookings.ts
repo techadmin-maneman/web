@@ -41,7 +41,7 @@ import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { TRIES_STOPPED, triesStopped } from "../policy/held-bookings.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { auditStatement, auditStatementIfBooked, type AuditEntry } from "./audit.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "./credits.ts";
 import { itemForService } from "./fsm-catalogue.ts";
@@ -611,7 +611,7 @@ async function alertIfNoCreditPaid(
     message:
       `Booking ${booked.id} was booked on a visit credit, but the client had none left by then, ` +
       "so nothing has paid for it. Decide whether to charge for the visit.",
-    link: `/clients/${booked.person_id}`,
+    link: paymentsTab(booked.person_id),
   });
 }
 

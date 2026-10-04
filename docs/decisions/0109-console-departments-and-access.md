@@ -15,7 +15,7 @@ Until now anyone Cloudflare Access let into the ops console could do everything 
 | ------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | Operations    | Dispatch, today's tasks, visits, technicians and their leave and phones, stock, held bookings re-tried               | Tasks, Dispatch, Technicians, Stock                    |
 | Customer Care | Clients (record, photos, consents, pieces, hair profile, a phoned-in address), grievances, number changes, deletions | Clients, Grievances, Number changes, Deletion requests |
-| Finance       | Payments, refunds, no-show charges and their disputes, credits, discount codes, prices                               | No-shows, Prices, Discount codes                       |
+| Finance       | Payments, refunds, no-show charges and their disputes, credits, discount codes, prices                               | Payments, Prices, Discount codes                       |
 | Growth        | Referrals and invites, the waitlist, the service area and launching it                                               | Referrals, Waitlist, Service area                      |
 | Admin         | Settings (rules, services, blackout days, day times, consumables, job sheet, storage), staff and access              | Settings, Staff                                        |
 
