@@ -1178,6 +1178,17 @@ describe("GET /api/availability/public", () => {
   });
 
   it("opens every window the plan starts in while self-serve booking is off: the request waits for ops", async () => {
+    // A hair system ops offer, which the fortnight's one visits are held as once the generic first fit is retired.
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('first_fit', 'essential', 'Mane Man Essential', 180, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+         VALUES ('first_fit', 'essential', 3200000, 0, '2026-01-01')`,
+      ),
+    ]);
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
     const off = { selfServeBooking: false };
 
