@@ -256,7 +256,8 @@ test("is a task on the board that leads to the client's Visits tab", async ({ pa
   await answer(page, { "GET /api/tasks": json(board) });
   await page.goto("/tasks");
   const tasks = page.getByRole("region", { name: "Tasks" });
-  await expect(tasks.getByRole("heading", { level: 3 })).toHaveText(["Booking not in FSM"]);
+  await expect(tasks.getByRole("heading", { level: 3 })).toHaveText(["Operations"]);
+  await expect(tasks.getByRole("heading", { level: 4 })).toHaveText(["Booking not in FSM"]);
   await expect(tasks.getByRole("listitem")).toContainText("Service visit, Sat 25 Sep, morning; FSM refused it");
   await expect(tasks.getByRole("link", { name: CLIENT.name })).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
 });

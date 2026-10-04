@@ -55,7 +55,7 @@ test("lists every request with the client's number, the day, and the days left o
   await expect(queue(page).getByRole("listitem")).toHaveCount(3);
   await expect(row(page, "Rohit Malhotra")).toContainText("+91 98100 04417 · requested 20 Sep 2027");
   await expect(row(page, "Rohit Malhotra")).toContainText("5 days left");
-  await expect(row(page, "Ashish Gill")).toContainText("Overdue 5");
+  await expect(row(page, "Ashish Gill")).toContainText("5 days overdue");
   await expect(row(page, "Karan Bose")).toContainText("Due today");
 });
 

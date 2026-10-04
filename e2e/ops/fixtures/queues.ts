@@ -173,8 +173,8 @@ export const DISPUTES = {
  * Read against 22 September 2027 in India, the day the tests and the fidelity
  * run set their clock to. Four have run over, as the board's head writes, and
  * each task's `due` is its `since` plus the placeholder two days
- * (src/policy/tasks.ts), so the days left are the board's own: "2 days",
- * "Today", "Overdue 3". Five are Priya's or Anil's, as the board's owners are, and
+ * (src/policy/tasks.ts), so the days left are the board's own: "2 days left",
+ * "Due today", "3 days overdue". Five are Priya's or Anil's, as the board's owners are, and
  * three nobody's yet.
  */
 export const TASKS = {

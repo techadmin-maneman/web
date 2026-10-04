@@ -1456,6 +1456,10 @@ export const tasks = {
   title: "Tasks",
   /** The head's count, in oxblood, as the board writes "4 overdue". */
   overdue: (count: number) => `${String(count)} overdue`,
+  /** PLACEHOLDER: what the head's count does, said after it to a screen reader. */
+  overdueJump: "go to the first",
+  /** Each department's section, named as the navigation names it. */
+  departments: DEPARTMENT_NAMES,
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
@@ -1513,6 +1517,9 @@ export const tasks = {
   } as Readonly<Record<string, string>>,
   /** PLACEHOLDER: a group longer than the board lists: its count is all of them. */
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
+  /** PLACEHOLDER: a group shows its five longest waits until ops ask for the rest. */
+  more: (count: number) => `Show ${String(count)} more`,
+  fewer: "Show fewer",
   /** PLACEHOLDER: what a consultation asked for, a first fit to book and a replacement due are done with. */
   book: "Book a visit",
   /** PLACEHOLDER: more were waiting than one look reads. */
@@ -1593,12 +1600,6 @@ export const tasks = {
     erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
     unknown: "Held for review",
-  },
-  /** The last column, as the board writes it: "2 days", "1 day", "Today", "Overdue 3". */
-  sla: {
-    today: "Today",
-    left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"}`,
-    over: (days: number) => `Overdue ${String(days)}`,
   },
   /**
    * Whose each task is (docs/decisions/0092-task-owners.md). The board writes each owner in ops by their first name,
@@ -1909,10 +1910,11 @@ export const technicians = {
  */
 
 /** How long a request has left before the time we have promised runs out, as board D2 words its column. */
+/** How long something waiting on ops has left, on Tasks and in every queue: "2 days left", "3 days overdue". */
 export const waiting = {
   left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"} left`,
   today: "Due today",
-  over: (days: number) => `Overdue ${String(days)}`,
+  over: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"} overdue`,
 } as const;
 
 export const grievances = {
