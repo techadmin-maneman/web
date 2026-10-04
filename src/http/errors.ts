@@ -98,7 +98,8 @@ export const ERROR_CODES = [
   "too_early_to_close",
   // A check-in or a start before the earliest check-in (src/policy/phone-clock.ts).
   "too_early_to_arrive",
-  // A visit ops would close by hand is closed or cancelled already, or the technician's phone closed it.
+  // A visit ops would close by hand is closed or cancelled already, or the technician's phone closed it; or a
+  // technician's step or photograph sent for a job that has closed.
   "already_closed",
   // A service-area change that would leave no pincode served at all, and every
   // client on the waitlist (docs/decisions/0061-ops-editable-inputs.md).

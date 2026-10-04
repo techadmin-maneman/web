@@ -4,6 +4,7 @@
 // src/queues/fsm-sync.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
+import { HOUR_MS } from "../lib/durations.ts";
 import { takesProfile } from "./hair-profile.ts";
 
 export const RULES = [
@@ -96,6 +97,19 @@ export function cardStepsFor(type: VisitType, oneVisit = false, hasClient = true
   const profileBefore = steps.includes("after_photos") ? "after_photos" : "outcome";
   const position = steps.indexOf(profileBefore);
   return [...steps.slice(0, position), PROFILE_STEP, ...steps.slice(position)];
+}
+
+/** The steps a technician may still put right once the job has closed, and for how long after the close. */
+const CORRECTED_AFTER_CLOSE: ReadonlySet<JobEventKind> = new Set(["checklist", "consumables"]);
+const CORRECTION_WINDOW_MS = HOUR_MS;
+
+/**
+ * Whether a step may land on a job that has closed: only a corrected checklist or count of what was used, within the
+ * hour after the close.
+ */
+export function landsAfterClose(kind: JobEventKind, closedAt: Date, now: Date): boolean {
+  if (!CORRECTED_AFTER_CLOSE.has(kind)) return false;
+  return now.getTime() - closedAt.getTime() < CORRECTION_WINDOW_MS;
 }
 
 /** Whether an event closes the job as a no-show (src/policy/no-show.ts). */

@@ -35,7 +35,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
-| Housekeeping | `alerts`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
+| Housekeeping | `alerts`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
 | The database's identity, and the restore's own switch | `deployment_identity`, `maintenance` | The identity is the same at every minute. Going back undoes the switch, so the steps turn it on again | Nothing |
 
 ## Tables
@@ -44,6 +44,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [alerts](#alerts): One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 - [appointments](#appointments): Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
+- [board_version](#board_version): One row: a number that triggers raise whenever a visit, a move, leave, a technician or the day's slot times change, so the open dispatch board reads itself again only then (ADR 0069).
 - [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 - [checklist_items](#checklist_items): Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
 - [cities](#cities): The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).
@@ -186,7 +187,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -235,7 +236,7 @@ Indexes:
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
-Triggers: `appointments_consultation_booked_added`, `appointments_consultation_booked_changed`, `appointments_consultation_booked_taken_out`, `appointments_first_fit_books_one_visit_added`, `appointments_first_fit_books_one_visit_changed`, `appointments_followed_up_added`, `appointments_followed_up_changed`, `appointments_followed_up_taken_out`, `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`, `appointments_replacement_booked_added`, `appointments_replacement_booked_changed`, `appointments_replacement_booked_taken_out`.
+Triggers: `appointments_board_added`, `appointments_board_changed`, `appointments_board_taken_out`, `appointments_consultation_booked_added`, `appointments_consultation_booked_changed`, `appointments_consultation_booked_taken_out`, `appointments_first_fit_books_one_visit_added`, `appointments_first_fit_books_one_visit_changed`, `appointments_followed_up_added`, `appointments_followed_up_changed`, `appointments_followed_up_taken_out`, `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`, `appointments_replacement_booked_added`, `appointments_replacement_booked_changed`, `appointments_replacement_booked_taken_out`.
 
 ## audit_log
 
@@ -262,6 +263,17 @@ Indexes:
 - `audit_log_subject`: on (`subject_kind`, `subject_id`, `at`)
 
 Triggers: `audit_log_append_only_delete`, `audit_log_append_only_update`.
+
+## board_version
+
+One row: a number that triggers raise whenever a visit, a move, leave, a technician or the day's slot times change, so the open dispatch board reads itself again only then (ADR 0069).
+
+Made by `0090_board_version.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |
+| `version` | INTEGER | no |  |  |
 
 ## checkins
 
@@ -326,7 +338,7 @@ Made by `0002_lead_path.sql`; changed by `0069_staff_and_access.sql`.
 
 What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 
-Made by `0002_lead_path.sql`; changed by `0009_consents_v2.sql`, `0057_consent_sources_and_checkin_coordinates.sql`.
+Made by `0002_lead_path.sql`; changed by `0009_consents_v2.sql`, `0057_consent_sources_and_checkin_coordinates.sql`, `0090_board_version.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -342,6 +354,7 @@ Made by `0002_lead_path.sql`; changed by `0009_consents_v2.sql`, `0057_consent_s
 Indexes:
 
 - `consents_by_person`: on (`person_id`)
+- `consents_by_person_purpose`: on (`person_id`, `purpose`, `created_at`)
 
 Triggers: `consents_no_delete`, `consents_no_update`.
 
@@ -623,7 +636,7 @@ Indexes:
 
 Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 
-Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0089_dispatch_move_blackout_reason.sql`.
+Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0090_board_version.sql`, `0091_dispatch_move_blackout_reason.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -649,6 +662,8 @@ Indexes:
 - `dispatch_moves_by_appointment`: on (`appointment_id`, `created_at`)
 - `dispatch_moves_one_at_a_time`: unique on (`appointment_id`), where `fsm_write_state = 'pending'`
 - `dispatch_moves_untold`: on (`now_start`), where `fsm_write_state = 'written' AND told_at IS NULL`
+
+Triggers: `dispatch_moves_board_added`, `dispatch_moves_board_changed`.
 
 ## events
 
@@ -787,7 +802,7 @@ Indexes:
 
 The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 
-Made by `0026_field_operations.sql`.
+Made by `0026_field_operations.sql`; changed by `0090_board_version.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -807,6 +822,7 @@ Made by `0026_field_operations.sql`.
 
 Indexes:
 
+- `job_events_by_appointment_kind`: on (`appointment_id`, `kind`)
 - `job_events_unwritten`: on (`fsm_write_state`, `received_at`)
 - A `UNIQUE` constraint: unique on (`appointment_id`, `event_id`)
 
@@ -1551,7 +1567,7 @@ Indexes:
 
 Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
 
-Made by `0067_slot_times.sql`.
+Made by `0067_slot_times.sql`; changed by `0090_board_version.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1566,7 +1582,7 @@ Indexes:
 
 - A `UNIQUE` constraint: unique on (`applies_from`)
 
-Triggers: `slot_times_no_delete`, `slot_times_no_update`.
+Triggers: `slot_times_board_added`, `slot_times_no_delete`, `slot_times_no_update`.
 
 ## staff
 
@@ -1775,7 +1791,7 @@ Indexes:
 
 A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
 
-Made by `0034_leave_and_asked_window.sql`.
+Made by `0034_leave_and_asked_window.sql`; changed by `0090_board_version.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1793,11 +1809,13 @@ Indexes:
 
 - `technician_leave_by_technician`: on (`technician_id`, `from_date`)
 
+Triggers: `technician_leave_board_added`, `technician_leave_board_changed`.
+
 ## technicians
 
 The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1816,6 +1834,8 @@ Indexes:
 
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 - `technicians_by_mobile`: on (`mobile_e164`)
+
+Triggers: `technicians_board_added`, `technicians_board_changed`.
 
 ## tryon_jobs
 

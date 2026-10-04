@@ -893,6 +893,17 @@
               }
             ]
           },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -949,6 +960,7 @@
           "ends_at",
           "length_minutes",
           "type",
+          "service",
           "status",
           "stage",
           "prepaid",
@@ -1266,6 +1278,64 @@
               }
             ],
             "description": "The client's latest request to delete their account that ops rejected, for 30 days after, while no other request is waiting."
+          },
+          "grievances": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "open",
+                    "resolved"
+                  ]
+                },
+                "raised_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "response": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Ops' answer, which they write knowing the client reads it; null while open."
+                },
+                "answered_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "text",
+                "state",
+                "raised_at",
+                "response",
+                "answered_at"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The client's latest 5 concerns about their data, newest first: every one still open, and those answered within 30 days."
           }
         },
         "required": [
@@ -1277,7 +1347,8 @@
           "number_change",
           "number_change_decided",
           "deletion",
-          "deletion_rejected"
+          "deletion_rejected",
+          "grievances"
         ],
         "additionalProperties": false
       },
@@ -1774,6 +1845,17 @@
               }
             ]
           },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -1916,6 +1998,7 @@
           "ends_at",
           "length_minutes",
           "type",
+          "service",
           "status",
           "stage",
           "prepaid",
@@ -4597,7 +4680,7 @@
     },
     "/api/profile": {
       "get": {
-        "summary": "The profile: name, number, address, consents, and any number change or deletion under way",
+        "summary": "The profile: name, number, address, consents, any number change or deletion under way, and the latest concerns raised",
         "responses": {
           "200": {
             "description": "The profile",
@@ -6695,7 +6778,7 @@
     },
     "/api/grievances": {
       "post": {
-        "summary": "Raise a grievance about how the client's data is handled. The same words, still open, are one",
+        "summary": "Raise a grievance about how the client's data is handled. The same words, still open, are one; 5 new ones a day",
         "requestBody": {
           "required": true,
           "content": {
@@ -6730,6 +6813,16 @@
           },
           "401": {
             "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 5 new grievances a day",
             "content": {
               "application/json": {
                 "schema": {

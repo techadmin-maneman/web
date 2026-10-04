@@ -7,7 +7,9 @@
 // product they chose, by name and never by price, or that they decided against
 // the fit, when nothing is fitted and no label is asked for. The checklist that
 // follows lists the fit's items only for a client being fitted
-// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Any other visit
+// says first what the client paid for, and warns when the hair profile names
+// another product.
 //
 // The board draws "Scan the piece". The owner ruled on 24 September 2026 that
 // labels carry neither a barcode nor a QR code (docs/open-points.md, "Piece
@@ -20,14 +22,14 @@
 // replacement the piece that came off and why it failed, so the step asks for
 // them: a lookup fills the base and lot in when it knows them.
 
-import { ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, unreachable, type Job, type PieceLookup } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
-import { STROKE } from "../icons.ts";
+import { STROKE, TAG } from "../icons.ts";
+import { paidFor, profileNamesAnother } from "../job/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
@@ -108,6 +110,26 @@ function ChoiceList({
         ))}
       </div>
       {choice === DECLINED && <p className={styles.note}>{oneVisit.declinedNote}</p>}
+    </section>
+  );
+}
+
+/** What the client paid for, which is what he fits, and a warning when the hair profile names another product. */
+function PaidFor({ job }: { job: Job }) {
+  const paid = paidFor(job);
+  if (paid === null) return null;
+  const inProfile = profileNamesAnother(job);
+  return (
+    <section className={styles.field} aria-labelledby="paid-for-title">
+      <h2 className={styles.fieldTitle} id="paid-for-title">
+        {jobCopy.piece.rows.paidFor}
+      </h2>
+      <p className={styles.paidFor}>{paid}</p>
+      {inProfile !== null && (
+        <p className={styles.hint} role="alert">
+          {jobCopy.piece.mismatch(inProfile)}
+        </p>
+      )}
     </section>
   );
 }
@@ -223,7 +245,11 @@ function Fitting({
         onFinish(body());
       }}
     >
-      {job.one_visit && <ChoiceList products={job.products} choice={choice} onChoose={setChoice} />}
+      {job.one_visit ? (
+        <ChoiceList products={job.products} choice={choice} onChoose={setChoice} />
+      ) : (
+        <PaidFor job={job} />
+      )}
 
       {!declined && (
         <>
@@ -231,8 +257,8 @@ function Fitting({
             <label className={styles.fieldLabel} htmlFor="piece-code">
               {copy.piece.label}
             </label>
-            <div className={styles.scan}>
-              <Icon className={styles.scanIcon} d={ICONS_P2.pieceId} size={21} stroke={STROKE} />
+            <div className={styles.labelField}>
+              <Icon className={styles.labelIcon} d={TAG} size={21} stroke={STROKE} />
               <input
                 className={styles.input}
                 id="piece-code"

@@ -696,6 +696,17 @@
               }
             ]
           },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -862,6 +873,7 @@
           "ends_at",
           "length_minutes",
           "type",
+          "service",
           "status",
           "stage",
           "prepaid",
@@ -939,6 +951,17 @@
               }
             ]
           },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -995,6 +1018,7 @@
           "ends_at",
           "length_minutes",
           "type",
+          "service",
           "status",
           "stage",
           "prepaid",
@@ -4499,6 +4523,10 @@
       "DispatchBoard": {
         "type": "object",
         "properties": {
+          "version": {
+            "type": "integer",
+            "description": "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another."
+          },
           "from": {
             "type": "string",
             "format": "date"
@@ -4612,6 +4640,17 @@
                       "type": "null"
                     }
                   ]
+                },
+                "service": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
                 },
                 "client": {
                   "anyOf": [
@@ -4745,6 +4784,7 @@
               "required": [
                 "appointment_id",
                 "type",
+                "service",
                 "client",
                 "sector",
                 "pincode",
@@ -4821,6 +4861,7 @@
           }
         },
         "required": [
+          "version",
           "from",
           "dates",
           "city",
@@ -4854,6 +4895,17 @@
                 "type": "null"
               }
             ]
+          },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
           },
           "client": {
             "anyOf": [
@@ -4986,6 +5038,7 @@
         "required": [
           "appointment_id",
           "type",
+          "service",
           "client",
           "sector",
           "pincode",
@@ -5038,6 +5091,19 @@
           "mobile",
           "whatsapp_visits",
           "referred_by"
+        ],
+        "additionalProperties": false
+      },
+      "DispatchBoardVersion": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "description": "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another."
+          }
+        },
+        "required": [
+          "version"
         ],
         "additionalProperties": false
       },
@@ -12305,6 +12371,33 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DispatchBoard"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dispatch/version": {
+      "get": {
+        "summary": "The board's version, which the open board asks for every minute: one row, where the board itself is hundreds",
+        "responses": {
+          "200": {
+            "description": "The version now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchBoardVersion"
                 }
               }
             }

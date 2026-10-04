@@ -70,8 +70,14 @@ const unlocksAt = (date: string) => at(dayBefore(date), "12:30");
 /** Midnight in India as the visit's day begins: a test taps I have arrived whenever on the day it runs. */
 const checkInOpens = (date: string) => at(dayBefore(date), "18:30");
 
-/** The slots each type takes (src/config/scheduling.ts). */
+/** The slots each type takes, and how long it is booked for (src/config/scheduling.ts). */
 const SLOTS: Readonly<Record<VisitType, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
+const MINUTES: Readonly<Record<VisitType, number>> = {
+  consultation: 60,
+  service: 90,
+  replacement: 135,
+  first_fit: 180,
+};
 
 /** A job nothing of which has reached us, as the day's list says it. */
 const NOT_BEGUN: Job["progress"] = { started_at: null, outcome: null };
@@ -89,11 +95,12 @@ const firstJob = (date: string, type: VisitType, oneVisit = false, progress = NO
   window_label: "morning",
   type,
   one_visit: oneVisit,
-  product: null,
+  service: null,
   sector: "Sector 65",
   status: "scheduled",
   badge: oneVisit ? "at_visit" : "prepaid",
   slots: SLOTS[type],
+  minutes: MINUTES[type],
   unlocked: true,
   unlocks_at: unlocksAt(date),
   client_name: "Rohit M.",
@@ -109,11 +116,12 @@ const secondJob = (date: string): Job => ({
   window_label: "morning",
   type: "service",
   one_visit: false,
-  product: null,
+  service: null,
   sector: "DLF Phase 4",
   status: "scheduled",
   badge: "credit",
   slots: 1,
+  minutes: 90,
   unlocked: true,
   unlocks_at: unlocksAt(date),
   client_name: "Vikram S.",
@@ -130,11 +138,12 @@ const lockedJob = (date: string): Job => ({
   window_label: "afternoon",
   type: "first_fit",
   one_visit: false,
-  product: "Mane Man Natural",
+  service: { tier: "natural", name: "Mane Man Natural" },
   sector: "Sector 43",
   status: "scheduled",
   badge: "prepaid",
   slots: 2,
+  minutes: 180,
   unlocked: false,
   unlocks_at: at(dayAfter(date), "12:30"),
   client_name: null,
@@ -153,11 +162,12 @@ const tomorrowsJob = (today: string): Job => {
     window_label: "morning",
     type: "service",
     one_visit: false,
-    product: null,
+    service: null,
     sector: "Sector 50",
     status: "scheduled",
     badge: "free",
     slots: 1,
+    minutes: 90,
     unlocked: true,
     unlocks_at: unlocksAt(date),
     client_name: "Rohit M.",
@@ -166,8 +176,8 @@ const tomorrowsJob = (today: string): Job => {
 };
 
 /** The day's list; `progress` is where Rohit's job stands, as the list carries it. */
-export function jobsToday(date: string, type: VisitType = "service", progress = NOT_BEGUN): Job[] {
-  return [firstJob(date, type, false, progress), secondJob(date), lockedJob(date)];
+export function jobsToday(date: string, type: VisitType = "service", progress = NOT_BEGUN, oneVisit = false): Job[] {
+  return [firstJob(date, type, oneVisit, progress), secondJob(date), lockedJob(date)];
 }
 
 export function jobsTomorrow(today: string): Job[] {
@@ -313,6 +323,8 @@ export interface CardOptions {
   readonly checklist?: Card["checklist"];
   /** A one visit's discount code already on it; none unless a test gives one. */
   readonly discountCode?: Card["discount_code"];
+  /** The service the visit was sold as; none unless a test gives one. */
+  readonly service?: Card["service"];
   /** What a one visit's client decided at the piece step that landed; none unless a test gives it. */
   readonly clientChoice?: Card["client_choice"];
 }
@@ -324,6 +336,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
   return {
     ...job,
     starts_at: options.startsAt ?? job.starts_at,
+    service: options.service ?? null,
     address: {
       line1: "Tower C, 14th floor",
       line2: null,
@@ -345,6 +358,8 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     progress,
     no_show_wait_min: options.waitMinutes ?? 15,
     checkin_from: checkInOpens(date),
+    // Not the policy's 200 m: ops have tuned it, and the door says theirs.
+    checkin_radius_m: 150,
     pieces: [...(options.pieces ?? [])],
     last_visit:
       options.lastVisit === true
@@ -374,6 +389,7 @@ export function lockedCard(date: string): Card {
     progress: NOTHING_DONE,
     no_show_wait_min: 15,
     checkin_from: checkInOpens(date),
+    checkin_radius_m: 150,
     pieces: null,
     last_visit: null,
     reminder: null,
@@ -459,6 +475,8 @@ export interface Fake {
   oneVisit: boolean;
   /** The discount code already on the one visit, or none. */
   discountCode: Card["discount_code"];
+  /** The service the first job was sold as, or none. */
+  service: Card["service"];
   /** What the one visit's client decided, as its piece step landed; the fake records it as the step lands. */
   clientChoice: Card["client_choice"];
   /** The client's pieces on the card. */
@@ -548,6 +566,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     type: "service",
     oneVisit: false,
     discountCode: null,
+    service: null,
     clientChoice: null,
     pieces: [],
     profile: null,
@@ -576,6 +595,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       profile: fake.profile,
       checklist: fake.checklist,
       discountCode: fake.discountCode,
+      service: fake.service,
       clientChoice: fake.clientChoice,
     });
 
@@ -710,7 +730,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (fake.malformed) return route.fulfill({ json: { date, jobs: null } });
       if (date === today) {
         const progress = { started_at: fake.progress.started_at, outcome: fake.progress.outcome };
-        return reply(route, 200, { date, jobs: empty ? [] : jobsToday(date, fake.type, progress) });
+        return reply(route, 200, { date, jobs: empty ? [] : jobsToday(date, fake.type, progress, fake.oneVisit) });
       }
       if (date === dayAfter(today) && fake.tomorrow) return reply(route, 200, { date, jobs: jobsTomorrow(today) });
       return reply(route, 200, { date, jobs: [] });

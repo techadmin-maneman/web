@@ -6,7 +6,15 @@ import { FIRST_FIT_WINDOWS, windowsFor } from "../../src/config/scheduling.ts";
 import { paymentBadge } from "../../src/policy/job-visibility.ts";
 import { cancelRefund, moveCost, noticeAt } from "../../src/policy/moving-a-visit.ts";
 import { chargedRefund, isDisputable } from "../../src/policy/no-show.ts";
-import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS, paidAtTheVisit, PLANS, RULES } from "../../src/policy/one-visit.ts";
+import {
+  closedIfSentBy,
+  ONE_VISIT_TERMS,
+  ONE_VISIT_WINDOWS,
+  paidAtTheVisit,
+  paymentLinkClosesAt,
+  PLANS,
+  RULES,
+} from "../../src/policy/one-visit.ts";
 import { stepsFor } from "../../src/policy/in-job-steps.ts";
 
 const WINDOW_STARTS = new Date("2026-09-24T03:30:00Z");
@@ -45,5 +53,14 @@ describe("a consultation and fit in one visit", () => {
     // A charged no-show takes nothing either, so there is nothing for the client to dispute.
     expect(chargedRefund("first_fit", ONE_VISIT_TERMS.noShowCharge)).toBe("all");
     expect(isDisputable({ kept: 0, creditSpent: false })).toBe(false);
+  });
+
+  it(RULES[3], () => {
+    const made = new Date("2026-09-21T06:30:00.000Z");
+    const closes = new Date("2026-10-05T06:30:00.000Z");
+    expect(paymentLinkClosesAt(made)).toEqual(closes);
+    // A link sent at `made` has closed by `closes`, and not a moment before.
+    expect(closedIfSentBy(closes)).toEqual(made);
+    expect(closedIfSentBy(new Date(closes.getTime() - 1)).getTime()).toBeLessThan(made.getTime());
   });
 });

@@ -40,6 +40,8 @@ import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { APP_SWITCH_SOURCES, CONSENT_PURPOSES, screenAsks } from "../policy/consents.ts";
 import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
+import { GRIEVANCES_SHOWN } from "../policy/grievances.ts";
+import { latestGrievances, type ShownGrievance } from "../domain/grievances.ts";
 import { revokeCard } from "../domain/referral-cards.ts";
 
 /** Number changes a client may start in a day. */
@@ -173,6 +175,24 @@ export const ProfileSchema = z
       .openapi({
         description: `The client's latest request to delete their account that ops rejected, for ${String(DECISION_SHOWN_DAYS)} days after, while no other request is waiting.`,
       }),
+    grievances: z
+      .array(
+        z
+          .object({
+            id: z.uuid(),
+            text: z.string(),
+            state: z.enum(["open", "resolved"]),
+            raised_at: z.iso.datetime(),
+            response: z
+              .union([z.string(), z.null()])
+              .openapi({ description: "Ops' answer, which they write knowing the client reads it; null while open." }),
+            answered_at: z.union([z.iso.datetime(), z.null()]),
+          })
+          .strict(),
+      )
+      .openapi({
+        description: `The client's latest ${String(GRIEVANCES_SHOWN)} concerns about their data, newest first: every one still open, and those answered within ${String(DECISION_SHOWN_DAYS)} days.`,
+      }),
   })
   .strict()
   .openapi("Profile");
@@ -200,7 +220,8 @@ const signedIn = { 401: errorResponse("session_required") };
 export const profileRoute = createRoute({
   method: "get",
   path: "/api/profile",
-  summary: "The profile: name, number, address, consents, and any number change or deletion under way",
+  summary:
+    "The profile: name, number, address, consents, any number change or deletion under way, and the latest concerns raised",
   responses: { 200: { description: "The profile", ...json(ProfileSchema) }, ...signedIn },
 });
 
@@ -362,6 +383,17 @@ function numberChangeBody(change: NumberChange) {
   };
 }
 
+function grievanceBody(grievance: ShownGrievance) {
+  return {
+    id: grievance.id,
+    text: grievance.text,
+    state: grievance.state,
+    raised_at: grievance.raisedAt,
+    response: grievance.response,
+    answered_at: grievance.answeredAt,
+  };
+}
+
 export function registerClientProfile(app: App): void {
   for (const path of [
     "/api/profile",
@@ -391,13 +423,14 @@ export function registerClientProfile(app: App): void {
     if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
 
     const now = c.var.deps.now();
-    const [address, consents, change, decided, deletion, deletionRejected] = await Promise.all([
+    const [address, consents, change, decided, deletion, deletionRejected, grievances] = await Promise.all([
       currentAddress(db, personId),
       consentsOf(db, personId),
       openNumberChange(db, personId),
       lastDecidedChange(db, personId, now),
       openDeletion(db, personId),
       lastRejectedDeletion(db, personId, now),
+      latestGrievances(db, personId, now),
     ]);
     return c.json(
       {
@@ -437,6 +470,7 @@ export function registerClientProfile(app: App): void {
           deletion !== null || deletionRejected === null
             ? null
             : { decided_at: deletionRejected.decidedAt, reason: deletionRejected.reason },
+        grievances: grievances.map(grievanceBody),
       },
       200,
     );

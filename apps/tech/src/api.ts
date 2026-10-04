@@ -14,6 +14,7 @@ import type { components, paths } from "./api-schema.ts";
 import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, SUPERSEDED } from "./routes.ts";
 
 export {
+  ALREADY_CLOSED,
   DEVICE_REVOKED,
   EVENT_KINDS,
   OUT_OF_ORDER,
@@ -33,7 +34,10 @@ export type Me = Schema["TechnicianMe"];
 export type Challenge = Schema["TechnicianChallenge"];
 export type Verified = Schema["TechnicianVerify"];
 export type JobSummary = Schema["TechnicianJob"];
-export type Job = Schema["TechnicianJobDetail"];
+/** A job's card. One an earlier build kept on the phone carries no check-in radius. */
+export type Job = Omit<Schema["TechnicianJobDetail"], "checkin_radius_m"> & {
+  readonly checkin_radius_m: Schema["TechnicianJobDetail"]["checkin_radius_m"] | null;
+};
 export type Progress = Schema["TechnicianJobProgress"];
 /** What the day's list carries of a job's progress: when it began and how it closed. */
 export type JobState = Schema["TechnicianJobState"];

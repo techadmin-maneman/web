@@ -246,6 +246,8 @@ export const api = {
   whoami: () => client.get("/api/whoami"),
   /** Seven days from `from`, or from today, in one city or every one. No name or number is in the query. */
   board: (asked: BoardQuery) => client.get("/api/dispatch", { query: setOnly({ from: asked.from, city: asked.city }) }),
+  /** A number that moves whenever something the board draws changes; one row, where the board is hundreds. */
+  boardVersion: () => client.get("/api/dispatch/version"),
   /** Where a job in hand would land in the week from `from`, by the check a move runs. Writes nothing. */
   room: (appointmentId: string, from: string) =>
     client.get("/api/dispatch/room", { query: { appointment_id: appointmentId, from } }),

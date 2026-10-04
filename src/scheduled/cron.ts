@@ -13,7 +13,7 @@
 // subrequests (src/lib/call-budget.ts). Their calls to D1, R2 and the queues are a separate allowance of 1,000 a run,
 // kept by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
 
-import { BOOKS_ITEM_PUSH } from "../config/environments.ts";
+import { BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
 import { fieldRecord } from "../config/field-record.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
@@ -30,6 +30,7 @@ import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
+import { tellOfNewGrievances } from "../domain/grievances.ts";
 import { anyHeldBooking, retryHeldBookings } from "../domain/held-bookings.ts";
 import { queueCreditReminders } from "../domain/credit-reminders.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
@@ -207,6 +208,10 @@ async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
 }
 
+async function grievanceAlertsJob({ env, deps, config }: CronContext): Promise<void> {
+  await tellOfNewGrievances(env.DB, deps.alert, `${OPS_ORIGIN[config.environment]}/grievances`, deps.now());
+}
+
 /** R2's share and the database fill over months, so an hourly look is enough. */
 async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
   await tellOfStorage(env.DB, deps.alertOnce);
@@ -256,8 +261,9 @@ async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Prom
   if (reminders.length > 0) log.info("credit_reminders_queued", { count: reminders.length });
 }
 
-async function paymentLinksJob({ env, deps, log, budget }: CronContext): Promise<void> {
-  const sent = await sendUnsentLinks(env.DB, { ...deps, log }, deps.now(), budget);
+async function paymentLinksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const linkDeps = { ...deps, log, messagingSettings: config.settings.messaging };
+  const sent = await sendUnsentLinks(env.DB, linkDeps, deps.now(), budget);
   if (sent > 0) log.info("payment_links_sent", { count: sent });
 }
 
@@ -365,6 +371,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
   { name: "requeue_fsm_erasures", needs: "fsm", every: 60, at: 19, run: requeueFsmErasures },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
+  // The grievances raised in the hour, in one message, so one client cannot flood the chat.
+  { name: "grievance_alerts", needs: "nothing", every: 60, at: 24, run: grievanceAlertsJob },
   { name: "housekeeping", needs: "nothing", every: 60, at: 28, run: housekeep },
   // What the client asked for, beside what the board offers them (ADR 0063).
   { name: "asked_windows", needs: "nothing", every: 60, at: 29, run: askedWindowsJob },

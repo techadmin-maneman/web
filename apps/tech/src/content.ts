@@ -5,7 +5,7 @@
 
 import type { Moved } from "@maneman/web-kit/api";
 import { shortDate } from "@maneman/web-kit/dates";
-import type { FitSpec, History } from "./api.ts";
+import type { Angle, FitSpec, History } from "./api.ts";
 import { clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
 
 export const signIn = {
@@ -111,8 +111,8 @@ export const reference = { label: "Ref", copy: "Copy", copied: "Copied" } as con
  */
 export const atRisk = {
   // PLACEHOLDER: neither file draws a phone that will not promise to keep its store.
-  title: "This phone has not promised to keep unsent work",
-  body: "Get to signal today and let the queue empty. A phone left unused for weeks can clear it.",
+  title: "Unsent work could be lost",
+  body: "Get to signal today so everything sends.",
 } as const;
 
 export const queue = {
@@ -173,6 +173,7 @@ export const stopped: Readonly<Record<string, string>> = {
   already_started: "This job was started, so it cannot close as a no-show.",
   photo_rejected: "The photographs would not upload.",
   not_found: "This job is no longer on your list, so what it holds cannot reach us.",
+  already_closed: "This job is closed, so what it holds cannot reach us.",
   piece_code: "The piece's label was not accepted.",
   old_piece: "The label of the piece that came off was not accepted.",
   // PLACEHOLDER: a one visit's product, no longer offered when the step reached us (ADR 0105).
@@ -262,13 +263,14 @@ function opensAt(unlocksAt: string, now: Date = new Date()): string {
 
 export const job = {
   back: "Back",
-  /** "9:30 am · service · 1 slot", and "Tomorrow · …" for a job on another day (board A3). */
+  /** "9:30 am · service · 90 min", and "Tomorrow · …" for a job on another day (board A3). */
   when: (parts: readonly string[]) => parts.join(" · "),
   tomorrow: "Tomorrow",
-  slots: (count: number) => `${String(count)} ${count === 1 ? "slot" : "slots"}`,
+  // PLACEHOLDER: the board writes "1 slot"; the visit's length says more.
+  minutes: (count: number) => `${String(count)} min`,
   navigate: "Navigate",
-  // PLACEHOLDER: the design draws no landmark line; the client app's words (ADR 0054).
-  near: (landmark: string) => `Near ${landmark}`,
+  // PLACEHOLDER: the design draws no landmark; the client types it as they like, so it shows as typed.
+  landmark: "Landmark",
   // PLACEHOLDER: the design draws no client's note; the client leaves one in their app (REQ-04).
   clientNote: (who: string, note: string) => `${who}'s note: ${note}`,
   // PLACEHOLDER: the board draws no way to reach the client from the card.
@@ -294,12 +296,15 @@ export const job = {
     // PLACEHOLDER: the board draws no locked card. The hour is the API's unlocks_at.
     opens: opensAt,
   },
+  // PLACEHOLDER: the board draws the profile's rows inside the piece card; they are a section of their own.
+  profileTitle: "Hair profile",
   piece: {
     title: "The piece",
     // PLACEHOLDER: the board's piece card reads tier, colour, adhesive, template and scalp, which nothing records.
-    // PLACEHOLDER: the board draws no "Hair system" row; on a first fit it is the one the client was sold.
+    // PLACEHOLDER: the board draws no "Paid for" row, nor a warning when the hair profile names another product.
+    mismatch: (inProfile: string) => `The hair profile says ${inProfile}. Check with ops before you fit.`,
     rows: {
-      sold: "Hair system",
+      paidFor: "Paid for",
       piece: "Piece",
       base: "Base",
       lot: "Supplier lot",
@@ -320,7 +325,11 @@ export const job = {
 export const notHome = {
   arrived: {
     step: "1 · Arrived",
-    body: "Tap at the door. We record the time and check you are within 200 m.",
+    // PLACEHOLDER: the board writes 200 m; the radius is ops' to set, and a card kept by an earlier build has none.
+    body: (radiusM: number | null) =>
+      radiusM === null
+        ? "Tap at the door. We record the time and check you are at the address."
+        : `Tap at the door. We record the time and check you are within ${String(radiusM)} m.`,
     action: "I have arrived",
     // PLACEHOLDER: the board draws no check-in before its time.
     opensAt: (time: string) => `Check-in opens at ${time}.`,
@@ -361,7 +370,8 @@ export const notHome = {
     no: "Not yet",
   },
   appears: {
-    title: "He appears",
+    // PLACEHOLDER: the board writes "He appears".
+    title: "Client's here",
     atTheDoor: (who: string) => `${who} is at the door`,
     body: "The timer stops. Nothing is charged.",
   },
@@ -374,13 +384,19 @@ export const capture = {
   retake: "Retake",
   take: "Capture",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
-  // The design writes this line for Top; it stands for each angle until the owner writes the other four.
-  guide: (angle: string) => `${angle} · line up the hairline`,
+  // PLACEHOLDER: the board writes Top's guide alone; the other four wait for the owner's words.
+  guides: {
+    front: "Front · face the camera, eyes level",
+    top: "Top · line up the hairline",
+    left: "Left · ear in the centre",
+    right: "Right · ear in the centre",
+    hair: "Hair · close in, sharp focus",
+  } satisfies Record<Angle, string>,
   // PLACEHOLDER: the board draws neither a refused camera nor the finished set.
   unavailable: "This phone will not open its camera. Check its permissions, then try again.",
   retry: "Try again",
   // PLACEHOLDER: the board draws no capture that failed.
-  missed: "That photograph did not keep. Capture it again.",
+  missed: "That photo did not save. Take it again.",
   done: "All five are on the phone. They go up when there is signal.",
   finish: "Done",
   // PLACEHOLDER: the board draws no set the API refused.
@@ -637,9 +653,9 @@ export const profile = {
     year: "The transplant's year",
     skin: "Skin conditions and allergies",
   },
-  // The piece card's rows from the profile: the board's Tier, Colour, Adhesive and Scalp, and the base's size.
+  // The card's rows from the profile: the board's Tier, as the hair system, Colour, Adhesive and Scalp, and the base's size.
   card: {
-    tier: "Tier",
+    tier: "Hair system",
     baseSize: "Base size",
     colour: "Colour",
     adhesive: "Adhesive",

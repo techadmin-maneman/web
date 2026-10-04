@@ -1111,7 +1111,8 @@ describe("a booking of a client erased since", () => {
     ]);
     const deps = fakeDependencies();
 
-    const sent = await sendUnsentLinks(env.DB, { ...deps, log: createLogger() }, NOW, createCallBudget(10));
+    const linkDeps = { ...deps, log: createLogger(), messagingSettings: LOCAL_CONFIG.settings.messaging };
+    const sent = await sendUnsentLinks(env.DB, linkDeps, NOW, createCallBudget(10));
 
     expect(sent).toBe(0);
     expect((deps.payments as StubPayments).made.links).toEqual([]);
