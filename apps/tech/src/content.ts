@@ -173,6 +173,7 @@ export const stopped: Readonly<Record<string, string>> = {
   already_started: "This job was started, so it cannot close as a no-show.",
   photo_rejected: "The photographs would not upload.",
   not_found: "This job is no longer on your list, so what it holds cannot reach us.",
+  already_closed: "This job is closed, so what it holds cannot reach us.",
   piece_code: "The piece's label was not accepted.",
   old_piece: "The label of the piece that came off was not accepted.",
   // PLACEHOLDER: a one visit's product, no longer offered when the step reached us (ADR 0105).

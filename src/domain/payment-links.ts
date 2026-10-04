@@ -18,10 +18,12 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
+import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
 import { failureReason, type Logger } from "../log.ts";
+import { closedIfSentBy, paymentLinkClosesAt } from "../policy/one-visit.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
@@ -39,6 +41,8 @@ export interface LinkDeps {
   readonly alertOnce: AlertOnce;
   readonly resolveAlert: ResolveAlert;
   readonly log: Logger;
+  /** Whose numbers Razorpay may text the link to. */
+  readonly messagingSettings: MessagingSettings;
 }
 
 /** The visit a link is for: the client Razorpay texts it to, and the product they were fitted with. */
@@ -254,14 +258,19 @@ async function askRazorpay(
     .bind(visit.personId)
     .first<{ name: string; mobile_e164: string }>();
   const product = await serviceOf(db, "first_fit", visit.tier);
+  const contact = client?.mobile_e164 ?? "";
+  const notify = onAllowlist(deps.messagingSettings, contact);
   try {
     const made = await deps.payments.createPaymentLink({
       amount: link.amount,
       reference: referenceOf(link, visit),
       description: `${hairSystemName(product?.name)} · fitted ${shortDate(visit.day)}`,
-      customer: { name: client?.name ?? "", contact: client?.mobile_e164 ?? "" },
+      customer: { name: client?.name ?? "", contact },
       notes: { appointment_id: visit.appointmentId, person_id: visit.personId },
+      closesAt: paymentLinkClosesAt(now),
+      notify,
     });
+    if (!notify) deps.log.info("payment_link_not_texted", { appointment_id: visit.appointmentId });
     await keepLink(db, deps, { link, visit, made }, now);
     return "sent";
   } catch (error) {
@@ -351,6 +360,8 @@ export interface PaidVisit {
   readonly linkId: string | null;
   readonly appointmentId: string;
   readonly personId: string | null;
+  /** The link the close made, by Razorpay's ID for it, and when Razorpay made it; null where none was made. */
+  readonly ownLink: { readonly razorpayLinkId: string; readonly sentAt: string } | null;
 }
 
 /**
@@ -367,13 +378,57 @@ export async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidV
   if (appointmentId === null) return null;
   const visit = await db
     .prepare(
-      `SELECT a.id, a.person_id, l.id AS link_id FROM appointments a
+      `SELECT a.id, a.person_id, l.id AS link_id, l.razorpay_link_id, l.sent_at FROM appointments a
        LEFT JOIN payment_links l ON l.appointment_id = a.id
        WHERE a.id = ?1`,
     )
     .bind(appointmentId)
-    .first<{ id: string; person_id: string | null; link_id: string | null }>();
-  return visit === null ? null : { linkId: visit.link_id, appointmentId: visit.id, personId: visit.person_id };
+    .first<VisitOfLinkRow>();
+  if (visit === null) return null;
+  return { linkId: visit.link_id, appointmentId: visit.id, personId: visit.person_id, ownLink: ownLinkOf(visit) };
+}
+
+interface VisitOfLinkRow {
+  id: string;
+  person_id: string | null;
+  link_id: string | null;
+  razorpay_link_id: string | null;
+  sent_at: string | null;
+}
+
+function ownLinkOf(row: VisitOfLinkRow): PaidVisit["ownLink"] {
+  if (row.razorpay_link_id === null || row.sent_at === null) return null;
+  return { razorpayLinkId: row.razorpay_link_id, sentAt: row.sent_at };
+}
+
+/**
+ * The visit's own link, cancelled once the visit is paid by another, as one ops made by hand, so that it neither
+ * takes a second payment nor reminds the client. One closed by its time is left alone; one Razorpay will not cancel
+ * is left to ops, who check whether the client paid it too. Never throws.
+ */
+export async function cancelLinkPaidElsewhere(
+  deps: Pick<LinkDeps, "payments" | "alertOnce" | "log">,
+  paid: { readonly visit: PaidVisit; readonly razorpayLinkId: string },
+  now: Date,
+): Promise<void> {
+  const { visit } = paid;
+  const own = visit.ownLink;
+  if (own === null || own.razorpayLinkId === paid.razorpayLinkId) return;
+  if (own.sentAt <= closedIfSentBy(now).toISOString()) return;
+  try {
+    await deps.payments.cancelPaymentLink(own.razorpayLinkId);
+    deps.log.info("payment_link_cancelled", { appointment_id: visit.appointmentId });
+  } catch (error) {
+    const reason = failureReason(error);
+    deps.log.warn("payment_link_not_cancelled", { appointment_id: visit.appointmentId, reason });
+    await deps.alertOnce({
+      key: `paid_elsewhere_link:${own.razorpayLinkId}`,
+      message:
+        `Visit ${visit.appointmentId} was paid by another link, and its own payment link ${own.razorpayLinkId} ` +
+        `could not be cancelled: ${reason}. Cancel it in Razorpay's dashboard; if the client paid it too, refund one.`,
+      ...(visit.personId === null ? {} : { link: paymentsTab(visit.personId) }),
+    });
+  }
 }
 
 /**

@@ -25,7 +25,9 @@ import { createStubPayments, type PaymentsProvider, type StubPayments } from "..
 import { ProviderError } from "../../src/providers/provider-error.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import { termsOfVisit } from "../../src/domain/visit-changes.ts";
-import { ONE_VISIT_TERMS } from "../../src/policy/one-visit.ts";
+import type { Settings } from "../../src/config/settings.ts";
+import { ONE_VISIT_TERMS, RULES } from "../../src/policy/one-visit.ts";
+import { RULES as STAGING_RULES } from "../../src/policy/staging-test-records.ts";
 import {
   appFor,
   captureLogs,
@@ -44,6 +46,14 @@ const NATURAL = { tier: "natural", name: "Mane Man Natural", amount: 4_500_000 }
 /** The first reference of NOW's year, which the visit's link takes before any payment. */
 const LINK_REFERENCE = "MM-2026-0001";
 
+/** Fourteen days after NOW, when a link made at NOW stops taking payment. */
+const TWO_WEEKS_ON = new Date("2026-10-05T06:30:00.000Z");
+
+/** Staging's messaging, texting only the handsets named. */
+const allowing = (...handsets: string[]): Partial<Settings> => ({
+  messaging: { ...LOCAL_SETTINGS.messaging, allowlist: handsets },
+});
+
 const path = (step: string) => `/api/tech/jobs/${JOB}/${step}`;
 const A_PIECE = { piece_code: "MM-NAT-4417-A", base: "Lace", supplier_lot: "L-22" };
 
@@ -53,8 +63,11 @@ beforeEach(async () => {
 });
 
 /** Today's job booked from the site as one visit, with a second product beside the standard first fit. */
-async function oneVisit(vendors: { payments?: PaymentsProvider } = {}): Promise<Working> {
-  const job = await working("first_fit", vendors);
+async function oneVisit(
+  vendors: { payments?: PaymentsProvider } = {},
+  settings: Partial<Settings> = {},
+): Promise<Working> {
+  const job = await working("first_fit", vendors, settings);
   await env.DB.batch([
     env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(JOB),
     env.DB.prepare(
@@ -208,11 +221,51 @@ describe("closing a one visit the client was fitted at", () => {
         description: "Mane Man Natural hair system · fitted Mon 21 Sep",
         customer: { name: "Rohit Malhotra", contact: "+919810000001" },
         notes: { appointment_id: JOB, person_id: PERSON },
+        closesAt: TWO_WEEKS_ON,
+        notify: true,
       },
     ]);
     expect(await linkRow()).toMatchObject({ tier: NATURAL.tier, amount: NATURAL.amount, made: 1, paid_at: null });
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json();
     expect(card).toMatchObject({ payment_link: { url: expect.stringMatching(/^https:\/\/rzp\.io\//) as string } });
+  });
+
+  // MON-45, PS-47: a link took payment, and Razorpay kept reminding the client, however long it went unpaid.
+  it(RULES[3], async () => {
+    const job = await oneVisit();
+    await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
+    await closeAsDone(job);
+    const owed = async (at: Date) =>
+      (await outstandingTasks(env.DB, at, TASK_SLA_HOURS)).tasks.find((task) => task.group === "payment_owed")?.detail;
+
+    expect(await owed(new Date(TWO_WEEKS_ON.getTime() - 60_000))).toBe(
+      `sent ${String(NATURAL.amount)} Mane Man Natural`,
+    );
+    expect(await owed(TWO_WEEKS_ON)).toBe(`closed ${String(NATURAL.amount)} Mane Man Natural`);
+  });
+
+  // MON-45, PS-46: on staging a test record's made-up number, very likely a stranger's, was texted "pay Rs. 30,000".
+  it(STAGING_RULES[3], async () => {
+    const logs = captureLogs();
+    const payments = createStubPayments();
+    const job = await oneVisit({ payments }, allowing("+919810000777"));
+    await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
+    await closeAsDone(job);
+
+    expect(payments.made.links).toMatchObject([{ customer: { contact: "+919810000001" }, notify: false }]);
+    // Made all the same, for ops to send from the client's Payments tab.
+    expect(await linkRow()).toMatchObject({ made: 1 });
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "payment_link_not_texted", appointment_id: JOB }),
+    );
+  });
+
+  it("texts the link on staging to a number on the allowlist", async () => {
+    const payments = createStubPayments();
+    const job = await oneVisit({ payments }, allowing("+919810000001"));
+    await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
+    await closeAsDone(job);
+    expect(payments.made.links).toMatchObject([{ notify: true }]);
   });
 
   it("is owed on the Tasks board until it is paid", async () => {
@@ -428,10 +481,10 @@ describe("closing a one visit the client decided against", () => {
 describe("Razorpay's word that a one visit's link is paid", () => {
   const SECRET = "a-razorpay-webhook-secret-for-tests";
 
-  async function deliver(event: object, eventId: string) {
+  async function deliver(event: object, eventId: string, deps = fakeDependencies()) {
     const body = JSON.stringify(event);
     const settings = { razorpay: { keyId: "rzp_test_abc", keySecret: "key-secret", webhookSecret: SECRET } };
-    const app = appFor("local", fakeDependencies(), { ...LOCAL_SETTINGS, ...settings });
+    const app = appFor("local", deps, { ...LOCAL_SETTINGS, ...settings });
     return request(app, "/api/hooks/razorpay", {
       method: "POST",
       body,
@@ -578,6 +631,45 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     await deliver(linkPaid({ id: "plink_by_hand", reference_id: JOB }), "evt-2");
     const payment = await env.DB.prepare("SELECT appointment_id FROM payments").first();
     expect(payment).toEqual({ appointment_id: JOB });
+    expect(await linkRow()).toMatchObject({ paid_at: "2026-09-22T08:57:15.000Z" });
+  });
+
+  // MON-45, PS-47: the visit's own link stayed payable, with Razorpay's reminders, once the visit was paid another way.
+  it("cancels the visit's own link once the client pays one ops made by hand", async () => {
+    const own = await fittedAndClosed(createStubPayments());
+    const payments = createStubPayments();
+    await deliver(linkPaid({ id: "plink_by_hand", reference_id: JOB }), "evt-9", fakeDependencies({ payments }));
+    expect(payments.made.cancelledLinks).toEqual([own]);
+  });
+
+  it("cancels nothing when the client pays the visit's own link", async () => {
+    const own = await fittedAndClosed(createStubPayments());
+    const payments = createStubPayments();
+    await deliver(linkPaid({ id: own, reference_id: LINK_REFERENCE }), "evt-10", fakeDependencies({ payments }));
+    expect(payments.made.cancelledLinks).toEqual([]);
+  });
+
+  it("leaves the visit's own link alone once it has closed by its time", async () => {
+    await fittedAndClosed(createStubPayments());
+    const payments = createStubPayments();
+    const deps = fakeDependencies({ payments, now: () => TWO_WEEKS_ON });
+    await deliver(linkPaid({ id: "plink_by_hand", reference_id: JOB }), "evt-11", deps);
+    expect(payments.made.cancelledLinks).toEqual([]);
+  });
+
+  it("tells ops once when Razorpay will not cancel the visit's own link, and still records the payment", async () => {
+    const own = await fittedAndClosed(createStubPayments());
+    const refusing: PaymentsProvider = {
+      ...createStubPayments(),
+      cancelPaymentLink: () =>
+        Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "Payment link cannot be cancelled")),
+    };
+    const deps = fakeDependencies({ payments: refusing });
+    const answer = await deliver(linkPaid({ id: "plink_by_hand", reference_id: JOB }), "evt-12", deps);
+
+    expect(answer.status).toBe(200);
+    expect(deps.alerts).toHaveLength(1);
+    expect(deps.alerts[0]).toContain(own);
     expect(await linkRow()).toMatchObject({ paid_at: "2026-09-22T08:57:15.000Z" });
   });
 
