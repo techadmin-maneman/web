@@ -50,6 +50,7 @@ import {
   checkAilabCredits,
   deletePhotos,
   expireTryOns,
+  giveUpOnFsmSteps,
   housekeep,
   letKeptLooksGo,
   letUnfinishedMovesGo,
@@ -330,6 +331,15 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
   if (written > 0) log.info("books_synced", done);
 }
 
+/** A technician's steps still waiting for FSM: sent there again on its path, given up on once it is switched off. */
+async function jobEventsJob(context: CronContext): Promise<void> {
+  if (fieldRecord(context.config.providers) === "ours") {
+    await giveUpOnFsmSteps(context);
+    return;
+  }
+  await requeueJobEvents(context);
+}
+
 async function ailabCreditsJob(context: CronContext): Promise<void> {
   await checkAilabCredits(context, context.config.settings.tryon.creditFloor);
 }
@@ -348,7 +358,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   // A one visit's payment link its close could not have Razorpay make (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
   { name: "payment_links", needs: "nothing", every: 5, at: 1, run: paymentLinksJob },
   { name: "requeue_tryons", needs: "nothing", every: 5, at: 2, run: requeueTryons },
-  { name: "requeue_job_events", needs: "nothing", every: 5, at: 2, run: requeueJobEvents },
+  { name: "requeue_job_events", needs: "nothing", every: 5, at: 2, run: jobEventsJob },
   // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md), and
   // one FSM refused five times running, tried every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
   { name: "unbooked_holds", needs: "nothing", every: 5, at: 3, run: unbookedHoldsJob },
