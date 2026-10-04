@@ -38,7 +38,7 @@ jobs:
     name: deploy staging
     needs: checks
     if: ${{ !cancelled() && needs.checks.result == 'success' }}
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 25
     environment:
       name: staging

@@ -50,6 +50,8 @@ GitHub gives a private repository 2,000 minutes of its runners a month. Ten jobs
 
 **GitHub's runners again (2 October 2026).** The repository is public, so GitHub's runners cost nothing and run every job side by side. `CI_RUNNER` is `github`, and the machine's runner is shut down. It must not come back while the repository is public: a fork's pull request would run its own code on the owner's machine.
 
+**The switch gone (4 October 2026).** Each job names `ubuntu-latest` itself, and `CI_RUNNER` chooses nothing: a variable set by mistake could otherwise send a fork's pull request to a machine (the 2 Oct audit, PLAT-93). Bringing the machine back means editing the workflows, on a private repository only (runbook, "The CI runner").
+
 ## Parallel jobs (23 September 2026)
 
 One job ran every check in turn, about thirteen minutes, of which the browser tests were four. A second runner (docs/runbook.md, "The CI runner") means independent checks can run at the same time, so `ci.yml` is six jobs again, grouped so each is worth an install of its own, and a `checks` job that needs them all.

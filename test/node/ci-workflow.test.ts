@@ -1,7 +1,7 @@
 // What CI's own steps must keep to (.github/workflows/ci.yml). A step here that
 // fails on a blip wastes a run; one that never fails checks nothing.
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const CI = readFileSync(".github/workflows/ci.yml", "utf8");
@@ -39,5 +39,17 @@ describe("the registry signatures step", () => {
     expect(filter).toContain(`grep -qE '(^|/)package(-lock)?\\.json$' changed.txt`);
     expect(filter).toMatch(/echo "dependencies=true" >> "\$GITHUB_OUTPUT"/);
     expect(CI).toMatch(/dependencies: \$\{\{ steps\.filter\.outputs\.dependencies \}\}/);
+  });
+});
+
+// The repository is public: a self-hosted runner would run a fork's pull request on the machine it lives on.
+describe("where every workflow runs", () => {
+  it("is GitHub's own runners, named in each job, with no variable that could move it", () => {
+    for (const file of readdirSync(".github/workflows")) {
+      const workflow = readFileSync(`.github/workflows/${file}`, "utf8");
+      const runners = [...workflow.matchAll(/^\s+runs-on:\s*(.+)$/gm)].map((match) => match[1]);
+      expect(runners.length, file).toBeGreaterThan(0);
+      expect(new Set(runners), file).toEqual(new Set(["ubuntu-latest"]));
+    }
   });
 });
