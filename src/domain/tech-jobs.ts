@@ -19,8 +19,9 @@
 // B5). The photograph itself is served on its own, and never cached.
 //
 // A consultation and fit in one visit also carries the products the client may
-// choose at it, by name and never by price, and where the payment link closing
-// it sent stands (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// choose at it, by name and never by price, what they chose once the piece step
+// lands, and where the payment link closing it sent stands
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 // Every unlocked card carries the client's hair profile as it stands, for the
 // piece card and for the profile step to start from
 // (docs/decisions/0106-a-clients-hair-profile.md).
@@ -33,7 +34,7 @@ import { cardStepsFor, type CardStep, type JobEventKind } from "../policy/in-job
 import { jobDay, paymentBadge, unlocked, unlocksAt, type JobDay, type PaymentBadge } from "../policy/job-visibility.ts";
 import { slotsFor } from "../policy/dispatch.ts";
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
-import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
+import { paidAtTheVisit, type Decision, type OneVisitState } from "../policy/one-visit.ts";
 import { earliestCheckIn, type PhoneClock } from "../policy/phone-clock.ts";
 import { namesMoreThanItsKind } from "../policy/services.ts";
 import { unitsFor } from "../policy/visit-length.ts";
@@ -43,6 +44,7 @@ import { codeOnVisit, type VisitCode } from "./discount-code-uses.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
+import { decisionAtVisit } from "./one-visit.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { bookedMinutes } from "./scheduling.ts";
 import { offeredProducts } from "./services.ts";
@@ -163,6 +165,8 @@ export interface JobDetail extends JobSummary {
   readonly payment_link: JobPaymentLink | null;
   /** On a one visit, the discount code already on it; never what it takes off. */
   readonly discount_code: JobCode | null;
+  /** On a one visit, what the client decided as the piece step recorded it; null before that step landed. */
+  readonly client_choice: Decision | null;
   /** The client's hair profile as it stands; null while the job is locked, or before one is recorded. */
   readonly profile: HairProfile | null;
   /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
@@ -337,11 +341,12 @@ export async function jobDetail(
   const oneVisit = row.one_visit !== null;
   const windowStart = new Date(row.window_start);
   const job = { id: row.id, type, windowStart, technicianId: options.technicianId };
-  const [progress, products, paymentLink, discountCode, unlockedParts] = await Promise.all([
+  const [progress, products, paymentLink, discountCode, clientChoice, unlockedParts] = await Promise.all([
     progressOf(db, job, options.waits),
     takesProfile(type, oneVisit) ? productsOn(db, indiaDate(windowStart)) : [],
     oneVisit ? paymentLinkOf(db, row.id) : null,
     oneVisit ? jobCodeOf(db, row.id) : null,
+    oneVisit ? decisionAtVisit(db, row.id) : null,
     unlocked(windowStart, options.now, options.unlockHour) ? unlockedPartsOf(db, row) : null,
   ]);
   const summary = summaryOf(row, options.now, options.unlockHour, schedule, progress);
@@ -359,6 +364,7 @@ export async function jobDetail(
     products,
     payment_link: paymentLink,
     discount_code: discountCode,
+    client_choice: clientChoice,
     profile: null,
     steps: cardStepsFor(type, oneVisit, row.person_id !== null),
   };

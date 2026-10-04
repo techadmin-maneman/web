@@ -1848,6 +1848,8 @@ export interface components {
             steps: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome" | "profile")[];
             /** @description This kind of visit's checklist, as ops set it in the console, in its order. */
             checklist: components["schemas"]["JobSheetItem"][];
+            /** @description On a one visit, the checklist it runs once the client decides against the fit: the consultation's alone. Empty on any other visit. */
+            checklist_if_declined: components["schemas"]["JobSheetItem"][];
             /** @description The reasons a job may be left partly done, as ops set them, in their order. */
             partial_reasons: components["schemas"]["JobSheetItem"][];
             /** @description Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at. */
@@ -1868,6 +1870,14 @@ export interface components {
                  * @enum {string}
                  */
                 given_by: "client" | "technician" | "ops";
+            } | null;
+            /** @description On a one visit, what the client decided as its piece step recorded it: the product they chose, or that they decided against the fit. Null until the piece step lands, and on any other visit. */
+            client_choice: {
+                /** @enum {boolean} */
+                declined: true;
+            } | {
+                /** @description The product's tier, from the card's products. */
+                product: string;
             } | null;
             /** @description The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded. */
             profile: components["schemas"]["HairProfile"] | null;
