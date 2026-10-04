@@ -8,7 +8,8 @@
 //   POST /api/visits/{id}/discount-code/remove      the code taken off the visit again
 //
 // Each change is audited in the batch that makes it, with IDs and codes only (ADR 0031). A code ops enter that does
-// not apply is answered as it is to the client: code_not_applicable. The code's own row in the list says why.
+// not apply is answered as it is to the client, code_not_applicable, save one switched off, code_off, since ops
+// switch codes off themselves. The code's own row in the list says why of the rest.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { PRICE_BOUNDS } from "../config/ops-settings.ts";
@@ -76,8 +77,8 @@ const NewCodesSchema = z
       .optional()
       .openapi({
         description:
-          `A code ops typed, ${String(CODE_LENGTH.min)} to ${String(CODE_LENGTH.max)} letters and digits, none of ` +
-          "I, L, O, 0 or 1; left out, each code is generated.",
+          `A code ops typed, ${String(CODE_LENGTH.min)} to ${String(CODE_LENGTH.max)} letters and digits; left out, ` +
+          "each code is generated, of letters and digits that cannot be read as each other.",
       }),
     count: z
       .number()
@@ -132,7 +133,12 @@ const listRoute = createRoute({
   summary: "The latest discount codes made, each with its uses and what it has taken off",
   request: {
     query: z.object({
-      code: z.string().trim().max(40).optional().openapi({ description: "One code, found by its text, however old." }),
+      code: z
+        .string()
+        .trim()
+        .max(40)
+        .optional()
+        .openapi({ description: "The codes that begin with this text, however old." }),
     }),
   },
   responses: { 200: { description: "The codes", ...json(CodesSchema) }, 403: errorResponse("access_required") },
@@ -186,7 +192,7 @@ const enterRoute = createRoute({
       "already_discounted: the visit carries a code; price_settled: it is paid for, its payment link is made, it is " +
         "invoiced, or it is cancelled",
     ),
-    422: errorResponse("code_not_applicable: the code does not apply to this visit"),
+    422: errorResponse("code_not_applicable: the code does not apply to this visit; code_off: it is switched off"),
   },
 });
 
@@ -267,7 +273,8 @@ export function registerOpsDiscountCodes(app: App): void {
     );
     if (entered.kind === "not_applicable") {
       log.info("discount_code_refused", { appointment_id: id, reason: entered.reason });
-      return c.json(errorBody("code_not_applicable", requestId), 422);
+      const refused = entered.reason === "switched_off" ? "code_off" : "code_not_applicable";
+      return c.json(errorBody(refused, requestId), 422);
     }
     if (entered.kind === "not_found") return c.json(errorBody("not_found", requestId), 404);
     if (entered.kind === "already_discounted") return c.json(errorBody("already_discounted", requestId), 409);

@@ -195,20 +195,26 @@ interface ListedCode {
   readonly given: number;
 }
 
-/** How many codes the list shows: the latest made. One code is found by its text, however old. */
+/** How many codes the list shows: the latest made. Codes are found by how they begin, however old. */
 export const LISTED_MOST = 200;
 
+/** The first text that no longer begins with `prefix`: "SPR" gives "SPS", so a range on the code's index finds them. */
+const pastPrefix = (prefix: string): string =>
+  prefix.slice(0, -1) + String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1);
+
 export async function listCodes(db: D1Database, now: Date, find: string | null): Promise<ListedCode[]> {
+  const typed = find === null ? "" : normalisedCode(find);
+  const prefix = typed === "" ? null : typed;
   const { results } = await db
     .prepare(
       `SELECT ${CODE_COLUMNS},
          (SELECT COUNT(*) FROM discount_code_uses u WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS uses,
          (SELECT COALESCE(SUM(u.amount_off), 0) FROM discount_code_uses u
            WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS given
-       FROM discount_codes c WHERE ?2 IS NULL OR c.code = ?2
+       FROM discount_codes c WHERE ?2 IS NULL OR (c.code >= ?2 AND c.code < ?4)
        ORDER BY c.created_at DESC, c.code LIMIT ?3`,
     )
-    .bind(now.toISOString(), find === null ? null : normalisedCode(find), LISTED_MOST)
+    .bind(now.toISOString(), prefix, LISTED_MOST, prefix === null ? null : pastPrefix(prefix))
     .all<CodeRow & { uses: number; given: number }>();
   return results.map((row) => ({
     id: row.id,

@@ -1050,6 +1050,7 @@ Request body:
             "not_disputable",
             "dispute_window_closed",
             "code_not_applicable",
+            "code_off",
             "already_discounted",
             "price_settled",
             "code_exists",

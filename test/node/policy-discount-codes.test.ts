@@ -89,10 +89,12 @@ describe("discount codes", () => {
   it(RULES[2], () => {
     // Whoever enters it, a code is the same code: matched whatever its case, and with no spaces around it.
     expect(normalisedCode("  wedding25 ")).toBe("WEDDING25");
-    // Its letters and digits are those no one misreads: no I, L, O, 0 or 1.
+    // A generated code's letters and digits are those no one misreads: no I, L, O, 0 or 1.
     expect(CODE_ALPHABET).not.toMatch(/[ILO01]/);
-    expect(isCodeText("WEDDING25")).toBe(false);
-    expect(isCodeText("WEDDNG25")).toBe(true);
+    // One ops type may use any (the owner, 2 Oct 2026): DIWALI, GOLD and WEDDING25 are ordinary words.
+    expect(isCodeText("WEDDING25")).toBe(true);
+    expect(isCodeText("diwali")).toBe(true);
+    expect(isCodeText("GOLD-10")).toBe(false);
     expect(isCodeText("ABC")).toBe(false);
     expect(isCodeText("A".repeat(17))).toBe(false);
   });

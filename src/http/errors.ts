@@ -124,8 +124,9 @@ export const ERROR_CODES = [
   "dispute_window_closed",
   // Discount codes (docs/decisions/0108-discount-codes.md): the code entered does not apply, which is all its enterer
   // is told; the booking carries a code already; the booking's price is settled, so no code goes on or comes off; or
-  // ops typed a code that already exists.
+  // ops typed a code that already exists. Ops alone are told a code is switched off, since they switch them off.
   "code_not_applicable",
+  "code_off",
   "already_discounted",
   "price_settled",
   "code_exists",

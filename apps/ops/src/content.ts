@@ -632,6 +632,7 @@ export const clients = {
       errors: {
         not_permitted: NOT_PERMITTED,
         code_not_applicable: "That code does not apply to this visit.",
+        code_off: "That code is switched off.",
         already_discounted: "This visit has a code already.",
         price_settled: "This visit is paid for or invoiced, so its code stays as it is.",
         not_found: "The code is already off this visit.",
@@ -709,6 +710,7 @@ export const clients = {
         not_bookable: "That day or service cannot be booked.",
         no_product: "No hair system is on sale that day.",
         code_not_applicable: "That code does not apply to this visit.",
+        code_off: "That code is switched off.",
         terms_changed: "Their last credit went on another booking a moment ago. Check, then book again.",
         unavailable: "Razorpay could not make the payment link, so nothing was held. Try again in a minute.",
         not_found: "This client cannot be booked.",
@@ -2330,7 +2332,7 @@ export const settings = {
     typed: "Type one",
     generated: "Generate them",
     code: "Code",
-    codeHint: "4 to 16 letters and figures. Not I, L, O, 0 or 1, which read as each other.",
+    codeHint: "4 to 16 letters and figures.",
     count: "How many",
     countHint: (most: number) => `1 to ${String(most)}. More than one makes each a single-use code.`,
     takesOff: "Takes off",
@@ -2368,11 +2370,12 @@ export const settings = {
     manyGenerated: (count: number) => `${String(count)} codes, generated, each used once`,
     oneGenerated: "One code, generated",
     made: (codes: readonly string[]) => `Made: ${codes.join(", ")}`,
-    find: "Find a code",
+    /** Codes are found by how they begin, so "SPR" finds SPRTEST. */
+    find: "Find codes that begin with",
     findButton: "Find",
     showAll: "Show the latest",
     none: "No code yet.",
-    noneFound: "No code has that text.",
+    noneFound: "No code begins with that.",
     /** How far a code is used: "3 of 10 uses", or "3 uses" with no limit. */
     usesOf: (uses: number, most: number | null) =>
       most === null ? `${String(uses)} ${uses === 1 ? "use" : "uses"}` : `${String(uses)} of ${String(most)} uses`,
@@ -2387,7 +2390,7 @@ export const settings = {
     switching: "Switching off",
     errors: {
       not_permitted: NOT_PERMITTED,
-      code: "A code is 4 to 16 letters and figures, none of them I, L, O, 0 or 1.",
+      code: "A code is 4 to 16 letters and figures, with no spaces or signs.",
       count: "A code you type is made once. Generate them to make more.",
       value: "A percentage is 1 to 100. An amount is whole rupees.",
       cap: "Only a percentage takes a cap, in whole rupees.",
@@ -2423,6 +2426,8 @@ export const settings = {
       return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
     },
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
+    /** A figure typed outside its bounds, said in the hint's place, since it leaves Save with nothing to send. */
+    outOfBounds: (min: string, max: string) => `Enter a whole figure from ${min} to ${max}.`,
     committed: "Nobody has set this, so the standard figure stands.",
     save: "Save",
     saving: "Saving",
@@ -2640,6 +2645,8 @@ export const settings = {
       gstHint: (max: number) => `A whole percentage, 0 to ${String(max)}.`,
       from: "Applies from",
       fromHint: "Tomorrow or later.",
+      /** A day typed before tomorrow, said beside the box before anything is checked. */
+      fromTooSoon: "Choose tomorrow or a later day. A price never changes what is sold today.",
       setPrice: "Set this price",
       renameTitle: (name: string) => `Rename ${name}`,
       name: "Name",

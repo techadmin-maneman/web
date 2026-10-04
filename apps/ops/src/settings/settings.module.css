@@ -243,6 +243,14 @@
   font-size: var(--fs-13);
 }
 
+/* A box's hint turned into what is wrong with what is in it. */
+.fieldError {
+  max-width: var(--measure-form);
+  margin: var(--sp-6) 0 0;
+  font-size: var(--fs-13);
+  color: var(--error-on-paper);
+}
+
 /* What the item and tier chosen cost today: the figure the boxes beneath start from. */
 .formNow {
   margin: var(--sp-12) 0 0;
