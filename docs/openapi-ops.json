@@ -8191,6 +8191,10 @@
           "max_minutes": {
             "type": "integer"
           },
+          "max_description": {
+            "type": "integer",
+            "description": "The most characters a description may have."
+          },
           "max_amount_ex_gst": {
             "type": "integer"
           },
@@ -8205,6 +8209,7 @@
           "late_fees",
           "min_minutes",
           "max_minutes",
+          "max_description",
           "max_amount_ex_gst",
           "max_gst_percent"
         ],
@@ -8228,6 +8233,17 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The line clients read under its name as they choose; null until ops write one."
           },
           "minutes": {
             "type": "integer",
@@ -8282,6 +8298,7 @@
           "kind",
           "tier",
           "name",
+          "description",
           "minutes",
           "sort",
           "retired_date",
@@ -8335,6 +8352,19 @@
         },
         "required": [
           "name"
+        ],
+        "additionalProperties": false
+      },
+      "ServiceDescribe": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        "required": [
+          "description"
         ],
         "additionalProperties": false
       },
@@ -15004,6 +15034,98 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ServiceRename"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Every service as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsServices"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names the box refused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no service of that kind has that code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/services/{kind}/{tier}/description": {
+      "post": {
+        "summary": "The line clients read under a service's name as they choose. An empty one clears it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,31}$"
+            },
+            "required": true,
+            "name": "tier",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceDescribe"
               }
             }
           }

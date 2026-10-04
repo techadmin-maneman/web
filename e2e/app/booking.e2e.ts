@@ -51,6 +51,7 @@ const PREMIUM = {
   type: "service",
   tier: "premium",
   name: "Premium service visit",
+  description: "A deeper clean and a fresh bond.",
   minutes: 120,
   price: { amount_ex_gst: 300000, amount: 354000, gst_percent: 18 },
 };
@@ -611,6 +612,8 @@ test("offers every service of the kind it books, the one offered chosen, with ho
   await expect(kind).toContainText("1 hour 30 minutes");
   await expect(kind).toContainText("Rs. 2,000");
   await expect(kind).toContainText("2 hours");
+  // The line ops wrote for a service sits under its name; one with none shows its name alone.
+  await expect(kind).toContainText("A deeper clean and a fresh bond.");
   // Once GST applies, what is charged leads and its split sits beneath (MON-32).
   await expect(kind).toContainText("Rs. 3,540");
   await expect(kind).toContainText("Rs. 3,000 + Rs. 540 GST");

@@ -441,6 +441,9 @@ export const api = {
   /** Its code stays, and with it every price it has and every visit sold under them. */
   renameService: (kind: Kind, tier: string, name: string) =>
     client.post("/api/services/{kind}/{tier}/name", { path: { kind, tier }, body: { name } }),
+  /** The line clients read under its name as they choose; an empty one clears it. */
+  describeService: (kind: Kind, tier: string, description: string) =>
+    client.post("/api/services/{kind}/{tier}/description", { path: { kind, tier }, body: { description } }),
   /** How long visits booked from now on are held and booked for. */
   setServiceLength: (kind: Kind, tier: string, minutes: number) =>
     client.post("/api/services/{kind}/{tier}/length", { path: { kind, tier }, body: { minutes } }),
