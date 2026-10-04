@@ -853,7 +853,7 @@ test("draws a change's outcome in the serif's one weight, never a made-up bold",
   );
   await logIn(page, fittedClient().mobile);
   await page.getByRole("button", { name: "Reschedule" }).click();
-  const outcome = page.getByRole("dialog").getByRole("heading", { name: /^That did not go through/ });
+  const outcome = page.getByRole("dialog").getByRole("heading", { name: /^That didn’t go through/ });
   await expect(outcome).toBeVisible();
   expect(await outcome.evaluate((heading) => getComputedStyle(heading).fontWeight)).toBe("400");
 });
