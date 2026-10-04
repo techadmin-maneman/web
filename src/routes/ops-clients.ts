@@ -3,7 +3,8 @@
 //   POST /api/clients/search               find a client by their whole mobile number
 //   POST /api/clients/find                 find clients by part of a name or of a number
 //   GET  /api/clients/:id                  who they are, their address, their visits, their payments, their history,
-//                                          the invite they came with, and any booking FSM refused, held for ops
+//                                          the invite they came with, any booking FSM refused, held for ops, and
+//                                          any booking that refunded its payment by itself
 //   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
 //   POST /api/clients/:id/photos/view      open them: one audit entry, and who opened them before
 //   GET  /api/clients/:id/photos/:photoId  one photograph, served within a logged opening
@@ -35,6 +36,7 @@ import {
   ownPhotoKey,
   visitOutcomes,
 } from "../domain/client-visits.ts";
+import { AUTO_REFUND_REASONS, autoRefundsOf, type AutoRefund } from "../domain/auto-refunds.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { clientVisitCodes } from "../domain/discount-code-uses.ts";
 import { heldBookingsOf, type HeldBooking } from "../domain/held-bookings.ts";
@@ -224,6 +226,35 @@ const heldBookingOf = (booking: HeldBooking) => ({
       : { code: booking.discountCode.code, amount_off: booking.discountCode.amountOff },
 });
 
+/** A booking that refunded its payment by itself, as the client's Visits tab says it, and the client was told. */
+const AutoRefundSchema = z
+  .object({
+    hold_id: z.uuid(),
+    type: z.enum(VISIT_TYPES),
+    service: z.string().openapi({ description: "Its service's name as it is now." }),
+    date: z.iso.date().openapi({ description: "India's day the visit was to be on." }),
+    amount: z.union([z.number().int(), z.null()]).openapi({
+      description:
+        "In paise, GST included: what Razorpay took, all of which went back; null where it is not on record.",
+    }),
+    reason: z.enum(AUTO_REFUND_REASONS).openapi({
+      description: "lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun.",
+    }),
+    refunded_at: z.iso.datetime(),
+  })
+  .strict()
+  .openapi("AutoRefund");
+
+const autoRefundOf = (refund: AutoRefund) => ({
+  hold_id: refund.holdId,
+  type: refund.type,
+  service: refund.serviceName,
+  date: refund.date,
+  amount: refund.amount,
+  reason: refund.reason,
+  refunded_at: refund.refundedAt,
+});
+
 const ClientRecordSchema = z
   .object({
     id: z.uuid(),
@@ -247,6 +278,9 @@ const ClientRecordSchema = z
     held_bookings: z
       .array(HeldBookingSchema)
       .openapi({ description: "Bookings FSM refused, waiting for a try or for ops; the soonest visit first." }),
+    auto_refunds: z
+      .array(AutoRefundSchema)
+      .openapi({ description: "Bookings that refunded their payment by themselves; the latest refund first." }),
   })
   .strict()
   .openapi("ClientRecord");
@@ -550,7 +584,7 @@ export function registerOpsClients(app: App): void {
 
     const now = c.var.deps.now();
     const retry = (await opsInputs(c)).fsmRetry;
-    const [address, credits, visits, fitted, payments, history, proposal, invite, held] = await Promise.all([
+    const [address, credits, visits, fitted, payments, history, proposal, invite, held, refunded] = await Promise.all([
       currentAddress(db, id),
       creditBalance(db, id, now),
       listVisits(db, id, now),
@@ -561,6 +595,7 @@ export function registerOpsClients(app: App): void {
       latestProposal(db, id),
       clientInviteOf(db, id),
       heldBookingsOf(db, id, now, retry),
+      autoRefundsOf(db, id),
     ]);
     const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
     const [outcomes, closings, codes] = await Promise.all([
@@ -592,6 +627,7 @@ export function registerOpsClients(app: App): void {
         history,
         invite,
         held_bookings: held.map(heldBookingOf),
+        auto_refunds: refunded.map(autoRefundOf),
       },
       200,
     );

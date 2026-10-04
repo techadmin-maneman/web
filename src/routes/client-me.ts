@@ -95,6 +95,11 @@ export const MeSchema = z
             window: z.enum(BOOKING_WINDOWS),
             paid: z.boolean().openapi({ description: "Paid for in money, rather than free or covered by a credit." }),
             one_visit: z.boolean().openapi({ description: "A consultation and fit in one visit." }),
+            told: z.boolean().openapi({
+              description:
+                "Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes " +
+                "whatever their consent, else only with their consent to WhatsApp about visits.",
+            }),
           })
           .strict(),
         z.null(),

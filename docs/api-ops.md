@@ -4729,6 +4729,13 @@ Request body:
         "$ref": "#/components/schemas/HeldBooking"
       },
       "description": "Bookings FSM refused, waiting for a try or for ops; the soonest visit first."
+    },
+    "auto_refunds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/AutoRefund"
+      },
+      "description": "Bookings that refunded their payment by themselves; the latest refund first."
     }
   },
   "required": [
@@ -4743,7 +4750,8 @@ Request body:
     "payments",
     "history",
     "invite",
-    "held_bookings"
+    "held_bookings",
+    "auto_refunds"
   ],
   "additionalProperties": false
 }
@@ -6091,6 +6099,71 @@ Request body:
     "retries_end",
     "retrying",
     "discount_code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AutoRefund
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "service": {
+      "type": "string",
+      "description": "Its service's name as it is now."
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's day the visit was to be on."
+    },
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, GST included: what Razorpay took, all of which went back; null where it is not on record."
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "lapsed",
+        "not_movable"
+      ],
+      "description": "lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun."
+    },
+    "refunded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "hold_id",
+    "type",
+    "service",
+    "date",
+    "amount",
+    "reason",
+    "refunded_at"
   ],
   "additionalProperties": false
 }

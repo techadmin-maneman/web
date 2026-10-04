@@ -119,6 +119,7 @@ export const RECORD = {
     attached: null,
   },
   held_bookings: [],
+  auto_refunds: [],
 } satisfies ClientRecord;
 
 /**

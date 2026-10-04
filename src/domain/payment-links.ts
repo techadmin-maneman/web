@@ -13,13 +13,14 @@
 // reference of the link they then make by hand. Until it is paid, the Tasks board lists it (src/domain/tasks.ts).
 //
 // Paid, Razorpay's webhook says so (src/routes/razorpay-hook.ts): the payment is the visit's, as a payment made
-// ahead is, and follows the same path to Books (src/domain/books-sync.ts). A link ops made by hand finds the visit
-// by its reference, the visit's ID.
+// ahead is, and follows the same path to Books (src/domain/books-sync.ts), and the client gets our receipt on
+// WhatsApp. A link ops made by hand finds the visit by its reference, the visit's ID.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { firstNameOf } from "../lib/names.ts";
 import { failureReason, type Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { isRefusal } from "../providers/provider-error.ts";
@@ -28,7 +29,7 @@ import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
 import { referenceLink } from "./payments.ts";
 import { priceOf } from "./price-book.ts";
 import { serviceOf } from "./services.ts";
-import { visitMessage } from "./visit-messages.ts";
+import { visitMessage, type Composed } from "./visit-messages.ts";
 
 /** What asking for the link came to; "free" when a discount code left nothing to pay, so no link was asked for. */
 export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free";
@@ -375,7 +376,8 @@ export async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidV
 
 /**
  * The link paid, by the payment Razorpay names, once: a second word of the same payment changes nothing. The payment
- * takes the link's split before GST, as a payment made ahead takes its hold's, where the amounts agree.
+ * takes the link's split before GST, as a payment made ahead takes its hold's, where the amounts agree. The client's
+ * receipt is queued in the same batch, once, and the sweeper sends it within minutes.
  */
 export async function markLinkPaid(
   db: D1Database,
@@ -398,5 +400,40 @@ export async function markLinkPaid(
          WHERE razorpay_payment_id = ?2 AND amount = (SELECT amount FROM payment_links WHERE id = ?1)`,
       )
       .bind(linkId, payment.razorpayPaymentId),
+    linkReceipt(db, linkId, now),
   ]);
+}
+
+/** The client's receipt for the link's visit, written unless one already is. */
+function linkReceipt(db: D1Database, linkId: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+       SELECT ?2, ?3, a.person_id, 'link_paid', 'appointment', a.id, 'queued', ?3
+       FROM payment_links l JOIN appointments a ON a.id = l.appointment_id
+       WHERE l.id = ?1 AND a.person_id IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM outbound_messages m WHERE m.subject_id = a.id AND m.kind = 'link_paid')`,
+    )
+    .bind(linkId, crypto.randomUUID(), now.toISOString());
+}
+
+/** What the client's receipt for a link paid says: what they paid for their hair system, and its reference. */
+export async function composeLinkPaid(db: D1Database, appointmentId: string, personId: string): Promise<Composed> {
+  const paid = await db
+    .prepare(
+      `SELECT pay.amount, pay.reference, l.tier, p.name FROM payment_links l
+       JOIN payments pay ON pay.razorpay_payment_id = l.razorpay_payment_id
+       JOIN people p ON p.id = pay.person_id
+       WHERE l.appointment_id = ?1 AND pay.person_id = ?2 AND pay.status = 'captured'`,
+    )
+    .bind(appointmentId, personId)
+    .first<{ amount: number; reference: string | null; tier: string; name: string }>();
+  if (paid === null) return { skip: "no captured payment for the link" };
+  if (paid.reference === null) return { skip: "the payment has no reference yet" };
+  const product = await serviceOf(db, "first_fit", paid.tier);
+  const hairSystem = product === null ? "hair system" : hairSystemName(product.name);
+  return {
+    template: "link_paid_v1",
+    params: [firstNameOf(paid.name), hairSystem, "", "", "", rupees(paid.amount), paid.reference],
+  };
 }
