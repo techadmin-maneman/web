@@ -526,7 +526,9 @@ describe("CRON_JOBS", () => {
     for (let run = 0; run < 3; run += 1) {
       await runCronJobs(meter, { env, deps, config: LOCAL_CONFIG, log: createLogger() });
     }
-    expect(deps.alerts).toEqual([expect.stringContaining("2.10 GB in R2, half of their 4 GB share")]);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("Photos and referral cards use 2.10 GB, half of their 4 GB of free storage"),
+    ]);
   });
 
   // PLAT-16 of the audit, 2 October 2026: nothing read the database's size before D1's limit stopped every write.
