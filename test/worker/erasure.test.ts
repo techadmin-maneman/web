@@ -310,6 +310,81 @@ describe("a client erased with a deletion request open", () => {
   });
 });
 
+// PS-18 and OIA-18 of the audit, 2 October 2026: an erased client's open grievance stayed in Grievances for good, with
+// an answer box for nobody, and the alerts about them kept linking to their page.
+describe("what an erasure leaves open for ops", () => {
+  const EARLIER = "2026-09-01T06:00:00.000Z";
+
+  it("closes their open grievance under whoever erased them, and blanks the answer to one closed before", async () => {
+    const personId = await book();
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO grievances (id, person_id, text, state, created_at) VALUES ('g-open', ?1, 'Please call first.', 'open', ?2)",
+      ).bind(personId, EARLIER),
+      env.DB.prepare(
+        `INSERT INTO grievances (id, person_id, text, state, response, resolved_by, resolved_at, created_at)
+         VALUES ('g-answered', ?1, 'Stop the calls.', 'resolved', 'We have stopped them.', 'priya@maneman.in', ?2, ?2)`,
+      ).bind(personId, EARLIER),
+    ]);
+
+    expect(await statusOf(personId)).toBe(200);
+
+    const { results } = await env.DB.prepare(
+      "SELECT id, text, state, response, resolved_by, resolved_at FROM grievances ORDER BY id",
+    ).all();
+    expect(results).toEqual([
+      {
+        id: "g-answered",
+        text: "Erased",
+        state: "resolved",
+        response: null,
+        resolved_by: "priya@maneman.in",
+        resolved_at: EARLIER,
+      },
+      {
+        id: "g-open",
+        text: "Erased",
+        state: "resolved",
+        response: "Client erased",
+        resolved_by: STAFF,
+        resolved_at: NOW.toISOString(),
+      },
+    ]);
+  });
+
+  it("resolves the alerts that link to their page, but those about money on their Payments tab", async () => {
+    const personId = await book();
+    const other = crypto.randomUUID();
+    const alerts: [key: string, link: string | null][] = [
+      ["booking_held:hold-1", `/clients/${personId}/visits`],
+      ["crm_contact_update", `/clients/${personId}`],
+      ["hair_profile_from_older:v1", `/clients/${personId}/pieces`],
+      ["books_refund_refused:refund-1", `/clients/${personId}/payments`],
+      ["someone_else", `/clients/${other}`],
+      ["someone_else_like_them", `/clients/${personId}0`],
+      ["no_link", null],
+    ];
+    await env.DB.batch(
+      alerts.map(([key, link]) =>
+        env.DB.prepare(
+          `INSERT INTO alerts (id, key, message, link, count, first_seen_at, last_seen_at)
+           VALUES (?1, ?2, 'An alert.', ?3, 1, ?4, ?4)`,
+        ).bind(crypto.randomUUID(), key, link, EARLIER),
+      ),
+    );
+
+    expect(await statusOf(personId)).toBe(200);
+
+    const { results } = await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL ORDER BY key").all();
+    expect(results.map((row) => row.key)).toEqual([
+      "books_refund_refused:refund-1",
+      "no_link",
+      "someone_else",
+      "someone_else_like_them",
+    ]);
+  });
+});
+
 describe("erasePerson", () => {
   it("deletes a result a running render stored after the jobs were read", async () => {
     const personId = await book();

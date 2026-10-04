@@ -16,9 +16,10 @@
 // Each route keeps to the caller's cities: a client elsewhere is not found.
 //
 // The records are the ones the client reads of themselves, through the same
-// domain functions, so the two surfaces cannot drift apart. An erased person is
-// "not found" here: their photographs, address and details are gone (ADR 0049),
-// and what is kept of them is a record for the deletion queue, not a page to read.
+// domain functions, so the two surfaces cannot drift apart. Of an erased person,
+// the record answers only what is kept: when they were erased, their visits and
+// their money. Every other route here does not find them: their photographs,
+// address and details are gone (ADR 0049).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
@@ -264,6 +265,20 @@ const ClientInvoiceSchema = z
   .strict()
   .openapi("ClientInvoice");
 
+const RecordVisitsSchema = z
+  .object({ upcoming: z.array(ClientVisitSchema), past: z.array(ClientVisitSchema) })
+  .strict()
+  .openapi({ description: "Upcoming soonest first; past newest first." });
+
+/** What the client's money is on the record, kept as it is once they are erased. */
+const RECORD_MONEY = {
+  payments: z.array(EntrySchema).openapi({ description: "Payments and refunds as one list, newest first." }),
+  payment_links: z.array(ClientPaymentLinkSchema).openapi({ description: "Every payment link, newest first." }),
+  invoices: z
+    .array(ClientInvoiceSchema)
+    .openapi({ description: "Each finished visit sold for a price, with its invoice; the latest visit first." }),
+};
+
 const ClientRecordSchema = z
   .object({
     id: z.uuid(),
@@ -275,15 +290,8 @@ const ClientRecordSchema = z
     credits: z
       .union([z.object({ visits: z.number().int(), earliest_expiry: z.iso.datetime().nullable() }).strict(), z.null()])
       .openapi({ description: "Service visits left and when the soonest expires; null with none left." }),
-    visits: z
-      .object({ upcoming: z.array(ClientVisitSchema), past: z.array(ClientVisitSchema) })
-      .strict()
-      .openapi({ description: "Upcoming soonest first; past newest first." }),
-    payments: z.array(EntrySchema).openapi({ description: "Payments and refunds as one list, newest first." }),
-    payment_links: z.array(ClientPaymentLinkSchema).openapi({ description: "Every payment link, newest first." }),
-    invoices: z
-      .array(ClientInvoiceSchema)
-      .openapi({ description: "Each finished visit sold for a price, with its invoice; the latest visit first." }),
+    visits: RecordVisitsSchema,
+    ...RECORD_MONEY,
     history: OpsHistorySchema,
     invite: z
       .union([ClientInviteSchema, z.null()])
@@ -294,6 +302,21 @@ const ClientRecordSchema = z
   })
   .strict()
   .openapi("ClientRecord");
+
+const ErasedClientRecordSchema = z
+  .object({
+    id: z.uuid(),
+    erased_at: z.iso.datetime(),
+    visits: RecordVisitsSchema.openapi({
+      description:
+        "Upcoming soonest first; past newest first. No discount code may be entered or taken off: price_open is false.",
+    }),
+    ...RECORD_MONEY,
+  })
+  .strict()
+  .openapi("ErasedClientRecord", {
+    description: "What is kept of a client once erased: their visits and money, as records. Nothing names them.",
+  });
 
 const PhotoSchema = z
   .object({
@@ -436,9 +459,13 @@ const recordRoute = createRoute({
   method: "get",
   path: "/api/clients/{id}",
   summary:
-    "The client's record: who they are, their address, their visits, their money, their history and their invite",
+    "The client's record: who they are, their address, their visits, their money, their history and their invite; " +
+    "of an erased client, when they were erased, their visits and their money",
   request: { params: clientId },
-  responses: { 200: { description: "The record", ...json(ClientRecordSchema) }, 404: unknownClient },
+  responses: {
+    200: { description: "The record", ...json(z.union([ClientRecordSchema, ErasedClientRecordSchema])) },
+    404: errorResponse("not_found: no such client, or the client is outside the caller's cities"),
+  },
 });
 
 const photosRoute = createRoute({
@@ -522,15 +549,62 @@ interface PersonRow {
   created_at: string;
 }
 
-/** The client by ID; null when there is no such person, they were erased, or they are outside the caller's cities. */
-export async function clientInReach(c: Context<AppEnv>, id: string): Promise<PersonRow | null> {
-  const person = await c.env.DB.prepare(
-    "SELECT id, name, mobile_e164, created_at FROM people WHERE id = ?1 AND erased_at IS NULL",
-  )
+/** The client by ID, erased or not; null when there is no such person or they are outside the caller's cities. */
+async function anyClientInReach(
+  c: Context<AppEnv>,
+  id: string,
+): Promise<(PersonRow & { erased_at: string | null }) | null> {
+  const person = await c.env.DB.prepare("SELECT id, name, mobile_e164, created_at, erased_at FROM people WHERE id = ?1")
     .bind(id)
-    .first<PersonRow>();
+    .first<PersonRow & { erased_at: string | null }>();
   if (person === null || !(await withinRouteReach(c, "client", id))) return null;
   return person;
+}
+
+/** The client by ID; null when there is no such person, they were erased, or they are outside the caller's cities. */
+export async function clientInReach(c: Context<AppEnv>, id: string): Promise<PersonRow | null> {
+  const person = await anyClientInReach(c, id);
+  return person?.erased_at === null ? person : null;
+}
+
+/** The client's visits, each with how it closed, any closing of its task by hand, and its discount code. */
+async function recordVisits(db: D1Database, personId: string, now: Date) {
+  const visits = await listVisits(db, personId, now);
+  const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
+  const [outcomes, closings, codes] = await Promise.all([
+    visitOutcomes(db, visitIds),
+    partialVisitsClosed(db, visitIds),
+    clientVisitCodes(db, personId),
+  ]);
+  const withOutcome = (list: typeof visits.upcoming) =>
+    list.map((visit) => ({
+      ...visit,
+      outcome: outcomes.get(visit.id) ?? null,
+      closed_without_follow_up: closings.get(visit.id) ?? null,
+      discount_code: codes.get(visit.id)?.code ?? null,
+      price_open: codes.get(visit.id)?.open ?? false,
+      requested_code: codes.get(visit.id)?.requested ?? null,
+    }));
+  return { upcoming: withOutcome(visits.upcoming), past: withOutcome(visits.past) };
+}
+
+/** What is kept of an erased client: their visits, none of them open to a discount code any more, and their money. */
+async function erasedRecord(db: D1Database, personId: string, erasedAt: string, now: Date) {
+  const [visits, payments, links, invoices] = await Promise.all([
+    recordVisits(db, personId, now),
+    paymentEntries(db, personId, now),
+    paymentLinksOf(db, personId),
+    visitInvoicesOf(db, personId),
+  ]);
+  const closed = (list: typeof visits.upcoming) => list.map((visit) => ({ ...visit, price_open: false }));
+  return {
+    id: personId,
+    erased_at: erasedAt,
+    visits: { upcoming: closed(visits.upcoming), past: closed(visits.past) },
+    payments,
+    payment_links: links,
+    invoices,
+  };
 }
 
 interface PhotoListRow {
@@ -589,16 +663,17 @@ export function registerOpsClients(app: App): void {
   app.openapi(recordRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    const person = await clientInReach(c, id);
+    const person = await anyClientInReach(c, id);
     if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-
     const now = c.var.deps.now();
+    if (person.erased_at !== null) return c.json(await erasedRecord(db, id, person.erased_at, now), 200);
+
     const retry = (await opsInputs(c)).fsmRetry;
     const [address, credits, visits, fitted, payments, links, invoices, history, proposal, invite, held] =
       await Promise.all([
         currentAddress(db, id),
         creditBalance(db, id, now),
-        listVisits(db, id, now),
+        recordVisits(db, id, now),
         isFitted(db, id),
         paymentEntries(db, id, now),
         paymentLinksOf(db, id),
@@ -609,21 +684,6 @@ export function registerOpsClients(app: App): void {
         clientInviteOf(db, id),
         heldBookingsOf(db, id, now, retry),
       ]);
-    const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
-    const [outcomes, closings, codes] = await Promise.all([
-      visitOutcomes(db, visitIds),
-      partialVisitsClosed(db, visitIds),
-      clientVisitCodes(db, id),
-    ]);
-    const withOutcome = (list: typeof visits.upcoming) =>
-      list.map((visit) => ({
-        ...visit,
-        outcome: outcomes.get(visit.id) ?? null,
-        closed_without_follow_up: closings.get(visit.id) ?? null,
-        discount_code: codes.get(visit.id)?.code ?? null,
-        price_open: codes.get(visit.id)?.open ?? false,
-        requested_code: codes.get(visit.id)?.requested ?? null,
-      }));
 
     return c.json(
       {
@@ -634,7 +694,7 @@ export function registerOpsClients(app: App): void {
         known_since: person.created_at,
         address: address === null ? null : clientAddressOf(address),
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
-        visits: { upcoming: withOutcome(visits.upcoming), past: withOutcome(visits.past) },
+        visits,
         payments,
         payment_links: links,
         invoices,

@@ -133,6 +133,21 @@ describe("a queue's deadline", () => {
     for (const [id, due] of inTheQueues) expect(due, id).toBe(onTheBoard.get(id));
   });
 
+  // OIA-18 of the audit, 2 October 2026: an erased client's grievance stayed in Grievances, shown under "erased:<id>",
+  // while the Tasks board counted one fewer.
+  it("lists nothing of a client erased with it still open, in any section, as the Tasks board lists nothing", async () => {
+    await env.DB.prepare(
+      "UPDATE people SET erased_at = ?2, name = 'Erased', mobile_e164 = 'erased:' || id WHERE id = ?1",
+    )
+      .bind(ROHIT, "2026-09-20T06:00:00.000Z")
+      .run();
+
+    const inTheQueues = await queuesDue();
+    expect([...inTheQueues.keys()].sort()).toEqual([CASE, ERASURE, HELD].sort());
+    expect([...(await tasksDue()).keys()]).not.toContain(GRIEVANCE);
+    expect([...(await tasksDue()).keys()]).not.toContain(CHANGE);
+  });
+
   it("counts a number change from when both codes were in, as the Tasks board does", async () => {
     expect((await queuesDue()).get(CHANGE)).toBe("2026-09-22T05:10:00.000Z");
   });

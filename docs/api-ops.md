@@ -151,17 +151,24 @@ Request body:
 
 ### GET /api/clients/{id}
 
-The client's record: who they are, their address, their visits, their money, their history and their invite
+The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits and their money
 
 **200**: The record
 
 ```json
 {
-  "$ref": "#/components/schemas/ClientRecord"
+  "anyOf": [
+    {
+      "$ref": "#/components/schemas/ClientRecord"
+    },
+    {
+      "$ref": "#/components/schemas/ErasedClientRecord"
+    }
+  ]
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
+**404**: not_found: no such client, or the client is outside the caller's cities
 
 ```json
 {
@@ -1352,7 +1359,7 @@ Request body:
 
 ### GET /api/grievances
 
-Open grievances in the caller's cities, oldest first
+Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's
 
 **200**: Open grievances
 
@@ -6300,6 +6307,92 @@ Request body:
     "discount_code"
   ],
   "additionalProperties": false
+}
+```
+
+### ErasedClientRecord
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "erased_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "visits": {
+      "type": "object",
+      "properties": {
+        "upcoming": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ClientVisit"
+          }
+        },
+        "past": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ClientVisit"
+          }
+        }
+      },
+      "required": [
+        "upcoming",
+        "past"
+      ],
+      "additionalProperties": false,
+      "description": "Upcoming soonest first; past newest first. No discount code may be entered or taken off: price_open is false."
+    },
+    "payments": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PaymentEntry"
+          },
+          {
+            "$ref": "#/components/schemas/RefundEntry"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "payment": "#/components/schemas/PaymentEntry",
+            "refund": "#/components/schemas/RefundEntry"
+          }
+        }
+      },
+      "description": "Payments and refunds as one list, newest first."
+    },
+    "payment_links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientPaymentLink"
+      },
+      "description": "Every payment link, newest first."
+    },
+    "invoices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientInvoice"
+      },
+      "description": "Each finished visit sold for a price, with its invoice; the latest visit first."
+    }
+  },
+  "required": [
+    "id",
+    "erased_at",
+    "visits",
+    "payments",
+    "payment_links",
+    "invoices"
+  ],
+  "additionalProperties": false,
+  "description": "What is kept of a client once erased: their visits and money, as records. Nothing names them."
 }
 ```
 

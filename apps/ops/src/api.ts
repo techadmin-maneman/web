@@ -23,7 +23,11 @@ export type Launch = Body<paths["/api/pincodes/{pin}/launch"]["post"]>;
 export type Decision = Body<paths["/api/referrals/{id}/decision"]["post"]>;
 
 export type ClientsFound = Body<paths["/api/clients/find"]["post"]>;
-export type ClientRecord = Body<paths["/api/clients/{id}"]["get"]>;
+/** A client's page: their record, or what is kept of them once erased. */
+type ClientPage = Body<paths["/api/clients/{id}"]["get"]>;
+export type ClientRecord = components["schemas"]["ClientRecord"];
+export type ErasedClientRecord = components["schemas"]["ErasedClientRecord"];
+export const isErased = (page: ClientPage): page is ErasedClientRecord => "erased_at" in page;
 export type ClientVisit = ClientRecord["visits"]["past"][number];
 export type ClientPayment = ClientRecord["payments"][number];
 export type ClientPaymentLink = ClientRecord["payment_links"][number];
