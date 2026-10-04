@@ -123,6 +123,29 @@ describe("the label the technician scans", () => {
     });
     expect(unknown.status).toBe(404);
   });
+
+  // FLD-18: the lookup said whose a piece was for any job, a stranger's included.
+  it("says whose it is only for a job of the technician's own", async () => {
+    await fittedPieceStatement(env.DB, FITTED).run();
+    await env.DB.prepare(
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t-other', 't-other', 'Sameer Bhatt', 'SB', 1, ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await env.DB.prepare("UPDATE appointments SET technician_id = 't-other' WHERE id = ?1").bind(JOB).run();
+    const cookie = `mm_tech=${await openTechnicianSession(env.DB, {
+      technicianId: IMRAN,
+      deviceId: "phone-abc-123",
+      label: null,
+      now: NOW,
+    })}`;
+
+    const answer = await request(tech, `/api/tech/pieces/lookup?code=MM-STD-4417-B&job=${JOB}`, {
+      headers: { Cookie: cookie },
+    });
+
+    expect(await answer.json()).toMatchObject({ belongs_to_this_job: false });
+  });
 });
 
 describe("GET /api/clients/:id/pieces", () => {

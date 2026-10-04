@@ -383,3 +383,26 @@ describe("the card", () => {
     expect(d1TripsOf(answer)).toBeLessThanOrEqual(CARD_TRIPS);
   });
 });
+
+// FLD-18, PS-09: cards never locked again, and the list served any date, so a lost phone could read every client the
+// technician had ever visited.
+describe("a job gone by", () => {
+  it("is read on yesterday's list, and no list before it is", async () => {
+    await insertJob(LAST_VISIT, { start: "2026-09-20T05:30:00.000Z", status: "completed" });
+    const yesterday = await get("/api/tech/jobs?date=2026-09-20");
+    expect(yesterday.status).toBe(200);
+    expect((await yesterday.json<{ jobs: { day: string }[] }>()).jobs.map((job) => job.day)).toEqual(["past"]);
+
+    const before = await get("/api/tech/jobs?date=2026-09-19");
+    expect(before.status).toBe(400);
+    expect(await before.json()).toMatchObject({ error: { code: "invalid_request", fields: ["date"] } });
+  });
+
+  it("keeps its client's door and number for a day after the visit, then locks again", async () => {
+    await insertJob(LAST_VISIT, { start: "2026-09-20T05:30:00.000Z", status: "completed" });
+    await insertJob(OLDER_VISIT, { start: "2026-09-19T05:30:00.000Z", status: "completed" });
+
+    expect(await card(LAST_VISIT)).toMatchObject({ unlocked: true, client: { name: expect.any(String) } });
+    expect(await card(OLDER_VISIT)).toMatchObject({ unlocked: false, address: null, client: null });
+  });
+});

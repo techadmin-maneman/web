@@ -476,6 +476,7 @@
           "day": {
             "type": "string",
             "enum": [
+              "past",
               "today",
               "tomorrow",
               "later"
@@ -698,6 +699,7 @@
           "day": {
             "type": "string",
             "enum": [
+              "past",
               "today",
               "tomorrow",
               "later"
@@ -2818,6 +2820,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TechnicianJobs"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a date before yesterday or after tomorrow",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

@@ -193,6 +193,14 @@ The technician's jobs on a date. Today and tomorrow in full; later dates only ti
 }
 ```
 
+**400**: invalid_request: a date before yesterday or after tomorrow
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **401**: session_required; device_revoked
 
 ```json
@@ -1458,6 +1466,7 @@ Request body:
     "day": {
       "type": "string",
       "enum": [
+        "past",
         "today",
         "tomorrow",
         "later"
@@ -1695,6 +1704,7 @@ Request body:
     "day": {
       "type": "string",
       "enum": [
+        "past",
         "today",
         "tomorrow",
         "later"
