@@ -207,6 +207,8 @@ export interface NoShowNote {
   readonly dispute: DisputeState | null;
   /** Whether the client may dispute the charge now: one that took something, not disputed yet. */
   readonly disputable: boolean;
+  /** When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed. */
+  readonly dispute_closed_at: string | null;
 }
 
 /**
@@ -230,7 +232,10 @@ interface NoteRow {
   dispute_until: string | null;
 }
 
-function chargeTaken(row: NoteRow): NoShowNote["charge"] {
+/** What a charge took, read with CHARGE_TAKEN. */
+export type ChargeColumns = Pick<NoteRow, "decision" | "charge" | "kept_amount" | "credit_spent">;
+
+export function chargeTaken(row: ChargeColumns): NoShowNote["charge"] {
   if (row.decision !== "charged" || row.charge === null || row.kept_amount === null) return null;
   return { kept: row.kept_amount, credit_spent: row.credit_spent === 1 };
 }
@@ -240,19 +245,24 @@ function disputeOf(row: NoteRow): DisputeState | null {
   return row.dispute_ruling ?? "open";
 }
 
+/** Whether the client could ever dispute the charge: one that took something, and that they have not disputed. */
+function couldDispute(charge: NoShowNote["charge"], dispute: DisputeState | null): boolean {
+  if (charge === null || dispute !== null) return false;
+  return isDisputable({ kept: charge.kept, creditSpent: charge.credit_spent });
+}
+
 function noteOf(row: NoteRow, now: Date): NoShowNote {
   const charge = chargeTaken(row);
   const dispute = disputeOf(row);
+  const open = withinDisputeWindow(row.dispute_until, now);
+  const disputeClosed = couldDispute(charge, dispute) && !open;
   return {
     decision: row.decision,
     waited_minutes: minutesBetween(row.wait_started_at, row.ended_at),
     charge,
     dispute,
-    disputable:
-      charge !== null &&
-      dispute === null &&
-      isDisputable({ kept: charge.kept, creditSpent: charge.credit_spent }) &&
-      withinDisputeWindow(row.dispute_until, now),
+    disputable: couldDispute(charge, dispute) && open,
+    dispute_closed_at: disputeClosed ? row.dispute_until : null,
   };
 }
 
@@ -374,6 +384,42 @@ async function chargeOf(db: D1Database, visit: OpenCase, inForce: TermsInputs): 
   };
 }
 
+/** The case's visit while the case is still undecided; null once it is ruled on, or for no such case. */
+async function undecidedCase(db: D1Database, caseId: string): Promise<OpenCase | null> {
+  return db
+    .prepare(
+      `SELECT n.appointment_id, p.id AS person_id, a.type, a.window_start,
+         EXISTS (SELECT 1 FROM credit_ledger r WHERE r.kind = 'redeem' AND r.source_id = n.appointment_id)
+           AS paid_with_credit
+       FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
+       LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
+       WHERE n.id = ?1 AND n.decision = 'undecided'`,
+    )
+    .bind(caseId)
+    .first<OpenCase>();
+}
+
+/** What charging an undecided case would do, for ops to read before they charge. */
+export interface ChargePreview {
+  /** In paise: what was paid for the visit, and what the charge keeps of it. The rest is refunded. */
+  readonly paid: number;
+  readonly kept: number;
+  /** Whether the charge keeps the credit the visit was paid with. */
+  readonly credit_kept: boolean;
+}
+
+/** What charging the case would keep and give back, worked out as charging it does; null once it is ruled on. */
+export async function chargePreview(db: D1Database, caseId: string, terms: TermsInputs): Promise<ChargePreview | null> {
+  const open = await undecidedCase(db, caseId);
+  if (open === null) return null;
+  const charged = await chargeOf(db, open, terms);
+  return {
+    paid: charged.kept + charged.refund,
+    kept: charged.kept,
+    credit_kept: open.paid_with_credit === 1 && !charged.creditBack,
+  };
+}
+
 /** What a waiver gives back, as ops set it: the payment, all of it, and the credit. */
 async function waiverOf(db: D1Database, appointmentId: string, waiver: Waiver) {
   const refund = waiver.payment === "refunded" ? ((await visitPayment(db, appointmentId))?.paid ?? 0) : 0;
@@ -404,17 +450,7 @@ export async function decideNoShow(
     disputeWindowDays?: number;
   },
 ): Promise<Ruled | null> {
-  const open = await db
-    .prepare(
-      `SELECT n.appointment_id, p.id AS person_id, a.type, a.window_start,
-         EXISTS (SELECT 1 FROM credit_ledger r WHERE r.kind = 'redeem' AND r.source_id = n.appointment_id)
-           AS paid_with_credit
-       FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
-       LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
-       WHERE n.id = ?1 AND n.decision = 'undecided'`,
-    )
-    .bind(input.caseId)
-    .first<OpenCase>();
+  const open = await undecidedCase(db, input.caseId);
   if (open === null) return null;
   const at = input.now.toISOString();
   const ruled: RulingClaim = { table: "no_show_cases", id: input.caseId, rulingId: crypto.randomUUID() };

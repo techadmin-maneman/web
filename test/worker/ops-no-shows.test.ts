@@ -512,6 +512,7 @@ describe("what charging a no-show costs the client", () => {
   }
 
   const recorded = () => env.DB.prepare("SELECT charge, kept_amount, refund_amount FROM no_show_cases").first();
+  const preview = () => request(ops, `/api/no-shows/${CASE}/charge`);
   const restores = async () =>
     (await env.DB.prepare("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'restore'").first<{ n: number }>())?.n;
 
@@ -535,6 +536,27 @@ describe("what charging a no-show costs the client", () => {
     // Rs. 3,000 and 5% GST, the price book's before 22 September.
     expect(payments.made.refunds).toEqual([expect.objectContaining({ amount: 1260000 })]);
     expect(await recorded()).toEqual({ charge: "late_fee", kept_amount: 315000, refund_amount: 1260000 });
+  });
+
+  // The charge was once asked about as "Charge Rohit Malhotra for the visit of Sat 19 Sep?", with no figure (MON-17).
+  it("says before a charge what it will keep and refund, as the charge then does", async () => {
+    await as("first_fit");
+    await paid(3000000);
+    await soldWith("late_fee", 400000);
+    expect(await (await preview()).json()).toEqual({ paid: 3000000, kept: 400000, credit_kept: false });
+
+    await charge();
+    expect(await recorded()).toEqual({ charge: "late_fee", kept_amount: 400000, refund_amount: 2600000 });
+    // Ruled on, there is nothing left to ask about.
+    expect((await preview()).status).toBe(404);
+  });
+
+  it("says before a charge whether it keeps the credit the visit was paid with", async () => {
+    await onCredit();
+    expect(await (await preview()).json()).toEqual({ paid: 0, kept: 0, credit_kept: true });
+    // Sold to cost nothing if missed, so the credit goes back.
+    await soldWith("nothing");
+    expect(await (await preview()).json()).toEqual({ paid: 0, kept: 0, credit_kept: false });
   });
 
   it("keeps a paid service visit whole", async () => {
@@ -736,5 +758,42 @@ describe("what charging a no-show costs the client", () => {
       expect(messages).toBe(1);
       expect(audited).toEqual([{ detail: JSON.stringify({ decision: stands }) }]);
     });
+  });
+});
+
+// After a charge the page once still said "Nothing was charged today", and the case was gone (MON-17).
+describe("GET /api/no-shows/decided", () => {
+  const decided = async () => (await (await request(ops, "/api/no-shows/decided")).json<{ cases: unknown[] }>()).cases;
+
+  it("lists the cases ruled on today, with the ruling and what a charge kept", async () => {
+    expect(await decided()).toEqual([]);
+    await env.DB.prepare(
+      `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,
+         status, captured_at, created_at, updated_at)
+       VALUES ('payment-1', 'MM-2026-0841', ?1, ?2, 'pay_visit', 200000, 'INR', 'upi', 'captured', ?3, ?3, ?3)`,
+    )
+      .bind(PERSON, VISIT, NOW.toISOString())
+      .run();
+    expect((await rule({ decision: "charged", reason: "Nobody came to the door" })).status).toBe(200);
+
+    expect(await decided()).toEqual([
+      {
+        id: CASE,
+        person: { id: PERSON, name: "Rohit Malhotra" },
+        visit_date: "2026-09-19",
+        decision: "charged",
+        decided_at: NOW.toISOString(),
+        charge: { kept: 200000, credit_spent: false },
+      },
+    ]);
+  });
+
+  it("says a waiver kept nothing, and leaves out a case ruled before today", async () => {
+    expect((await rule({ decision: "waived", reason: "He was stuck in the lift" })).status).toBe(200);
+    expect(await decided()).toMatchObject([{ id: CASE, decision: "waived", charge: null }]);
+
+    // Ruled at 11:59 pm last night in India.
+    await env.DB.prepare("UPDATE no_show_cases SET decided_at = '2026-09-20T18:29:00.000Z'").run();
+    expect(await decided()).toEqual([]);
   });
 });

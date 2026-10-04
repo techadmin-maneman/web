@@ -38,7 +38,7 @@ const DisputeSchema = z
       .openapi({ description: "Why the client says the charge is wrong, in their words; null once erased." }),
     raised_at: z.iso.datetime(),
     due: z.iso.datetime().openapi({
-      description: "When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at.",
+      description: "When ops should have ruled: the Tasks board's allowance for a disputed charge, from raised_at.",
     }),
     kept: z.number().int().openapi({ description: "In paise: what the charge kept of the visit's payment." }),
     credit_spent: z.boolean().openapi({ description: "Whether the charge spent the credit the visit used." }),
@@ -89,7 +89,7 @@ const rulingRoute = createRoute({
 export function registerOpsDisputes(app: App): void {
   app.openapi(disputesRoute, async (c) => {
     const [disputes, inputs] = await Promise.all([openDisputes(c.env.DB, LIMIT), opsInputs(c)]);
-    const due = (raisedAt: string) => dueAt(new Date(raisedAt), "no_show_decision", inputs.taskSlaHours).toISOString();
+    const due = (raisedAt: string) => dueAt(new Date(raisedAt), "no_show_dispute", inputs.taskSlaHours).toISOString();
     return c.json({ disputes: disputes.map((each) => ({ ...each, due: due(each.raised_at) })) }, 200);
   });
 

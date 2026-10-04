@@ -349,6 +349,8 @@ export const visits = {
       kept: (amount: string) => `Charged: we kept ${amount} of what you paid.`,
       creditSpent: "Charged: the free service visit it used is spent.",
       dispute: "Dispute this charge",
+      /** PLACEHOLDER: where the button stood, once the days to dispute have passed. */
+      disputeClosed: (day: string) => `The days to dispute this charge ended on ${day}.`,
       disputed: {
         open: "You disputed this charge. We are looking at it.",
         refunded: "We looked at your dispute and refunded the charge.",
