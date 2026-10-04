@@ -136,7 +136,7 @@ test("an address can still be typed when the search gives nothing", async ({ pag
   // The stub answers this query with a 503, as a spent quota or an outage would.
   const search = page.getByRole("combobox", { name: "Search for your building" });
   await search.fill("mm-stub:down");
-  await expect(page.getByText("Search is unavailable just now. Type your address below instead.")).toBeVisible();
+  await expect(page.getByText("Search isn’t available right now. Type your address below instead.")).toBeVisible();
   await expect(page.getByRole("option")).toHaveCount(0);
 
   // Whatever is in the box stands as words: no suggestion was chosen, so no pin.
@@ -263,7 +263,7 @@ test("lists the five consents off, and switches one on with its date and off aga
     await expect(page.getByRole("switch", { name })).toHaveAttribute("aria-checked", "false");
   }
   // Visit messages off, the client is told what that means; and that visits are photographed all the same.
-  const visitsOff = page.getByText("No visit updates on WhatsApp. We will call you about any change.");
+  const visitsOff = page.getByText("No visit updates on WhatsApp. We’ll call you about any change.");
   await expect(visitsOff).toBeVisible();
   await expect(page.getByText("Each visit is still photographed for your visit record.")).toBeVisible();
 
@@ -316,7 +316,7 @@ test("changes the number: a code to each, then it waits for us", async ({ page }
   await page.getByLabel(/^Code sent to \+91 /).fill(CODE);
   await page.getByRole("button", { name: "Check the codes" }).click();
   await expect(
-    page.getByText(/^We will confirm the change to \+91 \d{2}xxx x\d{4} with you, then it takes effect\.$/),
+    page.getByText(/^We’ll confirm the change to \+91 \d{2}xxx x\d{4} with you, then it takes effect\.$/),
   ).toBeVisible();
 
   // Until we decide it, the client can take it back, and start afresh.
@@ -332,9 +332,7 @@ test("a consent that did not go through says so, and the switch stays as it was"
   await page.route("**/api/consents/*", (route) => route.fulfill({ status: 503, json: { error: { code: "busy" } } }));
   const visits = page.getByRole("switch", { name: "WhatsApp about your visits" });
   await visits.click();
-  await expect(page.getByRole("alert")).toHaveText(
-    "That did not go through, so nothing has changed. Please try again.",
-  );
+  await expect(page.getByRole("alert")).toHaveText("That didn’t go through, so nothing has changed. Try again.");
   await expect(visits).toHaveAttribute("aria-checked", "false");
 });
 
@@ -345,9 +343,7 @@ test("a deletion request that did not go through says so, and asks again", async
   );
   await page.getByRole("button", { name: "Request deletion" }).click();
   await page.getByRole("button", { name: "Yes, request deletion" }).click();
-  await expect(page.getByRole("alert")).toHaveText(
-    "That did not go through, so nothing has been requested. Please try again.",
-  );
+  await expect(page.getByRole("alert")).toHaveText("That didn’t go through, so nothing was requested. Try again.");
   await expect(page.getByRole("button", { name: "Yes, request deletion" })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Deletion requested" })).toHaveCount(0);
 });
@@ -374,7 +370,7 @@ test("starts one number change, and checks the codes once, however often each is
   const checkLive = await check.isEnabled();
   await check.click({ force: true });
   // Both numbers checked: a second pair, tapped the same second, was let go with the first (e2e/app/one-tap.ts).
-  await expect(page.getByText(/^We will confirm the change to /)).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/^We’ll confirm the change to /)).toBeVisible({ timeout: 15_000 });
 
   expect({ starts: starts.asked(), checks: checks.asked(), startLive, checkLive }).toEqual({
     starts: 1,
@@ -506,7 +502,7 @@ test("asks before requesting deletion, then says it is requested", async ({ page
   await page.getByRole("button", { name: "Request deletion" }).click();
   await page.getByRole("button", { name: "Yes, request deletion" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Deletion requested" })).toHaveText(
-    /^Deletion requested on \d{1,2} [A-Z][a-z]{2} \d{4}\. We will confirm on WhatsApp\.$/,
+    /^Deletion requested on \d{1,2} [A-Z][a-z]{2} \d{4}\. We’ll confirm on WhatsApp\.$/,
   );
 });
 
@@ -529,7 +525,7 @@ test("says when ops kept the account, and why, and still lets the client ask aga
     });
   });
   await page.getByRole("link", { name: "Your profile" }).click();
-  await expect(page.getByText("On 2 Oct 2026 we did not delete your account.")).toBeVisible();
+  await expect(page.getByText("On 2 Oct 2026 we didn’t delete your account.")).toBeVisible();
   await expect(page.getByText("Our reason: You still have a consultation booked")).toBeVisible();
   await expect(page.getByText("Message us if you disagree, or ask again.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Request deletion" })).toBeVisible();
@@ -537,7 +533,7 @@ test("says when ops kept the account, and why, and still lets the client ask aga
 
 test("logs out from the foot of the profile", async ({ page }) => {
   await loggedIn(page);
-  await page.getByRole("button", { name: "Log out" }).click();
+  await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 });
 

@@ -140,7 +140,7 @@ test("says when the link could not be shared, and tries again", async ({ page })
     };
   });
   await page.getByRole("button", { name: "Copy link" }).click();
-  await expect(page.getByRole("alert")).toContainText("The link did not generate. Nothing was sent.");
+  await expect(page.getByRole("alert")).toContainText("The link didn’t generate. Nothing was sent.");
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByRole("button", { name: "Link copied" })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
@@ -251,7 +251,7 @@ test("says when the phone refused the card's share, and nothing when the client 
   await whatsapp.click();
   const failed = preview.getByRole("alert");
   await expect(failed).toContainText("Share failed");
-  await expect(failed).toContainText("The link did not generate. Nothing was sent.");
+  await expect(failed).toContainText("The link didn’t generate. Nothing was sent.");
   await preview.getByRole("button", { name: "Try again" }).click();
   await expect(preview.getByRole("alert")).toHaveCount(0);
   await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(HOUSE_CARD.byteLength)]);
@@ -271,9 +271,7 @@ test("offers their own card only once the first fit's photographs are in", async
   await toRefer(page);
   await page.getByRole("button", { name: "Share an invite" }).click();
   const sheet = page.getByRole("dialog", { name: "Which card?" });
-  await expect(
-    sheet.getByText("Your own before and after appears once your first-fit photographs are in."),
-  ).toBeVisible();
+  await expect(sheet.getByText("Your own before and after appears once your first-fit photos are in.")).toBeVisible();
   await expect(sheet.getByRole("radio")).toHaveCount(1);
   await expect(sheet.getByRole("radio", { name: /A Mane Man example/ })).toBeChecked();
   await scan(page);
@@ -313,7 +311,7 @@ test("asks for the consent before choosing their own card, and records none when
   await toRefer(page);
   await page.getByRole("button", { name: "Share an invite" }).click();
   await page.getByRole("radio", { name: /My before and after/ }).click();
-  await expect(page.getByRole("heading", { name: "Before you send your own photographs" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Before you send your own photos" })).toBeVisible();
   await expect(page.getByText("Your first name appears on your invite.")).toBeVisible();
 
   const consents = await holdOpen(page, "**/api/consents/*");
@@ -329,7 +327,7 @@ test("asks for the consent before choosing their own card, and records none when
   building.resolve(undefined);
 
   await expect(page.getByRole("heading", { name: "Preview · what your friend sees" })).toBeVisible();
-  await expect(page.getByRole("alert")).toHaveText("We could not make your card. The house example is used instead.");
+  await expect(page.getByRole("alert")).toHaveText("We couldn’t make your card, so we’ve used our example instead.");
   expect({ consents: consents.asked(), builds }).toEqual({ consents: 0, builds: 1 });
 });
 

@@ -30,7 +30,7 @@ describe("the texts file", () => {
     const found = placeholderTexts(copyFiles(process.cwd()));
     const ended = found.find((item) => item.note.includes("the design draws no session that ended"));
     expect(ended?.id).toMatch(/^apps\/app\/src\/content\.ts:\d+$/);
-    expect(ended?.source).toContain("Your session has ended");
+    expect(ended?.source).toContain("You’ve been signed out");
   });
 
   it("leaves the consent notices out of what may be edited", () => {

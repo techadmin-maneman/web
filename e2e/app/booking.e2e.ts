@@ -42,7 +42,7 @@ const LATE_FEE_LINE = "Moving inside 24 hours costs Rs. 4,720 (Rs. 4,000 + Rs. 7
 /** The pay step's promise for a visit ahead of its notice, and for one already inside it, whose payment is kept. */
 const FREE_UNTIL = /^Free to move or cancel until .+\. After that it is charged\.$/;
 const INSIDE_NOTICE =
-  /^This visit is less than 24 hours away: if you move or cancel it, the Rs\. [\d,]+ paid is not refunded\.$/;
+  /^This visit is less than 24 hours away: if you move or cancel it, the Rs\. [\d,]+ paid isn’t refunded\.$/;
 
 type Hold = Record<string, unknown>;
 
@@ -287,7 +287,7 @@ async function bookedWithoutPaying(page: Page, hold: () => Hold): Promise<void> 
 /** Every hold the page lets go of. */
 /** Waits until the hold's count has moved on a second, which is time passing with the sheet still up. */
 async function ticked(sheet: Locator): Promise<void> {
-  const count = sheet.getByText(/^Slot held \d:\d\d more\.$/);
+  const count = sheet.getByText(/^Held for \d:\d\d more\.$/);
   const shown = (await count.textContent()) ?? "";
   await expect(count).not.toHaveText(shown);
 }
@@ -308,7 +308,7 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await profileAs(page, { reminders: true });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(pay.getByText(/^Slot held \d:\d\d$/)).toBeVisible();
+  await expect(pay.getByText(/^Held for \d:\d\d$/)).toBeVisible();
   await expect(pay.getByText("Rs. 2,000", { exact: true })).toBeVisible();
   // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it (MON-19).
   await expect(pay.getByText(/GST/)).toHaveCount(0);
@@ -417,7 +417,7 @@ test("takes a discount code off the price at the pay step, says only that a wron
   await pay.getByRole("button", { name: "Have a discount code?" }).click();
   await pay.getByLabel("Discount code").fill("wrong1");
   await pay.getByRole("button", { name: "Apply" }).click();
-  await expect(pay.getByRole("alert")).toHaveText("That code does not apply to this visit.");
+  await expect(pay.getByRole("alert")).toHaveText("That code doesn’t apply to this visit.");
 
   applies = true;
   await pay.getByLabel("Discount code").fill("weddng25");
@@ -488,7 +488,7 @@ test("asks a client with no address for it first, then books", async ({ page }) 
   await expect(dates.getByText("Step 2 of 4")).toBeVisible();
   await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
   await dates.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("dialog", { name: "Pick a window" }).getByText("Step 3 of 4")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Pick a time" }).getByText("Step 3 of 4")).toBeVisible();
   await continueToPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
@@ -507,12 +507,12 @@ test("goes back to the address, saying why, when the API holds no slot for want 
       : route.fallback(),
   );
   await toWindows(page);
-  const windows = page.getByRole("dialog", { name: "Pick a window" });
+  const windows = page.getByRole("dialog", { name: "Pick a time" });
   await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
   await windows.getByRole("button", { name: "Continue to payment" }).click();
   const where = page.getByRole("dialog", { name: "Where we come" });
   await expect(where.getByRole("alert")).toHaveText(
-    "We need your address before we can hold a slot. Add it, then pick your window again.",
+    "We need your address before we can hold a time. Add it, then pick a time again.",
   );
   await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
 });
@@ -526,7 +526,7 @@ test("offers no day at an address we do not come to, but the address to change a
   await openSheet(page);
   const where = page.getByRole("dialog", { name: "Where we come" });
   await expect(where.getByRole("alert")).toHaveText(
-    "We do not come to 122018 yet. Change the address below, or join the waitlist and we will message you the day we do.",
+    "We don’t come to 122018 yet. Change the address below, or join the waitlist and we’ll message you the day we do.",
     { timeout: 30_000 },
   );
   await expect(where.getByLabel("Pincode")).toHaveValue("122018");
@@ -713,7 +713,7 @@ test("says a visit sold inside its notice is charged to change from now, never f
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(
     pay.getByText(
-      "This visit is less than 24 hours away: if you move or cancel it, the Rs. 2,000 paid is not refunded.",
+      "This visit is less than 24 hours away: if you move or cancel it, the Rs. 2,000 paid isn’t refunded.",
     ),
   ).toBeVisible();
   await expect(pay.getByText(/Free to move/)).toHaveCount(0);
@@ -745,7 +745,7 @@ test("says a free service visit is not returned for a visit it covers that is so
   const confirm = page.getByRole("dialog", { name: "Confirm", exact: true });
   await expect(
     confirm.getByText(
-      "This visit is less than 24 hours away: if you move or cancel it, the free service visit is not returned.",
+      "This visit is less than 24 hours away: if you move or cancel it, the free service visit isn’t returned.",
     ),
   ).toBeVisible();
   await expect(confirm.getByText(/the free service visit is gone/)).toHaveCount(0);
@@ -767,7 +767,7 @@ test("marks the days and windows inside the notice, which are still sold", async
   await expect(dates.getByText("Within 24 hours: changes are charged")).toBeVisible();
   await marked.click();
   await dates.getByRole("button", { name: "Continue" }).click();
-  const windows = page.getByRole("dialog", { name: "Pick a window" });
+  const windows = page.getByRole("dialog", { name: "Pick a time" });
   await expect(windows.getByRole("radio").first()).toBeVisible();
   const open = await windows.getByRole("radio").count();
   await expect(windows.getByText("Within 24 hours: changes are charged")).toHaveCount(open);
@@ -784,7 +784,7 @@ test("takes a visit that costs nothing to Confirm, never to a payment", async ({
   }));
   await holdAs(page, { type: "consultation", price: free, late_change_charge: "nothing" });
   await toWindows(page);
-  const windows = page.getByRole("dialog", { name: "Pick a window" });
+  const windows = page.getByRole("dialog", { name: "Pick a time" });
   await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
   await expect(windows.getByRole("button", { name: "Continue to payment" })).toHaveCount(0);
   await windows.getByRole("button", { name: "Continue", exact: true }).click();
@@ -853,7 +853,7 @@ test("draws a change's outcome in the serif's one weight, never a made-up bold",
   );
   await logIn(page, fittedClient().mobile);
   await page.getByRole("button", { name: "Reschedule" }).click();
-  const outcome = page.getByRole("dialog").getByRole("heading", { name: /^That did not go through/ });
+  const outcome = page.getByRole("dialog").getByRole("heading", { name: /^That didn’t go through/ });
   await expect(outcome).toBeVisible();
   expect(await outcome.evaluate((heading) => getComputedStyle(heading).fontWeight)).toBe("400");
 });
@@ -862,10 +862,10 @@ test("says so when the payment fails, with the hold counting outside the alert",
   await fakeCheckout(page, "failed");
   await toPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
-  const sheet = page.getByRole("dialog", { name: "The payment did not go through." });
+  const sheet = page.getByRole("dialog", { name: "The payment didn’t go through." });
   const alert = sheet.getByRole("alert");
-  await expect(alert).toContainText("The payment did not go through.");
-  await expect(sheet.getByText(/^Slot held \d:\d\d more\.$/)).toBeVisible();
+  await expect(alert).toContainText("The payment didn’t go through.");
+  await expect(sheet.getByText(/^Held for \d:\d\d more\.$/)).toBeVisible();
   await expect(sheet.getByRole("button", { name: "Try again" })).toBeVisible();
   // A screen reader reads an alert again whenever it changes: the ticking count is kept out of it.
   const said = await alert.textContent();
@@ -887,7 +887,7 @@ test("keeps the sheet, and the hold, when Checkout fails the moment it opens", a
   await toPayment(page);
   const released = releases(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
-  const failed = page.getByRole("dialog").getByText("The payment did not go through.");
+  const failed = page.getByRole("dialog").getByText("The payment didn’t go through.");
   await expect(failed).toBeVisible();
   await ticked(page.getByRole("dialog"));
   await expect(failed).toBeVisible();
@@ -913,7 +913,7 @@ test("says the payment failed when Checkout never loads, and keeps the sheet up 
   await ordered;
   await expect(pay).toBeVisible();
   await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeDisabled();
-  const failed = page.getByRole("dialog", { name: "The payment did not go through." });
+  const failed = page.getByRole("dialog", { name: "The payment didn’t go through." });
   // Checkout is given up on twenty seconds after it was last asked for. On a busy machine the pay step's own ask can
   // lapse before the tap, which asks again only once the order is in, after a single jump of the clock (1 October
   // 2026): so the clock moves on until the sheet has given up.
@@ -921,14 +921,14 @@ test("says the payment failed when Checkout never loads, and keeps the sheet up 
     await page.clock.fastForward("00:20");
     await expect(failed).toBeVisible({ timeout: 1_000 });
   }).toPass({ timeout: 15_000 });
-  await expect(failed.getByText(/^Slot held \d:\d\d more\.$/)).toBeVisible();
+  await expect(failed.getByText(/^Held for \d:\d\d more\.$/)).toBeVisible();
 });
 
 test("starts one payment, and one order, when the failed step is tapped twice", async ({ page }) => {
   await fakeCheckout(page, "failed");
   await toPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
-  const failed = page.getByRole("dialog", { name: "The payment did not go through." });
+  const failed = page.getByRole("dialog", { name: "The payment didn’t go through." });
   await expect(failed).toBeVisible();
 
   // Every order the API hands back, so two of them would be two ways to pay for one hold.
@@ -987,7 +987,7 @@ test("picks another window when one has just gone, and pays for that one", async
     return route.fulfill({ status: 409, json: { error: { code: "taken", request_id: "e2e" } } });
   });
   await toWindows(page);
-  const windows = page.getByRole("dialog", { name: "Pick a window" });
+  const windows = page.getByRole("dialog", { name: "Pick a time" });
   await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
   await windows.getByRole("button", { name: "Continue to payment" }).click();
   await expect(windows.getByRole("alert")).toHaveText(TAKEN);
@@ -1018,7 +1018,7 @@ test("shows one Close, its own, when a paid visit could not be booked", async ({
   await toPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   const refunded = page.getByRole("dialog", {
-    name: "We could not book that visit, so your payment is being refunded in full.",
+    name: "We couldn’t book that visit, so we’re refunding your payment in full.",
   });
   await expect(refunded).toBeVisible();
   await expect(refunded.getByRole("button", { name: "Close" })).toHaveCount(1);
@@ -1035,7 +1035,7 @@ test("lets a lapsed hold go the moment the phone sees it lapse, and picks again"
     { timeout: 5_000 },
   );
   await page.clock.fastForward("11:00");
-  const expired = page.getByRole("dialog", { name: "That slot has gone back." });
+  const expired = page.getByRole("dialog", { name: "That time has been released." });
   await expect(expired).toBeVisible();
   await released;
   await expired.getByRole("button", { name: "Pick again" }).click();
@@ -1100,7 +1100,7 @@ test("says the slot has gone back, and lets the API let it go, when Checkout clo
   await checkoutOpened(page);
   await page.clock.fastForward("11:00");
   await closedCheckout(page);
-  await expect(page.getByRole("dialog", { name: "That slot has gone back." })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "That time has been released." })).toBeVisible();
   expect(released).toEqual([]);
 });
 
@@ -1110,7 +1110,7 @@ test("counts the hold on the API's clock, however far out the phone's is", async
   await page.clock.install({ time: Date.now() + 11 * 60_000 });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(pay.getByText(/^Slot held (10:00|9:[45]\d)$/)).toBeVisible();
+  await expect(pay.getByText(/^Held for (10:00|9:[45]\d)$/)).toBeVisible();
   await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeEnabled();
 });
 
@@ -1122,7 +1122,7 @@ test("says, once, when a minute of the hold is left", async ({ page }) => {
   const told = pay.getByRole("status").filter({ hasText: "One minute left" });
   await expect(told).toHaveCount(0);
   await page.clock.fastForward("09:05");
-  await expect(told).toHaveText("One minute left to pay. Then the slot goes back.");
+  await expect(told).toHaveText("One minute left to pay. Then the time is released.");
 });
 
 test("takes focus to each step's heading as the sheet moves on", async ({ page }) => {
@@ -1131,7 +1131,7 @@ test("takes focus to each step's heading as the sheet moves on", async ({ page }
   const sheet = page.getByRole("dialog");
   await sheet.getByRole("radio").and(page.locator(":enabled")).first().click();
   await sheet.getByRole("button", { name: "Continue" }).click();
-  await expect(sheet.getByRole("heading", { name: "Pick a window" })).toBeFocused();
+  await expect(sheet.getByRole("heading", { name: "Pick a time" })).toBeFocused();
   await continueToPayment(page);
   await expect(sheet.getByRole("heading", { name: "Pay and confirm" })).toBeFocused();
 });
@@ -1216,11 +1216,11 @@ test("the payment's outcomes meet WCAG 2.2 AA: failed, the slot gone back, and c
   await page.clock.install();
   await toPayment(page);
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
-  await expect(page.getByRole("dialog", { name: "The payment did not go through." })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "The payment didn’t go through." })).toBeVisible();
   await scanOf(page);
 
   await page.clock.fastForward("11:00");
-  await expect(page.getByRole("dialog", { name: "That slot has gone back." })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "That time has been released." })).toBeVisible();
   await scanOf(page);
 });
 
@@ -1249,7 +1249,7 @@ test.describe("with motion, as most phones have it", () => {
 
     await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
     await page.getByRole("button", { name: "Continue" }).click();
-    const windows = page.getByRole("dialog", { name: "Pick a window" });
+    const windows = page.getByRole("dialog", { name: "Pick a time" });
     await expect(windows).toBeVisible();
     await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
     await scanOf(page);
@@ -1265,7 +1265,7 @@ test("each booking step meets WCAG 2.2 AA", async ({ page }) => {
   await scan();
   await page.getByRole("dialog").getByRole("radio").and(page.locator(":enabled")).first().click();
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("dialog", { name: "Pick a window" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Pick a time" })).toBeVisible();
   await scan();
   await page.getByRole("dialog").getByRole("radio").and(page.locator(":enabled")).first().click();
   await page.getByRole("button", { name: "Continue to payment" }).click();

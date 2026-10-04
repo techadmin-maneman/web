@@ -10,14 +10,14 @@ import type { Page } from "@playwright/test";
 import { expect } from "../support.ts";
 
 /** Board C3's words when the window went while the client was choosing. */
-export const TAKEN = "That window has just gone. Pick another.";
+export const TAKEN = "That time has just gone. Pick another.";
 
 /** The pay step: "Pay and confirm", or "Confirm" for a visit that costs nothing. */
 const PAY_STEP = /^(Pay and confirm|Confirm)$/;
 
 /** Picks a free window on the day the sheet is showing, and continues to the pay step. */
 export async function continueToPayment(page: Page): Promise<void> {
-  const windows = page.getByRole("dialog", { name: "Pick a window" });
+  const windows = page.getByRole("dialog", { name: "Pick a time" });
   const pay = page.getByRole("dialog", { name: PAY_STEP });
   // Three tries: the day has three windows, and a client would give up on the day too.
   for (let tries = 0; tries < 3; tries += 1) {
