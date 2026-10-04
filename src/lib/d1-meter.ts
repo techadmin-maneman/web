@@ -1,6 +1,9 @@
 // What a request, a cron run or a queue batch costs D1: the rows its statements read and wrote, and how many
 // statements it ran, summed from what D1 reports of each. Past 5 million rows read a day D1 refuses every query
 // until midnight UTC, so the log line that closes each piece of work carries these figures.
+//
+// It also times how long the work waited on D1. Each statement is a round trip to the database's region and back,
+// so statements sent together cost one wait, and statements awaited one after another cost one each.
 
 export interface D1Usage {
   readonly rowsRead: number;
@@ -8,11 +11,24 @@ export interface D1Usage {
   readonly queries: number;
 }
 
+/** How long the work waited on D1. */
+export interface D1Waits {
+  /**
+   * The stretches with a statement on its way, each at least one round trip waited on in turn. Statements sent while
+   * another is on its way share its stretch, so this never counts more trips than the work waited on.
+   */
+  readonly trips: number;
+  /** How long those stretches took, in milliseconds. */
+  readonly ms: number;
+}
+
 export interface MeteredDatabase {
   /** The database to hand the work, in place of the one metered. */
   readonly db: D1Database;
   /** What the work has cost so far. */
   usage(): D1Usage;
+  /** How long the work has waited on D1 so far. */
+  waits(): D1Waits;
 }
 
 export function meterDatabase(db: D1Database): MeteredDatabase {
@@ -20,7 +36,13 @@ export function meterDatabase(db: D1Database): MeteredDatabase {
   return {
     db: new MeteredD1(db, tally),
     usage: () => ({ rowsRead: tally.rowsRead, rowsWritten: tally.rowsWritten, queries: tally.queries }),
+    waits: () => ({ trips: tally.trips, ms: tally.waitedMs }),
   };
+}
+
+/** The waits as a Server-Timing entry, which a browser's network panel shows beside the request. */
+export function serverTiming(waits: D1Waits): string {
+  return `d1;dur=${String(waits.ms)};desc="${String(waits.trips)} round trips"`;
 }
 
 /** The usage as fields of a log line. */
@@ -46,11 +68,30 @@ class Tally {
   rowsRead = 0;
   rowsWritten = 0;
   queries = 0;
+  trips = 0;
+  waitedMs = 0;
+  private onTheirWay = 0;
+  private waitingSince = 0;
 
   add(result: Reported): void {
     this.queries += 1;
     this.rowsRead += result.meta?.rows_read ?? 0;
     this.rowsWritten += result.meta?.rows_written ?? 0;
+  }
+
+  /** Sends a statement or a batch, timing the wait it starts or joins. */
+  async timed<T>(send: () => Promise<T>): Promise<T> {
+    if (this.onTheirWay === 0) {
+      this.trips += 1;
+      this.waitingSince = Date.now();
+    }
+    this.onTheirWay += 1;
+    try {
+      return await send();
+    } finally {
+      this.onTheirWay -= 1;
+      if (this.onTheirWay === 0) this.waitedMs += Date.now() - this.waitingSince;
+    }
   }
 }
 
@@ -69,13 +110,13 @@ class MeteredStatement implements D1PreparedStatement {
   }
 
   async run<T = Record<string, unknown>>(): Promise<D1Result<T>> {
-    const result = await this.real.run<T>();
+    const result = await this.tally.timed(() => this.real.run<T>());
     this.tally.add(result);
     return result;
   }
 
   async all<T = Record<string, unknown>>(): Promise<D1Result<T>> {
-    const result = await this.real.all<T>();
+    const result = await this.tally.timed(() => this.real.all<T>());
     this.tally.add(result);
     return result;
   }
@@ -94,8 +135,8 @@ class MeteredStatement implements D1PreparedStatement {
   // D1 reports nothing of what raw() read either, so it counts as a statement alone.
   raw<T = unknown[]>(options?: { columnNames?: boolean }): Promise<[string[], ...T[]] | T[]> {
     this.tally.queries += 1;
-    if (options?.columnNames === true) return this.real.raw<T>({ columnNames: true });
-    return this.real.raw<T>();
+    if (options?.columnNames === true) return this.tally.timed(() => this.real.raw<T>({ columnNames: true }));
+    return this.tally.timed(() => this.real.raw<T>());
   }
 }
 
@@ -108,7 +149,7 @@ async function meteredBatch<T>(
   statements: D1PreparedStatement[],
   tally: Tally,
 ): Promise<D1Result<T>[]> {
-  const results = await real.batch<T>(statements.map(unmetered));
+  const results = await tally.timed(() => real.batch<T>(statements.map(unmetered)));
   for (const result of results) tally.add(result);
   return results;
 }
@@ -131,7 +172,7 @@ class MeteredD1 implements D1Database {
   }
 
   async exec(query: string): Promise<D1ExecResult> {
-    const result = await this.real.exec(query);
+    const result = await this.tally.timed(() => this.real.exec(query));
     this.tally.queries += result.count;
     return result;
   }

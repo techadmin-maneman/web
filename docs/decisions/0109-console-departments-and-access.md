@@ -1,6 +1,6 @@
 # 0109. The console by departments, and who may do what in it
 
-- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care and Operations by place
+- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care, Operations and Finance by place
 - Date: 2026-10-02
 
 ## Context
@@ -15,7 +15,7 @@ Until now anyone Cloudflare Access let into the ops console could do everything 
 | ------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | Operations    | Dispatch, today's tasks, visits, technicians and their leave and phones, stock, held bookings re-tried               | Tasks, Dispatch, Technicians, Stock                    |
 | Customer Care | Clients (record, photos, consents, pieces, hair profile, a phoned-in address), grievances, number changes, deletions | Clients, Grievances, Number changes, Deletion requests |
-| Finance       | Payments, refunds, no-show charges and their disputes, credits, discount codes, prices                               | No-shows, Prices, Discount codes                       |
+| Finance       | Payments, refunds, no-show charges and their disputes, credits, discount codes, prices                               | Payments, Prices, Discount codes                       |
 | Growth        | Referrals and invites, the waitlist, the service area and launching it                                               | Referrals, Waitlist, Service area                      |
 | Admin         | Settings (rules, services, blackout days, day times, consumables, job sheet, storage), staff and access              | Settings, Staff                                        |
 
@@ -42,7 +42,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 - A person Access lets in who is not on the list, or is switched off, is refused everything (`403 not_permitted`) except `GET /api/whoami`, which tells the console to say so, and the health check.
 - A route `ROUTE_NEEDS` does not list is refused. HEAD asks what GET asks, as Hono answers it with the GET route.
-- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today the Staff routes, Customer Care's and Operations' do (below, "Customer Care by place" and "Operations by place"). So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
+- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today the Staff routes, Customer Care's, Operations' and Finance's do (below, "Customer Care by place", "Operations by place" and "Finance by place"). So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
 
 **The owner is the national super-admin:** every department at Manage, nationally.
 
@@ -107,6 +107,13 @@ Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_k
 - A technician is seen, changed, switched off or on, given leave or a phone revoked only in the caller's cities. A technician is given only a city the caller's Operations Manage reaches; no city, only with a national grant.
 - Stock shows the kits of the technicians in the caller's cities. The central store is in no city: it, and a delivery into it, need a national grant.
 - Held bookings wait on FSM, which is leaving: retrying, stopping and linking one still need a national grant.
+
+## Finance by place (amended 4 October 2026)
+
+- A day's money, no-shows and their disputes, a client's credits and a code on a visit keep to the caller's cities and are `ownPlaces`, at the route's own level, as Customer Care's are. The day's figures and charges count only what was paid, refunded or kept in those cities. A case, a dispute, a client or a visit elsewhere is `404 not_found`.
+- Waiving a no-show and refunding a disputed charge ask Finance Manage in the record's own city (`permitsOn` in `src/http/staff-access.ts`). Finance Act nationally with Manage in Delhi charges and upholds anywhere, but waives and refunds only in Delhi; elsewhere it is `403 not_permitted`.
+- Codes, prices and the price book are the same in every place: any place's Finance View reads them. Making or switching off a code and changing a price still need a national grant.
+- Refunding a held booking stays national: held bookings wait on FSM, which is leaving.
 
 ## Consequences
 

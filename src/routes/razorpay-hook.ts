@@ -15,7 +15,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import type { AlertOnce } from "../domain/alerts.ts";
+import { paymentsTab, type AlertOnce } from "../domain/alerts.ts";
 import { recordBookingConsents } from "../domain/booking-consents.ts";
 import { paymentStatusOf, recordPayment, recordRefund, recordRefundedPayment } from "../domain/payments.ts";
 import { bookHold } from "../http/book-hold.ts";
@@ -105,7 +105,7 @@ async function holdLinkPaid(
       message:
         `The client paid the payment link for booking ${hold.id} (payment ${payment.id}), but Razorpay named no ` +
         "order for it, so the visit was not booked. Book it for them, or refund the payment in Razorpay's dashboard.",
-      link: `/clients/${hold.personId}`,
+      link: paymentsTab(hold.personId),
     });
     return;
   }
@@ -144,7 +144,7 @@ async function refundTaken(
       `Payment ${payment.id} was refunded in Razorpay before we heard it was paid. The payment and its refund ` +
       `${refund.id} are recorded now; no visit was booked for it. If no one here refunded it, Razorpay's ` +
       `payment messages are not reaching us (runbook, "Razorpay's webhook is not arriving").`,
-    ...(personId === null ? {} : { link: `/clients/${personId}` }),
+    ...(personId === null ? {} : { link: paymentsTab(personId) }),
   });
   return true;
 }

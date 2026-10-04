@@ -26,6 +26,8 @@ export type ClientsFound = Body<paths["/api/clients/find"]["post"]>;
 export type ClientRecord = Body<paths["/api/clients/{id}"]["get"]>;
 export type ClientVisit = ClientRecord["visits"]["past"][number];
 export type ClientPayment = ClientRecord["payments"][number];
+export type ClientPaymentLink = ClientRecord["payment_links"][number];
+export type ClientInvoice = ClientRecord["invoices"][number];
 /** A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). */
 export type HeldBooking = ClientRecord["held_bookings"][number];
 export type HeldBookingRefunded = Body<paths["/api/held-bookings/{id}/refund"]["post"]>;
@@ -137,8 +139,9 @@ export type TechnicianChange = Sent<paths["/api/technicians/{id}"]["patch"]>;
 export type ReturnedVisit = Body<paths["/api/technicians/{id}/deactivate"]["post"]>["visits"][number];
 export type Device = Technician["devices"][number];
 export type Leave = Technician["leave"][number];
-export type LeaveRecorded = Body<paths["/api/technicians/{id}/leave"]["post"]>;
-export type JobOnLeave = LeaveRecorded["jobs"][number];
+/** One technician's leave still to end, each period with the jobs still booked on its days. */
+export type StandingLeave = Body<paths["/api/technicians/{id}/leave"]["get"]>["leave"][number];
+export type JobOnLeave = StandingLeave["jobs"][number];
 export type TechniciansWork = Body<paths["/api/technicians/work"]["get"]>;
 export type TechnicianWork = TechniciansWork["technicians"][number];
 export type Board = Body<paths["/api/dispatch"]["get"]>;
@@ -334,8 +337,8 @@ export const api = {
     client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
   /** The cases nobody has ruled on yet. The route also answers the decided ones; the board draws a queue. */
   noShows: () => client.get("/api/no-shows", { query: { decision: "undecided" } }),
-  /** Today's money, as board D1 heads it. The route takes a date; the board draws no way of asking for another. */
-  dayMoney: () => client.get("/api/payments"),
+  /** A day's money, as board D1 heads it: India's date, or today with null. */
+  dayMoney: (date: string | null) => client.get("/api/payments", { query: setOnly({ date }) }),
   /**
    * Charge the visit or waive it, with the reason either way. A charge costs
    * what the booking was sold to cost a no-show, and gives back the rest.
@@ -360,7 +363,7 @@ export const api = {
     client.post("/api/deletion-requests/{id}/decision", { path: { id }, body: { decision, reason } }),
   /**
    * Erases a client now, from their page; it cannot be undone. `settledByHand` erases despite a visit booked or a
-   * payment held, which ops then cancel and refund themselves.
+   * payment held, which ops then cancel and refund themselves, or a payment link unpaid, which is cancelled.
    */
   eraseClient: (id: string, settledByHand: boolean) =>
     client.post("/api/clients/{id}/erasure", {
@@ -386,6 +389,7 @@ export const api = {
   revokeDevice: (id: string, deviceId: string) =>
     client.post("/api/technicians/{id}/devices/{device}/revoke", { path: { id, device: deviceId } }),
   /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0062). */
+  standingLeave: (id: string) => client.get("/api/technicians/{id}/leave", { path: { id } }),
   recordLeave: (id: string, leave: { from: string; to: string; note: string | null }) =>
     client.post("/api/technicians/{id}/leave", {
       path: { id },

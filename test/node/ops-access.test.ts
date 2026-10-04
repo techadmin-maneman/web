@@ -53,9 +53,10 @@ describe("what the console offers the person signed in", () => {
     expect(care.reaches(taskNeed("no_show_decision", "act"))).toBe(false);
   });
 
-  it("reaches nothing nationally from a grant of one city, as the API asks", () => {
+  it("offers waiving to Finance Manage in one city, which the API then asks in the case's own city", () => {
     const delhi: StaffGrant = { department: "finance", level: "manage", geography: "city", place: "Delhi" };
-    expect(accessOf(enforced([delhi], [])).reaches(WAIVING_A_NO_SHOW)).toBe(false);
+    expect(accessOf(enforced([delhi], [])).reaches(WAIVING_A_NO_SHOW)).toBe(true);
+    expect(accessOf(enforced([{ ...delhi, level: "act" }], [])).reaches(WAIVING_A_NO_SHOW)).toBe(false);
   });
 
   it("reaches nothing for a person switched off, whatever they hold", () => {

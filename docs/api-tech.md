@@ -287,7 +287,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -331,7 +331,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -525,7 +525,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -577,7 +577,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -629,7 +629,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -681,7 +681,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -733,7 +733,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -785,7 +785,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -829,7 +829,7 @@ Close the job as a no-show, once the wait has run
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -977,6 +977,7 @@ Request body:
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -1561,6 +1562,17 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
+    },
     "progress": {
       "$ref": "#/components/schemas/TechnicianJobState"
     }
@@ -1581,6 +1593,7 @@ Request body:
     "slots",
     "unlocked",
     "unlocks_at",
+    "client_name",
     "progress"
   ],
   "additionalProperties": false
@@ -1750,6 +1763,17 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
     },
     "progress": {
       "$ref": "#/components/schemas/TechnicianJobProgress"
@@ -2144,6 +2168,7 @@ Request body:
     "slots",
     "unlocked",
     "unlocks_at",
+    "client_name",
     "progress",
     "address",
     "access_notes",

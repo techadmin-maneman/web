@@ -4,7 +4,10 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  dispatchAsked,
+  dispatchPath,
   followsHere,
+  keyOf,
   landingPath,
   mayOpen,
   redirectOf,
@@ -12,11 +15,13 @@ import {
   SECTION_NAMES,
   SECTIONS,
   settingsPath,
+  technicianPath,
   titleOf,
 } from "../../apps/ops/src/route.ts";
 import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 
 const CLIENT = "22000000-0000-4000-8000-000000000001";
+const TECHNICIAN = "88000000-0000-4000-8000-000000000001";
 
 const namesIn = (department: string) =>
   SECTIONS.filter((section) => section.department === department).map((section) => SECTION_NAMES[section.page]);
@@ -31,7 +36,7 @@ describe("the ops console's routes", () => {
   it("lists the sections by department, Tasks first", () => {
     expect(namesIn("operations")).toEqual(["Tasks", "Dispatch", "Technicians", "Stock"]);
     expect(namesIn("customer_care")).toEqual(["Clients", "Grievances", "Number changes", "Deletion requests"]);
-    expect(namesIn("finance")).toEqual(["No-shows", "Prices", "Discount codes"]);
+    expect(namesIn("finance")).toEqual(["Payments", "Prices", "Discount codes"]);
     expect(namesIn("growth")).toEqual(["Referrals", "Waitlist", "Service area"]);
     expect(namesIn("admin")).toEqual(["Settings", "Staff"]);
     expect(SECTIONS.map((section) => section.department)).toEqual([
@@ -41,6 +46,12 @@ describe("the ops console's routes", () => {
       ...Array<string>(3).fill("growth"),
       ...Array<string>(2).fill("admin"),
     ]);
+  });
+
+  // MON-16 and OIA-08 of the audit, 2 October 2026: the day's money sat under "No-shows".
+  it("names the money section Payments, at the address it has always had", () => {
+    expect(SECTION_NAMES[routeOf("/no-shows").page]).toBe("Payments");
+    expect(titleOf(routeOf("/no-shows"))).toBe("Payments · Mane Man operations");
   });
 
   it("shows each section to those whose call opening its page is one the API lists", () => {
@@ -57,6 +68,31 @@ describe("the ops console's routes", () => {
     expect(routeOf("/stock")).toEqual({ page: "stock" });
     expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "pieces" });
     expect(routeOf(`/clients/${CLIENT}/photos`)).toEqual({ page: "clients", clientId: CLIENT, tab: "photos" });
+  });
+
+  it("opens a technician's page on his week, and each of its tabs at its own path", () => {
+    expect(routeOf("/technicians")).toEqual({ page: "technicians", technicianId: null, tab: "week" });
+    expect(routeOf(technicianPath(TECHNICIAN))).toEqual({ page: "technicians", technicianId: TECHNICIAN, tab: "week" });
+    expect(technicianPath(TECHNICIAN)).toBe(`/technicians/${TECHNICIAN}`);
+    expect(routeOf(technicianPath(TECHNICIAN, "kit"))).toEqual({
+      page: "technicians",
+      technicianId: TECHNICIAN,
+      tab: "kit",
+    });
+    expect(routeOf(`/technicians/${TECHNICIAN}/nowhere`)).toEqual({ page: "tasks" });
+    // His tabs share one key, so moving between them does not read the roster again.
+    expect(keyOf(routeOf(technicianPath(TECHNICIAN, "leave")))).toBe(keyOf(routeOf(technicianPath(TECHNICIAN))));
+    expect(keyOf(routeOf("/technicians"))).not.toBe(keyOf(routeOf(technicianPath(TECHNICIAN))));
+  });
+
+  it("links to the dispatch board on a week and a search, and reads them back", () => {
+    expect(dispatchPath({})).toBe("/dispatch");
+    expect(dispatchPath({ find: "Imran Qureshi" })).toBe("/dispatch?find=Imran+Qureshi");
+    const both = dispatchPath({ from: "2027-10-04", find: "Imran Qureshi" });
+    expect(both).toBe("/dispatch?from=2027-10-04&find=Imran+Qureshi");
+    expect(dispatchAsked(both.slice(both.indexOf("?")))).toEqual({ from: "2027-10-04", find: "Imran Qureshi" });
+    expect(dispatchAsked("")).toEqual({ from: null, find: "" });
+    expect(dispatchAsked("?from=next-week")).toEqual({ from: null, find: "" });
   });
 
   it("opens the pages that were Settings' tabs at their old addresses, and moves the address to the new one", () => {
@@ -83,6 +119,7 @@ describe("the ops console's routes", () => {
     expect(titleOf(routeOf("/settings/prices"))).toBe("Prices · Mane Man operations");
     expect(titleOf(routeOf("/settings/blackouts"))).toBe("Blackout days · Settings · Mane Man operations");
     expect(titleOf(routeOf(`/clients/${CLIENT}/consents`))).toBe("Consents · Clients · Mane Man operations");
+    expect(titleOf(routeOf(technicianPath(TECHNICIAN, "phones")))).toBe("Phones · Technicians · Mane Man operations");
     const titles = SECTIONS.map((section) => titleOf(routeOf(section.path)));
     expect(new Set(titles).size).toBe(SECTIONS.length);
   });

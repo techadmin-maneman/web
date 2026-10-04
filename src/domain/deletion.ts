@@ -3,13 +3,18 @@
 // (docs/decisions/0019-erasure.md): photographs, results and details, the same day.
 // Either way the client is told on WhatsApp, as their app promises.
 
-import type { Logger } from "../log.ts";
 import type { PlacesReached } from "../policy/access.ts";
 import { DELETION_DECIDED_WITHIN_DAYS, erasureRefusal, type ErasureRefusal } from "../policy/account-deletion.ts";
 import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import type { OutboundMessage } from "../providers/messaging.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { eraseAndQueue, erasureBlockers, type ErasureBlockers, type ErasureQueueEnv } from "./erasure.ts";
+import {
+  eraseAndQueue,
+  erasureBlockers,
+  type EraseOptions,
+  type ErasureBlockers,
+  type ErasureQueueEnv,
+} from "./erasure.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import { liveContact } from "./profile.ts";
 import type { Composed } from "./visit-messages.ts";
@@ -102,21 +107,16 @@ export type DeletionOutcome =
  * the reason, and queues the message that tells them why. The decision's audit
  * entry and the request's new state go in the erasure's own batch, so a
  * decision is recorded only if it happened. Deleting is refused while the
- * person has a visit booked or a payment held (src/policy/account-deletion.ts),
- * and the request waits.
+ * person has a visit or booking still to happen, a payment held or a link unpaid
+ * (src/policy/account-deletion.ts), and the request waits.
  */
 export async function decideDeletion(
   env: ErasureQueueEnv,
-  options: {
+  options: Omit<EraseOptions, "alongside"> & {
     id: string;
     decision: "delete" | "reject";
     staff: string;
     reason: string | null;
-    audit: AuditEntry;
-    fsmConnected: boolean;
-    requestId: string;
-    now: Date;
-    log: Logger;
   },
 ): Promise<DeletionOutcome> {
   const db = env.DB;
@@ -146,7 +146,7 @@ export async function decideDeletion(
     return { kind: "rejected", personId, messageId: message.id };
   }
 
-  const blockers = await erasureBlockers(db, personId);
+  const blockers = await erasureBlockers(db, personId, options.now);
   const refusal = erasureRefusal(blockers);
   if (refusal !== null) return { kind: "refused", refusal, blockers };
   const told = await liveContact(db, personId);
@@ -154,6 +154,8 @@ export async function decideDeletion(
     audit: options.audit,
     alongside: [decided],
     fsmConnected: options.fsmConnected,
+    payments: options.payments,
+    alertOnce: options.alertOnce,
     requestId: options.requestId,
     now: options.now,
     log: options.log,

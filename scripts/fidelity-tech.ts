@@ -46,8 +46,17 @@ const TOMORROW_DATE = "2030-09-20";
 /** The slots each type takes (src/config/scheduling.ts): board A1 writes them beneath the time. */
 const SLOTS: Readonly<Record<string, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
 
+const CLIENTS: Readonly<Record<string, string>> = {
+  "a0000000-0000-4000-8000-000000000001": "Rohit M.",
+  "a0000000-0000-4000-8000-000000000002": "Vikram S.",
+  "a0000000-0000-4000-8000-000000000003": "Sanjay B.",
+  "a0000000-0000-4000-8000-000000000004": "Nikhil A.",
+};
+
+const jobId = (id: number) => `a0000000-0000-4000-8000-00000000000${String(id)}`;
+
 const job = (id: number, date: string, time: string, minutes: number, type: string, badge: string, sector: string) => ({
-  id: `a0000000-0000-4000-8000-00000000000${String(id)}`,
+  id: jobId(id),
   day: date === DAY ? "today" : "tomorrow",
   date,
   // India is five and a half hours ahead, so the board's clock is this instant plus 5:30.
@@ -63,6 +72,7 @@ const job = (id: number, date: string, time: string, minutes: number, type: stri
   slots: SLOTS[type] ?? 1,
   unlocked: true,
   unlocks_at: `${date}T00:00:00.000Z`,
+  client_name: CLIENTS[jobId(id)] ?? null,
   progress: { started_at: null, outcome: null },
 });
 
@@ -79,13 +89,6 @@ const TOMORROW = [
   job(6, TOMORROW_DATE, "07:00", 90, "service", "credit", "Sector 56"),
   job(7, TOMORROW_DATE, "10:30", 135, "replacement", "prepaid", "Sector 49"),
 ];
-
-const CLIENTS: Readonly<Record<string, string>> = {
-  "a0000000-0000-4000-8000-000000000001": "Rohit M.",
-  "a0000000-0000-4000-8000-000000000002": "Vikram S.",
-  "a0000000-0000-4000-8000-000000000003": "Sanjay B.",
-  "a0000000-0000-4000-8000-000000000004": "Nikhil A.",
-};
 
 const CHECKLIST = [
   { id: "piece_removed", label: "Remove" },
