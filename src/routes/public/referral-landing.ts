@@ -34,7 +34,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { IdempotencyKeyHeaderSchema } from "../../http/idempotency.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
 import { visitorOf } from "../../http/visitor.ts";
-import { addressOf } from "../client-profile.ts";
+import { addressOf } from "../client/profile.ts";
 import { bookedBody, bookFromForm, joinWaitlistFromForm } from "./forms.ts";
 import {
   BOOKED_DESCRIPTION,

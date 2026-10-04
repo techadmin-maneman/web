@@ -55,9 +55,9 @@ import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { CONSENT_PURPOSES, CONSENT_SOURCES } from "../policy/consents.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { paymentEntries } from "../domain/client-payments.ts";
-import { EntrySchema } from "./client-payments.ts";
+import { EntrySchema } from "./client/payments.ts";
 import { ClientInviteSchema } from "./ops-client-referral.ts";
-import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
+import { HISTORY_FIGURES, VisitSummarySchema } from "./client/visits.ts";
 
 const clientId = z.object({ id: z.uuid() });
 const unknownClient = errorResponse(

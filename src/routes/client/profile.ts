@@ -13,12 +13,12 @@
 // made; its effect comes only with ops' decision, which is audited in turn
 // (src/routes/ops-profile.ts).
 
-import { clientRoute } from "../http/session-routes.ts";
+import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
-import { addressChangeRefusal } from "../domain/address-change.ts";
-import { auditStatementIfWritten, type AuditEntry } from "../domain/audit.ts";
-import { lastRejectedDeletion, openDeletion, requestDeletion } from "../domain/deletion.ts";
+import type { App } from "../../http/context.ts";
+import { addressChangeRefusal } from "../../domain/address-change.ts";
+import { auditStatementIfWritten, type AuditEntry } from "../../domain/audit.ts";
+import { lastRejectedDeletion, openDeletion, requestDeletion } from "../../domain/deletion.ts";
 import {
   lastDecidedChange,
   openNumberChange,
@@ -26,23 +26,23 @@ import {
   verifyNumberChange,
   withdrawNumberChange,
   type NumberChange,
-} from "../domain/number-change.ts";
-import { switchNotice } from "../config/notices.ts";
-import { recordConsent } from "../domain/consents.ts";
-import { consentsOf, currentAddress, liveContact, maskedMobile, type Address } from "../domain/profile.ts";
-import { takeOne } from "../domain/rate-limit.ts";
-import { clientOf } from "../http/client-session.ts";
-import { errorBody, errorResponse, refuse } from "../http/errors.ts";
-import { json } from "../http/openapi.ts";
-import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
-import { numberChangeCodes, sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
-import { visitorOf } from "../http/visitor.ts";
-import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { APP_SWITCH_SOURCES, CONSENT_PURPOSES, screenAsks } from "../policy/consents.ts";
-import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
-import { GRIEVANCES_SHOWN } from "../policy/grievances.ts";
-import { latestGrievances, type ShownGrievance } from "../domain/grievances.ts";
-import { revokeCard } from "../domain/referral-cards.ts";
+} from "../../domain/number-change.ts";
+import { switchNotice } from "../../config/notices.ts";
+import { recordConsent } from "../../domain/consents.ts";
+import { consentsOf, currentAddress, liveContact, maskedMobile, type Address } from "../../domain/profile.ts";
+import { takeOne } from "../../domain/rate-limit.ts";
+import { clientOf } from "../../http/client-session.ts";
+import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
+import { json } from "../../http/openapi.ts";
+import { saveClientAddress, suggestBuildings } from "../../http/address-save.ts";
+import { numberChangeCodes, sendCodeAfterResponse, withinCodeCeiling } from "../../http/send-code.ts";
+import { visitorOf } from "../../http/visitor.ts";
+import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
+import { APP_SWITCH_SOURCES, CONSENT_PURPOSES, screenAsks } from "../../policy/consents.ts";
+import { DECISION_SHOWN_DAYS } from "../../policy/decision-reasons.ts";
+import { GRIEVANCES_SHOWN } from "../../policy/grievances.ts";
+import { latestGrievances, type ShownGrievance } from "../../domain/grievances.ts";
+import { revokeCard } from "../../domain/referral-cards.ts";
 
 const blankToNull = (value: string | null | undefined): string | null =>
   value === undefined || value === null || value.trim() === "" ? null : value;

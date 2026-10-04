@@ -50,7 +50,7 @@ import { inviteOf, type Invite } from "../../domain/referrals.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { IdempotencyKeyHeaderSchema } from "../../http/idempotency.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
-import { addressOf, AddressSchema, RequiredFlatSchema } from "../client-profile.ts";
+import { addressOf, AddressSchema, RequiredFlatSchema } from "../client/profile.ts";
 import { bookedWithCode, bookFromForm, joinWaitlistFromForm } from "./forms.ts";
 
 /** Six digits, and never starting with 0 or 9: India's pincodes. */

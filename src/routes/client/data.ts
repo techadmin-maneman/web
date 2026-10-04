@@ -8,18 +8,18 @@
 // Correction is the profile itself (address, number change); erasure is the deletion request (ADR 0042).
 // Each is audited under the client.
 
-import { clientRoute } from "../http/session-routes.ts";
+import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../http/context.ts";
-import { auditStatementIfWritten, recordAudit } from "../domain/audit.ts";
-import { everythingHeldAbout } from "../domain/data-export.ts";
-import { openGrievanceInWords } from "../domain/grievances.ts";
-import { myDataPage } from "../domain/my-data-page.ts";
-import { takeOne } from "../domain/rate-limit.ts";
-import { clientOf } from "../http/client-session.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { GRIEVANCES_PER_DAY } from "../policy/grievances.ts";
+import type { App, AppEnv } from "../../http/context.ts";
+import { auditStatementIfWritten, recordAudit } from "../../domain/audit.ts";
+import { everythingHeldAbout } from "../../domain/data-export.ts";
+import { openGrievanceInWords } from "../../domain/grievances.ts";
+import { myDataPage } from "../../domain/my-data-page.ts";
+import { takeOne } from "../../domain/rate-limit.ts";
+import { clientOf } from "../../http/client-session.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { GRIEVANCES_PER_DAY } from "../../policy/grievances.ts";
 
 const exportRoute = clientRoute({
   method: "get",

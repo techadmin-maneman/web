@@ -5,11 +5,11 @@
 //   POST /api/appointments/:id/note   { note }: kept on the visit, for the technician's card
 
 import { z } from "@hono/zod-openapi";
-import { selfServeRoute } from "../http/session-routes.ts";
-import type { App } from "../http/context.ts";
-import { CLIENT_NOTE_MAX_CHARS, saveClientNote } from "../domain/client-notes.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { clientOf } from "../http/client-session.ts";
+import { selfServeRoute } from "../../http/session-routes.ts";
+import type { App } from "../../http/context.ts";
+import { CLIENT_NOTE_MAX_CHARS, saveClientNote } from "../../domain/client-notes.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { clientOf } from "../../http/client-session.ts";
 
 const NoteSchema = z
   .object({

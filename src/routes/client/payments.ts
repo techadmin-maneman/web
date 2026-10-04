@@ -13,10 +13,10 @@
 // failed attempt is not a payment and is left out. A payment kept under the
 // 24-hour rule is a charge, and carries its evidence.
 
-import { clientRoute } from "../http/session-routes.ts";
+import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
-import { VISIT_TYPES } from "../config/visit-types.ts";
+import type { App } from "../../http/context.ts";
+import { VISIT_TYPES } from "../../config/visit-types.ts";
 import {
   CREDIT_EVENTS,
   creditLines,
@@ -25,11 +25,11 @@ import {
   paymentEntry,
   receiptOf,
   REFERRAL_SIDES,
-} from "../domain/client-payments.ts";
-import { owedPayments } from "../domain/one-visit-money.ts";
-import { clientOf } from "../http/client-session.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { NoShowNoteSchema } from "./client-visits.ts";
+} from "../../domain/client-payments.ts";
+import { owedPayments } from "../../domain/one-visit-money.ts";
+import { clientOf } from "../../http/client-session.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { NoShowNoteSchema } from "./visits.ts";
 
 const VisitRefSchema = z
   .union([

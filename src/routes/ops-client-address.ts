@@ -17,7 +17,7 @@ import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
 import { currentAddress } from "../domain/profile.ts";
 import { errorBody, errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
-import { AddressSaveSchema, addressOf, SuggestionsSchema } from "./client-profile.ts";
+import { AddressSaveSchema, addressOf, SuggestionsSchema } from "./client/profile.ts";
 import { ClientAddressSchema, clientAddressOf, clientInReach } from "./ops-clients.ts";
 
 const clientId = z.object({ id: z.uuid() });

@@ -16,7 +16,7 @@ import { STANDARD_TIER, VISIT_TYPES, type VisitType } from "../../config/visit-t
 import { offeredServices } from "../../domain/services.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { PriceSchema } from "../client-booking.ts";
+import { PriceSchema } from "../client/booking.ts";
 
 const PublishedPricesSchema = z
   .object({

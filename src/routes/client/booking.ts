@@ -38,21 +38,21 @@
 // service with its price, late fee and length as they are when it is made
 // (docs/decisions/0085-services-ops-can-edit.md). A move keeps its visit's own.
 
-import { selfServeRoute } from "../http/session-routes.ts";
+import { selfServeRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../http/context.ts";
-import { BOOKING_DAYS, BOOKING_WINDOWS } from "../config/scheduling.ts";
-import { VISIT_TYPE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
-import { keepShownConsents, recordBookingConsents } from "../domain/booking-consents.ts";
-import { startBooking } from "../domain/bookings.ts";
-import { codeToCarry } from "../domain/discount-code-uses.ts";
-import { spendableCredits } from "../domain/credits.ts";
-import { lateFeeOn, priceOf, type Price } from "../domain/price-book.ts";
-import { checkoutHold, clientHold, releaseHold } from "../domain/holds.ts";
-import { currentAddress } from "../domain/profile.ts";
-import { isServed } from "../domain/service-area.ts";
+import type { App, AppEnv } from "../../http/context.ts";
+import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
+import { VISIT_TYPE_NAMES, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
+import { keepShownConsents, recordBookingConsents } from "../../domain/booking-consents.ts";
+import { startBooking } from "../../domain/bookings.ts";
+import { codeToCarry } from "../../domain/discount-code-uses.ts";
+import { spendableCredits } from "../../domain/credits.ts";
+import { lateFeeOn, priceOf, type Price } from "../../domain/price-book.ts";
+import { checkoutHold, clientHold, releaseHold } from "../../domain/holds.ts";
+import { currentAddress } from "../../domain/profile.ts";
+import { isServed } from "../../domain/service-area.ts";
 import {
   activeTechnicians,
   availability,
@@ -60,30 +60,30 @@ import {
   holdSlot,
   regularTechnician,
   type Moving,
-} from "../domain/scheduling.ts";
-import { bookableService, offeredProducts, serviceOf, type PricedService } from "../domain/services.ts";
-import { loadSlotSchedule } from "../domain/slot-times.ts";
-import { windowTimesOf } from "../policy/slot-times.ts";
+} from "../../domain/scheduling.ts";
+import { bookableService, offeredProducts, serviceOf, type PricedService } from "../../domain/services.ts";
+import { loadSlotSchedule } from "../../domain/slot-times.ts";
+import { windowTimesOf } from "../../policy/slot-times.ts";
 import {
   changeableVisit,
   changeTerms,
   termsInForce,
   type ChangeableVisit,
   type ChangeTerms,
-} from "../domain/visit-changes.ts";
-import { bookableDays } from "../domain/next-visit.ts";
-import type { OpsInputs } from "../domain/ops-settings.ts";
-import { bookHold } from "../http/book-hold.ts";
-import { clientOf } from "../http/client-session.ts";
-import { errorBody, errorResponse, refuse } from "../http/errors.ts";
-import { opsInputs } from "../http/ops-inputs.ts";
-import { visitorOf } from "../http/visitor.ts";
-import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
-import { indiaInstant } from "../lib/india-time.ts";
-import { changeChargedOnBooking, CHARGES, LATE_FEES, type SoldTerms } from "../policy/moving-a-visit.ts";
-import { stripStart } from "../policy/next-visit.ts";
-import { takesCredit } from "../policy/referral-reward.ts";
-import { PRICE_TIER } from "../policy/services.ts";
+} from "../../domain/visit-changes.ts";
+import { bookableDays } from "../../domain/next-visit.ts";
+import type { OpsInputs } from "../../domain/ops-settings.ts";
+import { bookHold } from "../../http/book-hold.ts";
+import { clientOf } from "../../http/client-session.ts";
+import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
+import { visitorOf } from "../../http/visitor.ts";
+import { GIVEN_BY_BOOKING, isFullAddress } from "../../policy/booking.ts";
+import { indiaInstant } from "../../lib/india-time.ts";
+import { changeChargedOnBooking, CHARGES, LATE_FEES, type SoldTerms } from "../../policy/moving-a-visit.ts";
+import { stripStart } from "../../policy/next-visit.ts";
+import { takesCredit } from "../../policy/referral-reward.ts";
+import { PRICE_TIER } from "../../policy/services.ts";
 
 export const PriceSchema = z
   .object({

@@ -9,16 +9,16 @@
 // self-serve booking, as every hold route is.
 
 import { z } from "@hono/zod-openapi";
-import { selfServeRoute } from "../http/session-routes.ts";
-import type { App } from "../http/context.ts";
-import { enterOnHold, removeFromHold } from "../domain/discount-code-holds.ts";
-import type { Entered, Removed } from "../domain/discount-code-uses.ts";
-import { clientHold } from "../domain/holds.ts";
-import { clientOf } from "../http/client-session.ts";
-import { mayCheckCode } from "../http/code-checks.ts";
-import { errorBody, errorResponse, refuse } from "../http/errors.ts";
-import { json } from "../http/openapi.ts";
-import { HoldSchema } from "./client-booking.ts";
+import { selfServeRoute } from "../../http/session-routes.ts";
+import type { App } from "../../http/context.ts";
+import { enterOnHold, removeFromHold } from "../../domain/discount-code-holds.ts";
+import type { Entered, Removed } from "../../domain/discount-code-uses.ts";
+import { clientHold } from "../../domain/holds.ts";
+import { clientOf } from "../../http/client-session.ts";
+import { mayCheckCode } from "../../http/code-checks.ts";
+import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
+import { json } from "../../http/openapi.ts";
+import { HoldSchema } from "./booking.ts";
 
 const holdId = z.object({ id: z.uuid() });
 

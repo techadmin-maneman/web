@@ -29,4 +29,4 @@ The same day, reminded that Refer opened only after a first fit because the invi
 
 - PR #139 is reverted: Refer shows the invite to fitted clients only, and everyone else sees board B2's empty state, as [0048](0048-referrals.md) and the board have it.
 - Open point 145 (the pre-fit message, and the self-referral gap) went with it, and is settled as withdrawn.
-- The API did not ask whether the referrer was fitted: the gate was the app's alone. Since 5 October 2026 it asks too (PS-61): `/api/refer` and the card routes answer `403 not_fitted` before a first fit, and a card of the client's own waits for a photograph of that fit (`src/routes/client-refer.ts`, `src/domain/referral-cards.ts`).
+- The API did not ask whether the referrer was fitted: the gate was the app's alone. Since 5 October 2026 it asks too (PS-61): `/api/refer` and the card routes answer `403 not_fitted` before a first fit, and a card of the client's own waits for a photograph of that fit (`src/routes/client/refer.ts`, `src/domain/referral-cards.ts`).

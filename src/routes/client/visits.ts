@@ -12,21 +12,21 @@
 // Every photograph is served through a link that lasts 15 minutes, and only
 // to the client whose photograph it is.
 
-import { clientRoute } from "../http/session-routes.ts";
+import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
-import { VISIT_TYPES } from "../config/visit-types.ts";
-import { clientHistory } from "../domain/client-history.ts";
-import { clientTryOns, ownTryOnImage, TRY_ON_IMAGES, TRY_ON_TOKEN_PURPOSES } from "../domain/client-try-ons.ts";
-import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
-import { takeOne } from "../domain/rate-limit.ts";
-import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
-import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../policy/no-show.ts";
-import { ANGLES, PHASES } from "../domain/visit-photos.ts";
-import { clientOf } from "../http/client-session.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { fileExtension, type ImageType } from "../lib/image-bytes.ts";
-import { verifyToken } from "../lib/signed-token.ts";
+import type { App } from "../../http/context.ts";
+import { VISIT_TYPES } from "../../config/visit-types.ts";
+import { clientHistory } from "../../domain/client-history.ts";
+import { clientTryOns, ownTryOnImage, TRY_ON_IMAGES, TRY_ON_TOKEN_PURPOSES } from "../../domain/client-try-ons.ts";
+import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../../domain/client-visits.ts";
+import { takeOne } from "../../domain/rate-limit.ts";
+import { VISIT_OUTCOMES } from "../../domain/visit-status.ts";
+import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../../policy/no-show.ts";
+import { ANGLES, PHASES } from "../../domain/visit-photos.ts";
+import { clientOf } from "../../http/client-session.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { fileExtension, type ImageType } from "../../lib/image-bytes.ts";
+import { verifyToken } from "../../lib/signed-token.ts";
 
 const TechnicianSchema = z
   .object({ name: z.string(), initials: z.string() })

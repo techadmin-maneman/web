@@ -12,7 +12,7 @@ The owner ruled on 27 September 2026 that the flat or house number is required i
 
 ## Decision
 
-**Every address given from now on carries the flat or house number.** The app's save, ops' save and the site's two booking forms refuse one without it: `400 invalid_request` naming `flat` (`address.flat` on the site's forms), from one schema (`RequiredFlatSchema`, `src/routes/client-profile.ts`). Each form marks the field as required, names it when it is left out and gives it the focus, as the other required parts do. An address saved before holds none and still reads, and still reaches FSM as it did.
+**Every address given from now on carries the flat or house number.** The app's save, ops' save and the site's two booking forms refuse one without it: `400 invalid_request` naming `flat` (`address.flat` on the site's forms), from one schema (`RequiredFlatSchema`, `src/routes/client/profile.ts`). Each form marks the field as required, names it when it is left out and gives it the focus, as the other required parts do. An address saved before holds none and still reads, and still reaches FSM as it did.
 
 **FSM's two street lines hold the whole address** (`streetOf`, `src/domain/profile.ts`):
 
