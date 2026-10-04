@@ -15,6 +15,9 @@
 // The board reads itself again every minute and when the tab comes back, and
 // after a move, without the loading state: the grid keeps its scroll, and the
 // keyboard goes back to the block that moved.
+//
+// A link may open the board on a week and a search ("?from=2026-10-12&find=Imran"),
+// as a technician's page does to show his days.
 
 import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -41,6 +44,7 @@ import { BlockDrawer } from "./BlockDrawer.tsx";
 import styles from "./dispatch.module.css";
 import { Grid, type InHand } from "./Grid.tsx";
 import { phoneWords } from "../lib/phone.ts";
+import { dispatchAsked } from "../route.ts";
 import {
   changeOf,
   idOf,
@@ -208,8 +212,9 @@ function ChangePanel({ changing, onClose }: { changing: Changing; onClose: (chan
 }
 
 export function DispatchScreen() {
-  const [query, setQuery] = useState<BoardQuery>({ from: null, city: null });
-  const [find, setFind] = useState("");
+  const [asked] = useState(() => dispatchAsked(window.location.search));
+  const [query, setQuery] = useState<BoardQuery>({ from: asked.from, city: null });
+  const [find, setFind] = useState(asked.find);
   const [opened, setOpened] = useState<BlockJob | null>(null);
   const [move, setMove] = useState<Move | null>(null);
   const [changing, setChanging] = useState<Changing | null>(null);

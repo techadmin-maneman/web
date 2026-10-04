@@ -11,6 +11,7 @@ import { chargePreview } from "../domain/no-shows.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate, indiaInstant } from "../lib/india-time.ts";
 
 /** As many as one day's rulings could run to. */
@@ -33,7 +34,7 @@ const chargePreviewRoute = createRoute({
   responses: {
     200: { description: "What a charge would do", ...json(ChargePreviewSchema) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such case, or it was ruled on already"),
+    404: errorResponse("not_found: no such case in the caller's cities, or it was ruled on already"),
   },
 });
 
@@ -66,7 +67,7 @@ const DecidedCaseSchema = z
 const decidedRoute = createRoute({
   method: "get",
   path: "/api/no-shows/decided",
-  summary: "The no-shows ruled on today in India, the latest first, each with its ruling",
+  summary: "The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling",
   responses: {
     200: { description: "The day's rulings", ...json(z.object({ cases: z.array(DecidedCaseSchema) }).strict()) },
     403: errorResponse("access_required"),
@@ -76,6 +77,7 @@ const decidedRoute = createRoute({
 export function registerOpsNoShowRulings(app: App): void {
   app.openapi(chargePreviewRoute, async (c) => {
     const { id } = c.req.valid("param");
+    if (!(await withinRouteReach(c, "no_show", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
     const preview = await chargePreview(c.env.DB, id, await opsInputs(c));
     if (preview === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     return c.json(preview, 200);
@@ -83,6 +85,7 @@ export function registerOpsNoShowRulings(app: App): void {
 
   app.openapi(decidedRoute, async (c) => {
     const startOfToday = indiaInstant(indiaDate(c.var.deps.now()), "00:00");
-    return c.json({ cases: await casesDecidedSince(c.env.DB, startOfToday, LIMIT) }, 200);
+    const cases = await casesDecidedSince(c.env.DB, startOfToday, LIMIT, await routeReach(c));
+    return c.json({ cases }, 200);
   });
 }

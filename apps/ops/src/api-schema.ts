@@ -524,7 +524,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2553,7 +2553,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** No-show cases: undecided first, each with its three facts */
+        /** No-show cases in the caller's cities: undecided first, each with its three facts */
         get: {
             parameters: {
                 query?: {
@@ -2638,7 +2638,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required, or not_permitted: waiving asks Finance MANAGE */
+                /** @description access_required, or not_permitted: waiving asks Finance MANAGE in the case's city */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2647,7 +2647,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such case, or it was ruled on already */
+                /** @description not_found: no such case in the caller's cities, or it was ruled on already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2823,7 +2823,47 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** A technician's leave that has not ended, each with the jobs still booked on its days */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The leave */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianStandingLeave"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such technician, or he is outside the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
         /** Record leave. Those days are then refused to booking and to the dispatch board alike */
         post: {
@@ -3041,7 +3081,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such case, or it was ruled on already */
+                /** @description not_found: no such case in the caller's cities, or it was ruled on already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3067,7 +3107,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The no-shows ruled on today in India, the latest first, each with its ruling */
+        /** The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling */
         get: {
             parameters: {
                 query?: never;
@@ -3114,7 +3154,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Disputed no-show charges still to rule on, oldest first, each with its evidence */
+        /** Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence */
         get: {
             parameters: {
                 query?: never;
@@ -3199,7 +3239,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required, or not_permitted: refunding asks Finance MANAGE */
+                /** @description access_required, or not_permitted: refunding asks Finance MANAGE in the dispute's city */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3208,7 +3248,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such dispute, or it was ruled on already */
+                /** @description not_found: no such dispute in the caller's cities, or it was ruled on already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3415,7 +3455,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A day's money: what was collected, what went back, and each charge kept or ruled on */
+        /** A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on */
         get: {
             parameters: {
                 query?: {
@@ -5976,7 +6016,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found */
+                /** @description not_found: no such visit in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -6049,7 +6089,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such visit, or it carries no code */
+                /** @description not_found: no such visit in the caller's cities, or it carries no code */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -7643,6 +7683,8 @@ export interface components {
                     /** Format: date-time */
                     last_seen_at: string;
                     revoked_at: string | null;
+                    /** @description Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it. */
+                    signed_in: boolean;
                 }[];
                 /** @description Leave that has not ended yet, soonest first (ADR 0062). */
                 leave: components["schemas"]["TechnicianLeave"][];
@@ -7675,18 +7717,37 @@ export interface components {
             to: string;
             note: string | null;
         };
+        TechnicianStandingLeave: {
+            /** @description His leave that has not ended yet, soonest first. */
+            leave: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                from: string;
+                /**
+                 * Format: date
+                 * @description Inclusive: a single day's leave has the same date twice.
+                 */
+                to: string;
+                note: string | null;
+                /** @description The jobs still booked on its days from today on, soonest first. */
+                jobs: components["schemas"]["TechnicianJobOnLeave"][];
+            }[];
+        };
+        /** @description A job booked on a day the technician is away, which the leave moves nowhere: ops move it on the dispatch board, and it waits on the Tasks board until they do. */
+        TechnicianJobOnLeave: {
+            /** Format: uuid */
+            appointment_id: string;
+            /** Format: date-time */
+            starts_at: string;
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            client: string | null;
+        };
         TechnicianLeaveRecorded: {
             /** Format: uuid */
             id: string;
-            /** @description The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch board, and each waits on the Tasks board until they do (OPS-07). */
-            jobs: {
-                /** Format: uuid */
-                appointment_id: string;
-                /** Format: date-time */
-                starts_at: string;
-                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
-                client: string | null;
-            }[];
+            /** @description The jobs already booked on those days, soonest first. */
+            jobs: components["schemas"]["TechnicianJobOnLeave"][];
         };
         TechnicianLeaveRequest: {
             /** Format: date */

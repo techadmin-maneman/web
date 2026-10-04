@@ -2,8 +2,10 @@
 // waived can still be seen (src/domain/no-shows.ts).
 
 import { indiaDate } from "../lib/india-time.ts";
+import type { PlacesReached } from "../policy/access.ts";
 import type { NoShowDecision } from "../policy/no-show.ts";
 import { CHARGE_TAKEN, chargeTaken, type ChargeColumns, type NoShowNote } from "./no-shows.ts";
+import { reachBinding, withinReach } from "./places.ts";
 
 /** A case ops have ruled on, with what the ruling did. */
 export interface DecidedCase {
@@ -26,19 +28,24 @@ interface DecidedRow extends ChargeColumns {
   decided_at: string;
 }
 
-/** The cases ruled on at or after `since`, the latest first. */
-export async function casesDecidedSince(db: D1Database, since: Date, limit: number): Promise<DecidedCase[]> {
+/** The cases in the places reached ruled on at or after `since`, the latest first. */
+export async function casesDecidedSince(
+  db: D1Database,
+  since: Date,
+  limit: number,
+  reached: PlacesReached,
+): Promise<DecidedCase[]> {
   const { results } = await db
     .prepare(
       `SELECT n.id, pe.id AS person_id, pe.name AS person_name, a.window_start, n.decision, n.decided_at, n.charge,
          ${CHARGE_TAKEN}
        FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
        LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
-       WHERE n.decision IN ('charged', 'waived') AND n.decided_at >= ?1
+       WHERE n.decision IN ('charged', 'waived') AND n.decided_at >= ?1 AND ${withinReach("no_show", "n", "?3")}
        ORDER BY n.decided_at DESC
        LIMIT ?2`,
     )
-    .bind(since.toISOString(), limit)
+    .bind(since.toISOString(), limit, reachBinding(reached))
     .all<DecidedRow>();
   return results.map((row) => ({
     id: row.id,
