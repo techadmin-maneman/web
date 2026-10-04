@@ -29,6 +29,7 @@ import { LOSS_EXTENTS, type LossExtent } from "../../../src/config/booking.ts";
 import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "../../../src/config/notices.ts";
 import { PRESETS, type PresetId } from "../../../src/config/presets.ts";
 import { KEEPING_NOTICES } from "../../../src/policy/kept-try-ons.ts";
+import type { ErrorKind } from "../lib/tryon-errors.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
 
 export interface Picture {
@@ -1067,7 +1068,7 @@ export const tryOn = {
         title: "The try-on is paused.",
         body: "We send every look on WhatsApp, and that isn't switched on yet. Book a free consultation and see the real thing.",
       },
-    },
+    } satisfies Record<ErrorKind, { step: string; frame: string; title: string; body: string }>,
   },
 };
 

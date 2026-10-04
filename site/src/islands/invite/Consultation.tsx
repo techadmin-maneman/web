@@ -98,10 +98,8 @@ export function Consultation(props: ConsultationProps) {
   const { pincode } = props.answer;
   const open = useOpenWindows(pincode, plan);
   const { consultation } = referral;
-  const windows = consultation.windows.filter(
-    (option) => plan === "consultation" || oneVisitStartsIn(option.id as BookingWindow),
-  );
-  const windowIds = windows.map((option) => option.id as BookingWindow);
+  const windows = consultation.windows.filter((option) => plan === "consultation" || oneVisitStartsIn(option.id));
+  const windowIds = windows.map((option) => option.id);
   // The visitor's pick while it is open; else the nearest open window.
   const slot = chosenSlot(open.days, windowIds, picked);
   const days = dayStrip(open.days?.[0]?.date ?? indiaTomorrow(), open.days?.length ?? DAYS);
@@ -232,7 +230,7 @@ export function Consultation(props: ConsultationProps) {
                 class="visually-hidden"
                 checked={plan === option.id}
                 onChange={() => {
-                  props.onPlanChange(option.id as Plan);
+                  props.onPlanChange(option.id);
                 }}
               />
               <span class={styles.windowLabel}>{option.label}</span>
@@ -312,7 +310,7 @@ export function Consultation(props: ConsultationProps) {
         <legend class={`caps ${styles.legend}`}>{consultation.window}</legend>
         <div class={styles.windows}>
           {windows.map((option) => {
-            const id = option.id as BookingWindow;
+            const { id } = option;
             const windowOpen = isOpen(open.days, slot.date, id);
             return (
               <label key={id} class={`${styles.window} ${slot.window === id ? styles.windowOn : ""}`}>

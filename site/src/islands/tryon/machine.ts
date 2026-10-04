@@ -8,11 +8,11 @@
 // the looks, and the sent screen the gate.
 
 import { tryOn } from "../../content/site.ts";
-import type { ErrorKind } from "../../lib/tryon-errors.ts";
+import { ERROR_KINDS, type ErrorKind } from "../../lib/tryon-errors.ts";
+import { isOneOf } from "../../../../src/lib/one-of.ts";
 
 export const SCREENS = ["upload", "consent", "stage", "looks", "gate", "sent", "error"] as const;
 export type Screen = (typeof SCREENS)[number];
-const ERROR_KINDS = Object.keys(tryOn.error.kinds) as ErrorKind[];
 
 export interface TryOnState {
   readonly screen: Screen;
@@ -99,7 +99,7 @@ export function lookLabel(look: number): string {
 function preview(screen: Screen, kind: string | null): TryOnState {
   const opened = { ...START, demo: true, screen };
   if (screen === "gate") return { ...opened, look: 0 };
-  if (screen === "error") return { ...opened, errorKind: ERROR_KINDS.find((known) => known === kind) ?? "photo" };
+  if (screen === "error") return { ...opened, errorKind: isOneOf(ERROR_KINDS, kind) ? kind : "photo" };
   if (screen !== "sent") return opened;
   const returning = kind === "returning";
   return { ...opened, look: 0, returning, mobile: returning ? "" : tryOn.gate.mobilePlaceholder };
