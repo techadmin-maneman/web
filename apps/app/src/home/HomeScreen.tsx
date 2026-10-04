@@ -158,7 +158,10 @@ function WhatToExpect() {
   );
 }
 
-/** A visit paid for, or booked free, that FSM does not have yet: never said to be booked, nor its money gone. */
+/**
+ * A visit paid for, or booked free, that FSM does not have yet: never said to be booked, nor its money gone. It
+ * promises a WhatsApp only where one will go.
+ */
 function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) {
   const copy = home.beingBooked;
   return (
@@ -171,7 +174,7 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
         <p className={styles.window}>{windowText(booking.window)}</p>
         <p className={styles.place}>{bookingName(booking)}</p>
         <p className={styles.free}>{booking.paid ? copy.paid : copy.free}</p>
-        <p className={styles.free}>{copy.told}</p>
+        {booking.told && <p className={styles.free}>{copy.told}</p>}
       </div>
     </section>
   );
