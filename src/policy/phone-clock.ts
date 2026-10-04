@@ -21,12 +21,13 @@ export const RULES = [
 /** Ours, not the prompt's: the bounds a phone's time is held within. */
 export const BOUNDS = [
   "A time the phone gives is never later than the moment the server received it.",
-  "Nor earlier than the visit's booked start less EARLIEST_BEFORE_START_MIN, nor more than MAX_OFFLINE_HOURS before the server received it: an earlier time is taken as that bound.",
+  "Nor earlier than the earliest check-in, nor more than MAX_OFFLINE_HOURS before the server received it: an earlier time is taken as that bound.",
   "A check-in or a start is refused unless its time falls on the visit's own date in India.",
+  "A check-in or a start that reaches the server before the earliest check-in, the booked start less EARLIEST_BEFORE_START_MIN, is refused with that time.",
 ] as const;
 
 /**
- * How long before the booked start a technician may say he arrived. Early
+ * How long before the booked start a technician may check in. Early
  * enough for one who beats the traffic, too early to back-date a morning's
  * check-in into the night before. The owner kept it on 27 September 2026
  * (docs/open-points.md, item 58).
@@ -49,6 +50,14 @@ export type PhoneClock = Readonly<Record<(typeof PHONE_CLOCK_KEYS)[number], numb
 
 export const PHONE_CLOCK: PhoneClock = { before_start: EARLIEST_BEFORE_START_MIN, held_offline: MAX_OFFLINE_HOURS };
 
+/** The earliest moment a technician may check in or start: the booked start less the minutes ops allow. */
+export const earliestCheckIn = (visitStart: Date, clock: PhoneClock = PHONE_CLOCK): Date =>
+  new Date(visitStart.getTime() - clock.before_start * MINUTE_MS);
+
+/** Whether a check-in or a start reached the server before the earliest check-in. */
+export const tooEarlyToArrive = (receivedAt: Date, visitStart: Date, clock: PhoneClock = PHONE_CLOCK): boolean =>
+  receivedAt.getTime() < earliestCheckIn(visitStart, clock).getTime();
+
 /** The phone's time for something it did, held within the bounds above; the server's own when it gave none. */
 export function boundedPhoneTime(
   claimed: Date | null,
@@ -58,7 +67,7 @@ export function boundedPhoneTime(
   if (claimed === null || Number.isNaN(claimed.getTime())) return bounds.receivedAt;
   const received = bounds.receivedAt.getTime();
   const earliest = Math.max(
-    bounds.visitStart.getTime() - clock.before_start * MINUTE_MS,
+    earliestCheckIn(bounds.visitStart, clock).getTime(),
     received - clock.held_offline * HOUR_MS,
   );
   return new Date(Math.min(received, Math.max(earliest, claimed.getTime())));

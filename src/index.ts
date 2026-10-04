@@ -13,7 +13,8 @@ import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
-import { CRON_JOBS, jobsDue, runCron } from "./scheduled/cron.ts";
+import { CRON_JOBS, runCron } from "./scheduled/cron.ts";
+import { callsFor, jobsDue, pingsWhenWell } from "./scheduled/schedule.ts";
 
 // Runs at module load. A Worker without a valid ENVIRONMENT, missing a secret
 // its providers need, or in production with a stub provider, throws here:
@@ -117,7 +118,8 @@ export default {
     await assertOwnDatabase(meteredEnv.DB);
     if (await cronHeldForMaintenance(meteredEnv, log)) return;
     const deps = makeDependencies(meteredEnv, log);
-    const jobs = jobsDue(CRON_JOBS, controller.cron, controller.scheduledTime);
-    await runCron(jobs, { env: meteredEnv, deps, config, log, meter });
+    const { cron, scheduledTime } = controller;
+    const run = { env: meteredEnv, deps, config, log, meter, calls: callsFor(cron) };
+    await runCron(jobsDue(CRON_JOBS, cron, scheduledTime), run, pingsWhenWell(cron, scheduledTime));
   },
 } satisfies ExportedHandler<Env>;

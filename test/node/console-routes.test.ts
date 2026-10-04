@@ -99,7 +99,11 @@ describe("the routes a caller's calls go ahead on", () => {
   });
 
   it("are, once enforced, only those a city's grant reaches: the ones that keep to the caller's places", () => {
-    expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([...SIGNED_IN_ROUTES, "GET /api/staff"]);
+    expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([
+      ...SIGNED_IN_ROUTES,
+      "GET /api/tasks",
+      "GET /api/staff",
+    ]);
   });
 
   it("are, for Finance in one city, its cities' money and the codes and prices every place reads", () => {
@@ -107,6 +111,8 @@ describe("the routes a caller's calls go ahead on", () => {
 
     expect(routes).toEqual(
       expect.arrayContaining([
+        "GET /api/tasks",
+        "PUT /api/tasks/{group}/{id}/owner",
         "GET /api/payments",
         "GET /api/no-shows",
         "POST /api/no-shows/{id}/decision",
@@ -137,7 +143,32 @@ describe("the routes a caller's calls go ahead on", () => {
       expect.arrayContaining(["GET /api/grievances", "POST /api/clients/find", "POST /api/clients/{id}/address"]),
     );
     expect(routes).not.toContain("POST /api/deletion-requests/{id}/decision");
-    expect(routes).not.toContain("GET /api/tasks");
+    expect(routes).toContain("GET /api/tasks");
+  });
+
+  it("are, for Operations in one city, every Operations route up to the level granted but the central store's", () => {
+    const operationsInDelhi: Caller = {
+      kind: "person",
+      active: true,
+      grants: [{ department: "operations", level: "act", place: { geography: "city", name: "Delhi" } }],
+    };
+    const routes = routesOpenTo(operationsInDelhi, true, NO_ZONES);
+
+    expect(routes).toEqual(
+      expect.arrayContaining([
+        "GET /api/dispatch",
+        "POST /api/dispatch/move",
+        "GET /api/tasks",
+        "POST /api/tasks/{group}/{id}/close",
+        "POST /api/visits",
+        "POST /api/technicians/{id}/leave",
+        "GET /api/stock",
+        "POST /api/stock/counts",
+      ]),
+    );
+    expect(routes).not.toContain("POST /api/technicians");
+    expect(routes).not.toContain("POST /api/stock/deliveries");
+    expect(routes).not.toContain("POST /api/held-bookings/{id}/retry");
   });
 
   it("are every route for a service token on the list, and none but the signed-in ones for one not on it", () => {
@@ -159,7 +190,7 @@ describe("Tasks, where each department sees the groups it decides", () => {
     return need;
   };
 
-  it("opens the board to View in any department, nationally", () => {
+  it("opens the board to View in any department, in any place", () => {
     const board = routeNeed("GET /api/tasks");
     expect(meetsNeed(holding(["growth", "view"]), board, NO_ZONES)).toBe(true);
     expect(meetsNeed(holding(), board, NO_ZONES)).toBe(false);
@@ -168,7 +199,7 @@ describe("Tasks, where each department sees the groups it decides", () => {
       active: true,
       grants: [{ department: "growth", level: "manage", place: { geography: "city", name: "Delhi" } }],
     };
-    expect(meetsNeed(delhi, board, NO_ZONES)).toBe(false);
+    expect(meetsNeed(delhi, board, NO_ZONES)).toBe(true);
   });
 
   it("gives each group to the department that decides it", () => {

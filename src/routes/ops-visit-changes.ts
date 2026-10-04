@@ -6,7 +6,8 @@
 //                                 phone was lost
 //
 // A cancel is free to the client unless ops apply the client's own late terms (src/policy/moving-a-visit.ts). Each is
-// audited in the batch that makes it (ADR 0031), with codes and amounts; ops' reason is kept with the change.
+// audited in the batch that makes it (ADR 0031), with codes and amounts; ops' reason is kept with the change. Both keep
+// to the caller's cities: a visit elsewhere is answered as one that does not exist.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -28,6 +29,7 @@ import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
+import { withinRouteReach } from "../http/staff-access.ts";
 import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
@@ -91,8 +93,8 @@ const cancelRoute = createRoute({
     400: errorResponse("invalid_request: a cancel with no reason"),
     403: errorResponse("access_required"),
     409: errorResponse(
-      "not_changeable: the visit has begun, passed or gone, or is no client's; terms_changed: the notice is not the " +
-        "one shown, so show the terms again",
+      "not_changeable: the visit has begun, passed or gone, is no client's, or is not in the caller's cities; " +
+        "terms_changed: the notice is not the one shown, so show the terms again",
     ),
     503: errorResponse("unavailable: FSM did not answer; nothing changed"),
   },
@@ -131,7 +133,7 @@ const closeRoute = createRoute({
     },
     400: errorResponse("invalid_request: no reason, or times that do not fit the visit's day or end after now"),
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such visit"),
+    404: errorResponse("not_found: no such visit in the caller's cities"),
     409: errorResponse(
       "already_closed: the visit is closed or cancelled, or the technician's phone closed it; managed_in_fsm: FSM " +
         "holds the record, so the visit is closed there",
@@ -205,6 +207,7 @@ async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: Cance
   const db = c.env.DB;
   const { deps, requestId, log } = c.var;
   const now = deps.now();
+  if (!(await withinRouteReach(c, "visit", visitId))) return c.json(errorBody("not_changeable", requestId), 409);
   const visit = await changeableVisitFor(db, visitId, now);
   if (visit === null) return c.json(errorBody("not_changeable", requestId), 409);
   const terms = await changeTerms(db, visit, now, termsInForce(await opsInputs(c), visit.type));
@@ -247,6 +250,7 @@ async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.
   const { requestId, deps, log } = c.var;
   if (asked.reason === "") return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
   if (fieldRecord(c.var.config.providers) === "fsm") return c.json(errorBody("managed_in_fsm", requestId), 409);
+  if (!(await withinRouteReach(c, "visit", visitId))) return c.json(errorBody("not_found", requestId), 404);
 
   const close = {
     appointmentId: visitId,

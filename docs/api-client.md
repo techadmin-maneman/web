@@ -1635,6 +1635,20 @@ Everything held about the client, to download
 }
 ```
 
+### GET /api/me/export.html
+
+Everything held about the client, as a page to download and read
+
+**200**: An HTML file, maneman-my-data.html, labelled and in India's time
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/grievances
 
 Raise a grievance about how the client's data is handled. The same words, still open, are one
@@ -1741,6 +1755,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
             "already_closed",
             "no_service_area",
             "service_exists",
@@ -1798,6 +1813,11 @@ Request body:
           ],
           "additionalProperties": false,
           "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+        },
+        "earliest_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [
@@ -2162,16 +2182,26 @@ Request body:
         "place": {
           "type": "string",
           "description": "Where it is: the saved address (locality, city and pincode), else the booking's city."
+        },
+        "requested": {
+          "type": "boolean",
+          "description": "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp."
+        },
+        "one_visit": {
+          "type": "boolean",
+          "description": "The consultation and the first fit in one visit."
         }
       },
       "required": [
         "date",
         "window",
         "window_label",
-        "place"
+        "place",
+        "requested",
+        "one_visit"
       ],
       "additionalProperties": false,
-      "description": "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit."
+      "description": "A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is on record. Null once one is, and once its day has passed."
     },
     "next_visit": {
       "anyOf": [
