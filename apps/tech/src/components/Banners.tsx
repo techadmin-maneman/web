@@ -9,9 +9,11 @@ import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
 import { changed as copy, today as todayCopy, whatStopped } from "../content.ts";
 import { STROKE } from "../icons.ts";
-import { useNames } from "../lib/useDay.ts";
+import { jobLabel } from "../lib/kind.ts";
+import { useHeldJobs } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
-import { account } from "../store/outbox.ts";
+import type { HeldJob } from "../store/jobs.ts";
+import { account, type JobAccount } from "../store/outbox.ts";
 import styles from "./banner.module.css";
 
 /** Board A2's banner: a paper strip with the line, and the explanation beneath it on ink. */
@@ -27,10 +29,18 @@ export function Offline() {
   );
 }
 
-/** Each job whose queue has stopped, by its client, with what stopped it. */
+type StoppedJob = NonNullable<JobAccount["stopped"]>;
+
+/** "4 pm consultation · Gurgaon: Ops moved this job to 9 am tomorrow.", from what the phone holds of the job. */
+function stoppedLine(stopped: StoppedJob, held: HeldJob | undefined): string {
+  const what = whatStopped(stopped, new Date(), held?.starts_at ?? null);
+  return copy.line(jobLabel(held, stopped.startsAt), what);
+}
+
+/** Each job whose queue has stopped, by its time, kind and area, with what stopped it. */
 export function Stopped() {
   const waiting = useOutbox();
-  const names = useNames(waiting);
+  const held = useHeldJobs(waiting);
   const stopped = account(waiting.events).flatMap((line) =>
     line.stopped === null ? [] : [{ ...line.stopped, job: line.job_id }],
   );
@@ -40,7 +50,7 @@ export function Stopped() {
     <div className={styles.stopped} role="alert">
       {stopped.map((each) => (
         <p className={styles.stoppedLine} key={each.job}>
-          {copy.line(names.get(each.job) ?? each.job.slice(0, 8), whatStopped(each))}
+          {stoppedLine(each, held.get(each.job))}
         </p>
       ))}
       <Link to="/waiting" className={buttonLook({ variant: "outlineOnInk", size: "small", className: styles.open })}>

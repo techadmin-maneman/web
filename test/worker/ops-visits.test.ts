@@ -49,17 +49,26 @@ let queue: ReturnType<typeof fakeQueue>;
 /** The queues a booking writes to, kept rather than delivered. */
 const bindings = () => ({ FSM_QUEUE: queue, MESSAGE_QUEUE: fakeQueue() });
 
+/** What a test may change about the console: its payments, who holds the record of field work, staging's handsets. */
+interface Vendors {
+  readonly payments?: PaymentsProvider;
+  readonly record?: FieldRecord;
+  readonly allowlist?: string[];
+}
+
 /** The ops console, on FSM's path unless it is our own database that holds the record of field work. */
-const opsApp = (vendors: { payments?: PaymentsProvider; record?: FieldRecord } = {}) => {
+const opsApp = (vendors: Vendors = {}) => {
   const record = vendors.record ?? "fsm";
   const deps = fakeDependencies({
     payments: vendors.payments ?? payments,
     ...(record === "ours" ? { fsm: fsmSwitchedOff() } : {}),
   });
-  return appFor("local", deps, {}, "ops", PROVIDERS_FOR[record]);
+  const allowlist = vendors.allowlist ?? LOCAL_SETTINGS.messaging.allowlist;
+  const settings = { messaging: { ...LOCAL_SETTINGS.messaging, allowlist } };
+  return appFor("local", deps, settings, "ops", PROVIDERS_FOR[record]);
 };
 
-const book = (body: object, vendors: { payments?: PaymentsProvider; record?: FieldRecord } = {}) =>
+const book = (body: object, vendors: Vendors = {}) =>
   request(
     opsApp(vendors),
     "/api/visits",
@@ -326,6 +335,7 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
         customer: { name: "Rohit Malhotra", contact: "+919810000001" },
         notes: { hold_id: body.hold_id, person_id: ROHIT },
         closesAt: new Date("2026-09-22T06:30:00.000Z"),
+        notify: true,
       },
     ]);
     const hold = await holdOf(body.hold_id);
@@ -341,6 +351,16 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     expect(hold?.payment_link_id).toMatch(/^plink_stub_/);
     expect(queue.sent).toEqual([]);
     expect(payments.made.orders).toEqual([]);
+  });
+
+  // MON-45, PS-46: staging texted every link, whoever the number belonged to.
+  it("makes the link but has Razorpay text it only to a number on staging's allowlist", async () => {
+    await rohit("fitted");
+    const logs = captureLogs();
+    const visit = { client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" };
+    expect((await book(visit, { allowlist: ["+919810000777"] })).status).toBe(201);
+    expect(payments.made.links).toMatchObject([{ notify: false }]);
+    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "payment_link_not_texted" }));
   });
 
   it("takes a discount code off a paid service visit's link before GST", async () => {

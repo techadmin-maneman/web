@@ -8,6 +8,7 @@ import { catchUpWithRazorpay } from "../domain/razorpay-catch-up.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { Logger } from "../log.ts";
+import { enqueue } from "../queues/enqueue.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
@@ -39,8 +40,10 @@ function holdBooker({ env, deps, config, log }: CatchUpRun): (holdId: string) =>
   if (fieldRecord(config.providers) === "fsm") {
     return (holdId) => env.FSM_QUEUE.send({ hold_id: holdId, request_id: REQUEST_ID } satisfies FsmSyncMessage);
   }
-  const notify = (messageId: string) =>
-    env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: REQUEST_ID } satisfies MessagingMessage);
+  const notify = (messageId: string) => {
+    const body = { message_id: messageId, request_id: REQUEST_ID } satisfies MessagingMessage;
+    return enqueue(env.MESSAGE_QUEUE, body, { log, ifLost: "sweeper" });
+  };
   const options: ConfirmOptions = {
     record: "ours",
     labelAsTest: config.environment !== "production",

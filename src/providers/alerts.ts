@@ -5,6 +5,7 @@
 // cities and dates, never personal data.
 
 import { scrubString, type Logger, type LogLevel } from "../log.ts";
+import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
 
 const TIMEOUT_MS = 5_000;
 
@@ -36,16 +37,16 @@ function createChatPost(options: ChatOptions, level: LogLevel, event: string): (
 
     // Discord reads "content"; Slack and Google Chat read "text" (and Google Chat rejects unknown keys).
     const body = new URL(webhookUrl).hostname.endsWith("discord.com") ? { content: text } : { text };
-    try {
-      const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
-      if (!response.ok) log.error(`${event}_not_delivered`, { status: response.status });
-    } catch (error) {
-      log.error(`${event}_not_delivered`, { error });
+    const response = await vendorFetch(
+      { fetch, log },
+      { vendor: "chat-webhook", step: event, timeoutMs: TIMEOUT_MS },
+      webhookUrl,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+    );
+    if (response instanceof VendorUnreachable) {
+      log.error(`${event}_not_delivered`, { error: response });
+      return;
     }
+    if (!response.ok) log.error(`${event}_not_delivered`, { status: response.status });
   };
 }

@@ -13,9 +13,10 @@
 // hand; the test then reads every stylesheet of the app, so a colour or a
 // ground that is not listed fails it rather than slipping by.
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { edgeOf, ratio, rulesOf, tokenRatio } from "./contrast.ts";
 
 interface Pairing {
   readonly text: string;
@@ -39,6 +40,36 @@ const PAIRINGS: readonly Pairing[] = [
 /** Grounds that never carry a word: the upload bar's track, and the scrim behind a confirmation. */
 const WORDLESS_GROUNDS = new Set(["--ink-rule", "--ink-night"]);
 
+interface EdgePairing {
+  readonly edge: string;
+  readonly ground: string;
+  readonly where: string;
+}
+
+/**
+ * The edges that show a control is there, which WCAG 1.4.11 holds to 3:1 against its ground. The boards draw
+ * them in --ink-line, 2:1 on the ink and too faint in the sun, so the app draws them in --ink-line-strong.
+ */
+const EDGE_PAIRINGS: readonly EdgePairing[] = [
+  {
+    edge: "--ink-line-strong",
+    ground: "--ink-deep",
+    where: "a field, a box of the sign-in code, a checklist box not yet ticked, a piece to pick",
+  },
+  { edge: "--paper", ground: "--ink-deep", where: "the label's field, a ticked box" },
+];
+
+/** The controls the edge pairings speak for, each by its stylesheet and its rule. */
+const CONTROLS = [
+  { file: "apps/tech/src/login/login.module.css", selector: ".mobile" },
+  { file: "apps/tech/src/login/login.module.css", selector: ".box" },
+  { file: "apps/tech/src/steps/steps.module.css", selector: ".box" },
+  { file: "apps/tech/src/steps/steps.module.css", selector: ".boxDone" },
+  { file: "apps/tech/src/steps/steps.module.css", selector: ".box64" },
+  { file: "apps/tech/src/steps/steps.module.css", selector: ".scan" },
+  { file: "apps/tech/src/steps/steps.module.css", selector: ".pick" },
+] as const;
+
 function stylesheets(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
@@ -52,12 +83,6 @@ function stylesheets(dir: string): string[] {
  * action, outlined on ink for the others. Their rules are read with the app's own.
  */
 const SHARED_BUTTONS = { file: "packages/ui/button.module.css", looks: [".gold", ".outlineOnInk"] } as const;
-
-/** Each rule of a stylesheet, as its selector and its declarations; a rule inside a layer or a query counts too. */
-function rulesOf(file: string): [string, string][] {
-  const css = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
-  return [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, selector = "", body = ""]) => [selector.trim(), body]);
-}
 
 /** The app's own rules, and the shared buttons' rules for the looks it draws. */
 function rulesDrawn(): [string, string][] {
@@ -89,33 +114,8 @@ function coloursUsed(): { texts: Set<string>; grounds: Set<string>; both: [strin
   return { texts, grounds, both };
 }
 
-const TOKENS = new Map(
-  ["packages/brand/tokens.css", "packages/brand/tokens-phase2.css"].flatMap((file) =>
-    [...readFileSync(file, "utf8").matchAll(/(--[\w-]+):\s*(#[0-9a-f]{6})\b/gi)].map(
-      ([, name = "", hex = ""]) => [name, hex] as const,
-    ),
-  ),
-);
-
-function luminance(hex: string): number {
-  const channels = [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16) / 255);
-  const [red = 0, green = 0, blue = 0] = channels.map((value) =>
-    value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4,
-  );
-  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-}
-
-/** WCAG's contrast ratio between two colours. */
-function ratio(text: string, ground: string): number {
-  const [lighter, darker] = [luminance(text), luminance(ground)].sort((a, b) => b - a);
-  return ((lighter ?? 0) + 0.05) / ((darker ?? 0) + 0.05);
-}
-
 function ratioOf(pairing: Pairing): number {
-  const text = TOKENS.get(pairing.text);
-  const ground = TOKENS.get(pairing.ground);
-  if (text === undefined || ground === undefined) throw new Error(`${pairing.text} or ${pairing.ground} is no token`);
-  return ratio(text, ground);
+  return tokenRatio(pairing.text, pairing.ground);
 }
 
 describe("the technician app's colour pairings", () => {
@@ -135,6 +135,28 @@ describe("the technician app's colour pairings", () => {
     expect(ratio("#a8b2c2", "#2a3a56")).toBeLessThan(5.8);
     expect(ratioOf({ text: "--ink-tag", ground: "--ink-disabled", where: "" })).toBeGreaterThanOrEqual(7);
   });
+});
+
+describe("the technician app's control edges", () => {
+  it.each(EDGE_PAIRINGS.map((pairing) => [`${pairing.edge} on ${pairing.ground}`, pairing] as const))(
+    "%s clears 3:1",
+    (_name, pairing) => {
+      expect(tokenRatio(pairing.edge, pairing.ground)).toBeGreaterThanOrEqual(3);
+    },
+  );
+
+  it("does not use the boards' --ink-line, which falls short of 3:1 on the ink", () => {
+    expect(tokenRatio("--ink-line", "--ink-deep")).toBeLessThan(3);
+    expect(EDGE_PAIRINGS.map((pairing) => pairing.edge)).not.toContain("--ink-line");
+  });
+
+  it.each(CONTROLS.map((control) => [`${control.selector} in ${control.file}`, control] as const))(
+    "edges %s in a colour the edge pairings list",
+    (_name, control) => {
+      const listed = EDGE_PAIRINGS.map((pairing) => pairing.edge);
+      expect(listed).toContain(edgeOf(control.file, control.selector));
+    },
+  );
 });
 
 describe("what the stylesheets use", () => {

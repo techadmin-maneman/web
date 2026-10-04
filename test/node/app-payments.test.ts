@@ -114,6 +114,7 @@ const noShow = (decision: "undecided" | "charged" | "waived") => ({
   charge: null,
   dispute: null,
   disputable: false,
+  dispute_closed_at: null,
 });
 
 describe("a visit's payment the client was not home for", () => {

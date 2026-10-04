@@ -166,7 +166,7 @@ Cloudflare dashboard → Manage Account → Account API Tokens → Create Token 
 - Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>`, `mm-ops-<env>` and `mm-tech-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step skips it, or fails with "No access to the specified service".
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also read and write production's database, and production's staging's; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - Optional, production's token: Account → **Account Analytics → Read**. With it, the canary's soak judges the new version on real visitors' errors as well as the smoke's (`docs/decisions/0006-deployment-pipeline.md`); without it the soak says so and the smoke checks stand alone.
-- Optional, production's token: Account → **Workers Observability → Edit** (Cloudflare asks for Edit to run a query, which changes nothing). With it, the soak also fails a release whose busy routes read more rows from D1 a request than their ceilings in `scripts/lib/free-tier-budget.ts`; without it the soak says it could not read them.
+- Optional, production's token: Account → **Workers Observability → Edit** (Cloudflare asks for Edit to run a query, which changes nothing). With it, the soak also fails a release whose busy routes read more rows from D1 a request than their ceilings in `scripts/lib/free-tier-budget.ts`, or whose Home or job card is slower at p95 than its budget in `scripts/lib/soak.ts`; without it the soak says it could not read them.
 - Optional, staging's token: the same **Account Analytics → Read**. With it, each staging deploy reports mm-api's CPU time over the last day against the free plan's 10 ms (`scripts/cpu-report.ts`); without it the step says it could not read it.
 - No zone permissions, and nothing on R2 or Queues: a token that reads a bucket's settings can read the photographs in it.
 
@@ -327,7 +327,7 @@ CI deploys code but cannot attach cron schedules, queue consumers or routes (`do
 npm run apply-triggers -- --env <env>
 ```
 
-After every deploy, both workflows compare the live cron schedules and queue consumers with every Worker's config, and warn on a difference. CI's token cannot read the queues, so its consumers read "not compared"; check them, and confirm an `apply-triggers`, with a token of your own that can read Workers and Queues:
+After every deploy, both workflows compare the live cron schedules and queue consumers, with each consumer's settings, with every Worker's config, and warn on a difference. CI's token cannot read the queues, so its consumers read "not compared"; check them, and confirm an `apply-triggers`, with a token of your own that can read Workers and Queues:
 
 ```sh
 node --env-file=.env.cf-read scripts/check-triggers.ts <env> --strict
@@ -620,7 +620,7 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
 
 #### If the address search misbehaves
 
-- **Suggestions never appear, and the logs say `address_suggest_failed` with `refused`.** The key is wrong, restricted to the wrong APIs, or its quota is spent. The alert space is told once a day while it lasts, with Google's own words: the Places API refuses with a 403 and a message, the Geocoding API with a 200 whose `status` is `REQUEST_DENIED`, `OVER_DAILY_LIMIT` or `OVER_QUERY_LIMIT`. Check step 3's API restrictions first. The form still works: an address can always be typed.
+- **Suggestions never appear, and the logs say `address_suggest_failed` with `refused`.** The key is wrong, restricted to the wrong APIs, or its quota is spent. The alert space is told at once and again each day while it lasts, with Google's own words, and the alert closes at the next search Google answers: the Places API refuses with a 403 and a message, the Geocoding API with a 200 whose `status` is `REQUEST_DENIED`, `OVER_DAILY_LIMIT` or `OVER_QUERY_LIMIT`. Check step 3's API restrictions first. The form still works: an address can always be typed.
 - **"busy" instead of suggestions.** A ceiling is reached. `geocode` is the ceiling's name in the alert. Either a client is hammering the form — the per-client limit is 120 a day — or `GEOCODE_DAILY_CEILING` is too low for real use. Raise it in `wrangler.jsonc` and deploy; the guard refuses anything above 1,800.
 - **To stop all spending at once.** Set `"GEOCODE_DAILY_CEILING": "0"` in `wrangler.jsonc` and deploy, or set `"GEOCODE_PROVIDER": "none"`. Either way the form keeps working, typed.
 - **A charge appears at all.** Something is wrong, because the quotas in step 4 cannot reach the free allowance. Disable the key in **Credentials**, set `GEOCODE_PROVIDER` to `none`, and find out how before re-enabling it.
@@ -751,7 +751,7 @@ R2's 10 GB a month is the account's, both environments together, and past it R2 
 
 ADR 0039 gives the photographs and the cards 4 GB. At 250 KB a photograph and 32 KB its thumbnail, which is what the technician app sends, that is about 1,312 visits. A client's kept try-on is paid from the same share, and while its look is kept at full size, the share holds about 444 visits at worst (ADR 0084, ADR 0093). A photograph copied from FSM keeps FSM's size, several MB (open point 125), and spends it faster. One from the technician app is at most 2 MB.
 
-**The storage meter** (ADR 0093) is a running figure of what this environment's `client-photos` and `referral-cards` hold. It tells ops once at 50%, 80% and 100% of the share (the alerts `r2_share:50`, `r2_share:80` and `r2_share:100`), and Settings shows it. **Past the share R2 bills, as the owner accepted** (open point 151): nothing is refused. Past the runaway ceiling, 20 GB, the technician app's uploads answer `503 busy` and wait on the phones, and ops are told (`r2_runaway_ceiling`): something is writing far more than the business makes. Find it before anything else. The usage notifications above, at 5 GB for the account, stay as the backstop.
+**The storage meter** (ADR 0093) is a running figure of what this environment's `client-photos` and `referral-cards` hold. It tells ops once at 50%, 80% and 100% of the share (the alerts `r2_share:50`, `r2_share:80` and `r2_share:100`), and Settings › Rules shows it under The console. **Past the share R2 bills, as the owner accepted** (open point 151): nothing is refused. Past the runaway ceiling, 20 GB, the technician app's uploads answer `503 busy` and wait on the phones, and ops are told (`r2_runaway_ceiling`): something is writing far more than the business makes. Find it before anything else. The usage notifications above, at 5 GB for the account, stay as the backstop.
 
 Each environment's meter counts its own buckets against the whole share, which staging and production share. Staging holds little, but read both on the dashboard before trusting one.
 
@@ -798,15 +798,11 @@ A mark is told once for good; to hear of one again after the database shrank bel
 
 ## Alerts and the cron
 
-Every alert says what went wrong with IDs only, and most link to the place in the ops console to act on it. Most are kept in D1 and told once, then again when they have happened 10, 100 and 1,000 times ("Still happening, 10 times: …"), and closed when what they were about is put right. What is told, and when, is the table in `docs/decisions/0067-alerts-and-silent-failures.md`. Without `ALERT_WEBHOOK_URL` they are logged as `alert` and still kept.
+Every alert says what went wrong with IDs only, and most link to the place in the ops console to act on it. Most are kept in D1 and told once, then again while they stay open: at their first sighting once a day has passed untold (six hours for the WhatsApp bridge, login codes, a paid booking with no visit and a failed refund), and when they have happened 10, 100 and 1,000 times ("Still open since Mon 21 Sep, 12 pm, 37 times: …"). They close when what they were about is put right. What is told, and when, is the table in `docs/decisions/0067-alerts-and-silent-failures.md`. Without `ALERT_WEBHOOK_URL` they are logged as `alert` and still kept.
 
-What is still open:
+What is still open is at the top of the console's **Tasks**, under **Needs a hand**: each alert ops were told of, with its message, a link to where to act, and how often it has happened. Each department sees its own kinds; Admin sees those about the system itself (ADR 0067, "Alerts on Tasks").
 
-```sql
-SELECT key, message, link, count, first_seen_at, last_seen_at FROM alerts WHERE resolved_at IS NULL ORDER BY last_seen_at DESC;
-```
-
-A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept charge, an FSM erasure) stay open once dealt with. Close one with `UPDATE alerts SET resolved_at = '<now, ISO>' WHERE key = '<key>' AND resolved_at IS NULL;`.
+A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept charge, an FSM erasure) stay open once dealt with: **Mark done** closes it, under your name. A failed message, a lead the CRM gave up on and a CRM erasure have **Send again**, which puts it back on its queue and closes the alert; if it fails again, a new alert says so.
 
 **A cron job keeps failing.** The alert names the job and its last error. Where each job stands:
 
@@ -814,7 +810,7 @@ A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept c
 SELECT job, failed_runs, last_failed_at, last_error FROM cron_jobs WHERE failed_runs > 0;
 ```
 
-The other jobs run regardless. The cron runs every minute, and each run only the jobs due in that minute: the table in `src/scheduled/cron.ts` gives each how often it runs (`every`: 5, 15 or 60 minutes) and in which minute (`at`). A run shares 40 outside calls between its jobs, and starts none after 30 seconds, so it ends before the next minute's; a job that finds them spent stops and leaves the rest to its next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
+The other jobs run regardless. The cron runs every minute, and each run only the jobs due in that minute: the table in `src/scheduled/cron.ts` gives each how often it runs (`every`: 5, 15 or 60 minutes) and in which minute (`at`). A minute's run shares 6 outside calls between its jobs, one record's worth, since each call costs it CPU time (a run of every job at once, as `npm run tick` asks for, has 40), and starts none after 30 seconds, so it ends before the next minute's; a job that finds them spent stops and leaves the rest to its next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
 
 Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
 
@@ -846,7 +842,7 @@ Every staging deploy also reports mm-api's CPU over the last day in its last ste
 
 Every alert is sent from inside mm-api, so a cron that stops altogether, or an API that is down, tells nobody. Two free monitors outside Cloudflare watch for that:
 
-1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it after every run, every minute, and pings `/fail` with the jobs' names when one failed, or when the run before never finished ("A cron run cut short"). No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
+1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it every five minutes while all is well, and pings `/fail` at once with the jobs' names when one failed, or when the run before never finished ("A cron run cut short"). No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
 2. **The API.** Any free uptime monitor checking `https://maneman.in/api/health` every 5 minutes for HTTP 200, telling the owner's e-mail. Production only: staging is behind Access. A 503 means the database is unreachable or not production's, and the answer's `d1` says which.
 
 ### What each alert means
@@ -861,11 +857,13 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Cloudflare's usage figures could not be read three hours running                         | `daily_allowances_unreadable`                                                                             | when they are read                   | "The daily allowances"                                                  |
 | The WhatsApp bridge is not connected                                                     | `whatsapp_bridge`                                                                                         | when it is open                      | "WhatsApp (Evolution) is down"                                          |
 | _n_ login codes failed to send in the last hour                                          | `login_codes_failing`                                                                                     | when a code goes                     | "WhatsApp (Evolution) is down"                                          |
-| Message _id_ (_kind_) failed after _n_ attempts                                          | none: told for each                                                                                       | not kept                             | "Replaying a failed message"                                            |
+| Message _id_ (_kind_) failed after _n_ attempts                                          | `message_failed:<message>`                                                                                | on Send again, or by hand            | "Replaying a failed message"                                            |
 | Messages queued over a day ago were never sent, and are now failed                       | `messages_unsent:<date>`                                                                                  | by hand                              | "WhatsApp (Evolution) is down", then "Replaying a failed message"       |
-| Lead _id_ did not reach the CRM                                                          | none                                                                                                      | not kept                             | "Replaying failed leads"                                                |
-| Erasing person _id_ in the CRM failed                                                    | none                                                                                                      | not kept                             | "Erasure within the day", step 3                                        |
+| Lead _id_ did not reach the CRM                                                          | `crm_lead:<lead>`                                                                                         | when it reaches the CRM              | "Replaying failed leads"                                                |
+| Erasing person _id_ in the CRM failed                                                    | `crm_erasure:<person>`                                                                                    | when it is blanked, or by hand       | "Erasure within the day", step 3                                        |
 | FSM would not anonymise contact _id_                                                     | `fsm_erasure:<person>`                                                                                    | by hand                              | "Erasure within the day"                                                |
+| Payment link _id_, of a client erased since, could not be cancelled                      | `erased_link:<link>`                                                                                      | by hand                              | cancel it in Razorpay's dashboard                                       |
+| Visit _id_ was paid by another link, and its own payment link could not be cancelled     | `paid_elsewhere_link:<link>`                                                                              | by hand                              | "A payment link"                                                        |
 | FSM sync gave up on appointment _id_                                                     | `fsm_sync:<fsm id>`                                                                                       | when it syncs                        | "FSM is down"                                                           |
 | FSM reconciliation repaired _n_ appointment(s) tonight                                   | none                                                                                                      | not kept                             | "FSM's webhook has stopped"                                             |
 | Lead _id_ did not reach FSM                                                              | none                                                                                                      | not kept                             | "FSM is down"                                                           |
@@ -892,9 +890,9 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | AILabTools credits are down to _n_                                                       | `ailab_credits_low`                                                                                       | when topped up                       | "Credits are low"                                                       |
 | Try-on job _id_ failed, or its result was billed but never downloaded                    | none                                                                                                      | not kept                             | "Try-on and WhatsApp"                                                   |
 | The daily _name_ ceiling is reached                                                      | none: told once a day                                                                                     | not kept                             | "A ceiling was reached"; section 13 for geocode                         |
-| Google refused the address search                                                        | `google_refused:<date>`                                                                                   | by hand                              | section 13                                                              |
-| Turnstile could not check _n_ visitors                                                   | `turnstile_unavailable:<date>`                                                                            | by hand                              | Cloudflare's status, and `TURNSTILE_SECRET`                             |
-| _n_ account deletion request(s) have waited 5 days                                       | none                                                                                                      | not kept                             | the console's Deletion requests                                         |
+| Google refused the address search                                                        | `google_refused`                                                                                          | when Google answers a search         | section 13                                                              |
+| Turnstile could not check _n_ visitors                                                   | `turnstile_unavailable`                                                                                   | when Turnstile answers again         | Cloudflare's status, and `TURNSTILE_SECRET`                             |
+| Deletion request _id_ has waited 5 days                                                  | `deletion_waiting:<request>`                                                                              | when it is decided                   | the console's Deletion requests                                         |
 | A client raised grievance _id_                                                           | none                                                                                                      | not kept                             | the console's Grievances                                                |
 
 ---
@@ -918,15 +916,15 @@ SELECT sync_state, COUNT(*) AS leads, MAX(sync_attempts) AS most_attempts FROM l
 SELECT id, sync_attempts, last_sync_error, created_at FROM leads WHERE sync_state = 'failed' ORDER BY created_at;
 ```
 
-`last_sync_error` holds Zoho's status and code, such as `Zoho 401 invalid_code: …`, and never the lead's details. A timeout names the step that was slow: `Zoho 0 TIMEOUT: token got no answer within 20 s`.
+`last_sync_error` holds Zoho's status and code, such as `Zoho 401 invalid_code: …`, and never the lead's details. A timeout names the step that was slow: `Zoho CRM 0 TIMEOUT: token got no answer within 20 s`.
 
 ### Syncs are slow
 
-Workers Logs (dashboard → Workers → the `mm-api` Worker → Logs) has one `zoho_call` line per request to Zoho, with the `step` (token, search, insert, update or note), `status`, `duration_ms` and `lead_id`. `crm_synced` and `crm_sync_failed` carry the whole sync's `duration_ms`. The time not spent in `zoho_call` lines went to D1.
+Workers Logs (dashboard → Workers → the `mm-api` Worker → Logs) has one `vendor_call` line per request to a vendor, with the `vendor` (`zoho-crm` here), the `step` (token, search, insert, update or note), `status`, `duration_ms` and `lead_id`; a failed answer adds the vendor's `code`, and one that never came has `status` 0 and a `reason`. Every other vendor's calls are logged the same way, so filtering on `vendor` (`evolution`, `google`, `razorpay`, `ailabtools`, `zoho-books`, …) shows each call to it. `crm_synced` and `crm_sync_failed` carry the whole sync's `duration_ms`. The time not spent in `vendor_call` lines went to D1.
 
 ### Zoho is down
 
-Nothing to do at first. A lead's first failure is retried by the queue 30 seconds later, then the sweeper retries it every five minutes. After 10 attempts (about 40 minutes) it stops and an alert names it. Once Zoho is back, replay the leads that gave up (below).
+Nothing to do at first. A lead's first failure is retried by the queue 30 seconds later, then the sweeper retries it every fifteen minutes. After 10 attempts (about two and a half hours) it stops and an alert names it. Once Zoho is back, replay the leads that gave up (below).
 
 ### The Zoho token was revoked or expired
 
@@ -943,11 +941,13 @@ Symptoms: calls fail with `Zoho 400 Access Denied: could not refresh the access 
 
 ### Replaying failed leads
 
+One lead: **Send again** on its alert, under Tasks' Needs a hand. Many, after an outage:
+
 ```sql
 UPDATE leads SET sync_attempts = 0 WHERE sync_state = 'failed';
 ```
 
-The sweeper picks them up within five minutes. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
+The sweeper picks them up within fifteen minutes, and each lead's alert closes as it reaches the CRM. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
 
 ### Checking Zoho's answers before a release
 
@@ -1131,7 +1131,7 @@ The cron's `razorpay_catch_up` job, every quarter hour, asks Razorpay about each
 - a hold ops sent a payment link for, from an hour after it was made until three days after it ran out;
 - a one visit's payment link, from an hour after it was sent until a week after it was made.
 
-Each is asked about at most once an hour, five holds and five links a run. A payment found is recorded as the webhook would have recorded it, and its hold is booked, or refunded in full if Razorpay made the payment after the hold and its grace ran out (ADR 0068). Ops get one alert per payment. Close it once the cause below is put right. "Booking … is paid for, but could not be booked or refunded" (key `razorpay_catch_up_not_booked:<hold ID>`) is a found payment that needs ops: book the visit for the client from the console, or refund the payment once in Razorpay's dashboard.
+Each is asked about at most once an hour; holds and links take turns while the run's calls last, so a long list waits a few runs. A payment found is recorded as the webhook would have recorded it, and its hold is booked, or refunded in full if Razorpay made the payment after the hold and its grace ran out (ADR 0068). Ops get one alert per payment. Close it once the cause below is put right. "Booking … is paid for, but could not be booked or refunded" (key `razorpay_catch_up_not_booked:<hold ID>`) is a found payment that needs ops: book the visit for the client from the console, or refund the payment once in Razorpay's dashboard.
 
 To see how far the webhook is behind:
 
@@ -1153,6 +1153,20 @@ The cause, from Workers Logs:
 Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068). A payment the cron recorded first is not recorded again when its webhook arrives.
 
 A payment older than the cron looks (a hold three days past, a one visit's link a week old) is not found by it: look it up in Razorpay's dashboard, and refund it there, then ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
+
+### A payment link
+
+A consultation and fit in one visit is paid by the link its close makes (ADR 0105), and a paid visit ops book in the console by the link the booking makes. Razorpay texts the link to the client, with reminders. On staging it texts only a number on `MESSAGING_ALLOWLIST`: for any other number the link is made but not texted, the Worker logs `payment_link_not_texted`, and the link is on the client's Payments tab to send by hand.
+
+A one visit's link takes payment for 14 days from when Razorpay made it; a console booking's closes with its hold. A one visit's link that closed unpaid stays on Tasks as "link closed unpaid", and reads "Closed unpaid" on the client's Payments tab.
+
+The Worker cancels a link at Razorpay when the client is erased, and when the visit is paid by another link, such as one you made by hand. One Razorpay will not cancel raises an alert with the link's ID (`erased_link:<link>` or `paid_elsewhere_link:<link>`).
+
+By hand, in Razorpay's dashboard, under Payment Links:
+
+- **A new link** for a one visit whose link closed unpaid or was never made: create a payment link for the amount on the Tasks line, with the visit's ID as its reference. Its payment finds the visit.
+- **Cancel a link** that should no longer take payment, for a wrong price or a visit settled another way: find it by its reference (`MM-…`) and cancel it. For a one visit, then send the right one as above.
+- **Paid twice:** if the client paid two links for one visit, refund one of the payments.
 
 ### A refund that failed
 
@@ -1232,6 +1246,8 @@ The lasting answers are a number of Mane Man's own (open point 38) and SMS (open
 
 ### Replaying a failed message
 
+One message: **Send again** on its alert, under Tasks' Needs a hand. Many, after an outage:
+
 ```sql
 UPDATE outbound_messages
 SET state = 'queued', attempts = 0, sending_at = NULL,
@@ -1270,9 +1286,10 @@ WHERE t.name LIKE '%<name>%' ORDER BY d.last_seen_at DESC;
 The app sends the outbox one step at a time, oldest first, whenever it has signal and whenever it comes to the front. Its "Waiting to reach us" screen (`/waiting`) lists, for each job, the photo sets and steps still on the phone, since when, and what stopped the job's queue.
 
 - **No signal.** Nothing is wrong. Get to signal and open the app. The app warns when the phone has not promised to keep its store: an iPhone keeps it only with the app on its home screen (ADR 0053), so a technician on an iPhone should not leave work waiting for days.
-- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops close the visit by hand in the console (in FSM while FSM holds the record); then he taps "Got it", which asks first and deletes that job's queue from the phone.
-- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
-- **Photographs failed**: "Retry".
+- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to 9 am tomorrow" or, before the phone has read the card again, "to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops close the visit by hand in the console (in FSM while FSM holds the record); then he taps "Delete this job's work", which asks first and deletes that job's queue from the phone.
+- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step, filled in as he sent it. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
+- **A photograph refused** ("The photographs would not upload"): "Retake photos" opens the camera for that set with only the refused angles to take again; the photographs that reached us stay, and the rest of the job follows once the set lands.
+- **Photographs waiting**: "Retry".
 - **Never sign out or delete the app while work is waiting**: signing out wipes the phone. The app asks first, and offers "Send first".
 
 A step that reached us and not FSM is on the server side: "FSM is down". What reached us for a visit:
@@ -1325,7 +1342,7 @@ The console has two doors, and both run the same erasure, written to `audit_log`
 1. **Check the request comes from the number's owner.** Reply to that number on WhatsApp, or call it.
 2. **Erase.** Find them in **Clients** by name or number, open their **Consents** tab, and press **Erase**. The console says what is deleted and what is kept, and asks you to confirm you have checked the request with them on their own number. Someone with a request open from their app has no Erase button: decide it in Deletion requests, which tells them when it is done.
 
-   **A visit booked, or a payment held.** Nothing is erased while the person has a visit still to happen, or a payment we captured with no visit behind it, and the console says which (`docs/decisions/0066-erasure-all-or-nothing.md`). Cancel each visit on their page (Visits, **Cancel**): it refunds what was paid, gives a visit credit back and tells the client. Refund a payment with no visit behind it in Razorpay. Then erase. If they cannot be settled today, tick that you will cancel and refund it by hand today and press **Erase anyway**: the person is erased, the audit entry records it (`settled_by_hand`, with the number of visits and payments), the Worker logs `erasure_override`, and the visit and payment must still be cancelled and refunded the same day. A refund needs none of the person's details.
+   **A visit booked, a payment held, or a link unpaid.** Nothing is erased while the person has a visit or a booking still to happen (a booking paid for or free that is not yet a visit counts), a payment we captured with no visit behind it, or a payment link unpaid, and the console says which (`docs/decisions/0066-erasure-all-or-nothing.md`). Cancel each visit on their page (Visits, **Cancel**): it refunds what was paid, gives a visit credit back and tells the client. Refund a payment with no visit behind it in Razorpay. A link waits to be paid, or for its booking's link to close. Then erase. If they cannot be settled today, tick the line the console shows and press **Erase anyway**: the person is erased, their bookings not yet visits are let go, their open payment links are cancelled at Razorpay, the audit entry records it (`settled_by_hand`, with the number of visits, bookings, payments and links), the Worker logs `erasure_override`, and the visit and payment must still be cancelled and refunded the same day. A refund needs none of the person's details. A link Razorpay would not cancel raises `erased_link:<link>`: cancel it in Razorpay's dashboard.
 
    The files (photos, results, visit photographs, the referral card) are deleted just after the rest. If R2 fails, the person is erased all the same and the cron finishes the files within five minutes; `files_erased_at` on the person is set once they are gone. A deletion request of theirs still open is closed by the erasure, under your name, so it neither waits in the queue nor alerts.
 
@@ -1336,7 +1353,7 @@ The console has two doors, and both run the same erasure, written to `audit_log`
    FROM people WHERE id = '<person_id>';
    ```
 
-   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts. To finish it by hand, find the record in Zoho by `D1_Person_ID` and blank those fields. Then run `UPDATE people SET crm_erased_at = '<now, ISO>' WHERE id = '<person_id>';`. If Books will not erase the customer after 10 tries, ops are alerted once with what to do by hand.
+   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts, and the alert waits under Tasks' Needs a hand. Once Zoho is back, **Send again** there. To finish it by hand instead, find the record in Zoho by `D1_Person_ID`, blank those fields, then **Mark done** (Customer Care Manage): that records the person as erased in the CRM. If Books will not erase the customer after 10 tries, ops are alerted once with what to do by hand.
 
 4. **Delete the chat** with the number in the Mane Man WhatsApp account, if there is one.
 5. **Tell the person** it is done, in the chat they asked in.

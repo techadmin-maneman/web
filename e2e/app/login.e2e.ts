@@ -34,6 +34,8 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await expect(page.getByText("Morning, 9 am to 12 pm")).toBeVisible();
   await expect(page.getByText("Gurgaon", { exact: true })).toBeVisible();
   await expect(page.getByText("Free", { exact: true })).toBeVisible();
+  // Phase 1's form booked nothing: ops confirm the time.
+  await expect(page.getByText("Requested · we confirm the time on WhatsApp")).toBeVisible();
   await expect(page.getByRole("link", { name: "Your profile" })).toHaveText("RM");
   await expect(page.getByRole("link", { name: "Reschedule" })).toHaveAttribute(
     "href",

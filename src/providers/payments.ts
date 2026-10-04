@@ -15,7 +15,7 @@ export interface RefundAsked {
   readonly receipt: string;
 }
 
-/** A payment link to make: what it asks for, our reference for it, and whom Razorpay texts it to. */
+/** A payment link to make: what it asks for, our reference for it, whom it is for, and until when. */
 export interface PaymentLinkRequest {
   readonly amount: number;
   /** Ours, unique to the link and shown on Razorpay's page: the reference its payment will have, "MM-2026-0841". */
@@ -24,8 +24,10 @@ export interface PaymentLinkRequest {
   readonly description: string;
   readonly customer: { readonly name: string; readonly contact: string };
   readonly notes: Record<string, string>;
-  /** When it stops taking payment; left out, it stays open. */
-  readonly closesAt?: Date;
+  /** When it stops taking payment. */
+  readonly closesAt: Date;
+  /** Whether Razorpay texts the link, and reminders of it, to the customer; off, the link is only made. */
+  readonly notify: boolean;
 }
 
 export interface PaymentsProvider {
@@ -39,14 +41,16 @@ export interface PaymentsProvider {
    */
   refund(paymentId: string, refund: RefundAsked): Promise<{ id: string | null }>;
   /**
-   * A payment link, which Razorpay texts to the customer itself. Refused for a reference Razorpay already holds a
-   * link under.
+   * A payment link, which Razorpay texts to the customer itself where asked to. Refused for a reference Razorpay
+   * already holds a link under.
    */
   createPaymentLink(link: PaymentLinkRequest): Promise<MadeLink>;
   /** The link made under our reference, if there is one: what a try whose answer never came made. */
   findPaymentLink(reference: string): Promise<MadeLink | null>;
   /** A payment link as Razorpay holds it now: "paid" once paid, with the order its payment was made on. */
   paymentLink(linkId: string): Promise<RazorpayPaymentLink>;
+  /** Stops a link taking payment, and Razorpay's reminders of it. Refused for a link paid, expired or cancelled. */
+  cancelPaymentLink(linkId: string): Promise<void>;
 }
 
 /** A payment link Razorpay made: its ID, and the address it texted. */
@@ -81,6 +85,7 @@ export function createPaymentsProvider(
     createPaymentLink: off,
     findPaymentLink: off,
     paymentLink: off,
+    cancelPaymentLink: off,
   };
 }
 
@@ -90,6 +95,7 @@ export interface StubPayments extends PaymentsProvider {
     readonly orders: { amount: number; receipt: string; notes: Record<string, string> }[];
     readonly refunds: { paymentId: string; amount: number }[];
     readonly links: PaymentLinkRequest[];
+    readonly cancelledLinks: string[];
   };
   /** The payments a test says were made on an order; none on an order it names nothing for. */
   readonly paymentsOn: Map<string, RazorpayPayment[]>;
@@ -107,6 +113,7 @@ export function createStubPayments(): StubPayments {
     orders: [] as { amount: number; receipt: string; notes: Record<string, string> }[],
     refunds: [] as { paymentId: string; amount: number }[],
     links: [] as PaymentLinkRequest[],
+    cancelledLinks: [] as string[],
   };
   const receipts = new Set<string>();
   const linksByReference = new Map<string, MadeLink>();
@@ -147,6 +154,10 @@ export function createStubPayments(): StubPayments {
         return Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "The id provided does not exist"));
       }
       return Promise.resolve({ id: linkId, status: "created", reference_id: madeUnder[0], order_id: null });
+    },
+    cancelPaymentLink: (linkId) => {
+      made.cancelledLinks.push(linkId);
+      return Promise.resolve();
     },
   };
 }

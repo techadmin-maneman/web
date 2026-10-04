@@ -1,15 +1,20 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { confirmBooking } from "../../src/domain/bookings.ts";
 import { alertAgedDeletions, deletionsWaiting } from "../../src/domain/deletion.ts";
 import { erasePerson } from "../../src/domain/erasure.ts";
+import { sendUnsentLinks } from "../../src/domain/payment-links.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { putCounted, readMeter } from "../../src/domain/storage-meter.ts";
 import type { Providers } from "../../src/config/environments.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
+import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { secretsMatch } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
 import type { PlacesReached } from "../../src/policy/access.ts";
 import { STUB_IDENTITY } from "../../src/providers/cloudflare-access.ts";
+import { createStubFsm } from "../../src/providers/fsm.ts";
+import { createStubPayments, type StubPayments } from "../../src/providers/payments.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
   LOCAL_CONFIG,
@@ -195,7 +200,7 @@ describe("POST /api/clients/:id/erasure", () => {
         actor: STAFF,
         subject_kind: "person",
         subject_id: personId,
-        detail: JSON.stringify({ settled_by_hand: false, visits: 0, payments: 0 }),
+        detail: JSON.stringify({ settled_by_hand: false, visits: 0, bookings: 0, payments: 0, links: 0 }),
       },
     ]);
   });
@@ -279,7 +284,7 @@ async function openRequest(personId: string): Promise<void> {
     .run();
 }
 
-const alertsNow = () => alertAgedDeletions(env.DB, NOW, () => Promise.resolve());
+const alertsNow = () => alertAgedDeletions(env.DB, NOW, fakeDependencies().alertOnce);
 
 // PS-17: the operators' door left the client's own request listed as waiting, and alerting.
 describe("a client erased with a deletion request open", () => {
@@ -293,6 +298,19 @@ describe("a client erased with a deletion request open", () => {
     expect(closed).toEqual({ state: "done", decided_at: NOW.toISOString(), decided_by: STAFF });
     expect(await deletionsWaiting(env.DB, EVERYWHERE)).toEqual([]);
     expect(await alertsNow()).toBe(0);
+  });
+
+  it("closes the request's alert on Tasks with it", async () => {
+    const personId = await book();
+    await openRequest(personId);
+    expect(await alertsNow()).toBe(1);
+
+    expect(await statusOf(personId)).toBe(200);
+
+    const open = await env.DB.prepare(
+      "SELECT key FROM alerts WHERE resolved_at IS NULL AND key LIKE 'deletion_waiting:%'",
+    ).all();
+    expect(open.results).toEqual([]);
   });
 
   it("is left out of the queue and its alert when an earlier erasure left the request open", async () => {
@@ -798,7 +816,9 @@ describe("erasure while something is still owed", () => {
     expect(await response.json()).toEqual({
       error: { code: "visit_booked", request_id: expect.any(String) as string },
       visits: [{ id: "visit-live", type: "service", status: "scheduled", window_start: "2026-09-28T03:30:00.000Z" }],
+      bookings: [],
       payments: [],
+      links: [],
     });
     expect(await env.DB.prepare("SELECT erased_at FROM people WHERE id = ?1").bind(personId).first()).toEqual({
       erased_at: null,
@@ -827,7 +847,264 @@ describe("erasure while something is still owed", () => {
     expect(await statusOf(personId, { body: { override_open_bookings: true } })).toBe(200);
 
     const entry = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'person.erase'").first("detail");
-    expect(entry).toBe(JSON.stringify({ settled_by_hand: true, visits: 1, payments: 1 }));
+    expect(entry).toBe(JSON.stringify({ settled_by_hand: true, visits: 1, bookings: 0, payments: 1, links: 0 }));
+  });
+});
+
+/** Imran, whose Wednesday a booking holds. */
+async function technician(): Promise<void> {
+  await env.DB.prepare(
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+  )
+    .bind(NOW.toISOString())
+    .run();
+}
+
+interface Holding {
+  readonly id: string;
+  readonly window?: "morning" | "afternoon";
+  readonly amount: number;
+  readonly confirmedAt: string | null;
+  readonly expiresAt: string;
+  readonly payByLink?: { readonly linkId: string; readonly reference: string };
+  readonly orderId?: string;
+}
+
+/** A booking of theirs not yet a visit, holding a window of Imran's Wednesday, the morning unless said. */
+async function holding(personId: string, hold: Holding): Promise<void> {
+  const at = NOW.toISOString();
+  const window = hold.window ?? "morning";
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
+         gst_percent, state, expires_at, created_at, updated_at, confirmed_at, queued_at, pay_by_link, payment_link_id,
+         reference, razorpay_order_id)
+       VALUES (?1, ?2, 'consultation', '2026-09-23', ?11, 't1', 0, ?3, ?3, 0, 'held', ?4, ?5, ?5, ?6, ?6, ?7, ?8, ?9,
+         ?10)`,
+    ).bind(
+      hold.id,
+      personId,
+      hold.amount,
+      hold.expiresAt,
+      at,
+      hold.confirmedAt,
+      hold.payByLink === undefined ? 0 : 1,
+      hold.payByLink?.linkId ?? null,
+      hold.payByLink?.reference ?? null,
+      hold.orderId ?? null,
+      window,
+    ),
+    env.DB.prepare(
+      "INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES ('t1', '2026-09-23', ?1, ?2)",
+    ).bind(`window:${window}`, hold.id),
+  ]);
+}
+
+const AN_HOUR_ON = new Date(NOW.getTime() + 60 * 60 * 1000).toISOString();
+
+/** The audit's X10: a free consultation confirmed, and not yet a visit. */
+const freeBooking = (personId: string) =>
+  holding(personId, { id: "hold-free", amount: 0, confirmedAt: NOW.toISOString(), expiresAt: NOW.toISOString() });
+
+/** A visit ops booked, its slot held while the payment link they sent is open. */
+const bookingByLink = (personId: string, expiresAt = AN_HOUR_ON) =>
+  holding(personId, {
+    id: "hold-link",
+    window: "afternoon",
+    amount: 200000,
+    confirmedAt: null,
+    expiresAt,
+    payByLink: { linkId: "plink_hold", reference: "MM-2026-0002" },
+  });
+
+/** A consultation and fit in one visit, fitted last week, whose link Razorpay sent and nobody has paid. */
+async function fittedVisitUnpaid(personId: string): Promise<void> {
+  const at = NOW.toISOString();
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
+         synced_at, one_visit)
+       VALUES ('visit-fitted', 'visit-fitted', ?1, 'first_fit', 'completed', NULL, '2026-09-14T03:30:00.000Z', ?2, ?2,
+         'booked')`,
+    ).bind(personId, at),
+    env.DB.prepare(
+      `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, razorpay_link_id,
+         short_url, sent_at, reference, created_at, updated_at)
+       VALUES ('link-1', 'visit-fitted', 'standard', 4500000, 3813559, 18, 'plink_visit', 'https://rzp.io/i/v', ?1,
+         'MM-2026-0003', ?1, ?1)`,
+    ).bind(at),
+  ]);
+}
+
+const holdStates = async () => (await env.DB.prepare("SELECT id, state FROM slot_holds ORDER BY id").all()).results;
+const claimsLeft = async () => (await env.DB.prepare("SELECT hold_id FROM slot_claims").all()).results;
+const erasedAt = async (personId: string) =>
+  env.DB.prepare("SELECT erased_at FROM people WHERE id = ?1").bind(personId).first("erased_at");
+
+describe("erasure while a booking is not yet a visit, or a payment link is unpaid", () => {
+  beforeEach(technician);
+
+  it("refuses a client whose free consultation is confirmed but not yet a visit, names it, and keeps it", async () => {
+    const personId = await book();
+    await freeBooking(personId);
+
+    const response = await erase(personId);
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      error: { code: "visit_booked" },
+      visits: [],
+      bookings: [{ id: "hold-free", type: "consultation", date: "2026-09-23", window: "morning" }],
+      links: [],
+    });
+    expect(await erasedAt(personId)).toBeNull();
+    expect(await holdStates()).toEqual([{ id: "hold-free", state: "held" }]);
+  });
+
+  it("refuses a client whose fitted visit's payment link is unpaid, and names the link", async () => {
+    const personId = await book();
+    await fittedVisitUnpaid(personId);
+
+    const response = await erase(personId);
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      error: { code: "payment_owed" },
+      links: [{ id: "link-1", reference: "MM-2026-0003", amount: 4500000 }],
+    });
+    expect(await erasedAt(personId)).toBeNull();
+  });
+
+  it("refuses a client with a payment link open for a booking, and names the booking's link", async () => {
+    const personId = await book();
+    await bookingByLink(personId);
+
+    const response = await erase(personId);
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      error: { code: "payment_owed" },
+      bookings: [],
+      links: [{ id: "hold-link", reference: "MM-2026-0002", amount: 200000 }],
+    });
+  });
+
+  it("is not held up by a booking's link that has closed, and asks Razorpay to cancel nothing", async () => {
+    const personId = await book();
+    await bookingByLink(personId, NOW.toISOString());
+    const deps = fakeDependencies();
+
+    expect(await statusOf(personId, { deps })).toBe(200);
+
+    expect((deps.payments as StubPayments).made.cancelledLinks).toEqual([]);
+  });
+
+  it("erases anyway when ops say so: lets go of the bookings and their time, and cancels the open links", async () => {
+    const personId = await book();
+    await freeBooking(personId);
+    await bookingByLink(personId);
+    await fittedVisitUnpaid(personId);
+    const deps = fakeDependencies();
+
+    expect(await statusOf(personId, { deps, body: { override_open_bookings: true } })).toBe(200);
+
+    expect(await holdStates()).toEqual([
+      { id: "hold-free", state: "released" },
+      { id: "hold-link", state: "released" },
+    ]);
+    expect(await claimsLeft()).toEqual([]);
+    expect((deps.payments as StubPayments).made.cancelledLinks).toEqual(["plink_visit", "plink_hold"]);
+    const entry = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'person.erase'").first("detail");
+    expect(entry).toBe(JSON.stringify({ settled_by_hand: true, visits: 0, bookings: 1, payments: 0, links: 2 }));
+  });
+
+  it("still erases when Razorpay will not cancel a link, and tells ops its ID to cancel by hand", async () => {
+    const personId = await book();
+    await fittedVisitUnpaid(personId);
+    const refusing = createStubPayments();
+    const deps = fakeDependencies({
+      payments: { ...refusing, cancelPaymentLink: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")) },
+    });
+
+    expect(await statusOf(personId, { deps, body: { override_open_bookings: true } })).toBe(200);
+
+    expect(await erasedAt(personId)).not.toBeNull();
+    expect(await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL").all()).toMatchObject({
+      results: [{ key: "erased_link:plink_visit" }],
+    });
+    expect(deps.alerts.join("\n")).toContain("plink_visit");
+  });
+});
+
+describe("a booking of a client erased since", () => {
+  beforeEach(technician);
+
+  it("is let go by the erasure, and a payment for it that comes in afterwards goes back rather than booking it", async () => {
+    const personId = await book();
+    await holding(personId, {
+      id: "hold-paying",
+      amount: 200000,
+      confirmedAt: null,
+      expiresAt: AN_HOUR_ON,
+      orderId: "order_late",
+    });
+    expect(await statusOf(personId)).toBe(200);
+    expect(await holdStates()).toEqual([{ id: "hold-paying", state: "released" }]);
+
+    // Razorpay's webhook records the capture and confirms the hold, then asks for the booking.
+    const at = NOW.toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, status,
+           captured_at, created_at, updated_at)
+         VALUES ('payment-late', ?1, 'order_late', 'pay_late', 200000, 'INR', 'captured', ?2, ?2, ?2)`,
+      ).bind(personId, at),
+      env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?1 WHERE id = 'hold-paying'").bind(at),
+    ]);
+    const payments = createStubPayments();
+    const outcome = await confirmBooking(env.DB, createStubFsm(), payments, "hold-paying", NOW, {
+      record: "ours",
+      labelAsTest: true,
+    });
+
+    expect(outcome).toBe("refunded");
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 200000 }]);
+    expect(await env.DB.prepare("SELECT id FROM appointments WHERE person_id = ?1").bind(personId).all()).toMatchObject(
+      {
+        results: [],
+      },
+    );
+    expect(await holdStates()).toEqual([{ id: "hold-paying", state: "released" }]);
+  });
+
+  it("is never written to FSM, and is let go, when a try for it still comes", async () => {
+    const personId = await book();
+    await freeBooking(personId);
+    await env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(personId, NOW.toISOString()).run();
+    const fsm = createStubFsm();
+
+    const outcome = await confirmBooking(env.DB, fsm, createStubPayments(), "hold-free", NOW, { labelAsTest: true });
+
+    expect(outcome).toBe("lapsed");
+    expect(fsm.made.workOrders).toEqual([]);
+    expect(await holdStates()).toEqual([{ id: "hold-free", state: "released" }]);
+    expect(await claimsLeft()).toEqual([]);
+  });
+
+  it("never has a payment link asked of Razorpay for it", async () => {
+    const personId = await book();
+    await fittedVisitUnpaid(personId);
+    await env.DB.batch([
+      env.DB.prepare("UPDATE payment_links SET razorpay_link_id = NULL, short_url = NULL, sent_at = NULL"),
+      env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(personId, NOW.toISOString()),
+    ]);
+    const deps = fakeDependencies();
+
+    const linkDeps = { ...deps, log: createLogger(), messagingSettings: LOCAL_CONFIG.settings.messaging };
+    const sent = await sendUnsentLinks(env.DB, linkDeps, NOW, createCallBudget(10));
+
+    expect(sent).toBe(0);
+    expect((deps.payments as StubPayments).made.links).toEqual([]);
   });
 });
 
@@ -892,6 +1169,18 @@ describe("ops deciding a deletion", () => {
       visits: [{ id: "visit-live", type: "service" }],
     });
     expect(await decisions()).toEqual([]);
+    expect(await env.DB.prepare("SELECT state FROM deletion_requests").first("state")).toBe("requested");
+  });
+
+  it("refuses to delete while a payment link is unpaid, names it, and leaves the request waiting", async () => {
+    const personId = await book();
+    await fittedVisitUnpaid(personId);
+    const id = await requested(personId);
+
+    const response = await decide(id, "delete");
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ error: { code: "payment_owed" }, links: [{ id: "link-1" }] });
     expect(await env.DB.prepare("SELECT state FROM deletion_requests").first("state")).toBe("requested");
   });
 

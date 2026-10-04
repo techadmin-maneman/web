@@ -1,17 +1,10 @@
 /*
- * Board D3's roster, on the panel the board draws it on and at its width: one
- * 34 px row a technician, in the board's own columns, with Leave where it draws
- * Skill. A technician's phones and leave open in a panel over the roster,
- * drawn as the dispatch board's drawer is. A revoke stays quiet until it is
- * asked for, since it ends a session and makes the phone drop its cached jobs.
+ * Board D3's roster, across the page's width: one 34 px row a technician, in
+ * the board's own columns, with Leave where it draws Skill. A technician's own
+ * page puts his details over his tabs, as a client's page does. A revoke stays
+ * quiet until it is asked for, since it ends a session and makes the phone drop
+ * its cached jobs.
  */
-
-.column {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-20);
-  max-width: var(--ops-panel);
-}
 
 .panel {
   padding: var(--sp-20);
@@ -157,6 +150,50 @@
   color: var(--text-muted);
 }
 
+/* ---- A technician's page: his details, then a tab at a time -------------- */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-8);
+  max-width: var(--measure-column);
+}
+
+.back {
+  font-size: var(--fs-14);
+  color: var(--text);
+  text-underline-offset: var(--sp-4);
+}
+
+.back:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+.pageTitle {
+  margin: var(--sp-8) 0 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-22);
+}
+
+.tabs {
+  align-self: stretch;
+  margin-top: var(--sp-20);
+}
+
+.tabPanel {
+  align-self: stretch;
+  padding-top: var(--sp-14);
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-150);
+}
+
 /* ---- Those switched off, beneath the table ------------------------------- */
 
 .off {
@@ -233,7 +270,7 @@
   outline-offset: calc(-1 * var(--focus-width));
 }
 
-/* ---- The panel over the roster: one technician's phones and leave -------- */
+/* ---- The panel over the roster: adding a technician --------------------- */
 
 .drawer {
   position: fixed;
@@ -349,10 +386,15 @@
   font-size: var(--fs-14);
 }
 
-.revoked {
+.revoked,
+.signedIn {
   margin: var(--sp-6) 0 0;
   font-size: var(--fs-13);
   color: var(--text-muted);
+}
+
+.signedIn {
+  color: var(--text);
 }
 
 .error {
@@ -363,7 +405,13 @@
 
 /* ---- Leave, which the dispatch board and booking both read (ADR 0062) ----- */
 
-/* The jobs a leave just recorded falls on, behind the oxblood rule the console gives what needs doing (OPS-07). */
+.period + .period {
+  margin-top: var(--sp-8);
+  padding-top: var(--sp-8);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+/* The jobs still booked on a period's days, behind the oxblood rule the console gives what needs doing. */
 .stranded {
   display: flex;
   flex-direction: column;
@@ -396,6 +444,29 @@
 .leavePeriod {
   font-size: var(--fs-14);
   white-space: nowrap;
+}
+
+.jobRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-6) var(--sp-12);
+  padding: var(--sp-4) 0;
+  font-size: var(--fs-13);
+}
+
+.show {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  font-size: var(--fs-13);
+  color: var(--text);
+  text-underline-offset: var(--sp-4);
+}
+
+.show:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
 .leaveNote {
@@ -438,4 +509,24 @@
 .input:focus-visible {
   outline: var(--focus-width) solid var(--ink);
   outline-offset: calc(-1 * var(--focus-width));
+}
+
+/* ---- His kit, as the stock ledger counts it ------------------------------ */
+
+.kit {
+  margin-top: var(--sp-12);
+}
+
+/* At or below its level: said in words, and in oxblood, never by colour alone. */
+.low {
+  margin-left: var(--sp-6);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-medium);
+  color: var(--error-on-paper);
+}
+
+.counted {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  white-space: nowrap;
 }

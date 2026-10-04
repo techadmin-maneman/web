@@ -26,8 +26,8 @@ import {
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
-/** The client's page in the console, which each alert links to. */
-const CLIENT_PAGE = `http://ops.localhost:4323/clients/${PERSON}`;
+/** The client's Payments tab in the console, which each alert links to. */
+const CLIENT_PAGE = `http://ops.localhost:4323/clients/${PERSON}/payments`;
 
 const SECOND = 1000;
 const MINUTE = 60;
@@ -42,6 +42,8 @@ let messageQueue: ReturnType<typeof fakeQueue>;
 let payments: StubPayments;
 /** Each order whose payments the job read from Razorpay, in turn. */
 let ordersRead: string[];
+/** Each payment link the job read from Razorpay, in turn. */
+let linksRead: string[];
 
 const configFor = (record: "fsm" | "ours") => ({
   ...LOCAL_CONFIG,
@@ -57,6 +59,10 @@ const dependencies = (seconds: number): TestDependencies =>
       orderPayments: (orderId) => {
         ordersRead.push(orderId);
         return payments.orderPayments(orderId);
+      },
+      paymentLink: (linkId) => {
+        linksRead.push(linkId);
+        return payments.paymentLink(linkId);
       },
     },
   });
@@ -123,6 +129,7 @@ beforeEach(async () => {
   messageQueue = fakeQueue();
   payments = createStubPayments();
   ordersRead = [];
+  linksRead = [];
   await env.DB.batch([
     env.DB.prepare(
       "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
@@ -355,5 +362,49 @@ describe("a one visit's payment link, paid without its webhook", () => {
     await runAt(dependencies(HOUR - MINUTE));
 
     expect(await linkRow()).toEqual({ razorpay_payment_id: null, paid_at: null });
+  });
+});
+
+describe("holds and links in one run", () => {
+  /** A hold whose Checkout opened on `orderId` and was let go when it ran out, `expiresIn` seconds on, nothing paid. */
+  const letGoHold = (id: string, orderId: string, expiresIn: number) =>
+    env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, razorpay_order_id, expires_at, created_at, updated_at)
+       VALUES (?1, ?2, 'service', '2026-09-24', 'afternoon', 't1', 0, 200000, 169492, 18, 'released', ?3, ?4, ?5, ?5)`,
+    )
+      .bind(id, PERSON, orderId, at(expiresIn).toISOString(), NOW.toISOString())
+      .run();
+
+  /** A one visit fitted at NOW, and its link, sent at once and still unpaid. */
+  const unpaidLink = () =>
+    env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id,
+           synced_at, one_visit)
+         VALUES (?1, ?1, ?2, 'first_fit', 'completed', '2026-09-21T03:30:00.000Z', '2026-09-21T06:30:00.000Z', 't1',
+           ?3, 'booked')`,
+      ).bind(VISIT, PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, razorpay_link_id,
+           short_url, sent_at, reference_year, reference_number, reference, created_at, updated_at)
+         VALUES ('link-1', ?1, 'natural', 4500000, 3813559, 18, 'plink_unpaid', 'https://rzp.io/i/unpaid', ?2, 2026, 7,
+           'MM-2026-0007', ?2, ?2)`,
+      ).bind(VISIT, NOW.toISOString()),
+    ]);
+
+  it("take turns, so holds that would spend every call of the run still leave some for a link", async () => {
+    await letGoHold("hold-a", "order_a", 10 * MINUTE);
+    await letGoHold("hold-b", "order_b", 11 * MINUTE);
+    await unpaidLink();
+    payments.linksNow.set("plink_unpaid", { id: "plink_unpaid", status: "created", order_id: null });
+
+    await runAt(dependencies(HOUR));
+    expect(ordersRead).toEqual(["order_a"]);
+    expect(linksRead).toEqual(["plink_unpaid"]);
+
+    await runAt(dependencies(HOUR + 15 * MINUTE));
+    expect(ordersRead).toEqual(["order_a", "order_b"]);
+    expect(linksRead).toEqual(["plink_unpaid"]);
   });
 });

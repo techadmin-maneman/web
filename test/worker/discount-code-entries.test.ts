@@ -933,12 +933,15 @@ describe("the technician, before a one visit's payment link", () => {
     return job;
   }
 
-  const fitted = async (job: Awaited<ReturnType<typeof oneVisit>>) => {
-    await job.workTo("consumables");
+  /** Works the one visit up to its outcome, the client's choice first, as its piece step's body says. */
+  const workedWith = async (job: Awaited<ReturnType<typeof oneVisit>>, piece: object) => {
+    await job.workTo("piece");
+    await job.post(`/api/tech/jobs/${JOB}/piece`, piece, "event-piece-01");
+    await job.post(`/api/tech/jobs/${JOB}/checklist`, { done: [] }, "event-checklist-01");
     await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
-    await job.post(`/api/tech/jobs/${JOB}/piece`, { ...A_PIECE, product: NATURAL.tier }, "event-piece-01");
     await job.post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
   };
+  const fitted = (job: Awaited<ReturnType<typeof oneVisit>>) => workedWith(job, { ...A_PIECE, product: NATURAL.tier });
 
   it("takes the code off the product's price in the link, and no amount reaches the phone", async () => {
     await make();
@@ -1012,10 +1015,7 @@ describe("the technician, before a one visit's payment link", () => {
     await make({ code: "UNQ5", maxUses: 1 });
     const job = await oneVisit();
     await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "UNQ5" }, "unused");
-    await job.workTo("consumables");
-    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
-    await job.post(`/api/tech/jobs/${JOB}/piece`, { declined: true }, "event-piece-01");
-    await job.post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    await workedWith(job, { declined: true });
     await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
     const use = await env.DB.prepare("SELECT removed_by, removed_by_id FROM discount_code_uses").first();
     expect(use).toEqual({ removed_by: "system", removed_by_id: "declined" });

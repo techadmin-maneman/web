@@ -232,7 +232,7 @@ export function TaskActions({
   const errors = failed?.closing === true ? tasks.close.errors : tasks.owner.errors;
   return (
     <>
-      <span className={styles.acts}>
+      <span className={styles.ownerActs}>
         {mine && (
           <Act
             label={tasks.owner.handBack}

@@ -15,13 +15,14 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import type { AlertOnce } from "../domain/alerts.ts";
+import { paymentsTab, type AlertOnce } from "../domain/alerts.ts";
 import { recordBookingConsents } from "../domain/booking-consents.ts";
 import { paymentStatusOf, recordPayment, recordRefund, recordRefundedPayment } from "../domain/payments.ts";
+import { afterResponse } from "../http/after-response.ts";
 import { bookHold } from "../http/book-hold.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { sha256Hex } from "../lib/hash.ts";
-import { linkPaid } from "../domain/payment-links.ts";
+import { cancelLinkPaidElsewhere, linkPaid } from "../domain/payment-links.ts";
 import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../domain/visit-booking.ts";
 import {
   RazorpayPaymentLinkSchema,
@@ -81,7 +82,7 @@ async function holdLinkPaid(
       message:
         `The client paid the payment link for booking ${hold.id} (payment ${payment.id}), but Razorpay named no ` +
         "order for it, so the visit was not booked. Book it for them, or refund the payment in Razorpay's dashboard.",
-      link: `/clients/${hold.personId}`,
+      link: paymentsTab(hold.personId),
     });
     return;
   }
@@ -120,7 +121,7 @@ async function refundTaken(
       `Payment ${payment.id} was refunded in Razorpay before we heard it was paid. The payment and its refund ` +
       `${refund.id} are recorded now; no visit was booked for it. If no one here refunded it, Razorpay's ` +
       `payment messages are not reaching us (runbook, "Razorpay's webhook is not arriving").`,
-    ...(personId === null ? {} : { link: `/clients/${personId}` }),
+    ...(personId === null ? {} : { link: paymentsTab(personId) }),
   });
   return true;
 }
@@ -166,8 +167,11 @@ export function registerRazorpayHook(app: App): void {
       const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
       const hold = await holdOfLink(db, { razorpayLinkId: link.id, reference: link.reference_id ?? null });
       if (hold === null) {
-        const paid = await linkPaid(db, { link, payment }, config.settings.ipHashSalt, now);
-        log.info("razorpay_hook_link_paid", { ours: paid });
+        const visit = await linkPaid(db, { link, payment }, config.settings.ipHashSalt, now);
+        log.info("razorpay_hook_link_paid", { ours: visit !== null });
+        if (visit !== null) {
+          await afterResponse(c, cancelLinkPaidElsewhere({ ...deps, log }, { visit, razorpayLinkId: link.id }, now));
+        }
       } else {
         await holdLinkPaid(c, { hold, link, payment });
       }

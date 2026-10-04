@@ -52,13 +52,16 @@ export const NO_SHOW_WAIT_MIN: Waits = {
 export const SERVER_CLOCK_RULE =
   "The wait runs on the server's clock as well as the phone's: a check-in the server has held for less than the wait cannot be closed, whatever time the phone gave it.";
 
+/** The owner's ruling on a technician who arrives early: the client's wait begins when their visit does. */
+export const BOOKED_START_RULE = "A technician who checked in before the booked start waits from the booked start.";
+
 /**
- * When the wait that started at check-in ends. The waits ops have set, or the
+ * When a wait that started at `startedAt` ends. The waits ops have set, or the
  * ones above: they are ops-editable inputs (docs/decisions/0061-ops-editable-inputs.md),
  * so every caller passes what is in force and the rule still stands on its own.
  */
-export const waitEndsAt = (checkedInAt: Date, type: VisitType, wait: Waits = NO_SHOW_WAIT_MIN): Date =>
-  new Date(checkedInAt.getTime() + wait[type] * MINUTE_MS);
+export const waitEndsAt = (startedAt: Date, type: VisitType, wait: Waits = NO_SHOW_WAIT_MIN): Date =>
+  new Date(startedAt.getTime() + wait[type] * MINUTE_MS);
 
 /** A check-in's two times: the phone's, held within bounds (src/policy/phone-clock.ts), and the server's. */
 export interface CheckInTimes {
@@ -66,20 +69,30 @@ export interface CheckInTimes {
   readonly receivedAt: Date;
 }
 
-/** When the wait ends: on the phone's time and on the server's, whichever is later. */
-export function noShowWaitEnds(checkIn: CheckInTimes, type: VisitType, wait: Waits = NO_SHOW_WAIT_MIN): Date {
-  const byPhone = waitEndsAt(checkIn.at, type, wait);
-  const byServer = waitEndsAt(checkIn.receivedAt, type, wait);
+/** When the wait starts: at the check-in, or at the booked start for a technician who arrived before it. */
+export const waitStartsAt = (checkedInAt: Date, visitStart: Date): Date =>
+  checkedInAt.getTime() > visitStart.getTime() ? checkedInAt : visitStart;
+
+/** When the wait ends: on the phone's time and on the server's, whichever is later, each from the booked start at the earliest. */
+export function noShowWaitEnds(
+  checkIn: CheckInTimes,
+  visitStart: Date,
+  type: VisitType,
+  wait: Waits = NO_SHOW_WAIT_MIN,
+): Date {
+  const byPhone = waitEndsAt(waitStartsAt(checkIn.at, visitStart), type, wait);
+  const byServer = waitEndsAt(waitStartsAt(checkIn.receivedAt, visitStart), type, wait);
   return byServer.getTime() > byPhone.getTime() ? byServer : byPhone;
 }
 
 /** Whether the technician may close the job as a no-show yet. */
 export const canCloseAsNoShow = (
   checkIn: CheckInTimes,
+  visitStart: Date,
   type: VisitType,
   now: Date,
   wait: Waits = NO_SHOW_WAIT_MIN,
-): boolean => now.getTime() >= noShowWaitEnds(checkIn, type, wait).getTime();
+): boolean => now.getTime() >= noShowWaitEnds(checkIn, visitStart, type, wait).getTime();
 
 /** The three facts ops rule on, and nothing else. */
 export interface Evidence {

@@ -21,7 +21,7 @@ import { discounted } from "../policy/discount-codes.ts";
 import { invoiceHold, type InvoiceHold, type SoldVisit } from "../policy/prepayment.ts";
 import type { BooksInvoice, BooksProvider, NewBooksInvoice } from "../providers/books.ts";
 import { isRefusal } from "../providers/provider-error.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { customerFor } from "./books-customers.ts";
 import { codeOnVisit, priceAfterCode } from "./discount-code-uses.ts";
 import { priceOf, type Price } from "./price-book.ts";
@@ -321,7 +321,7 @@ export function listPrice(db: D1Database, visit: PricedVisit): Promise<Price | n
 // What ops are told
 // ---------------------------------------------------------------------------
 
-const linkTo = (visit: Visit): string => `/clients/${visit.person_id}`;
+const linkTo = (visit: Visit): string => paymentsTab(visit.person_id);
 const named = (invoice: BooksInvoice): string => `${invoice.number} (${invoice.id})`;
 
 /** The draft's alert, saying why it is held. It shares the draft's key, so a visit is told of once. */

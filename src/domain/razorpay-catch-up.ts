@@ -7,9 +7,9 @@
 // - a hold ops sent a payment link for, from an hour after it was made until three days after it ran out;
 // - a one visit's payment link, from an hour after it was sent until a week after it was made.
 //
-// Each is asked about at most once an hour, a few of each a run. A payment found is recorded as its webhook would have
-// recorded it, a hold it paid for goes to be booked, or refunded if its time has gone, and ops are told once for each
-// payment we had not heard of.
+// Each is asked about at most once an hour, holds and links taking turns while the run's calls last. A payment found
+// is recorded as its webhook would have recorded it, a hold it paid for goes to be booked, or refunded if its time has
+// gone, and ops are told once for each payment we had not heard of.
 
 import { rupees } from "@maneman/web-kit/money";
 import type { CallBudget } from "../lib/call-budget.ts";
@@ -17,7 +17,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 import { failureReason, type Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { RazorpayPayment, RazorpayPaymentLink } from "../providers/razorpay.ts";
-import type { AlertOnce } from "./alerts.ts";
+import { paymentsTab, type AlertOnce } from "./alerts.ts";
 import { recordBookingConsents } from "./booking-consents.ts";
 import { linkPaid } from "./payment-links.ts";
 import { recordPayment } from "./payments.ts";
@@ -74,10 +74,16 @@ interface LinkToAsk {
 }
 
 /** A link Razorpay holds as paid, and the payment that paid it. */
-interface PaidLink {
+interface FoundPaid {
   readonly link: RazorpayPaymentLink;
   readonly payment: RazorpayPayment;
   readonly orderId: string;
+}
+
+/** One question for Razorpay: the calls it may take, and asking it, which answers whether a payment was found. */
+interface Question {
+  readonly calls: number;
+  readonly ask: () => Promise<boolean>;
 }
 
 /** Asks Razorpay what its webhook may have missed, as far as the run's calls allow. Answers how many payments it found. */
@@ -87,16 +93,32 @@ export async function catchUpWithRazorpay(
   budget: CallBudget,
   now: Date,
 ): Promise<number> {
+  const aboutHolds = (await holdsToAsk(db, now)).map((hold): Question => ({
+    calls: callsForHold(hold),
+    ask: () => askAboutHold(db, deps, hold, now),
+  }));
+  const aboutLinks = (await linksToAsk(db, now)).map((link): Question => ({
+    calls: CALLS_PER_LINK,
+    ask: () => askAboutLink(db, deps, link, now),
+  }));
   let found = 0;
-  for (const hold of await holdsToAsk(db, now)) {
-    if (!budget.spend(callsForHold(hold))) return found;
-    if (await askAboutHold(db, deps, hold, now)) found += 1;
-  }
-  for (const link of await linksToAsk(db, now)) {
-    if (!budget.spend(CALLS_PER_LINK)) return found;
-    if (await askAboutLink(db, deps, link, now)) found += 1;
+  for (const question of takingTurns(aboutHolds, aboutLinks)) {
+    if (!budget.spend(question.calls)) return found;
+    if (await question.ask()) found += 1;
   }
   return found;
+}
+
+/** A hold, then a link, and so on, so that neither kind takes every call of a run while the other waits. */
+function takingTurns(first: readonly Question[], second: readonly Question[]): Question[] {
+  const turns: Question[] = [];
+  for (let index = 0; index < Math.max(first.length, second.length); index += 1) {
+    const fromFirst = first[index];
+    const fromSecond = second[index];
+    if (fromFirst !== undefined) turns.push(fromFirst);
+    if (fromSecond !== undefined) turns.push(fromSecond);
+  }
+  return turns;
 }
 
 /** Reading the hold's order or link, and the refund a payment made too late is given back by. */
@@ -236,13 +258,13 @@ async function sendToBeBooked(deps: CatchUpDeps, hold: HoldToAsk): Promise<void>
       message:
         `Booking ${hold.id} is paid for, but could not be booked or refunded: ${reason}. Book the visit for the ` +
         "client, or refund the payment in Razorpay's dashboard.",
-      link: `/clients/${hold.person_id}`,
+      link: paymentsTab(hold.person_id),
     });
   }
 }
 
 /** The link as Razorpay holds it, with the payment that paid it; null while it is unpaid. */
-async function paidLink(payments: PaymentsProvider, linkId: string): Promise<PaidLink | null> {
+async function paidLink(payments: PaymentsProvider, linkId: string): Promise<FoundPaid | null> {
   const link = await payments.paymentLink(linkId);
   const orderId = link.order_id ?? null;
   if (link.status !== "paid" || orderId === null) return null;
@@ -294,6 +316,6 @@ async function tellFound(
     message:
       `Payment ${payment.id} of ${rupees(payment.amount)} for ${paidFor} reached us only when we asked Razorpay. ` +
       `${next} Razorpay's payment messages may not be reaching us (runbook, "Razorpay's webhook is not arriving").`,
-    ...(personId === null ? {} : { link: `/clients/${personId}` }),
+    ...(personId === null ? {} : { link: paymentsTab(personId) }),
   });
 }

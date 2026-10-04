@@ -162,6 +162,29 @@ describe("GET /api/no-shows", () => {
     expect((await cases())[0]?.person).toBeNull();
   });
 
+  // The audit's B13: a 4 pm visit checked in at 11:31, closed at 11:36 and charged, with nothing to say so.
+  it("flags a case whose wait ran from a check-in before the booked start", async () => {
+    expect((await cases())[0]).toMatchObject({ minutes_late: 309, closed_early: false });
+
+    await env.DB.prepare(
+      `UPDATE checkins SET at = '2026-09-19T02:00:00.000Z', claimed_at = '2026-09-19T02:00:00.000Z',
+         created_at = '2026-09-19T02:00:00.000Z'`,
+    ).run();
+    await env.DB.prepare(
+      `UPDATE no_show_cases SET wait_started_at = '2026-09-19T02:00:00.000Z', wait_ends_at = '2026-09-19T02:15:00.000Z',
+         closed_at = '2026-09-19T02:16:00.000Z'`,
+    ).run();
+    expect((await cases())[0]).toMatchObject({
+      checked_in_at: "2026-09-19T02:00:00.000Z",
+      minutes_late: -90,
+      closed_early: true,
+    });
+
+    // Closed sixteen minutes after the booked start: the client's own wait had run.
+    await env.DB.prepare("UPDATE no_show_cases SET closed_at = '2026-09-19T03:46:00.000Z'").run();
+    expect((await cases())[0]).toMatchObject({ closed_early: false });
+  });
+
   it("gives the moment it opened and the day it falls due, as the Tasks board reads it", async () => {
     // The placeholder allowance is two days (src/policy/tasks.ts), from the moment the case opened.
     expect((await cases())[0]).toMatchObject({
@@ -291,7 +314,7 @@ describe("POST /api/no-shows/:id/decision", () => {
 
     expect(deps.alerts).toEqual([
       `The refund of Rs. 2000 for visit ${VISIT}, a no-show waived, failed (its payment could not be read). ` +
-        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -512,6 +535,7 @@ describe("what charging a no-show costs the client", () => {
   }
 
   const recorded = () => env.DB.prepare("SELECT charge, kept_amount, refund_amount FROM no_show_cases").first();
+  const preview = () => request(ops, `/api/no-shows/${CASE}/charge`);
   const restores = async () =>
     (await env.DB.prepare("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'restore'").first<{ n: number }>())?.n;
 
@@ -535,6 +559,27 @@ describe("what charging a no-show costs the client", () => {
     // Rs. 3,000 and 5% GST, the price book's before 22 September.
     expect(payments.made.refunds).toEqual([expect.objectContaining({ amount: 1260000 })]);
     expect(await recorded()).toEqual({ charge: "late_fee", kept_amount: 315000, refund_amount: 1260000 });
+  });
+
+  // The charge was once asked about as "Charge Rohit Malhotra for the visit of Sat 19 Sep?", with no figure (MON-17).
+  it("says before a charge what it will keep and refund, as the charge then does", async () => {
+    await as("first_fit");
+    await paid(3000000);
+    await soldWith("late_fee", 400000);
+    expect(await (await preview()).json()).toEqual({ paid: 3000000, kept: 400000, credit_kept: false });
+
+    await charge();
+    expect(await recorded()).toEqual({ charge: "late_fee", kept_amount: 400000, refund_amount: 2600000 });
+    // Ruled on, there is nothing left to ask about.
+    expect((await preview()).status).toBe(404);
+  });
+
+  it("says before a charge whether it keeps the credit the visit was paid with", async () => {
+    await onCredit();
+    expect(await (await preview()).json()).toEqual({ paid: 0, kept: 0, credit_kept: true });
+    // Sold to cost nothing if missed, so the credit goes back.
+    await soldWith("nothing");
+    expect(await (await preview()).json()).toEqual({ paid: 0, kept: 0, credit_kept: false });
   });
 
   it("keeps a paid service visit whole", async () => {
@@ -596,7 +641,7 @@ describe("what charging a no-show costs the client", () => {
     expect(deps.alerts).toEqual([
       `The visit credit for visit ${VISIT}, a no-show charged, could not come back: its grant has expired or been ` +
         "withdrawn. The client is told so; settle it with them by hand if they are owed one. " +
-        `http://ops.localhost:4323/clients/${PERSON}`,
+        `http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -640,7 +685,7 @@ describe("what charging a no-show costs the client", () => {
 
     expect(deps.alerts).toEqual([
       `The refund of Rs. 26000 for visit ${VISIT}, a no-show charged, failed (Razorpay payment pay_visit). ` +
-        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     // The charge stands: the ruling is recorded whatever Razorpay says.
     expect(await recorded()).toMatchObject({ kept_amount: 400000 });
@@ -736,5 +781,42 @@ describe("what charging a no-show costs the client", () => {
       expect(messages).toBe(1);
       expect(audited).toEqual([{ detail: JSON.stringify({ decision: stands }) }]);
     });
+  });
+});
+
+// After a charge the page once still said "Nothing was charged today", and the case was gone (MON-17).
+describe("GET /api/no-shows/decided", () => {
+  const decided = async () => (await (await request(ops, "/api/no-shows/decided")).json<{ cases: unknown[] }>()).cases;
+
+  it("lists the cases ruled on today, with the ruling and what a charge kept", async () => {
+    expect(await decided()).toEqual([]);
+    await env.DB.prepare(
+      `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,
+         status, captured_at, created_at, updated_at)
+       VALUES ('payment-1', 'MM-2026-0841', ?1, ?2, 'pay_visit', 200000, 'INR', 'upi', 'captured', ?3, ?3, ?3)`,
+    )
+      .bind(PERSON, VISIT, NOW.toISOString())
+      .run();
+    expect((await rule({ decision: "charged", reason: "Nobody came to the door" })).status).toBe(200);
+
+    expect(await decided()).toEqual([
+      {
+        id: CASE,
+        person: { id: PERSON, name: "Rohit Malhotra" },
+        visit_date: "2026-09-19",
+        decision: "charged",
+        decided_at: NOW.toISOString(),
+        charge: { kept: 200000, credit_spent: false },
+      },
+    ]);
+  });
+
+  it("says a waiver kept nothing, and leaves out a case ruled before today", async () => {
+    expect((await rule({ decision: "waived", reason: "He was stuck in the lift" })).status).toBe(200);
+    expect(await decided()).toMatchObject([{ id: CASE, decision: "waived", charge: null }]);
+
+    // Ruled at 11:59 pm last night in India.
+    await env.DB.prepare("UPDATE no_show_cases SET decided_at = '2026-09-20T18:29:00.000Z'").run();
+    expect(await decided()).toEqual([]);
   });
 });
