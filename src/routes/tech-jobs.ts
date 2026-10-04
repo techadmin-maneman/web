@@ -1038,8 +1038,8 @@ export function registerTechJobs(app: App): void {
       },
       async (job) => {
         if (job.oneVisit === null || body.outcome !== "done") return;
-        const { deps, log } = c.var;
-        await closeOneVisit(c.env.DB, { ...deps, log }, job, deps.now());
+        const { deps, log, config } = c.var;
+        await closeOneVisit(c.env.DB, { ...deps, log, messagingSettings: config.settings.messaging }, job, deps.now());
       },
     );
   });
