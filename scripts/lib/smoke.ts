@@ -118,9 +118,11 @@ const health: Check = ({ options, api }) =>
       );
     }
     if (options.versionTag !== undefined) {
+      // A secret change publishes an untagged version of the same code: its commit still says what is live.
+      const live = body.version_tag ?? body.commit;
       assert(
-        body.version_tag === options.versionTag,
-        `version_tag is ${String(body.version_tag)}, expected ${options.versionTag}`,
+        live === options.versionTag,
+        `version_tag is ${String(body.version_tag)} and commit ${String(body.commit)}, expected ${options.versionTag}`,
       );
     }
     return `${options.environment}, version ${String(body.version_id)}, d1 ok`;

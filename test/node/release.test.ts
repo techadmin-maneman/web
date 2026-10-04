@@ -120,6 +120,18 @@ describe("shipping a Worker", () => {
     expect(calls).toContain(`versions deploy ${NEW}@100 --yes --message staging abc123`);
   });
 
+  // PLAT-62: a secret change publishes an untagged version, so the commit is baked into the code as well.
+  it("bakes a commit's SHA into the bundle it uploads, and nothing that is not one", () => {
+    const sha = "0123456789abcdef0123456789abcdef01234567";
+    const { wrangler, calls } = fakeWorker(serving(OLD));
+    ship(target("mm-api", "staging", wrangler), sha, `staging ${sha}`);
+    expect(calls.find((call) => call.startsWith("versions upload"))).toContain(`--define BUILD_SHA:"${sha}"`);
+
+    const other = fakeWorker(serving(OLD));
+    ship(target("mm-api", "staging", other.wrangler), "hotfix 1", "staging hotfix");
+    expect(other.calls.find((call) => call.startsWith("versions upload"))).not.toContain("--define");
+  });
+
   it("leaves an app alone that is not deployed yet and need not be", () => {
     const { wrangler, calls } = fakeWorker({ error: NOT_FOUND });
     expect(ship(target("mm-tech", "production", wrangler), "abc123", "release abc123")).toBeNull();

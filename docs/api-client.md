@@ -1943,6 +1943,13 @@ Request body:
       ],
       "description": "Tag given at upload: the git commit SHA in remote environments."
     },
+    "commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The git commit the code was built from, baked in at upload. A secret change publishes an untagged version of the same code, so this still names what is live when version_tag is null. Null in a local run."
+    },
     "d1": {
       "type": "string",
       "enum": [
@@ -1966,6 +1973,7 @@ Request body:
     "environment",
     "version_id",
     "version_tag",
+    "commit",
     "d1",
     "cron_completed_at"
   ],

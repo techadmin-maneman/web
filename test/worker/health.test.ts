@@ -92,4 +92,11 @@ describe("GET /api/health", () => {
 
     expect(HealthSchema.parse(await res.json())).toMatchObject({ version_id: "v-1", version_tag: "abc1234" });
   });
+
+  // The commit is baked in at upload (scripts/lib/release.ts); a test run, like a local one, has none.
+  it("names no commit for code built without one", async () => {
+    await markDatabase();
+    const res = await appFor().request("https://maneman.test/api/health", {}, env);
+    expect(HealthSchema.parse(await res.json())).toMatchObject({ commit: null });
+  });
 });
