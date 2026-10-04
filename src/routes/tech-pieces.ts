@@ -12,7 +12,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { pieceWithOwner } from "../domain/pieces.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { requireTechnicianSession } from "../http/technician-session.ts";
+import { requireTechnicianSession, technicianOf } from "../http/technician-session.ts";
 
 export const PieceSchema = z
   .object({
@@ -52,11 +52,12 @@ export function registerTechPieces(app: App): void {
     const found = await pieceWithOwner(c.env.DB, code.trim().toUpperCase());
     if (found === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
+    // Only a job of his own says whose the piece is: any other reads as none (FLD-18).
     const client =
       job === undefined
         ? null
-        : await c.env.DB.prepare("SELECT person_id FROM appointments WHERE id = ?1")
-            .bind(job)
+        : await c.env.DB.prepare("SELECT person_id FROM appointments WHERE id = ?1 AND technician_id = ?2")
+            .bind(job, technicianOf(c).technicianId)
             .first<{ person_id: string | null }>();
     return c.json(
       {

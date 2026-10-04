@@ -355,6 +355,15 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianJobs"];
                     };
                 };
+                /** @description invalid_request: a date before yesterday */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description session_required; device_revoked */
                 401: {
                     headers: {
@@ -1742,7 +1751,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            day: "today" | "tomorrow" | "later";
+            day: "past" | "today" | "tomorrow" | "later";
             /** Format: date */
             date: string;
             /** Format: date-time */
@@ -1790,7 +1799,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            day: "today" | "tomorrow" | "later";
+            day: "past" | "today" | "tomorrow" | "later";
             /** Format: date */
             date: string;
             /** Format: date-time */

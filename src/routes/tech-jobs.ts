@@ -100,7 +100,7 @@ import { indiaDate } from "../lib/india-time.ts";
 import { timeOfUuidV7 } from "../lib/uuidv7.ts";
 import { CARD_STEPS, takesStep, type JobEventKind } from "../policy/in-job-steps.ts";
 import { takesProfile } from "../policy/hair-profile.ts";
-import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
+import { listableDate, PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import { noShowWaitEnds } from "../policy/no-show.ts";
 import { boundedPhoneTime } from "../policy/phone-clock.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -142,7 +142,7 @@ const ServiceSchema = z
 const JobSummarySchema = z
   .object({
     id: z.uuid(),
-    day: z.enum(["today", "tomorrow", "later"]),
+    day: z.enum(["past", "today", "tomorrow", "later"]),
     date: z.iso.date(),
     starts_at: z.iso.datetime(),
     ends_at: z.union([z.iso.datetime(), z.null()]),
@@ -574,6 +574,7 @@ const jobsRoute = createRoute({
   request: { query: z.object({ date: z.iso.date().optional() }) },
   responses: {
     200: { description: "The day's jobs, in time order", ...json(JobsSchema) },
+    400: errorResponse("invalid_request: a date before yesterday"),
     401: errorResponse("session_required; device_revoked"),
   },
 });
@@ -796,6 +797,8 @@ export function registerTechJobs(app: App): void {
     const { technicianId } = technicianOf(c);
     const now = c.var.deps.now();
     const date = c.req.valid("query").date ?? indiaDate(now);
+    // Nothing before yesterday: paging back through every date read every past client's card (FLD-18).
+    if (!listableDate(date, now)) return c.json(errorBody("invalid_request", c.var.requestId, ["date"]), 400);
     const { addressUnlockHour } = await opsInputs(c);
     return c.json({ date, jobs: await jobsOn(c.env.DB, technicianId, date, now, addressUnlockHour) }, 200);
   });

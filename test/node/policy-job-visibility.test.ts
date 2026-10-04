@@ -6,12 +6,14 @@ import { describe, expect, it } from "vitest";
 import {
   DAY_BEFORE_REMINDER_HOUR,
   jobDay,
+  listableDate,
   namesTheOtherTechnician,
   PAYMENT_BADGES,
   paymentBadge,
   RULES,
   UNLOCK_HOUR,
   unlocked,
+  relocksAt,
   unlocksAt,
 } from "../../src/policy/job-visibility.ts";
 
@@ -100,5 +102,24 @@ describe("the other technician", () => {
   it("names nobody for a job that was cancelled, or only moved to another time", () => {
     expect(namesTheOtherTechnician(["status", "technician"])).toBe(false);
     expect(namesTheOtherTechnician(["time"])).toBe(false);
+  });
+});
+
+describe("a card after its visit", () => {
+  it(RULES[4], () => {
+    const yesterday = noon("2026-09-20");
+    // Locked at midnight in India at the end of the day after the visit: 2026-09-21T18:30Z.
+    expect(relocksAt(yesterday)).toEqual(new Date("2026-09-21T18:30:00Z"));
+    expect(unlocked(yesterday, new Date("2026-09-21T18:29:59Z"))).toBe(true);
+    expect(unlocked(yesterday, new Date("2026-09-21T18:30:00Z"))).toBe(false);
+    expect(unlocked(noon("2026-08-21"), NOW)).toBe(false);
+
+    expect(listableDate("2026-09-20", NOW)).toBe(true);
+    expect(listableDate("2026-09-19", NOW)).toBe(false);
+    expect(listableDate("2026-09-25", NOW)).toBe(true);
+  });
+
+  it("is on the past day, not today, once its date has gone", () => {
+    expect(jobDay(noon("2026-09-20"), NOW)).toBe("past");
   });
 });
