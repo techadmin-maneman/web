@@ -143,6 +143,17 @@ describe("telling ops", () => {
     await tellOfStorage(env.DB, deps.alertOnce);
     expect(deps.alerts).toEqual([expect.stringContaining("80% of their 4 GB share")]);
   });
+
+  // OIA-12 of the audit, 2 October 2026: the figure moved from the top of Settings to The console's section of Rules.
+  it("links to where Settings shows the figure", async () => {
+    await setMeter(PHASE_2_SHARE_BYTES / 2);
+    await tellOfStorage(env.DB, deps.alertOnce);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 250e6);
+    expect(deps.alerts).toEqual([
+      expect.stringMatching(/\/settings#console$/),
+      expect.stringMatching(/\/settings#console$/),
+    ]);
+  });
 });
 
 // PLAT-16 of the audit, 2 October 2026: nothing read the database's size, and past D1's limit every write fails.
