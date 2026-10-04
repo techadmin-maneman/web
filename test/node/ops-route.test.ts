@@ -38,7 +38,7 @@ describe("the ops console's routes", () => {
 
   it("lists the sections by department, Tasks first", () => {
     expect(namesIn("operations")).toEqual(["Tasks", "Dispatch", "Technicians", "Stock"]);
-    expect(namesIn("customer_care")).toEqual(["Clients", "Grievances", "Number changes", "Deletion requests"]);
+    expect(namesIn("customer_care")).toEqual(["Clients", "Concerns", "Number changes", "Deletion requests"]);
     expect(namesIn("finance")).toEqual(["Payments", "Prices", "Discount codes"]);
     expect(namesIn("growth")).toEqual(["Referrals", "Areas"]);
     expect(namesIn("admin")).toEqual(["Settings", "Staff"]);
@@ -157,7 +157,7 @@ describe("the ops console's routes", () => {
   it("titles each page by what it is, never by whom, so no two sections share a title (WCAG 2.4.2)", () => {
     expect(titleOf(routeOf("/"))).toBe("Tasks · Mane Man operations");
     expect(titleOf(routeOf("/settings/prices"))).toBe("Prices · Mane Man operations");
-    expect(titleOf(routeOf("/settings/blackouts"))).toBe("Blackout days · Settings · Mane Man operations");
+    expect(titleOf(routeOf("/settings/blackouts"))).toBe("Closed days · Settings · Mane Man operations");
     expect(titleOf(routeOf(`/clients/${CLIENT}/consents`))).toBe("Consents · Clients · Mane Man operations");
     expect(titleOf(routeOf(technicianPath(TECHNICIAN, "phones")))).toBe("Phones · Technicians · Mane Man operations");
     const titles = SECTIONS.map((section) => titleOf(routeOf(section.path)));

@@ -116,7 +116,8 @@ export async function startNumberChange(
     /** The request's audit entry, written with the change it names (src/domain/audit.ts). */
     audit: AuditEntry;
     now: Date;
-    fixedCode?: string | null;
+    /** The code each number gets in place of a random one, where there is one (knownCode). */
+    knownCodes?: { readonly old: string | null; readonly new: string | null };
   },
 ): Promise<StartedChange> {
   const id = crypto.randomUUID();
@@ -138,7 +139,7 @@ export async function startNumberChange(
   ]);
 
   const codeFor = async (which: WhichNumber) => {
-    const code = options.fixedCode ?? newLoginCode();
+    const code = options.knownCodes?.[which] ?? newLoginCode();
     const challenge = await createChallenge(db, {
       holder: "person",
       holderId: options.personId,

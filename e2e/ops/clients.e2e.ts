@@ -302,7 +302,7 @@ test("lists what waits on Tasks for the client under the head, each with a way t
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0)).toContainText("Replacement order3 days overdue");
   await expect(rows.nth(1)).toContainText("Number change1 day left");
-  await expect(openForClient(page).getByRole("link", { name: "Go to Pieces · Replacement order" })).toHaveAttribute(
+  await expect(openForClient(page).getByRole("link", { name: "Go to Hair · Replacement order" })).toHaveAttribute(
     "href",
     `/clients/${CLIENT.id}/pieces`,
   );
@@ -339,12 +339,12 @@ test("opens on the visits, with the invite on a Referrals tab of its own", async
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText([
     "Visits",
-    "Pieces",
+    "Hair",
     "Payments",
     "Referrals",
     "Consents",
     "Photos",
-    "History",
+    "Overview",
   ]);
   await expect(clientTab(page, "Visits")).toHaveAttribute("aria-current", "page");
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
@@ -1081,7 +1081,7 @@ test("erases anyway when a visit is booked, once ops say they will settle it by 
 // often they have been served belongs on the ops console as well as in the app.
 test("counts the client's visits and replacements, and the day their piece falls due", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/history`);
-  const history = page.getByRole("region", { name: "History" });
+  const history = page.getByRole("region", { name: "Overview" });
   const fact = (label: string) =>
     history
       .getByRole("term")
@@ -1099,7 +1099,7 @@ test("counts the client's visits and replacements, and the day their piece falls
 
 test("writes a client with no record in words, and their true noughts as noughts", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/history`, { [READ_RECORD]: json(NEW_RECORD) });
-  const history = page.getByRole("region", { name: "History" });
+  const history = page.getByRole("region", { name: "Overview" });
   const fact = (label: string) =>
     history
       .getByRole("term")
@@ -1129,7 +1129,7 @@ test("moves between the tabs without reading the record again, and keeps the pho
   await expect(page.getByRole("img")).toHaveCount(10);
   await page.getByRole("link", { name: "Consents" }).click();
   await expect(page.getByText("Ops cannot grant a consent.")).toBeVisible();
-  await page.getByRole("link", { name: "Pieces" }).click();
+  await page.getByRole("link", { name: "Hair" }).click();
   await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
   // Visits, Payments and History are drawn from the record already loaded, so they ask the API for nothing.
   await page.getByRole("link", { name: "Visits" }).click();
@@ -1138,8 +1138,8 @@ test("moves between the tabs without reading the record again, and keeps the pho
   await expect(page.getByRole("region", { name: "Payments and refunds" })).toContainText(
     "Service visit of 22 Aug 2027",
   );
-  await page.getByRole("link", { name: "History" }).click();
-  await expect(page.getByRole("region", { name: "History" })).toBeVisible();
+  await page.getByRole("link", { name: "Overview" }).click();
+  await expect(page.getByRole("region", { name: "Overview" })).toBeVisible();
   // Coming back finds the same opening, logged once: a tab changed is not a second look.
   await page.getByRole("link", { name: "Photos" }).click();
   await expect(page.getByText("Open · logged 10:42 am")).toBeVisible();
@@ -1200,7 +1200,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await expect(page.getByText("Ops cannot grant a consent.")).toBeVisible();
   await clean("consents");
 
-  await page.getByRole("link", { name: "History" }).click();
-  await expect(page.getByRole("region", { name: "History" })).toBeVisible();
+  await page.getByRole("link", { name: "Overview" }).click();
+  await expect(page.getByRole("region", { name: "Overview" })).toBeVisible();
   await clean("history");
 });

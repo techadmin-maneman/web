@@ -34,7 +34,7 @@ import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
-import { knownCode, sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
+import { numberChangeCodes, sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
@@ -582,17 +582,17 @@ export function registerClientProfile(app: App): void {
       return c.json(errorBody("busy", requestId), 503);
     }
 
+    const testRecord = contact?.testRecord ?? false;
     const started = await startNumberChange(db, {
       personId,
       newMobileE164: newMobile,
       pepper: config.settings.login.codePepper,
       audit: audit(personId, requestId, { action: "number_change.request" }),
       now,
-      fixedCode: knownCode(config.settings.login, contact?.name ?? null),
+      knownCodes: numberChangeCodes(config.settings.login, testRecord),
     });
-    const name = contact?.name ?? null;
-    await sendCodeAfterResponse(c, current, name, "whatsapp", started.codes.old.code);
-    await sendCodeAfterResponse(c, newMobile, name, "whatsapp", started.codes.new.code);
+    await sendCodeAfterResponse(c, current, testRecord, "whatsapp", started.codes.old.code);
+    await sendCodeAfterResponse(c, newMobile, testRecord, "whatsapp", started.codes.new.code);
     const expiresIn = Math.round((started.codes.new.challenge.expiresAt.getTime() - now.getTime()) / 1000);
     return c.json({ request_id: started.change.id, expires_in_s: expiresIn }, 202);
   });

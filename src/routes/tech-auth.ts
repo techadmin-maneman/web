@@ -42,6 +42,7 @@ import {
 import { visitorOf } from "../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { newLoginCode } from "../policy/one-time-code.ts";
+import { isStagingTestName } from "../policy/staging-test-records.ts";
 
 /** Why an active technician was refused a code, and what he can do, in ops' words. */
 function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings): string {
@@ -204,18 +205,18 @@ export function registerTechAuth(app: App): void {
 
     const visitor = await visitorOf(c);
     const technician = await findFieldTechnician(db, mobileE164);
-    const known = technician?.name ?? null;
+    // A technician ops named as a test is one: ops alone name technicians (src/policy/staging-test-records.ts).
+    const testRecord = technician !== null && isStagingTestName(technician.name);
     const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
-    const asked = await mayAskForCode(c, { surface: "tech", mobileHash, ipHash: visitor.ipHash, now, name: known });
+    const asked = await mayAskForCode(c, { surface: "tech", mobileHash, ipHash: visitor.ipHash, now, testRecord });
     if (technician !== null) await keepRefusalAlert(c, technician.id, asked);
     if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
     if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
 
     const sendsTo = technician?.mobileE164 ?? null;
-    const name = technician?.name ?? null;
-    if (!(await countCode(c, "tech", sendsTo, name, now))) return c.json(errorBody("busy", requestId), 503);
+    if (!(await countCode(c, "tech", sendsTo, testRecord, now))) return c.json(errorBody("busy", requestId), 503);
 
-    const code = knownCode(limits, name) ?? newLoginCode();
+    const code = knownCode(limits, testRecord) ?? newLoginCode();
     const challenge = await createChallenge(db, {
       holder: "technician",
       holderId: technician?.id ?? null,
@@ -223,7 +224,7 @@ export function registerTechAuth(app: App): void {
       pepper: limits.codePepper,
       now,
     });
-    await sendCodeAfterResponse(c, sendsTo, name, "whatsapp", code);
+    await sendCodeAfterResponse(c, sendsTo, testRecord, "whatsapp", code);
     return c.json(
       { challenge_id: challenge.id, expires_in_s: Math.ceil((challenge.expiresAt.getTime() - now.getTime()) / 1000) },
       202,

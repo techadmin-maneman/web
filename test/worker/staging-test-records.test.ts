@@ -31,14 +31,14 @@ beforeEach(async () => {
   await env.DB.prepare(
     "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('400050', 'Bandra', 'Mumbai', 0)",
   ).run();
-  for (const [id, mobile, name] of [
-    ["p-test", TEST_RECORD, "Staging test Kabir Rao"],
-    ["p-ordinary", ORDINARY, "Arjun Mehta"],
+  for (const [id, mobile, name, testRecord] of [
+    ["p-test", TEST_RECORD, "Staging test Kabir Rao", 1],
+    ["p-ordinary", ORDINARY, "Arjun Mehta", 0],
   ] as const) {
     await env.DB.batch([
       env.DB.prepare(
-        "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?1, ?2, ?3, ?4, 1)",
-      ).bind(id, NOW.toISOString(), mobile, name),
+        "INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record) VALUES (?1, ?2, ?3, ?4, 1, ?5)",
+      ).bind(id, NOW.toISOString(), mobile, name, testRecord),
       env.DB.prepare(
         `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, proposed_visit_date, request_id)
          VALUES (?1, ?2, ?3, 'form', 'Gurgaon', 'weekday_pm', 'crown', '2026-09-24', 'r')`,

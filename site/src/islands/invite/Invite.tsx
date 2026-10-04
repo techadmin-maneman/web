@@ -23,7 +23,8 @@
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { invitePageTitle, referral } from "../../content/referral.ts";
-import { booking, PRICES_SHOWN } from "../../content/site.ts";
+import { booking } from "../../content/site.ts";
+import { PRICES_SHOWN } from "../../lib/flags.ts";
 import {
   fetchInvite,
   fetchPublishedPrices,

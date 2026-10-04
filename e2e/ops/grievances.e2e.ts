@@ -18,10 +18,10 @@ async function open(page: Page, resolve = json({ state: "resolved" })): Promise<
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/grievances": json(GRIEVANCES), [ANSWER_IT]: resolve });
   await page.goto("/grievances");
-  await expect(page.getByRole("heading", { level: 1, name: "Grievances" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Concerns" })).toBeVisible();
 }
 
-const queue = (page: Page) => page.getByRole("region", { name: "Open grievances" });
+const queue = (page: Page) => page.getByRole("region", { name: "Open concerns" });
 const row = (page: Page, name: string) => queue(page).getByRole("listitem").filter({ hasText: name });
 
 test("lists every open grievance with the client's own words, number and day", async ({ page }) => {
@@ -80,7 +80,7 @@ test("records the answer, and the grievance leaves the queue", async ({ page }) 
   expect((await sent).postDataJSON()).toEqual({ response: "Taken off the launch list today." });
   await expect(page.getByText("Rohit Malhotra")).toBeHidden();
   // The row is gone, so the keyboard goes to the queue's heading and not to the top of the page.
-  await expect(page.getByRole("heading", { name: "Open grievances" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Open concerns" })).toBeFocused();
 });
 
 // Grievances are a group on the Tasks board now, which links each to its row here (OPS-08, OPS-05).
@@ -102,7 +102,7 @@ test("says so when someone has answered it already", async ({ page }) => {
 test("says so when no grievance is open", async ({ page }) => {
   await answer(page, { "GET /api/grievances": json({ grievances: [] }) });
   await page.goto("/grievances");
-  await expect(page.getByText("No grievance is open.")).toBeVisible();
+  await expect(page.getByText("No concern is open.")).toBeVisible();
 });
 
 test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {

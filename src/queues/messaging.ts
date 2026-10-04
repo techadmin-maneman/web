@@ -57,7 +57,6 @@ import {
   type VisitMessageKind,
 } from "../domain/visit-messages.ts";
 import { messageFailedKey } from "../policy/alerts.ts";
-import { isStagingTestRecord } from "../policy/staging-test-records.ts";
 import type { SendResult } from "../providers/messaging.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
@@ -151,6 +150,8 @@ interface MessageRow {
   person_id: string;
   mobile_e164: string;
   name: string;
+  /** One of our own scripts' records, or a staging test's (src/policy/staging-test-records.ts). */
+  test_record: number;
   erased_at: string | null;
 }
 
@@ -172,14 +173,14 @@ const isVisitKind = (kind: string): kind is VisitMessageKind =>
 
 /**
  * Whether staging's allowlist should hold this message back: an automatic kind (ADR 0097), or one about a record
- * our own scripts made, whatever its kind (isStagingTestRecord, src/policy/staging-test-records.ts). The try-on's
+ * our own scripts made, whatever its kind (people.test_record, src/policy/staging-test-records.ts). The try-on's
  * gate asks it too, since a try-on whose look would be held back does not run (ADR 0104).
  */
 export const heldBackByAllowlist = (
   messaging: MessagingSettings,
-  row: Pick<MessageRow, "mobile_e164" | "name" | "kind">,
+  row: Pick<MessageRow, "mobile_e164" | "test_record" | "kind">,
 ): boolean =>
-  (messageClass(row.kind) === "automatic" || isStagingTestRecord(row.name)) && !onAllowlist(messaging, row.mobile_e164);
+  (messageClass(row.kind) === "automatic" || row.test_record === 1) && !onAllowlist(messaging, row.mobile_e164);
 
 /** The daily cap on try-on results sent to one number, which the gate checks before a look is made (ADR 0104). */
 export async function resultMessageCap(
@@ -273,7 +274,7 @@ export async function sendMessage(
 
   const row = await db
     .prepare(
-      `SELECT m.state, m.attempts, m.created_at, m.kind, m.subject_id, m.person_id, p.mobile_e164, p.name, p.erased_at
+      `SELECT m.state, m.attempts, m.created_at, m.kind, m.subject_id, m.person_id, p.mobile_e164, p.name, p.test_record, p.erased_at
        FROM outbound_messages m JOIN people p ON p.id = m.person_id
        WHERE m.id = ?1`,
     )

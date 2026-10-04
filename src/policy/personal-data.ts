@@ -61,10 +61,10 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "books_erasure_attempts",
       "books_details_changed_at",
       "client_since",
+      "test_record",
     ],
     whyLeftOut:
-      "Our keys to the client's record here and in the CRM and Books, how an erasure of it is going, and when they " +
-      "first had a visit or a payment, which decides how long the record is kept.",
+      "Our keys to the client's record here and in the CRM and Books, how an erasure of it is going, and when they first had a visit or a payment, which decides how long the record is kept, and whether staging made it for a test.",
     erasure: {
       blanks: ["name", "email", "mobile_e164", "contactable"],
       why: "The name, e-mail and number go. The row stays, marked erased, for the records that point at it.",
