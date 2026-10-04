@@ -43,6 +43,7 @@ import type { MessagingMessage } from "../queues/messaging.ts";
 import { checkDailyAllowances } from "./daily-allowances.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
+import { retentionJob } from "./retention.ts";
 import {
   checkAilabCredits,
   deletePhotos,
@@ -306,6 +307,9 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "next_service_reminders", needs: "messaging", every: 60, at: 44, run: nextServiceRemindersJob },
   // Free service visits running out: a month, then a week, before their last day.
   { name: "credit_reminders", needs: "messaging", every: 60, at: 49, run: creditRemindersJob },
+  // What the retention periods let go of: dormant people who never became clients, old check-in coordinates, and the
+  // waitlist of areas launched a year ago (src/policy/retention.ts).
+  { name: "retention", needs: "nothing", every: 60, at: 53, run: retentionJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", every: 60, at: 59, run: erasedFilesJob },
   { name: "requeue_crm_erasures", needs: "nothing", every: 60, at: 59, run: requeueCrmErasures },
