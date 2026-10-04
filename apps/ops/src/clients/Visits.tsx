@@ -7,8 +7,8 @@
 // (HeldBookings.tsx; docs/decisions/0095-a-booking-fsm-refuses-is-held.md),
 // and to enter a discount code on a visit or take it off (VisitCode.tsx;
 // docs/decisions/0108-discount-codes.md), to book the client a visit (BookVisit.tsx), and to cancel a visit to come
-// (CancelVisit.tsx) or close by hand one whose technician's phone was lost (CloseVisit.tsx). Beneath the visits, any
-// booking that refunded its payment by itself, and why.
+// (CancelVisit.tsx) or close by hand one whose technician's phone was lost (CloseVisit.tsx). Each visit to come links
+// to its place on the dispatch board. Beneath the visits, any booking that refunded its payment by itself, and why.
 
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -16,8 +16,10 @@ import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
 import type { AutoRefund, ClientRecord, ClientVisit } from "../api.ts";
+import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { dispatchPath } from "../route.ts";
 import styles from "./clients.module.css";
 import { BookVisit } from "./BookVisit.tsx";
 import { CancelVisit } from "./CancelVisit.tsx";
@@ -181,6 +183,21 @@ function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: str
   );
 }
 
+/** A visit to come on the dispatch board: its week, with its drawer open. */
+function ShowOnBoard({ visit }: { visit: ClientVisit }) {
+  const mayOpen = useAccess().mayCall("GET /api/dispatch");
+  if (!mayOpen) return null;
+  return (
+    <OpsLink
+      className={styles.boardLink}
+      to={dispatchPath({ from: visit.date, visit: visit.id })}
+      label={copy.onBoardLabel(fullDate(visit.date))}
+    >
+      {copy.onBoard}
+    </OpsLink>
+  );
+}
+
 /** The client whose visits a table lists, where its rows may be changed: only the visits to come. */
 interface Changing {
   readonly name: string;
@@ -192,11 +209,14 @@ function VisitTable({
   visits,
   empty,
   changing = null,
+  onBoard = false,
 }: {
   title: string;
   visits: readonly ClientVisit[];
   empty: string;
   changing?: Changing | null;
+  /** Whether each visit links to its place on the dispatch board: the visits to come do. */
+  onBoard?: boolean;
 }) {
   return (
     <section className={styles.visitList} aria-label={title}>
@@ -217,7 +237,10 @@ function VisitTable({
           <tbody>
             {visits.map((visit) => (
               <tr key={visit.id}>
-                <td className={styles.cell}>{fullDate(visit.date)}</td>
+                <td className={styles.cell}>
+                  {fullDate(visit.date)}
+                  {onBoard && <ShowOnBoard visit={visit} />}
+                </td>
                 <td className={styles.cell}>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
                 <td className={styles.cell}>{visit.type === null ? clients.unknown : copy.types[visit.type]}</td>
                 <td className={styles.quietCell}>{visit.technician?.name ?? clients.unknown}</td>
@@ -346,6 +369,7 @@ export function VisitRecords({
         visits={visits.upcoming}
         empty={copy.noUpcoming}
         changing={{ name, onChanged }}
+        onBoard
       />
       <VisitTable title={copy.past} visits={visits.past} empty={copy.noPast} />
     </>

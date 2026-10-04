@@ -27,6 +27,7 @@ import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { failureReason, type Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
+import { deletionWaitingKey } from "../policy/alerts.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
@@ -284,6 +285,7 @@ export async function eraseAndQueue(
   const linkIds = await openLinkIds(env.DB, personId, now);
   const summary = await erasePerson(env, personId, now, log, [
     ...(options.alongside ?? []),
+    resolveOpenRequestAlerts(env.DB, personId, now),
     closeOpenRequests(env.DB, personId, audit.actor.id, now),
     closeOpenGrievances(env.DB, personId, audit.actor.id, now),
     resolveAlertsAbout(env.DB, personId, now),
@@ -300,6 +302,16 @@ export async function eraseAndQueue(
   await queueOutsideErasure(env, summary.personId, options);
   await cancelOpenLinks(linkIds, options);
   return summary;
+}
+
+/** The alerts on Tasks for the deletion requests the erasure is about to close; before it closes them. */
+function resolveOpenRequestAlerts(db: D1Database, personId: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE alerts SET resolved_at = ?2 WHERE resolved_at IS NULL AND key IN
+         (SELECT ?3 || id FROM deletion_requests WHERE person_id = ?1 AND state = 'requested')`,
+    )
+    .bind(personId, now.toISOString(), deletionWaitingKey(""));
 }
 
 /** A deletion request the person still has open is done by their erasure, under whoever erased them. */

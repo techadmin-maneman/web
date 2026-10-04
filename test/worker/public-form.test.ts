@@ -139,7 +139,7 @@ describe("the site's forms: Turnstile", () => {
     );
   });
 
-  it("tells ops once a day when Turnstile has turned five visitors away in an hour", async () => {
+  it("tells ops when Turnstile has turned five visitors away in an hour", async () => {
     const deps = fakeDependencies({
       fetch: fakeFetch({ [TURNSTILE_URL]: () => new Response("", { status: 502 }) }).fetch,
     });
@@ -152,6 +152,22 @@ describe("the site's forms: Turnstile", () => {
       "Turnstile could not check 5 visitors in the last hour (siteverify 502), so their bookings, try-ons and app " +
         "logins were turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
     ]);
+  });
+
+  it("closes the alert once Turnstile answers again", async () => {
+    let turnstileUp = false;
+    const siteverify = () => (turnstileUp ? json({ success: true }) : new Response("", { status: 502 }));
+    const app = appFor("local", fakeDependencies({ fetch: fakeFetch({ [TURNSTILE_URL]: siteverify }).fetch }));
+    const openAlerts = () =>
+      env.DB.prepare(
+        "SELECT count(*) AS open FROM alerts WHERE key = 'turnstile_unavailable' AND resolved_at IS NULL",
+      ).first("open");
+    for (let visitor = 0; visitor < 5; visitor += 1) await join(app);
+    expect(await openAlerts()).toBe(1);
+
+    turnstileUp = true;
+    expect((await join(app)).status).toBe(201);
+    expect(await openAlerts()).toBe(0);
   });
 
   it("sends Cloudflare the secret, the token and the visitor's IP", async () => {
