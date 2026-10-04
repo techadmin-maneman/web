@@ -3,7 +3,7 @@
 // whoever made it would make it again. A lost message is logged, and either a sweeper pass finds its row in D1 and
 // queues it again, or ops are told what to do by hand.
 
-import type { AlertOnce, RaisedAlert } from "../domain/alerts.ts";
+import type { AlertOnce, RaisedAlert } from "./alerts.ts";
 import type { Logger } from "../log.ts";
 
 /** The most messages Cloudflare takes in one sendBatch. */

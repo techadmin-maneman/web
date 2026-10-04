@@ -1,5 +1,5 @@
 // The register of business inputs ops set for themselves
-// (src/config/ops-settings.ts, docs/decisions/0061-ops-editable-inputs.md).
+// (src/policy/ops-settings.ts, docs/decisions/0061-ops-editable-inputs.md).
 //
 // Two things are held here: that a figure outside the bounds never reaches the
 // store and the refusal says what is allowed, and that what the hot path reads
@@ -21,7 +21,7 @@ import {
   type NumberSetting,
   type OpsSetting,
   type SettingValue,
-} from "../../src/config/ops-settings.ts";
+} from "../../src/policy/ops-settings.ts";
 import { COMMITTED, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
 import { CHECKIN_RADIUS_M } from "../../src/policy/check-in.ts";
 import { UNLOCK_HOUR } from "../../src/policy/job-visibility.ts";

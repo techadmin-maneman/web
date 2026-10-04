@@ -5,7 +5,8 @@
 import { renderWithStopLink, type TemplateName } from "../config/message-templates.ts";
 import type { ImageType } from "../lib/image-bytes.ts";
 import type { Logger } from "../log.ts";
-import { createEvolutionMessaging, type EvolutionSettings } from "./evolution.ts";
+import { createEvolutionMessaging } from "./evolution.ts";
+import type { EvolutionSettings } from "../config/evolution.ts";
 
 export type SendResult =
   | { readonly ok: true; readonly providerMessageId: string | null }

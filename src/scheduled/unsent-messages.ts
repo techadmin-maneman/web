@@ -11,8 +11,9 @@ import type { CallBudget } from "../lib/call-budget.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
-import { enqueueBatch } from "../queues/enqueue.ts";
-import { SENDING_LEASE_MS, type MessagingMessage } from "../queues/messaging.ts";
+import { enqueueBatch } from "../domain/enqueue.ts";
+import { SENDING_LEASE_MS } from "../queues/messaging.ts";
+import { type MessagingMessage } from "../config/pipeline.ts";
 
 /** Unsent this long after it was due, a message has lost its queue message or is waiting for the bridge. */
 const GRACE_MS = 5 * MINUTE_MS;

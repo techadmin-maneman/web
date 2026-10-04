@@ -24,11 +24,11 @@ import { failJob } from "../domain/tryon.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
-import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../queues/crm-sync.ts";
-import { enqueueBatch } from "../queues/enqueue.ts";
+import { enqueueBatch } from "../domain/enqueue.ts";
 import type { RenderMessage } from "../queues/render.ts";
 import { requeueUnsentMessages } from "./unsent-messages.ts";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
+import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../config/pipeline.ts";
 
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;

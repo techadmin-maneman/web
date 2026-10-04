@@ -5,9 +5,8 @@
 
 import type { Logger } from "../log.ts";
 import { alertKind, alertSubject, type SentAgainKind } from "../policy/alerts.ts";
-import type { CrmSyncMessage } from "../queues/crm-sync.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
+import { type CrmSyncMessage, type MessagingMessage } from "../config/pipeline.ts";
 
 /** The most open alerts one look reads: far more than ever wait at once, so the list is whole below it. */
 export const ALERTS_READ = 500;

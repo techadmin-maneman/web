@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import type { Connection } from "../../src/providers/messaging.ts";
-import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { checkAilabCredits, sweep, type SweepEnv } from "../../src/scheduled/sweeper.ts";
 import { NOW, captureLogs, fakeDependencies, fakeQueue, markDatabase } from "./helpers.ts";
 import { insertJob, insertPerson } from "./tryon-fixtures.ts";
+import { MAX_SYNC_ATTEMPTS } from "../../src/config/pipeline.ts";
 
 const minutesAgo = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000).toISOString();
 const minutesAhead = (minutes: number) => new Date(NOW.getTime() + minutes * 60_000).toISOString();

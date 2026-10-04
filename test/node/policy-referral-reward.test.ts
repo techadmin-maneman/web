@@ -1,7 +1,7 @@
 // What a referral earns, each rule named by the prompt's own words, or the owner's (src/policy/referral-reward.ts).
 
 import { describe, expect, it } from "vitest";
-import { checkValue, settingNamed } from "../../src/config/ops-settings.ts";
+import { checkValue, settingNamed } from "../../src/policy/ops-settings.ts";
 import { COMMITTED } from "../../src/domain/ops-settings.ts";
 import { indiaDate } from "../../src/lib/india-time.ts";
 import {

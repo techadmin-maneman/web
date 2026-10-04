@@ -14,7 +14,7 @@ On 1 October 2026 the owner asked: "how are referrals configured? Is it a hard c
 
 ### One input, three figures
 
-`referral_reward` joins Settings · Rules (`src/config/ops-settings.ts`) as a rule of numbers with three keys:
+`referral_reward` joins Settings · Rules (`src/policy/ops-settings.ts`) as a rule of numbers with three keys:
 
 | Key               | To begin with                                  | Bounds           | In the console                 |
 | ----------------- | ---------------------------------------------- | ---------------- | ------------------------------ |

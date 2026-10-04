@@ -2,9 +2,9 @@
 // is sent by the sweeper minutes later (src/scheduled/unsent-messages.ts), so the request goes on either way.
 
 import type { Context } from "hono";
-import { enqueue, enqueueBatch } from "../queues/enqueue.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
+import { enqueue, enqueueBatch } from "../domain/enqueue.ts";
 import type { AppEnv } from "./context.ts";
+import { type MessagingMessage } from "../config/pipeline.ts";
 
 export async function queueMessage(c: Context<AppEnv>, messageId: string): Promise<void> {
   const body = { message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage;

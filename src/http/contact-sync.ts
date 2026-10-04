@@ -5,8 +5,8 @@
 import type { Context } from "hono";
 import { markCustomerChanged } from "../domain/books-customers.ts";
 import type { AppEnv } from "./context.ts";
-import { enqueue, type IfLost } from "../queues/enqueue.ts";
-import type { CrmSyncMessage } from "../queues/crm-sync.ts";
+import { enqueue, type IfLost } from "../domain/enqueue.ts";
+import { type CrmSyncMessage } from "../config/pipeline.ts";
 
 export async function queueContactSync(c: Context<AppEnv>, personId: string): Promise<void> {
   const { requestId, log, deps } = c.var;

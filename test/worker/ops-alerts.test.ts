@@ -7,7 +7,7 @@ import type { AlertOnce } from "../../src/domain/alerts.ts";
 import type { App } from "../../src/http/context.ts";
 import { createLogger } from "../../src/log.ts";
 import { MAX_SEND_ATTEMPTS } from "../../src/config/pipeline.ts";
-import { MAX_SYNC_ATTEMPTS, syncLead } from "../../src/queues/crm-sync.ts";
+import { syncLead } from "../../src/queues/crm-sync.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
 import {
   appFor,
@@ -23,6 +23,7 @@ import {
 } from "./helpers.ts";
 import { enforce, listStaff, opsAs, person as staffPerson } from "./staff-fixtures.ts";
 import { insertJob, insertPerson } from "./tryon-fixtures.ts";
+import { MAX_SYNC_ATTEMPTS } from "../../src/config/pipeline.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const MESSAGE = "22222222-2222-4222-8222-222222222221";

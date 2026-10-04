@@ -8,7 +8,6 @@
 // every fifteen minutes until MAX_SYNC_ATTEMPTS, then this consumer alerts once,
 // and ops may send it again from Tasks. See docs/decisions/0012-zoho-sync.md.
 
-import { z } from "zod";
 import type { LossExtent, VisitWindow } from "../config/booking.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
 import type { Dependencies } from "../dependencies.ts";
@@ -19,25 +18,7 @@ import { resolveAlertStatement } from "../domain/alerts.ts";
 import { leadNotice } from "../domain/lead-notice.ts";
 import { crmErasureKey, crmLeadKey } from "../policy/alerts.ts";
 import { retryWithBackoff } from "./backoff.ts";
-
-export const MAX_SYNC_ATTEMPTS = 10;
-export const QUICK_RETRY_DELAY_SECONDS = 30;
-
-export const CrmSyncMessageSchema = z.union([
-  z.object({ lead_id: z.uuid(), request_id: z.string() }),
-  /** An erased person's record is blanked (docs/decisions/0019-erasure.md). */
-  z.object({ erase_person_id: z.uuid(), request_id: z.string() }),
-  /**
-   * A person whose number or address changed (src/http/contact-sync.ts), or whom ops attached an invite to
-   * (src/routes/ops-client-referral.ts), written onto their record; the second is noted on it too.
-   */
-  z.object({
-    update_person_id: z.string().min(1),
-    request_id: z.string(),
-    invite_attached: z.literal(true).optional(),
-  }),
-]);
-export type CrmSyncMessage = z.infer<typeof CrmSyncMessageSchema>;
+import { CrmSyncMessageSchema, MAX_SYNC_ATTEMPTS, QUICK_RETRY_DELAY_SECONDS } from "../config/pipeline.ts";
 
 export async function handleCrmSyncBatch(
   batch: MessageBatch,

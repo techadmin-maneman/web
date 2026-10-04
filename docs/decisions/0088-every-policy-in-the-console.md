@@ -22,7 +22,7 @@ ADR 0061's three safe defaults stand: a store that cannot be read gives the last
 
 ### Numbers and choices
 
-A rule is numbers, as before, or choices. A **rule of choices** (`ChoiceSetting`, `src/config/ops-settings.ts`) has a closed set of keys, each offered its own choices: a kind of visit with no late fee in the price book is never offered one. The API answers each rule with its `kind`, a number rule's `unit`, `min`, `max` and each key's `bounds`, and a choice rule's `choices`; the console draws a number's box with its unit and bounds, and a choice as a list in its own words (`settings.rules.choiceNames`, `apps/ops/src/content.ts`). **A key's bounds may carry their own unit**, since the phone's clock bounds count minutes and hours, and board D3's days and minutes.
+A rule is numbers, as before, or choices. A **rule of choices** (`ChoiceSetting`, `src/policy/ops-settings.ts`) has a closed set of keys, each offered its own choices: a kind of visit with no late fee in the price book is never offered one. The API answers each rule with its `kind`, a number rule's `unit`, `min`, `max` and each key's `bounds`, and a choice rule's `choices`; the console draws a number's box with its unit and bounds, and a choice as a list in its own words (`settings.rules.choiceNames`, `apps/ops/src/content.ts`). **A key's bounds may carry their own unit**, since the phone's clock bounds count minutes and hours, and board D3's days and minutes.
 
 ### What moved, and where each is kept
 

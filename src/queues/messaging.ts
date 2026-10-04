@@ -27,7 +27,6 @@
 // it again once the bridge is open, and fails it if it is still unsent a day on
 // (src/scheduled/unsent-messages.ts).
 
-import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { messageClass, RESULT_TEMPLATE, stopLinkPurpose, type TemplateName } from "../config/message-templates.ts";
 import { typeOfKey, type ImageType } from "../lib/image-bytes.ts";
@@ -36,7 +35,7 @@ import { type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { StaticConfig } from "../guard.ts";
-import type { MessageKind } from "../domain/messages.ts";
+import type { MessageKind } from "../config/message-kinds.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { mobileHashOf } from "../domain/number-codes.ts";
 import { heldBack } from "../policy/staging-test-records.ts";
@@ -64,9 +63,7 @@ import type { SendResult } from "../providers/messaging.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 import { isOneOf } from "../lib/one-of.ts";
-
-export const MessagingMessageSchema = z.object({ message_id: z.uuid(), request_id: z.string() });
-export type MessagingMessage = z.infer<typeof MessagingMessageSchema>;
+import { MessagingMessageSchema } from "../config/pipeline.ts";
 
 const RETRY_DELAY_SECONDS = 30;
 /** A send claimed longer ago than this is taken to have died, and may be claimed again. */

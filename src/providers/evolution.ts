@@ -15,15 +15,7 @@ import { renderWithStopLink } from "../config/message-templates.ts";
 import { fileExtension } from "../lib/image-bytes.ts";
 import type { Connection, MessagingProvider, SendResult } from "./messaging.ts";
 import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "./vendor-fetch.ts";
-
-export interface EvolutionSettings {
-  /** https://…, no trailing slash. */
-  readonly baseUrl: string;
-  readonly apiKey: string;
-  readonly instance: string;
-  /** The secret in the delivery-receipt webhook's path. Unset, the webhook answers 404. */
-  readonly webhookToken: string | null;
-}
+import type { EvolutionSettings } from "../config/evolution.ts";
 
 /**
  * The bridge answers a media send only after it has fetched the image and

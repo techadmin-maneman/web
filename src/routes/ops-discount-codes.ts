@@ -12,7 +12,7 @@
 // switch codes off themselves. The code's own row in the list says why of the rest.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { PRICE_BOUNDS } from "../config/ops-settings.ts";
+import { PRICE_BOUNDS } from "../policy/ops-settings.ts";
 import { codeOnVisit, enterOnVisit, removeFromVisit } from "../domain/discount-code-uses.ts";
 import { BATCH_MOST, listCodes, LISTED_MOST, makeCodes, switchOff, type NewCodes } from "../domain/discount-codes.ts";
 import { actorOf } from "../http/audit.ts";

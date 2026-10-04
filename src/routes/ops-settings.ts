@@ -29,7 +29,7 @@ import {
   settingNamed,
   PRICE_BOUNDS,
   type NumberSetting,
-} from "../config/ops-settings.ts";
+} from "../policy/ops-settings.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
 import {
   correctPrice,

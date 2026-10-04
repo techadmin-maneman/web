@@ -20,7 +20,7 @@ A code is always asked for by the number it is sent to: a client's `POST /api/au
 
 ### Fifteen kinds of queued message, classified once
 
-`src/queues/messaging.ts` sends every WhatsApp message but a login code (ADR 0030). Each of the fifteen kinds `MESSAGE_KINDS` names (`src/domain/messages.ts`) is now one of two classes, in `MESSAGE_CLASSES` beside the templates (`src/config/message-templates.ts`):
+`src/queues/messaging.ts` sends every WhatsApp message but a login code (ADR 0030). Each of the fifteen kinds `MESSAGE_KINDS` names (`src/config/message-kinds.ts`) is now one of two classes, in `MESSAGE_CLASSES` beside the templates (`src/config/message-templates.ts`):
 
 | Class         | Meaning                                                               | Kinds                                                                                                                                                                                                               |
 | ------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

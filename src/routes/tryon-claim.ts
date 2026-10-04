@@ -27,7 +27,7 @@ import { mobileHashOf } from "../domain/number-codes.ts";
 import { DAY_MS } from "../lib/durations.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { LOOK_PER_NUMBER_DAYS, undelivered } from "../policy/tryon-delivery.ts";
-import { enqueue } from "../queues/enqueue.ts";
+import { enqueue } from "../domain/enqueue.ts";
 import { messageHeldBack } from "../queues/messaging.ts";
 import { NumberCodeIdSchema } from "./number-codes.ts";
 

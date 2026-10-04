@@ -61,17 +61,6 @@ export interface MadeLink {
   readonly shortUrl: string;
 }
 
-/**
- * The payment provider gave no answer it could be held to, a timeout or its own failure, so a refund may or may not
- * have been made. Asking again under the same receipt is safe: a second refund under it is refused.
- */
-export class PaymentUnanswered extends Error {
-  constructor(step: string, cause: unknown) {
-    super(`the payment provider did not answer the ${step}`, { cause });
-    this.name = "PaymentUnanswered";
-  }
-}
-
 export function createPaymentsProvider(
   provider: string | undefined,
   settings: RazorpaySettings | null,

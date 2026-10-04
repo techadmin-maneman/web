@@ -60,8 +60,7 @@ import type { Logger } from "../log.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { bookingNeedsProof } from "../policy/number-proof.ts";
 import { ONE_VISIT_TERMS, planStartsIn, type Plan } from "../policy/one-visit.ts";
-import { enqueue } from "../queues/enqueue.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
+import { enqueue } from "./enqueue.ts";
 import type { Price } from "./price-book.ts";
 import { recordConsent, type ConsentRule } from "./consents.ts";
 import { bookableService, offeredProducts } from "./services.ts";
@@ -79,6 +78,7 @@ import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
 import { pincodeOf, type Pincode } from "./service-area.ts";
 import { inviteLapsed } from "../policy/invites.ts";
+import { type MessagingMessage } from "../config/pipeline.ts";
 
 /** Where a booking is, as the client reads it: the area once ops have named it, its city until then. */
 const placeOf = (pincode: Pincode): string => pincode.area ?? pincode.city;

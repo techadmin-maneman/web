@@ -27,9 +27,9 @@ import { failJob, loadJob, type JobRow } from "../domain/tryon.ts";
 import { fileExtension } from "../lib/image-bytes.ts";
 import type { Logger } from "../log.ts";
 import type { RenderFailure } from "../providers/image.ts";
-import { enqueue } from "./enqueue.ts";
-import type { MessagingMessage } from "./messaging.ts";
+import { enqueue } from "../domain/enqueue.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
+import { type MessagingMessage } from "../config/pipeline.ts";
 
 export const RenderMessageSchema = z.object({ job_id: z.uuid(), request_id: z.string() });
 export type RenderMessage = z.infer<typeof RenderMessageSchema>;

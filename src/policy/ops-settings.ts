@@ -12,25 +12,19 @@
 // of their own (price_book, serviceable_pincodes) because a document already
 // issued depends on what was true then; the ADR gives the split.
 
-import { CHECKIN_RADIUS_M } from "../policy/check-in.ts";
-import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "../policy/job-visibility.ts";
-import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAY_KEYS, NEXT_VISIT_DAYS } from "../policy/next-visit.ts";
-import { chargesFor, FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "../policy/moving-a-visit.ts";
-import {
-  DISPUTE_WINDOW_DAYS,
-  NO_SHOW_CHARGES,
-  NO_SHOW_WAIT_MIN,
-  WAIVER_GIVES_BACK,
-  WAIVER_KEYS,
-} from "../policy/no-show.ts";
-import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "../policy/phone-clock.ts";
-import { MAX_REWARD_VISITS, REFERRAL_REWARD, REFERRAL_REWARD_KEYS } from "../policy/referral-reward.ts";
-import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "../policy/technician-work.ts";
-import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
-import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "./pieces.ts";
-import { HOUR_OF_DAY } from "./setting-units.ts";
-import { PAYMENT_HOLD, PAYMENT_HOLD_KEYS } from "./scheduling.ts";
-import { VISIT_TYPES } from "./visit-types.ts";
+import { CHECKIN_RADIUS_M } from "./check-in.ts";
+import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "./job-visibility.ts";
+import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAY_KEYS, NEXT_VISIT_DAYS } from "./next-visit.ts";
+import { chargesFor, FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "./moving-a-visit.ts";
+import { DISPUTE_WINDOW_DAYS, NO_SHOW_CHARGES, NO_SHOW_WAIT_MIN, WAIVER_GIVES_BACK, WAIVER_KEYS } from "./no-show.ts";
+import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "./phone-clock.ts";
+import { MAX_REWARD_VISITS, REFERRAL_REWARD, REFERRAL_REWARD_KEYS } from "./referral-reward.ts";
+import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "./technician-work.ts";
+import { TASK_GROUPS, TASK_SLA_HOURS } from "./tasks.ts";
+import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "../config/pieces.ts";
+import { HOUR_OF_DAY } from "../config/setting-units.ts";
+import { PAYMENT_HOLD, PAYMENT_HOLD_KEYS } from "../config/scheduling.ts";
+import { VISIT_TYPES } from "../config/visit-types.ts";
 
 /** One number, or one per key; or, for a rule of choices, one choice per key. */
 export type SettingValue = number | Readonly<Record<string, number>> | Readonly<Record<string, string>>;
