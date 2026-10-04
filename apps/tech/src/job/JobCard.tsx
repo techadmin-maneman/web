@@ -131,7 +131,7 @@ export function JobCard({ job }: { job: Job }) {
     return (
       <section className={styles.locked}>
         <p className={styles.lockedTitle}>{copy.locked.title}</p>
-        <p className={styles.lockedBody}>{copy.locked.body}</p>
+        <p className={styles.lockedBody}>{copy.locked.opens(job.unlocks_at)}</p>
         <p className={styles.sector}>{where(job.sector)}</p>
       </section>
     );

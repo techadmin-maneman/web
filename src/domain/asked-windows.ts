@@ -14,8 +14,7 @@
 // ours makes a Request any more (docs/decisions/0101-phase-1s-path-into-fsm-removed.md),
 // so the pass reads only D1.
 //
-// On the five-minute cron, beside the invoice pass, and never in ops' path: the
-// board reads the column.
+// On the cron, once an hour, and never in ops' path: the board reads the column.
 
 import { windowLabel, type VisitWindow } from "../config/booking.ts";
 import type { BookingWindow } from "../config/scheduling.ts";

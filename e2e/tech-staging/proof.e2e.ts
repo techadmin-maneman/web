@@ -227,7 +227,7 @@ test("the day's list, and the card that unlocks the day before", async ({ page, 
   expect(later.sector).toBe(fixture.sector);
 
   await page.goto(`/jobs/${fixture.later.id}`);
-  await expect(page.getByText("The address and the client's card open the day before.")).toBeVisible();
+  await expect(page.getByText(/^Opens at .+ on /)).toBeVisible();
 
   await page.goto(`/jobs/${fixture.today.id}`);
   await expect(page.getByRole("heading", { level: 1, name: fixture.clientName })).toBeVisible();
