@@ -6,8 +6,17 @@
  * visit was closed as fitted or declined, or its payment link was paid.
  */
 export function visitBegun(alias: string): string {
+  return begunBy(alias, "'check_in', 'start', 'outcome'");
+}
+
+/** True once the visit has begun by more than the technician's check-in: he has started or closed it, or it was paid. */
+export function begunPastArrival(alias: string): string {
+  return begunBy(alias, "'start', 'outcome'");
+}
+
+function begunBy(alias: string, stepKinds: string): string {
   return `(EXISTS (SELECT 1 FROM job_events je WHERE je.appointment_id = ${alias}.id AND je.superseded = 0
-      AND je.kind IN ('check_in', 'start', 'outcome'))
+      AND je.kind IN (${stepKinds}))
     OR COALESCE(${alias}.one_visit, '') IN ('fitted', 'declined')
     OR EXISTS (SELECT 1 FROM payment_links pl WHERE pl.appointment_id = ${alias}.id AND pl.paid_at IS NOT NULL))`;
 }

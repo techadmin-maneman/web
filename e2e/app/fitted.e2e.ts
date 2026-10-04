@@ -262,6 +262,7 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   const client = fittedClient();
   await logIn(page, client.mobile);
   await tab(page, "Photos").click();
+  await expect(page.getByText("Taken for your visit record.", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: fullDate(client.service.date) })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: fullDate(client.firstFit.date) })).toBeVisible();
 

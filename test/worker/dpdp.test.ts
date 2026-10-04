@@ -460,8 +460,7 @@ describe("ops deciding a deletion request", () => {
     );
   }
 
-  // Open point 136: the sweeper would find them minutes later, where POST /api/erasure
-  // queues the CRM within seconds. Both doors are now as quick as each other.
+  // The sweeper would find them only minutes later.
   it("queues the CRM and the FSM contact itself, rather than waiting for the sweeper", async () => {
     const id = await requested();
     const crm = fakeQueue();

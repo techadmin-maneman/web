@@ -2,13 +2,15 @@
 // (board G1) opens it, and the booking sheet asks for it before any slot when the client has given none
 // (docs/decisions/0079-an-address-before-a-slot.md). The design draws no form; its fields follow G2's number
 // field. The fields an address cannot do without say they are required, and one left out is marked, named by the
-// error, and given the focus.
+// error, and given the focus. The API refuses a pincode we do not come to, which offers the waitlist, and a move to
+// another city while a visit is booked, which offers a message to ops.
 
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, type Address } from "../api.ts";
-import { profile } from "../content.ts";
+import { BOOKING_URL, messages, profile } from "../content.ts";
+import { whatsappWith } from "../lib/whatsapp.ts";
 import { BuildingSearch } from "./BuildingSearch.tsx";
 import styles from "./profile.module.css";
 
@@ -29,7 +31,13 @@ const EMPTY: Address = {
 
 type Field = Exclude<keyof Address, "place_id">;
 
+/** Why the API would not save the address, where the form offers a way on. */
+type Refused = "not_served" | "visit_booked";
+
 const ERROR_ID = "address-error";
+
+/** The site's /book, where a pincode we do not come to joins the waitlist. */
+const WAITLIST_URL = BOOKING_URL[String(import.meta.env.MM_ENV)] ?? BOOKING_URL.production;
 
 /** A part the client filled in. Absent and null mean the same: they did not. */
 export const given = (part: string | null | undefined): part is string =>
@@ -69,6 +77,7 @@ export function AddressForm({
   const [editing, setEditing] = useState<Address>(address ?? EMPTY);
   const [problem, setProblem] = useState<string | null>(null);
   const [invalid, setInvalid] = useState<readonly Field[]>([]);
+  const [refused, setRefused] = useState<Refused | null>(null);
   // One token for the whole search, made when the form opens: it is what puts
   // Google's autocomplete on the free per-session price rather than per
   // keystroke (docs/decisions/0054-address-capture.md).
@@ -86,6 +95,7 @@ export function AddressForm({
         : chosenDraft;
       const left = missing(draft);
       setInvalid(left);
+      setRefused(null);
       if (left.length > 0) {
         setProblem(copy.form.invalid);
         document.getElementById(`address-${left[0] ?? ""}`)?.focus();
@@ -98,11 +108,23 @@ export function AddressForm({
         access_notes: draft.access_notes?.trim() === "" ? null : draft.access_notes,
         session_token: sessionToken,
       });
-      if (!answer.ok) {
-        setProblem(copy.change.failed);
+      if (answer.ok) {
+        onSaved();
         return;
       }
-      onSaved();
+      if (answer.code === "not_served") {
+        setRefused("not_served");
+        setInvalid(["pincode"]);
+        setProblem(copy.form.notServed(draft.pincode.trim()));
+        document.getElementById("address-pincode")?.focus();
+        return;
+      }
+      if (answer.code === "visit_booked") {
+        setRefused("visit_booked");
+        setProblem(copy.form.visitBooked);
+        return;
+      }
+      setProblem(copy.change.failed);
     });
 
   const field = (
@@ -174,6 +196,16 @@ export function AddressForm({
         <p className={styles.error} id={ERROR_ID} role="alert">
           {problem}
         </p>
+      )}
+      {refused === "not_served" && (
+        <a className={styles.link} href={WAITLIST_URL}>
+          <span>{copy.form.waitlist}</span>
+        </a>
+      )}
+      {refused === "visit_booked" && (
+        <a className={styles.link} href={whatsappWith(messages.moveCity)} rel="noopener">
+          <span>{copy.form.message}</span>
+        </a>
       )}
       <div className={styles.row}>
         <Button variant="primary" size="control" className={styles.primary} type="submit" disabled={busy}>

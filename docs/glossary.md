@@ -53,7 +53,7 @@ The words the code, the database and the API use for the same few things, and wh
 
 ## Removing a person
 
-| Word                 | Means                                                                                                                                                                                                                     |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **deletion request** | A client asking, in the app, for their account to be deleted (`deletion_requests`). Ops decide it within 7 days (`DELETION_DECIDED_WITHIN_DAYS`).                                                                         |
-| **erasure**          | The act itself (`erasePerson`, ADR 0019 and 0066): photographs deleted, the person blanked, the CRM and FSM told. A decided deletion request is an erasure, and so is the operators' `POST /api/erasure`. All or nothing. |
+| Word                 | Means                                                                                                                                                                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **deletion request** | A client asking, in the app, for their account to be deleted (`deletion_requests`). Ops decide it within 7 days (`DELETION_DECIDED_WITHIN_DAYS`).                                                                                 |
+| **erasure**          | The act itself (`eraseAndQueue`, ADR 0019 and 0066): photographs deleted, the person blanked, the CRM, FSM and Books told. Done in the console only: a decided deletion request, or Erase on a person's own page. All or nothing. |

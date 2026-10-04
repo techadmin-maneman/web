@@ -41,6 +41,7 @@ const ADD_CREDITS: Call = `POST ${RECORD_PATH}/credits`;
 const ATTACH_INVITE: Call = `POST ${RECORD_PATH}/referral`;
 const SUGGEST: Call = `POST ${RECORD_PATH}/address/suggestions`;
 const SAVE_ADDRESS: Call = `POST ${RECORD_PATH}/address`;
+const ERASE: Call = `POST ${RECORD_PATH}/erasure`;
 const FIND: Call = "POST /api/clients/find";
 const readPhoto = (id: string): Call => `GET ${RECORD_PATH}/photos/${id}`;
 const NAME = { name: CLIENT.name, exact: true };
@@ -52,6 +53,31 @@ const VIEW = {
   logged_at: "2027-09-22T05:12:00.000Z",
   before: [{ by: "ops@maneman.in", at: "2027-09-19T04:40:00.000Z" }],
 } satisfies OpsReply<"/api/clients/{id}/photos/view", "post">;
+
+/** What an erasure from the client's page answers: what went. */
+const ERASED = {
+  erased_at: "2027-09-22T05:12:00.000Z",
+  photos_deleted: 1,
+  results_deleted: 1,
+  visit_photos_deleted: 10,
+  messages_cancelled: 0,
+  sessions_ended: 1,
+  addresses_removed: 1,
+} satisfies OpsReply<"/api/clients/{id}/erasure", "post">;
+
+/** Nothing erased: a visit of theirs is still booked. */
+const VISIT_BOOKED = {
+  error: { code: "visit_booked", request_id: "test" },
+  visits: [
+    {
+      id: "77000000-0000-4000-8000-000000000001",
+      type: "service",
+      status: "scheduled",
+      window_start: "2027-09-27T04:30:00.000Z",
+    },
+  ],
+  payments: [],
+};
 
 /** The client's routes, with every photograph a block of ink; `over` replaces any of them. */
 async function clientRoutes(page: Page, over: Answers = {}): Promise<void> {
@@ -638,6 +664,8 @@ test("keeps the photographs locked, and says what opening them records", async (
   });
   await expect(page.getByText("Locked")).toBeVisible();
   await expect(page.getByRole("heading", { name: `Photographs of ${CLIENT.name}` })).toBeVisible();
+  // Why they are kept, whatever the Consents tab says.
+  await expect(page.getByText("Taken for the visit record, at every visit.")).toBeVisible();
   await expect(page.getByText("Opening these records your name, the client and the time.")).toBeVisible();
   // Nothing is fetched while it is locked, so nothing is logged.
   expect(asked).toBe(0);
@@ -754,11 +782,56 @@ test("names a consent given by booking, and says where a place was not recorded"
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
-test("says when the client has asked to be erased", async ({ page }) => {
+test("says when the client has asked to be erased, and leaves it to Deletion requests", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`, {
     [READ_CONSENTS]: json(ERASURE_REQUESTED),
   });
   await expect(page.getByText("Erasure requested 18 Sep 2027. It is not decided here.")).toBeVisible();
+  await expect(page.getByRole("button", { name: `Erase ${CLIENT.name}` })).toHaveCount(0);
+});
+
+// The operators' erasure was a script with a shared secret, on the public host, that left no audit entry (PS-16).
+test("erases a client from their page, once ops confirm the request came from their own number", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/consents`, { [ERASE]: json(ERASED) });
+  const erasing = page.getByRole("region", { name: "Erase this client" });
+  await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();
+
+  const confirm = page.getByRole("group", { name: `Erasing ${CLIENT.name}` });
+  await expect(confirm).toBeFocused();
+  await expect(confirm).toContainText("Their invoices in Books, eight years, by law");
+  const now = confirm.getByRole("button", { name: "Erase now" });
+  await expect(now).toBeDisabled();
+  await confirm
+    .getByRole("checkbox", { name: "I have confirmed this request with them, on their own number." })
+    .check();
+
+  const sent = page.waitForRequest((request) => request.url().endsWith("/erasure") && request.method() === "POST");
+  await now.click();
+  expect((await sent).postDataJSON()).toEqual({});
+  await expect(page.getByRole("heading", { name: "Erased" })).toBeVisible();
+  await expect(page.getByRole("heading", NAME)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Find another client" })).toBeVisible();
+});
+
+test("erases anyway when a visit is booked, once ops say they will settle it by hand today", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/consents`, { [ERASE]: json(VISIT_BOOKED, 409) });
+  const erasing = page.getByRole("region", { name: "Erase this client" });
+  await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();
+  await erasing
+    .getByRole("checkbox", { name: "I have confirmed this request with them, on their own number." })
+    .check();
+  await erasing.getByRole("button", { name: "Erase now" }).click();
+
+  await expect(erasing).toContainText("They still have a visit booked, so nothing was erased.");
+  await answer(page, { [ERASE]: json(ERASED) });
+  const anyway = erasing.getByRole("button", { name: "Erase anyway" });
+  await expect(anyway).toBeDisabled();
+  await erasing.getByRole("checkbox", { name: "I will cancel and refund it by hand today." }).check();
+
+  const sent = page.waitForRequest((request) => request.url().endsWith("/erasure") && request.method() === "POST");
+  await anyway.click();
+  expect((await sent).postDataJSON()).toEqual({ override_open_bookings: true });
+  await expect(page.getByRole("heading", { name: "Erased" })).toBeVisible();
 });
 
 // The owner's ruling of 24 September 2026: what a client has bought and how

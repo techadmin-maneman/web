@@ -20,7 +20,7 @@ import {
   type Phase,
 } from "../api.ts";
 import { add, all, get, put, remove } from "./db.ts";
-import { keepArrival } from "./jobs.ts";
+import { forgetStartAtCheckIn, keepArrival, keepStartAtCheckIn, keptStartAtCheckIn } from "./jobs.ts";
 import { account, nextToSend, type JobAccount, type Queued } from "./replay.ts";
 import { uuidv7 } from "./uuidv7.ts";
 
@@ -98,7 +98,8 @@ export async function held(): Promise<JobAccount[]> {
  * A step already waiting is not queued a second time: a second tap on a gloved
  * screen, or the screen opened twice, sends it once. `startsAt` is the job's
  * start as the card said when the technician acted, which the API checks
- * against the one it holds.
+ * against the one it holds; once he has checked in, the start the card said
+ * then.
  */
 export async function queue(
   kind: EventKind,
@@ -118,7 +119,7 @@ export async function queue(
     path: pathFor(kind, jobId),
     body,
     queued_at: Date.now(),
-    starts_at: startsAt,
+    starts_at: await startSentWith(kind, jobId, startsAt),
     state: "waiting" as const,
     note: null,
     fields: [],
@@ -126,6 +127,18 @@ export async function queue(
   const seq = await add("outbox", event);
   changed();
   return { ...event, seq };
+}
+
+/**
+ * The start a step is sent with. A check-in keeps the card's; every later step of the job carries that same start,
+ * so a move ops make once the technician has arrived is refused rather than taken in by a card read again since.
+ */
+async function startSentWith(kind: EventKind, jobId: string, startsAt: string | null): Promise<string | null> {
+  if (kind === "check_in") {
+    if (startsAt !== null) await keepStartAtCheckIn(jobId, startsAt);
+    return startsAt;
+  }
+  return (await keptStartAtCheckIn(jobId)) ?? startsAt;
 }
 
 /**
@@ -188,6 +201,7 @@ export async function forget(jobId: string): Promise<void> {
   for (const frame of await frames()) {
     if (frame.job_id === jobId) await remove("frames", frame.id);
   }
+  await forgetStartAtCheckIn(jobId);
   changed();
 }
 
