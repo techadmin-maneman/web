@@ -336,8 +336,8 @@ describe("the invoice a finished visit gets", () => {
     expect(await invoicePass(books)).toEqual({ raised: 0, issued: 0 });
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "invoice_refused", code: "4004" }));
     expect(alerted).toEqual([
-      `Books refused the invoice of visit ${VISIT}: 400 4004. It is tried again each hour, or raise it in Books by ` +
-        `hand. ${CLIENT_LINK}`,
+      `Books refused the invoice of visit ${VISIT}, saying "the stub Books refused createInvoice". It is tried ` +
+        `again each hour, or raise it in Books by hand. ${CLIENT_LINK}`,
     ]);
     expect(await invoicePass(books, later(RECHECK_AFTER_MS + 1000))).toEqual({ raised: 1, issued: 1 });
     const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();

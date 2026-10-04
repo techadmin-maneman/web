@@ -49,7 +49,7 @@ export class ZohoError extends ProviderError {
   override readonly name = "ZohoError";
 
   constructor(status: number, code: string, message: string, refusal?: boolean) {
-    super(status, code, `Zoho ${String(status)} ${code}: ${message}`, refusal);
+    super(status, code, `Zoho ${String(status)} ${code}: ${message}`, refusal, message);
   }
 }
 

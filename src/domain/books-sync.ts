@@ -573,7 +573,8 @@ async function tellFailure(pass: Pass, record: FailedRecord, error: unknown): Pr
     pass.log.warn(`books_${record.kind}_refused`, { [idField]: record.id, status: error.status, code: error.code });
     await pass.deps.alertOnce({
       key: `books_${record.kind}_refused:${record.id}`,
-      message: `Books refused ${record.what}: ${String(error.status)} ${error.code}. ${record.then}`,
+      // Books' own words; its status and code go to the log above.
+      message: `Books refused ${record.what}, saying "${error.said}". ${record.then}`,
       link,
     });
     return;

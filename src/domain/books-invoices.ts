@@ -395,8 +395,8 @@ async function tellFailure(pass: Pass, visit: Visit, error: unknown): Promise<vo
     await pass.deps.alertOnce({
       key: `invoice_refused:${visit.id}`,
       message:
-        `Books refused the invoice of visit ${visit.id}: ${String(error.status)} ${error.code}. It is tried again ` +
-        "each hour, or raise it in Books by hand.",
+        `Books refused the invoice of visit ${visit.id}, saying "${error.said}". It is tried again each hour, or ` +
+        "raise it in Books by hand.",
       link: linkTo(visit),
     });
     return;
