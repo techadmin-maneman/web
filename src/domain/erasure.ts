@@ -5,15 +5,16 @@
 //
 // In order: one D1 batch blanks the person and what they left, ends their
 // sessions, cancels their unsent messages and expires their jobs, with who
-// erased them and any deletion request of theirs still open in the same batch,
-// so all of it happens or none of it does. Then their files are deleted from
-// R2, each before the row that names it. If that fails part-way, the person is
-// erased all the same and the cron's erased_files job deletes what is left. The
-// CRM and FSM are told at once, by their queues; Books by the cron's own pass
-// (src/domain/books-erasure.ts).
+// erased them, and their deletion requests, grievances and Customer Care
+// alerts still open closed, in the same batch, so all of it happens or none of
+// it does. Then their files are deleted from R2, each before the row that names
+// it. If that fails part-way, the person is erased all the same and the cron's
+// erased_files job deletes what is left. The CRM and FSM are told at once, by their queues;
+// Books by the cron's own pass (src/domain/books-erasure.ts).
 //
 // Nothing is erased while the person has a visit or booking still to happen, a
-// payment held with no visit behind it, or a payment link unpaid
+// payment held with no visit behind it, a cancelled visit's refund not yet
+// made, or a payment link unpaid
 // (src/policy/account-deletion.ts): the caller asks erasureBlockers first. When
 // ops erase all the same, the batch lets go of every booking of theirs not yet a
 // visit, so none is booked for nobody, and their open payment links are then
@@ -27,7 +28,7 @@ import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { failureReason, type Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
-import { deletionWaitingKey } from "../policy/alerts.ts";
+import { CUSTOMER_CARE_KINDS, deletionWaitingKey } from "../policy/alerts.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
@@ -124,7 +125,7 @@ const OPEN_BOOKING_LINKS = `FROM slot_holds
 
 /**
  * What ops settle before erasing: the visits still to happen, the bookings paid for or free that are not yet visits,
- * the payments held with no visit behind them, and the payment links still unpaid.
+ * the payments held with no visit behind them, the refunds cancels still owe, and the payment links still unpaid.
  */
 export async function erasureBlockers(db: D1Database, personId: string, now: Date): Promise<ErasureBlockers> {
   const { results: visits } = await db
@@ -144,7 +145,7 @@ export async function erasureBlockers(db: D1Database, personId: string, now: Dat
     )
     .bind(personId)
     .all<ErasureBlockers["bookings"][number]>();
-  const { results: payments } = await db
+  const { results: held } = await db
     .prepare(
       `SELECT id, reference, amount FROM payments
        WHERE person_id = ?1 AND appointment_id IS NULL AND status = 'captured'
@@ -152,6 +153,7 @@ export async function erasureBlockers(db: D1Database, personId: string, now: Dat
     )
     .bind(personId)
     .all<ErasureBlockers["payments"][number]>();
+  const payments = [...held, ...(await cancelRefundsOwed(db, personId))];
   const { results: links } = await db
     .prepare(
       `SELECT l.id, l.reference, l.amount ${UNPAID_VISIT_LINKS}
@@ -160,6 +162,27 @@ export async function erasureBlockers(db: D1Database, personId: string, now: Dat
     .bind(personId, now.toISOString())
     .all<ErasureBlockers["links"][number]>();
   return { visits, bookings, payments, links };
+}
+
+/**
+ * What their cancelled visits' refunds still owe them: refunds not yet made, whether the cron is still asking for one
+ * or Razorpay refused it and it waits for ops. Each is owed until we hold its refund's ID or Razorpay reports refunds
+ * of the payment that leave no more than the cancel kept.
+ */
+async function cancelRefundsOwed(db: D1Database, personId: string): Promise<ErasureBlockers["payments"]> {
+  const { results } = await db
+    .prepare(
+      `SELECT p.id, p.reference, p.amount - p.refunded_amount - c.kept_amount AS amount
+       FROM appointments a
+         JOIN visit_changes c ON c.appointment_id = a.id AND c.kind = 'cancelled'
+         JOIN payments p ON p.id = c.payment_id
+       WHERE a.person_id = ?1 AND a.status = 'cancelled' AND c.refund_amount > 0 AND c.razorpay_refund_id IS NULL
+         AND p.amount - p.refunded_amount > c.kept_amount
+       ORDER BY c.created_at`,
+    )
+    .bind(personId)
+    .all<ErasureBlockers["payments"][number]>();
+  return results;
 }
 
 /** Razorpay's IDs for the person's payment links it would still take a payment on. */
@@ -245,9 +268,10 @@ export async function erasePerson(
          WHERE person_id = ?1 AND state IN ('waiting', 'queued') RETURNING id`,
       )
       .bind(personId),
-    ...alongside,
     ...letGoOfBookings(db, personId, at),
     ...(await personalDataStatements(db, personId, at)),
+    // After the blanking, so a grievance the caller closes keeps the words it is closed with.
+    ...alongside,
     recordEvent(db, "person_erased", personId, { photos: counts.photos, results: counts.results }, now),
   ]);
 
@@ -270,9 +294,9 @@ export async function erasePerson(
 }
 
 /**
- * The one way a person is erased. Who erased them, and any deletion request of theirs still open, go in the
- * erasure's batch; the CRM's and FSM's blanking is queued at once rather than left to the sweeper, and their payment
- * links still open are cancelled. Null when they are already erased.
+ * The one way a person is erased. Who erased them, and what of theirs is still open for ops (a deletion request, a
+ * grievance, a Customer Care alert), go in the erasure's batch; the CRM's and FSM's blanking is queued at once rather than left to
+ * the sweeper, and their payment links still open are cancelled. Null when they are already erased.
  */
 export async function eraseAndQueue(
   env: ErasureQueueEnv,
@@ -286,6 +310,8 @@ export async function eraseAndQueue(
     ...(options.alongside ?? []),
     resolveOpenRequestAlerts(env.DB, personId, now),
     closeOpenRequests(env.DB, personId, audit.actor.id, now),
+    closeOpenGrievances(env.DB, personId, audit.actor.id, now),
+    resolveAlertsAbout(env.DB, personId, now),
     auditStatement(env.DB, audit, now),
   ]);
   if (summary === null) return null;
@@ -319,6 +345,33 @@ function closeOpenRequests(db: D1Database, personId: string, decidedBy: string, 
        WHERE person_id = ?1 AND state = 'requested'`,
     )
     .bind(personId, now.toISOString(), decidedBy);
+}
+
+/** An open grievance of theirs is closed by the erasure, under whoever erased them: nobody is left to answer. */
+function closeOpenGrievances(db: D1Database, personId: string, closedBy: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE grievances SET state = 'resolved', response = 'Client erased', resolved_by = ?2, resolved_at = ?3
+       WHERE person_id = ?1 AND state = 'open'`,
+    )
+    .bind(personId, closedBy, now.toISOString());
+}
+
+/**
+ * The person's open Customer Care alerts that link to their page are resolved: their messages, contact and notes went
+ * with the erasure. Every other alert stays open, since a visit, a booking or money may still need settling, and their
+ * page shows what is kept of those.
+ */
+function resolveAlertsAbout(db: D1Database, personId: string, now: Date): D1PreparedStatement {
+  const page = `/clients/${personId}`;
+  // An alert's kind is its key up to the first colon.
+  return db
+    .prepare(
+      `UPDATE alerts SET resolved_at = ?3
+       WHERE resolved_at IS NULL AND (link = ?1 OR instr(link, ?2) = 1)
+         AND substr(key, 1, instr(key || ':', ':') - 1) IN (SELECT value FROM json_each(?4))`,
+    )
+    .bind(page, `${page}/`, now.toISOString(), JSON.stringify(CUSTOMER_CARE_KINDS));
 }
 
 /** Both consumers do nothing for a person already done, so the sweeper finding them as well costs nothing. */

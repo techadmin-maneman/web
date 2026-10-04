@@ -225,7 +225,10 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await reason(page, "Zone rebalance");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toHaveText("Rohit M. moved. The client was sent the new window on WhatsApp.");
+  // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
+  await expect(page.getByRole("status")).toHaveText(
+    "Moved. We're sending Rohit M. the new window on WhatsApp; if it fails, a call task appears.",
+  );
   expect(sent).toEqual([
     {
       appointment_id: ROHIT_JOB?.appointment_id,
@@ -330,7 +333,7 @@ test("assigns a tray job through the assign route, with no technician expected",
   await page.getByRole("radio", { name: "Client asked to move it" }).check();
   await page.getByRole("button", { name: "Move", exact: true }).click();
 
-  await expect(page.getByRole("status")).toContainText("Vikram S. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Vikram S. the new window on WhatsApp;");
   expect(moved).toEqual([]);
   expect(assigned).toEqual([
     {
@@ -419,7 +422,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled();
 
   release();
-  await expect(page.getByRole("status")).toContainText("Rohit M. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Rohit M. the new window on WhatsApp;");
   expect(sent).toHaveLength(1);
 });
 

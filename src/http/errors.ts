@@ -104,6 +104,10 @@ export const ERROR_CODES = [
   // A service-area change that would leave no pincode served at all, and every
   // client on the waitlist (docs/decisions/0061-ops-editable-inputs.md).
   "no_service_area",
+  // A pincode served from a day still to come, which /book would take bookings for at once; and a pincode ops would add
+  // that the service area holds already.
+  "launch_in_future",
+  "pincode_held",
   // The services clients book (docs/decisions/0085-services-ops-can-edit.md): another service has the name, or its
   // kind the code; retiring it would leave its kind with nothing to book; a price for a service retired by its day.
   "service_exists",

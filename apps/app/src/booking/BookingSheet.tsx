@@ -493,6 +493,7 @@ export function BookingSheet({
           <DateStep
             before={before}
             days={availability.days}
+            noticeHours={availability.change_notice_hours}
             offered={offeredDate ?? null}
             chosen={date}
             later={
@@ -519,6 +520,7 @@ export function BookingSheet({
           <WindowStep
             before={before}
             day={day}
+            noticeHours={availability.change_notice_hours}
             regular={availability.regular}
             chosen={chosenWindow}
             busy={busy}

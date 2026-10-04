@@ -248,6 +248,7 @@ const service = (fields: {
   kind: "consultation" | "first_fit" | "service" | "replacement";
   tier: string;
   name: string;
+  description?: string;
   minutes: number;
   sort?: number;
   retired_date?: string | null;
@@ -262,6 +263,7 @@ const service = (fields: {
   kind: fields.kind,
   tier: fields.tier,
   name: fields.name,
+  description: fields.description ?? null,
   minutes: fields.minutes,
   sort: fields.sort ?? 0,
   retired_date: fields.retired_date ?? null,
@@ -299,6 +301,7 @@ export const SERVICES = {
       kind: "first_fit",
       tier: "premium",
       name: "Premium",
+      description: "A finer lace front, for a closer look.",
       minutes: 240,
       sort: 1,
       fsm_item_id: null,
@@ -364,6 +367,7 @@ export const SERVICES = {
   ],
   min_minutes: 30,
   max_minutes: 360,
+  max_description: 160,
   max_amount_ex_gst: 100_000_000,
   max_gst_percent: 28,
 } satisfies OpsReply<"/api/services">;
@@ -391,4 +395,5 @@ export const SERVICE_AREA = {
     },
     { pincode: "122018", area: "Sec65", city: "Gurgaon", served: false, launch_on: null, waiting: 0, to_alert: 0 },
   ],
+  cities: ["Gurgaon", "Delhi", "Mumbai"],
 } satisfies OpsReply<"/api/service-area">;

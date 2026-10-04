@@ -350,15 +350,33 @@ export function Visits({
       <BookOne clientId={clientId} record={record} onBooked={onChanged} />
       <HeldBookings bookings={record.held_bookings} upcoming={record.visits.upcoming} />
       <Address clientId={clientId} address={address} onAddress={onAddress} />
-      <VisitTable
-        title={copy.upcoming}
-        visits={record.visits.upcoming}
-        empty={copy.noUpcoming}
-        changing={{ name: record.name, onChanged }}
-        onBoard
-      />
-      <VisitTable title={copy.past} visits={record.visits.past} empty={copy.noPast} />
+      <VisitRecords visits={record.visits} name={record.name} onChanged={onChanged} />
       <AutoRefunds refunds={record.auto_refunds} />
     </div>
+  );
+}
+
+/** The visits to come, which ops may cancel or close by hand, then the visits done. */
+export function VisitRecords({
+  visits,
+  name,
+  onChanged,
+}: {
+  visits: ClientRecord["visits"];
+  /** Whose visits they are, as the panels that change one name them. */
+  name: string;
+  onChanged: () => void;
+}) {
+  return (
+    <>
+      <VisitTable
+        title={copy.upcoming}
+        visits={visits.upcoming}
+        empty={copy.noUpcoming}
+        changing={{ name, onChanged }}
+        onBoard
+      />
+      <VisitTable title={copy.past} visits={visits.past} empty={copy.noPast} />
+    </>
   );
 }

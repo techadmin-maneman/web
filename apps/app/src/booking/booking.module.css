@@ -162,9 +162,25 @@
   color: var(--paper-placeholder);
 }
 
+/* A day with a window inside the notice: a short rule beneath its number, as the legend shows it. */
+.dayLate {
+  position: absolute;
+  bottom: var(--sp-6);
+  left: 50%;
+  width: var(--sp-13);
+  height: var(--rule-strong);
+  background: var(--error-on-paper);
+  transform: translateX(-50%);
+}
+
+.day:has(.radio:checked) .dayLate {
+  background: var(--paper);
+}
+
 .legend {
   display: flex;
-  gap: var(--sp-20);
+  flex-wrap: wrap;
+  gap: var(--sp-8) var(--sp-20);
   margin-top: var(--sp-18);
   font-size: var(--fs-14);
   color: var(--text-muted);
@@ -186,6 +202,12 @@
 .swatchFull {
   border-color: var(--paper-shade);
   background: var(--paper-shade);
+}
+
+.swatchLate {
+  width: var(--sp-13);
+  height: var(--rule-strong);
+  background: var(--error-on-paper);
 }
 
 /* Board C3. */
@@ -241,6 +263,11 @@
   color: var(--text-muted);
 }
 
+/* A window inside the notice: still sold, and its line in the colour of a charge. */
+.windowLate {
+  color: var(--error-on-paper);
+}
+
 /*
  * The visits to choose between, which no board draws: each kind named in small capitals, over its services drawn as
  * the window step's rows. The first kind sits under the heading, as the windows do.
@@ -257,6 +284,22 @@
 .serviceMoney {
   flex-shrink: 0;
   text-align: right;
+}
+
+/* The line ops wrote for a service, under its name: a row that carries one grows to hold it. */
+.window:has(.serviceLine) {
+  padding-block: var(--sp-12);
+}
+
+.serviceLine {
+  display: block;
+  margin-top: var(--sp-3);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.window:has(.radio:checked) .serviceLine {
+  color: var(--ink-soft);
 }
 
 .regular {

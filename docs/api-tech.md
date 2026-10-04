@@ -1023,6 +1023,8 @@ Request body:
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -2091,7 +2093,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The day-before or arrival WhatsApp to the client, and when it was delivered."
+      "description": "The day-before or arrival WhatsApp that went to the client, and when it was delivered; null when none went, as when one was skipped or failed."
     },
     "steps": {
       "type": "array",

@@ -59,13 +59,16 @@ export const AUDIT_ACTIONS = [
   "slot_times.set",
   "pincode.set",
   "pincode.rename",
+  // A pincode ops add to the service area, unserved, in one of our cities.
+  "pincode.add",
   // The days no visit is offered, which the runbook's SQL set before (docs/decisions/0088-every-policy-in-the-console.md).
   "blackout.add",
   "blackout.remove",
-  // The services clients book (docs/decisions/0085-services-ops-can-edit.md): one added to a kind, renamed, given
-  // another length, a kind's put in another order, one retired from a day, and one offered again.
+  // The services clients book (docs/decisions/0085-services-ops-can-edit.md): one added to a kind, renamed, described,
+  // given another length, a kind's put in another order, one retired from a day, and one offered again.
   "service.add",
   "service.rename",
+  "service.describe",
   "service.length",
   "service.reorder",
   "service.retire",

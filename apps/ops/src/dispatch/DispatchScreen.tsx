@@ -132,7 +132,10 @@ function landsAtFrom(rooms: Rooms, to: Target): string | null {
 
 const isBlackout = (rooms: Rooms, date: string): boolean => rooms.state === "known" && rooms.blackouts.includes(date);
 
-/** What a move did, in words, from the server's own answer: a message is claimed only where one was queued. */
+/**
+ * What a move did, in words, from the server's own answer. A message queued is not yet one sent, so the notice says
+ * it is on its way, and where it fails the move waits on the Tasks board for a call.
+ */
 function doneNotice(job: Job, to: Target, moved: Moved): Notice {
   const copy = dispatch.landing.moved;
   const name = nameOf(job);

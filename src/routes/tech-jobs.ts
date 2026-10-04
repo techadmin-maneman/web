@@ -302,9 +302,10 @@ const JobDetailSchema = JobSummarySchema.extend({
       z.null(),
     ])
     .openapi({ description: "The client's latest earlier visit with after photographs; null for a first visit." }),
-  reminder: z
-    .union([z.object({ delivered_at: z.union([z.iso.datetime(), z.null()]) }).strict(), z.null()])
-    .openapi({ description: "The day-before or arrival WhatsApp to the client, and when it was delivered." }),
+  reminder: z.union([z.object({ delivered_at: z.union([z.iso.datetime(), z.null()]) }).strict(), z.null()]).openapi({
+    description:
+      "The day-before or arrival WhatsApp that went to the client, and when it was delivered; null when none went, as when one was skipped or failed.",
+  }),
   steps: z.array(z.enum(CARD_STEPS)).openapi({
     description: "The steps this visit type runs, in order; a consultation's and a one visit's take the profile.",
   }),

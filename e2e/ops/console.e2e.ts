@@ -46,7 +46,7 @@ test("opens on Tasks, with the sections under their departments and what waits i
     "Deletion requests, 1 waiting",
   ]);
   await expectNames(department("Finance"), ["Payments, 2 waiting, some overdue", "Prices", "Discount codes"]);
-  await expectNames(department("Growth"), ["Referrals, 2 waiting, some overdue", "Waitlist", "Service area"]);
+  await expectNames(department("Growth"), ["Referrals, 2 waiting, some overdue", "Areas"]);
   await expectNames(department("Admin"), ["Settings", "Staff"]);
   await expect(department("Operations").first()).toHaveAttribute("aria-current", "page");
 });
@@ -65,27 +65,37 @@ test("shows a person only the sections their access opens, and opens on the firs
   await expect(navigation(page).getByRole("list")).toHaveCount(1);
   await expectNames(navigation(page).getByRole("list", { name: "Finance" }).getByRole("link"), ["Payments", "Prices"]);
 
-  await page.goto("/waitlist");
-  await expect(page.getByRole("heading", { level: 1, name: "Waitlist" })).toBeVisible();
+  await page.goto("/areas");
+  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
   await expect(
     page.getByText("Your access does not reach this page. An Admin can add it on the Staff page."),
   ).toBeVisible();
 });
 
-test("opens a page that was a tab of Settings at its old address, under its own department", async ({ page }) => {
-  await page.goto("/settings/area");
-  await expect(page.getByRole("heading", { level: 1, name: "Service area" })).toBeVisible();
-  await expect(page).toHaveURL(/\/service-area$/);
-  await expect(navigation(page).getByRole("list", { name: "Growth" }).getByRole("link").last()).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+// OIA-13 of the audit, 2 October 2026: launching an area had two homes, the waitlist and Settings › Service area.
+test("opens the waitlist and the service area at their old addresses, as the tabs of Areas", async ({ page }) => {
+  for (const [old, now] of [
+    ["/settings/area", /\/areas\/served$/],
+    ["/service-area", /\/areas\/served$/],
+    ["/waitlist", /\/areas$/],
+  ] as const) {
+    await page.goto(old);
+    await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+    await expect(page).toHaveURL(now);
+    await expect(navigation(page).getByRole("list", { name: "Growth" }).getByRole("link").last()).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  }
+  const tabs = page.getByRole("navigation", { name: "Areas" });
+  await expect(tabs.getByRole("link")).toHaveText(["Waiting", "Served"]);
+  await expect(tabs.getByRole("link", { name: "Waiting" })).toHaveAttribute("aria-current", "page");
 });
 
 // OIA-22 and UX-29: changing section dropped the focus to the page, and nothing led past the navigation.
 test("moves the keyboard to a new page's heading, and offers a way past the navigation", async ({ page }) => {
-  await page.goto("/waitlist");
-  await expect(page.getByRole("heading", { level: 1, name: "Waitlist" })).toBeVisible();
+  await page.goto("/areas");
+  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
   await page.keyboard.press("Enter");
@@ -94,15 +104,15 @@ test("moves the keyboard to a new page's heading, and offers a way past the navi
   await navigation(page).getByRole("link", { name: "Referrals" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Referrals" })).toBeFocused();
   await page.goBack();
-  await expect(page.getByRole("heading", { level: 1, name: "Waitlist" })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeFocused();
 });
 
 // OPS-20 of the audit, 24 September 2026: every page was titled "Mane Man operations" (WCAG 2.4.2).
 test("titles each page by what it is", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Tasks · Mane Man operations");
-  await page.getByRole("link", { name: "Waitlist" }).click();
-  await expect(page).toHaveTitle("Waitlist · Mane Man operations");
+  await page.getByRole("link", { name: "Areas" }).click();
+  await expect(page).toHaveTitle("Waiting · Areas · Mane Man operations");
   await page.goto("/settings/prices");
   await expect(page).toHaveTitle("Prices · Mane Man operations");
 });
@@ -126,7 +136,7 @@ test("signs out through Access, where Access stands in front", async ({ page }) 
 
 test("tells a person the enforced Staff list does not name that the console is closed to them", async ({ page }) => {
   await answer(page, { "GET /api/whoami": signedIn("new.joiner@maneman.in", false, ONLY_SIGNED_IN) });
-  await page.goto("/waitlist");
+  await page.goto("/areas");
   await expect(page.getByRole("status").filter({ hasText: "You are not on the Staff list" })).toBeVisible();
   await expect(navigation(page).getByRole("link")).toHaveCount(0);
   await expect(page.getByText("Your access does not reach this page.")).toHaveCount(0);
@@ -134,7 +144,7 @@ test("tells a person the enforced Staff list does not name that the console is c
 
 // OPS-18 and VIS-20: the title sat on the header's baseline, high in its 56 px.
 test("centres the section's name in the header", async ({ page }) => {
-  await page.goto("/waitlist");
+  await page.goto("/areas");
   const header = await page.getByRole("banner").boundingBox();
   const title = await page.getByRole("heading", { level: 1 }).boundingBox();
   if (header === null || title === null) throw new Error("the header is not drawn");
@@ -149,7 +159,7 @@ test("says the sign-in has run out when Access turns a call away, and offers the
   await page.route("**/api/waitlist", (route) =>
     route.fulfill({ status: 302, headers: { Location: "https://maneman.cloudflareaccess.com/cdn-cgi/access/login" } }),
   );
-  await page.goto("/waitlist");
+  await page.goto("/areas");
   const lapsed = page.getByRole("alert").filter({ hasText: "Your sign-in to the console has run out" });
   await expect(lapsed).toBeVisible();
   await expect(lapsed.getByRole("button", { name: "Reload" })).toBeVisible();
@@ -160,10 +170,10 @@ test("says the sign-in has run out when Access turns a call away, and offers the
 test("leaves a click that asks for a new tab to the browser", async ({ page, context }) => {
   await page.goto("/");
   const opened = context.waitForEvent("page");
-  await page.getByRole("link", { name: "Waitlist" }).click({ modifiers: ["ControlOrMeta"] });
+  await page.getByRole("link", { name: "Areas" }).click({ modifiers: ["ControlOrMeta"] });
   const tab = await opened;
   await tab.waitForLoadState();
-  expect(new URL(tab.url()).pathname).toBe("/waitlist");
+  expect(new URL(tab.url()).pathname).toBe("/areas");
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
   await expect(page).toHaveURL(/\/tasks$/);
 });
@@ -180,9 +190,9 @@ test("serves its policy: its own origin only, no camera and no payment, and noin
 });
 
 test("answers any page path with the console, as a single-page app", async ({ page }) => {
-  const response = await page.goto("/waitlist");
+  const response = await page.goto("/areas");
   expect(response?.status()).toBe(200);
-  await expect(page.getByRole("heading", { level: 1, name: "Waitlist" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
 });
 
 test("reaches mm-api as the ops surface, on its own host", async ({ page }) => {
@@ -199,15 +209,15 @@ test("reaches mm-api as the ops surface, on its own host", async ({ page }) => {
 
 test("moves between sections without a reload, and back", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: "Waitlist" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Waitlist" })).toBeVisible();
-  expect(new URL(page.url()).pathname).toBe("/waitlist");
+  await page.getByRole("link", { name: "Areas" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/areas");
   await page.goBack();
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
 });
 
 test("meets WCAG 2.2 AA on its sections", async ({ page }) => {
-  for (const path of ["/", "/referrals", "/waitlist"]) {
+  for (const path of ["/", "/referrals", "/areas"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();

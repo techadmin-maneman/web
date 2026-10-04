@@ -4,17 +4,22 @@
 // As in Deletion requests, erasing takes two deliberate steps: the second says what is destroyed and what is kept,
 // and waits for ops to confirm the request came from the client's own number. The API refuses while a visit is booked,
 // a payment held or a payment link unpaid; ops may then erase all the same, saying they will settle it by hand today.
+// From then on the client's page shows only what is kept of them.
 
 import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
+import { longDate } from "@maneman/web-kit/dates";
 import { useEffect, useRef, useState } from "react";
-import { api } from "../api.ts";
+import { api, type ErasedClientRecord } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { ErasureLists } from "../deletions/ErasureLists.tsx";
 import deletionStyles from "../deletions/deletions.module.css";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
+import { HeldBookings } from "./HeldBookings.tsx";
+import { MoneyRecords } from "./Payments.tsx";
+import { VisitRecords } from "./Visits.tsx";
 
 const copy = clients.erasure;
 
@@ -170,7 +175,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
   );
 }
 
-/** What stands in place of the client's page once they are erased: nothing of theirs is left to show. */
+/** What stands in place of the client's page the moment they are erased, with what to do next. */
 export function Erased() {
   return (
     <section className={styles.erased} aria-label={copy.done.title}>
@@ -180,5 +185,26 @@ export function Erased() {
         {copy.done.back}
       </OpsLink>
     </section>
+  );
+}
+
+/**
+ * The page of a client erased since: their visits and money, as records, under the day they were erased. A visit still
+ * to come may be cancelled or closed by hand, as ops who erase despite one promise to, and a booking still held for
+ * them refunded.
+ */
+export function ErasedRecord({ record, onChanged }: { record: ErasedClientRecord; onChanged: () => void }) {
+  return (
+    <div className={styles.client}>
+      <div className={styles.head}>
+        <h2 className={styles.name}>{copy.record.title}</h2>
+        <p className={styles.note}>{copy.record.on(longDate(record.erased_at))}</p>
+      </div>
+      <div className={`${styles.panel ?? ""} ${styles.visits ?? ""}`}>
+        <HeldBookings bookings={record.held_bookings} upcoming={record.visits.upcoming} />
+        <VisitRecords visits={record.visits} name={copy.record.whose} onChanged={onChanged} />
+        <MoneyRecords payments={record.payments} links={record.payment_links} invoices={record.invoices} />
+      </div>
+    </div>
   );
 }

@@ -1770,6 +1770,8 @@ Request body:
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -2552,6 +2554,30 @@ Request body:
     },
     "referral_reward": {
       "$ref": "#/components/schemas/ReferralReward"
+    },
+    "pending_invite": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "referrer_first_name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Who sent it, exactly where the invite's own page names them; null where it does not."
+            }
+          },
+          "required": [
+            "referrer_first_name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The invite a client not yet fitted came with, while its free service visits (referral_reward's friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it lapsed."
     }
   },
   "required": [
@@ -2566,7 +2592,8 @@ Request body:
     "prompt",
     "invoice",
     "booking",
-    "referral_reward"
+    "referral_reward",
+    "pending_invite"
   ],
   "additionalProperties": false
 }
@@ -2780,6 +2807,17 @@ Request body:
     "name": {
       "type": "string"
     },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The line ops wrote to read under its name; null for none."
+    },
     "minutes": {
       "type": "integer",
       "description": "How long the visit is booked for."
@@ -2792,6 +2830,7 @@ Request body:
     "type",
     "tier",
     "name",
+    "description",
     "minutes",
     "price"
   ],
@@ -5430,6 +5469,10 @@ Request body:
       ],
       "description": "Whoever did the client's latest visit."
     },
+    "change_notice_hours": {
+      "type": "integer",
+      "description": "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it."
+    },
     "last": {
       "type": "string",
       "format": "date",
@@ -5489,13 +5532,18 @@ Request body:
                     }
                   ],
                   "description": "Who would come: the regular technician, another, or nobody (full)."
+                },
+                "change_charged": {
+                  "type": "boolean",
+                  "description": "Booked now, moving or cancelling it would already cost the client: it starts inside the notice, and its kind is charged there."
                 }
               },
               "required": [
                 "window",
                 "start",
                 "end",
-                "with"
+                "with",
+                "change_charged"
               ],
               "additionalProperties": false
             }
@@ -5515,6 +5563,7 @@ Request body:
     "service",
     "price",
     "regular",
+    "change_notice_hours",
     "last",
     "days"
   ],

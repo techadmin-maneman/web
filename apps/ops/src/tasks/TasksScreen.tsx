@@ -52,6 +52,7 @@ import { DECIDED_IN } from "./decided.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
 import { TaskActions } from "./TaskActions.tsx";
+import { untoldMoveOf } from "./untold-move.ts";
 import styles from "./tasks.module.css";
 
 type Group = TaskGroup["group"];
@@ -113,12 +114,7 @@ function linkOwed(word: string): "sent" | "unsent" | "closed" {
 /** The second line: the one fact the group turns on. */
 function subOf(group: Group, task: Task, now: Date): string {
   const copy = tasks.subs;
-  if (group === "untold_move") {
-    // The start the visit moved to.
-    return task.detail === null
-      ? tasks.unknown
-      : copy.untold_move(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
-  }
+  if (group === "untold_move") return untoldMoveOf(task.detail);
   if (group === "held_booking") {
     // The visit's kind, its day and its window, as the booking held them.
     const [type = "", day = "", when = ""] = task.detail?.split(" ") ?? [];
