@@ -210,7 +210,7 @@ interface UnsentRow extends LinkRow {
 
 /**
  * The links a close could not have made, asked of Razorpay again, oldest first: a few a run, each paid for from the
- * run's outside calls first. Answers how many were made.
+ * run's outside calls first. Never one for a client erased since. Answers how many were made.
  */
 export async function sendUnsentLinks(db: D1Database, deps: LinkDeps, now: Date, budget: CallBudget): Promise<number> {
   const { results } = await db
@@ -219,6 +219,7 @@ export async function sendUnsentLinks(db: D1Database, deps: LinkDeps, now: Date,
          a.window_start
        FROM payment_links l JOIN appointments a ON a.id = l.appointment_id
        WHERE l.sent_at IS NULL AND l.refused_at IS NULL
+         AND NOT EXISTS (SELECT 1 FROM people p WHERE p.id = a.person_id AND p.erased_at IS NOT NULL)
        ORDER BY l.created_at LIMIT ?1`,
     )
     .bind(LINKS_PER_PASS)

@@ -74,6 +74,8 @@ interface HoldRow {
   id: string;
   person_id: string;
   person_name: string;
+  /** When the client was erased; null while they are not. */
+  person_erased_at: string | null;
   type: VisitType;
   tier: string;
   /** The length it was held for; null for a hold made before services had lengths. */
@@ -117,7 +119,8 @@ interface HoldRow {
 async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
   return db
     .prepare(
-      `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.tier, h.minutes, s.name AS service_name, h.date,
+      `SELECT h.id, h.person_id, p.name AS person_name, p.erased_at AS person_erased_at, h.type, h.tier, h.minutes,
+              s.name AS service_name, h.date,
               h.window_label, h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
               h.grace_seconds, h.confirmed_at, h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind,
               h.use_credit, h.one_visit, h.pay_by_link, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.fsm_held_at, h.queued_at,
@@ -311,6 +314,7 @@ async function retakenInTime(
  * instead. Throws when FSM fails, so the queue tries again; answers "being_booked" while another consumer is
  * writing it, which the queue tries again later. A booking held for ops writes nothing to FSM while a visit of the
  * client's that may be the one ops booked for it by hand stands in the mirror, and ops are told once to link it.
+ * A hold whose client has been erased is never booked: it is let go, and any payment for it refunded.
  * `alongside` is written with whatever the try changes: the booking, or the hold let go.
  *
  * What stops a try is read again once it holds the lease, since ops act under the same lease: tries stopped by ops,
@@ -332,6 +336,10 @@ export async function confirmBooking(
     return "already_booked";
   }
   const payment = await capturedFor(db, hold.razorpay_order_id);
+  if (hold.person_erased_at !== null) {
+    await giveBack(db, payments, hold.id, now, "the client was erased", options.alongside);
+    return payment === null ? "lapsed" : "refunded";
+  }
   if (paidInMoney(hold) && payment === null) {
     if (hold.confirmed_at === null) return "not_paid";
     // Only a capture confirms a paid hold, so this one's payment has since been refunded, by ops.
