@@ -197,9 +197,9 @@ test("a frame the phone has no room for can be taken again, and the phone says i
     });
   });
   await capture.click();
-  await expect(page.getByText("That photo did not save. Take it again.")).toBeVisible();
+  await expect(page.getByText("That photo didn’t save. Take it again.")).toBeVisible();
   await expect(page.getByText("This phone's storage is full")).toBeVisible();
-  await expect(page.getByText(/will not open its camera/)).toHaveCount(0);
+  await expect(page.getByText(/won’t open its camera/)).toHaveCount(0);
   const results = await wcag(page);
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
@@ -225,7 +225,7 @@ test("a camera the phone refused can be asked for again", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
 
-  await expect(page.getByText(/will not open its camera/)).toBeVisible();
+  await expect(page.getByText(/won’t open its camera/)).toBeVisible();
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByRole("button", { name: "Capture" })).toBeEnabled();
 });

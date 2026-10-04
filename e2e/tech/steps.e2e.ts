@@ -365,7 +365,7 @@ test.describe("the piece (board B3, step 4)", () => {
     await page.getByRole("button", { name: "Check the label" }).click();
 
     await expect(
-      page.getByText("No signal, so the label is not checked. It goes on the job as you typed it."),
+      page.getByText("No signal, so the label isn’t checked. It goes on the job as you typed it."),
     ).toBeVisible();
     await expect(page.getByText(/We do not know that label/)).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
@@ -376,8 +376,8 @@ test.describe("the piece (board B3, step 4)", () => {
     await page.getByRole("textbox", { name: "The new piece's label" }).fill("MM-STD-9999-Z");
     await page.getByRole("button", { name: "Check the label" }).click();
 
-    await expect(page.getByRole("alert").filter({ hasText: "That piece is not this client's." })).toBeVisible();
-    await expect(page.getByRole("button", { name: "That piece is not this client's" })).toBeDisabled();
+    await expect(page.getByRole("alert").filter({ hasText: "That piece isn’t this client’s." })).toBeVisible();
+    await expect(page.getByRole("button", { name: "That piece isn’t this client’s" })).toBeDisabled();
   });
 
   test("picks the piece from the client's list, and sends its base, its lot and the piece that came off", async ({
@@ -438,7 +438,7 @@ test("a step the API refused can be corrected where it stands in the queue, not 
 
   // FLD-63: the step opens as it was sent, so only the label is typed again.
   await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
-  await expect(page.getByText("We could not record the label you gave. Correct it and tap Next.")).toBeVisible();
+  await expect(page.getByText("We couldn’t record the label you gave. Correct it and tap Next.")).toBeVisible();
   const label = page.getByRole("textbox", { name: "The new piece's label" });
   await expect(label).toHaveValue("MM-STD-7193 C");
   await expect(page.getByRole("textbox", { name: "Supplier lot" })).toHaveValue("LOT-5120");
@@ -612,7 +612,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await box.fill("wrong1");
     await page.getByRole("button", { name: "Apply code" }).click();
-    await expect(page.getByRole("alert")).toHaveText("That code does not apply to this visit.");
+    await expect(page.getByRole("alert")).toHaveText("That code doesn’t apply to this visit.");
 
     await box.fill("WEDDNG25");
     await page.getByRole("button", { name: "Apply code" }).click();
