@@ -35,7 +35,7 @@ export type ChargeKind = "late_cancellation" | "no_show";
 export interface Charge {
   readonly id: string;
   readonly kind: ChargeKind;
-  /** Null for a visit FSM never matched to one of our people. */
+  /** Null for a visit with no client of ours. */
   readonly person: { readonly id: string; readonly name: string } | null;
   /** In paise, what was kept; null on a no-show charged before a charge recorded what it kept. */
   readonly amount: number | null;

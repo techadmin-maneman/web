@@ -13,7 +13,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, request } from "./helpers.ts";
+import { appFor, fakeDependencies, markDatabase, request } from "./helpers.ts";
 
 let ops: App;
 
@@ -44,7 +44,6 @@ interface Service {
   sort: number;
   retired_date: string | null;
   offered: boolean;
-  fsm_item_id: string | null;
   updated_by: string;
   prices: Row[];
 }
@@ -88,7 +87,7 @@ beforeEach(async () => {
 });
 
 describe("the services, before anybody changes one", () => {
-  it("are the four the console starts with, each kind's standard, named as FSM names them, with its prices", async () => {
+  it("are the four the console starts with, each kind's standard, with its name and prices", async () => {
     const body = await services();
 
     expect(body.services.map((service) => [service.kind, service.tier, service.name, service.minutes])).toEqual([
@@ -438,18 +437,5 @@ describe("correcting a price still to come", () => {
     }
     expect((await serviceRows())[0]).toEqual(["2026-10-01", 250_000]);
     expect((await correct({ was_valid_from: "2026-12-01", valid_from: "2026-12-05" })).status).toBe(404);
-  });
-});
-
-describe("FSM's catalogue, while the owner has the push on", () => {
-  it("follows a service renamed or restored, and nothing else a service change does", async () => {
-    const queue = fakeQueue();
-    ops = appFor("local", fakeDependencies(), { fsmCataloguePush: true }, "ops");
-
-    await post("/api/services/service/standard/name", { name: "Monthly service" }, { FSM_QUEUE: queue });
-    await post("/api/services/service/standard/length", { minutes: 100 }, { FSM_QUEUE: queue });
-    await post("/api/services", { kind: "service", name: "Premium" }, { FSM_QUEUE: queue });
-
-    expect(queue.sent).toEqual([{ catalogue_sync: true, request_id: expect.any(String) as unknown }]);
   });
 });

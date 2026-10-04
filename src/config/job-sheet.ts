@@ -2,9 +2,8 @@
 // the committed lists, which stand until ops set their own.
 //
 // The prompt puts the checklist and the partial reasons in config, "taken from
-// the FSM job-sheet template". The trial found no template in the org
-// (`meta/job_sheet_forms` is empty), and the owner ruled on 27 September 2026
-// that the job sheet is set in the ops console instead (docs/open-points.md,
+// the FSM job-sheet template". There was no template, and the owner ruled on
+// 27 September 2026 that the job sheet is set in the ops console instead (docs/open-points.md,
 // item 28; docs/decisions/0087-consumables-and-stock.md). So the lists here are
 // what a kind of visit takes until ops save its checklist, and what the reasons
 // are until ops save theirs (src/domain/job-sheet-settings.ts). Every label the

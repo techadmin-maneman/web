@@ -1,15 +1,15 @@
 // GET /api/me: the client app's Home card (docs/prompts/phase2-backend.md,
 // "Read endpoints"). A client is fitted once a first fit or a later visit is
-// done (the FSM mirror, docs/decisions/0032-fsm-mirror.md); a lead has a
-// consultation, from the mirror or from their booking on the site before FSM
-// has it; else nothing is booked. The next visit comes from the mirror, and
+// done; a lead has a consultation, booked, or from their booking on the site
+// while it is not yet a visit; else nothing is booked. The next visit comes
+// from the visits, and
 // the credit tile, board B1's one prompt and the invoice line beneath it (src/domain/home-prompt.ts).
 // What the client may book now is every service offered of each kind open to
 // them, for the booking sheet to offer (docs/decisions/0085-services-ops-can-edit.md).
 //
-// A visit paid for, or booked free, that FSM does not have yet is said to be on
-// its way, neither booked nor refunded, while FSM is written or while it waits
-// after FSM refused it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+// A visit paid for, or booked free, that is not booked yet, its request having
+// failed part-way, is said to be on its way, neither booked nor refunded, until
+// the cron books it (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
 // With nothing booked, it says what the app offers next, which the booking
 // sheet opens pre-filled with: the first fit once the consultation is done, or
@@ -93,7 +93,7 @@ export const MeSchema = z
       }),
     next_visit: z
       .union([VisitSummarySchema, z.null()])
-      .openapi({ description: "The next visit that has not happened, from FSM: a consultation for a lead." }),
+      .openapi({ description: "The next visit that has not happened: a consultation for a lead." }),
     being_booked: z
       .union([
         z
@@ -118,8 +118,8 @@ export const MeSchema = z
       ])
       .openapi({
         description:
-          "The soonest visit paid for, or booked free, that FSM does not have yet: neither booked nor refunded. It " +
-          "is on its way, or held after FSM refused it, and becomes a visit once FSM takes it (ADR 0095).",
+          "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is " +
+          "on its way, and becomes a visit once it is booked (ADR 0068).",
       }),
     payment_owed: z.union([OwedPaymentSchema, z.null()]).openapi({
       description:

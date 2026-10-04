@@ -15,8 +15,7 @@ export const CONSUMABLE_BOUNDS = {
 } as const;
 
 /**
- * A consumable's name, as the technician's step, FSM's catalogue and the
- * console show it: a letter or a digit first, so a spreadsheet never reads it
+ * A consumable's name, as the technician's step and the console show it: a letter or a digit first, so a spreadsheet never reads it
  * as a formula, then letters, digits, spaces and . , ' ( ) & / + % -.
  */
 export const CONSUMABLE_NAME = /^[\p{L}\p{N}][\p{L}\p{N} .,'()&/+%-]{0,59}$/u;

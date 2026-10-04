@@ -6,7 +6,7 @@
 // (C8), and Add a note keeps the note on the visit for the technician (NoteSheet.tsx). Until then, Reschedule and
 // Add a note open WhatsApp to ops with a message ready
 // (docs/prompts/phase2-backend.md, "Booking"). Offline, rescheduling waits for the connection (B3). Once the
-// visit has begun, or its window has passed while FSM still has it open, its card says where it stands, and offers
+// visit has begun, or its window has passed while it is still open, its card says where it stands, and offers
 // nothing more.
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
@@ -22,7 +22,7 @@ import { useSession } from "../session.ts";
 import { oneVisitLines } from "./one-visit-words.ts";
 import styles from "./home.module.css";
 
-/** A visit from FSM the client may move or cancel in the app, while self-serve booking is on. */
+/** A visit the client may move or cancel in the app, while self-serve booking is on. */
 export function changingOf(visit: VisitSummary, what: string): ChangingVisit | null {
   if (visit.type === null) return null;
   return {
@@ -33,7 +33,7 @@ export function changingOf(visit: VisitSummary, what: string): ChangingVisit | n
   };
 }
 
-/** A visit from FSM, which a note can be kept on, and its technician's first name. */
+/** A visit, which a note can be kept on, and its technician's first name. */
 export const notingOf = (visit: VisitSummary): NotingVisit => ({
   visitId: visit.id,
   technician: visit.technician === null ? null : firstName(visit.technician.name),
@@ -80,7 +80,7 @@ function Reschedule(props: { what: string; date: string; changing: ChangingVisit
   );
 }
 
-/** A visit in FSM a note can be kept on, and who reads it. */
+/** A visit a note can be kept on, and who reads it. */
 export interface NotingVisit {
   readonly visitId: string;
   /** The technician's first name; null while none is assigned. */

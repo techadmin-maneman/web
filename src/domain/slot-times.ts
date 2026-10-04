@@ -69,7 +69,7 @@ export async function loadSlotSchedule(db: D1Database): Promise<SlotSchedule> {
   );
 }
 
-/** The last day any client's visit is booked, or held for payment or for FSM, on; null where there is none. */
+/** The last day any client's visit is booked, or held for payment or to be booked, on; null where there is none. */
 export async function lastBookedDate(db: D1Database): Promise<string | null> {
   const [visit, hold] = await db.batch<{ last: string | null }>([
     db.prepare(
@@ -102,7 +102,7 @@ export type SlotTimesSet =
 /**
  * Adds a change of times from a day, audited in the same batch. It is written only if, as it is written, no change
  * applies from that day or later and no visit is booked or held on that day or later; so two members of staff saving
- * at once, or a visit booked in FSM meanwhile, cannot leave a booked visit under times it was not booked by.
+ * at once, or a visit booked meanwhile, cannot leave a booked visit under times it was not booked by.
  */
 export async function setSlotTimes(
   db: D1Database,

@@ -1,210 +1,99 @@
-// The pieces tab and the technician's label lookup (src/domain/pieces.ts),
-// mirrored from FSM's assets, and the utilisation the board writes to events.
-// NOW is Monday 21 September 2026, 12 noon in India. Every code is made up.
+// The pieces tab and the technician's label lookup (src/domain/pieces.ts), and the utilisation the board writes to
+// events. NOW is Monday 21 September 2026, 12 noon in India. Every code is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { recordUtilisation } from "../../src/domain/dispatch.ts";
-import { COMMITTED } from "../../src/domain/ops-settings.ts";
-import { piecesOf, recordFailedPiece, recordFittedPiece, syncPieces } from "../../src/domain/pieces.ts";
+import { failedPieceStatement, fittedPieceStatement, piecesOf, type FittedPiece } from "../../src/domain/pieces.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
-import { createStubFsm, EMPTY_FSM, type FsmAsset, type StubFsm } from "../../src/providers/fsm.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
+const OTHER = "11111111-1111-4111-8111-111111111112";
 const IMRAN = "33333333-3333-4333-8333-333333333331";
 const JOB = "22222222-2222-4222-8222-222222222221";
 
-const asset = (overrides: Partial<FsmAsset> = {}): FsmAsset => ({
-  id: "asset-1",
-  assetNumber: "MM-STD-4417-B",
-  contactId: "contact-1",
-  productId: "part-standard",
-  productName: "Standard base",
-  serialNumber: "LOT-2026-07",
-  installedAt: "2026-07-01",
-  status: "Active",
-  modifiedAt: "2026-07-01T10:00:00+05:30",
-  ...overrides,
-});
+const FITTED: FittedPiece = {
+  personId: PERSON,
+  appointmentId: JOB,
+  pieceCode: "MM-STD-4417-B",
+  base: "Standard base",
+  supplierLot: "LOT-2026-07",
+  fittedOn: "2026-07-01",
+  replacementDue: "2026-12-28",
+  now: NOW,
+};
 
-let fsm: StubFsm;
+const fail = (personId: string, reason: string, now = NOW) =>
+  failedPieceStatement(env.DB, { personId, pieceCode: FITTED.pieceCode, reason, now }).run();
+
 let tech: App;
 let ops: App;
 
 beforeEach(async () => {
   await markDatabase();
-  fsm = createStubFsm({
-    ...EMPTY_FSM,
-    items: [{ id: "part-standard", name: "Standard base", type: "Part", price: null }],
-    assets: { "contact-1": [asset()] },
-  });
-  const deps = fakeDependencies({ fsm });
+  const deps = fakeDependencies();
   tech = appFor("local", deps, {}, "tech");
   ops = appFor("local", deps, {}, "ops");
 
   await env.DB.prepare(
     `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
-     VALUES (?1, 'resource-1', 'Imran Qureshi', 'IQ', 1, 'Gurgaon', '+919810000009', ?2)`,
+     VALUES (?1, ?1, 'Imran Qureshi', 'IQ', 1, 'Gurgaon', '+919810000009', ?2)`,
   )
     .bind(IMRAN, NOW.toISOString())
     .run();
   await env.DB.prepare(
-    `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id)
-     VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra', 'contact-1')`,
+    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
   )
     .bind(PERSON, NOW.toISOString())
     .run();
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
-       technician_id, fsm_modified_at, synced_at)
-     VALUES (?1, 'ap-1', ?2, 'replacement', 'scheduled', 'Scheduled', '2026-09-21T07:30:00.000Z',
-       '2026-09-21T09:45:00.000Z', ?3, ?4, ?4)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+     VALUES (?1, ?1, ?2, 'replacement', 'scheduled', '2026-09-21T07:30:00.000Z', '2026-09-21T09:45:00.000Z', ?3, ?4)`,
   )
     .bind(JOB, PERSON, IMRAN, NOW.toISOString())
     .run();
 });
 
-describe("the mirror of FSM's assets", () => {
-  it("computes the replacement due date from the base's cycle, which FSM has no field for", async () => {
-    expect(
-      await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays),
-    ).toBe(1);
-
-    const [piece] = await piecesOf(env.DB, PERSON);
-    expect(piece).toMatchObject({
-      piece_code: "MM-STD-4417-B",
-      base: "Standard base",
-      supplier_lot: "LOT-2026-07",
-      fitted_at: "2026-07-01",
-      // 180 days on from the fit, the cycle the owner ruled for every base.
-      replacement_due_at: "2026-12-28",
-      failed_at: null,
-    });
-  });
-
-  it("reads a piece FSM holds as Inactive back as failed, which is how our own failure writes it", async () => {
-    const inactive = createStubFsm({
-      ...EMPTY_FSM,
-      assets: { "contact-1": [asset({ status: "Inactive" })] },
-    });
-    await syncPieces(env.DB, inactive, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
-
-    const [piece] = await piecesOf(env.DB, PERSON);
-    expect(piece?.failed_at).toBe(NOW.toISOString());
-  });
-
-  it("writes FSM's answer over the copy, and never doubles a piece", async () => {
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
-
-    expect(await piecesOf(env.DB, PERSON)).toHaveLength(1);
-  });
-});
-
 describe("a piece the technician fitted", () => {
-  // The catalogue holds ops' consumables as parts too (docs/decisions/0087-consumables-and-stock.md), and "Bonding
-  // glue" sorts before "Standard base": a piece whose base nobody named must still be built on a base.
-  it("is never built on a consumable's part when its base is not named", async () => {
-    const withConsumables = createStubFsm({
-      ...EMPTY_FSM,
-      items: [
-        { id: "part-glue", name: "Bonding glue", type: "Part", price: 0 },
-        { id: "part-acetone", name: "Acetone", type: "Part", price: 0 },
-        { id: "part-standard", name: "Standard base", type: "Part", price: null },
-      ],
-    });
-    await env.DB.prepare(
-      `INSERT INTO consumables (code, name, unit, unit_cost, fsm_item_id, fsm_name, created_at, updated_at)
-       VALUES ('bonding_glue', 'Bonding glue', 'ml', 90, NULL, NULL, ?1, ?1),
-              ('solvent', 'Solvent', 'ml', 50, 'part-acetone', 'Acetone', ?1, ?1)`,
-    )
-      .bind(NOW.toISOString())
-      .run();
+  it("is recorded once, however often its step lands", async () => {
+    await fittedPieceStatement(env.DB, FITTED).run();
+    await fittedPieceStatement(env.DB, { ...FITTED, now: new Date(NOW.getTime() + 60_000) }).run();
 
-    await recordFittedPiece(env.DB, withConsumables, {
-      personId: PERSON,
-      fsmContactId: "contact-1",
-      appointmentId: JOB,
-      pieceCode: "MM-STD-9002-A",
-      base: null,
-      supplierLot: null,
-      fittedOn: "2026-09-21",
-      replacementDue: "2027-03-20",
-      now: NOW,
-    });
-
-    expect(withConsumables.made.assets[0]?.productId).toBe("part-standard");
+    expect(await piecesOf(env.DB, PERSON)).toEqual([
+      expect.objectContaining({
+        piece_code: "MM-STD-4417-B",
+        base: "Standard base",
+        supplier_lot: "LOT-2026-07",
+        fitted_at: "2026-07-01",
+        replacement_due_at: "2026-12-28",
+        failed_at: null,
+      }),
+    ]);
   });
 
-  it("becomes an asset in FSM first, then our copy, and a replay writes neither twice", async () => {
-    const fitted = {
-      personId: PERSON,
-      fsmContactId: "contact-1",
-      appointmentId: JOB,
-      pieceCode: "MM-STD-9001-A",
-      base: "Standard base",
-      supplierLot: "LOT-2026-09",
-      fittedOn: "2026-09-21",
-      replacementDue: "2027-03-20",
-      now: NOW,
-    };
-    const first = await recordFittedPiece(env.DB, fsm, fitted);
-    const again = await recordFittedPiece(env.DB, fsm, fitted);
+  it("keeps the first failure recorded, with its reason", async () => {
+    await fittedPieceStatement(env.DB, FITTED).run();
+    await fail(PERSON, "base torn at the hairline");
+    await fail(PERSON, "lifting at the front", new Date(NOW.getTime() + 60_000));
 
-    expect(again).toBe(first);
-    expect(fsm.made.assets).toHaveLength(1);
-    expect(fsm.made.assets[0]).toMatchObject({
-      contactId: "contact-1",
-      assetNumber: "MM-STD-9001-A",
-      productId: "part-standard",
-      installedAt: "2026-09-21",
-    });
-    expect(await piecesOf(env.DB, PERSON)).toHaveLength(1);
-  });
-
-  it("finds by its label an asset FSM made whose answer never came, rather than making a second", async () => {
-    const fitted = {
-      personId: PERSON,
-      fsmContactId: "contact-1",
-      appointmentId: JOB,
-      pieceCode: "MM-STD-9001-A",
-      base: "Standard base",
-      supplierLot: "LOT-2026-09",
-      fittedOn: "2026-09-21",
-      replacementDue: "2027-03-20",
-      now: NOW,
-    };
-    fsm.loseAnswer("createAsset");
-    await expect(recordFittedPiece(env.DB, fsm, fitted)).rejects.toThrow();
-
-    const retried = await recordFittedPiece(env.DB, fsm, fitted);
-    expect(fsm.made.assets).toHaveLength(1);
-    const held = (await fsm.assets("contact-1")).find((each) => each.assetNumber === "MM-STD-9001-A");
-    expect(retried).toBe(held?.id);
-    expect(await piecesOf(env.DB, PERSON)).toHaveLength(1);
-  });
-
-  it("marks a failed piece in FSM and keeps the reason on our side", async () => {
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
-
-    const done = await recordFailedPiece(env.DB, fsm, {
-      pieceCode: "MM-STD-4417-B",
-      reason: "base torn at the hairline",
-      now: NOW,
-    });
-
-    expect(done).toBe(true);
-    expect(fsm.made.assetUpdates).toEqual([{ assetId: "asset-1", status: "Inactive" }]);
     const [piece] = await piecesOf(env.DB, PERSON);
     expect(piece).toMatchObject({ failed_at: NOW.toISOString(), failure_reason: "base torn at the hairline" });
+  });
+
+  it("is never marked failed by another client's visit", async () => {
+    await fittedPieceStatement(env.DB, FITTED).run();
+    await fail(OTHER, "base torn at the hairline");
+
+    const [piece] = await piecesOf(env.DB, PERSON);
+    expect(piece).toMatchObject({ failed_at: null, failure_reason: null });
   });
 });
 
 describe("the label the technician scans", () => {
-  it("is found in the mirror, and says whether it is this job's client's", async () => {
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
+  it("is found in our records, and says whether it is this job's client's", async () => {
+    await fittedPieceStatement(env.DB, FITTED).run();
     const cookie = `mm_tech=${await openTechnicianSession(env.DB, {
       technicianId: IMRAN,
       deviceId: "phone-abc-123",
@@ -237,7 +126,8 @@ describe("the label the technician scans", () => {
 });
 
 describe("GET /api/clients/:id/pieces", () => {
-  it("reads FSM afresh, since FSM is the record", async () => {
+  it("reads the client's pieces from our records", async () => {
+    await fittedPieceStatement(env.DB, FITTED).run();
     const answer = await request(ops, `/api/clients/${PERSON}/pieces`);
 
     expect(answer.status).toBe(200);
@@ -261,10 +151,10 @@ describe("the utilisation the board writes to events daily", () => {
   it("records yesterday's share of the day's slots, once", async () => {
     // Yesterday: one replacement, a slot and a half of the one technician's four.
     await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
-         technician_id, fsm_modified_at, synced_at)
-       VALUES ('yesterday', 'ap-2', ?1, 'replacement', 'scheduled', 'Scheduled', '2026-09-20T04:30:00.000Z',
-         '2026-09-20T06:45:00.000Z', ?2, ?3, ?3)`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id,
+         synced_at)
+       VALUES ('yesterday', 'yesterday', ?1, 'replacement', 'scheduled', '2026-09-20T04:30:00.000Z',
+         '2026-09-20T06:45:00.000Z', ?2, ?3)`,
     )
       .bind(PERSON, IMRAN, NOW.toISOString())
       .run();

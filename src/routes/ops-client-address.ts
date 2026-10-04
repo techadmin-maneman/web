@@ -6,7 +6,7 @@
 //   POST /api/clients/:id/address               save it as the client's address, marked as given to ops
 //
 // It is saved as the client's own save in the app saves one (src/http/address-save.ts): the same fields and checks,
-// the building geocoded once within the day's ceiling, and the address sent on to FSM's contact and the CRM. It is
+// the building geocoded once within the day's ceiling, and the address sent on to Books and the CRM. It is
 // marked with the member of staff who saved it, audited in the same batch, and replaces any address before it. A
 // visit to come with no address then leaves the Tasks board, as it does when the client saves one.
 

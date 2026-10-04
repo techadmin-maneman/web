@@ -33,7 +33,7 @@ describe("mm-api wrangler config", () => {
     };
 
     it("reads every secret .dev.vars.example names", () => {
-      expect(secretNames).toContain("ZOHO_FSM_REFRESH_TOKEN");
+      expect(secretNames).toContain("ZOHO_BOOKS_REFRESH_TOKEN");
       expect(secretNamesIn("# a comment\nA_SECRET=\n\nB_SECRET=value\n")).toEqual(["A_SECRET", "B_SECRET"]);
     });
 
@@ -88,7 +88,7 @@ describe("mm-api wrangler config", () => {
     [
       "staging consumes a different queue",
       ["env.staging.queues.consumers.0.queue", "mm-other-staging"],
-      "env.staging: queues.consumers declares [mm-other-staging, mm-render-staging, mm-messaging-staging, mm-fsm-sync-staging]",
+      "env.staging: queues.consumers declares [mm-other-staging, mm-render-staging, mm-messaging-staging]",
     ],
   ])("fails when %s", (_label, edit, problem) => {
     expect(api(edit)).toContain(problem);

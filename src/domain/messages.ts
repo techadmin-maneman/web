@@ -23,7 +23,7 @@ export const MESSAGE_KINDS = [
   "arrival_notice", // the technician has arrived
   "no_show_decided", // ops ruled on a visit the client was not home for
   "no_show_dispute_ruled", // ops refunded or upheld a no-show's charge the client disputed
-  "booking_refunded", // a booking given back, by ops or by itself; its subject is the hold
+  "booking_refunded", // a booking given back by itself; its subject is the hold
   "next_service_reminder", // the next visit falls due soon, and nothing is booked (ADR 0086)
   "friend_fitted", // to the referrer
   "friend_credited", // to the friend: the invite's credits are theirs

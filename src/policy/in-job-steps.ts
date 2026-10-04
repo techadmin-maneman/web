@@ -1,7 +1,7 @@
 // The steps of a job, one screen each (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
 // The rules as the prompt states them, the order the steps run in, and the check that holds a phone to that order
-// (docs/decisions/0038-offline-writes.md). Each step lands in src/domain/job-events.ts and reaches FSM from
-// src/queues/fsm-sync.ts.
+// (docs/decisions/0038-offline-writes.md). Each step lands in src/domain/job-events.ts, and what it records is
+// written with it (src/domain/job-record.ts).
 
 import type { VisitType } from "../config/visit-types.ts";
 import { HOUR_MS } from "../lib/durations.ts";

@@ -153,7 +153,6 @@ export function ConsumableForm({
           copy.levels(levelOf(draft.kit), levelOf(draft.central)),
         ]
       : changes(consumable, draft);
-  const renamedInFsm = consumable !== null && consumable.fsm.item_id !== null && draft.name.trim() !== consumable.name;
 
   return (
     <fieldset className={styles.group}>
@@ -215,7 +214,6 @@ export function ConsumableForm({
         <CheckPanel
           title={form.confirm.title}
           lines={lines.length === 0 ? [form.confirm.nothing] : lines}
-          warnings={renamedInFsm ? [form.confirm.renamed] : []}
           send={form.confirm.send}
           sending={form.saving}
           back={form.confirm.back}

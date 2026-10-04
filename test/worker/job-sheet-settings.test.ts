@@ -11,9 +11,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { CHECKLIST, PARTIAL_REASONS } from "../../src/config/job-sheet.ts";
-import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
-import { createLogger } from "../../src/log.ts";
-import { fakeQueue, markDatabase, request } from "./helpers.ts";
+import { markDatabase, request } from "./helpers.ts";
 import { JOB, PERSON, working, type Working } from "./job-fixtures.ts";
 
 interface List {
@@ -156,20 +154,6 @@ describe("a checklist ops save", () => {
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["done"] } });
   });
-
-  it("writes FSM's summary in the words ops gave, counting only what is still on the list", async () => {
-    await job.opsPost("/api/job-sheet/checklists/service", { items: EDITED });
-    await job.workTo("checklist");
-    await job.post(
-      `/api/tech/jobs/${JOB}/checklist`,
-      { done: ["scalp_cleaned", "adhesive_renewed"] },
-      "event-checklist-01",
-    );
-
-    await drain(job);
-    const summary = job.fsm.made.appointmentUpdates.at(-1)?.fields.Summary ?? "";
-    expect(summary).toContain("Checklist 1/6: Scalp cleaned and dried, PLACEHOLDER Adhesive renewed");
-  });
 });
 
 describe("the partial reasons ops save", () => {
@@ -264,18 +248,3 @@ describe("the partial reasons ops save", () => {
     expect((await partialTask())?.detail).toBe("PLACEHOLDER Client unwell");
   });
 });
-
-/** Delivers every FSM write the job's steps queued, in order, as the fsm-sync consumer would. */
-async function drain(working: Working): Promise<void> {
-  for (let delivered = 0; delivered < working.fsmQueue.sent.length; delivered += 1) {
-    const body = working.fsmQueue.sent[delivered];
-    const message = { id: `m-${String(delivered)}`, attempts: 1, body, ack: () => undefined, retry: () => undefined };
-    const batch = { queue: "mm-fsm-sync-local", messages: [message] } as unknown as MessageBatch;
-    await handleFsmSyncBatch(
-      batch,
-      { ...env, MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: working.fsmQueue },
-      working.deps,
-      createLogger(),
-    );
-  }
-}

@@ -4,10 +4,9 @@
 // booking.
 //
 // Each pass does a little of six things, oldest first:
-//   - without FSM, makes the Books customer of each client with money or a
-//     finished visit to record (src/domain/books-customers.ts); on FSM's path,
-//     FSM's own sync makes it every two to three hours;
-//   - without FSM, writes a client's new number or address to their customer;
+//   - makes the Books customer of each client with money or a finished visit to
+//     record (src/domain/books-customers.ts);
+//   - writes a client's new number or address to their customer;
 //   - records each captured payment whose client Books has, once;
 //   - applies a visit's payment to its invoice, once Books has sent it, and tells
 //     ops of any part the invoice did not owe;
@@ -28,13 +27,11 @@
 // happened three times. Each record is paid for from the cron run's outside
 // calls first, and the pass stops when they are spent.
 
-import type { FieldRecord } from "../config/field-record.ts";
 import type { GstRegistration } from "../config/gst.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { failureReason, type Logger } from "../log.ts";
 import type { BooksProvider } from "../providers/books.ts";
-import type { FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { customerFor, updateCustomerOf } from "./books-customers.ts";
@@ -43,8 +40,8 @@ import { HOUR_MS } from "../lib/durations.ts";
 /** How many of each a pass handles at most. */
 export const PER_PASS = 5;
 export const RECHECK_AFTER_MS = HOUR_MS;
-/** Outside calls one record may cost: FSM or Books, Books' look for it, Books' record, and the alert it may send. */
-export const CALLS_PER_RECORD = 4;
+/** Outside calls one record may cost: Books' look for it, Books' record, and the alert it may send. */
+export const CALLS_PER_RECORD = 3;
 /** Outside calls one customer may cost: Books' write, and the alert it may send. */
 export const CALLS_PER_CUSTOMER = 2;
 /** A failure other than a refusal is told once it has happened this many times, an hour apart. */
@@ -53,13 +50,10 @@ const FAILURES_BEFORE_ALERT = 3;
 export interface BooksSyncOptions {
   readonly refundAccountId: string | null;
   readonly labelAsTest: boolean;
-  /** Whether FSM's sync makes each client's Books customer, or this pass does. */
-  readonly fieldRecord: FieldRecord;
   readonly gst: GstRegistration;
 }
 
 export interface BooksSyncDeps {
-  readonly fsm: FsmProvider;
   readonly books: BooksProvider;
   readonly alertOnce: AlertOnce;
   readonly resolveAlert: ResolveAlert;
@@ -106,15 +100,13 @@ export async function syncBooks(
   };
   const summary: BooksSyncSummary = { customers: 0, customersUpdated: 0, recorded: 0, applied: 0, refunded: 0 };
 
-  if (options.fieldRecord === "ours") {
-    for (const personId of await customersToAdd(pass)) {
-      if (!budget.spend(CALLS_PER_CUSTOMER)) return summary;
-      if (await addCustomer(pass, personId)) summary.customers += 1;
-    }
-    for (const personId of await customersToUpdate(pass)) {
-      if (!budget.spend(CALLS_PER_CUSTOMER)) return summary;
-      if (await updateCustomer(pass, personId)) summary.customersUpdated += 1;
-    }
+  for (const personId of await customersToAdd(pass)) {
+    if (!budget.spend(CALLS_PER_CUSTOMER)) return summary;
+    if (await addCustomer(pass, personId)) summary.customers += 1;
+  }
+  for (const personId of await customersToUpdate(pass)) {
+    if (!budget.spend(CALLS_PER_CUSTOMER)) return summary;
+    if (await updateCustomer(pass, personId)) summary.customersUpdated += 1;
   }
   for (const payment of await paymentsToRecord(pass)) {
     if (!budget.spend(CALLS_PER_RECORD)) return summary;
@@ -137,7 +129,7 @@ export async function syncBooks(
 }
 
 // ---------------------------------------------------------------------------
-// Making a client's customer, without FSM
+// Making a client's customer
 // ---------------------------------------------------------------------------
 
 /**
@@ -194,7 +186,7 @@ async function addCustomer(pass: Pass, personId: string): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
-// Writing a client's new number or address to their customer, without FSM
+// Writing a client's new number or address to their customer
 // ---------------------------------------------------------------------------
 
 /** People with a customer whose number or address changed after it was last written. */
@@ -259,39 +251,22 @@ interface PaymentToRecord {
   reference: string | null;
   amount: number;
   captured_at: string;
-  fsm_contact_id: string | null;
-  books_customer_id: string | null;
+  books_customer_id: string;
 }
 
-/** On FSM's path, payments of clients FSM has a contact for; without it, of clients with a Books customer. */
+/** Payments of clients with a Books customer. */
 async function paymentsToRecord(pass: Pass): Promise<PaymentToRecord[]> {
-  const statement =
-    pass.options.fieldRecord === "ours"
-      ? pass.db.prepare(
-          `SELECT p.id, p.person_id, p.razorpay_payment_id, p.reference, p.amount, p.captured_at, pe.fsm_contact_id,
-             pe.books_customer_id
-           FROM payments p JOIN people pe ON pe.id = p.person_id
-           WHERE p.books_payment_id IS NULL AND p.captured_at IS NOT NULL AND pe.books_customer_id IS NOT NULL
-             AND (p.books_checked_at IS NULL OR p.books_checked_at < ?1)
-           ORDER BY p.captured_at LIMIT ?2`,
-        )
-      : pass.db.prepare(
-          `SELECT p.id, p.person_id, p.razorpay_payment_id, p.reference, p.amount, p.captured_at, pe.fsm_contact_id,
-             pe.books_customer_id
-           FROM payments p JOIN people pe ON pe.id = p.person_id
-           WHERE p.books_payment_id IS NULL AND p.captured_at IS NOT NULL AND pe.fsm_contact_id IS NOT NULL
-             AND (p.books_checked_at IS NULL OR p.books_checked_at < ?1)
-           ORDER BY p.captured_at LIMIT ?2`,
-        );
-  const { results } = await statement.bind(pass.recheck, PER_PASS).all<PaymentToRecord>();
+  const { results } = await pass.db
+    .prepare(
+      `SELECT p.id, p.person_id, p.razorpay_payment_id, p.reference, p.amount, p.captured_at, pe.books_customer_id
+       FROM payments p JOIN people pe ON pe.id = p.person_id
+       WHERE p.books_payment_id IS NULL AND p.captured_at IS NOT NULL AND pe.books_customer_id IS NOT NULL
+         AND (p.books_checked_at IS NULL OR p.books_checked_at < ?1)
+       ORDER BY p.captured_at LIMIT ?2`,
+    )
+    .bind(pass.recheck, PER_PASS)
+    .all<PaymentToRecord>();
   return results;
-}
-
-/** The client's Books customer: kept on them without FSM; on FSM's path, the one FSM's contact names, if any yet. */
-async function customerOfPayment(pass: Pass, payment: PaymentToRecord): Promise<string | null> {
-  if (pass.options.fieldRecord === "ours") return payment.books_customer_id;
-  if (payment.fsm_contact_id === null) return null;
-  return (await pass.deps.fsm.contact(payment.fsm_contact_id))?.booksCustomerId ?? null;
 }
 
 /** True when Books has it now. */
@@ -306,9 +281,7 @@ async function recordPayment(pass: Pass, payment: PaymentToRecord): Promise<bool
     then: "It is asked again every hour.",
   } as const;
   try {
-    // Not yet in Books, the payment waits the hour its claim holds it for.
-    const customerId = await customerOfPayment(pass, payment);
-    if (customerId === null) return false;
+    const customerId = payment.books_customer_id;
     const reference = payment.reference ?? payment.razorpay_payment_id;
     // An earlier try whose answer never came may have recorded it already.
     const booksPaymentId =

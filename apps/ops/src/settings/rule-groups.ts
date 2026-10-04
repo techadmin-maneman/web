@@ -14,7 +14,7 @@ export const RULE_GROUPS = [
     id: "moves",
     rules: ["change_notice_hours", "late_change_charge", "no_show_charge", "no_show_waiver", "dispute_window_days"],
   },
-  { id: "booking", rules: ["payment_hold", "booking_days", "fsm_retry"] },
+  { id: "booking", rules: ["payment_hold", "booking_days"] },
   { id: "field", rules: ["checkin_radius_m", "no_show_wait_min", "phone_clock", "address_unlock_hour"] },
   { id: "reminders", rules: ["reminder_hour", "piece_cycle_days"] },
   { id: "referrals", rules: ["referral_reward"] },

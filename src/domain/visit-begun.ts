@@ -1,5 +1,4 @@
-// Whether a visit has begun, by our own records rather than FSM's status, which can lag behind the visit or never
-// arrive. The SQL fragments read the appointments row the alias names.
+// Whether a visit has begun, by the technician's steps rather than the visit's status. The SQL fragments read the appointments row the alias names.
 
 /**
  * True once the visit has begun: the technician's phone has landed a check-in, a start or an outcome for it, a one

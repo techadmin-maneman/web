@@ -299,11 +299,7 @@ function ServiceBlock(props: {
         {service.name}
       </h4>
       <p className={styles.facts}>
-        {[
-          copy.facts(service.minutes, service.tier),
-          service.fsm_item_id === null ? copy.fsm.notYet : copy.fsm.linked,
-          standing(service, today),
-        ].join(" · ")}
+        {[copy.facts(service.minutes, service.tier), standing(service, today)].join(" · ")}
       </p>
       <p className={styles.facts}>
         {service.description === null ? copy.notDescribed : copy.described(service.description)}

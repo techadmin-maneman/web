@@ -1,5 +1,5 @@
 // The client app's visits and photographs (docs/prompts/phase2-backend.md,
-// "Read endpoints"), read from the FSM mirror (docs/decisions/0032-fsm-mirror.md).
+// "Read endpoints").
 //
 //   GET /api/visits                 upcoming and past, with what they add up to
 //   GET /api/visits/:id             one visit, with its photographs
@@ -62,15 +62,14 @@ export const VisitSummarySchema = z
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
     stage: z.union([z.enum(["booked", "in_progress", "done", "closing"]), z.null()]).openapi({
       description:
-        "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM " +
-        "says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. " +
-        "Null once FSM has closed it.",
+        "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done " +
+        "from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed.",
     }),
     prepaid: z.boolean().openapi({ description: "Paid for ahead, or covered by a visit credit: board C1's Prepaid." }),
     technician: z.union([TechnicianSchema, z.null()]),
     place: z
       .string()
-      .openapi({ description: "The saved address's area, city and pincode, else FSM's city and pincode." }),
+      .openapi({ description: "The saved address's area, city and pincode, else the visit's city and pincode." }),
     one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
       description:
         "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by " +
@@ -86,8 +85,8 @@ const PhotoLinkSchema = z
     url: z.string().openapi({ description: "Lasts 15 minutes; only the signed-in client can open it." }),
     thumbnail_url: z.union([z.string(), z.null()]).openapi({
       description:
-        "Its small copy, for a row of thumbnails, likewise; null for a photograph with none, such as one copied from " +
-        "FSM, which the row shows itself.",
+        "Its small copy, for a row of thumbnails, likewise; null for a photograph with none, which the row shows " +
+        "itself.",
     }),
     width: z.union([z.number().int(), z.null()]),
     height: z.union([z.number().int(), z.null()]),
@@ -142,11 +141,11 @@ const VisitDetailSchema = VisitSummarySchema.extend({
   duration_minutes: z.union([z.number().int(), z.null()]).openapi({ description: "From start to finish, once done." }),
   outcome: z
     .union([z.enum(VISIT_OUTCOMES), z.null()])
-    .openapi({ description: "Done, partly done, or a no-show: the client was not home. Null until FSM closes it." }),
+    .openapi({ description: "Done, partly done, or a no-show: the client was not home. Null until it is closed." }),
   what_was_done: z.union([z.array(z.string()), z.null()]).openapi({
     description:
       "The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was " +
-      "recorded, as for a visit closed in FSM's own screens.",
+      "recorded.",
   }),
   photos: PhotoSetSchema,
   document_id: z
@@ -193,7 +192,7 @@ const ClientHistorySchema = z
     replacement_due: z.union([z.object({ month: z.string().regex(/^\d{4}-\d{2}$/) }).strict(), z.null()]).openapi({
       description:
         "The month the piece now in wear falls due, and null when no piece is in wear. " +
-        "A month, not a day: FSM's install date is read again on every sync, so the day can move (ADR 0059).",
+        "A month, not a day (ADR 0059).",
     }),
   })
   .strict()

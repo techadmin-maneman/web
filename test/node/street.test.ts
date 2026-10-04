@@ -1,9 +1,9 @@
-// The client's address as FSM's service address holds it (src/domain/profile.ts), within what the org was found to
-// keep on 30 September 2026 (src/lib/fsm-text.ts).
+// The client's address as their Books customer holds it (src/domain/profile.ts), within what Zoho keeps
+// (src/lib/zoho-text.ts).
 
 import { describe, expect, it } from "vitest";
 import { streetOf } from "../../src/domain/profile.ts";
-import { FSM_STREET_MAX, fsmText } from "../../src/lib/fsm-text.ts";
+import { STREET_MAX, zohoText } from "../../src/lib/zoho-text.ts";
 
 const ADDRESS = {
   flat: "Flat 402",
@@ -42,7 +42,7 @@ describe("streetOf", () => {
     expect(streetOf({ ...older, locality: "Sector 65" })).toEqual({ street1: "House 12", street2: "Sector 65" });
   });
 
-  it("keeps each line within what FSM takes, at the longest every part may be", () => {
+  it("keeps each line within what Zoho takes, at the longest every part may be", () => {
     const longest = {
       flat: "f".repeat(40),
       floor: "1".repeat(20),
@@ -53,23 +53,23 @@ describe("streetOf", () => {
       locality: "a".repeat(80),
     };
     const { street1, street2 } = streetOf(longest);
-    expect(street1.length).toBeLessThanOrEqual(FSM_STREET_MAX);
+    expect(street1.length).toBeLessThanOrEqual(STREET_MAX);
     expect(street1).toMatch(/^f{40}, Floor 1{20}, Tower t{40}, b{120}$/);
-    expect(street2).toHaveLength(FSM_STREET_MAX);
+    expect(street2).toHaveLength(STREET_MAX);
     expect(street2).toMatch(/^s{120}, a{80}, Landmark: l+…$/);
   });
 });
 
-describe("fsmText", () => {
-  it("leaves out what FSM would cut the rest at, and keeps what it keeps", () => {
-    expect(fsmText("Ring twice 🙏 the bell is broken", 500)).toBe("Ring twice the bell is broken");
-    expect(fsmText("Tower B 🇮🇳", 255)).toBe("Tower B");
-    expect(fsmText("गेट पर कॉल करें ✅ ❤️ Rs. 500 “quoted”", 500)).toBe("गेट पर कॉल करें ✅ ❤️ Rs. 500 “quoted”");
-    expect(fsmText("line one\nline two", 500)).toBe("line one\nline two");
+describe("zohoText", () => {
+  it("leaves out what Zoho would cut the rest at, and keeps what it keeps", () => {
+    expect(zohoText("Ring twice 🙏 the bell is broken", 500)).toBe("Ring twice the bell is broken");
+    expect(zohoText("Tower B 🇮🇳", 255)).toBe("Tower B");
+    expect(zohoText("गेट पर कॉल करें ✅ ❤️ Rs. 500 “quoted”", 500)).toBe("गेट पर कॉल करें ✅ ❤️ Rs. 500 “quoted”");
+    expect(zohoText("line one\nline two", 500)).toBe("line one\nline two");
   });
 
-  it("ends text too long in an ellipsis, within the most FSM takes", () => {
-    expect(fsmText("x".repeat(256), 255)).toBe(`${"x".repeat(254)}…`);
-    expect(fsmText("x".repeat(255), 255)).toBe("x".repeat(255));
+  it("ends text too long in an ellipsis, within the most Zoho takes", () => {
+    expect(zohoText("x".repeat(256), 255)).toBe(`${"x".repeat(254)}…`);
+    expect(zohoText("x".repeat(255), 255)).toBe("x".repeat(255));
   });
 });

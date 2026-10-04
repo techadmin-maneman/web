@@ -1,6 +1,5 @@
-// What a technician's step writes to our own record of field work, in the same batch as the step itself, where our
-// database holds that record (src/config/field-record.ts): the visit's status as he arrives, starts and closes it,
-// its visits row at the close, and the pieces. Each write is safe to run again, since a phone replays its outbox.
+// What a technician's step writes to our own record of field work, in the same batch as the step itself: the visit's
+// status as he arrives, starts and closes it, its visits row at the close, and the pieces. Each write is safe to run again, since a phone replays its outbox.
 
 import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";

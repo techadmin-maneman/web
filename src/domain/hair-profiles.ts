@@ -6,7 +6,7 @@
 // ever changed; an erasure blanks every one (migration 0064 holds the table to that).
 //
 // The history is health information, recorded with the fit spec as the owner ruled. This file and the export are all
-// that read it; nothing here logs it, audits it or hands it to a queue, so it never reaches Zoho CRM, FSM or Books.
+// that read it; nothing here logs it, audits it or hands it to a queue, so it never reaches Zoho CRM or Books.
 
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";

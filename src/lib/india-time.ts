@@ -35,8 +35,3 @@ export function indiaInstant(date: string, time: string): Date {
 export function indiaTime(instant: Date): string {
   return new Date(instant.getTime() + IST_OFFSET_MS).toISOString().slice(11, 16);
 }
-
-/** An instant as India's local time with its offset, as Zoho FSM takes it: "2026-09-24T12:00:00+05:30". */
-export function indiaIso(instant: Date): string {
-  return `${new Date(instant.getTime() + IST_OFFSET_MS).toISOString().slice(0, 19)}+05:30`;
-}

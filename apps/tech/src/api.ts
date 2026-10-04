@@ -148,7 +148,7 @@ const client = createClient<paths, ErrorCode>({
   onUnreached: () => {
     reached(false);
   },
-  // FSM changed the job under the phone and the answer lost its body on the way: still a job to stop.
+  // The job changed under the phone and the answer lost its body on the way: still a job to stop.
   missingCode: (status) => (status === 409 ? SUPERSEDED : "unknown"),
 });
 

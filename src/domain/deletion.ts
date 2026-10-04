@@ -158,7 +158,6 @@ export async function decideDeletion(
   const erased = await eraseAndQueue(env, personId, {
     audit: options.audit,
     alongside: [decided, alertResolved],
-    fsmConnected: options.fsmConnected,
     payments: options.payments,
     alertOnce: options.alertOnce,
     requestId: options.requestId,

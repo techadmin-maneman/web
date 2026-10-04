@@ -1,5 +1,5 @@
 // One requester for every Zoho client (docs/decisions/0070-vendor-correctness.md):
-// the CRM, FSM and Books each on a client of its own. Each request goes through
+// the CRM and Books each on a client of its own. Each request goes through
 // vendorFetch, and a failed one becomes a ZohoError.
 //
 // The access token lasts an hour and is kept in D1 (`zoho_access_tokens`), so
@@ -54,7 +54,7 @@ export class ZohoError extends ProviderError {
 }
 
 /** The Zoho clients, each with its own access token. */
-export type ZohoClientName = "crm" | "fsm" | "books";
+export type ZohoClientName = "crm" | "books";
 
 const vendorOf = (name: ZohoClientName): Vendor => `zoho-${name}`;
 
@@ -301,7 +301,7 @@ function failedRecord(json: unknown): ZohoErrorBody | null {
   return Array.isArray(body?.data) ? (body.data[0] ?? body) : body;
 }
 
-/** Zoho's code in a failed answer. Books' codes are numbers, CRM's and FSM's words. */
+/** Zoho's code in a failed answer. Books' codes are numbers, the CRM's words. */
 function zohoCodeOf(json: unknown): string {
   const code = failedRecord(json)?.code;
   return typeof code === "string" || typeof code === "number" ? String(code) : "HTTP_ERROR";

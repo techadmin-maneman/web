@@ -38,7 +38,6 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/client-errors": SIGNED_IN,
 
   // Operations: dispatch, today's tasks, visits, technicians, leave and stock, each kept to the caller's cities.
-  // Held bookings wait on FSM, which is leaving, so they stay national.
   "GET /api/dispatch": inOwnPlaces("operations", "view"),
   "GET /api/dispatch/version": readFromAnyPlace("operations"),
   "GET /api/dispatch/room": inOwnPlaces("operations", "view"),
@@ -53,9 +52,6 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/alerts": inOwnDepartments("view"),
   "POST /api/alerts/{id}/resolve": inOwnDepartments("act"),
   "POST /api/alerts/{id}/send-again": inOwnDepartments("act"),
-  "POST /api/held-bookings/{id}/retry": need("operations", "act"),
-  "POST /api/held-bookings/{id}/stop": need("operations", "act"),
-  "POST /api/held-bookings/{id}/link": need("operations", "act"),
   "GET /api/visits/availability": inOwnPlaces("operations", "view"),
   "POST /api/visits": inOwnPlaces("operations", "act"),
   // Free to the client unless ops apply the client's own terms, as an ops move is free: everyday work, not a waiver.
@@ -103,9 +99,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // Finance: payments, refunds, no-show charges and their disputes, credits, discount codes and prices. A day's money,
   // no-shows, disputes, credits and a code on a visit keep to the caller's cities. Codes and prices are the same in
   // every place: any place's View reads them, and changing them needs a national grant. Waiving a charge and refunding
-  // a disputed one ask MANAGE inside their routes (WAIVING_A_NO_SHOW, REFUNDING_A_DISPUTE). Held bookings wait on FSM,
-  // which is leaving, so refunding one stays national. The price book lists every service with its prices, so reading
-  // it is Finance's; changing a service stays Admin's.
+  // a disputed one ask MANAGE inside their routes (WAIVING_A_NO_SHOW, REFUNDING_A_DISPUTE). The price book lists every
+  // service with its prices, so reading it is Finance's; changing a service stays Admin's.
   "GET /api/payments": inOwnPlaces("finance", "view"),
   "GET /api/no-shows": inOwnPlaces("finance", "view"),
   "POST /api/no-shows/{id}/decision": inOwnPlaces("finance", "act"),
@@ -113,7 +108,6 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/no-shows/decided": inOwnPlaces("finance", "view"),
   "GET /api/no-shows/disputes": inOwnPlaces("finance", "view"),
   "POST /api/no-shows/disputes/{id}/ruling": inOwnPlaces("finance", "act"),
-  "POST /api/held-bookings/{id}/refund": need("finance", "manage"),
   "POST /api/clients/{id}/credits": inOwnPlaces("finance", "manage"),
   "GET /api/discount-codes": readFromAnyPlace("finance"),
   "POST /api/discount-codes": need("finance", "manage"),
@@ -182,7 +176,6 @@ export const GIVING_NO_CITY: RouteNeed = need("operations", "manage");
 /** The department that decides each group of tasks: its people see the group on Tasks, and Act may take a task of it. */
 export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   untold_move: "operations",
-  held_booking: "operations",
   leave_conflict: "operations",
   address_to_confirm: "customer_care",
   consultation_request: "customer_care",
@@ -198,7 +191,6 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   grievance: "customer_care",
   draft_invoice: "finance",
   payment_owed: "finance",
-  erasure_unfinished: "customer_care",
 };
 
 /** What seeing a group of tasks, or taking a task of it, asks: the board keeps each task to the caller's cities. */

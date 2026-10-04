@@ -165,7 +165,7 @@ export const dispatch = {
     stranded: (jobs: number) => `Away · ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} to move`,
     strandedLabel: (technician: string, date: string, jobs: number) =>
       `${technician} is away on ${date}, with ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} still to move`,
-    /** Beneath the board, saying where leave comes from, since it is ours and not FSM's. */
+    /** Beneath the board, saying where leave comes from. */
     leave: "Leave is recorded on the Technicians screen. A day marked Away takes no job.",
   },
   tray: {
@@ -343,10 +343,6 @@ export const dispatch = {
       not_permitted: NOT_PERMITTED,
       invalid_request: "That move is not one we can make. Nothing was moved.",
       not_found: "This visit is no longer live. The board now shows it as it stands.",
-      fsm_refused: "Our scheduling system would not take it. Nothing was moved.",
-      /** PLACEHOLDER: FSM took the new technician and not the new time; the board is read again. */
-      fsm_partly:
-        "Our scheduling system took the new technician but not the new time. The board now shows it as it stands.",
       /** PLACEHOLDER: the technician began the visit after the board was read. */
       in_progress: "The technician has begun this visit, so it stays where it is. Nothing was moved.",
       offline: "You are offline. Connect, then try again.",
@@ -705,7 +701,7 @@ export const clients = {
         not_permitted: NOT_PERMITTED,
         not_changeable: "This visit can no longer be cancelled: it has begun, passed or been cancelled already.",
         invalid_request: "Say why it is cancelled.",
-        unavailable: "FSM did not answer, so nothing changed. Try again in a minute.",
+        unavailable: "That did not go through, so nothing changed. Try again in a minute.",
         offline: "You are offline. Connect, then try again.",
         unknown: "That did not go through. Nothing was cancelled.",
       } as Readonly<Record<string, string>>,
@@ -733,7 +729,6 @@ export const clients = {
       done: { done: "Closed as done.", partial: "Closed as partly done. Its follow-up waits on Tasks." },
       errors: {
         not_permitted: NOT_PERMITTED,
-        managed_in_fsm: "FSM holds this visit's record, so close it in FSM.",
         already_closed: "This visit is closed already, by the technician's phone or from here, or it was cancelled.",
         too_early_to_close: "This visit's time has not come yet.",
         times: "The times must fall on the visit's day, begin before they end, and end by now.",
@@ -753,11 +748,11 @@ export const clients = {
     },
     /** "First fit · Mane Man Essential": the kind, and the service it was sold as where that says more. */
     what: (kind: string, service: string | null) => (service === null ? kind : `${kind} · ${service}`),
-    /** A visit to come, by where it stands, and one done, by how FSM closed it. */
+    /** A visit to come, by where it stands, and one done, by how it was closed. */
     stages: {
       booked: "Booked",
       in_progress: "Under way",
-      done: "Done, not yet closed in FSM",
+      done: "Done",
       closing: "Being closed",
     },
     // PLACEHOLDER: "Not home" is ours; the board draws Done and Partial.
@@ -765,91 +760,6 @@ export const clients = {
     statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
     /** Paid ahead, or covered by a credit: board C1 of the client app's own badge. */
     prepaid: "Prepaid",
-    /**
-     * PLACEHOLDER, all of it: a booking FSM refused five times running, held with its slot and its payment until a
-     * try books it, or ops book it in FSM or refund it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). No
-     * board draws it.
-     */
-    held: {
-      title: "Not in FSM yet",
-      note:
-        "FSM refused these five times running. Nothing is refunded: the slot and the payment are kept until the " +
-        "booking is booked, or you refund it.",
-      /** "Service visit, Thu 24 Sep, 12:00". */
-      what: (visit: string, when: string) => `${visit}, ${when}`,
-      paid: (amount: string) => `Paid ${amount}`,
-      credit: "A free service visit covers it",
-      free: "Nothing to pay",
-      /** "Code AUDTEST, Rs. 1,000 off": the code the client booked with. */
-      code: (applied: string) => `Code ${applied}`,
-      refusal: (reason: string) => `FSM said: ${reason}`,
-      noRefusal: "FSM gave no reason.",
-      retrying: (until: string) => `Tried again automatically until ${until}.`,
-      stopped: "No longer tried automatically. Book it in FSM and link it, or refund it.",
-      passed: "Its time has passed. Book another time in FSM and link it, or refund it.",
-      retry: "Try FSM again",
-      trying: "Trying…",
-      stop: "Stop trying — I'll book it in FSM",
-      stopping: "Stopping…",
-      stoppedNow: "The hourly tries are stopped. Book it in FSM, then link it here.",
-      link: "Link the visit I booked in FSM",
-      linkLabel: "The visit you booked in FSM",
-      linkHint:
-        "It shows here once FSM has sent it to us, within a minute of booking it. A work order an earlier try " +
-        "left is cancelled, so nothing is booked twice.",
-      linkNone: "No visit of this kind is booked for them yet. Book it in FSM, then reload this page.",
-      linkSave: "Link it",
-      linking: "Linking…",
-      /** "Thu 24 Sep, 14:00". */
-      visit: (date: string, time: string) => `${date}, ${time}`,
-      refund: "Refund it",
-      refundCheck: (amount: string | null) =>
-        amount === null
-          ? "Cancel what FSM holds for it, and let the booking go? Nothing was paid for it."
-          : `Cancel what FSM holds for it, and refund ${amount} to the client in full?`,
-      refundSave: "Refund and let it go",
-      refunding: "Refunding…",
-      cancel: "Cancel",
-      tried: {
-        booked: "Booked in FSM. The client is told.",
-        given_back: "Its payment had been refunded, or its hold had lapsed, so it was let go.",
-        refused: (reason: string) => `FSM refused it again: ${reason}`,
-        to_link:
-          "A visit of theirs of this kind reached FSM after it was held, so nothing was written. If it is the one " +
-          "you booked, link it.",
-      },
-      linked: "Linked to that visit. The client is told.",
-      money: {
-        refunded: (amount: string, payment: string) =>
-          `Refunded ${amount} in full (Razorpay payment ${payment}). The client is told.`,
-        refunded_before: (payment: string) => `Razorpay payment ${payment} was refunded before. The client is told.`,
-        nothing_paid: "Nothing was paid for it, so nothing is refunded. The client is told.",
-        booked: "A try booked it in FSM meanwhile, so nothing is refunded.",
-        refund_refused: (amount: string, payment: string) =>
-          `Razorpay refused to refund ${amount} (payment ${payment}), so nothing has gone back and the booking ` +
-          "still waits. Try again, or refund it in Razorpay's dashboard and then press Refund it here.",
-        // Not refund it in the dashboard: the refund may have been made, and only ours cannot be made twice.
-        refund_unanswered: (amount: string, payment: string) =>
-          `Razorpay did not say whether it refunded ${amount} (payment ${payment}), so it may have, and the booking ` +
-          "still waits. Press Refund it again: Razorpay will not refund it twice.",
-      },
-      fsm: {
-        cancelled: (workOrder: string) => `Its work order ${workOrder} is cancelled in FSM.`,
-        not_cancelled: (workOrder: string) =>
-          `FSM would not cancel its work order ${workOrder}: cancel it by hand, so no technician goes.`,
-        unknown: (booking: string) =>
-          `FSM may hold a work order for it: look for "(booking ${booking})" among its work orders and cancel it.`,
-      },
-      errors: {
-        not_permitted: NOT_PERMITTED,
-        not_found: "It is no longer waiting: it may have been booked or refunded. Reload the page.",
-        not_changeable: "Its time has passed, so FSM is not tried again. Link a visit booked in FSM, or refund it.",
-        superseded: "A try is writing it to FSM right now. Reload in a minute to see how it went.",
-        invalid_request:
-          "That visit cannot be this booking. Choose one of theirs, of the same kind, booked in FSM since they paid.",
-        unknown: "That did not go through. Try again.",
-      } as Readonly<Record<string, string>>,
-    },
   },
   /*
    * PLACEHOLDER, all of it: the board draws a Payments tab and nothing in it.
@@ -979,7 +889,7 @@ export const clients = {
       already_invited: "They came with this invite already, so nothing was attached.",
     },
   },
-  /** Board B1: every piece the client has been fitted with, from FSM's assets. */
+  /** Board B1: every piece the client has been fitted with. */
   pieces: {
     title: "Pieces",
     /** The board's six columns, in its order. */
@@ -1174,7 +1084,7 @@ export const clients = {
     done: {
       title: "Erased",
       body:
-        "Their photographs and details are gone. Their records in the CRM, Books and FSM are blanked within a few " +
+        "Their photographs and details are gone. Their records in the CRM and Books are blanked within a few " +
         "minutes. Tell them it is done, in the chat they asked in.",
       back: "Find another client",
     },
@@ -1214,7 +1124,7 @@ export const clients = {
       replacement: "Replacement due",
       spend: "Paid",
     },
-    /** A client we have never fitted, and one whose earlier visits FSM never held, read the same from here. */
+    /** A client we have never fitted, and one whose earlier visits were never recorded here, read the same. */
     noFirstFit: "No first fit on record",
     noVisit: "No visit done yet",
     /** The day ops order a piece against, with the piece it is for, as board D2's task queue names one. */
@@ -1455,7 +1365,7 @@ export const noShows = {
       unattended: (was: string) => `Nobody was home · visit was ${was}`,
       /** PLACEHOLDER: a charge on a visit that carries no start time. */
       undated: "time unknown",
-      /** PLACEHOLDER: a charge on a visit FSM never matched to one of our people. */
+      /** PLACEHOLDER: a charge on a visit with no client of ours. */
       unknown: "Client unknown",
       /**
        * PLACEHOLDER: words where the amount stands on a no-show charged before a
@@ -1687,8 +1597,6 @@ export const tasks = {
   groups: {
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
     untold_move: "Call about a move",
-    // PLACEHOLDER: a group the board does not draw (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-    held_booking: "Booking not in FSM",
     // PLACEHOLDER: two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     leave_conflict: "Job on a day off",
     address_to_confirm: "Address to confirm",
@@ -1711,12 +1619,9 @@ export const tasks = {
     draft_invoice: "Draft invoice",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
     payment_owed: "Payment owed",
-    erasure_unfinished: "Erasure left in FSM",
   } as Readonly<Record<string, string>>,
   /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */
   visit: (date: string) => `Visit of ${date}`,
-  /** PLACEHOLDER: an erased client has no name left to show, so the line says when they were erased. */
-  erased: (date: string) => `Client erased ${date}`,
   /** PLACEHOLDER: a disputed charge whose client has since been erased. */
   disputeErased: "A client since erased",
   /** PLACEHOLDER: a queue whose row has lost the client it was about. */
@@ -1765,11 +1670,6 @@ export const tasks = {
       not_sent: (when: string) => `Moved to ${when}; the WhatsApp did not go`,
       unknown: (when: string) => `Moved to ${when}; not told yet`,
     },
-    /**
-     * PLACEHOLDER: "Service visit, Thu 24 Sep, afternoon; FSM refused it": booked or refunded from the client's
-     * Visits tab (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-     */
-    held_booking: (visit: string, day: string, window: string) => `${visit}, ${day}, ${window}; FSM refused it`,
     /** PLACEHOLDER: "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
     leave_conflict: (when: string, technician: string) => `${when}, and ${technician} is away`,
     /**
@@ -1815,7 +1715,7 @@ export const tasks = {
      * words the job sheet gives it, which ops set in Settings (docs/decisions/0087-consumables-and-stock.md).
      */
     partial_visit: (reason: string, date: string) => `${reason} · ${date}`,
-    /** PLACEHOLDER: a visit closed partial in FSM's own screen, with no reason from the technician. */
+    /** PLACEHOLDER: a visit closed partial with no reason from the technician. */
     noReason: "No reason recorded",
     no_show_decision: (technician: string) => `${technician} attended`,
     /** PLACEHOLDER: "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
@@ -1834,8 +1734,6 @@ export const tasks = {
      */
     payment_owed: (product: string, amount: string, link: LinkState) =>
       `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
-    // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
-    erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
     unknown: "Held for review",
   },
@@ -1981,7 +1879,7 @@ export const technicians = {
   /** The Leave column: away today until when, the first day of leave to come, or nothing. */
   away: (until: string) => `Away to ${until}`,
   from: (date: string) => `From ${date}`,
-  /** A zone the FSM mirror has nothing for, written as the design's tables write a gap. */
+  /** A zone a technician has none of, written as the design's tables write a gap. */
   unknown: "—",
   // PLACEHOLDER: the board draws no console without technicians.
   empty: "No technician is active.",
@@ -2048,9 +1946,8 @@ export const technicians = {
     } as Readonly<Record<string, string>>,
   },
   /**
-   * PLACEHOLDER: the design draws no leave anywhere, because FSM was thought to
-   * hold it. It does not (ADR 0062), so leave is recorded here and every line
-   * below is ours.
+   * PLACEHOLDER: the design draws no leave anywhere. Leave is recorded here
+   * (ADR 0062), and every line below is ours.
    */
   leave: {
     none: "No leave recorded.",
@@ -2122,7 +2019,6 @@ export const technicians = {
     save: "Save changes",
     saving: "Saving",
     cancel: "Cancel",
-    fsm: "His details come from Zoho FSM. Change them there.",
   },
   switchOff: {
     open: "Switch off",
@@ -2154,7 +2050,6 @@ export const technicians = {
     number_in_use_now: "Another active technician signs in with his number now. Change one of the two numbers first.",
     unreadable_mobile: "Enter a 10-digit Indian mobile.",
     invalid_request: "Enter his name and a 10-digit Indian mobile.",
-    managed_in_fsm: "His details come from Zoho FSM. Change them there.",
     not_found: "That technician is no longer here. Reload to see the roster as it stands.",
     not_permitted: NOT_PERMITTED,
     offline: "You are offline. Connect, then try again.",
@@ -2242,7 +2137,7 @@ export const deletions = {
       items: [
         "Their visits, payments, refunds and credits, as records",
         "Their invoices in Books, eight years, by law",
-        "Their records in the CRM, Books and FSM, blanked within a few minutes",
+        "Their records in the CRM and Books, blanked within a few minutes",
       ],
     },
     /** The runbook's first step, "Check the request comes from the number's owner". */
@@ -2450,8 +2345,8 @@ export const settings = {
     saving: "Saving",
     saved: "Saved.",
     reset: "Go back to the standard figure",
-    /** The open-keyed rule's extra row: a base FSM names, and the cycle for it. */
-    keyName: "Base, exactly as FSM names it",
+    /** The open-keyed rule's extra row: a base, and the cycle for it. */
+    keyName: "Base, exactly as the technician records it",
     keyValue: "Days",
     add: "Add",
     defaultKey: "Every other base",
@@ -2476,11 +2371,6 @@ export const settings = {
       payment_hold: {
         countdown: "The countdown the client sees",
         grace: "A payment still in time, after it",
-      },
-      // PLACEHOLDER: how often, and how long, a booking FSM refused is tried again (ADR 0095).
-      fsm_retry: {
-        every: "Tried again every",
-        for: "For, from the fifth refusal",
       },
       // PLACEHOLDER: board D3's two figures (docs/open-points.md, item 59).
       technician_work: {
@@ -2588,14 +2478,14 @@ export const settings = {
   /**
    * PLACEHOLDER, every line of it: no board draws the services (docs/decisions/0085-services-ops-can-edit.md). A kind
    * of visit is code; the services within it are ops', each named, timed, priced, ordered and retired from a day
-   * here, and FSM's catalogue follows each by its own item. What a price or a change was is shown beside what it will
+   * here, and each is invoiced in Books on an item of its own. What a price or a change was is shown beside what it will
    * be before anything is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
    */
   services: {
     title: "Services and prices",
     note:
       "What clients can book, kind by kind. A new price applies from tomorrow at the earliest, so a price already " +
-      "quoted never moves. Each service reaches FSM's catalogue as its own item.",
+      "quoted never moves. Each service is invoiced in Books on an item of its own.",
     /** The four kinds, as the rest of the console names them. */
     kinds: dispatch.typeNames,
     /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
@@ -2607,7 +2497,6 @@ export const settings = {
     /** The line clients read under the service's name in the app as they choose. */
     described: (line: string) => `Clients read: “${line}”`,
     notDescribed: "No description, so clients read the name alone.",
-    fsm: { linked: "In FSM's catalogue", notYet: "Not found in FSM's catalogue yet" },
     offered: "Offered",
     retiring: (from: string) => `Clients stop seeing it from ${from}`,
     retired: (from: string) => `Retired from ${from}`,
@@ -2668,7 +2557,7 @@ export const settings = {
       setPrice: "Set this price",
       renameTitle: (name: string) => `Rename ${name}`,
       name: "Name",
-      nameHint: "What clients, ops and FSM's catalogue call it. A letter or a digit first.",
+      nameHint: "What clients and ops call it. A letter or a digit first.",
       describeTitle: (name: string) => `The description of ${name}`,
       description: "Description",
       descriptionHint: (max: number) =>
@@ -2758,26 +2647,14 @@ export const settings = {
     title: "Consumables",
     // PLACEHOLDER
     note: "What a technician may record using on a job, and what one costs us. The cost is ours alone: no client's invoice carries it.",
-    /** PLACEHOLDER: whether FSM's catalogue follows by itself (FSM_CATALOGUE_PUSH). */
-    fsmNote: {
-      on: "FSM's catalogue follows within the hour: a new consumable is added there as a part at Rs. 0, and a rename renames it.",
-      off: "FSM's catalogue does not follow by itself yet. Add each consumable in FSM as a part at Rs. 0, named exactly as here; the hourly check then finds it by its name.",
-    },
     // PLACEHOLDER
-    columns: ["Consumable", "Cost of one", "Low at", "In FSM", "State"],
+    columns: ["Consumable", "Cost of one", "Low at", "State"],
     none: "No consumables yet. Add the first below.",
     /** PLACEHOLDER: "Kit 5 · store 50", the levels a place is low at. */
     levels: (kit: number | null, central: number | null) => {
       if (kit === null && central === null) return "No level";
       const parts = [kit === null ? null : `Kit ${String(kit)}`, central === null ? null : `store ${String(central)}`];
       return parts.filter((part) => part !== null).join(" · ");
-    },
-    /** PLACEHOLDER: where each stands in FSM's catalogue, as the hourly check last read it. */
-    fsm: {
-      linked: "In FSM",
-      renamed: (name: string) => `In FSM as ${name}`,
-      missing: "Not in FSM",
-      unchecked: "Not checked yet",
     },
     // PLACEHOLDER
     states: {
@@ -2797,7 +2674,7 @@ export const settings = {
       addTitle: "Add a consumable",
       changeTitle: (name: string) => `Change ${name}`,
       name: "Name",
-      nameHint: "As the technician reads it and FSM's catalogue names it: a letter or a digit first.",
+      nameHint: "As the technician reads it: a letter or a digit first.",
       unit: "Unit",
       unitHint: "What one is counted in: strip, ml, sachet.",
       cost: "Cost of one, in rupees",
@@ -2818,7 +2695,6 @@ export const settings = {
         line: (field: string, was: string, now: string) => `${field}: ${was} → ${now}`,
         fields: { name: "Name", unit: "Unit", cost: "Cost of one", kit: "Kit low at", central: "Store low at" },
         noLevel: "no level",
-        renamed: "FSM's part keeps its old name until the push renames it, or you rename it there.",
         send: "Save it",
         back: "Change it",
         nothing: "Nothing has changed.",

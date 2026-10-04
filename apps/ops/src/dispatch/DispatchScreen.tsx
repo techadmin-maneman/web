@@ -6,7 +6,7 @@
 // mouse, by opening it and choosing a destination from a list. Either way the
 // board first asks where the job would land, and offers only those windows;
 // then the reason picker (A2) comes before anything is written. The server
-// checks again before any write to FSM (docs/decisions/0034-clash-check.md)
+// checks again before anything is written (docs/decisions/0034-clash-check.md)
 // and refuses a move made from a board that has gone stale
 // (docs/decisions/0069-dispatch-under-concurrency.md). A refusal names the
 // technician and the window the board asked for, because the API answers with
@@ -180,7 +180,6 @@ function placeOn(board: Board, job: Job): { readonly words: string; readonly unc
 function staleWords(job: Job, code: string, now: Board | null): string {
   const copy = dispatch.landing;
   if (code === "not_found") return copy.errors.not_found;
-  if (code === "fsm_partly") return copy.errors.fsm_partly;
   if (code === "in_progress") return copy.errors.in_progress;
   const place = now === null ? null : placeOn(now, job);
   if (place?.unchanged === true) return copy.beingMoved(nameOf(job));
@@ -188,7 +187,7 @@ function staleWords(job: Job, code: string, now: Board | null): string {
 }
 
 /** Refusals that mean the job is no longer as the board had it: it is let go, and the board read again. */
-const STALE = new Set(["superseded", "not_found", "fsm_partly", "in_progress"]);
+const STALE = new Set(["superseded", "not_found", "in_progress"]);
 
 /** A visit being cancelled or closed by hand, in its own panel, opened from its drawer. */
 interface Changing {

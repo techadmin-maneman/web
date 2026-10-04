@@ -1,7 +1,6 @@
 // Adding a technician, changing his details, and switching him off or back on (src/routes/ops-technicians.ts).
-// While FSM is the record of field work, a technician FSM lists is changed in FSM: the API says which technicians
-// are ours to change (`editable`). Switching off asks first, since it signs him out at once and hands his visits
-// still to come back to the dispatch board.
+// Switching off asks first, since it signs him out at once and hands his visits still to come back to the dispatch
+// board.
 
 import { Button, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
@@ -450,8 +449,7 @@ export function Details({
       ) : (
         <Facts technician={technician} />
       )}
-      {!technician.editable && <p className={styles.none}>{copy.fsm}</p>}
-      {technician.editable && !changing && (
+      {!changing && (
         <>
           {mayChange && (
             <div className={styles.actions}>
