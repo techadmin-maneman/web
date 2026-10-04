@@ -587,6 +587,17 @@
             "type": "string",
             "format": "date-time"
           },
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The client's name, from the day before the visit as the card's client is; null until then."
+          },
           "progress": {
             "$ref": "#/components/schemas/TechnicianJobState"
           }
@@ -607,6 +618,7 @@
           "slots",
           "unlocked",
           "unlocks_at",
+          "client_name",
           "progress"
         ],
         "additionalProperties": false
@@ -766,6 +778,17 @@
           "unlocks_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The client's name, from the day before the visit as the card's client is; null until then."
           },
           "progress": {
             "$ref": "#/components/schemas/TechnicianJobProgress"
@@ -1160,6 +1183,7 @@
           "slots",
           "unlocked",
           "unlocks_at",
+          "client_name",
           "progress",
           "address",
           "access_notes",

@@ -2038,6 +2038,34 @@ Request body:
 }
 ```
 
+### GET /api/technicians/{id}/leave
+
+A technician's leave that has not ended, each with the jobs still booked on its days
+
+**200**: The leave
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianStandingLeave"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician, or he is outside the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/technicians/{id}/leave
 
 Record leave. Those days are then refused to booking and to the dispatch board alike
@@ -9995,13 +10023,18 @@ Request body:
                       "type": "null"
                     }
                   ]
+                },
+                "signed_in": {
+                  "type": "boolean",
+                  "description": "Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it."
                 }
               },
               "required": [
                 "device_id",
                 "label",
                 "last_seen_at",
-                "revoked_at"
+                "revoked_at",
+                "signed_in"
               ],
               "additionalProperties": false
             }
@@ -10146,6 +10179,119 @@ Request body:
 }
 ```
 
+### TechnicianStandingLeave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "leave": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "description": "Inclusive: a single day's leave has the same date twice."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TechnicianJobOnLeave"
+            },
+            "description": "The jobs still booked on its days from today on, soonest first."
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to",
+          "note",
+          "jobs"
+        ],
+        "additionalProperties": false
+      },
+      "description": "His leave that has not ended yet, soonest first."
+    }
+  },
+  "required": [
+    "leave"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianJobOnLeave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "appointment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "client": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "appointment_id",
+    "starts_at",
+    "type",
+    "client"
+  ],
+  "additionalProperties": false,
+  "description": "A job booked on a day the technician is away, which the leave moves nowhere: ops move it on the dispatch board, and it waits on the Tasks board until they do."
+}
+```
+
 ### TechnicianLeaveRecorded
 
 ```json
@@ -10159,52 +10305,9 @@ Request body:
     "jobs": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "appointment_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "starts_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "consultation",
-                  "first_fit",
-                  "service",
-                  "replacement"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "client": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "appointment_id",
-          "starts_at",
-          "type",
-          "client"
-        ],
-        "additionalProperties": false
+        "$ref": "#/components/schemas/TechnicianJobOnLeave"
       },
-      "description": "The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch board, and each waits on the Tasks board until they do (OPS-07)."
+      "description": "The jobs already booked on those days, soonest first."
     }
   },
   "required": [

@@ -1,8 +1,9 @@
-// What a piece of work costs D1, summed from what D1 reports of each statement it ran (src/lib/d1-meter.ts).
+// What a piece of work costs D1, summed from what D1 reports of each statement it ran, and how long it waited on D1
+// (src/lib/d1-meter.ts).
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { meterDatabase, usageFields, usageSince } from "../../src/lib/d1-meter.ts";
+import { meterDatabase, serverTiming, usageFields, usageSince } from "../../src/lib/d1-meter.ts";
 import { countRowsRead } from "./helpers.ts";
 
 const PEOPLE = ["p-1", "p-2", "p-3"];
@@ -83,6 +84,27 @@ describe("a metered database", () => {
     await meter.db.prepare("SELECT 1").all();
 
     expect(meter.usage()).toEqual({ rowsRead: 0, rowsWritten: 0, queries: 1 });
+  });
+
+  it("counts statements sent together as one round trip, and statements sent one after another as one each", async () => {
+    const meter = meterDatabase(env.DB);
+    const { db } = meter;
+
+    await Promise.all([
+      db.prepare("SELECT id FROM people").all(),
+      db.prepare("SELECT name FROM people WHERE id = ?1").bind("p-1").first(),
+      db.batch([db.prepare("SELECT 1")]),
+    ]);
+    await db.prepare("SELECT id FROM people").all();
+    await db.prepare("UPDATE people SET name = 'Renamed' WHERE id = ?1").bind("p-1").run();
+
+    expect(meter.waits().trips).toBe(3);
+    expect(meter.usage().queries).toBe(5);
+    expect(meter.waits().ms).toBeGreaterThanOrEqual(0);
+  });
+
+  it("gives the waits as a Server-Timing entry", () => {
+    expect(serverTiming({ trips: 4, ms: 380 })).toBe('d1;dur=380;desc="4 round trips"');
   });
 
   it("gives the usage as log fields, and what changed between two readings", () => {
