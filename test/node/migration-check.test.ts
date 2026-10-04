@@ -105,3 +105,44 @@ ${trigger("1")}`,
     ).toEqual([]);
   });
 });
+
+// From 0101 on: those before it have run, and are never edited.
+describe("how a new migration is written", () => {
+  const applied = Array.from({ length: 100 }, (_, index) => create(`${String(index + 1).padStart(4, "0")}_t.sql`));
+  const check = (sql: string) => checkMigrations([...applied, create("0101_new.sql", sql)]);
+
+  it("opens with at most five comment lines", () => {
+    const header = (lines: number) => `${"-- why\n".repeat(lines)}CREATE TABLE u (id TEXT);`;
+    expect(check(header(5))).toEqual([]);
+    expect(check(header(6))).toEqual(["0101_new.sql: 6 comment lines open it; at most 5, the rest in its ADR"]);
+  });
+
+  it("names no open point by number, which renumbering makes wrong", () => {
+    expect(check("-- docs/open-points.md, item 39\nCREATE TABLE u (id TEXT);")).toEqual([
+      "0101_new.sql: names an open point by number, which renumbering makes wrong",
+    ]);
+    expect(check("-- the open points list the owner's answer\nCREATE TABLE u (id TEXT);")).toEqual([]);
+  });
+
+  it("holds no one environment's test data", () => {
+    expect(check("UPDATE people SET test_record = 1 WHERE name = 'Staging test';")).toEqual([
+      "0101_new.sql: holds one environment's test data; write it from a script run there",
+    ]);
+  });
+
+  it.each([
+    "UPDATE people SET test_record = 0;",
+    "INSERT INTO people_copy SELECT * FROM people;",
+    "INSERT OR IGNORE INTO people_copy (id) SELECT id FROM people;",
+  ])("estimates the writes of a backfill of a whole table: %s", (sql) => {
+    expect(check(sql)).toEqual([
+      '0101_new.sql: backfills a whole table; estimate its writes in a "-- backfill:" line (docs/migrations.md)',
+    ]);
+    expect(check(`-- backfill: about 2,000 rows x (1 + 2 indexes)\n${sql}`)).toEqual([]);
+  });
+
+  it("needs no estimate for a change to some rows, or for a migration already applied", () => {
+    expect(check("UPDATE people SET test_record = 0 WHERE id = 'p1';")).toEqual([]);
+    expect(checkMigrations([create("0001_old.sql", "UPDATE people SET test_record = 0;")])).toEqual([]);
+  });
+});
