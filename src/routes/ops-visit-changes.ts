@@ -260,7 +260,8 @@ async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.
     byHand: { by: staffOf(c).id, reason: asked.reason },
     audit: visitAudit(c, "visit.close", visitId, { outcome: asked.outcome }),
   };
-  const closed = await closeByHand(c.env.DB, { ...deps, log }, close, deps.now());
+  const linkDeps = { ...deps, log, messagingSettings: c.var.config.settings.messaging };
+  const closed = await closeByHand(c.env.DB, linkDeps, close, deps.now());
   if (closed.kind === "closed") {
     log.info("visit_closed_by_hand", { appointment_id: visitId, outcome: asked.outcome });
     return c.json({ visit_id: visitId, status: closed.status, duration_minutes: closed.durationMinutes }, 200);

@@ -1462,6 +1462,9 @@ export const noShows = {
   },
 } as const;
 
+/** Where a payment link still owed stands, as the Tasks board says it. */
+const PAYMENT_LINK_STATES = { sent: "link sent", unsent: "link not sent", closed: "link closed unpaid" } as const;
+
 /**
  * Board D2's queue. A task is not a record: it is a row in a queue the database
  * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
@@ -1593,10 +1596,10 @@ export const tasks = {
     draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
     /**
      * PLACEHOLDER: "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
-     * link not sent waits for ops to send one from Razorpay's dashboard (ADR 0105).
+     * link not sent, or closed unpaid, waits for ops to send one from Razorpay's dashboard (ADR 0105).
      */
-    payment_owed: (product: string, amount: string, sent: boolean) =>
-      `${product}, ${amount}; ${sent ? "link sent" : "link not sent"}`,
+    payment_owed: (product: string, amount: string, link: "sent" | "unsent" | "closed") =>
+      `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
     // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
     erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.

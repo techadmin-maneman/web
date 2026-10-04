@@ -305,6 +305,21 @@ describe("GET /api/clients/{id}, its payment links and invoices", () => {
     ]);
   });
 
+  // MON-45, PS-47: a one visit's link closes 14 days after Razorpay made it.
+  it("says a one visit's link closed unpaid once its 14 days are up", async () => {
+    await finishedVisit(FIT, "first_fit", "2026-09-04T04:30:00.000Z", "fitted");
+    await env.DB.prepare(
+      `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, razorpay_link_id,
+         short_url, sent_at, reference, created_at, updated_at)
+       VALUES (?1, ?2, 'natural', 3540000, 3000000, 18, 'plink_fit', 'https://rzp.io/i/fit901', ?3, 'MM-2026-0901',
+         ?3, ?3)`,
+    )
+      .bind(ONE_VISIT_LINK, FIT, "2026-09-07T06:30:00.000Z")
+      .run();
+    const body = await (await request(ops, `/api/clients/${PERSON}`)).json<{ payment_links: unknown[] }>();
+    expect(body.payment_links).toEqual([expect.objectContaining({ id: ONE_VISIT_LINK, state: "lapsed" })]);
+  });
+
   it("says a link Razorpay has not made yet is being made, and one it refused was refused", async () => {
     await finishedVisit(FIT, "first_fit", "2026-09-18T04:30:00.000Z", "fitted");
     await env.DB.prepare(

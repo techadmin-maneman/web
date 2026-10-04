@@ -81,6 +81,12 @@ const fitWindow = (window: string | undefined): string | null =>
 /** Whole weeks from one instant to another. */
 const weeksBetween = (from: string, to: Date): number => Math.floor((to.getTime() - Date.parse(from)) / WEEK_MS);
 
+/** Where a payment link still owed stands; a word the board does not know reads as not sent. */
+function linkOwed(word: string): "sent" | "unsent" | "closed" {
+  if (word === "sent" || word === "closed") return word;
+  return "unsent";
+}
+
 /** The second line: the one fact the group turns on. */
 function subOf(group: Group, task: Task, now: Date): string {
   const copy = tasks.subs;
@@ -142,10 +148,10 @@ function subOf(group: Group, task: Task, now: Date): string {
   if (group === "no_show_decision") return task.detail === null ? copy.unknown : copy.no_show_decision(task.detail);
   if (group === "draft_invoice") return copy.draft_invoice(shortDate(indiaDate(task.since)));
   if (group === "payment_owed") {
-    // Whether Razorpay sent the link, what it asks for in paise, and the product, by name.
-    const [sent = "", amount = "", ...product] = task.detail?.split(" ") ?? [];
+    // Whether Razorpay sent the link or it closed unpaid, what it asks for in paise, and the product, by name.
+    const [link = "", amount = "", ...product] = task.detail?.split(" ") ?? [];
     if (amount === "") return tasks.unknown;
-    return copy.payment_owed(product.join(" "), rupees(Number(amount)), sent === "sent");
+    return copy.payment_owed(product.join(" "), rupees(Number(amount)), linkOwed(link));
   }
   if (group === "erasure_unfinished") return copy.erasure_unfinished(task.detail ?? tasks.unknown);
   if (group === "grievance") return copy.grievance;

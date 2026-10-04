@@ -22,6 +22,7 @@ import {
   NEXT_VISIT_DAYS,
   type NextVisitDays,
 } from "../policy/next-visit.ts";
+import { closedIfSentBy } from "../policy/one-visit.ts";
 import { dueAt, type Slas, type TaskGroup } from "../policy/tasks.ts";
 import { MAX_SYNC_ATTEMPTS } from "../queues/crm-sync.ts";
 
@@ -100,8 +101,9 @@ const FIRST_FIT_EPISODE = "s.consulted_start";
  * holds the visits whose booking or closing left ops something to do, and needs
  * the moment ops look, as `?1`, and what the next visit's days make of it (`?3`
  * to `?7`, below). The fourth holds the bookings FSM refused and the one
- * visits' payments still owed, and needs nothing but READ_CAP. Each takes READ_CAP as `?2`, which bounds what one look at the
- * board can cost. The first three hold five arms each; the fourth has room.
+ * visits' payments still owed, and needs the latest a link can have been sent and be closed now, as `?1`. Each takes
+ * READ_CAP as `?2`, which bounds what one look at the board can cost. The first three hold five arms each; the fourth
+ * has room.
  *
  * A consultation asked for is read only while the client has no consultation
  * booked or done, `booked`, which the database keeps as their consultations are
@@ -268,8 +270,9 @@ const OUTSTANDING = [
   // in India. It goes once a try books it, ops link the visit they booked in FSM, or ops refund it.
   //
   // A one visit's payment link still unpaid (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): whether
-  // Razorpay sent it, what it asks for in paise, and the product, by name. It waits from the close that asked for it,
-  // and goes once Razorpay's webhook says it is paid. The index on the links still unpaid reads only those.
+  // Razorpay sent it or it has closed unpaid, what it asks for in paise, and the product, by name. It waits from the
+  // close that asked for it, and goes once Razorpay's webhook says it is paid. The index on the links still unpaid
+  // reads only those.
   withOwners(`
   SELECT 'held_booking' AS "group", h.id AS id, h.person_id AS person_id, pe.name AS person_name,
          h.type || ' ' || h.date || ' ' || h.window_label AS detail, h.fsm_held_at AS since,
@@ -278,8 +281,8 @@ const OUTSTANDING = [
    WHERE h.state = 'held' AND h.confirmed_at IS NOT NULL AND h.fsm_held_at IS NOT NULL AND pe.erased_at IS NULL
   UNION ALL
   SELECT 'payment_owed', l.id, a.person_id, pe.name,
-         CASE WHEN l.sent_at IS NULL THEN 'unsent' ELSE 'sent' END || ' ' || l.amount || ' '
-           || COALESCE(s.name, l.tier),
+         CASE WHEN l.sent_at IS NULL THEN 'unsent' WHEN l.sent_at <= ?1 THEN 'closed' ELSE 'sent' END
+           || ' ' || l.amount || ' ' || COALESCE(s.name, l.tier),
          l.created_at, NULL, ''
     FROM payment_links l JOIN appointments a ON a.id = l.appointment_id JOIN people pe ON pe.id = a.person_id
     LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = l.tier
@@ -360,8 +363,7 @@ export async function outstandingTasks(
         daysOn(days.first_fit_to_book),
         daysOn(days.service_cadence),
       ),
-    // Its one number is READ_CAP, which every statement takes as ?2.
-    db.prepare(OUTSTANDING[3]).bind(null, READ_CAP),
+    db.prepare(OUTSTANDING[3]).bind(closedIfSentBy(now).toISOString(), READ_CAP),
   ]);
   const truncated = answers.some((answer) => answer.results.length >= READ_CAP);
   // Each statement sorted its own rows; the board wants one list, so they are merged on the same column.
