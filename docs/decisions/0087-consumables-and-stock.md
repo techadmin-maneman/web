@@ -130,9 +130,9 @@ Each save shows what is renamed, added, taken off and moved before it is sent (A
   - `test/worker/job-sheet-settings.test.ts`: the job sheet, the committed lists and retired items.
   - `test/worker/fsm-catalogue.test.ts`: the parts, with the push off and on, and its bound; a catalogue past a thousand items, read whole and read in part.
   - `test/worker/fsm.test.ts`, `test/worker/fsm-zoho-replies.test.ts`: the two calls, on Zoho, the stub and the unconnected provider.
-  - `test/node/fakes-contract.test.ts`: the console's fakes answer as the API does.
+  - `test/node/dom/fakes-contract.test.ts`: the console's fakes answer as the API does.
   - `test/worker/pieces.test.ts`: a piece is never built on a consumable's part.
   - `test/worker/ops-tasks.test.ts`: a partial visit's reason in ops' words.
-  - `test/node/tech-kept.test.ts`: a card an earlier build kept.
+  - `test/node/dom/tech-kept.test.ts`: a card an earlier build kept.
   - `e2e/ops/consumables.e2e.ts`, `e2e/ops/job-sheet.e2e.ts`, `e2e/ops/stock.e2e.ts`: the console.
   - `e2e/tech/steps.e2e.ts`: the step.

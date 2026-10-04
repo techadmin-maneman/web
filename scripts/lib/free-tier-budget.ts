@@ -161,7 +161,7 @@ export function consoleRowsReadPerDay(visitsInWeek: number, cadence: ConsoleCade
 
 /**
  * The most rows a request to a route may read, on average while a release soaks, before it is rolled back. The
- * dispatch board's is a load at the most visits the boards have room for (test/node/ops-board-budget.test.ts holds it
+ * dispatch board's is a load at the most visits the boards have room for (test/node/dom/ops-board-budget.test.ts holds it
  * there); a route not named has OTHER_ROUTE_ROWS_READ, several times what the busiest of them read on 2 October 2026.
  */
 export const ROUTE_ROWS_READ: Readonly<Record<string, number>> = {

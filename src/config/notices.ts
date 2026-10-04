@@ -22,7 +22,7 @@ const NAMING_LINE = "Your first name appears on your invite.";
 /**
  * The pay step's lines, when booking a visit in the app also agrees to the photograph purposes the client has never
  * decided on (ADR 0080): for both, or for one asked alone. The app shows them word for word
- * (apps/app/src/booking/consents.ts; test/node/app-consent-lines.test.ts).
+ * (apps/app/src/booking/consents.ts; test/node/dom/app-consent-lines.test.ts).
  */
 const BOOKING_BOTH = [
   "By booking this visit, you also agree to photographs for your own record and on referral cards.",

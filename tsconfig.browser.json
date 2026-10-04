@@ -1,12 +1,9 @@
 {
   // The browser tests (e2e/) and the fidelity harness: Node code whose callbacks
   // run in a page, so they need the DOM's types, which clash with the Workers
-  // types in tsconfig.node.json. The technician app's store and content tests
-  // are here for the same reason: they run in Node against DOM code;
-  // the client app's tests of its calls, routes and money, and the ops
-  // console's of its routes, whose code is written against the DOM too; and
-  // the tests of the apps' shared components, which are React (packages/ui), and of the apps' components on a
-  // page (test/dom).
+  // types in tsconfig.node.json. Every test in test/node/dom/ is here for the
+  // same reason: it runs in Node against the apps' code, written against the
+  // DOM; and so are the tests of the apps' components on a page (test/dom).
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
@@ -16,62 +13,17 @@
   "include": [
     "e2e/**/*.ts",
     "test/dom/**/*.ts",
-    "test/node/app-api.test.ts",
-    "test/node/app-booking-days.test.ts",
-    "test/node/app-late-change.test.ts",
-    "test/node/app-checkout.test.ts",
-    "test/node/app-consent-lines.test.ts",
-    "test/node/app-documents.test.ts",
-    "test/node/app-invite-share.test.ts",
-    "test/node/fakes-contract.test.ts",
-    "test/node/app-payments.test.ts",
-    "test/node/app-money.test.ts",
-    "test/node/app-next-visit-words.test.ts",
-    "test/node/app-one-visit-words.test.ts",
-    "test/node/app-referral-card.test.ts",
-    "test/node/app-route.test.ts",
-    "test/node/app-upcoming.test.ts",
-    "test/node/ops-board-budget.test.ts",
-    "test/node/ops-access.test.ts",
-    "test/node/ops-dispatch-job.test.ts",
-    "test/node/ops-route.test.ts",
-    "test/node/ops-staff-grants.test.ts",
-    "test/node/ops-task-links.test.ts",
-    "test/node/ops-task-sections.test.ts",
-    "test/node/ops-waiting.test.ts",
-    "test/node/tech-api.test.ts",
-    "test/node/tech-content.test.ts",
-    "test/node/tech-kept.test.ts",
-    "test/node/tech-paid-for.test.ts",
-    "test/node/tech-outbox.test.ts",
-    "test/node/tech-outbox-replay.test.ts",
-    "test/node/tech-piece-label.test.ts",
-    "test/node/tech-profile-form.test.ts",
-    "test/node/tech-progress.test.ts",
-    "test/node/tech-receipt.test.ts",
-    "test/node/tech-sent-before.test.ts",
-    "test/node/tech-set-aside.test.ts",
-    "test/node/tech-store.test.ts",
-    "test/node/ui-*.test.ts",
-    "test/node/web-kit-api.test.ts",
+    "test/node/dom/**/*.ts",
     "packages/web-kit/api.ts",
     "packages/web-kit/client-errors.ts",
     "packages/web-kit/small-jpeg.ts",
     "packages/web-kit/turnstile.ts",
-    "test/node/static-server.test.ts",
     "playwright.config.ts",
     "playwright.staging.config.ts",
     "scripts/seed-local.ts",
-    "scripts/fidelity.ts",
-    "scripts/fidelity-app.ts",
-    "scripts/fidelity-ops.ts",
-    "scripts/fidelity-refer.ts",
-    "scripts/fidelity-tech.ts",
+    "scripts/fidelity*.ts",
     "scripts/lib/fidelity.ts",
-    "scripts/serve-site.ts",
-    "scripts/serve-app.ts",
-    "scripts/serve-ops.ts",
-    "scripts/serve-tech.ts",
+    "scripts/serve-*.ts",
     "scripts/lighthouse.ts",
     "scripts/lib/static-server.ts",
     "scripts/smoke-csp.ts",

@@ -1,5 +1,5 @@
 // A piece's label as the technician types it, checked on the phone with the
-// API's own rule (src/config/pieces.ts; test/node/tech-content.test.ts holds
+// API's own rule (src/config/pieces.ts; test/node/dom/tech-content.test.ts holds
 // the two to each other). A label the API would refuse is caught here, where it
 // can still be put right, rather than stopping the job's close-out on its way.
 

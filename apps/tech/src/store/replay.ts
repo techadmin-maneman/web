@@ -1,5 +1,5 @@
 // What the outbox sends, and in what order. Kept apart from IndexedDB so the
-// rules can be read and tested on their own (test/node/tech-outbox.test.ts).
+// rules can be read and tested on their own (test/node/dom/tech-outbox.test.ts).
 //
 // The rules, from docs/decisions/0038-offline-writes.md and the technician boards:
 //
