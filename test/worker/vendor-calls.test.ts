@@ -4,7 +4,9 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { NO_GST } from "../../src/config/gst.ts";
 import { PRESETS } from "../../src/config/presets.ts";
+import type { ZohoBooksSettings } from "../../src/config/settings.ts";
 import { createLogger } from "../../src/log.ts";
 import {
   API_BASE_URL,
@@ -14,10 +16,12 @@ import {
   createAilabtoolsProvider,
 } from "../../src/providers/ailabtools.ts";
 import { createAlert, createLeadNotice } from "../../src/providers/alerts.ts";
+import { createBooksProvider } from "../../src/providers/books.ts";
 import { createAccessVerifier, ACCESS_TOKEN_HEADER } from "../../src/providers/cloudflare-access.ts";
 import { readDailyUsage } from "../../src/providers/cloudflare-usage.ts";
 import { createEvolutionMessaging } from "../../src/providers/evolution.ts";
 import { pingHeartbeat } from "../../src/providers/heartbeat.ts";
+import { createPaymentsProvider } from "../../src/providers/payments.ts";
 import { verifyTurnstile } from "../../src/providers/turnstile.ts";
 import { createZohoRequester } from "../../src/providers/zoho-http.ts";
 import { captureLogs, fakeFetch, json, NOW, TURNSTILE_URL } from "./helpers.ts";
@@ -242,5 +246,115 @@ describe("Zoho", () => {
     ]);
     expect(logs.lines().at(-1)).toMatchObject({ code: "57" });
     expect(JSON.stringify(logs.lines())).not.toMatch(/client-secret|1000\.refresh|books-token/);
+  });
+});
+
+describe("Razorpay", () => {
+  const API = "https://api.razorpay.com/v1";
+  const SETTINGS = { keyId: "rzp_test_abc", keySecret: "key-secret", webhookSecret: null };
+  const ORDER = { amount: 200000, receipt: "hold-1", notes: { hold_id: "hold-1" } };
+  const razorpay = (fetch: typeof globalThis.fetch) => createPaymentsProvider("razorpay", SETTINGS, { fetch, log });
+
+  it("logs an order, and a refusal with Razorpay's code, and never the keys", async () => {
+    let refusing = false;
+    const payments = razorpay(
+      fakeFetch({
+        [`${API}/orders`]: () =>
+          refusing
+            ? json({ error: { code: "BAD_REQUEST_ERROR", description: "The amount must be at least INR 1.00" } }, 400)
+            : json({ id: "order_9" }),
+      }).fetch,
+    );
+
+    await payments.createOrder(ORDER);
+    refusing = true;
+    await expect(payments.createOrder(ORDER)).rejects.toThrow("Razorpay 400 BAD_REQUEST_ERROR");
+
+    expect(vendorCalls()).toEqual([
+      { vendor: "razorpay", step: "create_order", status: 200 },
+      { vendor: "razorpay", step: "create_order", status: 400 },
+    ]);
+    expect(logs.lines().at(-1)).toMatchObject({ code: "BAD_REQUEST_ERROR" });
+    expect(JSON.stringify(logs.lines())).not.toMatch(/key-secret|rzp_test_abc/);
+  });
+
+  // CQ-03: Razorpay's answers were read with a bare parse, whose ZodError named neither the step nor the answer.
+  it("names where an order it cannot read differs, and the step that got no answer", async () => {
+    const unreadable = razorpay(fakeFetch({ [`${API}/orders`]: () => json({ entity: "order" }) }).fetch);
+    await expect(unreadable.createOrder(ORDER)).rejects.toThrow(
+      "Razorpay 200 UNEXPECTED_ANSWER: create_order: id: Invalid input: expected string, received undefined; " +
+        "the answer has keys entity",
+    );
+    await expect(razorpay(timedOut).createOrder(ORDER)).rejects.toThrow(
+      "Razorpay 0 TIMEOUT: create_order got no answer within 10 s",
+    );
+  });
+});
+
+describe("Zoho Books", () => {
+  const SETTINGS: ZohoBooksSettings = {
+    clientId: "1000.BOOKSCLIENT",
+    clientSecret: "books-client-secret",
+    refreshToken: "1000.books-refresh",
+    accountsHost: "accounts.zoho.in",
+    apiHost: "www.zohoapis.in",
+    orgId: "60088931635",
+    refundAccountId: null,
+    gst: NO_GST,
+  };
+  const BOOKS_API = "https://www.zohoapis.in/books/v3";
+  const PAYMENT = {
+    customerId: "customer-1",
+    amount: 200000,
+    date: "2026-10-02",
+    reference: "MM-2026-0841",
+    description: "Advance for a visit",
+  };
+
+  function zohoBooks(routes: Parameters<typeof fakeFetch>[0]) {
+    const http = fakeFetch({
+      "https://accounts.zoho.in/oauth/v2/token": () => json({ access_token: "books-access-1", expires_in: 3600 }),
+      ...routes,
+    });
+    return createBooksProvider("zoho", SETTINGS, { db: env.DB, fetch: http.fetch, now: () => NOW, log });
+  }
+
+  // CQ-03: Books' payments, refunds and invoices were read with a bare parse.
+  it("names where a recorded payment's or refund's answer differs from what is read, and none of its values", async () => {
+    const books = zohoBooks({
+      [`${BOOKS_API}/customerpayments/payment-1/refunds`]: () =>
+        json({ code: 0, payment_refund: { amount: 2000, reference_number: "rfnd_9" } }, 201),
+      [`${BOOKS_API}/customerpayments`]: () =>
+        json({ code: 0, message: "The payment has been recorded.", payment: { amount: 2000 } }, 201),
+    });
+
+    await expect(books.recordPayment(PAYMENT)).rejects.toThrow(
+      "Zoho 201 UNEXPECTED_ANSWER: record_payment: payment.payment_id: Invalid input: expected string, received " +
+        "undefined; payment has keys amount",
+    );
+    const refund = {
+      amount: 200000,
+      date: "2026-10-02",
+      reference: "rfnd_9",
+      description: "Cancelled",
+      fromAccountId: "a-1",
+    };
+    await expect(books.recordRefund("payment-1", refund)).rejects.toThrow(
+      "Zoho 201 UNEXPECTED_ANSWER: record_refund: payment_refund.payment_refund_id: Invalid input: expected " +
+        "string, received undefined; payment_refund has keys amount, reference_number",
+    );
+  });
+
+  it("names where an invoice's answer differs, and still answers none for an invoice Books does not have", async () => {
+    const books = zohoBooks({
+      [`${BOOKS_API}/invoices/invoice-1`]: () => json({ code: 0, invoice: { invoice_id: "invoice-1" } }),
+      [`${BOOKS_API}/invoices/invoice-2`]: () => json({ code: 1002, message: "Invoice does not exist." }, 404),
+    });
+
+    await expect(books.invoice("invoice-1")).rejects.toThrow(
+      "Zoho 200 UNEXPECTED_ANSWER: invoice: invoice.invoice_number: Invalid input: expected string, received " +
+        "undefined; invoice has keys invoice_id",
+    );
+    expect(await books.invoice("invoice-2")).toBeNull();
   });
 });
