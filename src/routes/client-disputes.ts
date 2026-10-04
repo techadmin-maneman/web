@@ -3,10 +3,10 @@
 //
 //   POST /api/visits/:id/dispute   { reason }: once a charge; ops rule Refund or Uphold in the console
 //
-// Every /api/visits/* route takes the client's session from src/routes/client-visits.ts, which is registered first
-// (src/app.ts). Not behind SELF_SERVE_BOOKING: a charge can be disputed however the visit was booked.
+// Not behind SELF_SERVE_BOOKING: a charge can be disputed however the visit was booked.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { z } from "@hono/zod-openapi";
+import { clientRoute } from "../http/session-routes.ts";
 import type { App } from "../http/context.ts";
 import { raiseDispute } from "../domain/no-show-disputes.ts";
 import { clientOf } from "../http/client-session.ts";
@@ -23,7 +23,7 @@ const DisputeRequestSchema = z
   .strict()
   .openapi("NoShowDisputeRequest");
 
-const disputeRoute = createRoute({
+const disputeRoute = clientRoute({
   method: "post",
   path: "/api/visits/{id}/dispute",
   summary: "Dispute the no-show's charge on a visit, once",

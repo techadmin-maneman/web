@@ -3,11 +3,9 @@
 // off, the app sends the note to ops on WhatsApp instead (ADR 0043).
 //
 //   POST /api/appointments/:id/note   { note }: kept on the visit, for the technician's card
-//
-// Every /api/appointments/* route takes the client's session and the switch
-// from src/routes/client-changes.ts, which is registered first (src/app.ts).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { z } from "@hono/zod-openapi";
+import { selfServeRoute } from "../http/session-routes.ts";
 import type { App } from "../http/context.ts";
 import { CLIENT_NOTE_MAX_CHARS, saveClientNote } from "../domain/client-notes.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -24,7 +22,7 @@ const NoteSchema = z
 
 const NotedSchema = z.object({ note: z.string(), noted_at: z.iso.datetime() }).strict().openapi("VisitNoted");
 
-const noteRoute = createRoute({
+const noteRoute = selfServeRoute({
   method: "post",
   path: "/api/appointments/{id}/note",
   summary: "Leave the technician a note on a visit to come",

@@ -41,7 +41,8 @@
 // table, and the job's order leaves it out, so it needs only
 // the start (docs/decisions/0106-a-clients-hair-profile.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { techRoute } from "../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { CONSUMABLE_BOUNDS } from "../config/consumables.ts";
@@ -95,7 +96,7 @@ import {
 import { ANGLES, PHASES, type Phase } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse, type ErrorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
-import { requireTechnicianSession, technicianOf } from "../http/technician-session.ts";
+import { technicianOf } from "../http/technician-session.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { timeOfUuidV7 } from "../lib/uuidv7.ts";
 import { CARD_STEPS, takesStep, type JobEventKind } from "../policy/in-job-steps.ts";
@@ -567,7 +568,7 @@ const DAY_CONFLICT = errorResponse(
     "not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
 );
 
-const jobsRoute = createRoute({
+const jobsRoute = techRoute({
   method: "get",
   path: "/api/tech/jobs",
   summary: "The technician's jobs on a date. Today and tomorrow in full; later dates only time, type and sector",
@@ -579,7 +580,7 @@ const jobsRoute = createRoute({
   },
 });
 
-const jobRoute = createRoute({
+const jobRoute = techRoute({
   method: "get",
   path: "/api/tech/jobs/{id}",
   summary: "One of the technician's jobs, with the day-before unlock enforced",
@@ -591,7 +592,7 @@ const jobRoute = createRoute({
   },
 });
 
-const lastVisitPhotoRoute = createRoute({
+const lastVisitPhotoRoute = techRoute({
   method: "get",
   path: "/api/tech/jobs/{id}/last-visit-photo",
   summary: "The client's last visit, after: one photograph, under the card's own unlock, never cached",
@@ -608,7 +609,7 @@ const lastVisitPhotoRoute = createRoute({
   },
 });
 
-const checkinRoute = createRoute({
+const checkinRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/checkin",
   summary: "I have arrived: the time and the phone's position, inside the geofence",
@@ -620,7 +621,7 @@ const checkinRoute = createRoute({
   },
 });
 
-const startRoute = createRoute({
+const startRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/start",
   summary: "Start the job. The duration runs from here to the outcome",
@@ -632,7 +633,7 @@ const startRoute = createRoute({
   },
 });
 
-const uploadUrlRoute = createRoute({
+const uploadUrlRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/photos/upload-url",
   summary: "A link to PUT one photograph to, for one phase and angle",
@@ -658,7 +659,7 @@ const PhotoTakenSchema = z
   .strict()
   .openapi("TechnicianPhotoTaken");
 
-const uploadRoute = createRoute({
+const uploadRoute = techRoute({
   method: "put",
   path: "/api/tech/photos/{token}",
   summary: "The photograph itself: a JPEG or PNG, at most 2 MB",
@@ -673,7 +674,7 @@ const uploadRoute = createRoute({
   },
 });
 
-const smallUploadRoute = createRoute({
+const smallUploadRoute = techRoute({
   method: "put",
   path: "/api/tech/photos/{token}/small",
   summary: "The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB and 800 px a side",
@@ -694,7 +695,7 @@ const smallUploadRoute = createRoute({
   },
 });
 
-const photosRoute = createRoute({
+const photosRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/photos",
   summary: "The phase's five photographs are in",
@@ -705,7 +706,7 @@ const photosRoute = createRoute({
   },
 });
 
-const checklistRoute = createRoute({
+const checklistRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/checklist",
   summary: "The service checklist, per visit type",
@@ -716,7 +717,7 @@ const checklistRoute = createRoute({
   },
 });
 
-const consumablesRoute = createRoute({
+const consumablesRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/consumables",
   summary: "Consumables used, with quantities",
@@ -727,7 +728,7 @@ const consumablesRoute = createRoute({
   },
 });
 
-const pieceRoute = createRoute({
+const pieceRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/piece",
   summary: "The piece: a replacement's, a first fit's and a one visit's step only",
@@ -744,7 +745,7 @@ const pieceRoute = createRoute({
   },
 });
 
-const profileRoute = createRoute({
+const profileRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/profile",
   summary: "The client's hair profile, the fit spec and their history, as a new version",
@@ -761,7 +762,7 @@ const profileRoute = createRoute({
   },
 });
 
-const outcomeRoute = createRoute({
+const outcomeRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/outcome",
   summary: "Done, or partial with a reason",
@@ -772,7 +773,7 @@ const outcomeRoute = createRoute({
   },
 });
 
-const noShowRoute = createRoute({
+const noShowRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/no-show",
   summary: "Close the job as a no-show, once the wait has run",
@@ -789,10 +790,6 @@ const noShowRoute = createRoute({
 });
 
 export function registerTechJobs(app: App): void {
-  for (const path of ["/api/tech/jobs", "/api/tech/jobs/*", "/api/tech/photos/*"]) {
-    app.use(path, requireTechnicianSession);
-  }
-
   app.openapi(jobsRoute, async (c) => {
     const { technicianId } = technicianOf(c);
     const now = c.var.deps.now();

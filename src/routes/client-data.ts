@@ -8,7 +8,8 @@
 // Correction is the profile itself (address, number change); erasure is the deletion request (ADR 0042).
 // Each is audited under the client.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { clientRoute } from "../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { auditStatementIfWritten, recordAudit } from "../domain/audit.ts";
@@ -16,11 +17,11 @@ import { everythingHeldAbout } from "../domain/data-export.ts";
 import { openGrievanceInWords } from "../domain/grievances.ts";
 import { myDataPage } from "../domain/my-data-page.ts";
 import { takeOne } from "../domain/rate-limit.ts";
-import { clientOf, requireClientSession } from "../http/client-session.ts";
+import { clientOf } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { GRIEVANCES_PER_DAY } from "../policy/grievances.ts";
 
-const exportRoute = createRoute({
+const exportRoute = clientRoute({
   method: "get",
   path: "/api/me/export",
   summary: "Everything held about the client, to download",
@@ -33,7 +34,7 @@ const exportRoute = createRoute({
   },
 });
 
-const exportPageRoute = createRoute({
+const exportPageRoute = clientRoute({
   method: "get",
   path: "/api/me/export.html",
   summary: "Everything held about the client, as a page to download and read",
@@ -64,7 +65,7 @@ async function auditedExport(c: Context<AppEnv>): Promise<{ held: Record<string,
   return { held: await everythingHeldAbout(c.env.DB, id), now };
 }
 
-const grievanceRoute = createRoute({
+const grievanceRoute = clientRoute({
   method: "post",
   path: "/api/grievances",
   summary: `Raise a grievance about how the client's data is handled. The same words, still open, are one; ${String(GRIEVANCES_PER_DAY)} new ones a day`,
@@ -94,10 +95,6 @@ const grievanceRoute = createRoute({
 });
 
 export function registerClientData(app: App): void {
-  app.use("/api/me/export", requireClientSession);
-  app.use("/api/me/export.html", requireClientSession);
-  app.use("/api/grievances", requireClientSession);
-
   app.openapi(exportRoute, async (c) => {
     const { held, now } = await auditedExport(c);
     return c.json({ exported_at: now.toISOString(), ...held }, 200, {

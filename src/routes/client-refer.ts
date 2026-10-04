@@ -7,13 +7,14 @@
 //   GET    /api/refer/card    the same card while it is live, for the app to show and to share as a photograph
 //   DELETE /api/refer/card    the revoke: new opens show the house card
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { clientRoute } from "../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { spendableCredits, type Balance } from "../domain/credits.ts";
 import { liveCard, MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";
 import { inviteOf, referralCodeOf } from "../domain/referrals.ts";
-import { clientOf, requireClientSession } from "../http/client-session.ts";
+import { clientOf } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
@@ -121,7 +122,7 @@ async function codeOf(db: D1Database, personId: string, now: Date): Promise<stri
   return referralCodeOf(db, personId, person?.name ?? "", now);
 }
 
-const referRoute = createRoute({
+const referRoute = clientRoute({
   method: "get",
   path: "/api/refer",
   summary: "The client's code, credits and fitted friends",
@@ -131,7 +132,7 @@ const referRoute = createRoute({
   },
 });
 
-const cardRoute = createRoute({
+const cardRoute = clientRoute({
   method: "put",
   path: "/api/refer/card",
   summary: "Upload the client's referral card: the body is the JPEG itself",
@@ -146,14 +147,14 @@ const cardRoute = createRoute({
   },
 });
 
-const revokeRoute = createRoute({
+const revokeRoute = clientRoute({
   method: "delete",
   path: "/api/refer/card",
   summary: "Take the client's card down: new opens show the house card",
   responses: { 204: { description: "Revoked, or there was none" }, 401: errorResponse("session_required") },
 });
 
-const liveCardRoute = createRoute({
+const liveCardRoute = clientRoute({
   method: "get",
   path: "/api/refer/card",
   summary: "The client's own card while it is live: the JPEG the invite shows",
@@ -177,9 +178,6 @@ const liveCardRoute = createRoute({
 });
 
 export function registerClientRefer(app: App): void {
-  app.use("/api/refer", requireClientSession);
-  app.use("/api/refer/*", requireClientSession);
-
   app.openapi(cardRoute, async (c) => {
     const session = clientOf(c);
     const db = c.env.DB;

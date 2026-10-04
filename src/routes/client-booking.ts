@@ -38,7 +38,8 @@
 // service with its price, late fee and length as they are when it is made
 // (docs/decisions/0085-services-ops-can-edit.md). A move keeps its visit's own.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { selfServeRoute } from "../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
@@ -74,10 +75,9 @@ import {
 import { bookableDays } from "../domain/next-visit.ts";
 import type { OpsInputs } from "../domain/ops-settings.ts";
 import { bookHold } from "../http/book-hold.ts";
-import { clientOf, requireClientSession } from "../http/client-session.ts";
+import { clientOf } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import { requireSelfServe } from "../http/self-serve.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
 import { indiaInstant } from "../lib/india-time.ts";
@@ -250,7 +250,7 @@ export const BookingSchema = z
   .strict()
   .openapi("Booking");
 
-const availabilityRoute = createRoute({
+const availabilityRoute = selfServeRoute({
   method: "get",
   path: "/api/availability",
   summary: "The windows open for a service over 14 days",
@@ -281,7 +281,7 @@ const availabilityRoute = createRoute({
   },
 });
 
-const holdRoute = createRoute({
+const holdRoute = selfServeRoute({
   method: "post",
   path: "/api/holds",
   summary: "Hold a window for ten minutes while the client pays",
@@ -317,7 +317,7 @@ const holdRoute = createRoute({
   },
 });
 
-const holdByIdRoute = createRoute({
+const holdByIdRoute = selfServeRoute({
   method: "get",
   path: "/api/holds/{id}",
   summary: "One of the client's holds",
@@ -346,7 +346,7 @@ const BookingStartSchema = z
   .strict()
   .openapi("BookingStart");
 
-const bookingRoute = createRoute({
+const bookingRoute = selfServeRoute({
   method: "post",
   path: "/api/bookings",
   summary: "Book a held window: pay through Checkout, or, if free, book it at once",
@@ -358,7 +358,7 @@ const bookingRoute = createRoute({
   },
 });
 
-const releaseRoute = createRoute({
+const releaseRoute = selfServeRoute({
   method: "delete",
   path: "/api/holds/{id}",
   summary: "Let a hold go",
@@ -499,11 +499,6 @@ export async function startCheckout(c: Context<AppEnv>, holdId: string, personId
 }
 
 export function registerClientBooking(app: App): void {
-  for (const path of ["/api/availability", "/api/holds", "/api/holds/*", "/api/bookings"]) {
-    app.use(path, requireClientSession);
-    app.use(path, requireSelfServe);
-  }
-
   app.openapi(availabilityRoute, async (c) => {
     const session = clientOf(c);
     const { type, tier, from, moving: movingId } = c.req.valid("query");

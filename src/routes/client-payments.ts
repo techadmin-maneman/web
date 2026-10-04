@@ -13,7 +13,8 @@
 // failed attempt is not a payment and is left out. A payment kept under the
 // 24-hour rule is a charge, and carries its evidence.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { clientRoute } from "../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import {
@@ -26,7 +27,7 @@ import {
   REFERRAL_SIDES,
 } from "../domain/client-payments.ts";
 import { owedPayments } from "../domain/one-visit-money.ts";
-import { clientOf, requireClientSession } from "../http/client-session.ts";
+import { clientOf } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { NoShowNoteSchema } from "./client-visits.ts";
 
@@ -190,7 +191,7 @@ const RefundDetailSchema = RefundEntrySchema.extend({
     .openapi({ description: "The refund voucher; arrives with the invoicing route (docs/open-points.md, item 3)." }),
 }).openapi("RefundDetail");
 
-const paymentsRoute = createRoute({
+const paymentsRoute = clientRoute({
   method: "get",
   path: "/api/payments",
   summary: "The client's payments and refunds, newest first",
@@ -218,7 +219,7 @@ const paymentsRoute = createRoute({
   },
 });
 
-const entryRoute = createRoute({
+const entryRoute = clientRoute({
   method: "get",
   path: "/api/payments/{id}",
   summary: "One of the client's entries: a payment with its documents, or a refund",
@@ -235,7 +236,7 @@ const entryRoute = createRoute({
   },
 });
 
-const receiptRoute = createRoute({
+const receiptRoute = clientRoute({
   method: "get",
   path: "/api/payments/{id}/receipt",
   summary: "A payment's receipt, as a PDF from Books",
@@ -248,7 +249,7 @@ const receiptRoute = createRoute({
   },
 });
 
-const documentRoute = createRoute({
+const documentRoute = clientRoute({
   method: "get",
   path: "/api/documents/{id}",
   summary: "A visit's invoice, as a PDF from Books",
@@ -262,10 +263,6 @@ const documentRoute = createRoute({
 });
 
 export function registerClientPayments(app: App): void {
-  for (const path of ["/api/payments", "/api/payments/*", "/api/documents/*"]) {
-    app.use(path, requireClientSession);
-  }
-
   app.openapi(paymentsRoute, async (c) => {
     const session = clientOf(c);
     const [owed, entries, credits] = await Promise.all([

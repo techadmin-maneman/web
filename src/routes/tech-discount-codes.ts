@@ -8,7 +8,8 @@
 // apply is answered code_not_applicable and nothing more; every check is counted against the technician and the
 // address (src/http/code-checks.ts). No amount is answered: none reaches the technician's phone.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { z } from "@hono/zod-openapi";
+import { techRoute } from "../http/session-routes.ts";
 import type { App } from "../http/context.ts";
 import { enterOnVisit } from "../domain/discount-code-uses.ts";
 import { workableJob } from "../domain/tech-jobs.ts";
@@ -27,7 +28,7 @@ const AppliedSchema = z
   .strict()
   .openapi("TechnicianDiscountCodeApplied");
 
-const enterRoute = createRoute({
+const enterRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/discount-code",
   summary: "Enter a discount code on a one visit, before its payment link is made",
