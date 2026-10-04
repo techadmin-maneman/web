@@ -1434,7 +1434,7 @@ Made by `0021_referrals.sql`; changed by `0043_area_names.sql`.
 
 What clients may book: each kind of visit's services, their names, the line clients read under each, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
 
-Made by `0050_services.sql`; changed by `0070_field_record_ours.sql`, `0091_service_description.sql`.
+Made by `0050_services.sql`; changed by `0070_field_record_ours.sql`, `0092_service_description.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
