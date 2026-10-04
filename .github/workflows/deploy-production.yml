@@ -129,6 +129,9 @@ jobs:
       - name: Check the database is production's, before anything touches it
         run: node scripts/mark-database.ts production --check
 
+      - name: Refuse the release while the API's copy waits for the owner's wording
+        run: node scripts/check-copy.ts api
+
       # An upload sends no traffic, and fails on a binding whose bucket, queue or database is missing:
       # so a missing resource stops the release here, before any migration runs.
       - name: Upload the new mm-api version (no traffic yet)

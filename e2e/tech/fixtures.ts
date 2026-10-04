@@ -185,35 +185,35 @@ export function jobsTomorrow(today: string): Job[] {
 }
 
 const CHECKLIST: Card["checklist"] = [
-  { id: "piece_removed", label: "PLACEHOLDER Piece removed" },
-  { id: "scalp_cleaned", label: "PLACEHOLDER Scalp cleaned" },
-  { id: "piece_cleaned", label: "PLACEHOLDER Piece cleaned" },
+  { id: "piece_removed", label: "Hair system removed" },
+  { id: "scalp_cleaned", label: "Scalp cleaned" },
+  { id: "piece_cleaned", label: "Hair system cleaned" },
 ];
 
 /** A consultation's checklist, which a one visit runs alone once the client decides against the fit. */
 const CONSULTATION_CHECKLIST: Card["checklist"] = [
-  { id: "scalp_checked", label: "PLACEHOLDER Scalp and hairline checked" },
-  { id: "measurements_taken", label: "PLACEHOLDER Measurements taken" },
-  { id: "options_shown", label: "PLACEHOLDER Options and prices shown" },
+  { id: "scalp_checked", label: "Scalp and hairline checked" },
+  { id: "measurements_taken", label: "Measurements taken" },
+  { id: "options_shown", label: "Options and prices shown" },
 ];
 
 /** A consultation and fit in one visit: the consultation's three items, then the first fit's six (src/config/job-sheet.ts). */
 export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
   ...CONSULTATION_CHECKLIST,
-  { id: "template_checked", label: "PLACEHOLDER Template checked against the head" },
-  { id: "base_trimmed", label: "PLACEHOLDER Base trimmed and shaped" },
-  { id: "adhesive_applied", label: "PLACEHOLDER Adhesive applied" },
-  { id: "piece_set", label: "PLACEHOLDER Piece set and pressed" },
-  { id: "cut_and_styled", label: "PLACEHOLDER Cut and styled" },
-  { id: "aftercare_explained", label: "PLACEHOLDER Aftercare explained" },
+  { id: "template_checked", label: "Template checked against the head" },
+  { id: "base_trimmed", label: "Base trimmed and shaped" },
+  { id: "adhesive_applied", label: "Adhesive applied" },
+  { id: "piece_set", label: "Hair system set and pressed" },
+  { id: "cut_and_styled", label: "Cut and styled" },
+  { id: "aftercare_explained", label: "Aftercare explained" },
 ];
 
 /** The reasons as the console set them: the committed four, in src/config/job-sheet.ts's words. */
 const PARTIAL_REASONS: Card["partial_reasons"] = [
   { id: "client_stopped_it", label: "Client stopped it partway" },
-  { id: "piece_not_ready", label: "PLACEHOLDER The piece was not ready" },
-  { id: "client_unwell", label: "PLACEHOLDER Client unwell" },
-  { id: "more_time_needed", label: "PLACEHOLDER More time needed" },
+  { id: "piece_not_ready", label: "Hair system not ready" },
+  { id: "client_unwell", label: "Client unwell" },
+  { id: "more_time_needed", label: "More time needed" },
 ];
 
 /**

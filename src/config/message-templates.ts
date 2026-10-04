@@ -4,6 +4,7 @@
 import { MESSAGE_KINDS, type MessageKind } from "../domain/messages.ts";
 import type { MessagePurpose } from "../policy/consents.ts";
 
+// PLACEHOLDER: every text below waits for the owner's wording (docs/open-points.md, item 39).
 export const TEMPLATES: Readonly<Record<string, string>> = {
   // The try-on's look, to the number that claimed it: {{1}} the first name. The second sentence is the design's own.
   tryon_result_v1:
@@ -142,12 +143,12 @@ export function renderMessage(name: string, params: readonly string[]): string |
   const template = TEMPLATES[name];
   if (template === undefined) return null;
 
-  const positions = [...template.matchAll(PLACEHOLDER)].map((match) => Number(match[1]));
+  const positions = [...template.matchAll(PARAM)].map((match) => Number(match[1]));
   if (positions.some((position) => params[position - 1] === undefined)) return null;
-  return template.replace(PLACEHOLDER, (_match, position: string) => params[Number(position) - 1] ?? "");
+  return template.replace(PARAM, (_match, position: string) => params[Number(position) - 1] ?? "");
 }
 
-const PLACEHOLDER = /\{\{(\d+)\}\}/g;
+const PARAM = /\{\{(\d+)\}\}/g;
 
 /** The text, ending with the line that stops it when the message carries a stop link. */
 export function renderWithStopLink(name: string, params: readonly string[], stopLink?: string): string | null {

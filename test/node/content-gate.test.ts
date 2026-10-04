@@ -34,13 +34,22 @@ describe("a PLACEHOLDER mark", () => {
 });
 
 describe("the production gate on Phase 2's copy", () => {
-  it("covers each app's content and the referral landing's", () => {
+  // CQ-43 and CP-26 of the 2 Oct audit: the site's own marks, the job sheet and the WhatsApp texts went ungated.
+  it("covers each app's content, the site's, the referral landing's and the API's", () => {
     expect(CONTENT_FILES).toEqual({
-      site: ["site/src/content/referral.ts"],
+      site: ["site/src/content/referral.ts", "site/src/content/site.ts"],
       app: ["apps/app/src/content.ts"],
       ops: ["apps/ops/src/content.ts"],
       tech: ["apps/tech/src/content.ts"],
+      api: ["src/config/job-sheet.ts", "src/config/message-templates.ts"],
     });
+  });
+
+  it("refuses a production release of the API while its copy holds a mark", () => {
+    const marked = CONTENT_FILES.api.some((file) => placeholderMarks(readFileSync(file, "utf8")).length > 0);
+    const check = spawnSync(process.execPath, ["scripts/check-copy.ts", "api"], { encoding: "utf8" });
+    expect(check.status).toBe(marked ? 1 : 0);
+    if (marked) expect(check.stderr).toContain("src/config/job-sheet.ts");
   });
 
   it("names each file still marked, how many lines, and where the first are", () => {
