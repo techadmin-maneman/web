@@ -4843,12 +4843,34 @@ Request body:
           },
           "mobile": {
             "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "fitted",
+              "lead",
+              "nothing_booked"
+            ]
+          },
+          "next_visit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the client's next visit not yet closed starts; null for none."
           }
         },
         "required": [
           "id",
           "name",
-          "mobile"
+          "mobile",
+          "state",
+          "next_visit"
         ],
         "additionalProperties": false
       }

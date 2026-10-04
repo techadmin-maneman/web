@@ -47,6 +47,9 @@ const FIND: Call = "POST /api/clients/find";
 const readPhoto = (id: string): Call => `GET ${RECORD_PATH}/photos/${id}`;
 const NAME = { name: CLIENT.name, exact: true };
 const MOBILE = "+91 98100 04417";
+/** The client as a search lists them, with where they stand and their next visit. */
+const FOUND = { ...CLIENT, state: "fitted" as const, next_visit: "2027-09-25T05:00:00.000Z" };
+const STANDING = "Fitted · Next visit Sat 25 Sep, 10:30 am";
 type ConsentSource = OpsReply<"/api/clients/{id}/consents">["consents"][number]["source"];
 
 /** The opening the API logs, at India's 10:42 by its own clock, and one before it. */
@@ -118,7 +121,7 @@ const invitedBy = (page: Page) =>
 // A client could be found only by their whole number, typed exactly (OPS-04).
 test("finds clients by part of a name, and sends it in the body, never in the URL", async ({ page }) => {
   await answer(page, {
-    [FIND]: json({ clients: [CLIENT], more: false }),
+    [FIND]: json({ clients: [FOUND], more: false }),
     [READ_RECORD]: json(RECORD),
     [READ_PIECES]: json(PIECES),
     [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
@@ -135,10 +138,69 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
   expect(new URL(request.url()).search).toBe("");
 
   const found = page.getByRole("region", { name: "Clients" });
-  await expect(found.getByRole("listitem")).toHaveText([`${CLIENT.name}${MOBILE}`]);
+  await expect(found.getByRole("listitem")).toHaveText([`${CLIENT.name}${STANDING}${MOBILE}`]);
   await found.getByRole("link", NAME).click();
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/visits`);
+});
+
+// OIA-15: search lived on Clients alone, Back lost the results, and a result named no state or visit.
+test("finds a client from another page's header, keeps the words out of the URL, and keeps the results across Back", async ({
+  page,
+}) => {
+  const asked: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/clients/find")) asked.push((request.postDataJSON() as { text: string }).text);
+  });
+  await answer(page, {
+    [FIND]: json({ clients: [FOUND], more: false }),
+    [READ_RECORD]: json(RECORD),
+    [READ_PIECES]: json(PIECES),
+    [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
+  });
+  await page.goto(`/clients/${CLIENT.id}/visits`);
+  await page.getByRole("searchbox", { name: "Find a client by name or number" }).fill("98100 0441");
+  await page.getByRole("button", { name: "Find client" }).click();
+
+  const found = page.getByRole("region", { name: "Clients" });
+  await expect(found.getByRole("listitem")).toHaveText([`${CLIENT.name}${STANDING}${MOBILE}`]);
+  expect(new URL(page.url()).pathname).toBe("/clients");
+  expect(new URL(page.url()).search).toBe("");
+  await expect(page.getByLabel("Name or number")).toHaveValue("98100 0441");
+
+  await found.getByRole("link", NAME).click();
+  await expect(page.getByRole("heading", NAME)).toBeVisible();
+  await page.goBack();
+  await expect(found.getByRole("listitem")).toHaveText([`${CLIENT.name}${STANDING}${MOBILE}`]);
+  expect(asked).toEqual(["98100 0441"]);
+});
+
+test("offers the clients opened this session, and forgets them on sign-out", async ({ page }) => {
+  await answer(page, {
+    "GET /api/whoami": json({
+      signed_in_as: "ops@maneman.in",
+      sign_out: "/cdn-cgi/access/logout",
+      staff: {
+        enforced: false,
+        listed: true,
+        grants: [],
+        may_call: ["GET /api/clients/{id}", "POST /api/clients/find", "GET /api/clients/{id}/hair-profile"],
+      },
+    }),
+    [READ_RECORD]: json(RECORD),
+    [READ_PIECES]: json(PIECES),
+    [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
+  });
+  await page.goto(`/clients/${CLIENT.id}/visits`);
+  await expect(page.getByRole("heading", NAME)).toBeVisible();
+  await page.goto("/clients");
+  const recent = page.getByRole("region", { name: "Opened this session" });
+  await expect(recent.getByRole("link", NAME)).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
+
+  await page.route("**/cdn-cgi/access/logout", (route) => route.fulfill({ contentType: "text/html", body: "" }));
+  await page.getByRole("link", { name: "Sign out" }).click();
+  await page.waitForURL("**/cdn-cgi/access/logout");
+  expect(await page.evaluate(() => sessionStorage.getItem("ops.recent-clients"))).toBeNull();
 });
 
 test("says so when nobody matches, and when more match than are listed", async ({ page }) => {
@@ -148,7 +210,7 @@ test("says so when nobody matches, and when more match than are listed", async (
   await page.getByRole("button", { name: "Find" }).click();
   await expect(page.getByRole("status")).toContainText("Nobody matches “98100 0441”.");
 
-  await answer(page, { [FIND]: json({ clients: [CLIENT], more: true }) });
+  await answer(page, { [FIND]: json({ clients: [FOUND], more: true }) });
   await page.getByRole("button", { name: "Find" }).click();
   await expect(page.getByText("More clients match than are listed.")).toBeVisible();
 });
@@ -1095,7 +1157,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
     ).toEqual([]);
   };
 
-  await answer(page, { [FIND]: json({ clients: [CLIENT], more: false }) });
+  await answer(page, { [FIND]: json({ clients: [FOUND], more: false }) });
   await page.goto("/clients");
   await page.getByLabel("Name or number").fill("malhotra");
   await page.getByRole("button", { name: "Find" }).click();

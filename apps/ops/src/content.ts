@@ -69,6 +69,12 @@ export const shell = {
     signedInAs: (who: string) => `Signed in as ${who}`,
     signOut: "Sign out",
   },
+  /** PLACEHOLDER: the header's way to a client from any page, which the board does not draw. */
+  find: {
+    label: "Find a client by name or number",
+    placeholder: "Name or number",
+    submit: "Find client",
+  },
   /**
    * PLACEHOLDER: Cloudflare Access ends a session after the time the team sets,
    * and from then on every call is sent to its login page instead of reaching
@@ -468,6 +474,11 @@ export const clients = {
     found: "Clients",
     none: (text: string) => `Nobody matches “${text}”. An erased client has no page.`,
     more: "More clients match than are listed. Add to the name or the number.",
+    /** PLACEHOLDER: beside each match, so two of one name can be told apart. */
+    nextVisit: (when: string) => `Next visit ${when}`,
+    noVisit: "No visit booked",
+    /** PLACEHOLDER: the clients opened this session, offered before anything is searched for. */
+    recent: "Opened this session",
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "Type two letters of a name, or four digits of a number.",

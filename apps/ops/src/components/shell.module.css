@@ -159,6 +159,33 @@
 }
 
 /* Who is signed in: the board's box of initials, with the name beside it in the header's own muted line. */
+/* The header's client search, between the title and who is signed in. */
+.finder {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-8);
+  min-width: 0;
+}
+
+.finderField {
+  width: 100%;
+  max-width: var(--ops-finder);
+  height: var(--tap);
+  padding: 0 var(--sp-11);
+  border: var(--hairline) solid var(--paper-control);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--fs-14);
+  color: var(--text);
+}
+
+.finderField:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
 .account {
   display: flex;
   flex-shrink: 0;
