@@ -270,7 +270,7 @@ export async function jobDetail(
     address: null,
     access_notes: null,
     client: null,
-    progress: await progressOf(db, { id: row.id, type }, options.waits),
+    progress: await progressOf(db, { id: row.id, type, technicianId: options.technicianId }, options.waits),
     no_show_wait_min: options.waits[type],
     pieces: null,
     last_visit: null,
@@ -499,10 +499,13 @@ function badgeOf(row: JobRow): PaymentBadge {
   return paymentBadge({ onCredit: row.on_credit === 1, free: row.free === 1, oneVisit: paidAtTheVisit(row.one_visit) });
 }
 
-/** What the phone has already sent for this job, from the events it landed. */
+/**
+ * What the phone has already sent for this job, from the events it landed. The check-in is the job's technician's
+ * own, so one given the job after another checked in at it still has to arrive himself.
+ */
 export async function progressOf(
   db: D1Database,
-  job: { id: string; type: VisitType },
+  job: { id: string; type: VisitType; technicianId: string },
   waits: Waits,
 ): Promise<JobProgress> {
   const { results } = await db
@@ -512,12 +515,11 @@ export async function progressOf(
     )
     .bind(job.id)
     .all<{ kind: JobEventKind; body: string; occurred_at: string; received_at: string }>();
-  const checkIn = results.find((event) => event.kind === "check_in");
   const start = results.find((event) => event.kind === "start");
   const outcome = results.findLast((event) => event.kind === "outcome");
-  const arrival = checkIn === undefined ? null : await latestArrival(db, job.id);
+  const arrival = await latestArrival(db, job);
   return {
-    checked_in_at: checkIn?.occurred_at ?? null,
+    checked_in_at: arrival?.at.toISOString() ?? null,
     wait_ends_at: arrival === null ? null : noShowWaitEnds(arrival, job.type, waits).toISOString(),
     distance_m: arrival?.distanceM ?? null,
     started_at: start?.occurred_at ?? null,
