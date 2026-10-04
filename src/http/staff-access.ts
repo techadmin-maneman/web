@@ -7,7 +7,14 @@ import { createMiddleware } from "hono/factory";
 import { routePath } from "hono/route";
 import { cityOf, type PlacedRecord } from "../domain/places.ts";
 import { callerAccessOf } from "../domain/staff.ts";
-import { placesReached, reachesCity, type CallerAccess, type PlacesReached } from "../policy/access.ts";
+import {
+  placesReached,
+  reachesCity,
+  type CallerAccess,
+  type Department,
+  type Level,
+  type PlacesReached,
+} from "../policy/access.ts";
 import { meetsNeed, needOf, OWN_DEPARTMENTS, SIGNED_IN, type RouteNeed } from "../policy/console-routes.ts";
 import type { AppEnv } from "./context.ts";
 import { errorBody } from "./errors.ts";
@@ -68,12 +75,38 @@ export async function routeReach(c: Context<AppEnv>): Promise<PlacesReached> {
   if (need === undefined || need === SIGNED_IN || need.department === OWN_DEPARTMENTS) {
     throw new Error("only a route of one department keeps to the caller's places");
   }
-  return placesReached(await callerAccess(c), need.department, need.level);
+  return reachOf(c, need.department, need.level);
 }
 
-/** Whether a record is within this route's reach for the caller. One with no city is reached only everywhere. */
-export async function withinRouteReach(c: Context<AppEnv>, kind: PlacedRecord, id: string): Promise<boolean> {
-  const reached = await routeReach(c);
+/** The places the caller's work in a department reaches at a level, where the route's own line does not say. */
+export async function reachOf(c: Context<AppEnv>, department: Department, level: Level): Promise<PlacesReached> {
+  return placesReached(await callerAccess(c), department, level);
+}
+
+/** Whether a record is within the places reached. One with no city is reached only everywhere. */
+async function recordWithin(
+  c: Context<AppEnv>,
+  reached: PlacesReached,
+  kind: PlacedRecord,
+  id: string,
+): Promise<boolean> {
   if (reached.kind === "everywhere") return true;
   return reachesCity(reached, await cityOf(c.env.DB, kind, id));
+}
+
+/** Whether a record is within this route's reach for the caller. */
+export async function withinRouteReach(c: Context<AppEnv>, kind: PlacedRecord, id: string): Promise<boolean> {
+  return recordWithin(c, await routeReach(c), kind, id);
+}
+
+/**
+ * As `permits`, for a choice on one record, as waiving a no-show's charge is: the caller's grants must reach what it
+ * asks in the record's city.
+ */
+export async function permitsOn(c: Context<AppEnv>, need: RouteNeed, kind: PlacedRecord, id: string): Promise<boolean> {
+  if (need.department === OWN_DEPARTMENTS) throw new Error("a choice on one record asks one department");
+  const access = await callerAccess(c);
+  const reached = placesReached(access, need.department, need.level);
+  const allowed = meets(access, need) && (await recordWithin(c, reached, kind, id));
+  return goesAhead(c, access, allowed, askedOf(need));
 }

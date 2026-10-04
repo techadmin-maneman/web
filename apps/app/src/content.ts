@@ -188,7 +188,10 @@ export const home = {
   note: "Add a note",
   consultation: {
     label: "Your consultation",
+    labelOneVisit: "Your consultation and fit",
     free: "Free",
+    /** Asked for on the site, not yet booked. */
+    requested: "Requested · we confirm the time on WhatsApp",
   },
   /** Board B1's credit tile: "3 free service visits", and "Use by 2 Oct", or "Use by tonight" on the last day. */
   credits: freeVisitsTile,
@@ -281,6 +284,8 @@ export const visits = {
   none: "Nothing booked yet.",
   /** Board C1: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
+  /** A consultation asked for on the site, which ops have yet to confirm. */
+  requested: "Requested",
   // PLACEHOLDER: a visit that is not this client's, or no longer exists.
   notFound: "We could not find this visit.",
   // PLACEHOLDER: offline, the visits are not kept on the phone.
@@ -349,6 +354,8 @@ export const visits = {
       kept: (amount: string) => `Charged: we kept ${amount} of what you paid.`,
       creditSpent: "Charged: the free service visit it used is spent.",
       dispute: "Dispute this charge",
+      /** PLACEHOLDER: where the button stood, once the days to dispute have passed. */
+      disputeClosed: (day: string) => `The days to dispute this charge ended on ${day}.`,
       disputed: {
         open: "You disputed this charge. We are looking at it.",
         refunded: "We looked at your dispute and refunded the charge.",
@@ -604,6 +611,7 @@ export const change = {
     acceptCredit: "Cancel and use it",
     done: "Cancelled",
     doneLine: (visit: string) => `${visit} is cancelled.`,
+    refundPending: (amount: string) => `Your refund of ${amount} is on its way.`,
     close: "Done",
   },
   // PLACEHOLDER: what came of a change that did not go through.

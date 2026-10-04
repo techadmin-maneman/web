@@ -4,9 +4,9 @@
 // again, so nothing here may fail without ops being told what is owed.
 
 import type { PaymentsProvider } from "../providers/payments.ts";
-import type { AlertOnce } from "./alerts.ts";
-import { askRefund, refundReceipt, type RefundOutcome } from "./refunds.ts";
-import { refundLeftToOps, visitPayment, type VisitPayment } from "./visit-changes.ts";
+import { paymentsTab, type AlertOnce } from "./alerts.ts";
+import { askRefund, refundLeftToOps, refundReceipt, type RefundOutcome } from "./refunds.ts";
+import { visitPayment, type VisitPayment } from "./visit-changes.ts";
 import { creditOfVisit } from "./visit-messages.ts";
 
 /** Money going back to the client once a ruling is written. */
@@ -59,7 +59,7 @@ async function alertIfCreditNotBack(db: D1Database, alertOnce: AlertOnce, credit
     message:
       `The visit credit for visit ${credit.appointmentId}, a no-show ${credit.why}, could not come back: its grant ` +
       "has expired or been withdrawn. The client is told so; settle it with them by hand if they are owed one.",
-    link: credit.personId === null ? "/no-shows" : `/clients/${credit.personId}`,
+    link: credit.personId === null ? "/no-shows" : paymentsTab(credit.personId),
   });
 }
 
@@ -95,6 +95,6 @@ export async function refundNoShow(
       payment === null || outcome === "unread"
         ? `The refund of ${what}, failed (its payment could not be read). Refund it by hand in Razorpay, once.`
         : refundLeftToOps(outcome, what, payment.razorpayPaymentId, amount),
-    link: refund.personId === null ? "/no-shows" : `/clients/${refund.personId}`,
+    link: refund.personId === null ? "/no-shows" : paymentsTab(refund.personId),
   });
 }

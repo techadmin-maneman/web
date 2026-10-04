@@ -5,8 +5,8 @@
 // held on the phone (./sets.ts). A job whose queue stopped says what stopped it
 // in the app's words — the API answers a code and the fields behind it, never a
 // sentence (apps/tech/src/content.ts). A step the API refused can be put right
-// where it stands; "Got it" lets go of the job's work only once the technician
-// has said so a second time, since what it deletes never reaches us.
+// where it stands, a refused photograph set retaken; deleting the job's work asks
+// a second time, since what it deletes never reaches us.
 
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -17,7 +17,8 @@ import { Offline } from "../components/Banners.tsx";
 import { Confirm } from "../components/Confirm.tsx";
 import { atRisk as atRiskCopy, queue as copy, reference, whatStopped } from "../content.ts";
 import { STROKE } from "../icons.ts";
-import { useNames } from "../lib/useDay.ts";
+import { jobLabel } from "../lib/kind.ts";
+import { useHeldJobs } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock } from "../lib/when.ts";
@@ -28,14 +29,13 @@ import { Progress } from "./Progress.tsx";
 import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "./sets.ts";
 import styles from "./waiting.module.css";
 
-/** The steps a refused write can be put right on: the ones with a screen of their own to put it right in. */
-const CORRECTABLE: ReadonlySet<EventKind> = new Set(["checklist", "consumables", "piece", "profile", "outcome"]);
+const PHOTO_STEPS: ReadonlySet<InJobStep> = new Set(["before_photos", "after_photos"]);
 
 const isInJobStep = (kind: EventKind): kind is InJobStep => kind in STEP_PATHS;
 
-/** A refused step the technician can open again and correct; null for any other stop. */
+/** A refused step the technician can open again and put right on its own screen; null for any other stop. */
 function correctable(stopped: JobAccount["stopped"]): InJobStep | null {
-  if (stopped?.state !== "refused" || !CORRECTABLE.has(stopped.kind)) return null;
+  if (stopped?.state !== "refused") return null;
   return isInJobStep(stopped.kind) ? stopped.kind : null;
 }
 
@@ -59,14 +59,20 @@ function SetLine({ set }: { set: PhotoSet }) {
 export function WaitingScreen() {
   const { offline, atRisk } = useSession();
   const waiting = useOutbox();
-  const names = useNames(waiting);
+  const kept = useHeldJobs(waiting);
   const heading = useScreen(copy.title);
   const [forgetting, setForgetting] = useState<string | null>(null);
 
   const held = account(waiting.events);
   const sets = photoSets(waiting.frames, waiting.events);
   const jobs = [...new Set([...sets.map((set) => set.job), ...held.map((line) => line.job_id)])];
-  const name = (id: string) => names.get(id) ?? id.slice(0, 8);
+
+  /** The client while the phone holds the card; else the job's time, kind and area as the technician knew them. */
+  const name = (id: string) => {
+    const job = kept.get(id);
+    const startsAt = waiting.events.find((event) => event.job_id === id)?.starts_at ?? null;
+    return job?.client ?? jobLabel(job, startsAt);
+  };
 
   /** When this job's oldest unsent thing was taken: a half-captured set has frames and no event yet. */
   const since = (id: string): number | null => {
@@ -140,7 +146,9 @@ export function WaitingScreen() {
                   {taken !== null && <p className={styles.count}>{copy.since(clock(new Date(taken).toISOString()))}</p>}
                   {stopped !== null && (
                     <div className={styles.stopped} role="alert">
-                      <p className={styles.stoppedLine}>{whatStopped(stopped)}</p>
+                      <p className={styles.stoppedLine}>
+                        {whatStopped(stopped, new Date(), kept.get(id)?.starts_at ?? null)}
+                      </p>
                       {stopped.requestId !== null && (
                         <ErrorRef requestId={stopped.requestId} words={reference} className={styles.reference} />
                       )}
@@ -154,7 +162,7 @@ export function WaitingScreen() {
                               go(stepPath(id, toCorrect));
                             }}
                           >
-                            {copy.correct}
+                            {PHOTO_STEPS.has(toCorrect) ? copy.retake : copy.correct}
                           </Button>
                         )}
                         <Button
@@ -165,7 +173,7 @@ export function WaitingScreen() {
                             setForgetting(id);
                           }}
                         >
-                          {copy.read}
+                          {copy.forget.open}
                         </Button>
                       </div>
                     </div>

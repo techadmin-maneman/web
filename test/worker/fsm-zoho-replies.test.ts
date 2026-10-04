@@ -412,7 +412,7 @@ describe("FSM: what FSM said, kept readable", () => {
         "Zoho 400 INVALID_DATA: invalid data (field $Service_Resources, expected jsonarray, at $.data[0].$Service_Resources)",
     });
     await expect(failure).rejects.not.toThrow(/sr-1|Rohit/);
-    const call = logs.lines().find((line) => line.event === "zoho_call" && line.step === "create_appointment");
+    const call = logs.lines().find((line) => line.event === "vendor_call" && line.step === "create_appointment");
     expect(call).toMatchObject({ status: 400, code: "INVALID_DATA" });
   });
 

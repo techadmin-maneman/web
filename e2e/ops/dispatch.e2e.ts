@@ -445,6 +445,52 @@ test("moves between weeks and cities, asking the route for each", async ({ page 
   await expect.poll(() => asked.at(-1)).toBe("?city=Delhi");
 });
 
+// A technician's page shows his days by linking here with the week and his name.
+test("opens on the week and the search a link asks for", async ({ page }) => {
+  const asked: string[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === BOARD_PATH) asked.push(url.search);
+  });
+  await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
+  await page.goto("/dispatch?from=2025-09-19&find=Sohna");
+
+  await expect(page.getByLabel("Find a technician, zone or client")).toHaveValue("Sohna");
+  await expect(page.getByRole("rowheader")).toHaveText(["Faizan AliSohna Rd"]);
+  await expect.poll(() => asked[0]).toBe("?from=2025-09-19");
+});
+
+// OIA-03, BK-21: "Move it in Dispatch" landed on this week's bare board, and Back from a client reset it.
+test("opens the visit a link names, in its drawer, on the week the link asks for", async ({ page }) => {
+  await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
+  await page.goto(`/dispatch?from=2025-09-19&visit=${ROHIT_JOB?.appointment_id ?? ""}`);
+
+  await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeFocused();
+  await expect(page).toHaveURL(/\/dispatch\?from=2025-09-19$/);
+});
+
+test("keeps its week, city, search and open visit in the address, so Back from a client finds it as it was", async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole("button", { name: "Next week" }).click();
+  await page.getByLabel("City", { exact: true }).selectOption("Delhi");
+  await page.getByLabel("Find a technician, zone or client").fill("Rohit");
+  await press(page, ROHIT_BLOCK);
+  const kept = `?from=2025-09-26&city=Delhi&find=Rohit&visit=${ROHIT_JOB?.appointment_id ?? ""}`;
+  await expect.poll(() => new URL(page.url()).search).toBe(kept);
+
+  await page.getByRole("dialog").getByRole("link", { name: "Open client" }).click();
+  await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}$`));
+  await page.goBack();
+
+  await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
+  await expect(page.getByLabel("City", { exact: true })).toHaveValue("Delhi");
+  await expect(page.getByLabel("Find a technician, zone or client")).toHaveValue("Rohit");
+});
+
 // OPS-10: 168 technicians made a board 15,000 px tall whose day headers scrolled away, with no way to find a row.
 test("keeps its header row and technicians' column in place, and finds a row by name, zone or client", async ({
   page,

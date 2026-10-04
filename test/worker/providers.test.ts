@@ -11,7 +11,8 @@ beforeEach(() => {
 });
 
 describe("verifyTurnstile", () => {
-  const check = (fetchImpl: typeof fetch) => verifyTurnstile({ secret: "s", token: "t", ip: null, fetch: fetchImpl });
+  const check = (fetchImpl: typeof fetch) =>
+    verifyTurnstile({ secret: "s", token: "t", ip: null, fetch: fetchImpl, log: createLogger() });
 
   it("passes only when Cloudflare says success", async () => {
     expect(await check(fakeFetch({ [TURNSTILE_URL]: () => json({ success: true }) }).fetch)).toEqual({

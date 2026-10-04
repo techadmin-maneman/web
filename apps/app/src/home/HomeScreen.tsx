@@ -1,8 +1,9 @@
 // Home (boards B1 and B2): "One card, one prompt, nothing else." The next visit from FSM: a consultation as B2
 // draws it, with what to expect, and any other visit as B1 draws it, with its technician (VisitCard.tsx). A
-// booking's consultation, not yet in FSM, shows as B2. A visit FSM has not closed stays here until it is, so Home
-// never says nothing is booked, nor offers the booking again, while one is under way. Nor while a visit paid for, or
-// booked free, waits for FSM to take it: Home says it is being booked, and that the payment is in (ADR 0095).
+// consultation from the site shows as B2 until its day has passed, saying so while it is only asked for. A visit FSM
+// has not closed stays here until it is, so Home never says nothing is booked, nor offers the booking again, while one
+// is under way. Nor while a visit paid for, or booked free, waits for FSM to take it: Home says it is being booked,
+// and that the payment is in (ADR 0095).
 //
 // Beneath the card, B1's credit tile while there is a balance, its one prompt, and an invoice just issued as a line
 // beneath that (src/domain/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
@@ -12,7 +13,7 @@ import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me } from "../api.ts";
-import { BOOKING_URL, home, messages, VISIT_TYPES, visits, windowText } from "../content.ts";
+import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
 import { BookNext } from "../booking/BookNext.tsx";
 import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
@@ -64,17 +65,30 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
       </section>
     );
   }
-  if (me.consultation !== null) {
-    const { date, place } = me.consultation;
-    return (
-      <Consultation date={date} when={windowText(me.consultation.window)} place={place} changing={null} noting={null} />
-    );
-  }
+  if (me.consultation !== null) return <ProposedConsultation consultation={me.consultation} />;
   if (me.being_booked !== null) return <BeingBooked booking={me.being_booked} />;
   if (me.state === "fitted" || me.booking.types.includes("first_fit")) {
     return <NothingNext promptBooks={me.prompt?.kind === "next_visit"} />;
   }
   return <NothingBooked me={me} offline={offline} />;
+}
+
+/**
+ * A consultation booked on the site, or asked for there and not yet booked, before any visit is on record: ops move
+ * it, and a note goes to them on WhatsApp.
+ */
+function ProposedConsultation({ consultation }: { consultation: NonNullable<Me["consultation"]> }) {
+  return (
+    <Consultation
+      date={consultation.date}
+      when={windowText(consultation.window)}
+      place={consultation.place}
+      changing={null}
+      noting={null}
+      requested={consultation.requested}
+      oneVisit={consultation.one_visit}
+    />
+  );
 }
 
 /** Board B2: the consultation card on ink, and what to expect on paper until it begins. */
@@ -83,27 +97,39 @@ function Consultation(props: {
   /** The window, or where a consultation that has begun stands. */
   when: string;
   place: string;
-  /** Null for a booking's consultation, not yet in FSM: ops move it. */
+  /** Null for a consultation from the site: ops move it. */
   changing: ChangingVisit | null;
-  /** Null for a booking's consultation, not yet in FSM: a note goes to ops on WhatsApp. */
+  /** Null for a consultation from the site: a note goes to ops on WhatsApp. */
   noting: NotingVisit | null;
   begun?: boolean;
+  /** Asked for on the site, and not yet booked. */
+  requested?: boolean;
+  /** The consultation and the first fit in one visit, paid for once fitted. */
+  oneVisit?: boolean;
 }) {
+  const copy = home.consultation;
   const date = shortDate(props.date);
   const begun = props.begun === true;
+  const oneVisit = props.oneVisit === true;
   return (
     <>
       <section aria-labelledby="consultation">
         <h1 className={styles.label} id="consultation">
-          {home.consultation.label}
+          {oneVisit ? copy.labelOneVisit : copy.label}
         </h1>
         <div className={styles.card}>
           <p className={styles.date}>{date}</p>
           <p className={styles.window}>{props.when}</p>
           {props.place !== "" && <p className={styles.place}>{props.place}</p>}
-          <p className={styles.free}>{home.consultation.free}</p>
+          {!oneVisit && <p className={styles.free}>{copy.free}</p>}
+          {props.requested === true && <p className={styles.free}>{copy.requested}</p>}
           {!begun && (
-            <Actions what={VISIT_TYPES.consultation} date={date} changing={props.changing} noting={props.noting} />
+            <Actions
+              what={oneVisit ? ONE_VISIT : VISIT_TYPES.consultation}
+              date={date}
+              changing={props.changing}
+              noting={props.noting}
+            />
           )}
         </div>
       </section>
@@ -132,7 +158,10 @@ function WhatToExpect() {
   );
 }
 
-/** A visit paid for, or booked free, that FSM does not have yet: never said to be booked, nor its money gone. */
+/**
+ * A visit paid for, or booked free, that FSM does not have yet: never said to be booked, nor its money gone. It
+ * promises a WhatsApp only where one will go.
+ */
 function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) {
   const copy = home.beingBooked;
   return (
@@ -145,7 +174,7 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
         <p className={styles.window}>{windowText(booking.window)}</p>
         <p className={styles.place}>{bookingName(booking)}</p>
         <p className={styles.free}>{booking.paid ? copy.paid : copy.free}</p>
-        <p className={styles.free}>{copy.told}</p>
+        {booking.told && <p className={styles.free}>{copy.told}</p>}
       </div>
     </section>
   );

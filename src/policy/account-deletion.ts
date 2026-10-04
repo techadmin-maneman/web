@@ -12,21 +12,28 @@ export const DELETION_DECIDED_WITHIN_DAYS = 7;
 
 /**
  * Ours, not the prompt's (docs/decisions/0066-erasure-all-or-nothing.md): an
- * account is not erased while a visit of theirs is still to happen, or while we
- * hold a payment of theirs with no visit behind it. Erasing then would send a
- * technician to nobody, or keep money owed back. Ops cancel the visit, or
- * refund the payment, first.
+ * account is not erased while a visit of theirs is still to happen, or a booking
+ * of theirs is paid for or free but not yet a visit; while we hold a payment of
+ * theirs with no visit behind it; or while a payment link of theirs is unpaid.
+ * Erasing then would send a technician to nobody, keep money owed back, or leave
+ * Razorpay asking an erased client to pay. Ops settle each first.
  */
 export const LIVE_VISIT_STATUSES = ["scheduled", "dispatched", "in_progress"] as const;
 
-export type ErasureRefusal = "visit_booked" | "payment_held";
+export type ErasureRefusal = "visit_booked" | "payment_held" | "payment_owed";
 
-/** Why the account cannot be erased yet, a booked visit before a held payment; null when nothing stands in the way. */
+/**
+ * Why the account cannot be erased yet: a visit or booking first, since cancelling it settles its payment too, then a
+ * held payment, then an unpaid link. Null when nothing stands in the way.
+ */
 export function erasureRefusal(held: {
   readonly visits: readonly unknown[];
+  readonly bookings: readonly unknown[];
   readonly payments: readonly unknown[];
+  readonly links: readonly unknown[];
 }): ErasureRefusal | null {
-  if (held.visits.length > 0) return "visit_booked";
+  if (held.visits.length > 0 || held.bookings.length > 0) return "visit_booked";
   if (held.payments.length > 0) return "payment_held";
+  if (held.links.length > 0) return "payment_owed";
   return null;
 }

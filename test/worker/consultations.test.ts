@@ -3,13 +3,28 @@
 // Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { consultationBody, lastBookableDay } from "../../scripts/lib/test-booking.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, provedNumberCode, request } from "./helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  NOW,
+  provedNumberCode,
+  request,
+} from "./helpers.ts";
+
+/**
+ * The most round trips to D1 a booking from the site may wait on in turn. It waited on 14 when each read waited for the
+ * one before.
+ */
+const CONSULTATION_TRIPS = 9;
 
 const VISITOR = {
   name: "Karan Bhatia",
@@ -118,6 +133,25 @@ describe("POST /api/consultation", () => {
       first_choice_window: null,
       city: "Gurgaon",
     });
+  });
+
+  // PLAT-15: each D1 read is a round trip to the database's region, so the booking's reads that need nothing from each
+  // other go together. The request's log line says how many it waited on.
+  it("waits on few round trips to D1", async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    const logs = captureLogs();
+
+    const answer = await request(
+      site(),
+      "/api/consultation",
+      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
+    );
+    const line = logs.lines().find((each) => each.event === "request");
+    vi.restoreAllMocks();
+
+    expect(answer.status).toBe(201);
+    expect(line?.d1_trips).toBeLessThanOrEqual(CONSULTATION_TRIPS);
   });
 
   // The staging check and the load test book this way (scripts/staging-lead.ts, scripts/load-test-leads.ts).
@@ -662,6 +696,36 @@ describe("an invite the browser remembered", () => {
     ]);
   });
 
+  // BK-30 of the audit, 2 October 2026: a refused send to FSM's queue answered 500 after the hold was written, and
+  // the invite and the lead were never recorded. The cron books the hold half an hour on.
+  it("attributes the invite and leaves the lead when FSM's queue refuses the hold", async () => {
+    const crm = fakeQueue();
+    const fsmDown = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) };
+    const answer = await request(
+      site(),
+      "/api/consultation",
+      post({
+        ...VISITOR,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        address: ADDRESS,
+        invite_code: "RM4K7P",
+        invite_told: true,
+      }),
+      { FSM_QUEUE: fsmDown, CRM_QUEUE: crm, MESSAGE_QUEUE: fakeQueue() },
+    );
+
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", credits: true, invite: "valid" });
+    expect((await attributions()).results).toEqual([expect.objectContaining({ code: "RM4K7P", via: "consultation" })]);
+    expect(crm.sent).toEqual([{ lead_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
+    // Held and confirmed: what the cron books once the half hour has passed.
+    const hold = await env.DB.prepare("SELECT state, confirmed_at IS NOT NULL AS confirmed FROM slot_holds").first();
+    expect(hold).toEqual({ state: "held", confirmed: 1 });
+  });
+
   // PS-24: the friend is told who hears of their fit before /book sends the invite, or the invite is not sent.
   it("books without the invite when the form did not say who is told of the fit", async () => {
     const answer = await book("RM4K7P", {});
@@ -1178,6 +1242,17 @@ describe("GET /api/availability/public", () => {
   });
 
   it("opens every window the plan starts in while self-serve booking is off: the request waits for ops", async () => {
+    // A hair system ops offer, which the fortnight's one visits are held as once the generic first fit is retired.
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('first_fit', 'essential', 'Mane Man Essential', 180, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+         VALUES ('first_fit', 'essential', 3200000, 0, '2026-01-01')`,
+      ),
+    ]);
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
     const off = { selfServeBooking: false };
 

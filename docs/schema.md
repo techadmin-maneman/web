@@ -162,7 +162,7 @@ Indexes:
 
 One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 
-Made by `0038_alerts.sql`.
+Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`, `0088_alerts_retold.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -174,10 +174,13 @@ Made by `0038_alerts.sql`.
 | `first_seen_at` | TEXT | no |  |  |
 | `last_seen_at` | TEXT | no |  |  |
 | `resolved_at` | TEXT | yes |  |  |
+| `told_at` | TEXT | yes |  |  |
+| `last_told_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `alerts_open_by_key`: unique on (`key`), where `resolved_at IS NULL`
+- `alerts_open_told`: on (`told_at`), where `resolved_at IS NULL AND told_at IS NOT NULL`
 
 ## appointments
 
@@ -264,7 +267,7 @@ Triggers: `audit_log_append_only_delete`, `audit_log_append_only_update`.
 
 Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 
-Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance.sql`, `0037_cron_indexes.sql`, `0057_consent_sources_and_checkin_coordinates.sql`.
+Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance.sql`, `0037_cron_indexes.sql`, `0057_consent_sources_and_checkin_coordinates.sql`, `0085_checkin_job_event.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -281,11 +284,13 @@ Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance
 | `distance_m` | INTEGER | yes |  |  |
 | `lat` | REAL | yes |  |  |
 | `lng` | REAL | yes |  |  |
+| `job_event_id` | TEXT | yes |  | → `job_events.id` |
 
 Indexes:
 
 - `checkins_by_address`: on (`address_id`), where `address_id IS NOT NULL`
 - `checkins_by_appointment`: on (`appointment_id`, `at`)
+- `checkins_one_per_job_event`: unique on (`job_event_id`), where `job_event_id IS NOT NULL`
 
 ## checklist_items
 
@@ -1477,7 +1482,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1527,6 +1532,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `reference` | TEXT | yes |  |  |
 | `reference_year` | INTEGER | yes |  |  |
 | `reference_number` | INTEGER | yes |  |  |
+| `auto_refund_reason` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1901,7 +1907,7 @@ Made by `0002_lead_path.sql`; changed by `0054_policies_in_the_console.sql`.
 
 Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).
 
-Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0082_ops_cancel_and_close.sql`.
+Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0082_ops_cancel_and_close.sql`, `0084_cancel_refund_settled.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1921,12 +1927,14 @@ Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0082_ops_
 | `cancelled_by` | TEXT | yes |  |  |
 | `cancel_reason` | TEXT | yes |  |  |
 | `ops_terms` | TEXT | yes |  |  |
+| `refund_settled_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `visit_changes_by_appointment`: on (`appointment_id`, `created_at`)
 - `visit_changes_by_payment`: on (`payment_id`)
 - `visit_changes_one_end`: unique on (`appointment_id`), where `kind IN ('replaced', 'cancelled')`
+- `visit_changes_refund_owed`: on (`created_at`), where `kind = 'cancelled' AND refund_settled_at IS NULL`
 
 ## visits
 

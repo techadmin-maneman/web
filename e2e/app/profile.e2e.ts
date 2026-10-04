@@ -440,7 +440,7 @@ test("offers support on WhatsApp, with the design's line", async ({ page }) => {
 
 test("Your data: a download of everything held, and a concern sent to ops", async ({ page }) => {
   await loggedIn(page);
-  await expect(page.getByRole("link", { name: "Download my data" })).toHaveAttribute("href", "/api/me/export");
+  await expect(page.getByRole("link", { name: "Download my data" })).toHaveAttribute("href", "/api/me/export.html");
   await page.getByRole("button", { name: "Raise a concern" }).click();
   await page.getByRole("textbox", { name: "Your concern" }).fill("Please explain who sees my photographs.");
   await page.getByRole("button", { name: "Send" }).click();

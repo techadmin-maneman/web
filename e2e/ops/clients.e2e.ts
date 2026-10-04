@@ -76,8 +76,10 @@ const VISIT_BOOKED = {
       window_start: "2027-09-27T04:30:00.000Z",
     },
   ],
+  bookings: [],
   payments: [],
-};
+  links: [],
+} satisfies OpsReply<"/api/clients/{id}/erasure", "post", 409>;
 
 /** The client's routes, with every photograph a block of ink; `over` replaces any of them. */
 async function clientRoutes(page: Page, over: Answers = {}): Promise<void> {
@@ -100,6 +102,17 @@ async function openClient(page: Page, path: string, over: Answers = {}): Promise
 
 /** The head's figures, by the name the board letters each with. */
 const meta = (page: Page) => page.getByRole("definition");
+
+/** One of the client's tabs, apart from the navigation's section of the same name. */
+const clientTab = (page: Page, name: string) =>
+  page.getByRole("navigation", { name: CLIENT.name }).getByRole("link", { name, exact: true });
+
+/** Who invited the client, in the head. */
+const invitedBy = (page: Page) =>
+  page
+    .getByRole("term")
+    .filter({ hasText: /^Invited by$/ })
+    .locator("+ dd");
 
 // A client could be found only by their whole number, typed exactly (OPS-04).
 test("finds clients by part of a name, and sends it in the body, never in the URL", async ({ page }) => {
@@ -152,10 +165,20 @@ test("heads the page with the client's standing and the number to reach them on"
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   // "Fitted" heads a column of the pieces table beneath, so the standing is read from its own list.
   // The replacement is the month the board's head writes, never the day the pieces table carries.
-  await expect(meta(page)).toHaveText(["Fitted", "2 · use by 3 Jan 2028", "Mar 2028", MOBILE]);
+  await expect(meta(page)).toHaveText(["Fitted", "2 · use by 3 Jan 2028", "Mar 2028", MOBILE, "Vikram Sethi (VSAB23)"]);
   await expect(page.getByRole("link", { name: `Call ${CLIENT.name} on ${MOBILE}` })).toHaveAttribute(
     "href",
     `tel:${CLIENT.mobile}`,
+  );
+});
+
+// Who invited a client was shown only under Payments, below the credits form (MON-16).
+test("heads the page with who invited the client, a way to their page, and the invite's code", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}`);
+  await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
+  await expect(invitedBy(page).getByRole("link", { name: "Vikram Sethi" })).toHaveAttribute(
+    "href",
+    "/clients/22000000-0000-4000-8000-000000000009",
   );
 });
 
@@ -319,6 +342,12 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   await expect(coming).toContainText("Imran Qureshi");
   await expect(coming).toContainText("Booked · Prepaid");
   await expect(page.getByRole("region", { name: "Done" }).getByRole("row").nth(1)).toContainText("22 Aug 2027");
+  // OIA-03, BK-21: a visit to come opens on the dispatch board, on its week with its drawer open; a visit done does not.
+  await expect(coming.getByRole("link", { name: "Show on board: the visit of 25 Sep 2027" })).toHaveAttribute(
+    "href",
+    "/dispatch?from=2027-09-25&visit=33000000-0000-4000-8000-000000000002",
+  );
+  await expect(page.getByRole("region", { name: "Done" }).getByRole("link", { name: /Show on board/ })).toHaveCount(0);
 });
 
 test("says so when there is no address and no visit either way", async ({ page }) => {
@@ -517,6 +546,72 @@ test("names the discount code a payment was made with, and what it took off", as
   await expect(payment).toContainText("Code AUDTEST, Rs. 1,000 off");
 });
 
+// A booking paid for and not yet a visit read as a bare "Payment" (P2-25's note).
+test("names a payment for a booking not yet a visit by what is being booked", async ({ page }) => {
+  const [paid] = RECORD.payments;
+  const forBooking = {
+    ...RECORD,
+    payments:
+      paid === undefined
+        ? []
+        : [{ ...paid, visit: null, booking: { type: "first_fit", date: "2027-10-04", under_way: true } }],
+  } satisfies OpsReply<"/api/clients/{id}">;
+  await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(forBooking) });
+  const payment = page.getByRole("region", { name: "Payments and refunds" }).getByRole("row").nth(1);
+  await expect(payment).toContainText("First fit of 4 Oct 2027");
+});
+
+// MON-16 and OIA-08: a client who lost Razorpay's text could not be sent the link again; the address sat only in D1.
+test("lists the payment links sent, and copies an open one's address to send again", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await openClient(page, `/clients/${CLIENT.id}/payments`);
+  const links = page.getByRole("region", { name: "Payment links" });
+  const open = links.getByRole("row").nth(1);
+  await expect(open).toContainText("21 Sep 2027");
+  await expect(open).toContainText("Service visit, visit of 2 Oct 2027");
+  await expect(open).toContainText("Rs. 2,360");
+  await expect(open).toContainText("Waiting to be paid · Ref MM-2027-0902");
+  await expect(open).toContainText("https://rzp.io/i/MMsv902");
+
+  const copy = open.getByRole("button");
+  await expect(copy).toHaveAccessibleName("Copy link · Service visit, visit of 2 Oct 2027");
+  await copy.click();
+  await expect(copy).toHaveAccessibleName("Copied · Service visit, visit of 2 Oct 2027");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("https://rzp.io/i/MMsv902");
+
+  const paidLink = links.getByRole("row").nth(2);
+  await expect(paidLink).toContainText("Paid 20 Aug 2027 · Ref MM-2027-0841");
+  await expect(paidLink.getByRole("button")).toHaveCount(0);
+});
+
+test("says where each finished visit's invoice stands in Books", async ({ page }) => {
+  const withDraft = {
+    ...RECORD,
+    invoices: [
+      {
+        visit_id: "33000000-0000-4000-8000-000000000003",
+        date: "2027-09-01",
+        type: "replacement",
+        state: "draft",
+        issued_at: null,
+      },
+      ...RECORD.invoices,
+    ],
+  } satisfies OpsReply<"/api/clients/{id}">;
+  await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(withDraft) });
+  const invoices = page.getByRole("region", { name: "Invoices" }).getByRole("row");
+  await expect(invoices.nth(1)).toContainText("Replacement of 1 Sep 2027");
+  await expect(invoices.nth(1)).toContainText("Draft in Books, not sent");
+  await expect(invoices.nth(2)).toContainText("Service visit of 22 Aug 2027");
+  await expect(invoices.nth(2)).toContainText("Sent 22 Aug 2027");
+});
+
+test("says so when nothing was linked or invoiced yet", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(NEW_RECORD) });
+  await expect(page.getByRole("region", { name: "Payment links" })).toContainText("No payment links yet.");
+  await expect(page.getByRole("region", { name: "Invoices" })).toContainText("No finished visit to invoice yet.");
+});
+
 // A credit given or taken in error once needed SQL to put right (BIZ-15).
 test("puts a client's credits right, with the reason, and shows the balance it answers", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
@@ -564,14 +659,9 @@ test("says so when the API would take away more than the client holds", async ({
 });
 
 // A friend who booked away from the invite's page earned their referrer nothing until ops could attach it (ADR 0089).
-test("names the invite a client came with, who sent it, and where its visits stand", async ({ page }) => {
+test("says where the visits of the invite a client came with stand", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`);
   const invite = page.getByRole("region", { name: "Invite" });
-  await expect(invite).toContainText("CodeVSAB23");
-  await expect(invite.getByRole("link", { name: "Vikram Sethi" })).toHaveAttribute(
-    "href",
-    "/clients/22000000-0000-4000-8000-000000000009",
-  );
   await expect(invite).toContainText("What it earnsGiven");
   await expect(invite).toContainText("Since20 Oct 2026");
   await expect(invite.getByText("Attached by")).toHaveCount(0);
@@ -607,7 +697,8 @@ test("attaches an invite to a client who came with none, with why, and shows it 
   expect((await sent).postDataJSON()).toEqual({ code: "rm4k7p", reason: "Told us Rohit sent him" });
 
   await expect(invite.getByRole("status")).toHaveText("Attached. The CRM is sent it too.");
-  await expect(invite).toContainText("CodeRM4K7P");
+  // The head names who sent it as the API answered, without the record being read again.
+  await expect(invitedBy(page)).toHaveText("Rohit Malhotra (RM4K7P)");
   await expect(invite).toContainText("What it earnsGiven when this client is fitted");
   await expect(invite).toContainText("Attached byops@maneman.in");
   await expect(invite).toContainText("WhyTold us Rohit sent him");
@@ -650,7 +741,7 @@ test.describe("says why an invite was not attached", () => {
     await invite.getByLabel("Why").fill("Told us Rohit sent him");
     await invite.getByRole("button", { name: "Attach the invite" }).click();
     await expect(invite.getByRole("status")).toHaveText("They came with this invite already, so nothing was attached.");
-    await expect(invite).toContainText("CodeVSAB23");
+    await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
   });
 });
 
@@ -891,8 +982,10 @@ test("moves between the tabs without reading the record again, and keeps the pho
   // Visits, Payments and History are drawn from the record already loaded, so they ask the API for nothing.
   await page.getByRole("link", { name: "Visits" }).click();
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
-  await page.getByRole("link", { name: "Payments" }).click();
-  await expect(page.getByText("Service visit of 22 Aug 2027")).toBeVisible();
+  await clientTab(page, "Payments").click();
+  await expect(page.getByRole("region", { name: "Payments and refunds" })).toContainText(
+    "Service visit of 22 Aug 2027",
+  );
   await page.getByRole("link", { name: "History" }).click();
   await expect(page.getByRole("region", { name: "History" })).toBeVisible();
   // Coming back finds the same opening, logged once: a tab changed is not a second look.
@@ -935,7 +1028,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
   await clean("visits");
 
-  await page.getByRole("link", { name: "Payments" }).click();
+  await clientTab(page, "Payments").click();
   await expect(page.getByRole("region", { name: "Free service visits" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Invite" })).toBeVisible();
   await clean("payments");

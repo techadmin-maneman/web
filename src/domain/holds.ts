@@ -17,6 +17,7 @@ import {
 } from "../policy/moving-a-visit.ts";
 import { spendableCredits } from "./credits.ts";
 import { holdDiscount } from "./discount-code-holds.ts";
+import { consentGiven } from "./messages.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
 import { graceEndOf, graceEnds, heldMinutes, visitTimes } from "./scheduling.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
@@ -83,12 +84,17 @@ const hasLapsed = (row: HoldRow, now: Date) =>
 
 async function holdOf(db: D1Database, row: HoldRow, now: Date) {
   const minutes = heldMinutes(row);
-  const schedule = await loadSlotSchedule(db);
+  const lateCharge = row.late_change_charge ?? LATE_CHANGE_CHARGES[row.type];
+  const price = { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent };
+  const [schedule, lateFee, credit, discount] = await Promise.all([
+    loadSlotSchedule(db),
+    lateFeeOf(db, row, lateCharge),
+    creditOn(db, row, now),
+    holdDiscount(db, { id: row.id, price }),
+  ]);
   const { start, end } = visitTimes(row.date, row.start_unit, minutes, schedule);
   const windowStarts = indiaInstant(row.date, windowTimesOf(schedule.on(row.date))[row.window_label].start);
   const noticeHours = row.change_notice_hours ?? FREE_CHANGE_NOTICE_HOURS;
-  const lateCharge = row.late_change_charge ?? LATE_CHANGE_CHARGES[row.type];
-  const price = { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent };
   return {
     id: row.id,
     type: row.type,
@@ -99,7 +105,7 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     ends_at: end.toISOString(),
     technician: { name: row.technician_name, initials: row.technician_initials },
     price,
-    late_fee: await lateFeeOf(db, row, lateCharge),
+    late_fee: lateFee,
     free_until: freeUntil(windowStarts, noticeHours).toISOString(),
     change_notice_hours: noticeHours,
     late_change_charge: lateCharge,
@@ -109,8 +115,8 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     paid: row.paid === 1,
     visit_id: row.appointment_id,
     moves_visit_id: row.moves_appointment_id,
-    credit: await creditOn(db, row, now),
-    discount: await holdDiscount(db, { id: row.id, price }),
+    credit,
+    discount,
   };
 }
 
@@ -159,6 +165,11 @@ export interface BookingUnderWay {
   readonly paid: boolean;
   /** A consultation and fit in one visit. */
   readonly one_visit: boolean;
+  /**
+   * Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their
+   * consent, else only with their consent to WhatsApp about visits.
+   */
+  readonly told: boolean;
 }
 
 /**
@@ -183,12 +194,14 @@ export async function bookingUnderWay(db: D1Database, personId: string): Promise
       one_visit: number;
     }>();
   if (row === null) return null;
+  const paid = row.amount > 0 && row.use_credit !== 1;
   return {
     type: row.type,
     date: row.date,
     window: row.window_label,
-    paid: row.amount > 0 && row.use_credit !== 1,
+    paid,
     one_visit: row.one_visit === 1,
+    told: paid || (await consentGiven(db, personId, "whatsapp_visits")),
   };
 }
 

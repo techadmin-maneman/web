@@ -14,10 +14,10 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { queueMessage } from "../http/queue-message.ts";
 import { secretsMatch } from "../lib/hash.ts";
 import { stopByReply } from "../domain/stop-messages.ts";
 import { isStopReply } from "../policy/consents.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 
 /** Receipts that say something new. SERVER_ACK (reached WhatsApp's servers) and PENDING do not. */
 const DELIVERED = new Set(["DELIVERY_ACK", "READ", "PLAYED"]);
@@ -140,7 +140,7 @@ async function takeReplies(c: Context<AppEnv>, body: unknown): Promise<void> {
     const answerId = await stopByReply(c.env.DB, { mobileE164, requestId, now: deps.now() });
     if (answerId === null) continue;
     stopped += 1;
-    await c.env.MESSAGE_QUEUE.send({ message_id: answerId, request_id: requestId } satisfies MessagingMessage);
+    await queueMessage(c, answerId);
   }
   log.info("evolution_replies", { messages: messages.length, stopped });
 }

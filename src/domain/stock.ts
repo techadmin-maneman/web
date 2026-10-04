@@ -23,6 +23,7 @@ import { countDifference, isLow } from "../policy/stock.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { auditStatement, auditStatementIfWritten, type AuditActor } from "./audit.ts";
 import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
+import { isWithin } from "./places.ts";
 
 /** Where stock is kept: a technician's kit, by his ID, or the central store, null. */
 export type Place = string | null;
@@ -377,10 +378,40 @@ export interface StockView {
   readonly movements: readonly StockMovement[];
 }
 
+interface TechnicianRow {
+  readonly id: string;
+  readonly name: string;
+  readonly active: number;
+}
+
+/**
+ * The places the screen shows: the central store where the caller reaches everywhere, then each kit within reach. A
+ * technician who left keeps his column while his kit holds anything, so it can be counted or moved.
+ */
+function placesShown(
+  technicians: readonly TechnicianRow[],
+  holding: readonly { readonly technician_id: string | null }[],
+  kits: ReadonlySet<string> | null,
+): StockPlace[] {
+  const store: StockPlace[] = kits === null ? [{ technicianId: null, name: null, active: true }] : [];
+  const shown = technicians.filter(
+    (row) => isWithin(kits, row.id) && (row.active === 1 || holding.some((each) => each.technician_id === row.id)),
+  );
+  return [...store, ...shown.map((row) => ({ technicianId: row.id, name: row.name, active: row.active === 1 }))];
+}
+
 /** How many of the latest movements the screen shows beneath the table. */
 const MOVEMENTS_SHOWN = 30;
 
-export async function stockView(db: D1Database, now: Date): Promise<StockView> {
+/**
+ * What the places hold. `kits` are the technicians whose kits the caller's cities reach; null reaches every kit and the
+ * central store, which is in no city.
+ */
+export async function stockView(
+  db: D1Database,
+  now: Date,
+  kits: ReadonlySet<string> | null = null,
+): Promise<StockView> {
   const today = indiaDate(now);
   const [balances, technicians, recent] = await db.batch([
     db.prepare(
@@ -394,29 +425,26 @@ export async function stockView(db: D1Database, now: Date): Promise<StockView> {
     db
       .prepare(
         `SELECT created_at, consumable_code, technician_id, quantity, reason, actor, note FROM stock_movements
+         WHERE ?2 IS NULL OR technician_id IN (SELECT value FROM json_each(?2))
          ORDER BY created_at DESC, rowid DESC LIMIT ?1`,
       )
-      .bind(MOVEMENTS_SHOWN),
+      .bind(MOVEMENTS_SHOWN, kits === null ? null : JSON.stringify([...kits])),
   ]);
-  const held = (balances?.results ?? []) as {
-    consumable_code: string;
-    technician_id: string | null;
-    quantity: number;
-    counted_at: string | null;
-  }[];
+  const held = (
+    (balances?.results ?? []) as {
+      consumable_code: string;
+      technician_id: string | null;
+      quantity: number;
+      counted_at: string | null;
+    }[]
+  ).filter((row) => isWithin(kits, row.technician_id));
   const holding = held.filter((row) => row.quantity !== 0);
   const heldSomewhere = new Set(holding.map((row) => row.consumable_code));
   const consumables = (await allConsumables(db)).filter(
     (consumable) => isOffered(consumable, today) || heldSomewhere.has(consumable.code),
   );
-  // A technician who left keeps his column while his kit holds anything, so it can be counted or moved.
-  const kits = ((technicians?.results ?? []) as { id: string; name: string; active: number }[]).filter(
-    (row) => row.active === 1 || holding.some((each) => each.technician_id === row.id),
-  );
-  const places: StockPlace[] = [
-    { technicianId: null, name: null, active: true },
-    ...kits.map((row) => ({ technicianId: row.id, name: row.name, active: row.active === 1 })),
-  ];
+  const technicianRows = (technicians?.results ?? []) as TechnicianRow[];
+  const places = placesShown(technicianRows, holding, kits);
 
   const holdings = consumables.flatMap((consumable) =>
     places.map((place): Holding => {

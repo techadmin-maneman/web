@@ -195,5 +195,5 @@ export const cardUrl = (version: number) => `/api/refer/card?v=${String(version)
 /** The same card as a file, for the share sheet to send. */
 export const storedCard = (version: number) => client.request<Blob>("GET", cardUrl(version), { file: true });
 
-/** Everything held about the client, as a file the browser saves. */
-export const EXPORT_URL = "/api/me/export";
+/** Everything held about the client, as a page the browser saves and they can read. */
+export const EXPORT_URL = "/api/me/export.html";
