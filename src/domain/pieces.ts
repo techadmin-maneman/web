@@ -5,6 +5,8 @@
 //
 // The technician's label lookup reads these rows, so scanning a label works with no signal.
 
+import { pieceBodyOf } from "./job-event-bodies.ts";
+
 export interface Piece {
   readonly id: string;
   readonly piece_code: string;
@@ -76,26 +78,18 @@ export type PieceField = "piece_code" | "old_piece";
  * The pieces a piece step's body names. A failure_reason on the piece itself marks that piece failed and fits nothing;
  * a one visit the client decided against names none.
  */
-export function pieceStepOf(body: Record<string, unknown>): PieceStep {
+export function pieceStepOf(body: unknown): PieceStep {
+  const piece = pieceBodyOf(body);
+  if (piece === null || "declined" in piece) return { fitted: null, failed: [] };
   const failed: PieceFailure[] = [];
-  const oldPiece = oldPieceOf(body.old_piece);
-  if (oldPiece !== null) failed.push({ ...oldPiece, field: "old_piece" });
-
-  const code = textOf(body.piece_code);
-  if (code === null) return { fitted: null, failed };
-  const failure = textOf(body.failure_reason);
+  const oldPiece = piece.old_piece ?? null;
+  if (oldPiece !== null) {
+    failed.push({ code: oldPiece.piece_code, reason: oldPiece.failure_reason, field: "old_piece" });
+  }
+  const code = piece.piece_code;
+  const failure = piece.failure_reason ?? null;
   if (failure !== null) return { fitted: null, failed: [...failed, { code, reason: failure, field: "piece_code" }] };
-  return { fitted: { code, base: textOf(body.base), supplierLot: textOf(body.supplier_lot) }, failed };
-}
-
-const textOf = (value: unknown): string | null => (typeof value === "string" ? value : null);
-
-function oldPieceOf(value: unknown): { code: string; reason: string } | null {
-  if (typeof value !== "object" || value === null) return null;
-  const piece = value as { piece_code?: unknown; failure_reason?: unknown };
-  const code = textOf(piece.piece_code);
-  const reason = textOf(piece.failure_reason);
-  return code === null || reason === null ? null : { code, reason };
+  return { fitted: { code, base: piece.base ?? null, supplierLot: piece.supplier_lot ?? null }, failed };
 }
 
 /**

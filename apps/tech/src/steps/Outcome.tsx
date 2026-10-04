@@ -20,7 +20,7 @@
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md, 0108-discount-codes.md).
 
 import { useState } from "react";
-import type { Job, PartialReason } from "../api.ts";
+import type { EventBody, Job, PartialReason } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { choiceOf, type ClientChoice } from "../lib/progress.ts";
 import { Failed, Loading } from "../states/States.tsx";
@@ -87,7 +87,7 @@ function Choosing({
   job: Job;
   clientChoice: ClientChoice | null;
   refused: Queued | null;
-  onFinish: (body: unknown) => void;
+  onFinish: (body: EventBody<"outcome">) => void;
   onBack: () => void;
 }) {
   const reasons = job.partial_reasons;

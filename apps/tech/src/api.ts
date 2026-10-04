@@ -2,7 +2,9 @@
 // client the apps share (packages/web-kit/api.ts). Every shape here is the
 // API's own: `npm run openapi` writes ./api-schema.ts from the schemas that
 // serve the routes, and each call's path, query, body and answer are checked
-// against it, so nothing below is this app's reading of a board.
+// against it, so nothing below is this app's reading of a board. A step's body
+// is checked as the outbox queues it (EventBody, ./routes.ts); `send` replays it
+// as the phone kept it, which may be from an earlier build.
 //
 // Every call is same-origin, so the session cookie goes with it and the Origin
 // matches (docs/decisions/0026-hosts-and-surfaces.md). Every write carries the
@@ -25,6 +27,7 @@ export {
   TECHNICIAN_INACTIVE,
   TOO_EARLY_TO_ARRIVE,
   TOO_EARLY_TO_CLOSE,
+  type EventBody,
   type EventKind,
 } from "./routes.ts";
 

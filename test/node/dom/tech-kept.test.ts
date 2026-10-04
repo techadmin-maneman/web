@@ -224,7 +224,7 @@ describe("a day's jobs", () => {
 
   it("does not let go of a job whose work is still on the phone", async () => {
     await keepJob(card("old", LAST_WEEK));
-    await queue("checklist", "old", { items: [] });
+    await queue("checklist", "old", { done: [] });
     api({ [`/api/tech/jobs?date=${TODAY}`]: { status: 200, json: { date: TODAY, jobs: [] } } });
 
     await loadDay(TODAY);

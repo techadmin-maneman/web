@@ -37,7 +37,7 @@ async function aDaysWork(technicianId: string | null = IMRAN): Promise<string> {
   await keepDay(DAY, [{ id: JOB, date: DAY } as JobSummary]);
   await keepJob({ id: JOB, client: { name: "Rohit Malhotra", mobile: "+919810000001", note: null } } as Job);
   await keepArrival(JOB, { passed: true, distance_m: 40 } as CheckIn);
-  await queue("start", JOB, {});
+  await queue("start", JOB, null);
   await keepFrame(JOB, "front", "before", new Blob(["frame"]));
   return phone;
 }

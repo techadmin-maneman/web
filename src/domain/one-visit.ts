@@ -12,13 +12,16 @@ import { STANDARD_TIER } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { Decision } from "../policy/one-visit.ts";
 import { releaseDeclined } from "./discount-code-uses.ts";
+import { pieceBodyOf } from "./job-event-bodies.ts";
 import { eventsOf } from "./job-events.ts";
 import { sendPaymentLink, type LinkDeps, type LinkSent } from "./payment-links.ts";
 
 /** The client's decision, from the piece step's body; null for a body that records neither. */
-export function decisionOf(body: Record<string, unknown>): Decision | null {
-  if (body.declined === true) return { declined: true };
-  return typeof body.product === "string" ? { product: body.product } : null;
+export function decisionOf(body: unknown): Decision | null {
+  const piece = pieceBodyOf(body);
+  if (piece === null) return null;
+  if ("declined" in piece) return { declined: true };
+  return piece.product === undefined ? null : { product: piece.product };
 }
 
 /** The client's decision as the visit's latest piece step recorded it; null before one landed. */

@@ -73,7 +73,13 @@ import {
   type MovedTo,
   type Superseding,
 } from "../domain/job-events.ts";
-import { ConsumablesRequestSchema, OutcomeRequestSchema } from "../domain/job-event-bodies.ts";
+import {
+  ChecklistRequestSchema,
+  ConsumablesRequestSchema,
+  OutcomeRequestSchema,
+  PieceFittedSchema,
+  PieceRequestSchema,
+} from "../domain/job-event-bodies.ts";
 import { jobRecordOf, type LandingStep } from "../domain/job-record.ts";
 import { pieceLabelTaken, pieceStepOf, type PieceField } from "../domain/pieces.ts";
 import { checklistOf, declinedChecklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
@@ -441,45 +447,6 @@ const PhotosRequestSchema = z
   .object({ phase: z.enum(PHASES) })
   .strict()
   .openapi("TechnicianPhotosRequest");
-
-const ChecklistRequestSchema = z
-  .object({ done: z.array(z.string().min(1).max(64)).max(20) })
-  .strict()
-  .openapi("ChecklistRequest");
-
-const PieceFittedSchema = z
-  .object({
-    piece_code: z.string().min(3).max(40),
-    base: z.string().min(1).max(60).nullable().optional(),
-    supplier_lot: z.string().min(1).max(60).nullable().optional(),
-    failure_reason: z.string().min(1).max(200).nullable().optional(),
-    old_piece: z
-      .object({ piece_code: z.string().min(3).max(40), failure_reason: z.string().min(1).max(200) })
-      .strict()
-      .nullable()
-      .optional()
-      .openapi({ description: "On a replacement: the piece that came off, and why it failed." }),
-    product: z.string().min(1).max(32).optional().openapi({
-      description:
-        "On a one visit, and only there: the product the client chose, by its tier from the card's products.",
-    }),
-  })
-  .strict()
-  .openapi("PieceFitted", {
-    description:
-      "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing.",
-  });
-
-const PieceDeclinedSchema = z
-  .object({ declined: z.literal(true) })
-  .strict()
-  .openapi("PieceDeclined", {
-    description:
-      "On a one visit, and only there: the client decided against the fit, so nothing was fitted, and closing the " +
-      "visit as done makes it a consultation.",
-  });
-
-const PieceRequestSchema = z.union([PieceFittedSchema, PieceDeclinedSchema]).openapi("PieceRequest");
 
 const NoShowSchema = z
   .object({

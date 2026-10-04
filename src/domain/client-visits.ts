@@ -10,6 +10,7 @@ import { signToken } from "../lib/signed-token.ts";
 import type { OneVisitState } from "../policy/one-visit.ts";
 import { namesMoreThanItsKind } from "../policy/services.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
+import { tickedItemsOf } from "./job-event-bodies.ts";
 import { jobSheet } from "./job-sheet-settings.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
 import { oneVisitPrice, type OneVisitPrice } from "./one-visit-money.ts";
@@ -327,8 +328,7 @@ async function whatWasDone(db: D1Database, visitId: string, type: VisitType | nu
     .bind(visitId)
     .first<{ body: string }>();
   if (event === null) return null;
-  const { done } = JSON.parse(event.body) as { done?: unknown };
-  const ticked = new Set(Array.isArray(done) ? done : []);
+  const ticked = new Set(tickedItemsOf(JSON.parse(event.body)));
   const list = (await jobSheet(db)).checklists[type];
   return [...list.items, ...list.retired].filter((item) => ticked.has(item.id)).map((item) => item.label);
 }

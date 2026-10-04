@@ -6,6 +6,8 @@
 // `apps/tech/src/api-schema.ts` from the same schemas that serve the routes, so
 // the app cannot drift from them without failing to compile.
 
+import type { paths } from "./api-schema.ts";
+
 export interface TechRoute {
   readonly method: "GET" | "POST" | "PUT";
   /** The path under the technician host's /api, as the OpenAPI document writes it. */
@@ -86,7 +88,7 @@ export const EVENT_KINDS = [
 export type EventKind = (typeof EVENT_KINDS)[number];
 
 /** The route one of the outbox's events is sent to. Both photograph sets go to the one route. */
-const ROUTE_OF: Readonly<Record<EventKind, string>> = {
+const ROUTE_OF = {
   check_in: "checkin",
   start: "start",
   before_photos: "photos",
@@ -97,7 +99,16 @@ const ROUTE_OF: Readonly<Record<EventKind, string>> = {
   profile: "profile",
   outcome: "outcome",
   no_show: "no-show",
-};
+} as const satisfies Record<EventKind, string>;
+
+type EventRoute<K extends EventKind> = paths[`/api/tech/jobs/{id}/${(typeof ROUTE_OF)[K]}`]["post"];
+
+/** What an event of this kind sends: its route's request body, as the API's document has it; null for a route that takes none. */
+export type EventBody<K extends EventKind> = K extends EventKind
+  ? EventRoute<K> extends { requestBody: { content: { "application/json": infer Body } } }
+    ? Body
+    : null
+  : never;
 
 export function pathFor(kind: EventKind, jobId: string): string {
   return `/tech/jobs/${jobId}/${ROUTE_OF[kind]}`;

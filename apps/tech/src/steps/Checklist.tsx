@@ -11,7 +11,7 @@
 import { GLYPHS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { useState } from "react";
-import type { Job } from "../api.ts";
+import type { EventBody, Job } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { BOX_TICK_STROKE } from "../icons.ts";
 import { declinedTheFit } from "../lib/progress.ts";
@@ -40,7 +40,7 @@ function Ticking({
   job: Job;
   declined: boolean;
   refused: Queued | null;
-  onFinish: (body: unknown) => void;
+  onFinish: (body: EventBody<"checklist">) => void;
   onBack: () => void;
 }) {
   const items = declined ? job.checklist_if_declined : job.checklist;

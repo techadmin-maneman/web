@@ -15,7 +15,7 @@
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useState } from "react";
-import type { Job } from "../api.ts";
+import type { EventBody, Job } from "../api.ts";
 import { closed, done, stepsOf } from "../lib/progress.ts";
 import type { Loaded } from "../lib/useDay.ts";
 import { useJob } from "../lib/useDay.ts";
@@ -26,7 +26,7 @@ import { correct, queue, replay, type Queued } from "../store/outbox.ts";
 
 const LOADING: Loaded<Job> = { state: "loading" };
 
-export interface Standing {
+export interface Standing<K extends InJobStep> {
   /** Loading until the outbox has been read as well, so a step being put right starts from what it sent. */
   readonly loaded: Loaded<Job>;
   readonly retry: () => void;
@@ -35,11 +35,11 @@ export interface Standing {
   /** Every write still on the phone, of every job. */
   readonly queued: readonly Queued[];
   /** Queues this step's write, once however often it is tapped, and opens the next screen. */
-  readonly finish: (body: unknown) => Promise<void>;
+  readonly finish: (body: EventBody<K>) => Promise<void>;
   readonly back: () => void;
 }
 
-export function useStep(id: string, step: InJobStep): Standing {
+export function useStep<K extends InJobStep>(id: string, step: K): Standing<K> {
   const waiting = useOutbox();
   const [card, retry] = useJob(id, signatureOf(waiting));
   const [, once] = useOneAtATime();
@@ -56,7 +56,7 @@ export function useStep(id: string, step: InJobStep): Standing {
     if (leaves) redirect(`/jobs/${id}`);
   }, [leaves, id]);
 
-  const finish = (body: unknown) =>
+  const finish = (body: EventBody<K>) =>
     once(async () => {
       if (job === null) return;
       setFinishing(true);
