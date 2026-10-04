@@ -1,4 +1,4 @@
--- Migration number: 0085
+-- Migration number: 0086
 -- Why a booking refunded its hold by itself, which the client's Visits tab in the console says: 'lapsed', paid after
 -- the hold and its grace had run out; 'not_movable', a move whose visit the technician had already begun. Null for a
 -- hold never refunded, and for one ops refunded.
