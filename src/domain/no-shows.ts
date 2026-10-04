@@ -79,10 +79,7 @@ export interface NoShowCase {
   readonly message_state: MessageState;
   readonly message_delivered_at: string | null;
   readonly wait_ends_at: string;
-  /**
-   * The wait ran from a check-in before the booked start, so the case closed before the client's own wait had run:
-   * ops waive it, or give their reason to charge.
-   */
+  /** The case closed before the client's own wait, from the booked start, had run: ops waive it, or give their reason to charge. */
   readonly closed_early: boolean;
   readonly closed_at: string | null;
   /** When the case opened, which is when it started waiting for ops. */
@@ -284,10 +281,11 @@ export async function noShowNotes(
   return new Map(results.map((row) => [row.appointment_id, noteOf(row, now)]));
 }
 
-/** Whether a case's wait ran from before the visit's booked start, as no wait counted from the booked start can. */
-function waitedFromBeforeTheStart(row: CaseRow): boolean {
-  if (row.window_start === null) return false;
-  return Date.parse(row.wait_started_at) < Date.parse(row.window_start);
+/** Whether a case closed before the same wait, counted from the booked start, would have run out. */
+function closedBeforeTheClientsWait(row: CaseRow): boolean {
+  if (row.window_start === null || row.closed_at === null) return false;
+  const waitMs = Date.parse(row.wait_ends_at) - Date.parse(row.wait_started_at);
+  return Date.parse(row.closed_at) < Date.parse(row.window_start) + waitMs;
 }
 
 /** The cases ops have still to rule on, oldest first, then the decided ones. */
@@ -335,7 +333,7 @@ export async function listNoShowCases(
     message_state: messageStateOf(row),
     message_delivered_at: row.message_delivered_at,
     wait_ends_at: row.wait_ends_at,
-    closed_early: waitedFromBeforeTheStart(row),
+    closed_early: closedBeforeTheClientsWait(row),
     closed_at: row.closed_at,
     opened_at: row.created_at,
     decision: row.decision,

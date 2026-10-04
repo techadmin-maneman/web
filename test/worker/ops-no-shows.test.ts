@@ -179,6 +179,10 @@ describe("GET /api/no-shows", () => {
       minutes_late: -90,
       closed_early: true,
     });
+
+    // Closed sixteen minutes after the booked start: the client's own wait had run.
+    await env.DB.prepare("UPDATE no_show_cases SET closed_at = '2026-09-19T03:46:00.000Z'").run();
+    expect((await cases())[0]).toMatchObject({ closed_early: false });
   });
 
   it("gives the moment it opened and the day it falls due, as the Tasks board reads it", async () => {
