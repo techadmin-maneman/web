@@ -125,6 +125,7 @@ describe("restoring the whole database", () => {
       "stock_balances",
       "last_visits",
       "ops_settings_snapshot",
+      "board_version",
     ]);
   });
 });

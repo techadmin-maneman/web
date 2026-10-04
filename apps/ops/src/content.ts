@@ -2004,14 +2004,14 @@ export const grievances = {
     /** Beneath the name: the number to answer on, and the day it was raised. */
     raised: (mobile: string, date: string) => `${mobile} · raised ${date}`,
     label: "Your answer",
-    hint: "Kept with the grievance, under your name. The audit log records that you answered it.",
+    hint: "The client sees this in their app. The audit log records that you answered it.",
     send: "Record the answer and close it",
     sending: "Closing",
     empty: "No grievance is open.",
-    /** Recording an answer sends nothing: the client hears from whoever answers them. */
+    /** Recording an answer sends nothing: the client hears from whoever answers them, and reads it in the app. */
     note: (days: number) =>
-      `The client is told in the app that we answer within ${String(days)} days, on WhatsApp. ` +
-      "Nothing here messages them: send your answer, then record it.",
+      `The client is told in the app that we answer within ${String(days)} days. ` +
+      "Nothing here messages them: answer on WhatsApp, then record the answer here. Their app shows it.",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "Someone has answered this one already. Reload to see the queue as it stands.",
