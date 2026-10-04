@@ -1,6 +1,6 @@
 # 0109. The console by departments, and who may do what in it
 
-- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care by place
+- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care and Finance by place
 - Date: 2026-10-02
 
 ## Context
@@ -42,7 +42,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 - A person Access lets in who is not on the list, or is switched off, is refused everything (`403 not_permitted`) except `GET /api/whoami`, which tells the console to say so, and the health check.
 - A route `ROUTE_NEEDS` does not list is refused. HEAD asks what GET asks, as Hono answers it with the GET route.
-- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today the Staff routes and Customer Care's do (below, "Customer Care by place"). So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
+- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today the Staff routes, Customer Care's and Finance's do (below, "Customer Care by place" and "Finance by place"). So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
 
 **The owner is the national super-admin:** every department at Manage, nationally.
 
@@ -98,6 +98,13 @@ Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_k
 - The cities are those the caller's grants reach at the route's own level (`routeReach` in `src/http/staff-access.ts`). Customer Care View nationally with Act in Delhi reads every client but corrects, answers and decides only in Delhi.
 - A list leaves out what is elsewhere. A client or a request elsewhere is answered `404 not_found`, as one that does not exist, so a city lead cannot tell that it does.
 - Tasks still needs a national grant until Operations' lists keep to the caller's cities.
+
+## Finance by place (amended 4 October 2026)
+
+- A day's money, no-shows and their disputes, a client's credits and a code on a visit keep to the caller's cities and are `ownPlaces`, at the route's own level, as Customer Care's are. The day's figures and charges count only what was paid, refunded or kept in those cities. A case, a dispute, a client or a visit elsewhere is `404 not_found`.
+- Waiving a no-show and refunding a disputed charge ask Finance Manage in the record's own city (`permitsOn` in `src/http/staff-access.ts`). Finance Act nationally with Manage in Delhi charges and upholds anywhere, but waives and refunds only in Delhi; elsewhere it is `403 not_permitted`.
+- Codes, prices and the price book are the same in every place: any place's Finance View reads them. Making or switching off a code and changing a price still need a national grant.
+- Refunding a held booking stays national: held bookings wait on FSM, which is leaving.
 
 ## Consequences
 

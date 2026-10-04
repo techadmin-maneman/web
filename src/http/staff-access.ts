@@ -71,9 +71,30 @@ export async function routeReach(c: Context<AppEnv>): Promise<PlacesReached> {
   return placesReached(await callerAccess(c), need.department, need.level);
 }
 
-/** Whether a record is within this route's reach for the caller. One with no city is reached only everywhere. */
-export async function withinRouteReach(c: Context<AppEnv>, kind: PlacedRecord, id: string): Promise<boolean> {
-  const reached = await routeReach(c);
+/** Whether a record is within the places reached. One with no city is reached only everywhere. */
+async function recordWithin(
+  c: Context<AppEnv>,
+  reached: PlacesReached,
+  kind: PlacedRecord,
+  id: string,
+): Promise<boolean> {
   if (reached.kind === "everywhere") return true;
   return reachesCity(reached, await cityOf(c.env.DB, kind, id));
+}
+
+/** Whether a record is within this route's reach for the caller. */
+export async function withinRouteReach(c: Context<AppEnv>, kind: PlacedRecord, id: string): Promise<boolean> {
+  return recordWithin(c, await routeReach(c), kind, id);
+}
+
+/**
+ * As `permits`, for a choice on one record, as waiving a no-show's charge is: the caller's grants must reach what it
+ * asks in the record's city.
+ */
+export async function permitsOn(c: Context<AppEnv>, need: RouteNeed, kind: PlacedRecord, id: string): Promise<boolean> {
+  if (need.department === OWN_DEPARTMENTS) throw new Error("a choice on one record asks one department");
+  const access = await callerAccess(c);
+  const reached = placesReached(access, need.department, need.level);
+  const allowed = meets(access, need) && (await recordWithin(c, reached, kind, id));
+  return goesAhead(c, access, allowed, askedOf(need));
 }

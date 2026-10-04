@@ -30,7 +30,7 @@ import { afterRuling } from "../domain/after-a-ruling.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import { permits, withinRouteReach } from "../http/staff-access.ts";
+import { permitsOn, routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { WAIVING_A_NO_SHOW } from "../policy/console-routes.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { roster, type RosterTechnician } from "../domain/technician-roster.ts";
@@ -227,7 +227,7 @@ const LeaveRecordedSchema = z
 const noShowsRoute = createRoute({
   method: "get",
   path: "/api/no-shows",
-  summary: "No-show cases: undecided first, each with its three facts",
+  summary: "No-show cases in the caller's cities: undecided first, each with its three facts",
   request: { query: z.object({ decision: z.enum([...NO_SHOW_DECISIONS, "all"]).default("undecided") }) },
   responses: { 200: { description: "The cases", ...json(NoShowsSchema) }, 403: errorResponse("access_required") },
 });
@@ -240,8 +240,8 @@ const decisionRoute = createRoute({
   responses: {
     200: { description: "Recorded", ...json(z.object({ decided: z.boolean() }).strict()) },
     400: errorResponse("invalid_request: a ruling needs a reason"),
-    403: errorResponse("access_required, or not_permitted: waiving asks Finance MANAGE"),
-    404: errorResponse("not_found: no such case, or it was ruled on already"),
+    403: errorResponse("access_required, or not_permitted: waiving asks Finance MANAGE in the case's city"),
+    404: errorResponse("not_found: no such case in the caller's cities, or it was ruled on already"),
   },
 });
 
@@ -307,7 +307,8 @@ const revokeRoute = createRoute({
 export function registerOpsField(app: App): void {
   app.openapi(noShowsRoute, async (c) => {
     const { decision } = c.req.valid("query");
-    const [cases, inputs] = await Promise.all([listNoShowCases(c.env.DB, decision, 200), opsInputs(c)]);
+    const reached = await routeReach(c);
+    const [cases, inputs] = await Promise.all([listNoShowCases(c.env.DB, decision, 200, reached), opsInputs(c)]);
     const due = (openedAt: string) => dueAt(new Date(openedAt), "no_show_decision", inputs.taskSlaHours).toISOString();
     return c.json(
       { cases: cases.map((each) => ({ ...each, due: due(each.opened_at) })), waiver: inputs.noShowWaiver },
@@ -322,7 +323,8 @@ export function registerOpsField(app: App): void {
     if (needsReason("no_show", decision) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
-    if (decision === "waived" && !(await permits(c, WAIVING_A_NO_SHOW))) {
+    if (!(await withinRouteReach(c, "no_show", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (decision === "waived" && !(await permitsOn(c, WAIVING_A_NO_SHOW, "no_show", id))) {
       return c.json(errorBody("not_permitted", c.var.requestId), 403);
     }
     const now = c.var.deps.now();
