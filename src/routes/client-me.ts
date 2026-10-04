@@ -49,7 +49,7 @@ import { PriceSchema } from "./client-booking.ts";
 import { OwedPaymentSchema } from "./client-payments.ts";
 import { creditsBody, CreditsSchema } from "./client-refer.ts";
 import { OneVisitPriceSchema, VisitSummarySchema } from "./client-visits.ts";
-import { ReferralRewardSchema } from "./referral-reward.ts";
+import { ReferralRewardSchema } from "./public/referral-reward.ts";
 
 export const MeSchema = z
   .object({

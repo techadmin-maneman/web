@@ -12,7 +12,7 @@
 // there. A link Razorpay refuses outright is not asked for again, and ops are told once, with the visit's ID as the
 // reference of the link they then make by hand. Until it is paid, the Tasks board lists it (src/domain/tasks.ts).
 //
-// Paid, Razorpay's webhook says so (src/routes/razorpay-hook.ts), or the cron finds it paid when the webhook never
+// Paid, Razorpay's webhook says so (src/routes/hooks/razorpay.ts), or the cron finds it paid when the webhook never
 // came (src/domain/razorpay-catch-up.ts): the payment is the visit's, as a payment made ahead is, and follows the same
 // path to Books (src/domain/books-sync.ts), and the client gets our receipt on WhatsApp. A link ops made by hand finds
 // the visit by its reference, the visit's ID.

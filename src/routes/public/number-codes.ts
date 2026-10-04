@@ -9,15 +9,15 @@
 // here never stop clients and technicians signing in.
 
 import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
-import type { App, AppEnv } from "../http/context.ts";
-import { checkNumberCode, createNumberCode, mobileHashOf } from "../domain/number-codes.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { json, PersonNameSchema } from "../http/openapi.ts";
-import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
-import { checkTurnstile, visitorOf } from "../http/visitor.ts";
-import { isTestNumber } from "../domain/test-records.ts";
-import { toE164 } from "../lib/mobile.ts";
-import { newLoginCode } from "../policy/one-time-code.ts";
+import type { App, AppEnv } from "../../http/context.ts";
+import { checkNumberCode, createNumberCode, mobileHashOf } from "../../domain/number-codes.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { json, PersonNameSchema } from "../../http/openapi.ts";
+import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../../http/send-code.ts";
+import { checkTurnstile, visitorOf } from "../../http/visitor.ts";
+import { isTestNumber } from "../../domain/test-records.ts";
+import { toE164 } from "../../lib/mobile.ts";
+import { newLoginCode } from "../../policy/one-time-code.ts";
 
 const NumberCodeRequestSchema = z
   .object({

@@ -99,7 +99,7 @@ describe("a pull request touching money or personal data", () => {
       "src/domain/hair-profiles.ts",
       "src/domain/discount-code-uses.ts",
       "src/domain/no-show-disputes.ts",
-      "src/routes/razorpay-hook.ts",
+      "src/routes/hooks/razorpay.ts",
     ];
     expect(sensitiveFiles(files)).toEqual(files);
   });

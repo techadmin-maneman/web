@@ -3,32 +3,32 @@
 // The look goes to WhatsApp only, and never to the site
 // (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so the gate comes
 // before the render: the claim is accepted once the photograph is uploaded and
-// a WhatsApp code has proved the number (src/routes/number-codes.ts), and
+// a WhatsApp code has proved the number (src/routes/public/number-codes.ts), and
 // POST /api/tryon/generate refuses a job no claim has. A claim whose look
 // could not be sent is refused before anything is written. What a claim writes
 // is src/domain/tryon-claims.ts.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../http/context.ts";
-import { CURRENT_NOTICE } from "../config/notices.ts";
-import { TRYON_STAGES } from "../config/tryon.ts";
-import { isSpent, takeOne } from "../domain/rate-limit.ts";
-import { isTestNumber } from "../domain/test-records.ts";
-import { testRecordAtCreation } from "../policy/staging-test-records.ts";
-import { loadJob, type JobRow } from "../domain/tryon.ts";
-import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../domain/tryon-claims.ts";
-import { errorResponse, type ErrorCode } from "../http/errors.ts";
-import { answerKeyed, IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
-import { provedNumber } from "../http/number-proof.ts";
-import { PersonNameSchema } from "../http/openapi.ts";
-import { visitorOf } from "../http/visitor.ts";
-import { mobileHashOf } from "../domain/number-codes.ts";
-import { DAY_MS } from "../lib/durations.ts";
-import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { LOOK_PER_NUMBER_DAYS, undelivered } from "../policy/tryon-delivery.ts";
-import { enqueue } from "../domain/enqueue.ts";
-import { messageHeldBack } from "../queues/messaging.ts";
+import type { App, AppEnv } from "../../http/context.ts";
+import { CURRENT_NOTICE } from "../../config/notices.ts";
+import { TRYON_STAGES } from "../../config/tryon.ts";
+import { isSpent, takeOne } from "../../domain/rate-limit.ts";
+import { isTestNumber } from "../../domain/test-records.ts";
+import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
+import { loadJob, type JobRow } from "../../domain/tryon.ts";
+import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../../domain/tryon-claims.ts";
+import { errorResponse, type ErrorCode } from "../../http/errors.ts";
+import { answerKeyed, IdempotencyKeyHeaderSchema, onceForKey } from "../../http/idempotency.ts";
+import { provedNumber } from "../../http/number-proof.ts";
+import { PersonNameSchema } from "../../http/openapi.ts";
+import { visitorOf } from "../../http/visitor.ts";
+import { mobileHashOf } from "../../domain/number-codes.ts";
+import { DAY_MS } from "../../lib/durations.ts";
+import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
+import { LOOK_PER_NUMBER_DAYS, undelivered } from "../../policy/tryon-delivery.ts";
+import { enqueue } from "../../domain/enqueue.ts";
+import { messageHeldBack } from "../../queues/messaging.ts";
 import { NumberCodeIdSchema } from "./number-codes.ts";
 
 const AttributionSchema = z

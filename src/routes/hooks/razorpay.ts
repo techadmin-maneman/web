@@ -14,9 +14,9 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../http/context.ts";
-import { paymentsTab, type AlertOnce } from "../domain/alerts.ts";
-import { recordBookingConsents } from "../domain/booking-consents.ts";
+import type { App, AppEnv } from "../../http/context.ts";
+import { paymentsTab, type AlertOnce } from "../../domain/alerts.ts";
+import { recordBookingConsents } from "../../domain/booking-consents.ts";
 import { rupees } from "@maneman/web-kit/money";
 import {
   keptRefund,
@@ -25,14 +25,14 @@ import {
   recordPayment,
   recordRefund,
   recordRefundedPayment,
-} from "../domain/payments.ts";
-import { afterResponse } from "../http/after-response.ts";
-import { bookHold } from "../http/book-hold.ts";
-import { cappedBody } from "../http/capped-body.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { sha256Hex } from "../lib/hash.ts";
-import { cancelLinkPaidElsewhere, linkPaid } from "../domain/payment-links.ts";
-import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../domain/visit-booking.ts";
+} from "../../domain/payments.ts";
+import { afterResponse } from "../../http/after-response.ts";
+import { bookHold } from "../../http/book-hold.ts";
+import { cappedBody } from "../../http/capped-body.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { sha256Hex } from "../../lib/hash.ts";
+import { cancelLinkPaidElsewhere, linkPaid } from "../../domain/payment-links.ts";
+import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../../domain/visit-booking.ts";
 import {
   RazorpayPaymentLinkSchema,
   RazorpayPaymentSchema,
@@ -41,7 +41,7 @@ import {
   type RazorpayPayment,
   type RazorpayPaymentLink,
   type RazorpayRefund,
-} from "../providers/payments/razorpay.ts";
+} from "../../providers/payments/razorpay.ts";
 
 const EventSchema = z.object({
   event: z.string(),

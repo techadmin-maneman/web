@@ -56,7 +56,7 @@ const part = (max: number) => z.string().trim().max(max).nullish();
 
 const optional = (max: number) => z.string().trim().max(max).nullable();
 
-/** The one address shape, which the site's booking forms take too (src/routes/consultations.ts). */
+/** The one address shape, which the site's booking forms take too (src/routes/public/consultations.ts). */
 export const AddressSchema = z
   .object({
     line1: z.string().trim().min(1).max(120),

@@ -11,22 +11,22 @@
 // send one (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
-import { CURRENT_NOTICE } from "../config/notices.ts";
-import { MAX_COPY_BYTES, MAX_UPLOAD_BYTES, TRYON_UPLOAD_LINK_TTL_MS } from "../config/tryon.ts";
-import { withinCeiling } from "../domain/ceilings.ts";
-import { takeOne } from "../domain/rate-limit.ts";
-import { loadJob } from "../domain/tryon.ts";
-import { cappedBody } from "../http/capped-body.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { lookCookieJob } from "../http/look-cookie.ts";
-import { checkTurnstile, visitorOf } from "../http/visitor.ts";
-import { copyKey } from "../domain/kept-try-ons.ts";
-import { putCounted } from "../domain/storage-meter.ts";
-import { checkCopy, checkPhoto } from "../domain/photo.ts";
-import { KEEPING_NOTICES } from "../policy/kept-try-ons.ts";
-import { tryOnRuns } from "../policy/tryon-delivery.ts";
-import { signToken, verifyToken } from "../lib/signed-token.ts";
+import type { App } from "../../http/context.ts";
+import { CURRENT_NOTICE } from "../../config/notices.ts";
+import { MAX_COPY_BYTES, MAX_UPLOAD_BYTES, TRYON_UPLOAD_LINK_TTL_MS } from "../../config/tryon.ts";
+import { withinCeiling } from "../../domain/ceilings.ts";
+import { takeOne } from "../../domain/rate-limit.ts";
+import { loadJob } from "../../domain/tryon.ts";
+import { cappedBody } from "../../http/capped-body.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { lookCookieJob } from "../../http/look-cookie.ts";
+import { checkTurnstile, visitorOf } from "../../http/visitor.ts";
+import { copyKey } from "../../domain/kept-try-ons.ts";
+import { putCounted } from "../../domain/storage-meter.ts";
+import { checkCopy, checkPhoto } from "../../domain/photo.ts";
+import { KEEPING_NOTICES } from "../../policy/kept-try-ons.ts";
+import { tryOnRuns } from "../../policy/tryon-delivery.ts";
+import { signToken, verifyToken } from "../../lib/signed-token.ts";
 
 export const UploadUrlRequestSchema = z
   .object({

@@ -22,7 +22,7 @@
 // (docs/decisions/0081-the-site-takes-the-address.md).
 //
 // The form may book the consultation and the first fit in one visit instead,
-// once a WhatsApp code has proved the number (src/routes/number-codes.ts):
+// once a WhatsApp code has proved the number (src/routes/public/number-codes.ts):
 // three hours, morning or afternoon, with nothing paid here; the client chooses
 // the product with the technician and pays by a link once fitted
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). That one may
@@ -37,21 +37,21 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../http/context.ts";
-import { LOSS_EXTENTS } from "../config/booking.ts";
-import { TOLD_NOTICES } from "../config/notices.ts";
-import { BOOKING_WINDOWS } from "../config/scheduling.ts";
-import { openDays } from "../domain/open-windows.ts";
-import { isServed } from "../domain/service-area.ts";
-import { DISCOUNT_KINDS } from "../policy/discount-codes.ts";
-import { PLANS, type Plan } from "../policy/one-visit.ts";
-import { CODE_PATTERN } from "../config/invite-codes.ts";
-import { inviteOf, type Invite } from "../domain/referrals.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { IdempotencyKeyHeaderSchema } from "../http/idempotency.ts";
-import { PersonNameSchema } from "../http/openapi.ts";
-import { addressOf, AddressSchema, RequiredFlatSchema } from "./client-profile.ts";
-import { bookedWithCode, bookFromForm, joinWaitlistFromForm } from "./public-forms.ts";
+import type { App, AppEnv } from "../../http/context.ts";
+import { LOSS_EXTENTS } from "../../config/booking.ts";
+import { TOLD_NOTICES } from "../../config/notices.ts";
+import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
+import { openDays } from "../../domain/open-windows.ts";
+import { isServed } from "../../domain/service-area.ts";
+import { DISCOUNT_KINDS } from "../../policy/discount-codes.ts";
+import { PLANS, type Plan } from "../../policy/one-visit.ts";
+import { CODE_PATTERN } from "../../config/invite-codes.ts";
+import { inviteOf, type Invite } from "../../domain/referrals.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { IdempotencyKeyHeaderSchema } from "../../http/idempotency.ts";
+import { PersonNameSchema } from "../../http/openapi.ts";
+import { addressOf, AddressSchema, RequiredFlatSchema } from "../client-profile.ts";
+import { bookedWithCode, bookFromForm, joinWaitlistFromForm } from "./forms.ts";
 
 /** Six digits, and never starting with 0 or 9: India's pincodes. */
 const PincodeSchema = z

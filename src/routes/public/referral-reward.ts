@@ -5,8 +5,8 @@
 //   GET /api/referral-reward    each side's free service visits and how long they last
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
-import { opsInputs } from "../http/ops-inputs.ts";
+import type { App } from "../../http/context.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 
 export const ReferralRewardSchema = z
   .object({

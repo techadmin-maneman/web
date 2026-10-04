@@ -2,7 +2,7 @@
 // found by the same availability and clash check the app books by (src/domain/scheduling.ts). What is paid at booking
 // decides what follows (src/policy/pay-by-link.ts): a visit nothing is paid for, free, on a credit, or a consultation
 // and fit in one visit, is confirmed and booked at once; a paid visit holds its slot while a Razorpay payment link is
-// open, and is booked once the link is paid (src/routes/razorpay-hook.ts).
+// open, and is booked once the link is paid (src/routes/hooks/razorpay.ts).
 //
 // Ops book within the days a client may book, from tomorrow to the horizon ops set, and a consultation or a first fit
 // only while the client has none still to come. A discount code ops enter comes off the price before GST, as the

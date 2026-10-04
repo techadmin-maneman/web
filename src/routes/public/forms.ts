@@ -4,7 +4,7 @@
 // Idempotency-Key, and answer alike: 201 with what was made, or the refusal.
 
 import type { Context } from "hono";
-import type { AppEnv } from "../http/context.ts";
+import type { AppEnv } from "../../http/context.ts";
 import {
   bookConsultation,
   joinTheWaitlist,
@@ -12,9 +12,9 @@ import {
   type ConsultationRequest,
   type StandingCode,
   type WaitlistRequest,
-} from "../domain/public-booking.ts";
-import { answerKeyed, onceForKey } from "../http/idempotency.ts";
-import { formRequest } from "../http/public-form.ts";
+} from "../../domain/public-booking.ts";
+import { answerKeyed, onceForKey } from "../../http/idempotency.ts";
+import { formRequest } from "../../http/public-form.ts";
 
 /** The request as its Idempotency-Key is kept: the route it came to, the key, and what was sent. */
 interface Keyed {

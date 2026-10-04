@@ -1,6 +1,6 @@
 // A client's try-on, kept (docs/decisions/0084-a-clients-try-on-is-kept.md): the owner's ruling of 27 September 2026,
 // in the owner's words, and which of a person's try-ons it keeps. The small copy of the photograph comes up with the
-// photograph (src/routes/tryon-upload.ts); the sweeper keeps a try-on, and lets its look go once the first fit is
+// photograph (src/routes/public/tryon-upload.ts); the sweeper keeps a try-on, and lets its look go once the first fit is
 // photographed (src/domain/kept-try-ons.ts); the app shows it (src/domain/client-try-ons.ts).
 //
 // A client is someone who has booked a visit, of any kind. Their try-on is kept only if its photograph was agreed to

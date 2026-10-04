@@ -13,12 +13,12 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { App, AppEnv } from "../http/context.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { queueMessage } from "../http/queue-message.ts";
-import { secretsMatch } from "../lib/hash.ts";
-import { stopByReply } from "../domain/stop-messages.ts";
-import { isStopReply } from "../policy/consents.ts";
+import type { App, AppEnv } from "../../http/context.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { queueMessage } from "../../http/queue-message.ts";
+import { secretsMatch } from "../../lib/hash.ts";
+import { stopByReply } from "../../domain/stop-messages.ts";
+import { isStopReply } from "../../policy/consents.ts";
 
 /** Receipts that say something new. SERVER_ACK (reached WhatsApp's servers) and PENDING do not. */
 const DELIVERED = new Set(["DELIVERY_ACK", "READ", "PLAYED"]);

@@ -42,7 +42,7 @@ export const SENSITIVE_PATHS = [
   "src/config/gst",
   "src/providers/payments/",
   "src/providers/books/",
-  "src/routes/razorpay-hook",
+  "src/routes/hooks/razorpay",
   "src/routes/ops-credits",
   // Consent
   "src/domain/booking-consents",
