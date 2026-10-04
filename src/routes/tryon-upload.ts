@@ -14,7 +14,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { CURRENT_NOTICE } from "../config/notices.ts";
 import { MAX_COPY_BYTES, MAX_UPLOAD_BYTES, TRYON_UPLOAD_LINK_TTL_MS } from "../config/tryon.ts";
-import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
+import { withinCeiling } from "../domain/ceilings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob } from "../domain/tryon.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -23,7 +23,6 @@ import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 import { copyKey } from "../domain/kept-try-ons.ts";
 import { putCounted } from "../domain/storage-meter.ts";
 import { checkCopy, checkPhoto } from "../domain/photo.ts";
-import { indiaHour } from "../lib/india-time.ts";
 import { KEEPING_NOTICES } from "../policy/kept-try-ons.ts";
 import { tryOnRuns } from "../policy/tryon-delivery.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
@@ -133,16 +132,12 @@ export function registerTryonUpload(app: App): void {
     if (turnstile === "unavailable") return c.json(errorBody("unavailable", requestId), 503);
 
     const { tryon } = settings;
-    const withinLimit = await takeOne(db, {
-      scope: "tryon:upload:ip",
-      key: visitor.ipHash,
-      window: indiaHour(now),
-      limit: tryon.uploadIpHourlyLimit,
-    });
-    if (!withinLimit) return c.json(errorBody("rate_limited", requestId), 429);
+    const at = { now, settings };
+    if (!(await takeOne(db, "tryon:upload:ip", visitor.ipHash, at))) {
+      return c.json(errorBody("rate_limited", requestId), 429);
+    }
 
-    if (!(await takeFromCeiling(db, "upload", tryon.uploadDailyCeiling, now))) {
-      await alertCeilingReached(db, deps.alert, "upload", tryon.uploadDailyCeiling, now);
+    if (!(await withinCeiling(db, deps.alert, "upload", at))) {
       return c.json(errorBody("busy", requestId), 503);
     }
 

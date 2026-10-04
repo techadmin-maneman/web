@@ -5,6 +5,8 @@
 //
 // A local run may raise one with a var of the same name, as the browser tests do (playwright.config.ts). The startup
 // guard refuses such a var anywhere else.
+//
+// Which window each counts in, and every other limit, is in src/policy/rate-limits.ts.
 
 export const FIXED_LIMITS = {
   // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.

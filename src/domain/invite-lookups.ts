@@ -2,31 +2,20 @@
 // there counts against the address, and an open counts in ops' funnel once a day for each address and code, so a
 // reload, or a loop, adds nothing.
 
-import { indiaDate, indiaHour } from "../lib/india-time.ts";
-import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "../policy/invites.ts";
-import { isSpent, takeOne, type Limit } from "./rate-limit.ts";
-
-function missesFrom(ipHash: string, now: Date): Limit {
-  return { scope: "invite_miss:ip", key: ipHash, window: indiaHour(now), limit: INVITE_MISSES_PER_ADDRESS_HOURLY };
-}
+import { isSpent, takeOne, type CountedAt } from "./rate-limit.ts";
 
 /** Whether this address has used up its misses this hour. Counts nothing. */
-export function inviteMissesSpent(db: D1Database, ipHash: string, now: Date): Promise<boolean> {
-  return isSpent(db, missesFrom(ipHash, now));
+export function inviteMissesSpent(db: D1Database, ipHash: string, at: CountedAt): Promise<boolean> {
+  return isSpent(db, "invite_miss:ip", ipHash, at);
 }
 
-export async function countInviteMiss(db: D1Database, ipHash: string, now: Date): Promise<void> {
-  await takeOne(db, missesFrom(ipHash, now));
+export async function countInviteMiss(db: D1Database, ipHash: string, at: CountedAt): Promise<void> {
+  await takeOne(db, "invite_miss:ip", ipHash, at);
 }
 
 /** Counts the invite opened, unless this address opened it already today. */
-export async function countInviteOpen(db: D1Database, code: string, ipHash: string, now: Date): Promise<void> {
-  const firstToday = await takeOne(db, {
-    scope: "invite_open",
-    key: `${code}:${ipHash}`,
-    window: indiaDate(now),
-    limit: 1,
-  });
+export async function countInviteOpen(db: D1Database, code: string, ipHash: string, at: CountedAt): Promise<void> {
+  const firstToday = await takeOne(db, "invite_open", `${code}:${ipHash}`, at);
   if (!firstToday) return;
   await db.prepare("UPDATE referral_codes SET opens = opens + 1 WHERE code = ?1").bind(code).run();
 }

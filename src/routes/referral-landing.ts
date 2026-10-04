@@ -258,26 +258,26 @@ export function registerReferralLanding(app: App): void {
 
   app.openapi(inviteRoute, async (c) => {
     const db = c.env.DB;
-    const now = c.var.deps.now();
+    const at = { now: c.var.deps.now(), settings: c.var.config.settings };
     const { ipHash } = await visitorOf(c);
-    if (await inviteMissesSpent(db, ipHash, now)) return c.json(errorBody("rate_limited", c.var.requestId), 429);
+    if (await inviteMissesSpent(db, ipHash, at)) return c.json(errorBody("rate_limited", c.var.requestId), 429);
 
     const found = await invite(c, c.req.valid("param").code);
     if (found === null) {
-      await countInviteMiss(db, ipHash, now);
+      await countInviteMiss(db, ipHash, at);
       return c.json(UNKNOWN_INVITE, 200);
     }
     // Ops' funnel counts opens; the referrer never sees them (the tracker shows fits only). A chat app fetching the
     // link for its preview is not an open: the site's Worker passes the visitor's user agent on.
-    if (!LINK_PREVIEW.test(c.req.header("User-Agent") ?? "")) await countInviteOpen(db, found.code, ipHash, now);
+    if (!LINK_PREVIEW.test(c.req.header("User-Agent") ?? "")) await countInviteOpen(db, found.code, ipHash, at);
     return c.json({ state: "valid" as const, referrer_first_name: found.referrerFirstName, card: found.card }, 200);
   });
 
   app.openapi(ogRoute, async (c) => {
     const db = c.env.DB;
-    const now = c.var.deps.now();
+    const at = { now: c.var.deps.now(), settings: c.var.config.settings };
     const { ipHash } = await visitorOf(c);
-    if (await inviteMissesSpent(db, ipHash, now)) return c.redirect(HOUSE_CARD, 302);
+    if (await inviteMissesSpent(db, ipHash, at)) return c.redirect(HOUSE_CARD, 302);
 
     const code = c.req
       .valid("param")
@@ -285,7 +285,7 @@ export function registerReferralLanding(app: App): void {
       .toUpperCase();
     const card = await liveCard(db, c.env.REFERRAL_CARDS, code);
     if (card === null) {
-      await countInviteMiss(db, ipHash, now);
+      await countInviteMiss(db, ipHash, at);
       return c.redirect(HOUSE_CARD, 302);
     }
     // A version's card never changes: a new one gets a new link. The length tells a chat's crawler the card's size

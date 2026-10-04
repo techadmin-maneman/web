@@ -5,7 +5,6 @@ import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
 import { countOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
-import { indiaHour } from "../lib/india-time.ts";
 import { TURNSTILE_TEST_TOKEN, verifyTurnstile, type TurnstileResult } from "../providers/turnstile.ts";
 
 export interface Visitor {
@@ -56,7 +55,7 @@ async function countUnavailable(c: Context<AppEnv>, detail: string): Promise<voi
   const { deps, log } = c.var;
   log.warn("turnstile_unavailable", { detail, check: "TURNSTILE_SECRET" });
   const now = deps.now();
-  const failed = await countOne(c.env.DB, { scope: "turnstile_unavailable", key: "all", window: indiaHour(now) });
+  const failed = await countOne(c.env.DB, "turnstile_unavailable", "all", now);
   if (failed < UNAVAILABLE_PER_HOUR_TO_ALERT) return;
   await deps.alertOnce({
     key: TURNSTILE_UNAVAILABLE,

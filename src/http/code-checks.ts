@@ -5,8 +5,6 @@
 
 import type { Context } from "hono";
 import { takeOne } from "../domain/rate-limit.ts";
-import { indiaDate, indiaHour } from "../lib/india-time.ts";
-import { CODE_CHECKS } from "../policy/discount-codes.ts";
 import type { AppEnv } from "./context.ts";
 import { visitorOf } from "./visitor.ts";
 
@@ -15,17 +13,7 @@ export async function mayCheckCode(c: Context<AppEnv>, who: string): Promise<boo
   const db = c.env.DB;
   const now = c.var.deps.now();
   const { ipHash } = await visitorOf(c);
-  const withinAddress = await takeOne(db, {
-    scope: "discount_code:ip",
-    key: ipHash,
-    window: indiaHour(now),
-    limit: CODE_CHECKS.perAddressHourly,
-  });
-  if (!withinAddress) return false;
-  return takeOne(db, {
-    scope: "discount_code:person",
-    key: who,
-    window: indiaDate(now),
-    limit: CODE_CHECKS.perNumberDaily,
-  });
+  const at = { now, settings: c.var.config.settings };
+  if (!(await takeOne(db, "discount_code:ip", ipHash, at))) return false;
+  return takeOne(db, "discount_code:person", who, at);
 }

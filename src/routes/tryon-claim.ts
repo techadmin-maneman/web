@@ -22,13 +22,12 @@ import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { provedNumber } from "../http/number-proof.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { saltedHash } from "../lib/hash.ts";
+import { mobileHashOf } from "../domain/number-codes.ts";
 import { DAY_MS } from "../lib/durations.ts";
-import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { LOOK_PER_NUMBER_DAYS, undelivered } from "../policy/tryon-delivery.ts";
 import { enqueue } from "../queues/enqueue.ts";
-import { heldBackByAllowlist, resultMessageCap } from "../queues/messaging.ts";
+import { messageHeldBack } from "../queues/messaging.ts";
 import { NumberCodeIdSchema } from "./number-codes.ts";
 
 const AttributionSchema = z
@@ -161,12 +160,15 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
 
   const why = undelivered({
     messaging: settings.messaging,
-    heldBack: heldBackByAllowlist(settings.messaging, {
+    heldBack: messageHeldBack(settings.messaging, {
       mobile_e164: mobileE164,
       test_record: (await isTestNumber(db, c.var.config.environment, mobileE164, request.name)) ? 1 : 0,
       kind: "tryon_result",
     }),
-    capSpent: await isSpent(db, await resultMessageCap(settings, mobileE164, now)),
+    capSpent: await isSpent(db, "message:result:mobile", await mobileHashOf(settings.ipHashSalt, mobileE164), {
+      now,
+      settings,
+    }),
   });
   if (why === "number_capped") return { ok: false, status: 429, code: "rate_limited" };
   if (why !== null) {
@@ -174,11 +176,9 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
     return { ok: false, status: 503, code: "whatsapp_unavailable" };
   }
 
-  const withinLimit = await takeOne(db, {
-    scope: "tryon:claim:mobile",
-    key: await saltedHash(settings.ipHashSalt, `mobile:${mobileE164}`),
-    window: indiaDate(now),
-    limit: settings.tryon.claimMobileDailyLimit,
+  const withinLimit = await takeOne(db, "tryon:claim:mobile", await mobileHashOf(settings.ipHashSalt, mobileE164), {
+    now,
+    settings,
   });
   if (!withinLimit) return { ok: false, status: 429, code: "rate_limited" };
 

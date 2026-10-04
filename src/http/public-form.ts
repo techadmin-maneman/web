@@ -6,8 +6,7 @@ import type { Context } from "hono";
 import type { Checked, FormRequest } from "../domain/public-booking.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { isTestNumber } from "../domain/test-records.ts";
-import { saltedHash } from "../lib/hash.ts";
-import { indiaDate } from "../lib/india-time.ts";
+import { mobileHashOf } from "../domain/number-codes.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { skipsAddressLimits } from "../policy/staging-test-records.ts";
 import { bookHold } from "./book-hold.ts";
@@ -25,24 +24,13 @@ async function checkPerson(c: Context<AppEnv>, mobile: string, token: string, na
   if (turnstile === "rejected") return { ok: false, status: 403, code: "turnstile_failed" };
   if (turnstile === "unavailable") return { ok: false, status: 503, code: "unavailable" };
   const { settings, environment } = c.var.config;
-  const today = indiaDate(c.var.deps.now());
+  const at = { now: c.var.deps.now(), settings };
   const db = c.env.DB;
   // The address first: a refusal of the address costs the number nothing. Only staging lets a test record past it.
   const testRecord = environment === "staging" && (await isTestNumber(db, environment, mobileE164, name));
   const within =
-    (skipsAddressLimits(environment, testRecord) ||
-      (await takeOne(db, {
-        scope: "booking:ip",
-        key: visitor.ipHash,
-        window: today,
-        limit: settings.leadIpDailyLimit,
-      }))) &&
-    (await takeOne(db, {
-      scope: "booking:mobile",
-      key: await saltedHash(settings.ipHashSalt, `mobile:${mobileE164}`),
-      window: today,
-      limit: settings.leadMobileDailyLimit,
-    }));
+    (skipsAddressLimits(environment, testRecord) || (await takeOne(db, "booking:ip", visitor.ipHash, at))) &&
+    (await takeOne(db, "booking:mobile", await mobileHashOf(settings.ipHashSalt, mobileE164), at));
   if (!within) return { ok: false, status: 429, code: "rate_limited" };
   return { ok: true, mobile: mobileE164, ipHash: visitor.ipHash };
 }

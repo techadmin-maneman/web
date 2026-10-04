@@ -21,7 +21,6 @@ import { failJob, loadJob, type JobRow, type RenderChoice } from "../domain/tryo
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { setLookCookie } from "../http/look-cookie.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { indiaHour } from "../lib/india-time.ts";
 import { tryOnRuns } from "../policy/tryon-delivery.ts";
 import { enqueue } from "../queues/enqueue.ts";
 import type { RenderMessage } from "../queues/render.ts";
@@ -92,12 +91,7 @@ export function registerTryonGenerate(app: App): void {
     const now = deps.now();
 
     const visitor = await visitorOf(c);
-    const withinLimit = await takeOne(db, {
-      scope: "tryon:generate:ip",
-      key: visitor.ipHash,
-      window: indiaHour(now),
-      limit: settings.tryon.generateIpHourlyLimit,
-    });
+    const withinLimit = await takeOne(db, "tryon:generate:ip", visitor.ipHash, { now, settings });
     if (!withinLimit) return c.json(errorBody("rate_limited", requestId), 429);
 
     const job = await loadJob(db, request.job_id);
@@ -151,10 +145,10 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
     return statusOf(current ?? job);
   }
 
-  const ceiling = c.var.config.settings.tryon.renderDailyCeiling;
-  if (!(await takeFromCeiling(db, "render", ceiling, now))) {
+  const at = { now, settings: c.var.config.settings };
+  if (!(await takeFromCeiling(db, "render", at))) {
     await failJob(db, job.id, "busy", null, now);
-    await alertCeilingReached(db, c.var.deps.alert, "render", ceiling, now);
+    await alertCeilingReached(db, c.var.deps.alert, "render", at);
     return { error: "busy", status: 503 };
   }
 

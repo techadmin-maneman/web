@@ -18,7 +18,6 @@ import { myDataPage } from "../domain/my-data-page.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { indiaDate } from "../lib/india-time.ts";
 import { GRIEVANCES_PER_DAY } from "../policy/grievances.ts";
 
 const exportRoute = createRoute({
@@ -129,12 +128,7 @@ export function registerClientData(app: App): void {
     const already = await openGrievanceInWords(db, session.subjectId, text);
     if (already !== null) return c.json({ id: already, state: "open" as const }, 201);
 
-    const allowed = await takeOne(db, {
-      scope: "grievance:person",
-      key: session.subjectId,
-      window: indiaDate(now),
-      limit: GRIEVANCES_PER_DAY,
-    });
+    const allowed = await takeOne(db, "grievance:person", session.subjectId, { now, settings: c.var.config.settings });
     if (!allowed) return c.json(errorBody("rate_limited", c.var.requestId), 429);
 
     const id = crypto.randomUUID();

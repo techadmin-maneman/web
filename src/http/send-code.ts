@@ -19,12 +19,11 @@
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
-import { onAllowlist, type LoginSettings } from "../config/settings.ts";
-import { alertCeilingReached, ceilingReached, takeFromCeiling, type Ceiling } from "../domain/ceilings.ts";
-import { countOne, takeOne } from "../domain/rate-limit.ts";
-import { indiaDate, indiaHour } from "../lib/india-time.ts";
+import type { LoginSettings } from "../config/settings.ts";
+import { alertCeilingReached, ceilingReached, withinCeiling, type Ceiling } from "../domain/ceilings.ts";
+import { countOne, takeOne, type CountedAt } from "../domain/rate-limit.ts";
 import { scrubString } from "../log.ts";
-import { skipsAddressLimits } from "../policy/staging-test-records.ts";
+import { heldBack, skipsAddressLimits } from "../policy/staging-test-records.ts";
 import type { CodeChannel } from "../providers/codes.ts";
 import { afterResponse } from "./after-response.ts";
 
@@ -46,15 +45,12 @@ const CEILING_OF: Readonly<Record<CodeSurface, CodeCeiling>> = {
   form: "form_code",
 };
 
-function ceilingLimit(login: LoginSettings, ceiling: CodeCeiling): number {
-  return ceiling === "tech_code" ? login.techCodeDailyCeiling : login.codeDailyCeiling;
-}
+const countedAt = (c: Context<AppEnv>, now: Date): CountedAt => ({ now, settings: c.var.config.settings });
 
 /** Whether today's ceiling is reached already; the first refusal of the day tells ops. Counts nothing. */
 async function ceilingSpent(c: Context<AppEnv>, ceiling: CodeCeiling, now: Date): Promise<boolean> {
-  const limit = ceilingLimit(c.var.config.settings.login, ceiling);
-  if (!(await ceilingReached(c.env.DB, ceiling, limit, now))) return false;
-  await alertCeilingReached(c.env.DB, c.var.deps.alert, ceiling, limit, now);
+  if (!(await ceilingReached(c.env.DB, ceiling, countedAt(c, now)))) return false;
+  await alertCeilingReached(c.env.DB, c.var.deps.alert, ceiling, countedAt(c, now));
   return true;
 }
 
@@ -76,23 +72,13 @@ export async function mayAskForCode(
   },
 ): Promise<CodeGate> {
   if (await ceilingSpent(c, CEILING_OF[input.surface], input.now)) return "busy";
-  const { login: limits } = c.var.config.settings;
   const db = c.env.DB;
+  const at = countedAt(c, input.now);
   const withinAddress =
     skipsAddressLimits(c.var.config.environment, input.testRecord) ||
-    (await takeOne(db, {
-      scope: `${input.surface}:code:ip`,
-      key: input.ipHash,
-      window: indiaHour(input.now),
-      limit: limits.codeIpHourlyLimit,
-    }));
+    (await takeOne(db, `${input.surface}:code:ip`, input.ipHash, at));
   if (!withinAddress) return "address_spent";
-  const withinNumber = await takeOne(db, {
-    scope: `${input.surface}:code:mobile`,
-    key: input.mobileHash,
-    window: indiaDate(input.now),
-    limit: limits.codeMobileDailyLimit,
-  });
+  const withinNumber = await takeOne(db, `${input.surface}:code:mobile`, input.mobileHash, at);
   return withinNumber ? "open" : "number_spent";
 }
 
@@ -115,10 +101,10 @@ export function numberChangeCodes(
 
 /**
  * Whether this account's code would be held back by staging's allowlist: only ever true for one of our own
- * scripts' test records (ADR 0097). A real account's code is never held back by it.
+ * scripts' test records (ADR 0097). A code is never automatic, so a real account's is never held back by it.
  */
-function heldBackByAllowlist(c: Context<AppEnv>, sendsTo: string, testRecord: boolean): boolean {
-  return testRecord && !onAllowlist(c.var.config.settings.messaging, sendsTo);
+function codeHeldBack(c: Context<AppEnv>, sendsTo: string, testRecord: boolean): boolean {
+  return heldBack(c.var.config.settings.messaging, { automatic: false, testRecord, mobileE164: sendsTo });
 }
 
 /**
@@ -133,7 +119,7 @@ export async function countCode(
   now: Date,
 ): Promise<boolean> {
   if (sendsTo === null) return true;
-  if (heldBackByAllowlist(c, sendsTo, testRecord)) return true;
+  if (codeHeldBack(c, sendsTo, testRecord)) return true;
   return withinCodeCeiling(c, now, CEILING_OF[surface]);
 }
 
@@ -155,7 +141,7 @@ export async function sendCodeAfterResponse(
       log.info("login_code_not_sent", { channel, reason: "no account holds the number" });
       return;
     }
-    if (heldBackByAllowlist(c, mobileE164, testRecord)) {
+    if (codeHeldBack(c, mobileE164, testRecord)) {
       log.info("login_code_not_sent", { channel, reason: "number not on the allowlist" });
       return;
     }
@@ -175,8 +161,7 @@ export async function sendCodeAfterResponse(
 }
 
 async function countFailure(c: Context<AppEnv>, detail: string): Promise<void> {
-  const window = indiaHour(c.var.deps.now());
-  const failed = await countOne(c.env.DB, { scope: "login_code_failed", key: "all", window });
+  const failed = await countOne(c.env.DB, "login_code_failed", "all", c.var.deps.now());
   if (failed < FAILURES_PER_HOUR_TO_ALERT) return;
   await c.var.deps.alertOnce({
     key: "login_codes_failing",
@@ -192,8 +177,5 @@ export async function withinCodeCeiling(
   now: Date,
   ceiling: CodeCeiling = "login_code",
 ): Promise<boolean> {
-  const limit = ceilingLimit(c.var.config.settings.login, ceiling);
-  if (await takeFromCeiling(c.env.DB, ceiling, limit, now)) return true;
-  await alertCeilingReached(c.env.DB, c.var.deps.alert, ceiling, limit, now);
-  return false;
+  return withinCeiling(c.env.DB, c.var.deps.alert, ceiling, countedAt(c, now));
 }

@@ -15,7 +15,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
+import { withinCeiling } from "../domain/ceilings.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { clientTryOns, ownTryOnImage, TRY_ON_IMAGES, TRY_ON_TOKEN_PURPOSES } from "../domain/client-try-ons.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
@@ -501,8 +501,7 @@ function registerTryOnImages(app: App): void {
     if (held === null) return c.json(errorBody("not_found", requestId), 404);
 
     // Counted as the site's result links are, so every read of the try-on's buckets stays under a ceiling (ADR 0014).
-    if (!(await takeFromCeiling(c.env.DB, "result_read", tryon.resultReadDailyCeiling, now))) {
-      await alertCeilingReached(c.env.DB, deps.alert, "result_read", tryon.resultReadDailyCeiling, now);
+    if (!(await withinCeiling(c.env.DB, deps.alert, "result_read", { now, settings: c.var.config.settings }))) {
       return c.json(errorBody("busy", requestId), 503);
     }
     const object = await c.env[held.bucket].get(held.key);

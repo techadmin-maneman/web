@@ -9,7 +9,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { FAILURE_CODES, JOB_STATES } from "../config/tryon.ts";
-import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
+import { withinCeiling } from "../domain/ceilings.ts";
 import { loadJob } from "../domain/tryon.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { lookCookieJob } from "../http/look-cookie.ts";
@@ -93,9 +93,7 @@ export function registerTryonResult(app: App): void {
     const resultKey = await verifyToken(settings.tryon.linkSigningKey, "result", c.req.valid("param").token, now);
     if (resultKey === null) return c.json(errorBody("not_found", requestId), 404);
 
-    const ceiling = settings.tryon.resultReadDailyCeiling;
-    if (!(await takeFromCeiling(c.env.DB, "result_read", ceiling, now))) {
-      await alertCeilingReached(c.env.DB, deps.alert, "result_read", ceiling, now);
+    if (!(await withinCeiling(c.env.DB, deps.alert, "result_read", { now, settings }))) {
       return c.json(errorBody("busy", requestId), 503);
     }
 
