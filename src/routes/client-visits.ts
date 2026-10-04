@@ -12,7 +12,8 @@
 // Every photograph is served through a link that lasts 15 minutes, and only
 // to the client whose photograph it is.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { clientRoute } from "../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { withinCeiling } from "../domain/ceilings.ts";
@@ -22,7 +23,7 @@ import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/clien
 import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
 import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
-import { clientOf, requireClientSession } from "../http/client-session.ts";
+import { clientOf } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { fileExtension, type ImageType } from "../lib/image-bytes.ts";
 import { verifyToken } from "../lib/signed-token.ts";
@@ -276,7 +277,7 @@ const CompareSchema = z
   .strict()
   .openapi("PhotoCompare");
 
-const visitsRoute = createRoute({
+const visitsRoute = clientRoute({
   method: "get",
   path: "/api/visits",
   summary: "The client's visits, upcoming and past",
@@ -289,7 +290,7 @@ const visitsRoute = createRoute({
   },
 });
 
-const visitRoute = createRoute({
+const visitRoute = clientRoute({
   method: "get",
   path: "/api/visits/{id}",
   summary: "One of the client's visits, with its photographs",
@@ -301,7 +302,7 @@ const visitRoute = createRoute({
   },
 });
 
-const timelineRoute = createRoute({
+const timelineRoute = clientRoute({
   method: "get",
   path: "/api/photos",
   summary: "The client's photographs, by visit, newest first, and their try-ons",
@@ -314,7 +315,7 @@ const timelineRoute = createRoute({
   },
 });
 
-const compareRoute = createRoute({
+const compareRoute = clientRoute({
   method: "get",
   path: "/api/photos/compare",
   summary: "One angle from two of the client's visits, to compare",
@@ -336,7 +337,7 @@ const compareRoute = createRoute({
   },
 });
 
-const photoFileRoute = createRoute({
+const photoFileRoute = clientRoute({
   method: "get",
   path: "/api/photos/file/{token}",
   summary: "A photograph, through a link that lasts 15 minutes",
@@ -351,7 +352,7 @@ const photoFileRoute = createRoute({
   },
 });
 
-const photoSmallRoute = createRoute({
+const photoSmallRoute = clientRoute({
   method: "get",
   path: "/api/photos/small/{token}",
   summary: "A photograph's small copy, through a link that lasts 15 minutes; the photograph itself if the copy is gone",
@@ -366,7 +367,7 @@ const photoSmallRoute = createRoute({
   },
 });
 
-const tryOnFileRoute = createRoute({
+const tryOnFileRoute = clientRoute({
   method: "get",
   path: "/api/photos/try-on/{image}/{token}",
   summary: "A try-on's photograph or look, through a link that lasts 15 minutes",
@@ -383,10 +384,6 @@ const tryOnFileRoute = createRoute({
 });
 
 export function registerClientVisits(app: App): void {
-  for (const path of ["/api/visits", "/api/visits/*", "/api/photos", "/api/photos/*"]) {
-    app.use(path, requireClientSession);
-  }
-
   app.openapi(visitsRoute, async (c) => {
     const session = clientOf(c);
     const [visits, history] = await Promise.all([

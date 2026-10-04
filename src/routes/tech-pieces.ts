@@ -8,11 +8,12 @@
 //
 // No client's name or number here: a label says which piece, not whose.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { techRoute } from "../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { pieceWithOwner } from "../domain/pieces.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { requireTechnicianSession, technicianOf } from "../http/technician-session.ts";
+import { technicianOf } from "../http/technician-session.ts";
 
 export const PieceSchema = z
   .object({
@@ -32,7 +33,7 @@ const LookupSchema = z
   .strict()
   .openapi("PieceLookup", { description: "Whether the label is one of the job's client's pieces." });
 
-const lookupRoute = createRoute({
+const lookupRoute = techRoute({
   method: "get",
   path: "/api/tech/pieces/lookup",
   summary: "The piece a label names",
@@ -45,8 +46,6 @@ const lookupRoute = createRoute({
 });
 
 export function registerTechPieces(app: App): void {
-  app.use("/api/tech/pieces/*", requireTechnicianSession);
-
   app.openapi(lookupRoute, async (c) => {
     const { code, job } = c.req.valid("query");
     const found = await pieceWithOwner(c.env.DB, code.trim().toUpperCase());

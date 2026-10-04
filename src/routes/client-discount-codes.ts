@@ -6,9 +6,10 @@
 // Only while the hold's price is open: while nothing is paid, so Checkout's order is made for what is left; an order
 // Checkout was closed on unpaid is let go, and the next Pay makes another. A code that does not apply is answered code_not_applicable and nothing more, whatever the reason, which is logged; every
 // check is counted against the client and their address (src/http/code-checks.ts). Behind the session and
-// self-serve booking, as every hold route is (src/routes/client-booking.ts).
+// self-serve booking, as every hold route is.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { z } from "@hono/zod-openapi";
+import { selfServeRoute } from "../http/session-routes.ts";
 import type { App } from "../http/context.ts";
 import { enterOnHold, removeFromHold } from "../domain/discount-code-holds.ts";
 import type { Entered, Removed } from "../domain/discount-code-uses.ts";
@@ -31,7 +32,7 @@ const settled = errorResponse(
     "ops_assisted",
 );
 
-const enterRoute = createRoute({
+const enterRoute = selfServeRoute({
   method: "post",
   path: "/api/holds/{id}/discount-code",
   summary: "Take a discount code off the hold's price, while nothing is paid for it",
@@ -49,7 +50,7 @@ const enterRoute = createRoute({
   },
 });
 
-const removeRoute = createRoute({
+const removeRoute = selfServeRoute({
   method: "delete",
   path: "/api/holds/{id}/discount-code",
   summary: "Take the code off the hold again, while nothing is paid for it",

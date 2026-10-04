@@ -15,6 +15,7 @@
 // Technicians' codes have a day's ceiling of their own, so client traffic never
 // stops one signing in, and ops are told when an active technician is refused.
 
+import { techRoute } from "../http/session-routes.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { LoginSettings } from "../config/settings.ts";
@@ -33,12 +34,7 @@ import { json } from "../http/openapi.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { afterResponse } from "../http/after-response.ts";
 import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse, type CodeGate } from "../http/send-code.ts";
-import {
-  clearTechnicianCookie,
-  setTechnicianCookie,
-  requireTechnicianSession,
-  technicianOf,
-} from "../http/technician-session.ts";
+import { clearTechnicianCookie, setTechnicianCookie, technicianOf } from "../http/technician-session.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { newLoginCode } from "../policy/one-time-code.ts";
@@ -144,7 +140,7 @@ const verifyRoute = createRoute({
   },
 });
 
-const logoutRoute = createRoute({
+const logoutRoute = techRoute({
   method: "post",
   path: "/api/tech/auth/logout",
   summary: "End this session on this phone",
@@ -177,7 +173,7 @@ const TechMeSchema = z
   .strict()
   .openapi("TechnicianMe");
 
-const meRoute = createRoute({
+const meRoute = techRoute({
   method: "get",
   path: "/api/tech/me",
   summary: "Who is signed in, and the phone this session is bound to",
@@ -191,9 +187,6 @@ const meRoute = createRoute({
 });
 
 export function registerTechAuth(app: App): void {
-  app.use("/api/tech/auth/logout", requireTechnicianSession);
-  app.use(meRoute.path, requireTechnicianSession);
-
   app.openapi(otpRoute, async (c) => {
     const { requestId, deps, config } = c.var;
     const { login: limits, ipHashSalt } = config.settings;

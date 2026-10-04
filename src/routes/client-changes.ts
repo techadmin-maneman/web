@@ -9,15 +9,15 @@
 // A move picks its new time as a booking does, through GET /api/availability
 // and POST /api/holds with `moving`.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { selfServeRoute } from "../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { cancelVisit, changeableVisit, changeTerms, termsInForce, type ChangeTerms } from "../domain/visit-changes.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import { clientOf, requireClientSession } from "../http/client-session.ts";
+import { clientOf } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { queueMessage } from "../http/queue-message.ts";
-import { requireSelfServe } from "../http/self-serve.ts";
 import { BookingSchema, moveTermsFor, PriceSchema, startCheckout } from "./client-booking.ts";
 
 const NoticeSchema = z.enum(["free", "late"]).openapi({
@@ -81,7 +81,7 @@ const CancelTermsSchema = z
 
 const params = z.object({ id: z.uuid().openapi({ description: "The visit's ID." }) });
 
-const rescheduleRoute = createRoute({
+const rescheduleRoute = selfServeRoute({
   method: "post",
   path: "/api/appointments/{id}/reschedule",
   summary: "What moving a visit costs, or start the move a hold makes",
@@ -111,7 +111,7 @@ const rescheduleRoute = createRoute({
   },
 });
 
-const cancelRoute = createRoute({
+const cancelRoute = selfServeRoute({
   method: "post",
   path: "/api/appointments/{id}/cancel",
   summary: "What cancelling a visit gives back, or cancel it on those terms",
@@ -150,9 +150,6 @@ const cancelRoute = createRoute({
 });
 
 export function registerClientChanges(app: App): void {
-  app.use("/api/appointments/*", requireClientSession);
-  app.use("/api/appointments/*", requireSelfServe);
-
   app.openapi(rescheduleRoute, async (c) => {
     const session = clientOf(c);
     const visitId = c.req.valid("param").id;

@@ -16,7 +16,8 @@
 // the next service once a visit is (docs/decisions/0086-the-next-visit-is-offered.md),
 // each as one of the services ops offer.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { clientRoute } from "../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { WINDOW_LABELS, type WindowLabel } from "../config/booking.ts";
@@ -39,7 +40,7 @@ import {
   type ProposedBooking,
 } from "../domain/proposed-visits.ts";
 import { pendingInviteOf } from "../domain/referrals.ts";
-import { clientOf, requireClientSession } from "../http/client-session.ts";
+import { clientOf } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
@@ -315,7 +316,7 @@ async function beingBookedBody(db: D1Database, underWay: BookingUnderWay | null)
   return { ...booking, one_visit: oneVisit ? await heldOneVisitPrice(db, holdId, booking.date) : null };
 }
 
-export const meRoute = createRoute({
+export const meRoute = clientRoute({
   method: "get",
   path: "/api/me",
   summary: "The Home card: who the client is and what is booked",
@@ -360,7 +361,6 @@ async function homeFactsOf(c: Context<AppEnv>, personId: string, now: Date) {
 }
 
 export function registerClientMe(app: App): void {
-  app.use(meRoute.path, requireClientSession);
   app.openapi(meRoute, async (c) => {
     const personId = clientOf(c).subjectId;
     const db = c.env.DB;
