@@ -12,6 +12,7 @@
 
 import { z } from "zod";
 import { renderWithStopLink } from "../config/message-templates.ts";
+import { fileExtension } from "../lib/image-bytes.ts";
 import type { Connection, MessagingProvider, SendResult } from "./messaging.ts";
 import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "./vendor-fetch.ts";
 
@@ -39,23 +40,23 @@ export function createEvolutionMessaging(
   deps: VendorFetchDependencies,
 ): MessagingProvider {
   return {
-    async send({ to, template, params, mediaUrl, stopLink }): Promise<SendResult> {
+    async send({ to, template, params, media, stopLink }): Promise<SendResult> {
       const text = renderWithStopLink(template, params, stopLink);
       if (text === null) return { ok: false, transient: false, detail: `template ${template} is missing a param` };
 
       const number = to.replace(/\D/g, ""); // "+919810000000" -> "919810000000"
       const [path, body] =
-        mediaUrl === undefined
+        media === undefined
           ? (["sendText", { number, text }] as const)
           : ([
               "sendMedia",
               {
                 number,
                 mediatype: "image",
-                mimetype: "image/png",
+                mimetype: media.type,
                 caption: text,
-                media: mediaUrl,
-                fileName: "mane-man.png",
+                media: media.url,
+                fileName: `mane-man.${fileExtension(media.type)}`,
               },
             ] as const);
       const timeoutMs = SEND_TIMEOUT_MS[path];

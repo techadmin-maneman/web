@@ -30,6 +30,7 @@
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { messageClass, RESULT_TEMPLATE, stopLinkPurpose, type TemplateName } from "../config/message-templates.ts";
+import { typeOfKey, type ImageType } from "../lib/image-bytes.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
 import { type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
@@ -164,7 +165,7 @@ interface MessageRow {
 interface Sendable {
   readonly template: TemplateName;
   readonly params: string[];
-  readonly mediaUrl?: () => Promise<string>;
+  readonly media?: { readonly url: () => Promise<string>; readonly type: ImageType };
   readonly stopLink?: string;
 }
 
@@ -207,15 +208,18 @@ async function resultContent(db: D1Database, config: StaticConfig, row: MessageR
     template: RESULT_TEMPLATE,
     // Greeted by first name, and sent on to book the consultation that shows it for real.
     params: [firstNameOf(row.name), `${PUBLIC_ORIGIN[config.environment]}/book`],
-    // The provider fetches the image when it sends.
-    mediaUrl: async () => {
-      const token = await signToken(
-        tryon.linkSigningKey,
-        "result",
-        resultKey,
-        new Date(now.getTime() + RESULT_LINK_MESSAGE_TTL_MS),
-      );
-      return `${PUBLIC_ORIGIN[config.environment]}/api/result/${token}`;
+    // The provider fetches the image when it sends, declared as what the render stored.
+    media: {
+      url: async () => {
+        const token = await signToken(
+          tryon.linkSigningKey,
+          "result",
+          resultKey,
+          new Date(now.getTime() + RESULT_LINK_MESSAGE_TTL_MS),
+        );
+        return `${PUBLIC_ORIGIN[config.environment]}/api/result/${token}`;
+      },
+      type: typeOfKey(resultKey),
     },
   };
 }
@@ -369,12 +373,13 @@ async function keepQueued(db: D1Database, messageId: string, detail: string): Pr
 /** The provider's answer. A throw, minting the image's link or sending, is a failure worth trying again. */
 async function sendContent(deps: Dependencies, to: string, content: Sendable): Promise<SendResult> {
   try {
-    const mediaUrl = content.mediaUrl === undefined ? undefined : await content.mediaUrl();
+    const media =
+      content.media === undefined ? undefined : { url: await content.media.url(), type: content.media.type };
     return await deps.messaging.send({
       to,
       template: content.template,
       params: content.params,
-      ...(mediaUrl === undefined ? {} : { mediaUrl }),
+      ...(media === undefined ? {} : { media }),
       ...(content.stopLink === undefined ? {} : { stopLink: content.stopLink }),
     });
   } catch (error) {

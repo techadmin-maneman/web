@@ -5,7 +5,7 @@ import type { StaticConfig } from "../../src/guard.ts";
 import { verifyToken } from "../../src/lib/signed-token.ts";
 import { createLogger } from "../../src/log.ts";
 import { createEvolutionMessaging, SEND_TIMEOUT_MS } from "../../src/providers/evolution.ts";
-import type { MessagingProvider, SendResult } from "../../src/providers/messaging.ts";
+import type { MessagingProvider, OutboundMessage, SendResult } from "../../src/providers/messaging.ts";
 import { MAX_SEND_ATTEMPTS } from "../../src/config/pipeline.ts";
 import { handleMessagingBatch, sendMessage } from "../../src/queues/messaging.ts";
 import {
@@ -28,10 +28,10 @@ function config(messaging: Partial<Settings["messaging"]> = {}): StaticConfig {
 
 /** A messaging provider that records what it was asked to send and answers as told. */
 function recordingProvider(answer: SendResult = { ok: true, providerMessageId: "wa-1" }) {
-  const sent: { to: string; template: string; params: readonly string[]; mediaUrl: string | undefined }[] = [];
+  const sent: { to: string; template: string; params: readonly string[]; media: OutboundMessage["media"] }[] = [];
   const provider: MessagingProvider = {
-    send: ({ to, template, params, mediaUrl }) => {
-      sent.push({ to, template, params, mediaUrl });
+    send: ({ to, template, params, media }) => {
+      sent.push({ to, template, params, media });
       return Promise.resolve(answer);
     },
     connection: () => Promise.resolve({ open: true }),
@@ -77,7 +77,8 @@ describe("messaging: sending a result", () => {
       template: "tryon_result_v1",
       params: ["Arjun", "http://localhost:4321/book"],
     });
-    const link = new URL(sent[0]?.mediaUrl ?? "");
+    expect(sent[0]?.media?.type).toBe("image/png");
+    const link = new URL(sent[0]?.media?.url ?? "");
     // The site answers /api/* on its own origin, locally at :4321 as the browser tests serve it (LIFE-17).
     expect(link.origin).toBe("http://localhost:4321");
     const token = link.pathname.replace("/api/result/", "");
@@ -328,7 +329,7 @@ describe("Evolution API", () => {
       to: "+919810000001",
       template: "tryon_result_v1",
       params: ["Arjun", "https://maneman.in/book"],
-      mediaUrl: "https://x.test/r.png",
+      media: { url: "https://x.test/r.png", type: "image/png" },
     });
 
     expect(result).toEqual({ ok: true, providerMessageId: "3EB0ABC" });
@@ -341,6 +342,19 @@ describe("Evolution API", () => {
       media: "https://x.test/r.png",
       fileName: "mane-man.png",
     });
+  });
+
+  // A render the provider returned as a JPEG was declared a PNG, which WhatsApp then refused or showed broken.
+  it("declares the image as the type it was stored as", async () => {
+    const http = fakeFetch({ [SEND_MEDIA]: () => json({ key: { id: "3EB0ABC" } }) });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
+    await evolution.send({
+      to: "+919810000001",
+      template: "tryon_result_v1",
+      params: ["Arjun", "https://maneman.in/book"],
+      media: { url: "https://x.test/r.jpg", type: "image/jpeg" },
+    });
+    expect(JSON.parse(http.calls[0]?.body ?? "{}")).toMatchObject({ mimetype: "image/jpeg", fileName: "mane-man.jpg" });
   });
 
   it("sends plain text when there is no image, and refuses an unknown template without calling out", async () => {
@@ -381,7 +395,7 @@ describe("Evolution API", () => {
       to: "+919810000001",
       template: "tryon_result_v1",
       params: ["A", "https://maneman.in/book"],
-      mediaUrl: "https://x.test/r.png",
+      media: { url: "https://x.test/r.png", type: "image/png" },
     });
 
   it.each([
@@ -421,7 +435,7 @@ describe("Evolution API", () => {
         to: "+919810000001",
         template: "tryon_result_v1",
         params: ["A", "https://maneman.in/book"],
-        mediaUrl: "https://x.test/r.png",
+        media: { url: "https://x.test/r.png", type: "image/png" },
       }),
     ).toEqual({
       ok: false,
@@ -442,7 +456,7 @@ describe("Evolution API", () => {
         to: "+919810000001",
         template: "tryon_result_v1",
         params: ["A", "https://maneman.in/book"],
-        mediaUrl: "https://x.test/r.png",
+        media: { url: "https://x.test/r.png", type: "image/png" },
       }),
     ).toEqual({
       ok: false,

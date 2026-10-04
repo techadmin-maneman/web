@@ -16,7 +16,7 @@ import {
 } from "../../src/domain/visit-messages.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
-import type { MessagingProvider } from "../../src/providers/messaging.ts";
+import type { MessagingProvider, OutboundMessage } from "../../src/providers/messaging.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
@@ -46,10 +46,10 @@ function config(messaging: Partial<Settings["messaging"]> = {}): StaticConfig {
 }
 
 function recordingProvider() {
-  const sent: { to: string; template: TemplateName; params: readonly string[]; mediaUrl: string | undefined }[] = [];
+  const sent: { to: string; template: TemplateName; params: readonly string[]; media: OutboundMessage["media"] }[] = [];
   const provider: MessagingProvider = {
-    send: ({ to, template, params, mediaUrl }) => {
-      sent.push({ to, template, params, mediaUrl });
+    send: ({ to, template, params, media }) => {
+      sent.push({ to, template, params, media });
       return Promise.resolve({ ok: true, providerMessageId: "wa-1" });
     },
     connection: () => Promise.resolve({ open: true }),
@@ -307,7 +307,7 @@ describe("sending a visit message", () => {
         to: "+919810000001",
         template: "visit_booked_v1",
         params: ["Rohit", "service visit", "Thu 24 Sep", "12 to 4 pm", "Imran", "Rs. 2,000", "MM-2026-0841", ""],
-        mediaUrl: undefined,
+        media: undefined,
       },
     ]);
     expect((await messages()).results).toEqual([{ kind: "payment_receipt", subject_id: VISIT, state: "sent" }]);
