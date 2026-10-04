@@ -241,6 +241,14 @@ describe("a grant of Finance in one city", () => {
     expect(undecided.results).toEqual([{ id: IN_GURGAON.undecided }, { id: NOWHERE.undecided }]);
   });
 
+  it("lists only its city's rulings of the day, and shows what a charge would keep only in its city", async () => {
+    expect(await idsIn(await get(delhi, "/api/no-shows/decided"), "cases")).toEqual([IN_DELHI.charged]);
+
+    expect((await get(delhi, `/api/no-shows/${IN_GURGAON.undecided}/charge`)).status).toBe(404);
+    expect((await get(delhi, `/api/no-shows/${NOWHERE.undecided}/charge`)).status).toBe(404);
+    expect((await get(delhi, `/api/no-shows/${IN_DELHI.undecided}/charge`)).status).toBe(200);
+  });
+
   it("lists and rules on only its city's disputes", async () => {
     expect(await idsIn(await get(delhi, "/api/no-shows/disputes"), "disputes")).toEqual([IN_DELHI.dispute]);
 
@@ -295,10 +303,9 @@ describe("a grant of Finance in one city", () => {
     expect((await get(delhi, "/api/services")).status).toBe(200);
   });
 
-  it("is not let make a code or refund a held booking, which need a national grant", async () => {
+  it("is not let make a code, which needs a national grant", async () => {
     const code = { code: "FIVEPC", kind: "percent", value: 5, covers: ["service"], once_per_client: true };
     expect((await post(delhi, "/api/discount-codes", code)).status).toBe(403);
-    expect((await post(delhi, "/api/held-bookings/99999999-9999-4999-8999-999999999999/refund")).status).toBe(403);
   });
 });
 

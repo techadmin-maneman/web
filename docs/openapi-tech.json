@@ -1070,6 +1070,13 @@
             },
             "description": "This kind of visit's checklist, as ops set it in the console, in its order."
           },
+          "checklist_if_declined": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobSheetItem"
+            },
+            "description": "On a one visit, the checklist it runs once the client decides against the fit: the consultation's alone. Empty on any other visit."
+          },
           "partial_reasons": {
             "type": "array",
             "items": {
@@ -1153,6 +1160,42 @@
             ],
             "description": "On a one visit, the discount code already on it, so the outcome step asks for none; never what it takes off. Null on any other visit, and on a one visit with no code."
           },
+          "client_choice": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "declined": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "declined"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "product": {
+                    "type": "string",
+                    "description": "The product's tier, from the card's products."
+                  }
+                },
+                "required": [
+                  "product"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "On a one visit, what the client decided as its piece step recorded it: the product they chose, or that they decided against the fit. Null until the piece step lands, and on any other visit."
+          },
           "profile": {
             "anyOf": [
               {
@@ -1193,11 +1236,13 @@
           "reminder",
           "steps",
           "checklist",
+          "checklist_if_declined",
           "partial_reasons",
           "consumables",
           "products",
           "payment_link",
           "discount_code",
+          "client_choice",
           "profile"
         ],
         "additionalProperties": false

@@ -101,6 +101,7 @@ describe("the routes a caller's calls go ahead on", () => {
     expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([
       ...SIGNED_IN_ROUTES,
       "GET /api/tasks",
+      "GET /api/alerts",
       "GET /api/staff",
     ]);
   });
@@ -112,9 +113,14 @@ describe("the routes a caller's calls go ahead on", () => {
       expect.arrayContaining([
         "GET /api/tasks",
         "PUT /api/tasks/{group}/{id}/owner",
+        "GET /api/alerts",
+        "POST /api/alerts/{id}/resolve",
+        "POST /api/alerts/{id}/send-again",
         "GET /api/payments",
         "GET /api/no-shows",
         "POST /api/no-shows/{id}/decision",
+        "GET /api/no-shows/{id}/charge",
+        "GET /api/no-shows/decided",
         "GET /api/no-shows/disputes",
         "POST /api/no-shows/disputes/{id}/ruling",
         "POST /api/clients/{id}/credits",
@@ -125,7 +131,6 @@ describe("the routes a caller's calls go ahead on", () => {
         "GET /api/services",
       ]),
     );
-    expect(routes).not.toContain("POST /api/held-bookings/{id}/refund");
     expect(routes).not.toContain("POST /api/discount-codes");
     expect(routes).not.toContain("POST /api/prices");
   });
@@ -167,7 +172,6 @@ describe("the routes a caller's calls go ahead on", () => {
     );
     expect(routes).not.toContain("POST /api/technicians");
     expect(routes).not.toContain("POST /api/stock/deliveries");
-    expect(routes).not.toContain("POST /api/held-bookings/{id}/retry");
   });
 
   it("are, for Growth in one city, every Growth route up to the level granted but the service area's", () => {
@@ -235,6 +239,7 @@ describe("Tasks, where each department sees the groups it decides", () => {
     expect(TASK_DEPARTMENTS.untold_move).toBe("operations");
     expect(TASK_DEPARTMENTS.grievance).toBe("customer_care");
     expect(TASK_DEPARTMENTS.no_show_decision).toBe("finance");
+    expect(TASK_DEPARTMENTS.no_show_dispute).toBe("finance");
     expect(TASK_DEPARTMENTS.referral_review).toBe("growth");
   });
 

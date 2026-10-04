@@ -147,7 +147,7 @@ async function booksErasuresJob({ env, deps, log, budget }: CronContext): Promis
 }
 
 async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
-  await alertAgedDeletions(env.DB, deps.now(), deps.alert);
+  await alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
 }
 
 /** R2's share and the database fill over months, so an hourly look is enough. */

@@ -342,6 +342,12 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   await expect(coming).toContainText("Imran Qureshi");
   await expect(coming).toContainText("Booked · Prepaid");
   await expect(page.getByRole("region", { name: "Done" }).getByRole("row").nth(1)).toContainText("22 Aug 2027");
+  // OIA-03, BK-21: a visit to come opens on the dispatch board, on its week with its drawer open; a visit done does not.
+  await expect(coming.getByRole("link", { name: "Show on board: the visit of 25 Sep 2027" })).toHaveAttribute(
+    "href",
+    "/dispatch?from=2027-09-25&visit=33000000-0000-4000-8000-000000000002",
+  );
+  await expect(page.getByRole("region", { name: "Done" }).getByRole("link", { name: /Show on board/ })).toHaveCount(0);
 });
 
 test("says so when there is no address and no visit either way", async ({ page }) => {

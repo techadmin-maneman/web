@@ -399,11 +399,14 @@ describe("ops deciding a deletion request", () => {
 });
 
 describe("the deletion window", () => {
-  it("alerts ops once about requests that have waited 5 days", async () => {
+  const AGED = "33333333-3333-4333-8333-333333333331";
+  const RECENT = "33333333-3333-4333-8333-333333333332";
+
+  beforeEach(async () => {
     const at = (days: number) => new Date(NOW.getTime() - days * 86_400_000).toISOString();
     for (const [id, days] of [
-      ["d1", 6],
-      ["d2", 2],
+      [AGED, 6],
+      [RECENT, 2],
     ] as const) {
       await env.DB.prepare(
         "INSERT INTO deletion_requests (id, person_id, created_at, state) VALUES (?1, ?2, ?3, 'requested')",
@@ -411,15 +414,50 @@ describe("the deletion window", () => {
         .bind(id, PERSON, at(days))
         .run();
     }
-    const alerts: string[] = [];
-    const alert = (message: string) => {
-      alerts.push(message);
-      return Promise.resolve();
-    };
-    expect(await alertAgedDeletions(env.DB, NOW, alert)).toBe(1);
-    expect(await alertAgedDeletions(env.DB, NOW, alert)).toBe(0);
-    expect(alerts).toEqual([
-      "1 account deletion request(s) have waited 5 days. Each must be processed within 7 (ops console, deletion requests).",
+  });
+
+  const openAlerts = () =>
+    env.DB.prepare("SELECT key, link, told_at FROM alerts WHERE resolved_at IS NULL")
+      .all()
+      .then((answer) => answer.results);
+
+  it("tells ops once of a request that has waited 5 days, keeps the alert, and names the day it is due", async () => {
+    const deps = fakeDependencies();
+    expect(await alertAgedDeletions(env.DB, NOW, deps.alertOnce)).toBe(1);
+    expect(await alertAgedDeletions(env.DB, NOW, deps.alertOnce)).toBe(0);
+
+    expect(deps.alerts).toEqual([
+      `Deletion request ${AGED} has waited 5 days. Decide it by 2026-09-22, within 7 days of the request. ` +
+        "http://ops.localhost:4323/deletion-requests",
     ]);
+    expect(await openAlerts()).toEqual([
+      { key: `deletion_waiting:${AGED}`, link: "/deletion-requests", told_at: NOW.toISOString() },
+    ]);
+  });
+
+  it("marks a request alerted only once its alert is kept or told, so a failed one is tried on the next run", async () => {
+    const failing = () => Promise.reject(new Error("D1 is down"));
+    await expect(alertAgedDeletions(env.DB, NOW, failing)).rejects.toThrow("D1 is down");
+    expect(
+      await env.DB.prepare("SELECT alerted_at FROM deletion_requests WHERE id = ?1").bind(AGED).first("alerted_at"),
+    ).toBeNull();
+
+    expect(await alertAgedDeletions(env.DB, NOW, fakeDependencies().alertOnce)).toBe(1);
+  });
+
+  it("closes the alert when ops decide the request", async () => {
+    await alertAgedDeletions(env.DB, NOW, fakeDependencies().alertOnce);
+    const decided = await request(
+      appFor("local", fakeDependencies(), {}, "ops"),
+      `/api/deletion-requests/${AGED}/decision`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify({ decision: "reject", reason: "Not the number's owner" }),
+      },
+    );
+
+    expect(decided.status).toBe(200);
+    expect(await openAlerts()).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 /*
- * The client's page, and the three boards it carries: B1's pieces, which FSM
- * owns, B2, the photographs, locked until the view is logged, and B3, the
- * consents, which ops read and never change. The page's head and tabs are
+ * The client's page, and the three boards it carries: B1's pieces, B2, the
+ * photographs, locked until the view is logged, and B3, the consents, which ops
+ * read and never change. The page's head and tabs are
  * board B1's frame, narrowed to what the ops routes answer.
  */
 
@@ -243,6 +243,24 @@
   color: var(--text-muted);
 }
 
+/* A visit to come's way to the dispatch board, beneath its date, on a target 24 px tall (WCAG 2.5.8). */
+.boardLink {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-height: var(--sp-24);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: var(--sp-4);
+}
+
+.boardLink:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
 /* A visit left partly done that ops closed without a follow-up, beneath its state. */
 .closedLine {
   display: block;
@@ -279,75 +297,32 @@
   text-align: right;
 }
 
-/* ---- Bookings FSM refused, held for ops (docs/decisions/0095) ------------ */
+/* ---- Bookings that refunded themselves ------------------------------------ */
 
-.held {
-  max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--paper-line);
-  padding: var(--sp-22);
-}
-
-.heldNote {
-  margin: 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
-}
-
-.heldList {
+.refundList {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.heldItem {
+.refundItem {
   padding: var(--sp-16) 0 0;
 }
 
-.heldItem + .heldItem {
+.refundItem + .refundItem {
   margin-top: var(--sp-16);
   border-top: var(--hairline) solid var(--paper-line);
 }
 
-.heldWhat {
+.refundWhat {
   margin: 0;
   font-size: var(--fs-16);
 }
 
-.heldLine {
+.refundLine {
   margin: var(--sp-6) 0 0;
   font-size: var(--fs-14);
   color: var(--text-muted);
-}
-
-.heldActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-10);
-  margin-top: var(--sp-12);
-}
-
-.heldForm {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-8);
-  margin-top: var(--sp-12);
-}
-
-.heldSelect {
-  min-height: var(--ops-row);
-  padding: 0 var(--sp-10);
-  border: var(--hairline) solid var(--paper-control);
-  border-radius: 0;
-  background: var(--paper-light);
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--text);
-}
-
-.heldSelect:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* ---- Credits, put right by hand ------------------------------------------ */

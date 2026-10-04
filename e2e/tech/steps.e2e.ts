@@ -243,7 +243,8 @@ test.describe("on a 360 × 640 phone", () => {
     fake.type = "first_fit";
     fake.oneVisit = true;
     fake.checklist = ONE_VISIT_CHECKLIST;
-    startedThrough(fake, "before_photos");
+    fake.clientChoice = { product: "natural" };
+    startedThrough(fake, "before_photos", "piece");
     await page.goto(`/jobs/${JOB_ID}/checklist`);
 
     const heading = page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" });
@@ -465,15 +466,33 @@ test("a refused outcome opens as it was chosen", async ({ page }) => {
 });
 
 // A consultation and fit in one visit, which no board draws: the client chooses the product with the technician at
-// the piece step, or decides against the fit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// the piece step, straight after the before photographs, or decides against the fit
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 test.describe("the piece of a consultation and fit in one visit", () => {
   async function onTheChoice(page: Page): Promise<Fake> {
     const fake = await fakeTech(page);
     fake.type = "first_fit";
     fake.oneVisit = true;
-    startedThrough(fake, "before_photos", "checklist", "consumables");
+    fake.checklist = ONE_VISIT_CHECKLIST;
+    startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
     await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
+    return fake;
+  }
+
+  /** The one visit at its outcome, the client's choice landed with its piece step, and any code on the visit. */
+  async function atTheOutcome(
+    page: Page,
+    choice: Fake["clientChoice"],
+    discountCode: Fake["discountCode"] = null,
+  ): Promise<Fake> {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    fake.clientChoice = choice;
+    fake.discountCode = discountCode;
+    startedThrough(fake, "before_photos", "piece", "checklist", "consumables", "profile", "after_photos");
+    await page.goto(`/jobs/${JOB_ID}/outcome`);
     return fake;
   }
 
@@ -496,9 +515,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   test("records that the client decided against it, and asks for no label", async ({ page }) => {
     const fake = await onTheChoice(page);
     await page.getByRole("button", { name: "Decided against it", exact: true }).click();
-    await expect(
-      page.getByText("Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay."),
-    ).toBeVisible();
+    await expect(page.getByText("Nothing is fitted. The visit ends as a free consultation.")).toBeVisible();
     await expect(page.getByRole("textbox", { name: "The new piece's label" })).toHaveCount(0);
     expect((await wcag(page)).violations).toEqual([]);
     await page.getByRole("button", { name: "Next" }).click();
@@ -507,14 +524,64 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     expect(writesTo(fake, "piece")[0]?.body).toEqual({ declined: true });
   });
 
+  // FLD-37: the fit's items are never asked of a technician who fitted nothing.
+  test("runs the consultation's checklist alone once the client decided against the fit", async ({ page }) => {
+    const fake = await onTheChoice(page);
+    await page.getByRole("button", { name: "Decided against it", exact: true }).click();
+    await page.getByRole("button", { name: "Next" }).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "Consultation checklist" })).toBeVisible();
+    const items = page.getByRole("button", { name: /PLACEHOLDER/ });
+    await expect(items).toHaveCount(3);
+    await expect(page.getByRole("button", { name: /Adhesive applied/ })).toHaveCount(0);
+    for (const item of await items.all()) await item.click();
+    await page.getByRole("button", { name: "Next" }).click();
+
+    await expect.poll(() => writesTo(fake, "checklist").length).toBe(1);
+    expect(writesTo(fake, "checklist")[0]?.body).toEqual({
+      done: ["scalp_checked", "measurements_taken", "options_shown"],
+    });
+  });
+
+  test("runs the consultation's checklist and the fit's for a client being fitted", async ({ page }) => {
+    await onTheChoice(page);
+    await page.getByRole("button", { name: "Mane Man Natural" }).click();
+    await page.getByRole("textbox", { name: "The new piece's label" }).fill("MM-NAT-5120-A");
+    await page.getByRole("button", { name: "Next" }).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /PLACEHOLDER/ })).toHaveCount(9);
+  });
+
+  // MON-52, CP-37: a declined visit offers no code and promises no link, and closes as what it became.
+  test("ends a declined visit as a free consultation, with no code asked for, and closes as one", async ({ page }) => {
+    const fake = await atTheOutcome(page, { declined: true }, { code: "AUDTEST", given_by: "client" });
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+
+    await expect(page.getByText("Ends as a free consultation. Nothing to pay.")).toBeVisible();
+    await expect(page.getByText(/payment link/)).toHaveCount(0);
+    await expect(page.getByText(/AUDTEST/)).toHaveCount(0);
+    await expect(page.getByLabel("Discount code, if the client has one")).toHaveCount(0);
+    expect((await wcag(page)).violations).toEqual([]);
+
+    await page.getByRole("button", { name: "Next" }).click();
+    await expect(page.getByText("Rohit M. · free consultation")).toBeVisible();
+    expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done" });
+  });
+
+  test("names the product the payment link is for, once the client chose it", async ({ page }) => {
+    await atTheOutcome(page, { product: "natural" });
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(page.getByText("Closing texts the client a payment link for Mane Man Natural.")).toBeVisible();
+    await expect(page.getByLabel("Discount code, if the client has one")).toBeVisible();
+  });
+
   // A discount code the client gives, before the link goes (docs/decisions/0108-discount-codes.md).
   test("takes a discount code before the link goes, asked at once, and says only that a wrong one does not apply", async ({
     page,
   }) => {
-    const fake = await fakeTech(page);
-    fake.type = "first_fit";
-    fake.oneVisit = true;
-    startedThrough(fake, "before_photos", "checklist", "consumables", "piece", "after_photos");
+    const fake = await atTheOutcome(page, { product: "natural" });
+    // Routed after the fake API, so this route answers the code ahead of it.
     const asked: unknown[] = [];
     await page.route(`**/api/tech/jobs/${JOB_ID}/discount-code`, (route) => {
       const body = route.request().postDataJSON() as { code: string };
@@ -522,7 +589,6 @@ test.describe("the piece of a consultation and fit in one visit", () => {
       if (body.code === "WEDDNG25") return route.fulfill({ json: { code: "WEDDNG25" } });
       return route.fulfill({ status: 422, json: { error: { code: "code_not_applicable", request_id: "test" } } });
     });
-    await page.goto(`/jobs/${JOB_ID}/outcome`);
     const box = page.getByLabel("Discount code, if the client has one");
     await expect(box).toHaveCount(0);
     await page.getByRole("button", { name: "Done", exact: true }).click();
@@ -540,12 +606,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   });
 
   test("says the code the client booked with, and asks for none", async ({ page }) => {
-    const fake = await fakeTech(page);
-    fake.type = "first_fit";
-    fake.oneVisit = true;
-    fake.discountCode = { code: "AUDTEST", given_by: "client" };
-    startedThrough(fake, "before_photos", "checklist", "consumables", "piece", "after_photos");
-    await page.goto(`/jobs/${JOB_ID}/outcome`);
+    await atTheOutcome(page, { product: "natural" }, { code: "AUDTEST", given_by: "client" });
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await expect(page.getByText("Code AUDTEST applied at booking. The payment link will take it off.")).toBeVisible();
     await expect(page.getByLabel("Discount code, if the client has one")).toHaveCount(0);

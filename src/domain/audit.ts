@@ -94,6 +94,9 @@ export const AUDIT_ACTIONS = [
   "task.hand_back",
   "task.close",
   "address.given_to_ops",
+  // An alert on Tasks' "Needs a hand" marked done, and the message, lead or CRM erasure it gave up on sent again.
+  "alert.resolve",
+  "alert.send_again",
   // A hold ops made and let go, since its booking could not go ahead.
   "booking.give_back",
   // A visit ops booked for a client from the console: its slot held, and booked at once or sent a payment link. One

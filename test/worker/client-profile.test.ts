@@ -300,7 +300,7 @@ describe("POST /api/address/suggestions", () => {
     expect((await res.json<{ error: { code: string } }>()).error.code).toBe("unavailable");
   });
 
-  it("tells ops once a day that Google refuses the search, in Google's words", async () => {
+  it("tells ops that Google refuses the search, in Google's words, and again a day on while it lasts", async () => {
     const res = await suggest(client, "mm-stub:refused", "s-1");
     expect(res.status).toBe(503);
     await suggest(client, "mm-stub:refused", "s-2");
@@ -311,7 +311,19 @@ describe("POST /api/address/suggestions", () => {
 
     const tomorrow = fakeDependencies({ now: () => new Date(NOW.getTime() + 24 * 60 * 60 * 1000) });
     await suggest(appFor("local", tomorrow, {}, "client"), "mm-stub:refused", "s-3");
-    expect(tomorrow.alerts).toEqual([told]);
+    expect(tomorrow.alerts).toEqual([`Still open since Mon 21 Sep, 12 pm, 3 times: ${told}`]);
+  });
+
+  it("closes the alert of Google's refusal at the next search Google answers", async () => {
+    const openAlerts = () =>
+      env.DB.prepare("SELECT count(*) AS open FROM alerts WHERE key = 'google_refused' AND resolved_at IS NULL").first(
+        "open",
+      );
+    await suggest(client, "mm-stub:refused", "s-1");
+    expect(await openAlerts()).toBe(1);
+
+    expect((await suggest(client, "Sunrise", "s-2")).status).toBe(200);
+    expect(await openAlerts()).toBe(0);
   });
 
   it("needs a signed-in client: suggestions cost money", async () => {

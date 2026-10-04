@@ -29,11 +29,12 @@
 //
 // No response here carries an amount.
 //
-// A consultation and fit in one visit runs the first fit's steps, its checklist
-// the consultation's and the fit's; the client chooses the product with the
-// technician, or decides against it, at the piece step, and closing it as done
-// makes it the product's visit, whose payment link Razorpay then texts to the
-// client, or a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// A consultation and fit in one visit runs the first fit's steps, the piece
+// first: the client chooses the product with the technician there, or decides
+// against it, before the checklist, which is the consultation's and the fit's,
+// or the consultation's alone once they decline. Closing it as done makes it
+// the product's visit, whose payment link Razorpay then texts to the client, or
+// a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 //
 // A consultation and a one visit also take the client's hair profile, just
 // before the after photographs. It is not a job event: it lands in its own
@@ -73,7 +74,7 @@ import {
 } from "../domain/job-events.ts";
 import { jobRecordOf, type LandingStep } from "../domain/job-record.ts";
 import { pieceLabelTaken, pieceStepOf, type PieceField } from "../domain/pieces.ts";
-import { checklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
+import { checklistOf, declinedChecklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
 import { recordJobUse } from "../domain/job-use.ts";
 import { tellOfLowStock } from "../domain/stock.ts";
 import { roomFor } from "../domain/storage-meter.ts";
@@ -291,6 +292,11 @@ const JobDetailSchema = JobSummarySchema.extend({
   checklist: z
     .array(JobSheetItemSchema)
     .openapi({ description: "This kind of visit's checklist, as ops set it in the console, in its order." }),
+  checklist_if_declined: z.array(JobSheetItemSchema).openapi({
+    description:
+      "On a one visit, the checklist it runs once the client decides against the fit: the consultation's alone. " +
+      "Empty on any other visit.",
+  }),
   partial_reasons: z
     .array(JobSheetItemSchema)
     .openapi({ description: "The reasons a job may be left partly done, as ops set them, in their order." }),
@@ -334,6 +340,19 @@ const JobDetailSchema = JobSummarySchema.extend({
       description:
         "On a one visit, the discount code already on it, so the outcome step asks for none; never what it takes " +
         "off. Null on any other visit, and on a one visit with no code.",
+    }),
+  client_choice: z
+    .union([
+      z.object({ declined: z.literal(true) }).strict(),
+      z
+        .object({ product: z.string().openapi({ description: "The product's tier, from the card's products." }) })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({
+      description:
+        "On a one visit, what the client decided as its piece step recorded it: the product they chose, or that " +
+        "they decided against the fit. Null until the piece step lands, and on any other visit.",
     }),
   profile: z.union([HairProfileSchema, z.null()]).openapi({
     description:
@@ -776,6 +795,7 @@ export function registerTechJobs(app: App): void {
       {
         ...job,
         checklist: [...checklistOf(sheet, { type, oneVisit: job.one_visit }).items],
+        checklist_if_declined: job.one_visit ? [...declinedChecklistOf(sheet).items] : [],
         partial_reasons: [...sheet.partialReasons.items],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
       },

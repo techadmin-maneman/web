@@ -373,7 +373,7 @@ test("lists the jobs still booked on a leave each time the tab opens, each with 
   await expect(stranded()).toContainText("Mon 4 Oct, 10:30 am · Rohit Malhotra");
   await expect(
     stranded().getByRole("link", { name: "Show on board: Mon 4 Oct, 10:30 am · Rohit Malhotra" }),
-  ).toHaveAttribute("href", "/dispatch?from=2027-10-04&find=Sandeep+Yadav");
+  ).toHaveAttribute("href", "/dispatch?from=2027-10-04&find=Sandeep+Yadav&visit=22000000-0000-4000-8000-000000000001");
 
   await main.getByRole("link", { name: "Phones", exact: true }).click();
   await main.getByRole("link", { name: "Leave", exact: true }).click();

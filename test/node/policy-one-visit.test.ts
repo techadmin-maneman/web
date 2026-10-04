@@ -16,10 +16,11 @@ const LATE = new Date("2026-09-24T01:30:00Z");
 describe("a consultation and fit in one visit", () => {
   it(RULES[0], () => {
     expect(PLANS).toEqual(["consultation", "one_visit"]);
-    // The fit comes with the consultation's steps: the first fit's, its piece step included.
-    expect(stepsFor("first_fit", true)).toContain("piece");
+    // The fit comes with the consultation's steps: the first fit's, its piece step, with the client's choice, first.
+    expect([...stepsFor("first_fit", true)].sort()).toEqual([...stepsFor("first_fit")].sort());
+    expect(stepsFor("first_fit", true).indexOf("piece")).toBeLessThan(stepsFor("first_fit", true).indexOf("checklist"));
     // However it closed, even as the consultation it becomes when the client declines.
-    expect(stepsFor("consultation", true)).toEqual(stepsFor("first_fit"));
+    expect(stepsFor("consultation", true)).toEqual(stepsFor("first_fit", true));
     // Three hours, which start in the morning or the afternoon, as a first fit does.
     expect(ONE_VISIT_WINDOWS).toEqual(FIRST_FIT_WINDOWS);
     expect(windowsFor("first_fit")).toEqual([...ONE_VISIT_WINDOWS]);
