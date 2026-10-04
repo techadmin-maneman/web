@@ -4,7 +4,7 @@
 // docs/decisions/0003-environment-identity-guard.md.
 
 import { toE164 } from "../lib/mobile.ts";
-import type { EvolutionSettings } from "../providers/evolution.ts";
+import type { EvolutionSettings } from "./evolution.ts";
 import { ENABLED_SURFACES, type EnvironmentName, type ProviderVar } from "./environments.ts";
 import { GSTIN_FORMAT, SAC_FORMAT, STATE_CODE_FORMAT, type GstRegistration } from "./gst.ts";
 import { FIXED_LIMITS, type FixedLimit } from "./limits.ts";

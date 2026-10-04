@@ -33,7 +33,7 @@ What to know before changing anything:
 - **D1 is the record of bookings, visits, technicians and pieces; Razorpay is the record of money.** D1 keeps a mirror of Razorpay's payments, read afresh from Razorpay and never written as the truth (ADR 0044). Zoho Books is written from D1: a customer by the five-minute Books pass, and an invoice from our own figures (ADR 0110).
 - **Every vendor is behind an adapter** in `src/providers/`, with a stub. Locally every one is a stub, and nothing leaves the machine. Production refuses to start with a stub.
 - **The free plan is a rule, not a hope** (ADR 0009). Daily ceilings keep R2 from billing, a test proves them, and a Worker may hold 64 vars and secrets at most.
-- **Business rules live once, in `src/policy/`,** most quoting their brief's own words (`RULES`), which their tests name.
+- **Business rules live once, in `src/policy/`,** most quoting their brief's own words (`RULES`), which their tests name; the data they read is `src/config/`. What may import what is `docs/architecture.md`, and a test holds src/ to it.
 - **zod is the contract.** Each route declares its request and answer in zod; `npm run openapi` writes the OpenAPI documents, the API reference and each front end's types from them.
 
 ## Words
@@ -94,10 +94,10 @@ A merge to `main` deploys all five Workers to staging (`.github/workflows/deploy
 src/                  mm-api
   index.ts            the Worker: requests by host, the queue consumers, the cron
   app.ts              one app per surface, and the routes each answers
-  config/             environments, settings, limits, booking choices, notices, presets, message texts
-  policy/             the business rules, most quoting their brief's words, which their tests name
+  config/             data: environments, settings, limits, booking choices, notices, presets, message texts, queue contracts
+  policy/             the business rules, most quoting their brief's words, which their tests name; what ops may set
   domain/             what the rules act on: bookings, visits, payments, invoices, alerts; no HTTP here
-  http/               what a request carries: its types, sessions, Access and the ops audit, idempotency
+  http/               what a request carries: its types, sessions, Access and the ops audit, idempotency, and adapters to the domain
   lib/                small helpers: India's time, durations, hashes, signed tokens, the cron's call budget
   providers/          each vendor behind an interface, with its stub
   queues/             the queue consumers: crm-sync, messaging, render

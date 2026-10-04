@@ -21,7 +21,7 @@ import {
   type OpsSettingName,
   type OpsValues,
   type SettingValue,
-} from "../config/ops-settings.ts";
+} from "../policy/ops-settings.ts";
 import type { Cycles } from "../config/pieces.ts";
 import type { PaymentHold } from "../config/scheduling.ts";
 import type { NextVisitDays } from "../policy/next-visit.ts";

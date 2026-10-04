@@ -23,7 +23,7 @@ import { codeOnVisit } from "./discount-code-uses.ts";
 import { readOpsInputs } from "./ops-settings.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
-import type { MessageKind } from "./messages.ts";
+import type { MessageKind } from "../config/message-kinds.ts";
 import { consentGiven } from "./consents.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";

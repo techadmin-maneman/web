@@ -313,7 +313,7 @@ describe("the cron's path, followed from cron.ts", () => {
       expect.arrayContaining([
         "src/scheduled/sweeper.ts",
         "src/domain/ops-settings.ts",
-        "src/domain/messages.ts",
+        "src/config/message-kinds.ts",
         "src/domain/slot-times.ts",
         "src/domain/price-book.ts",
         "src/domain/audit.ts",

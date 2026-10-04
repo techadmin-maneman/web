@@ -30,7 +30,6 @@ import { failureReason, type Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
 import { CUSTOMER_CARE_KINDS, deletionWaitingKey } from "../policy/alerts.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
-import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { recordConsent } from "./consents.ts";
@@ -38,6 +37,7 @@ import { blankProfiles } from "./hair-profiles.ts";
 import { copyKey, keptLookKey } from "./kept-try-ons.ts";
 import { deleteCounted, deleteUnder } from "./storage-meter.ts";
 import { recordEvent } from "./tryon.ts";
+import { type CrmSyncMessage } from "../config/pipeline.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;

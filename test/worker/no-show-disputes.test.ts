@@ -12,7 +12,8 @@ import { ruleOnDispute } from "../../src/domain/no-show-disputes.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import type { DisputeRuling } from "../../src/policy/no-show.ts";
-import { createStubPayments, PaymentUnanswered } from "../../src/providers/payments.ts";
+import { createStubPayments } from "../../src/providers/payments.ts";
+import { PaymentUnanswered } from "../../src/providers/provider-error.ts";
 import {
   appFor,
   captureLogs,

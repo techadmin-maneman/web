@@ -10,7 +10,7 @@ import {
   STOP_LINKS,
   stopLinkPurpose,
 } from "../../src/config/message-templates.ts";
-import { MESSAGE_KINDS } from "../../src/domain/messages.ts";
+import { MESSAGE_KINDS } from "../../src/config/message-kinds.ts";
 
 describe("the message class table", () => {
   it("covers every kind, once each", () => {

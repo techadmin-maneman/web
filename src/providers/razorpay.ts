@@ -22,8 +22,8 @@ import { z } from "zod";
 import type { RazorpaySettings } from "../config/settings.ts";
 import { saltedHash, secretsMatch } from "../lib/hash.ts";
 import type { Logger } from "../log.ts";
-import { PaymentUnanswered, type PaymentsProvider } from "./payments.ts";
-import { ProviderError } from "./provider-error.ts";
+import type { PaymentsProvider } from "./payments.ts";
+import { PaymentUnanswered, ProviderError } from "./provider-error.ts";
 import { parseAnswer, vendorAnswerOf } from "./vendor-answer.ts";
 import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
 

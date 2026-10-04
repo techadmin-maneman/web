@@ -7,8 +7,8 @@ import { catchUpWithRazorpay } from "../domain/razorpay-catch-up.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { Logger } from "../log.ts";
-import { enqueue } from "../queues/enqueue.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
+import { enqueue } from "../domain/enqueue.ts";
+import { type MessagingMessage } from "../config/pipeline.ts";
 
 const REQUEST_ID = "razorpay-catch-up";
 

@@ -2,7 +2,7 @@
 // {{1}}, {{2}}, … are the params, in order. The owner approved the texts on 4 October 2026 (docs/open-points.md,
 // item 39).
 
-import { MESSAGE_KINDS, type MessageKind } from "../domain/messages.ts";
+import { MESSAGE_KINDS, type MessageKind } from "./message-kinds.ts";
 import type { MessagePurpose } from "../policy/consents.ts";
 import { isOneOf } from "../lib/one-of.ts";
 

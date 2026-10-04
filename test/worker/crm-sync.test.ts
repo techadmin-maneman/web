@@ -1,12 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  MAX_SYNC_ATTEMPTS,
-  QUICK_RETRY_DELAY_SECONDS,
-  eraseInCrm,
-  handleCrmSyncBatch,
-  syncLead,
-} from "../../src/queues/crm-sync.ts";
+import { eraseInCrm, handleCrmSyncBatch, syncLead } from "../../src/queues/crm-sync.ts";
 import { createLogger } from "../../src/log.ts";
 import type { CrmContact, CrmLead, CrmProvider } from "../../src/providers/crm.ts";
 import {
@@ -18,6 +12,7 @@ import {
   phaseOneLead,
   stubCrmThatFails,
 } from "./helpers.ts";
+import { MAX_SYNC_ATTEMPTS, QUICK_RETRY_DELAY_SECONDS } from "../../src/config/pipeline.ts";
 
 const log = createLogger();
 

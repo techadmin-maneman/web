@@ -21,7 +21,7 @@ import { inviteLapsed } from "../policy/invites.ts";
 import { creditExpiry, type ReferralReward } from "../policy/referral-reward.ts";
 import { auditStatementIfStamped, type AuditEntry } from "./audit.ts";
 import { clawBack } from "./credits.ts";
-import type { MessageKind } from "./messages.ts";
+import type { MessageKind } from "../config/message-kinds.ts";
 import { firstNameOf } from "../lib/names.ts";
 
 /** "Karan Bhatia" → "Karan": all the messages and the tracker name a person by. */

@@ -23,7 +23,7 @@ import { setLookCookie } from "../http/look-cookie.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { DAY_MS } from "../lib/durations.ts";
 import { LOOK_PER_NUMBER_DAYS, tryOnRuns } from "../policy/tryon-delivery.ts";
-import { enqueue } from "../queues/enqueue.ts";
+import { enqueue } from "../domain/enqueue.ts";
 import type { RenderMessage } from "../queues/render.ts";
 
 export const GenerateRequestSchema = z

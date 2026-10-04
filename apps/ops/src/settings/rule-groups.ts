@@ -1,6 +1,6 @@
 // Settings › Rules, by subject: each group is a section of its own, with its own anchor and its own Save.
 
-import type { OpsSettingName } from "../../../../src/config/ops-settings.ts";
+import type { OpsSettingName } from "../../../../src/policy/ops-settings.ts";
 
 interface RuleGroup {
   /** The section's anchor: "/settings#moves". */

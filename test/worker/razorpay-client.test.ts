@@ -4,7 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import { createLogger } from "../../src/log.ts";
-import { createPaymentsProvider, createStubPayments, PaymentUnanswered } from "../../src/providers/payments.ts";
+import { createPaymentsProvider, createStubPayments } from "../../src/providers/payments.ts";
+import { PaymentUnanswered } from "../../src/providers/provider-error.ts";
 import { RazorpayError } from "../../src/providers/razorpay.ts";
 import { fakeFetch, json } from "./helpers.ts";
 

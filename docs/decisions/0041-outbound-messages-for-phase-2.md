@@ -24,7 +24,7 @@ SQLite cannot change a CHECK constraint in place, so the table has to be rebuilt
 
 **Rebuild `outbound_messages` once** (migration 0006):
 
-- **No CHECK on `kind`.** The kinds are listed in code (`MESSAGE_KINDS`, `src/domain/messages.ts`), as the audit log's actions are (ADR 0031). A new kind then needs no second rebuild, which would be the second contract step for one table.
+- **No CHECK on `kind`.** The kinds are listed in code (`MESSAGE_KINDS`, `src/config/message-kinds.ts`), as the audit log's actions are (ADR 0031). A new kind then needs no second rebuild, which would be the second contract step for one table.
 - **`subject_kind`** says which table `subject_id` points into (`MESSAGE_SUBJECTS`). It defaults to `tryon_job`, the one subject Phase 1 has.
 - **`delivered_at` and `read_at`**, filled from receipts. The first report of each wins.
 - **An index on `provider_message_id`**, the ID a receipt uses to name the message.

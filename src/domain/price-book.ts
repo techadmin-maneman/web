@@ -14,7 +14,7 @@
 // are items of their own, one figure a kind (docs/decisions/0085-services-ops-can-edit.md).
 
 import { withGst } from "../config/gst.ts";
-import { PRICE_BOUNDS } from "../config/ops-settings.ts";
+import { PRICE_BOUNDS } from "../policy/ops-settings.ts";
 import { STANDARD_TIER, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstPriceDay } from "../policy/prices.ts";

@@ -21,8 +21,8 @@ import { json } from "../http/openapi.ts";
 import { withinRouteReach } from "../http/staff-access.ts";
 import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../config/crm.ts";
 import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
-import type { CrmSyncMessage } from "../queues/crm-sync.ts";
-import { enqueue } from "../queues/enqueue.ts";
+import { enqueue } from "../domain/enqueue.ts";
+import { type CrmSyncMessage } from "../config/pipeline.ts";
 
 /** The invite a client came with, as their page shows it. */
 export const ClientInviteSchema = z

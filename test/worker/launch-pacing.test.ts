@@ -8,9 +8,9 @@ import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { PACED_GAP_SECONDS, PACED_PER_MINUTE } from "../../src/policy/message-pacing.ts";
 import type { Connection } from "../../src/providers/messaging.ts";
-import type { MessagingMessage } from "../../src/queues/messaging.ts";
 import { requeueUnsentMessages } from "../../src/scheduled/unsent-messages.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { type MessagingMessage } from "../../src/config/pipeline.ts";
 
 const MINUTE_MS = 60_000;
 const LAUNCHED = "122018";

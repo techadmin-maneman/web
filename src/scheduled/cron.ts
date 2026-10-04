@@ -39,8 +39,7 @@ import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "../lib/d1-meter.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
-import { enqueue, enqueueBatch } from "../queues/enqueue.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
+import { enqueue, enqueueBatch } from "../domain/enqueue.ts";
 import { checkDailyAllowances } from "./daily-allowances.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
@@ -58,6 +57,7 @@ import {
 } from "./sweeper.ts";
 import { CRON_CALLS, type Timing } from "./schedule.ts";
 import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
+import { type MessagingMessage } from "../config/pipeline.ts";
 
 export interface CronContext {
   readonly env: Env;

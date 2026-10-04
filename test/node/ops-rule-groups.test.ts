@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { settings } from "../../apps/ops/src/content.ts";
 import { OTHER_GROUP, RULE_GROUPS, rulePath, sectionsOf } from "../../apps/ops/src/settings/rule-groups.ts";
-import { OPS_SETTINGS } from "../../src/config/ops-settings.ts";
+import { OPS_SETTINGS } from "../../src/policy/ops-settings.ts";
 
 const rule = (name: string) => ({ name });
 
