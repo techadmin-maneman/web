@@ -1,6 +1,6 @@
 # 0101. Phase 1's path into FSM is removed, and no booking carries a Request
 
-- Status: accepted, on the owner's ruling of 1 October 2026
+- Status: superseded by [0110](0110-field-work-without-fsm.md) on 4 October 2026: with FSM gone there is no path into it to remove. Was: accepted, on the owner's ruling of 1 October 2026
 - Date: 2026-10-01
 - Amends [0032](0032-fsm-mirror.md), [0063](0063-the-asked-window.md) and [0064](0064-converting-a-request.md); closes the plan's C4 (`docs/open-points.md`, items 33 and 159)
 

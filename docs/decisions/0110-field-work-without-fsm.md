@@ -1,6 +1,6 @@
 # 0110. Field work without Zoho FSM
 
-- Status: accepted, on the owner's ruling of 2 October 2026
+- Status: accepted, on the owner's ruling of 2 October 2026. Built: staging left FSM on 4 October 2026, and FSM's code was deleted the same day. Supersedes [0032](0032-fsm-mirror.md), [0064](0064-converting-a-request.md), [0095](0095-a-booking-fsm-refuses-is-held.md), [0098](0098-the-door-in-fsms-address.md), [0099](0099-the-clients-note-in-fsm.md) and [0101](0101-phase-1s-path-into-fsm-removed.md); [fsm-licensing.md](fsm-licensing.md) and [fsm-trial.md](fsm-trial.md) are history.
 - Date: 2026-10-02
 
 ## Context
@@ -35,3 +35,12 @@ The build follows these rules:
 - Migration 0070 adds `people.books_customer_id` (unique), `services.books_item_id`, lets `appointments.fsm_status` and `fsm_modified_at` be empty, and lets `zoho_access_tokens` hold a token for Books' own client.
 - Until staging switches, nothing changes for its users: each changed path keeps FSM's way under `zoho` and `stub`.
 - D1 is the only record of field work once FSM goes, so a restore that is proven to work matters more.
+
+## FSM's code removed, 4 October 2026
+
+Staging switched to `FSM_PROVIDER: "none"` and ran on our own database first (FSM-PR10). Then FSM's code went (FSM-PR11):
+
+- **Gone:** FSM's providers, the `fsm-sync` queue and its consumer, the mirror, FSM's webhook, the reconciliation, held bookings and their console panel, `FSM_PROVIDER` and every `ZOHO_FSM_*` setting, and the cron jobs that only FSM needed.
+- **A booking is written in the request that confirms it.** A paid hold whose request failed part-way is booked by the cron within the half hour, and ops are told once of one that still cannot be.
+- **The `fsm_*` columns stay** until a release after this one reaches production, when a contract migration drops those nothing reads (rule 7). `fsm_id` stays for good (rule 1).
+- **Rule 2 has done its work.** There is one path, so changing a variable no longer rolls staging back to FSM.

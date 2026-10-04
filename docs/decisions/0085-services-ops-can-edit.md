@@ -1,6 +1,6 @@
 # 0085. Services ops can edit
 
-- Status: accepted, on the owner's rulings of 27 September 2026 (ADR 0025, items 67 and 35; `docs/open-points.md`, items 1, 11 and 13). The push to FSM's catalogue is built and stays off until the owner switches it on in production (item 11); amended 28 September 2026 by the plan's piece C28, whose hourly check reads FSM's whole catalogue ([0087](0087-consumables-and-stock.md))
+- Status: accepted, on the owner's rulings of 27 September 2026 (ADR 0025, items 67 and 35; `docs/open-points.md`, items 1, 11 and 13). The push to FSM's catalogue is built and stays off until the owner switches it on in production (item 11); amended 28 September 2026 by the plan's piece C28, whose hourly check reads FSM's whole catalogue ([0087](0087-consumables-and-stock.md)). Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a service is synced to Books' items; the push to FSM's catalogue is gone.
 - Date: 2026-09-27
 - Amends [0073](0073-prices-from-the-price-book.md) and [0061](0061-ops-editable-inputs.md), and, built beside it the same day, [0086](0086-the-next-visit-is-offered.md), whose visit offered now names a service, and [0087](0087-consumables-and-stock.md), whose expected use is now checked against the services; follows [0035](0035-window-slot-map.md) for the half-slots a day is counted in, [0068](0068-a-paid-hold-is-kept.md) for what a hold keeps, [0070](0070-vendor-correctness.md) for the invoice check and [0071](0071-what-ops-see-before-a-setting-changes.md) for what ops see before a change
 

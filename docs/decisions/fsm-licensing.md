@@ -1,6 +1,6 @@
 # Zoho FSM licensing for our own apps
 
-- Status: **the owner has ruled that we build our own interface and go on** (23 September 2026). Zoho's written answer is still outstanding, and this record says plainly which is which.
+- Status: **history.** FSM was removed on 4 October 2026 ([0110](0110-field-work-without-fsm.md)); this record is kept as it stood. Was: **the owner has ruled that we build our own interface and go on** (23 September 2026). Zoho's written answer is still outstanding, and this record says plainly which is which.
 - Referenced by: `docs/prompts/phase2-backend.md` ("Technician app and dispatch — how they relate to FSM", Licensing)
 
 ## The question for Zoho

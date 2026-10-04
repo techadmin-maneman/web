@@ -1,6 +1,6 @@
 # 0052. Technician sessions, devices and the day-before unlock
 
-- Status: accepted
+- Status: accepted. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): switching a technician off is ours alone; FSM's user is not read.
 - Date: 2026-09-23
 
 ## Context
