@@ -16,7 +16,7 @@ import type { OneVisitPrice, VisitSummary } from "../api.ts";
 import { home, messages, windowText } from "../content.ts";
 import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { NoteSheet } from "../booking/NoteSheet.tsx";
-import { firstName, oneVisitOf, summaryName, visitName, visitTitle } from "../lib/visit.ts";
+import { firstName, oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { oneVisitLines } from "./one-visit-words.ts";
