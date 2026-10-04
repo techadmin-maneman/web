@@ -71,3 +71,24 @@ The owner ruled on 2 October 2026 to keep one free account, with no Workers Paid
 - **The runbook's "Workers daily limit reached (1027)"** says how to tell and what to do.
 
 Workers requests are not yet among the allowances the hourly check tells ops about at 70% (the runbook's "The daily allowances").
+
+## Update, 4 October 2026: the cron's CPU time
+
+On 3 October 2026 Cloudflare began holding the five-minute cron to the free plan's 10 ms: every staging run from 09:55 to 19:55 UTC ended `exceededCpu` at 10 ms, so no background job ran for ten hours. The runs it let finish used 34 and 61 ms.
+
+**What a run costs**, measured two ways:
+
+- Staging's own tail: an invocation costs about 1 ms, and about 0.35 ms more for each statement it sends D1 (the cheapest request with 7 statements took 3 ms, with 16 to 18 took 6 to 7 ms). A run of every job sent 56 or 57.
+- In Node, each job run as one invocation would run it, on a stand-in for D1, timing only the Worker's own JavaScript (zod without code generation, as in Workers): the whole run cost 11 to 12.5 ms the first time and 1.3 ms once V8 had compiled it. Cloudflare's 34 to 61 ms is the first-time figure and the statements together: a cron run meets most of its code for the first time in the isolate it lands in.
+- Over an empty run's 2.5 ms, most jobs added 0.1 to 0.8 ms; the sweeper 1.4 ms and 16 statements, the WhatsApp bridge 1.3 ms, the FSM reconciliation 3.8 ms. Making every provider on every invocation was 0.8 ms of the empty run.
+
+**Decision.**
+
+- The trigger fires every minute (`* * * * *`), still one of the account's five cron triggers for each environment, and each run takes only the jobs due in its minute. Each job has `every` (5, 15 or 60 minutes) and `at` (its minute in that period), so no minute holds more than four jobs or sends more than 16 statements (`CRON_STATEMENTS_PER_RUN`, held by `test/worker/cron-reads.test.ts`). The FSM reconciliation has its minute alone. The sweeper's eleven steps are jobs of their own, and the hourly checks that once read the clock's minute (the storage meter, the daily allowances, the AILabTools balance, FSM's catalogue, Books' items) run by the table.
+- A run reads its record and its failing jobs in one round trip, makes each provider only when a job first uses it, and starts no outside call after 30 seconds, so it ends before the next minute's.
+- Measured as above, a typical minute costs 2.6 ms the first time and 0.15 ms after, with 5 to 11 statements; the heaviest are FSM's reconciliation and catalogue, 6 to 8 ms, which go when FSM is switched off.
+- A run on any other schedule runs every job, as before: `npm run tick`, and the five-minute trigger until an operator attaches the new one (ADR 0010).
+
+**Rejected.** Each job as a message of its own on a queue: 3 operations a message, and the table's 4,032 job runs a day would be about 12,000 operations for staging alone, past the account's 10,000. A service binding to the Worker itself: not a binding kind this ADR allows, and Cloudflare does not say a called invocation gets its own CPU allowance. Workers Paid: the owner ruled on 2 October 2026 to keep one free account.
+
+**What it costs the day**, per environment: 1,440 invocations (both environments together, 2.9% of the account's 100,000 requests); each writes its record twice, 2,880 rows (both together, 5.8% of the 100,000 written); and each reads its record and failing jobs, about 7,200 rows. The jobs read no more than before, since none runs more often than every five minutes (`cronRowsReadPerDay`). No queue operation is added. Workers Logs gain one line a minute, and each job writes its own only when it did something.

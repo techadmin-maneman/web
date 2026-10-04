@@ -81,10 +81,31 @@ export function changesTime(job: Job, to: Target): boolean {
 export const isMovable = (block: Block): boolean =>
   block.status !== "completed" && block.status !== "in_progress" && block.begun === null;
 
+/** A visit the technician has checked in at and gone no further: it moves once ops choose to clear the check-in. */
+export const movesIfCheckInCleared = (block: Block): boolean =>
+  block.begun === "arrived" && (block.status === "scheduled" || block.status === "dispatched");
+
 /** How far the technician has got on a visit not yet done, in the board's word; null before he arrives. */
 export function begunWord(block: Block): string | null {
   if (block.begun === null || block.status === "completed") return null;
   return dispatch.board.begun[block.begun] ?? null;
+}
+
+/** What ops may do to a visit for its client from the board, besides moving it. */
+export type VisitChange = "cancel" | "close";
+
+const NOT_BEGUN: readonly Block["status"][] = ["scheduled", "dispatched"];
+const OPEN: readonly Block["status"][] = ["scheduled", "dispatched", "in_progress"];
+
+/**
+ * Cancelled while it is still ahead and the technician has not begun it, or closed by hand once its time has come,
+ * while neither his phone nor anyone has closed it.
+ */
+export function changeOf(block: Block, now: number): VisitChange | null {
+  if (Date.parse(block.starts_at) > now) {
+    return NOT_BEGUN.includes(block.status) && block.begun === null ? "cancel" : null;
+  }
+  return OPEN.includes(block.status) && block.begun !== "closed" ? "close" : null;
 }
 
 /** "Rohit", as the drawer's WhatsApp button names him. */

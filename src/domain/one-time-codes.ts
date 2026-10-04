@@ -20,6 +20,8 @@ export interface Challenge {
   readonly id: string;
   /** The client's or the technician's ID; null for a number that is no one's, whose challenge holds no code. */
   readonly holderId: string | null;
+  /** The hash a client's login was asked for under (mobileHashOf), whoever holds the number; null on any other. */
+  readonly mobileHash: string | null;
   readonly channel: CodeChannel;
   readonly createdAt: Date;
   readonly lastSentAt: Date;
@@ -30,11 +32,13 @@ export interface Challenge {
 
 /** The columns a Challenge is read from. A row has a person or a technician, never both. */
 export const CHALLENGE_COLUMNS =
-  "id, COALESCE(person_id, technician_id) AS holder_id, channel, created_at, last_sent_at, sends, attempts, expires_at";
+  "id, COALESCE(person_id, technician_id) AS holder_id, mobile_hash, channel, created_at, last_sent_at, sends, " +
+  "attempts, expires_at";
 
 export interface ChallengeRow {
   id: string;
   holder_id: string | null;
+  mobile_hash: string | null;
   channel: CodeChannel;
   created_at: string;
   last_sent_at: string;
@@ -47,6 +51,7 @@ export function challengeOf(row: ChallengeRow): Challenge {
   return {
     id: row.id,
     holderId: row.holder_id,
+    mobileHash: row.mobile_hash,
     channel: row.channel,
     createdAt: new Date(row.created_at),
     lastSentAt: new Date(row.last_sent_at),
@@ -70,6 +75,8 @@ export async function createChallenge(
     now: Date;
     purpose?: ChallengePurpose;
     numberChangeId?: string;
+    /** A client's login keeps the number's hash, so a code sent again counts against the number's day. */
+    mobileHash?: string;
   },
 ): Promise<Challenge> {
   const id = crypto.randomUUID();
@@ -82,8 +89,8 @@ export async function createChallenge(
     .prepare(
       `INSERT INTO otp_challenges
          (id, created_at, person_id, technician_login, technician_id, purpose, channel, code_hash, last_sent_at,
-          expires_at, number_change_id)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'whatsapp', ?7, ?2, ?8, ?9)
+          expires_at, number_change_id, mobile_hash)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'whatsapp', ?7, ?2, ?8, ?9, ?10)
        RETURNING ${CHALLENGE_COLUMNS}`,
     )
     .bind(
@@ -96,6 +103,7 @@ export async function createChallenge(
       codeHash,
       new Date(options.now.getTime() + CODE_TTL_MS).toISOString(),
       options.numberChangeId ?? null,
+      options.mobileHash ?? null,
     )
     .first<ChallengeRow>();
   if (row === null) throw new Error("challenge not written");

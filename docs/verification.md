@@ -811,6 +811,46 @@ The provider's new calls, run through the real adapter against the owner's org w
 
 **Not proven by these two runs:** making an item, which only a first run does (`POST /items` answered 201 on the exploratory calls, making `4242595000000245041`); and GST's treatment and places, which wait for GST to be turned on in Books.
 
+## FSM removal, PR 10: staging off FSM
+
+Run once staging is switched (docs/runbook.md, "Switching staging off FSM"), as a real user with staging's test records, backdating rather than waiting. Not run yet.
+
+| #   | Check                                                                    | Answer |
+| --- | ------------------------------------------------------------------------ | ------ |
+| 1   | A consultation booked on the site                                        |        |
+| 2   | A paid first fit booked in the app                                       |        |
+| 3   | A visit booked by ops                                                    |        |
+| 4   | A dispatch move and a reassign                                           |        |
+| 5   | A technician's whole day on a phone                                      |        |
+| 6   | A partial job                                                            |        |
+| 7   | A no-show                                                                |        |
+| 8   | A cancel with a refund                                                   |        |
+| 9   | The invoice issued and the payment applied; the receipt and the PDF open |        |
+| 10  | The CRM Contact appears after Books' Instant Sync, with "MM person ID"   |        |
+| 11  | An erasure blanks the Books customer, and the CRM Contact follows        |        |
+| 12  | A technician added in the console signs in                               |        |
+
+If check 11 fails, the CRM Contact is blanked directly instead: CRM Contacts access (open point 21), about a day's work.
+
+## Zoho's answers, read through the adapters, 4 October 2026
+
+Every read the Books and CRM adapters make, run through the adapters against the owner's org with the scripts' tokens, so each answer was read by the adapter's own schema: `node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/zoho-contract-probe.ts --record` (RB, "Checking Zoho's answers before a release"). Nothing was written; 13 calls, 03:42 IST.
+
+| #   | Read                                                              | Answer                                                                      |
+| --- | ----------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 1   | Books' items, a page at a time                                    | **PASS**, 6 items                                                           |
+| 2   | An invoice, its PDF, and an invoice found by its reference        | **SKIP**: the org holds no invoice                                          |
+| 3   | No invoice under a new reference                                  | **PASS**                                                                    |
+| 4   | A payment found by its customer and our reference, `MM-2026-0016` | **PASS**: the first time this search ran on the org                         |
+| 5   | That payment's receipt                                            | **PASS**, a PDF                                                             |
+| 6   | A refund found on its payment by Razorpay's refund ID             | **PASS**: the first time this search ran on the org                         |
+| 7   | No refund under a new reference                                   | **PASS**                                                                    |
+| 8   | A Lead found by its person ID, and none for a new person ID       | **FAIL**, 401 `OAUTH_SCOPE_MISMATCH`: the scripts' token has no Leads scope |
+
+**What it changed.** The adapter tests now read the org's own answers to the payment and refund searches (`test/fixtures/vendors/books/payments-by-reference.json` and `refunds-of-payment.json`, with no one's details), where before they read shapes written from Books' documentation. Books applies the payment search's two filters exactly (`comparator: "equal"`), and the adapter still compares each reference again.
+
+**Owed.** The CRM's scripts' token has only the settings scopes, so the Lead search is not yet read on the org: a new code with `ZohoCRM.modules.leads.READ` and `ZohoSearch.securesearch.READ` added (RB, Zoho, step 7), then the probe again with `--record`, which writes `test/fixtures/vendors/crm/lead-search.json` for the CRM tests to load. Read 2 waits for the first invoice the D1 path raises on staging.
+
 ## What the P2-M2 and P2-M5 proofs left in the owner's org
 
 Staging shares the real Zoho org (open point 19), so the records below are real and are the owner's to keep or clear. Every one of them is labelled "Staging test". Nothing was deleted, because two of them are still wanted: **WO13 carries the invoice the owner raised by hand**, INV-000001, which the invoice check still waits on for the reason in open point 114; and the first fit is the visit a move was proven on.

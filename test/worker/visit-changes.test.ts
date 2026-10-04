@@ -10,6 +10,9 @@ import { listCodes, makeCodes } from "../../src/domain/discount-codes.ts";
 import { moveJob } from "../../src/domain/dispatch.ts";
 import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { settleOwedRefunds } from "../../src/domain/cancel-refunds.ts";
+import { createCallBudget } from "../../src/lib/call-budget.ts";
+import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubPayments, PaymentUnanswered, type PaymentsProvider } from "../../src/providers/payments.ts";
 import type { MoveReason } from "../../src/policy/dispatch.ts";
@@ -146,6 +149,7 @@ describe("POST /api/appointments/:id/cancel", () => {
       kept: 0,
       destination: "upi",
       cancelled: false,
+      refund_pending: false,
     });
     expect(fsm.made.cancelled).toEqual([]);
 
@@ -318,6 +322,45 @@ describe("POST /api/appointments/:id/cancel", () => {
     expect((await visitRow())?.status).toBe("scheduled");
     expect((await changes()).results).toEqual([]);
     expect(payments.made.refunds).toEqual([]);
+  });
+
+  it("refunds through the cron's job a visit FSM cancelled though the write after failed, once the mirror has it", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    const fsm = createStubFsm(world());
+    const payments = createStubPayments();
+    const deps = fakeDependencies({ fsm, payments });
+    let batches = 0;
+    const lostOnce: Pick<D1Database, "prepare" | "batch"> = {
+      prepare: (sql) => env.DB.prepare(sql),
+      batch: <T = unknown>(statements: D1PreparedStatement[]) => {
+        batches += 1;
+        if (batches === 1) return Promise.reject(new Error("D1_ERROR: Network connection lost."));
+        return env.DB.batch<T>(statements);
+      },
+    };
+
+    const answer = await post(
+      appFor("local", deps, {}, "client"),
+      `/api/appointments/${VISIT}/cancel`,
+      { confirm: true, notice: "free" },
+      { DB: lostOnce as D1Database },
+    );
+    expect(answer.status).toBe(503);
+    expect(fsm.made.cancelled).toHaveLength(1);
+    expect(payments.made.refunds).toEqual([]);
+
+    const pass = () =>
+      settleOwedRefunds(
+        env.DB,
+        { ...deps, budget: createCallBudget(40), log: createLogger() },
+        new Date(NOW.getTime() + 11 * 60_000),
+      );
+    expect(await pass()).toBe(0);
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled' WHERE id = ?1")
+      .bind(VISIT)
+      .run();
+    expect(await pass()).toBe(1);
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 200000 }]);
   });
 
   it("refuses a visit that has started, has passed, is another client's, or while self-serve is off", async () => {
@@ -569,7 +612,7 @@ describe("moving a visit", () => {
     expect(held.price.amount).toBe(400000);
     const started = await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     expect(await started.json()).toMatchObject({
-      checkout: { amount: 400000, description: "Moving your first fit to 2026-09-28" },
+      checkout: { amount: 400000, description: "Moving your visit to Mon 28 Sep" },
     });
 
     const fsm = createStubFsm(world());

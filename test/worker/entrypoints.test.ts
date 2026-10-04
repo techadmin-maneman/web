@@ -24,6 +24,12 @@ function queueBatch(queue: string, bodies: unknown[]) {
   return { queue, messages, ackAll: vi.fn(), retryAll: vi.fn() };
 }
 
+async function booksPaymentOf(paymentId: string): Promise<string | null> {
+  return env.DB.prepare("SELECT books_payment_id FROM payments WHERE id = ?1")
+    .bind(paymentId)
+    .first<string | null>("books_payment_id");
+}
+
 /** What the runbook's first step of a restore writes. */
 async function switchMaintenanceOn(startedAt: string): Promise<void> {
   await env.DB.prepare("INSERT INTO maintenance (id, reason, started_at) VALUES (1, 'restoring D1', ?1)")
@@ -122,6 +128,20 @@ describe("queue handler", () => {
     expect(summary?.d1_queries).toBeGreaterThan(1);
   });
 
+  it("acknowledges an fsm-sync message without reaching FSM, which is off locally", async () => {
+    await markDatabase();
+    const logs = captureLogs();
+    const batch = queueBatch("mm-fsm-sync-local", [{ fsm_id: "fsm-1", request_id: "r" }]);
+
+    await worker.queue(batch as unknown as MessageBatch, env);
+
+    expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
+    expect(batch.messages[0]?.retry).not.toHaveBeenCalled();
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "fsm_message_dropped", kind: "appointment_read" }),
+    );
+  });
+
   it("retries messages from a queue it does not know", async () => {
     await markDatabase();
     const batch = queueBatch("mm-mystery-local", [{}]);
@@ -156,7 +176,7 @@ describe("scheduled handler while D1 is being restored", () => {
 
     await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), { ...env, ...queues });
 
-    expect(logs.lines().some((line) => line.event === "sweep")).toBe(false);
+    expect(logs.lines().some((line) => line.event === "cron_run")).toBe(false);
     expect(logs.lines().some((line) => line.event === "cron_stopped_for_maintenance")).toBe(true);
     expect(await lastCompletedAt(env.DB)).toBeNull();
     expect(await env.DB.prepare("SELECT COUNT(*) AS alerts FROM alerts").first()).toEqual({ alerts: 0 });
@@ -176,7 +196,7 @@ describe("scheduled handler while D1 is being restored", () => {
 });
 
 describe("scheduled handler", () => {
-  it("runs the sweeper, and notes the run as finished", async () => {
+  it("runs the jobs, and notes the run as finished", async () => {
     await markDatabase();
     const logs = captureLogs();
     await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), {
@@ -185,8 +205,28 @@ describe("scheduled handler", () => {
       RENDER_QUEUE: fakeQueue(),
       MESSAGE_QUEUE: fakeQueue(),
     });
-    expect(logs.lines().some((line) => line.event === "sweep")).toBe(true);
+    expect(logs.lines().find((line) => line.event === "cron_run")).toMatchObject({ failed_jobs: [] });
     expect(await lastCompletedAt(env.DB)).not.toBeNull();
+  });
+
+  // D-01 of 4 October 2026: one run of every job took 34 to 61 ms of CPU on staging, past the free plan's 10.
+  it("on the every-minute trigger, runs only the jobs due in the minute it was scheduled for", async () => {
+    await markDatabase();
+    const logs = captureLogs();
+    const eightPast = Date.UTC(2026, 9, 4, 6, 8);
+    await worker.scheduled(createScheduledController({ cron: "* * * * *", scheduledTime: eightPast }), {
+      ...env,
+      CRM_QUEUE: fakeQueue(),
+      RENDER_QUEUE: fakeQueue(),
+      MESSAGE_QUEUE: fakeQueue(),
+      FSM_QUEUE: fakeQueue(),
+    });
+    const summary = logs.lines().find((line) => line.event === "cron_run");
+    expect(Object.keys(summary?.d1_rows_read_by_job as object)).toEqual([
+      "unbooked_holds",
+      "release_unfinished_moves",
+      "visit_reminders",
+    ]);
   });
 
   it("ends the run with a line saying what it cost D1, and what each job read of it", async () => {
@@ -208,7 +248,7 @@ describe("scheduled handler", () => {
     expect(summary).toMatchObject({ job: "cron", failed_jobs: [], d1_rows_read: read });
     expect(summary?.d1_rows_written).toBeGreaterThan(0);
     const byJob = summary?.d1_rows_read_by_job as Record<string, number>;
-    expect(Object.keys(byJob)).toEqual(expect.arrayContaining(["sweeper", "referrals", "books_sync"]));
+    expect(Object.keys(byJob)).toEqual(expect.arrayContaining(["requeue_leads", "referrals", "books_sync"]));
     const jobsRead = Object.values(byJob).reduce((total, rows) => total + rows, 0);
     expect(jobsRead).toBeGreaterThan(0);
     expect(jobsRead).toBeLessThanOrEqual(read);
@@ -236,11 +276,8 @@ describe("scheduled handler", () => {
       MESSAGE_QUEUE: fakeQueue(),
       FSM_QUEUE: fakeQueue(),
     });
-    // The stub FSM has no such client in Books yet, so the payment waits its hour.
-    const payment = await env.DB.prepare("SELECT books_checked_at FROM payments WHERE id = 'pay-1'").first<{
-      books_checked_at: string | null;
-    }>();
-    expect(payment?.books_checked_at).not.toBeNull();
+    // Locally FSM is off, so the pass makes the client's customer in the stub Books and records the payment there.
+    expect(await booksPaymentOf("pay-1")).not.toBeNull();
   });
 
   it("runs every other job when one fails, and logs the one that failed", async () => {
@@ -252,7 +289,7 @@ describe("scheduled handler", () => {
       env.DB.prepare(
         "INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id) VALUES ('p-1', ?1, '+919810000001', 'Rohit Malhotra', 'c-1')",
       ).bind(now),
-      // A lead the sweeper re-sends, onto a queue that is down: the sweep fails.
+      // A lead the sweeper re-sends, onto a queue that is down: that job fails.
       env.DB.prepare(
         `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, request_id)
          VALUES ('lead-1', 'p-1', ?1, 'form', 'Gurgaon', 'weekday_am', 'crown', 'r')`,
@@ -277,12 +314,9 @@ describe("scheduled handler", () => {
     });
 
     expect(logs.lines().filter((line) => line.event === "cron_job_failed")).toEqual([
-      expect.objectContaining({ level: "error", job: "sweeper" }),
+      expect.objectContaining({ level: "error", job: "requeue_leads" }),
     ]);
-    // The Books pass runs last, after the sweep that failed.
-    const payment = await env.DB.prepare("SELECT books_checked_at FROM payments WHERE id = 'pay-1'").first<{
-      books_checked_at: string | null;
-    }>();
-    expect(payment?.books_checked_at).not.toBeNull();
+    // The Books pass runs after the job that failed.
+    expect(await booksPaymentOf("pay-1")).not.toBeNull();
   });
 });

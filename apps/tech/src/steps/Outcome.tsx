@@ -46,7 +46,9 @@ export function Outcome({ id }: { id: string }) {
   const [codeChecking, setCodeChecking] = useState(false);
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
 
   const reasons = loaded.value.partial_reasons;
   const closesOneVisit = loaded.value.one_visit && choice === "done";

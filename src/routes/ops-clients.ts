@@ -12,6 +12,7 @@
 //
 // A client is always found by their ID. What ops search with goes in a request
 // body, never in a path, so that a number stays out of URLs, referrers and logs.
+// Each route keeps to the caller's cities: a client elsewhere is not found.
 //
 // The records are the ones the client reads of themselves, through the same
 // domain functions, so the two surfaces cannot drift apart. An erased person is
@@ -20,8 +21,9 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
+import type { Context } from "hono";
 import { staffOf } from "../http/audit.ts";
-import type { App } from "../http/context.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { earlierViews, logPhotoView, PHOTO_VIEW_MINUTES, viewInForce } from "../domain/photo-views.ts";
@@ -36,6 +38,7 @@ import {
 import { creditBalance } from "../domain/credits.ts";
 import { clientVisitCodes } from "../domain/discount-code-uses.ts";
 import { heldBookingsOf, type HeldBooking } from "../domain/held-bookings.ts";
+import { reachBinding, withinReach } from "../domain/places.ts";
 import { clientInviteOf } from "../domain/referrals.ts";
 import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
 import { consentRecordsOf, currentAddress, type ConsentState, type SavedAddress } from "../domain/profile.ts";
@@ -44,6 +47,7 @@ import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
+import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { CONSENT_PURPOSES, CONSENT_SOURCES } from "../policy/consents.ts";
@@ -55,7 +59,9 @@ import { ClientInviteSchema } from "./ops-client-referral.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
 
 const clientId = z.object({ id: z.uuid() });
-const unknownClient = errorResponse("not_found: no such client, or the client has been erased");
+const unknownClient = errorResponse(
+  "not_found: no such client, or the client has been erased or is outside the caller's cities",
+);
 
 const nullable = z.union([z.string(), z.null()]);
 
@@ -138,6 +144,11 @@ const ClientVisitSchema = VisitSummarySchema.extend({
   price_open: z.boolean().openapi({
     description: "Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off.",
   }),
+  requested_code: z.union([z.string(), z.null()]).openapi({
+    description:
+      "For a consultation and fit in one visit, the code the client typed on /book for it, honoured as it stood " +
+      "then when entered on the visit; null for none.",
+  }),
 }).openapi("ClientVisit");
 
 /**
@@ -177,6 +188,19 @@ const HeldBookingSchema = z
     refusal: z.union([z.string(), z.null()]).openapi({ description: "FSM's latest refusal, as the log gives it." }),
     retries_end: z.iso.datetime().openapi({ description: "When the hourly tries end, or ended, as ops set them." }),
     retrying: z.boolean().openapi({ description: "Still tried every hour: inside its tries, and its visit to come." }),
+    discount_code: z
+      .union([
+        z
+          .object({
+            code: z.string(),
+            amount_off: z
+              .union([z.number().int(), z.null()])
+              .openapi({ description: "In paise before GST; null until the visit's price is known." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({ description: "The discount code the client booked with (docs/decisions/0108-discount-codes.md)." }),
   })
   .strict()
   .openapi("HeldBooking");
@@ -194,6 +218,10 @@ const heldBookingOf = (booking: HeldBooking) => ({
   refusal: booking.refusal,
   retries_end: booking.retriesEnd,
   retrying: booking.retrying,
+  discount_code:
+    booking.discountCode === null
+      ? null
+      : { code: booking.discountCode.code, amount_off: booking.discountCode.amountOff },
 });
 
 const ClientRecordSchema = z
@@ -345,7 +373,7 @@ const findRoute = createRoute({
   },
   responses: {
     200: {
-      description: "The clients it matches, by name",
+      description: "The clients it matches in the caller's cities, by name",
       ...json(
         z
           .object({
@@ -450,12 +478,15 @@ interface PersonRow {
   created_at: string;
 }
 
-/** The client by ID, or null when there is no such person or they have been erased. */
-function clientById(db: D1Database, id: string): Promise<PersonRow | null> {
-  return db
-    .prepare("SELECT id, name, mobile_e164, created_at FROM people WHERE id = ?1 AND erased_at IS NULL")
+/** The client by ID; null when there is no such person, they were erased, or they are outside the caller's cities. */
+export async function clientInReach(c: Context<AppEnv>, id: string): Promise<PersonRow | null> {
+  const person = await c.env.DB.prepare(
+    "SELECT id, name, mobile_e164, created_at FROM people WHERE id = ?1 AND erased_at IS NULL",
+  )
     .bind(id)
     .first<PersonRow>();
+  if (person === null || !(await withinRouteReach(c, "client", id))) return null;
+  return person;
 }
 
 interface PhotoListRow {
@@ -481,7 +512,9 @@ export function registerOpsClients(app: App): void {
     )
       .bind(mobile)
       .first<PersonRow>();
-    if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (person === null || !(await withinRouteReach(c, "client", person.id))) {
+      return c.json(errorBody("not_found", c.var.requestId), 404);
+    }
     return c.json({ id: person.id, name: person.name, mobile: person.mobile_e164 }, 200);
   });
 
@@ -489,11 +522,14 @@ export function registerOpsClients(app: App): void {
     const search = searchOf(c.req.valid("json").text);
     if (search === null) return c.json(errorBody("invalid_request", c.var.requestId, ["text"]), 400);
     const column = search.by === "number" ? "mobile_e164" : "name";
+    const reached = await routeReach(c);
     const { results } = await c.env.DB.prepare(
-      `SELECT id, name, mobile_e164 FROM people
-       WHERE erased_at IS NULL AND ${column} LIKE ?1 ESCAPE '\\' ORDER BY name, id LIMIT ?2`,
+      `SELECT client.id, client.name, client.mobile_e164 FROM people client
+       WHERE client.erased_at IS NULL AND client.${column} LIKE ?1 ESCAPE '\\'
+         AND ${withinReach("client", "client", "?3")}
+       ORDER BY client.name, client.id LIMIT ?2`,
     )
-      .bind(containing(search.text), CLIENTS_FOUND + 1)
+      .bind(containing(search.text), CLIENTS_FOUND + 1, reachBinding(reached))
       .all<{ id: string; name: string; mobile_e164: string }>();
     return c.json(
       {
@@ -509,7 +545,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(recordRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    const person = await clientById(db, id);
+    const person = await clientInReach(c, id);
     if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const now = c.var.deps.now();
@@ -539,6 +575,7 @@ export function registerOpsClients(app: App): void {
         closed_without_follow_up: closings.get(visit.id) ?? null,
         discount_code: codes.get(visit.id)?.code ?? null,
         price_open: codes.get(visit.id)?.open ?? false,
+        requested_code: codes.get(visit.id)?.requested ?? null,
       }));
 
     return c.json(
@@ -563,7 +600,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(photosRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientById(db, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const { results } = await db
       .prepare(
@@ -609,7 +646,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(viewRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientById(db, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const now = c.var.deps.now();
     try {
       await logPhotoView(db, { personId: id, actor: staffOf(c), requestId: c.var.requestId, now });
@@ -623,7 +660,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(photoRoute, async (c) => {
     const { id, photo_id: photoId } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientById(db, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     // The same lookup the client's own photographs go through: a photograph of
     // anyone else is not found, whatever ID is asked for.
     const photo = await ownPhotoKey(db, id, photoId);
@@ -652,7 +689,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(consentsRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientById(db, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const [consents, deletion] = await Promise.all([
       consentRecordsOf(db, id),

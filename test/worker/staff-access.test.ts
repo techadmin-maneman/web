@@ -72,12 +72,13 @@ describe("once the Staff list is enforced", () => {
     expect((await request(care, "/api/dispatch")).status).toBe(403);
   });
 
-  it("opens no national route to a grant of one city or zone, until the route keeps to the caller's cities", async () => {
+  it("opens to a grant of one city or zone only the routes that keep to the caller's cities", async () => {
     await listStaff("delhi@maneman.in", ["customer_care:manage:city:Delhi", "admin:view:zone:NCR"]);
     const delhi = opsAs(person("delhi@maneman.in"));
 
-    expect((await request(delhi, "/api/grievances")).status).toBe(403);
+    expect((await request(delhi, "/api/settings")).status).toBe(403);
     expect((await request(delhi, "/api/staff")).status).toBe(200);
+    expect((await request(delhi, "/api/grievances")).status).toBe(200);
   });
 
   it("lets a listed service token in as before, and refuses one not listed", async () => {
@@ -184,8 +185,12 @@ describe("GET /api/whoami", () => {
     expect(routes).not.toContain("GET /api/settings");
   });
 
-  it("names nothing but who is signed in and the health check to a person not on the enforced list", async () => {
+  it("names nothing but who is signed in, the health check and the console's errors to a person not on the list", async () => {
     await enforce();
-    expect(await mayCall(person("stranger@maneman.in"))).toEqual(["GET /api/health", "GET /api/whoami"]);
+    expect(await mayCall(person("stranger@maneman.in"))).toEqual([
+      "GET /api/health",
+      "GET /api/whoami",
+      "POST /api/client-errors",
+    ]);
   });
 });

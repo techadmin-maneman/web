@@ -23,6 +23,7 @@ An alert in the alert space names what went wrong with IDs only; "What each aler
 | Try-ons fail                                                | "Try-on and WhatsApp"                                               |
 | A technician lost a phone, or his work is stuck on it       | "A technician's lost phone", "Work stuck on a technician's phone"   |
 | Ops cannot get into the console                             | "Locked out of the ops console"                                     |
+| Someone says a screen failed, or quotes a Ref               | "Someone says a screen failed"                                      |
 | R2 storage is growing, or a usage e-mail came               | "Staying on the free tier"                                          |
 | A daily allowance is 70% used                               | "The daily allowances"                                              |
 | Every host answers Cloudflare's error 1027                  | "Workers daily limit reached (1027)"                                |
@@ -55,7 +56,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 7. Worker secrets: alert webhook               | done (Google Chat)                                     | done (the same Google Chat space)                                                         |
 | 7. Worker secrets: AILabTools, link signing    | done                                                   | done (staging's AILabTools key, for now)                                                  |
 | 7. Worker secrets: Evolution, allowlist        | done (poker-settle's bridge, for now)                  | Evolution done (the same bridge; messaging off)                                           |
-| 7. Worker secrets: erasure                     | done                                                   | done                                                                                      |
+| 7. Worker secrets: erasure                     | retired: delete `ERASURE_SECRET` once this lands       | retired: delete `ERASURE_SECRET` with the release that carries it                         |
 | 7. Worker secrets: login code pepper           | done (22 September 2026)                               | not yet: with the client surface                                                          |
 | 7. Worker secrets: the cron's heartbeat        | not yet ("The outside watchers")                       | not yet ("The outside watchers")                                                          |
 | 7. Worker secrets: the analytics token         | not yet ("The daily allowances")                       | not yet: moves here from staging at go-live                                               |
@@ -221,7 +222,6 @@ Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the va
 | `AILAB_API_KEY`                                                             | The environment's AILabTools API key, a separate key per environment where the dashboard allows.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `RESULT_SIGNING_KEY`                                                        | 32 or more random characters, generated like `IP_HASH_SALT`. Signs upload and result links; changing it invalidates links already handed out.                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`         | The Evolution API bridge (`docs/decisions/0016-whatsapp-through-evolution.md`). The URL must be public `https://`, reachable from Cloudflare, and include the port if it is not 443: staging's ends in `ts.net:8443`, because port 443 on that host serves another app. `GET /` there should answer "Welcome to the Evolution API".                                                                                                                                                                                                                                      |
-| `ERASURE_SECRET`                                                            | 32 or more random characters, generated like `IP_HASH_SALT`. Authorises `POST /api/erasure`. Keep one copy, in the git-ignored `.env.erasure-<env>` file that ops use for erasures ("Erasure within the day").                                                                                                                                                                                                                                                                                                                                                           |
 | `MESSAGING_ALLOWLIST`                                                       | Staging: the founders' mobile numbers, comma-separated. Holds back an automatic message — a reminder, a launch alert, or one to someone other than who acted — and any message about a record one of our own scripts made ("Staging test", "Load test"), whatever its kind; a login code and a message that answers a real person who just acted (their booking, their move, their cancel, the try-on result they claimed) reach any number otherwise (ADR 0097; `isStagingTestRecord`, `src/policy/staging-test-records.ts`). A secret, so the numbers stay out of git. |
 | `STAGING_TEST_RECORD_CODE`                                                  | Staging only, optional: six digits that a "Staging test …" record signs in with, so an audit walks the real login screens; such records also skip the per-address limits on codes and the site's forms (`src/policy/staging-test-records.ts`). The guard refuses it anywhere else.                                                                                                                                                                                                                                                                                       |
 | `GOOGLE_MAPS_API_KEY`                                                       | The address search, once `GEOCODE_PROVIDER` is `google`. Make and restrict it in section 13 first: an unrestricted key is a key anyone can spend.                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -247,7 +247,7 @@ A single secret: `W secret put ALERT_WEBHOOK_URL --env <env>` prompts for the va
 
 One space can serve both environments: every alert starts `[mm-api staging]` or `[mm-api production]`.
 
-The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-production` (`maneman.in`, `www.maneman.in`). The front-end needs their site keys, which are public: `docs/turnstile.md`.
+The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-production` (`maneman.in`, `www.maneman.in`, and `app.maneman.in` before the client app goes live there). The front ends need their site keys, which are public: `docs/turnstile.md`.
 
 ### 8. Zoho
 
@@ -312,7 +312,7 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
    It confirms every field, type and pick-list value the sync writes, and lists the Leads assignment rules with their IDs. Fill in `ZOHO_LAR_ID`, run it again until it passes, then `W secret bulk` the file and delete it. The next lead proves the setup end to end: it should reach Zoho within a minute, assigned and with its proposed date.
 
-7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`; for FSM and for Books, the same scopes as the Worker's FSM and Books tokens, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
+7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`, and for the contract probe's reads `ZohoCRM.modules.leads.READ` and `ZohoSearch.securesearch.READ`; for FSM and for Books, the same scopes as the Worker's FSM and Books tokens, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
    - the CRM's as `ZOHO_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET` and the hosts;
    - FSM's as `ZOHO_FSM_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and the hosts;
    - Books' as `ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, the hosts and `ZOHO_BOOKS_ORG_ID`, in `.env.books-scripts`.
@@ -516,7 +516,7 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    W secret put RAZORPAY_KEY_SECRET --env <env>
    ```
 
-2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay:
+2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay. It must be at least 32 characters (the command below gives 48), and while `SELF_SERVE_BOOKING` is on the Worker refuses to start without it:
 
    ```sh
    openssl rand -hex 24
@@ -530,14 +530,14 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    - Payment links on: the one visit's link is made through the API (`POST /v1/payment_links`), which the account must allow (open point 166).
    - On staging, the hooks path already has its Access bypass (step 12, point 3).
 
-### 12. WhatsApp delivery receipts (Evolution)
+### 12. WhatsApp delivery receipts and STOP replies (Evolution)
 
-Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md). The no-show evidence depends on these receipts. Until this is set up, the route answers 404 and no receipts are recorded.
+Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md), and passes on the messages people send us, where a STOP reply withdraws the sender's WhatsApp consents and is answered once. The no-show evidence depends on the receipts. Until this is set up, the route answers 404: no receipts are recorded and a STOP reply stops nothing (the link at the foot of a reminder still works).
 
 1. **The token.** Make a random value of at least 32 characters, e.g. `openssl rand -hex 24`, and set it on the Worker with `W secret put EVOLUTION_WEBHOOK_TOKEN --env <env>`. Use a different value in each environment.
 2. **Evolution's webhook**, on the instance the Worker sends from:
    - URL: `https://<host>/api/hooks/evolution/<token>`;
-   - events: **`MESSAGES_UPDATE` only**;
+   - events: **`MESSAGES_UPDATE` and `MESSAGES_UPSERT` only**;
    - "webhook by events": off.
 
    Every event is a request against the free plan's daily allowance, so send no others.
@@ -558,6 +558,8 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
    `delivered_at` and `read_at` should be filled within seconds. If they stay empty, look in Workers Logs:
    - `evolution_hook_unauthorized`: the token in Evolution's URL is wrong;
    - no `evolution_receipts` line at all: Access or Bot Fight Mode is stopping the webhook.
+
+   Then reply STOP from that handset, if its person has agreed to WhatsApp about visits or launches. The handset gets one answer, the client's page in the console shows the consents withdrawn by "STOP reply", and Workers Logs has an `evolution_replies` line with `stopped: 1`. Switch the consents back on in the app afterwards.
 
 ---
 
@@ -812,15 +814,17 @@ A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept c
 SELECT job, failed_runs, last_failed_at, last_error FROM cron_jobs WHERE failed_runs > 0;
 ```
 
-The other jobs run regardless. A run shares 40 outside calls between its jobs; a job that finds them spent stops and leaves the rest to the next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
+The other jobs run regardless. The cron runs every minute, and each run only the jobs due in that minute: the table in `src/scheduled/cron.ts` gives each how often it runs (`every`: 5, 15 or 60 minutes) and in which minute (`at`). A run shares 40 outside calls between its jobs, and starts none after 30 seconds, so it ends before the next minute's; a job that finds them spent stops and leaves the rest to its next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
 
-Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need both FSM and Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
+Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
 
 **The cron and the queue consumers have stood still for maintenance.** The switch a restore runs under has been on for an hour ("Restoring D1"). Once the restore is done, switch it off; the next run does its jobs, and the queues deliver what they hold. Then close the alert by hand.
 
 ### A cron run cut short
 
-Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and the alert closes once runs have finished for an hour. The jobs after where the run stopped did not run that time; the next run does them, so one alert is a blip. Where it stands:
+Cloudflare stops a run that uses too much CPU time, and the free plan allows 10 ms an invocation. One run of every job took 30 to 60 ms, and on 3 October 2026 Cloudflare stopped every staging run for ten hours. So the cron runs every minute, each run only the few jobs due in that minute (`src/scheduled/cron.ts`; ADR 0009, "Update, 4 October 2026: the cron's CPU time").
+
+Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and pings the heartbeat's `/fail` saying so ("The outside watchers"). The alert closes once runs have finished for an hour. Only that minute's jobs missed a turn, and each runs again at its next minute, so one alert is a blip. The minute of the run's start says which jobs it was running: those whose `every` and `at` fall on it, in `src/scheduled/cron.ts`. Where it stands:
 
 ```sql
 SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs;
@@ -828,13 +832,21 @@ SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs;
 
 `GET /api/health` shows `cron_completed_at`, the last finished run, for information; its status does not depend on it.
 
-Cloudflare stops a run that uses too much CPU time, and the free plan allows 10 ms an invocation. Every staging deploy reports mm-api's CPU over the last day in its last step, and `node --env-file=.env.cf-read scripts/cpu-report.ts production` reports production's (the token needs Account Analytics: Read). Workers Logs at the run's start time show the last job that logged before it stopped. If runs are cut again and again, tell the developers: the later jobs (invoices, Books, refunds owed, erasures) are not running.
+If the alert comes back for runs started in the same minute of the hour again and again, that minute's run is too heavy for the free plan: tell the developers which minute, so its jobs can be given minutes of their own. To see what Cloudflare charged each run, tail it across a few minutes and read `cpuTime` and `outcome` (`exceededCpu` is a run stopped):
+
+```sh
+node node_modules/wrangler/bin/wrangler.js tail mm-api-<env> --format json
+```
+
+Every staging deploy also reports mm-api's CPU over the last day in its last step, and `node --env-file=.env.cf-read scripts/cpu-report.ts production` reports production's (the token needs Account Analytics: Read).
+
+**After a deploy that changes the trigger.** Cloudflare attaches the trigger apart from the code (ADR 0010). Until an operator runs `npm run apply-triggers -- --env <env>`, the five-minute trigger fires, and each of its runs runs every job at once, as before, too heavy for the free plan. The deploy's trigger check names the difference.
 
 ### The outside watchers
 
 Every alert is sent from inside mm-api, so a cron that stops altogether, or an API that is down, tells nobody. Two free monitors outside Cloudflare watch for that:
 
-1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it after every run, and pings `/fail` with the failed jobs' names when one failed. No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
+1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it after every run, every minute, and pings `/fail` with the jobs' names when one failed, or when the run before never finished ("A cron run cut short"). No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
 2. **The API.** Any free uptime monitor checking `https://maneman.in/api/health` every 5 minutes for HTTP 200, telling the owner's e-mail. Production only: staging is behind Access. A 503 means the database is unreachable or not production's, and the answer's `d1` says which.
 
 ### What each alert means
@@ -859,12 +871,13 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Lead _id_ did not reach FSM                                                              | none                                                                                                      | not kept                             | "FSM is down"                                                           |
 | A technician's _step_ … has waited over an hour to reach FSM                             | `job_event_pending:<job event>`                                                                           | when it is written or given up       | "FSM is down"                                                           |
 | A technician's _step_ did not reach FSM after _n_ attempts                               | none                                                                                                      | not kept                             | "FSM is down"                                                           |
+| A technician's steps on visit _id_ were never written to FSM, which is now switched off  | `job_event_unwritten:<visit>`                                                                             | by hand                              | "Switching staging off FSM"                                             |
 | Booking _id_ was paid for … and is neither booked in FSM nor refunded                    | `unbooked_hold:<hold>`                                                                                    | when booked or given back            | "A booking FSM would not take"                                          |
 | Booking _id_ could not be written to FSM after _n_ attempts. Nothing is refunded …       | `booking_held:<hold>`                                                                                     | when booked or refunded              | "A booking FSM would not take"                                          |
 | Booking _id_ was not written to FSM: visit _id_ … reached FSM after the booking was held | `booking_to_link:<hold>`                                                                                  | when booked or refunded              | "A booking FSM would not take"                                          |
 | Booking _id_: an earlier try may have made its work order in FSM                         | `work_order_lookup_failed:<hold>`                                                                         | by hand                              | cancel all but one work order, as it says                               |
 | The client moved visit _id_ … and FSM would not cancel its work order                    | `replaced_not_cancelled:<visit>`                                                                          | by hand                              | cancel it in FSM, as it says                                            |
-| The refund … for visit _id_, cancelled by the client (or a no-show's), failed            | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<why>:<visit>`                                     | by hand                              | "A refund that failed"                                                  |
+| The refund … for visit _id_, cancelled by the client or ops (or a no-show's), failed     | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<why>:<visit>`                                     | by hand                              | "A refund that failed"                                                  |
 | The visit credit for visit _id_, a no-show _why_, could not come back                    | `no_show_credit_not_back:<why>:<visit>`                                                                   | by hand                              | "A credit that could not come back"                                     |
 | Invoice _id_ of visit _id_ is held as a draft, or is still a draft                       | `invoice_draft:<visit>`                                                                                   | when the invoice is issued           | "Invoices and Books"                                                    |
 | FSM refused to invoice, or the invoice pass has failed                                   | `invoice_refused:<visit>`, `invoice_failed:<visit>`                                                       | when the invoice is issued           | "Invoices and Books"                                                    |
@@ -935,6 +948,16 @@ UPDATE leads SET sync_attempts = 0 WHERE sync_state = 'failed';
 ```
 
 The sweeper picks them up within five minutes. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
+
+### Checking Zoho's answers before a release
+
+The adapter tests read answers recorded from the org, so they pass only while Zoho answers as it did. Before every release, run each read the Books and CRM adapters make, through the adapters, against the owner's org. It writes nothing and makes about 15 calls:
+
+```sh
+node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/zoho-contract-probe.ts
+```
+
+Each read prints `PASS`, `SKIP` when the org holds nothing for it to read (no invoice yet, say), or `FAIL`. A failure naming `UNEXPECTED_ANSWER` and a field means Zoho now answers in a shape the adapter does not read: change the adapter's schema in `src/providers/books-zoho.ts` or `zoho-crm.ts`, run the probe again with `--record` to write the answers the tests load (`test/fixtures/vendors`, with no one's details), and run those tests. `OAUTH_SCOPE_MISMATCH` means a scripts' token lacks a scope (Zoho, step 7 of "Provisioning an environment"). Record the date and the lines in `docs/verification.md`.
 
 ---
 
@@ -1050,6 +1073,48 @@ FSM's API deletes no invoice, so the list names FSM's invoices of staging's work
 
 FSM keeps a deleted record in its recycle bin, out of every list the API gives, so production's reconciliation never sees it.
 
+### Switching staging off FSM
+
+Production has never used FSM. Staging leaves it in the order below, once every pull request of the FSM removal before this one is live. From the switch, our own database is the record of field work: a booking, a move, a cancel, a technician's steps, pieces and photographs are written there in the request that makes them, and the Books pass makes each client's customer and each finished visit's invoice itself. Steps 2 and 4 read FSM's API, so finish them before FSM's trial ends (about 7 October 2026).
+
+1. **Empty what is in flight.** Each of these should come back empty:
+
+   ```sql
+   SELECT id, person_id, fsm_held_at FROM slot_holds WHERE state = 'held' AND fsm_held_at IS NOT NULL;
+   SELECT appointment_id, COUNT(*) AS steps FROM job_events
+   WHERE fsm_write_state = 'pending' AND superseded = 0 GROUP BY appointment_id;
+   SELECT id, technician_id, status FROM appointments
+   WHERE status IN ('dispatched', 'in_progress') AND deleted_at IS NULL;
+   ```
+
+   - A **held booking** (the Tasks board's "Booking not in FSM"): **Refund it** from the client's Visits tab ("A booking FSM would not take", above).
+   - A **technician's step still waiting for FSM**: wait for it to be written, or let the switch give it up (below).
+   - A **visit under way**: let the technician finish it before the switch, or close it afterwards from the console.
+   - The `mm-fsm-sync-staging` queue: its backlog on Cloudflare's dashboard (Queues) at 0. What is left in it at the switch is acknowledged without reaching FSM, and a booking in it is booked in our own database.
+
+2. **Clear staging's records from the org**: "Staging's records in the org", above. A client whose FSM contact the owner keeps is linked in step 4; the rest get a Books customer of their own after the switch.
+3. **The owner, in Zoho.**
+   - FSM, Setup → Automation → Workflow Rules: switch off the rules on Service Appointments that call our webhook (step 11b, point 6). Setup → Automation → Webhooks: delete the webhooks they ran.
+   - FSM, Setup → Marketplace (or Integrations): switch off the **Zoho Books** and **Zoho CRM** integrations.
+   - Books → Settings → Zoho Apps → Zoho CRM, already switched on: two-way sync, Contacts only, transaction sync off, duplicates "Skip", and Books' "MM person ID" mapped to a CRM Contacts field of the same name.
+4. **Link each client to the Books customer FSM made for them**, or the Books pass makes them a second one. With `.env.fsm-scripts` (the scripts' FSM token, step 8.7):
+
+   ```sh
+   node --env-file=.env.fsm-scripts scripts/link-books-customers.ts           # lists each link, and why a client is skipped
+   node --env-file=.env.fsm-scripts scripts/link-books-customers.ts --write   # writes them
+   ```
+
+   It prints IDs only. A client FSM made no customer for, or whose contact is gone, is skipped and gets a new customer from the Books pass after the switch. Each linked client is marked for that pass to write their details and ID over the customer, so Books' sync takes "MM person ID" to the CRM.
+
+5. **Switch.** Land the one-line pull request that sets `FSM_PROVIDER` to `"none"` under `env.staging.vars` in `wrangler.jsonc`; the push deploys staging. Check `/api/health`. FSM's secrets may stay set: nothing reads them. From then on:
+   - the fsm-sync consumer acknowledges what is left for FSM and logs `fsm_message_dropped`;
+   - the cron's `requeue_job_events` marks a technician's step still waiting for FSM `rejected`, with the steps behind it, and tells ops once a visit, `job_event_unwritten`: check the visit, and close it from the console if the work was done;
+   - the cron's `fsm_reconcile`, `fsm_catalogue` and `requeue_fsm_erasures` stop, and `books_items` starts.
+
+6. **Prove it** as a real user, with staging's test records and backdating rather than waiting (the live-testing rules), and write each check in `docs/verification.md`, "FSM removal, PR 10".
+
+**Rolling back.** Set `FSM_PROVIDER` back to `"zoho"` for staging and deploy, and the owner switches FSM's workflow rules, webhooks and integrations back on. Visits booked meanwhile stay in our database, with no FSM record. A client given a Books customer meanwhile has none in FSM, so their payments wait until FSM's own integration makes one.
+
 ---
 
 ## Razorpay
@@ -1073,15 +1138,17 @@ The cause, from Workers Logs:
 - the route answers 404: `RAZORPAY_WEBHOOK_SECRET` is not set on the Worker (step 11c, point 2);
 - `razorpay_hook_unauthorized`: the secret in Razorpay's webhook is not the Worker's;
 - nothing at all: Razorpay is not calling. The webhook is disabled (Razorpay disables one that has failed for 24 hours, and e-mails the account), its URL is wrong, it is set up in the other mode from the keys (test or live), or, on staging, Access is stopping `/api/hooks/` (step 12, point 3);
-- `razorpay_hook_refund_early`, answered 409: a refund came before its payment. Razorpay sends it again; nothing is wrong.
+- `razorpay_hook_refund_early`, answered 409: a refund came before its payment, in an event that does not carry the payment. Razorpay sends it again; nothing is wrong.
 
 Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068).
 
-For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own webhook is then answered 409, since its payment was never recorded; that is expected.
+For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
 
 ### A refund that failed
 
-"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a client's cancel, `no_show_refund_failed` for a waived no-show). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
+"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a cancel, the client's or ops', `no_show_refund_failed` for a waived no-show). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
+
+A cancel (the client's or ops') whose refund was never asked for, or never recorded (D1 lost, or the Worker stopped, once the visit was cancelled), is no alert: the cron's `cancel_refunds` job asks for it again at its first quarter-hourly run from ten minutes on, under the cancel's receipt. If Razorpay refuses that, the alert is the "may have been made" one, since the first ask may have refunded it: refund by hand only if the payment shows no refund of that amount.
 
 ---
 
@@ -1179,7 +1246,7 @@ A technician signs in on his phone with his number and a WhatsApp code; the sess
 
 1. **Revoke it.** In the ops console, Technicians, under Phones: each phone he has signed in on, and when it was last used. Revoke the lost one; its session ends at once. A technician who installed the app on an iPhone has two rows for one handset, the browser's copy and the installed app's (ADR 0053): revoke both.
 2. **What it still holds.** The phone keeps its jobs until it next reaches us: each client's name, number, address and gate code, and any photographs and steps not yet sent. At its next contact it wipes all of it, and `technician_devices.wiped_at` records that it has. A phone that never comes back online keeps it, and that is personal data on a lost device: follow "A personal data breach" to judge it.
-3. **What was only on the phone** is lost with it. Ops enter in FSM by hand what the technician did that did not reach us; what did reach us is in `job_events` ("Work stuck on a technician's phone", below).
+3. **What was only on the phone** is lost with it. What did reach us is in `job_events` ("Work stuck on a technician's phone", below). A visit he finished whose close never reached us is closed by hand in the console: on the client's Visits tab or the visit's drawer on the dispatch board, **Close by hand**, with how it went, when the work began and ended, and how you know. While FSM holds the record (`FSM_PROVIDER` is `zoho`), the console refuses and the visit is entered in FSM by hand instead.
 4. **A new phone.** He signs in on it with his number, and it enrols itself. If the number went with the phone, change it in FSM: a number we do not know is looked up in FSM at sign-in.
 
 ```sql
@@ -1193,8 +1260,8 @@ WHERE t.name LIKE '%<name>%' ORDER BY d.last_seen_at DESC;
 The app sends the outbox one step at a time, oldest first, whenever it has signal and whenever it comes to the front. Its "Waiting to reach us" screen (`/waiting`) lists, for each job, the photo sets and steps still on the phone, since when, and what stopped the job's queue.
 
 - **No signal.** Nothing is wrong. Get to signal and open the app. The app warns when the phone has not promised to keep its store: an iPhone keeps it only with the app on its home screen (ADR 0053), so a technician on an iPhone should not leave work waiting for days.
-- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops enter it in FSM by hand; then he taps "Got it", which asks first and deletes that job's queue from the phone.
-- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step.
+- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops close the visit by hand in the console (in FSM while FSM holds the record); then he taps "Got it", which asks first and deletes that job's queue from the phone.
+- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
 - **Photographs failed**: "Retry".
 - **Never sign out or delete the app while work is waiting**: signing out wipes the phone. The app asks first, and offers "Send first".
 
@@ -1204,6 +1271,18 @@ A step that reached us and not FSM is on the server side: "FSM is down". What re
 SELECT kind, occurred_at, received_at, fsm_write_state, fsm_error FROM job_events
 WHERE appointment_id = '<visit id>' ORDER BY received_at;
 ```
+
+---
+
+## Someone says a screen failed
+
+The console and the technician app show a **Ref** under a page that did not load, and under a technician's step the API refused: the first eight characters of the call's request ID, and "Copy" copies the whole ID. Every line mm-api logged of that call carries it as `request_id`. In Workers Logs (the `mm-api` Worker → Logs), filter on `request_id` starting with the Ref, or equal to the copied ID. A change in the console that failed shows no Ref: every console call is in `audit_log` under the person, with its `request_id`.
+
+```sql
+SELECT at, action, request_id, detail FROM audit_log WHERE actor = '<their e-mail>' ORDER BY at DESC LIMIT 20;
+```
+
+The client app, the console and the technician app also report their own errors, each as one `client_error` line: `app` (client, ops or tech), `kind` (`error`, `unhandled_rejection`, `render`, or `outbox_gave_up` for a step the technician app stopped sending because the API refused it), `message`, `path`, and the outbox's `step`, `code` and `refused_request_id`. A page sends ten at most, and an address twenty an hour. A run of them after a release points at that release: tell the developers.
 
 ---
 
@@ -1226,43 +1305,41 @@ While ops are locked out, nothing in the console can be done by SQL without losi
 
 ## Erasure within the day
 
-The photo notice promises that a person's data is deleted the same day they ask. Whoever takes the request erases it before the end of that day. What is erased, and what is not, is in `docs/decisions/0019-erasure.md`, `0049-dpdp.md` and `0066-erasure-all-or-nothing.md`. A request a client makes from their app is decided in the ops console's Deletion requests, which refuses for the same reasons as step 2 below and says which.
+The photo notice promises that a person's data is deleted the same day they ask. Whoever takes the request erases it before the end of that day, in the ops console; there is no other way. What is erased, and what is not, is in `docs/decisions/0019-erasure.md`, `0049-dpdp.md` and `0066-erasure-all-or-nothing.md`.
+
+The console has two doors, and both run the same erasure, written to `audit_log` under your Access identity in the erasure's own batch. Both need Customer Care at Manage, and a service token can use neither.
+
+- A request a client made in their app waits in **Deletion requests** ("A client's account" below).
+- A request made any other way, on WhatsApp, on the phone or in person, is erased from the person's own page (`person.erase`). Anyone who gave us a number has one, client or not.
 
 1. **Check the request comes from the number's owner.** Reply to that number on WhatsApp, or call it.
-2. **Erase.** With the environment's secret in a git-ignored file, `.env.erasure-production`, holding `ERASURE_SECRET="…"` (for staging, also `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`):
+2. **Erase.** Find them in **Clients** by name or number, open their **Consents** tab, and press **Erase**. The console says what is deleted and what is kept, and asks you to confirm you have checked the request with them on their own number. Someone with a request open from their app has no Erase button: decide it in Deletion requests, which tells them when it is done.
 
-   ```sh
-   node --env-file=.env.erasure-production scripts/erase-person.ts --environment production
-   ```
+   **A visit booked, or a payment held.** Nothing is erased while the person has a visit still to happen, or a payment we captured with no visit behind it, and the console says which (`docs/decisions/0066-erasure-all-or-nothing.md`). Cancel each visit on their page (Visits, **Cancel**): it refunds what was paid, gives a visit credit back and tells the client. Refund a payment with no visit behind it in Razorpay. Then erase. If they cannot be settled today, tick that you will cancel and refund it by hand today and press **Erase anyway**: the person is erased, the audit entry records it (`settled_by_hand`, with the number of visits and payments), the Worker logs `erasure_override`, and the visit and payment must still be cancelled and refunded the same day. A refund needs none of the person's details.
 
-   The script asks for the number and for a confirmation, then prints the person's ID and what it deleted: photos, results, and messages not yet sent. It keeps the number out of shell history. Without the script, the call is `POST /api/erasure` with `Authorization: Bearer <ERASURE_SECRET>` and the body `{ "mobile": "98100 00000" }`.
+   The files (photos, results, visit photographs, the referral card) are deleted just after the rest. If R2 fails, the person is erased all the same and the cron finishes the files within five minutes; `files_erased_at` on the person is set once they are gone. A deletion request of theirs still open is closed by the erasure, under your name, so it neither waits in the queue nor alerts.
 
-   **A visit booked, or a payment held.** The erasure is refused (`409`, `visit_booked` or `payment_held`) while the person has a visit still to happen, or a payment we captured with no visit behind it, and nothing is erased (`docs/decisions/0066-erasure-all-or-nothing.md`). The script lists each visit and payment. Cancel the visits in FSM and refund the payments in Razorpay, wait for the mirror to show them (a few minutes), then run it again. If they cannot be settled today, run it with `--override-open-bookings` (in the body, `"override_open_bookings": true`): the person is erased anyway, the Worker logs `erasure_override` with the counts, and the visits and payments must still be cancelled and refunded by hand the same day. A refund needs none of the person's details.
-
-   The files (photos, results, visit photographs, the referral card) are deleted just after the rest. If R2 fails, the person is erased all the same and the cron finishes the files within five minutes; `files_erased_at` on the person is set once they are gone.
-
-3. **Check Zoho within a few minutes.** The crm-sync queue blanks the record: the last name becomes "Erased", mobile and e-mail are emptied, and Contact Consent is unticked.
+3. **Check Zoho within a few minutes.** The erasure queues the CRM's blanking at once, and FSM's while FSM is connected: in the CRM the last name becomes "Erased", mobile and e-mail are emptied, and Contact Consent is unticked. Books' customer is erased by the cron's own pass: deleted where no invoice or payment names it, otherwise renamed "Erased client", blanked and made inactive. That pass waits up to a day for a payment of theirs still on its way to Books. The person's ID is in the address of their page.
 
    ```sql
-   SELECT erased_at, crm_erased_at, crm_erasure_attempts, crm_erasure_error FROM people WHERE id = '<person_id>';
+   SELECT erased_at, crm_erased_at, crm_erasure_attempts, crm_erasure_error, fsm_erased_at, books_erased_at
+   FROM people WHERE id = '<person_id>';
    ```
 
-   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts. To finish it by hand, find the record in Zoho by `D1_Person_ID` and blank those fields. Then run `UPDATE people SET crm_erased_at = '<now, ISO>' WHERE id = '<person_id>';`.
+   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts. To finish it by hand, find the record in Zoho by `D1_Person_ID` and blank those fields. Then run `UPDATE people SET crm_erased_at = '<now, ISO>' WHERE id = '<person_id>';`. If Books will not erase the customer after 10 tries, ops are alerted once with what to do by hand.
 
 4. **Delete the chat** with the number in the Mane Man WhatsApp account, if there is one.
-5. **Tell the person** it is done.
+5. **Tell the person** it is done, in the chat they asked in.
 
-`404` means no one has that number, or the person was erased already; check the number for typos. Someone who used the try-on but never passed the gate never gave a number, and their photo is deleted within the hour anyway.
+Someone who used the try-on but never passed the gate never gave a number, and their photo is deleted within the hour anyway.
 
 **Zoho's history.** Blanking the fields may leave the old values in the record's timeline. If the person or legal asks for full removal, delete the record in Zoho, then delete it from the recycle bin as well. D1's lead history is unaffected.
 
-**A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**, and is decided there rather than by API. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also:
+**A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) after it.
 
-- deletes their visit photographs from the client-photos bucket;
-- deletes their saved addresses;
-- anonymises their FSM contact within a few minutes, through the fsm-sync queue (docs/decisions/0049-dpdp.md).
+Rejecting a request sends the client your reason on WhatsApp (`deletion_rejected_v1`), and their app shows it for 30 days, so write it for them to read.
 
-Check FSM as you check Zoho:
+While FSM is connected, check it as you check Zoho:
 
 ```sql
 SELECT erased_at, fsm_erased_at, fsm_erasure_attempts FROM people WHERE id = '<person_id>';

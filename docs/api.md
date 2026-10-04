@@ -1175,35 +1175,27 @@ A result image, behind the signed link a WhatsApp message carries, which expires
 }
 ```
 
-### POST /api/erasure
+### POST /api/stop
 
-Operators only: erase a person's photos, results and details, found by their number
+Stops the messages a reminder's or alert's link names, by withdrawing the consent they were sent under
 
 Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErasureRequest"
+  "$ref": "#/components/schemas/StopMessagesRequest"
 }
 ```
 
-**200**: Erased
+**200**: Stopped
 
 ```json
 {
-  "$ref": "#/components/schemas/ErasureResponse"
+  "$ref": "#/components/schemas/StoppedMessages"
 }
 ```
 
-**400**: invalid_request: see error.fields
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**401**: unauthorized
+**400**: invalid_request: no token
 
 ```json
 {
@@ -1211,25 +1203,17 @@ Request body:
 }
 ```
 
-**404**: not_found: no one with this number, or already erased
+**404**: not_found: the link is not ours, or has expired
 
 ```json
 {
   "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**409**: visit_booked or payment_held: settle what it names first, or say it is settled
-
-```json
-{
-  "$ref": "#/components/schemas/ErasureRefused"
 }
 ```
 
 ### POST /api/hooks/evolution/{token}
 
-Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent
+Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages
 
 **204**: Taken, or ignored. Either way Evolution need not send it again
 
@@ -1293,7 +1277,7 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
-**409**: not_ready: a refund for a payment not yet recorded; Razorpay retries it
+**409**: not_ready: a refund of a payment not yet recorded, whose event does not carry it; Razorpay retries it
 
 ```json
 {
@@ -1348,6 +1332,7 @@ Razorpay's webhook: payments and refunds
             "not_bookable",
             "hold_expired",
             "address_required",
+            "not_served",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -1367,6 +1352,7 @@ Razorpay's webhook: payments and refunds
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",
@@ -2582,176 +2568,42 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
-### ErasureResponse
+### StoppedMessages
 
 ```json
 {
   "type": "object",
   "properties": {
-    "person_id": {
-      "type": "string",
-      "format": "uuid"
-    },
-    "erased_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "photos_deleted": {
-      "type": "integer"
-    },
-    "results_deleted": {
-      "type": "integer"
-    },
-    "messages_cancelled": {
-      "type": "integer"
-    },
-    "crm": {
+    "purpose": {
       "type": "string",
       "enum": [
-        "queued"
+        "whatsapp_visits",
+        "whatsapp_launches"
       ],
-      "description": "The CRM record is blanked by the crm-sync queue, retried until done."
+      "description": "What is no longer sent. The same answer when it had been stopped already."
     }
   },
   "required": [
-    "person_id",
-    "erased_at",
-    "photos_deleted",
-    "results_deleted",
-    "messages_cancelled",
-    "crm"
+    "purpose"
   ],
   "additionalProperties": false
 }
 ```
 
-### ErasureRefused
+### StopMessagesRequest
 
 ```json
 {
   "type": "object",
   "properties": {
-    "error": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "string",
-          "enum": [
-            "visit_booked",
-            "payment_held"
-          ]
-        },
-        "request_id": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "code",
-        "request_id"
-      ],
-      "additionalProperties": false
-    },
-    "visits": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "type": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "consultation",
-              "first_fit",
-              "service",
-              "replacement",
-              null
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "scheduled",
-              "dispatched",
-              "in_progress"
-            ]
-          },
-          "window_start": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "status",
-          "window_start"
-        ],
-        "additionalProperties": false
-      }
-    },
-    "payments": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "reference": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "amount": {
-            "type": "integer",
-            "description": "In paise."
-          }
-        },
-        "required": [
-          "id",
-          "reference",
-          "amount"
-        ],
-        "additionalProperties": false
-      }
-    }
-  },
-  "required": [
-    "error",
-    "visits",
-    "payments"
-  ],
-  "additionalProperties": false
-}
-```
-
-### ErasureRequest
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "mobile": {
+    "token": {
       "type": "string",
-      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
-      "example": "98100 00000"
-    },
-    "override_open_bookings": {
-      "type": "boolean",
-      "description": "Erase even with a visit booked or a payment held: only once ops have cancelled and refunded them by hand (the runbook's \"Erasure within the day\")."
+      "minLength": 1,
+      "maxLength": 600
     }
   },
   "required": [
-    "mobile"
+    "token"
   ],
   "additionalProperties": false
 }

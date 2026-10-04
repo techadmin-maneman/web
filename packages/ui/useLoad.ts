@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 /** A call's answer, as packages/web-kit/api.ts gives it, cut to what a page needs. */
-type Answered<T> = { readonly ok: true; readonly body: T } | { readonly ok: false; readonly status: number };
+type Answered<T> =
+  | { readonly ok: true; readonly body: T }
+  | { readonly ok: false; readonly status: number; readonly requestId: string | null };
 
-/** `notFound`: the API has no such thing for this person, which trying again will not change. */
+/**
+ * `notFound`: the API has no such thing for this person, which trying again will not change. `requestId`: the API's
+ * ID for the call, for the person to quote; null when the API never answered.
+ */
 export type Loaded<T> =
   | { readonly state: "loading" }
-  | { readonly state: "failed"; readonly notFound: boolean }
+  | { readonly state: "failed"; readonly notFound: boolean; readonly requestId: string | null }
   | { readonly state: "loaded"; readonly value: T };
 
 /**
@@ -21,10 +26,7 @@ export function useLoad<T>(load: () => Promise<Answered<T>>): readonly [Loaded<T
   useEffect(() => {
     let current = true;
     void load().then((answer) => {
-      if (!current) return;
-      setLoaded(
-        answer.ok ? { state: "loaded", value: answer.body } : { state: "failed", notFound: answer.status === 404 },
-      );
+      if (current) setLoaded(loadedFrom(answer));
     });
     return () => {
       current = false;
@@ -36,6 +38,16 @@ export function useLoad<T>(load: () => Promise<Answered<T>>): readonly [Loaded<T
     setAttempt((count) => count + 1);
   }, []);
   return [loaded, retry] as const;
+}
+
+function loadedFrom<T>(answer: Answered<T>): Loaded<T> {
+  if (answer.ok) return { state: "loaded", value: answer.body };
+  return { state: "failed", notFound: answer.status === 404, requestId: answer.requestId };
+}
+
+/** The failed call's request ID, for a page that draws its failure without asking which state it is in. */
+export function failedRequestId(loaded: Loaded<unknown>): string | null {
+  return loaded.state === "failed" ? loaded.requestId : null;
 }
 
 /**

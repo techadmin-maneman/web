@@ -34,6 +34,10 @@ export type VisitAvailability = Body<paths["/api/visits/availability"]["get"]>;
 export type AvailabilityQuery = NonNullable<paths["/api/visits/availability"]["get"]["parameters"]["query"]>;
 export type VisitToBook = Sent<paths["/api/visits"]["post"]>;
 export type VisitBooked = Body<paths["/api/visits"]["post"]>;
+/** What cancelling a client's visit gives back, free to the client and on their own late terms. */
+export type CancelTerms = Body<paths["/api/visits/{id}/cancel"]["post"]>;
+export type CancelOutcome = CancelTerms["free"];
+export type HandClose = Sent<paths["/api/visits/{id}/close"]["post"]>;
 export type CreditBalance = Body<paths["/api/clients/{id}/credits"]["post"]>;
 export type CreditAdjustment = Sent<paths["/api/clients/{id}/credits"]["post"]>;
 export type ClientInvite = NonNullable<ClientRecord["invite"]>;
@@ -239,8 +243,12 @@ export const api = {
   assign: (appointmentId: string, to: Landing, shown: Shown) =>
     client.post("/api/dispatch/assign", { body: moveBody(appointmentId, to, shown) }),
   /** A job already on the board, moved. The client is never charged for it; the answer says how he hears of it. */
-  move: (appointmentId: string, to: Landing, shown: Shown) =>
-    client.post("/api/dispatch/move", { body: moveBody(appointmentId, to, shown) }),
+  move: (appointmentId: string, to: Landing, shown: Shown, clearingCheckIn = false) =>
+    client.post("/api/dispatch/move", {
+      body: clearingCheckIn
+        ? { ...moveBody(appointmentId, to, shown), clear_check_in: true as const }
+        : moveBody(appointmentId, to, shown),
+    }),
   /** Ops called a client who had not heard of a move; its task leaves the Tasks board. */
   toldByPhone: (moveId: string) => client.post("/api/dispatch/moves/{id}/told", { path: { id: moveId } }),
   held: () => client.get("/api/referrals/held"),
@@ -275,6 +283,18 @@ export const api = {
   visitAvailability: (query: AvailabilityQuery) => client.get("/api/visits/availability", { query }),
   /** A visit booked for a client: at once when nothing is paid at booking, else a payment link goes to them. */
   bookVisit: (visit: VisitToBook) => client.post("/api/visits", { body: visit }),
+  /** What a cancel would give back, free to the client and on their own late terms. Changes nothing. */
+  cancelTerms: (visitId: string) =>
+    client.post("/api/visits/{id}/cancel", { path: { id: visitId }, body: { confirm: false } }),
+  /** The cancel, on the notice ops were shown: free to the client unless `onClientTerms`. */
+  cancelVisit: (visitId: string, notice: CancelTerms["notice"], onClientTerms: boolean, reason: string) =>
+    client.post("/api/visits/{id}/cancel", {
+      path: { id: visitId },
+      body: { confirm: true, notice, ...(onClientTerms ? { on_client_terms: true } : {}), reason },
+    }),
+  /** A visit whose technician's phone was lost before it sent the work, closed as ops say it went. */
+  closeVisit: (visitId: string, close: HandClose) =>
+    client.post("/api/visits/{id}/close", { path: { id: visitId }, body: close }),
   /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
   adjustCredits: (id: string, adjustment: CreditAdjustment) =>
     client.post("/api/clients/{id}/credits", { path: { id }, body: adjustment }),
@@ -338,6 +358,15 @@ export const api = {
    */
   decideDeletion: (id: string, decision: "delete" | "reject", reason: string | null) =>
     client.post("/api/deletion-requests/{id}/decision", { path: { id }, body: { decision, reason } }),
+  /**
+   * Erases a client now, from their page; it cannot be undone. `settledByHand` erases despite a visit booked or a
+   * payment held, which ops then cancel and refund themselves.
+   */
+  eraseClient: (id: string, settledByHand: boolean) =>
+    client.post("/api/clients/{id}/erasure", {
+      path: { id },
+      body: settledByHand ? { override_open_bookings: true } : {},
+    }),
   numberChanges: () => client.get("/api/number-changes"),
   /** Confirming moves the client to the new number; rejecting needs a reason. */
   decideNumberChange: (id: string, decision: "confirm" | "reject", reason: string | null) =>

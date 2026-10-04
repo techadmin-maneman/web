@@ -286,6 +286,24 @@ export async function rejectPendingAfter(
   return results.sort((a, b) => a.received_at.localeCompare(b.received_at) || a.rowid - b.rowid).map((row) => row.kind);
 }
 
+/** Gives up on every event of the visit still waiting for FSM. Returns their IDs. */
+export async function rejectAllPending(
+  db: D1Database,
+  appointmentId: string,
+  now: Date,
+  reason: string,
+): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `UPDATE job_events SET fsm_write_state = 'rejected', fsm_error = ?2, updated_at = ?3
+       WHERE appointment_id = ?1 AND superseded = 0 AND fsm_write_state = 'pending'
+       RETURNING id`,
+    )
+    .bind(appointmentId, reason, now.toISOString())
+    .all<{ id: string }>();
+  return results.map((row) => row.id);
+}
+
 /** Marks what FSM did with the event. A rejection keeps FSM's status and message, never record data. */
 export async function markFsmWrite(
   db: D1Database,

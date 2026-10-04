@@ -35,10 +35,15 @@ describe("what each ops route asks of its caller", () => {
   });
 
   it("is found from Hono's path, whose placeholders begin with a colon", () => {
-    expect(needOf("get", "/api/clients/:id/photos/:photo_id")).toEqual({ department: "customer_care", level: "view" });
+    expect(needOf("get", "/api/clients/:id/photos/:photo_id")).toEqual({
+      department: "customer_care",
+      level: "view",
+      ownPlaces: true,
+    });
     expect(needOf("POST", "/api/deletion-requests/:id/decision")).toEqual({
       department: "customer_care",
       level: "manage",
+      ownPlaces: true,
     });
     expect(needOf("GET", "/api/*")).toBeUndefined();
     expect(needOf("GET", "/constructor")).toBeUndefined();
@@ -46,7 +51,7 @@ describe("what each ops route asks of its caller", () => {
 
   it("asks of HEAD what it asks of GET, since Hono answers HEAD with the GET route", () => {
     expect(needOf("HEAD", "/api/health")).toBe(SIGNED_IN);
-    expect(needOf("HEAD", "/api/grievances")).toEqual({ department: "customer_care", level: "view" });
+    expect(needOf("HEAD", "/api/grievances")).toEqual({ department: "customer_care", level: "view", ownPlaces: true });
   });
 
   it("asks MANAGE of what gives money back, waives it, or sets prices, codes, settings, erasures and access", () => {
@@ -76,6 +81,8 @@ describe("what each ops route asks of its caller", () => {
 
 describe("the routes a caller's calls go ahead on", () => {
   const NO_ZONES = new Map<string, string>();
+  /** The health check, who is signed in, and the console's own errors: open to anyone Access lets in. */
+  const SIGNED_IN_ROUTES = ["GET /api/health", "GET /api/whoami", "POST /api/client-errors"];
   const financeInDelhi: Caller = {
     kind: "person",
     active: true,
@@ -92,20 +99,28 @@ describe("the routes a caller's calls go ahead on", () => {
   });
 
   it("are, once enforced, only those a city's grant reaches: the ones that keep to the caller's places", () => {
-    expect(routesOpenTo(financeInDelhi, true, NO_ZONES)).toEqual(["GET /api/health", "GET /api/whoami"]);
-    expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([
-      "GET /api/health",
-      "GET /api/whoami",
-      "GET /api/staff",
-    ]);
+    expect(routesOpenTo(financeInDelhi, true, NO_ZONES)).toEqual(SIGNED_IN_ROUTES);
+    expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([...SIGNED_IN_ROUTES, "GET /api/staff"]);
+  });
+
+  it("are, for Customer Care in one city, every Customer Care route up to the level granted", () => {
+    const careInDelhi: Caller = {
+      kind: "person",
+      active: true,
+      grants: [{ department: "customer_care", level: "act", place: { geography: "city", name: "Delhi" } }],
+    };
+    const routes = routesOpenTo(careInDelhi, true, NO_ZONES);
+
+    expect(routes).toEqual(
+      expect.arrayContaining(["GET /api/grievances", "POST /api/clients/find", "POST /api/clients/{id}/address"]),
+    );
+    expect(routes).not.toContain("POST /api/deletion-requests/{id}/decision");
+    expect(routes).not.toContain("GET /api/tasks");
   });
 
   it("are every route for a service token on the list, and none but the signed-in ones for one not on it", () => {
     expect(routesOpenTo({ kind: "service", allowed: true }, true, NO_ZONES)).toEqual(Object.keys(ROUTE_NEEDS));
-    expect(routesOpenTo({ kind: "service", allowed: false }, true, NO_ZONES)).toEqual([
-      "GET /api/health",
-      "GET /api/whoami",
-    ]);
+    expect(routesOpenTo({ kind: "service", allowed: false }, true, NO_ZONES)).toEqual(SIGNED_IN_ROUTES);
   });
 });
 

@@ -42,7 +42,7 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { PriceSchema } from "./client-booking.ts";
-import { CreditsSchema } from "./client-refer.ts";
+import { creditsBody, CreditsSchema } from "./client-refer.ts";
 import { VisitSummarySchema } from "./client-visits.ts";
 import { ReferralRewardSchema } from "./referral-reward.ts";
 
@@ -94,6 +94,7 @@ export const MeSchema = z
             date: z.iso.date(),
             window: z.enum(BOOKING_WINDOWS),
             paid: z.boolean().openapi({ description: "Paid for in money, rather than free or covered by a credit." }),
+            one_visit: z.boolean().openapi({ description: "A consultation and fit in one visit." }),
           })
           .strict(),
         z.null(),
@@ -316,7 +317,7 @@ export function registerClientMe(app: App): void {
         consultation: proposal === null || asked === null ? null : consultationOf(proposal, asked, place),
         next_visit: upcoming,
         being_booked: underWay,
-        credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
+        credits: credits.visits > 0 ? creditsBody(credits) : null,
         prompt,
         invoice,
         booking: { self_serve: c.var.config.settings.selfServeBooking, types, services, next: offer },

@@ -310,6 +310,74 @@ describe("the address the consultation is at", () => {
     expect(messages.sent).toEqual([{ message_id: told.results[0]?.id, request_id: expect.any(String) as string }]);
   });
 
+  describe("on the account of a number we know (BK-25)", () => {
+    beforeEach(async () => {
+      await env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p-known', ?1, '+919810000002', 'Karan Bhatia')",
+      )
+        .bind(NOW.toISOString())
+        .run();
+    });
+    const onAccount = (pin: string) =>
+      env.DB.prepare(
+        `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+         VALUES ('old', 'p-known', '2026-09-01T00:00:00.000Z', 'House 12', 'Sushant Lok', 'Gurgaon', ?1)`,
+      )
+        .bind(pin)
+        .run();
+    const told = async () =>
+      (await env.DB.prepare("SELECT kind FROM outbound_messages ORDER BY rowid").all<{ kind: string }>()).results.map(
+        (row) => row.kind,
+      );
+
+    it("is the one checked and booked, while the page names the place typed, as for a new number", async () => {
+      await pincode("122011", "Sushant Lok", "Gurgaon", true);
+      await onAccount("122011");
+      const answer = await book({ address: ADDRESS });
+
+      expect(answer.status).toBe(201);
+      expect(await answer.json()).toEqual(BOOKED_MORNING);
+      const held = await env.DB.prepare("SELECT pincode FROM slot_holds WHERE person_id = 'p-known'").first();
+      expect(held).toEqual({ pincode: "122011" });
+      expect(await told()).toEqual(["address_on_account"]);
+    });
+
+    it("keeps the pincode on the account on the request ops book from, while self-serve booking is off", async () => {
+      await pincode("122011", "Sushant Lok", "Gurgaon", true);
+      await onAccount("122011");
+      const answer = await request(
+        site({ selfServeBooking: false }),
+        "/api/consultation",
+        post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+        { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
+      );
+      expect(await answer.json()).toMatchObject({ state: "requested" });
+      const asked = await env.DB.prepare("SELECT pincode FROM consultation_requests").first();
+      expect(asked).toEqual({ pincode: "122011" });
+    });
+
+    it.each([
+      ["we hold but do not serve", "400050", true],
+      ["we do not hold", "411001", false],
+    ])(
+      "books nothing in a pincode %s, answers as for a new number, and tells its owner on WhatsApp",
+      async (_, pin, held) => {
+        if (held) await pincode(pin, "Bandra", "Mumbai", false);
+        await onAccount(pin);
+        const messages = fakeQueue();
+        const answer = await book({ address: ADDRESS }, { MESSAGE_QUEUE: messages });
+
+        expect(answer.status).toBe(201);
+        expect(await answer.json()).toEqual(BOOKED_MORNING);
+        expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
+        expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(0);
+        expect(await count("SELECT COUNT(*) AS n FROM addresses WHERE person_id = 'p-known'")).toBe(1);
+        expect(await told()).toEqual(["address_not_served"]);
+        expect(messages.sent).toHaveLength(1);
+      },
+    );
+  });
+
   it("leaves the first address untouched when the same number books again with another", async () => {
     const first = await book({ address: ADDRESS });
     expect(await first.json()).toEqual(BOOKED_MORNING);
@@ -915,6 +983,23 @@ describe("a consultation and fit in one visit", () => {
     const told = await env.DB.prepare("SELECT kind FROM outbound_messages").all();
     expect(told.results).toEqual([{ kind: "consultation_confirmation" }]);
     expect(messages.sent).toHaveLength(1);
+  });
+
+  // D-04: Home called the one visit, on its way to FSM, a first fit.
+  it("is on the client's Home as one visit while FSM does not have it yet", async () => {
+    await book({ one_visit: true });
+    const personId = await env.DB.prepare("SELECT person_id FROM slot_holds").first<string>("person_id");
+    const session = await openSession(env.DB, {
+      kind: "client",
+      subjectId: personId ?? "",
+      deviceLabel: null,
+      now: NOW,
+    });
+    const client = appFor("local", fakeDependencies(), {}, "client");
+    const me = await (await request(client, "/api/me", { headers: { Cookie: `mm_app=${session}` } })).json();
+    expect(me).toMatchObject({
+      being_booked: { type: "first_fit", date: "2026-09-23", window: "morning", paid: false, one_visit: true },
+    });
   });
 
   it("books the consultation alone when the one visit is not asked for", async () => {

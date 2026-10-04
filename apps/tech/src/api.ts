@@ -34,6 +34,8 @@ export type Verified = Schema["TechnicianVerify"];
 export type JobSummary = Schema["TechnicianJob"];
 export type Job = Schema["TechnicianJobDetail"];
 export type Progress = Schema["TechnicianJobProgress"];
+/** What the day's list carries of a job's progress: when it began and how it closed. */
+export type JobState = Schema["TechnicianJobState"];
 export type Accepted = Schema["TechnicianWriteAccepted"];
 export type CheckIn = Schema["CheckIn"];
 export type NoShowClose = Schema["NoShowClose"];

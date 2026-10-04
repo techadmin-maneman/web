@@ -7,9 +7,11 @@ import type { Block, BoardRow, Unassigned } from "../../apps/ops/src/api.ts";
 import {
   addDays,
   begunWord,
+  changeOf,
   changesTime,
   firstNameOf,
   isMovable,
+  movesIfCheckInCleared,
   nameOf,
   shownOf,
   whenOf,
@@ -119,10 +121,32 @@ describe("where a job stands, and what a move changes", () => {
     expect(isMovable(block({ status: "completed" }))).toBe(false);
   });
 
+  it("moves a visit the technician has only checked in at once ops clear the check-in, and none further on", () => {
+    expect(movesIfCheckInCleared(block({ status: "scheduled", begun: "arrived" }))).toBe(true);
+    expect(movesIfCheckInCleared(block({ status: "dispatched", begun: "arrived" }))).toBe(true);
+    expect(movesIfCheckInCleared(block({ status: "scheduled", begun: null }))).toBe(false);
+    expect(movesIfCheckInCleared(block({ status: "dispatched", begun: "started" }))).toBe(false);
+    expect(movesIfCheckInCleared(block({ status: "in_progress", begun: "arrived" }))).toBe(false);
+  });
+
   it("says how far the technician has got on a visit not yet done, from his phone", () => {
     expect(begunWord(block({ begun: "started" }))).toBe("Started");
     expect(begunWord(block({ begun: null }))).toBeNull();
     expect(begunWord(block({ status: "completed", begun: "closed" }))).toBeNull();
+  });
+
+  it("offers a cancel while the visit is ahead and not begun, and a close by hand once its time has come", () => {
+    const before = Date.parse("2025-09-19T03:00:00.000Z");
+    const after = Date.parse("2025-09-19T06:00:00.000Z");
+    expect(changeOf(block({ status: "scheduled" }), before)).toBe("cancel");
+    expect(changeOf(block({ status: "dispatched" }), before)).toBe("cancel");
+    expect(changeOf(block({ status: "scheduled", begun: "arrived" }), before)).toBeNull();
+    expect(changeOf(block({ status: "in_progress" }), before)).toBeNull();
+    expect(changeOf(block({ status: "scheduled" }), after)).toBe("close");
+    expect(changeOf(block({ status: "in_progress", begun: "started" }), after)).toBe("close");
+    expect(changeOf(block({ status: "in_progress", begun: "closed" }), after)).toBeNull();
+    expect(changeOf(block({ status: "completed" }), after)).toBeNull();
+    expect(changeOf(block({ status: "terminated" }), after)).toBeNull();
   });
 
   it("counts the board's weeks in whole days, across a month and a year's end", () => {

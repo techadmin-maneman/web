@@ -13,6 +13,7 @@ import { z } from "zod";
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../config/booking.ts";
 import { BOOKED_WINDOW_NAMES, CRM_ORG_HAS_REFERRAL_FIELDS, REFERRAL_LEAD_SOURCE } from "../config/crm.ts";
 import type { ZohoSettings } from "../config/settings.ts";
+import type { Plan } from "../policy/one-visit.ts";
 
 import type { CrmContact, CrmLead, CrmProvider, CrmSyncResult, LeadSource, LeadStatus } from "./crm.ts";
 import { createZohoRequester, ZohoError, type ZohoRequesterDependencies, type ZohoWrite } from "./zoho-http.ts";
@@ -127,7 +128,20 @@ export const ERASED_RECORD: Readonly<Record<string, unknown>> = {
   Mobile: null,
   Email: null,
   Contact_Consent: false,
+  Description: null,
 };
+
+const PLAN_NAMES: Readonly<Record<Plan, string>> = {
+  consultation: "Consultation",
+  one_visit: "Consultation and fit in one visit",
+};
+
+/** The lead's Description: what the booking asked for, and the discount code given for it. Null where none says. */
+function descriptionOf(lead: CrmLead): string | null {
+  if (lead.plan === null) return null;
+  const code = lead.discountCode === null ? "" : ` Discount code ${lead.discountCode}.`;
+  return `${PLAN_NAMES[lead.plan]}.${code}`;
+}
 
 /** The source a new record names: a friend's invite, where the org can say so, else the page the lead came from. */
 function sourceOf(lead: CrmLead, fields: OrgFields): string {
@@ -188,6 +202,8 @@ export function recordFor(
 
   // Booking details come only from bookings; a try-on must not blank them.
   if (lead.source !== "tryon") {
+    const description = descriptionOf(lead);
+    if (description !== null) record.Description = description;
     if (lead.city !== null) record.City = lead.city;
     if (lead.firstChoiceWindow !== null) record.First_Choice_Window = WINDOW_NAMES[lead.firstChoiceWindow];
     if (lead.lossExtent !== null) record.Loss_Extent = LOSS_EXTENT_NAMES[lead.lossExtent];
@@ -203,18 +219,20 @@ function windowWords(lead: CrmLead): string | null {
 }
 
 /**
- * The note added to an existing record. City, dates and windows only; no personal data. A note needs no field of
- * the org's, so the invite and the window reach a record here whether or not the referral fields exist.
+ * The note added to an existing record. City, dates, windows and the plan only; no personal data, and no code, since
+ * an erasure keeps a record's notes. A note needs no field of the org's, so the invite and the window reach a record
+ * here whether or not the referral fields exist.
  */
 export function noteFor(lead: CrmLead): { title: string; content: string } {
   if (lead.source === "form") {
     const asked = windowWords(lead);
     const window = asked === null ? "" : `, ${asked}`;
     const date = lead.proposedVisitDate === null ? "" : `, proposed ${lead.proposedVisitDate}`;
+    const plan = lead.plan === "one_visit" ? ` ${PLAN_NAMES.one_visit}.` : "";
     const invite = lead.inviteCode === null ? "" : " Came through an invite.";
     return {
       title: "New booking request",
-      content: `Asked for a visit in ${lead.city ?? "an unknown city"}${window}${date}.${invite}`,
+      content: `Asked for a visit in ${lead.city ?? "an unknown city"}${window}${date}.${plan}${invite}`,
     };
   }
   if (lead.source === "waitlist") {
@@ -245,6 +263,15 @@ const RecordOutcomes = z.object({
 const SearchAnswer = z.object({ data: z.array(z.object({ id: z.string() })).default([]) });
 
 type ZohoApi = ReturnType<typeof createZohoApi>;
+
+/** The CRM's one read on its own, finding a person's Lead by their person ID, for a caller that must never write. */
+export function createZohoLeadFinder(
+  settings: ZohoSettings,
+  deps: ZohoDependencies,
+): (personId: string) => Promise<string | null> {
+  const api = createZohoApi(settings, deps);
+  return (personId) => api.findLeadByPersonId(personId);
+}
 
 function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
   const request = createZohoRequester("crm", settings, deps);

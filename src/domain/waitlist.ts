@@ -165,13 +165,18 @@ export async function launchPincode(
   return { alerts };
 }
 
-/** What a launch alert says: the area we now come to, its city until ops have named it, and where to book. */
+/**
+ * What a launch alert says: the area we now come to, its city until ops have named it, and where to book. Paced
+ * alerts leave minutes after the launch, so the consent is read again here: one withdrawn meanwhile stops it.
+ */
 export async function composeLaunchAlert(
   db: D1Database,
   pincode: string,
   personId: string,
   environment: EnvironmentName,
 ): Promise<{ template: string; params: string[] } | { skip: string }> {
+  const stillAgreed = await consentGiven(db, personId, "whatsapp_launches");
+  if (!stillAgreed) return { skip: "no consent to WhatsApp about launches" };
   const row = await db
     .prepare(
       `SELECT p.name, ${namedArea("s")} AS area, s.city, s.served FROM people p

@@ -31,9 +31,12 @@
 // of a hold made in the app. They give every number the same answer
 // (src/policy/site-booking.ts): a number with a consultation still to happen, or
 // past consultations, books nothing, and its owner is told why on WhatsApp
-// (src/domain/site-notices.ts). The person, their consent, their address and
-// the slot are written in one batch: a slot that has gone leaves nothing behind
-// (docs/decisions/0068-a-paid-hold-is-kept.md).
+// (src/domain/site-notices.ts). A visit goes to the address already on the
+// account, so that address's pincode is the one checked and booked; where we do
+// not come to it, nothing is booked, and its owner is told so on WhatsApp too. A
+// number joining a waitlist is told of its invite as a new number would be. The
+// person, their consent, their address and the slot are written in one batch: a
+// slot that has gone leaves nothing behind (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
 // The form may book the consultation and the fit in one visit instead, for a
 // number proved with its WhatsApp code (src/policy/number-proof.ts): a first
@@ -42,8 +45,8 @@
 // takes no money (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 // The site's own form may carry a discount code for it, which stands on the
 // booking and comes off the product's price at the link; while booking is off,
-// it is kept on the request, for ops to enter on the visit they book
-// (docs/decisions/0108-discount-codes.md).
+// it is kept on the request, for ops to enter on the visit they book, as it
+// stood when typed (src/domain/requested-codes.ts).
 //
 // The number, the Turnstile token and the day's limits are checked by the
 // route's side (src/http/public-form.ts), which this is handed as checkPerson:
@@ -70,23 +73,8 @@ import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } 
 import { saveBookingLead, type Attribution } from "./leads.ts";
 import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
-import { namedArea } from "./area-names.ts";
-
-/** A pincode we know, and whether a technician works there. */
-export interface Pincode {
-  readonly pincode: string;
-  /** Null until ops have named the area. */
-  readonly area: string | null;
-  readonly city: string;
-  readonly served: number;
-}
-
-export function pincodeOf(db: D1Database, pin: string): Promise<Pincode | null> {
-  return db
-    .prepare(`SELECT pincode, ${namedArea("p")} AS area, city, served FROM serviceable_pincodes p WHERE pincode = ?1`)
-    .bind(pin)
-    .first<Pincode>();
-}
+import { pincodeOf, type Pincode } from "./service-area.ts";
+import { inviteLapsed } from "../policy/invites.ts";
 
 /** Where a booking is, as the client reads it: the area once ops have named it, its city until then. */
 const placeOf = (pincode: Pincode): string => pincode.area ?? pincode.city;
@@ -186,9 +174,17 @@ function formPerson(
   return { id, statements: [person, consent.statement] };
 }
 
-/** Why a person we know books nothing from a form; null when they may book a consultation there. */
-async function notBookedFor(db: D1Database, personId: string): Promise<NotBookedFromSite | null> {
+/**
+ * Why a person we know books nothing from a form; null when they may book a consultation there. `addressOutsideArea`:
+ * the address on their account is in a pincode we do not come to.
+ */
+async function notBookedFor(
+  db: D1Database,
+  personId: string,
+  addressOutsideArea: boolean,
+): Promise<NotBookedFromSite | null> {
   return notBookedFromSite({
+    addressOutsideArea,
     hasConsultationToCome: (await liveVisitOf(db, personId, "consultation")) !== null,
     mayBookConsultation: (await bookableTypes(db, personId)).includes("consultation"),
   });
@@ -212,6 +208,23 @@ async function applyInvite(
     return { credits: false, invite: "valid" };
   }
   return { credits: attribution.credits, invite: attribution.lapsed ? "expired" : "valid" };
+}
+
+/**
+ * What a new number is told of the invite it came with: its credits apply, unless it was held on the waitlist of an
+ * area that launched more than 12 months ago. A number we know that books nothing, or joins a waitlist, is told the
+ * same, whatever stands for it, so the page never says that a number is known.
+ */
+function inviteAsForANewNumber(
+  invite: Invite | null,
+  waitlistLaunchedAt: string | null,
+  now: Date,
+): { readonly credits: boolean; readonly invite: InviteState } {
+  if (invite === null) return { credits: false, invite: "unknown" };
+  if (waitlistLaunchedAt !== null && inviteLapsed(new Date(waitlistLaunchedAt), now)) {
+    return { credits: false, invite: "expired" };
+  }
+  return { credits: true, invite: "valid" };
 }
 
 /** The city a lead may name: the pincode's, where we have it as a city of ours. */
@@ -443,10 +456,16 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   }
 
   const knownId = await personWithMobile(db, checked.mobile);
+  const saved = knownId === null ? null : await currentAddress(db, knownId);
+  const savedPincode = saved === null ? null : await pincodeOf(db, saved.pincode);
   if (knownId !== null) {
-    const notBooked = await notBookedFor(db, knownId);
+    const addressOutsideArea = saved !== null && savedPincode?.served !== 1;
+    const notBooked = await notBookedFor(db, knownId, addressOutsideArea);
     if (notBooked !== null) return answerAsForANewNumber(form, request, pincode, { personId: knownId, notBooked });
   }
+  // The visit goes to the address on the account where there is one, which is served, or the person would have been
+  // answered above; else to the address typed, in the pincode checked.
+  const visitPincode = savedPincode ?? pincode;
   const code = request.discountCode === null ? null : await oneVisitCode(form, request.discountCode, knownId, oneVisit);
   if (code?.ok === false) return code;
   const person = formPerson(db, {
@@ -459,7 +478,6 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     ipHash: checked.ipHash,
     now,
   });
-  const saved = knownId === null ? null : await currentAddress(db, knownId);
   const address = typedAddress({ hasSavedAddress: saved !== null });
   // The page says nothing of an address already on the account; its owner is told on WhatsApp.
   const addressNotice =
@@ -486,7 +504,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
         price: visit.price,
         terms: visit.terms,
         oneVisit,
-        pincode: request.pincode,
+        pincode: visitPincode.pincode,
         from: "site",
         alongside,
         afterHold: (newHold) =>
@@ -499,7 +517,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     holdId = hold.id;
     await form.bookHold(hold.id);
   } else {
-    const asked = { personId: person.id, pincode: request.pincode, date: request.date, window: request.window };
+    const asked = { personId: person.id, pincode: visitPincode.pincode, date: request.date, window: request.window };
     const kept = { oneVisit, invite: request.invite, discountCode: code?.code ?? null, now };
     await db.batch([...alongside, requestStatement(db, { ...asked, ...kept })]);
   }
@@ -515,7 +533,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     invite: request.invite,
     personId: person.id,
     via: "consultation",
-    pincode: request.pincode,
+    pincode: visitPincode.pincode,
     toldNotice: request.toldNotice,
     now,
   });
@@ -524,7 +542,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     personId: person.id,
     name: request.name,
     mobile: checked.mobile,
-    pincode,
+    pincode: visitPincode,
     lossExtent: request.lossExtent,
     date: request.date,
     attribution: request.attribution,
@@ -546,6 +564,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     state,
     date: request.date,
     window: request.window,
+    // The place typed, as a new number is told, wherever the visit goes.
     area: placeOf(pincode),
     credits: invited.credits,
     invite: invited.invite,
@@ -578,9 +597,7 @@ async function answerAsForANewNumber(
     date: request.date,
     window: request.window,
     area: placeOf(pincode),
-    // A new number carries a valid invite's credits.
-    credits: request.invite !== null,
-    invite: request.invite === null ? "unknown" : "valid",
+    ...inviteAsForANewNumber(request.invite, null, form.now),
     oneVisit,
     discountCode: code === null ? null : { code: code.code, terms: code.terms },
   };
@@ -678,7 +695,10 @@ function launchAlertRule(knownId: string | null): ConsentRule {
   return knownId === null ? "always" : "if_undecided";
 }
 
-/** Takes the number for a pincode we do not serve yet, with the launch alert if it was asked for. */
+/**
+ * Takes the number for a pincode we do not serve yet, with the launch alert if it was asked for. A number we know is
+ * answered as a new number is, whatever its invite came to.
+ */
 export async function joinTheWaitlist(
   form: FormRequest,
   request: WaitlistRequest,
@@ -752,5 +772,6 @@ export async function joinTheWaitlist(
     served: false,
     now,
   });
-  return { ok: true, area: pincode?.area ?? null, credits: invited.credits, invite: invited.invite };
+  const told = knownId === null ? invited : inviteAsForANewNumber(request.invite, pincode?.launched_at ?? null, now);
+  return { ok: true, area: pincode?.area ?? null, ...told };
 }

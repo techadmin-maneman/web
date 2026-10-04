@@ -59,6 +59,7 @@
                   "not_bookable",
                   "hold_expired",
                   "address_required",
+                  "not_served",
                   "already_booked",
                   "not_changeable",
                   "terms_changed",
@@ -78,6 +79,7 @@
                   "fsm_partly",
                   "in_progress",
                   "too_early_to_close",
+                  "already_closed",
                   "no_service_area",
                   "service_exists",
                   "last_of_kind",
@@ -205,6 +207,71 @@
         ],
         "additionalProperties": false
       },
+      "ClientErrorReport": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "error",
+              "unhandled_rejection",
+              "render",
+              "outbox_gave_up"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "The page's path, with no query or fragment."
+          },
+          "stack": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "The script the error was thrown in."
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "column": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "step": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "outbox_gave_up: the write's kind, as `checklist`."
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "outbox_gave_up: the code the API refused it with."
+          },
+          "status": {
+            "type": "integer",
+            "description": "outbox_gave_up: the refusal's HTTP status."
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+          }
+        },
+        "required": [
+          "kind",
+          "message",
+          "path"
+        ],
+        "additionalProperties": false
+      },
       "LoginChallenge": {
         "type": "object",
         "properties": {
@@ -251,10 +318,16 @@
             "type": "string",
             "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
             "example": "98100 00000"
+          },
+          "turnstile_token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
           }
         },
         "required": [
-          "mobile"
+          "mobile",
+          "turnstile_token"
         ],
         "additionalProperties": false
       },
@@ -448,13 +521,18 @@
                   "paid": {
                     "type": "boolean",
                     "description": "Paid for in money, rather than free or covered by a credit."
+                  },
+                  "one_visit": {
+                    "type": "boolean",
+                    "description": "A consultation and fit in one visit."
                   }
                 },
                 "required": [
                   "type",
                   "date",
                   "window",
-                  "paid"
+                  "paid",
+                  "one_visit"
                 ],
                 "additionalProperties": false
               },
@@ -899,11 +977,16 @@
               }
             ],
             "description": "When the soonest expire."
+          },
+          "expiring_visits": {
+            "type": "integer",
+            "description": "How many of them expire then."
           }
         },
         "required": [
           "visits",
-          "earliest_expiry"
+          "earliest_expiry",
+          "expiring_visits"
         ],
         "additionalProperties": false
       },
@@ -1135,6 +1218,39 @@
               "requested_at"
             ],
             "additionalProperties": false
+          },
+          "deletion_rejected": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "decided_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Ops' reason, which they write knowing the client reads it."
+                  }
+                },
+                "required": [
+                  "decided_at",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The client's latest request to delete their account that ops rejected, for 30 days after, while no other request is waiting."
           }
         },
         "required": [
@@ -1145,7 +1261,8 @@
           "consents",
           "number_change",
           "number_change_decided",
-          "deletion"
+          "deletion",
+          "deletion_rejected"
         ],
         "additionalProperties": false
       },
@@ -2739,6 +2856,21 @@
             ],
             "description": "Where credits added came from; null for any other entry."
           },
+          "referral_side": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "referrer",
+                  "friend"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this client's own fit through an invite. Null for any other entry."
+          },
           "no_show": {
             "anyOf": [
               {
@@ -2757,6 +2889,7 @@
           "visits",
           "visit",
           "source",
+          "referral_side",
           "no_show"
         ],
         "additionalProperties": false
@@ -3912,6 +4045,10 @@
           "cancelled": {
             "type": "boolean",
             "description": "false: the terms only; true: the visit is cancelled."
+          },
+          "refund_pending": {
+            "type": "boolean",
+            "description": "true: the visit is cancelled, and its refund is still to be asked of Razorpay, which happens within minutes."
           }
         },
         "required": [
@@ -3925,7 +4062,8 @@
           "refund",
           "kept",
           "destination",
-          "cancelled"
+          "cancelled",
+          "refund_pending"
         ],
         "additionalProperties": false
       },
@@ -4114,6 +4252,46 @@
         }
       }
     },
+    "/api/client-errors": {
+      "post": {
+        "summary": "Report an error in the app's own page",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientErrorReport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Logged"
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: this address has sent its reports for the hour, or every address has",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/otp": {
       "post": {
         "summary": "Send a login code on WhatsApp. The answer is the same whether or not the number has a booking",
@@ -4148,6 +4326,16 @@
               }
             }
           },
+          "403": {
+            "description": "turnstile_failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "429": {
             "description": "rate_limited: too many codes for this number today, or from this address this hour",
             "content": {
@@ -4159,7 +4347,7 @@
             }
           },
           "503": {
-            "description": "busy: today's ceiling on codes is reached",
+            "description": "busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached",
             "content": {
               "application/json": {
                 "schema": {
@@ -4206,7 +4394,7 @@
             }
           },
           "429": {
-            "description": "too_early, or rate_limited",
+            "description": "too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -4273,7 +4461,7 @@
             }
           },
           "429": {
-            "description": "too_early, or rate_limited",
+            "description": "too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -4499,6 +4687,26 @@
           },
           "401": {
             "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "visit_booked: a visit still to come is in another city, which the address may not leave",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "not_served: the pincode is not one we come to",
             "content": {
               "application/json": {
                 "schema": {
@@ -5597,7 +5805,7 @@
             }
           },
           "422": {
-            "description": "not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system",
+            "description": "not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not come to",
             "content": {
               "application/json": {
                 "schema": {
@@ -5692,7 +5900,7 @@
             }
           },
           "422": {
-            "description": "not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system",
+            "description": "not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not come to",
             "content": {
               "application/json": {
                 "schema": {
@@ -5849,7 +6057,7 @@
     },
     "/api/holds/{id}/discount-code": {
       "post": {
-        "summary": "Take a discount code off the hold's price, before Checkout has its order",
+        "summary": "Take a discount code off the hold's price, while nothing is paid for it",
         "parameters": [
           {
             "schema": {
@@ -5903,7 +6111,7 @@
             }
           },
           "409": {
-            "description": "already_discounted: the hold carries a code; hold_expired; price_settled: Checkout has its order, or it is paid for; ops_assisted",
+            "description": "already_discounted: the hold carries a code; hold_expired; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted",
             "content": {
               "application/json": {
                 "schema": {
@@ -5935,7 +6143,7 @@
         }
       },
       "delete": {
-        "summary": "Take the code off the hold again, before Checkout has its order",
+        "summary": "Take the code off the hold again, while nothing is paid for it",
         "parameters": [
           {
             "schema": {
@@ -5979,7 +6187,7 @@
             }
           },
           "409": {
-            "description": "hold_expired: the hold ran out; price_settled: Checkout has its order, or it is paid for; ops_assisted",
+            "description": "hold_expired: the hold ran out; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted",
             "content": {
               "application/json": {
                 "schema": {
@@ -6131,6 +6339,16 @@
               }
             }
           },
+          "202": {
+            "description": "The visit is cancelled, and its refund is on its way",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelTerms"
+                }
+              }
+            }
+          },
           "401": {
             "description": "session_required",
             "content": {
@@ -6152,7 +6370,7 @@
             }
           },
           "503": {
-            "description": "unavailable: FSM did not answer; nothing changed",
+            "description": "unavailable: the visit could not be cancelled just now; nothing changed",
             "content": {
               "application/json": {
                 "schema": {

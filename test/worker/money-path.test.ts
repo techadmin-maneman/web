@@ -9,7 +9,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { confirmBooking, requeueUnbookedHolds } from "../../src/domain/bookings.ts";
+import { bookUnbookedHolds, confirmBooking, requeueUnbookedHolds } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
@@ -104,8 +104,8 @@ async function fittedPerson(id: string, mobile: string, name: string) {
 }
 
 /**
- * Razorpay's signed webhook for a payment, delivered at `now`. On our own record it books the hold itself, refunding
- * through `through.payments` a payment made too late.
+ * Razorpay's signed webhook for a payment, or for `through.refund` of it, delivered at `now`. On our own record it
+ * books the hold itself, refunding through `through.payments` a payment made too late.
  */
 async function webhook(
   event: string,
@@ -113,14 +113,15 @@ async function webhook(
   payment: object,
   now: Date,
   queue = fakeQueue(),
-  through: { readonly record?: FieldRecord; readonly payments?: PaymentsProvider } = {},
+  through: { readonly record?: FieldRecord; readonly payments?: PaymentsProvider; readonly refund?: object } = {},
 ) {
   const record = through.record ?? "fsm";
   const payments = through.payments ?? createStubPayments();
   const deps = depsFor(record, { now: () => now, payments });
   const settings = { ...LOCAL_SETTINGS, razorpay: { keyId: "rzp_test_money", keySecret: "s", webhookSecret: SECRET } };
   const app = appFor("local", deps, settings, "public", PROVIDERS_FOR[record]);
-  const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment } } });
+  const refund = through.refund === undefined ? {} : { refund: { entity: through.refund } };
+  const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment }, ...refund } });
   const answer = await request(
     app,
     "/api/hooks/razorpay",
@@ -411,7 +412,7 @@ describe("a paid hold whose booking FSM refused once (W2)", () => {
 describe("the public form, with a client's number, while that client's hold is paid (W3)", () => {
   it("neither lets the hold go nor renames the client", async () => {
     await env.DB.prepare(
-      "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
+      "INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
     ).run();
     const ordered = await heldAndOrdered(PERSON);
     await webhook("payment.captured", "evt_w3", payment("pay_w3", ordered, at(59)), at(60));
@@ -742,6 +743,62 @@ describe("the half-hour pass over paid holds (BIZ-06)", () => {
   });
 });
 
+// MON-12: after an outage the runbook has ops refund, from Razorpay's dashboard, a payment whose capture never came.
+describe.each(RECORDS)("a refund of a payment whose capture never reached us, on %s's record", (record) => {
+  /** The cron's half-hour pass over paid holds on this record: how many it put back or booked. */
+  function halfHourPass(now: Date) {
+    const deps = depsFor(record);
+    const budget = createCallBudget(40);
+    const log = createLogger();
+    if (record === "fsm") return requeueUnbookedHolds(env.DB, { queue: fakeQueue(), ...deps, budget, log }, now);
+    return bookUnbookedHolds(env.DB, { ...deps, notify: () => Promise.resolve(), labelAsTest: true, budget, log }, now);
+  }
+
+  /** A hold paid for inside its ten minutes, then refunded in full from Razorpay's dashboard an hour on. */
+  async function refundedInDashboard() {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    const paid = payment("pay_m12", ordered, at(30));
+    const refund = {
+      id: "rfnd_m12",
+      payment_id: "pay_m12",
+      amount: ordered.amount,
+      status: "processed",
+      created_at: Math.floor(at(3600).getTime() / SECOND),
+    };
+    return { ordered, paid, refunded: { ...paid, status: "refunded", captured: true }, refund };
+  }
+
+  it("records both and books nothing: the hold is not confirmed, and the half-hour pass leaves it alone", async () => {
+    const { ordered, refunded, refund } = await refundedInDashboard();
+    const queue = fakeQueue();
+
+    const answer = await webhook("refund.processed", "evt_m12", refunded, at(3601), queue, { record, refund });
+
+    expect(answer.status).toBe(200);
+    expect(queue.sent).toEqual([]);
+    const paid = env.DB.prepare("SELECT status FROM payments WHERE razorpay_payment_id = 'pay_m12'");
+    expect(await paid.first()).toEqual({ status: "refunded" });
+    const hold = env.DB.prepare("SELECT confirmed_at FROM slot_holds WHERE id = ?1").bind(ordered.holdId);
+    expect(await hold.first()).toEqual({ confirmed_at: null });
+    expect(await halfHourPass(at(3 * 3600))).toBe(0);
+    expect((await scheduledServiceVisits(PERSON)).results).toEqual([]);
+  });
+
+  it("books nothing when the capture arrives after the refund, and asks Razorpay for no second refund", async () => {
+    const { ordered, paid, refunded, refund } = await refundedInDashboard();
+    const payments = createStubPayments();
+    const queue = fakeQueue();
+    await webhook("refund.processed", "evt_m12", refunded, at(3601), queue, { record, refund });
+
+    await webhook("payment.captured", "evt_m12_late", paid, at(3700), queue, { record, payments });
+    await drain(queue, at(3701), payments);
+
+    expect((await holdRow(ordered.holdId))?.state).toBe("released");
+    expect(payments.made.refunds).toEqual([]);
+    expect((await scheduledServiceVisits(PERSON)).results).toEqual([]);
+  });
+});
+
 describe.each(RECORDS)("GST once a price carries it (W7, BIZ-07), on %s's record", (record) => {
   it("shows the Payments tab the figure before GST, and the rate, that the hold charged", async () => {
     await env.DB.prepare(
@@ -766,7 +823,7 @@ describe.each(RECORDS)("GST once a price carries it (W7, BIZ-07), on %s's record
 describe("where a visit booked from the site is (LIFE-04, CLI-14)", () => {
   it("carries the pincode booked at onto the visit, and onto the contact FSM is given", async () => {
     await env.DB.prepare(
-      "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
+      "INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
     ).run();
     const site = appFor("local", fakeDependencies(), {}, "public");
     const queue = fakeQueue();

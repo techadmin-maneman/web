@@ -1109,6 +1109,7 @@ describe("ops refunding it from the console", () => {
     await refusedFiveTimes(holdId, fsm);
     const refusing: PaymentsProvider = {
       createOrder: () => Promise.reject(new Error("unused")),
+      orderPayments: () => Promise.reject(new Error("unused")),
       refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")),
       createPaymentLink: () => Promise.reject(new Error("unused")),
       findPaymentLink: () => Promise.reject(new Error("unused")),
@@ -1134,6 +1135,7 @@ describe("ops refunding it from the console", () => {
     await refusedFiveTimes(holdId);
     const payments: PaymentsProvider = {
       createOrder: () => Promise.reject(new Error("unused")),
+      orderPayments: () => Promise.reject(new Error("unused")),
       refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")),
       createPaymentLink: () => Promise.reject(new Error("unused")),
       findPaymentLink: () => Promise.reject(new Error("unused")),
@@ -1422,6 +1424,7 @@ describe("where it waits for ops, and what the client sees meanwhile", () => {
         refusal: "Zoho 400 INVALID_DATA",
         retries_end: afterHeld(24 * HOUR).toISOString(),
         retrying: true,
+        discount_code: null,
       },
     ]);
   });
@@ -1436,6 +1439,12 @@ describe("where it waits for ops, and what the client sees meanwhile", () => {
       being_booked: unknown;
     }>();
     expect(me.next_visit).toBeNull();
-    expect(me.being_booked).toEqual({ type: "service", date: "2026-09-24", window: "afternoon", paid: true });
+    expect(me.being_booked).toEqual({
+      type: "service",
+      date: "2026-09-24",
+      window: "afternoon",
+      paid: true,
+      one_visit: false,
+    });
   });
 });

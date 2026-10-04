@@ -5,6 +5,7 @@
 // The ordering rules are in ./replay.ts; this file is the store and the sending.
 
 import type { Moved } from "@maneman/web-kit/api";
+import { reportClientError } from "@maneman/web-kit/client-errors";
 import {
   api,
   type Answer,
@@ -16,10 +17,18 @@ import {
   type Angle,
   type CheckIn,
   type EventKind,
+  type JobState,
   type Phase,
 } from "../api.ts";
 import { add, all, get, put, remove } from "./db.ts";
-import { keepArrival } from "./jobs.ts";
+import {
+  forgetMarks,
+  forgetStartAtCheckIn,
+  keepArrival,
+  keepLanded,
+  keepStartAtCheckIn,
+  keptStartAtCheckIn,
+} from "./jobs.ts";
 import { account, nextToSend, type JobAccount, type Queued } from "./replay.ts";
 import { uuidv7 } from "./uuidv7.ts";
 
@@ -43,17 +52,24 @@ export interface Frame {
 /** Why a replay stopped short, so the screen can say it plainly. */
 export type Stopped = "offline" | "signed-out" | null;
 
+type Refused = Extract<Answer<unknown>, { readonly ok: false }>;
+
 /** A job no longer this technician's, as the API said it: the code, what changed, and whom it went to. */
 interface Gone {
+  readonly kind: "gone";
   readonly note: string;
   readonly fields: readonly string[];
   readonly moved: Moved | null;
 }
 
-/** Why a photograph could not go up: no signal, signed out, the job gone from the phone, or the file refused. */
-type Trouble = "offline" | "signed-out" | "refused" | Gone;
+/** A photograph the API would not take, as it answered. */
+interface Rejected {
+  readonly kind: "rejected";
+  readonly answer: Refused;
+}
 
-type Refused = Extract<Answer<unknown>, { readonly ok: false }>;
+/** Why a photograph could not go up: no signal, signed out, the job gone from the phone, or the file refused. */
+type Trouble = "offline" | "signed-out" | Gone | Rejected;
 
 export interface Replayed {
   readonly sent: number;
@@ -90,7 +106,8 @@ export async function held(): Promise<JobAccount[]> {
  * A step already waiting is not queued a second time: a second tap on a gloved
  * screen, or the screen opened twice, sends it once. `startsAt` is the job's
  * start as the card said when the technician acted, which the API checks
- * against the one it holds.
+ * against the one it holds; once he has checked in, the start the card said
+ * then.
  */
 export async function queue(
   kind: EventKind,
@@ -110,7 +127,7 @@ export async function queue(
     path: pathFor(kind, jobId),
     body,
     queued_at: Date.now(),
-    starts_at: startsAt,
+    starts_at: await startSentWith(kind, jobId, startsAt),
     state: "waiting" as const,
     note: null,
     fields: [],
@@ -121,6 +138,18 @@ export async function queue(
 }
 
 /**
+ * The start a step is sent with. A check-in keeps the card's; every later step of the job carries that same start,
+ * so a move ops make once the technician has arrived is refused rather than taken in by a card read again since.
+ */
+async function startSentWith(kind: EventKind, jobId: string, startsAt: string | null): Promise<string | null> {
+  if (kind === "check_in") {
+    if (startsAt !== null) await keepStartAtCheckIn(jobId, startsAt);
+    return startsAt;
+  }
+  return (await keptStartAtCheckIn(jobId)) ?? startsAt;
+}
+
+/**
  * A step the API refused, sent again as the technician corrected it. It keeps
  * its place in the queue, so the steps queued behind it follow it, and it goes
  * under a new event ID, since the API recorded nothing of the refused one.
@@ -128,7 +157,7 @@ export async function queue(
 export async function correct(seq: number, body: unknown): Promise<void> {
   const refused = await get<Queued>("outbox", seq);
   if (refused === null) return;
-  await put("outbox", { ...refused, id: uuidv7(), body, state: "waiting", note: null, fields: [] });
+  await put("outbox", { ...refused, id: uuidv7(), body, state: "waiting", note: null, fields: [], request_id: null });
   changed();
 }
 
@@ -180,6 +209,8 @@ export async function forget(jobId: string): Promise<void> {
   for (const frame of await frames()) {
     if (frame.job_id === jobId) await remove("frames", frame.id);
   }
+  await forgetMarks(jobId);
+  await forgetStartAtCheckIn(jobId);
   changed();
 }
 
@@ -189,10 +220,27 @@ async function markStopped(
   note: string,
   fields: readonly string[],
   moved: Moved | null = null,
+  requestId: string | null = null,
 ): Promise<void> {
   const current = await get<Queued>("outbox", event.seq);
   if (current === null) return;
-  await put("outbox", { ...current, state, note, fields, moved });
+  await put("outbox", { ...current, state, note, fields, moved, request_id: requestId });
+}
+
+/**
+ * A write the API refused: its job stops there for the technician to put right, and the refusal is reported, since
+ * nothing else would tell anyone but him.
+ */
+async function giveUp(event: Queued, note: string, fields: readonly string[], answer: Refused): Promise<void> {
+  await markStopped(event, "refused", note, fields, null, answer.requestId);
+  reportClientError({
+    kind: "outbox_gave_up",
+    message: `${event.kind} refused: ${answer.code}`,
+    step: event.kind,
+    code: answer.code,
+    status: answer.status,
+    ...(answer.requestId === null ? {} : { request_id: answer.requestId }),
+  });
 }
 
 let running: Promise<Replayed> | null = null;
@@ -252,8 +300,11 @@ async function uploadFrame(frame: Frame): Promise<Trouble | null> {
   const sent = await api.uploadThumbnail(link.body.small_upload_url, take, frame.small);
   if (sent.ok) return null;
   const trouble = failureOf(sent);
-  return trouble === "refused" ? null : trouble;
+  return isRejected(trouble) ? null : trouble;
 }
+
+const isRejected = (trouble: Trouble): trouble is Rejected =>
+  typeof trouble === "object" && trouble.kind === "rejected";
 
 /**
  * What a failed call on the way to a write means for the round: wait, sign out,
@@ -265,9 +316,17 @@ async function uploadFrame(frame: Frame): Promise<Trouble | null> {
 function failureOf(answer: Refused): Trouble {
   if (unreachable(answer)) return "offline";
   if (answer.status === 401) return "signed-out";
-  if (answer.code === SUPERSEDED) return { note: SUPERSEDED, fields: answer.fields, moved: answer.moved };
-  if (answer.status === 404) return { note: "not_found", fields: [], moved: null };
-  return "refused";
+  if (answer.code === SUPERSEDED) return { kind: "gone", note: SUPERSEDED, fields: answer.fields, moved: answer.moved };
+  if (answer.status === 404) return { kind: "gone", note: "not_found", fields: [], moved: null };
+  return { kind: "rejected", answer };
+}
+
+/** Where the job stands as a landed write answered: its own progress, or that of the step a check-in or no-show made. */
+function stateIn(body: unknown): JobState | null {
+  const answer = body as { progress?: Partial<JobState>; accepted?: { progress?: Partial<JobState> } | null } | null;
+  const progress = answer?.progress ?? answer?.accepted?.progress;
+  if (progress === undefined) return null;
+  return { started_at: progress.started_at ?? null, outcome: progress.outcome ?? null };
 }
 
 /**
@@ -293,8 +352,8 @@ async function run(): Promise<Replayed> {
       if (trouble === "offline" || trouble === "signed-out") {
         return { sent, superseded, refused, stopped: trouble };
       }
-      if (trouble === "refused") {
-        await markStopped(event, "refused", "photo_rejected", []);
+      if (trouble?.kind === "rejected") {
+        await giveUp(event, "photo_rejected", [], trouble.answer);
         refused += 1;
         changed();
         continue;
@@ -314,6 +373,8 @@ async function run(): Promise<Replayed> {
     if (answer.ok) {
       // A check-in answers pass or fail with the distance; the job screen shows it.
       if (event.kind === "check_in") await keepArrival(event.job_id, answer.body as CheckIn);
+      const landed = stateIn(answer.body);
+      if (landed !== null) await keepLanded(event.job_id, landed);
       if (event.kind === "no_show") early.delete(event.job_id);
       await remove("outbox", event.seq);
       sent += 1;
@@ -340,7 +401,7 @@ async function run(): Promise<Replayed> {
     }
     // Ours or theirs, and passing: try the whole queue again later.
     if (answer.status === 429 || answer.status >= 500) return { sent, superseded, refused, stopped: "offline" };
-    await markStopped(event, "refused", answer.code, answer.fields);
+    await giveUp(event, answer.code, answer.fields, answer);
     refused += 1;
     changed();
   }

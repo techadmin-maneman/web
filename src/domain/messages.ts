@@ -17,6 +17,7 @@ export const MESSAGE_KINDS = [
   "nothing_to_pay", // a one visit a discount code left nothing to pay for, once the client is fitted (ADR 0108)
   "reschedule_confirmation",
   "cancel_confirmation",
+  "visit_cancelled", // ops cancelled the visit from the console
   "visit_moved", // ops moved the visit: the new window
   "arrival_notice", // the technician has arrived
   "no_show_decided", // ops ruled on a visit the client was not home for
@@ -26,11 +27,16 @@ export const MESSAGE_KINDS = [
   "friend_fitted", // to the referrer
   "friend_credited", // to the friend: the invite's credits are theirs
   "referral_rejected", // to either side: ops refused a held grant
+  "credits_expiring", // free service visits run out: a month before their last day, and a week before
   "launch_alert", // the person's pincode went live
   // The site's booking form, for a number we know (src/domain/site-notices.ts): what the page tells no one.
   "consultation_exists",
   "book_in_app",
   "address_on_account",
+  "address_not_served",
+  // Ops kept the account the client asked us to delete, with their reason (src/domain/deletion.ts).
+  "deletion_rejected",
+  "messages_stopped", // the answer to a STOP reply (src/domain/stop-messages.ts)
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
 

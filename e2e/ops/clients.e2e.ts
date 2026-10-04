@@ -41,6 +41,7 @@ const ADD_CREDITS: Call = `POST ${RECORD_PATH}/credits`;
 const ATTACH_INVITE: Call = `POST ${RECORD_PATH}/referral`;
 const SUGGEST: Call = `POST ${RECORD_PATH}/address/suggestions`;
 const SAVE_ADDRESS: Call = `POST ${RECORD_PATH}/address`;
+const ERASE: Call = `POST ${RECORD_PATH}/erasure`;
 const FIND: Call = "POST /api/clients/find";
 const readPhoto = (id: string): Call => `GET ${RECORD_PATH}/photos/${id}`;
 const NAME = { name: CLIENT.name, exact: true };
@@ -52,6 +53,31 @@ const VIEW = {
   logged_at: "2027-09-22T05:12:00.000Z",
   before: [{ by: "ops@maneman.in", at: "2027-09-19T04:40:00.000Z" }],
 } satisfies OpsReply<"/api/clients/{id}/photos/view", "post">;
+
+/** What an erasure from the client's page answers: what went. */
+const ERASED = {
+  erased_at: "2027-09-22T05:12:00.000Z",
+  photos_deleted: 1,
+  results_deleted: 1,
+  visit_photos_deleted: 10,
+  messages_cancelled: 0,
+  sessions_ended: 1,
+  addresses_removed: 1,
+} satisfies OpsReply<"/api/clients/{id}/erasure", "post">;
+
+/** Nothing erased: a visit of theirs is still booked. */
+const VISIT_BOOKED = {
+  error: { code: "visit_booked", request_id: "test" },
+  visits: [
+    {
+      id: "77000000-0000-4000-8000-000000000001",
+      type: "service",
+      status: "scheduled",
+      window_start: "2027-09-27T04:30:00.000Z",
+    },
+  ],
+  payments: [],
+};
 
 /** The client's routes, with every photograph a block of ink; `over` replaces any of them. */
 async function clientRoutes(page: Page, over: Answers = {}): Promise<void> {
@@ -126,7 +152,7 @@ test("heads the page with the client's standing and the number to reach them on"
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   // "Fitted" heads a column of the pieces table beneath, so the standing is read from its own list.
   // The replacement is the month the board's head writes, never the day the pieces table carries.
-  await expect(meta(page)).toHaveText(["Fitted", "2 · expire 3 Jan 2028", "Mar 2028", MOBILE]);
+  await expect(meta(page)).toHaveText(["Fitted", "2 · use by 3 Jan 2028", "Mar 2028", MOBILE]);
   await expect(page.getByRole("link", { name: `Call ${CLIENT.name} on ${MOBILE}` })).toHaveAttribute(
     "href",
     `tel:${CLIENT.mobile}`,
@@ -144,7 +170,7 @@ test("opens a WhatsApp chat with the client from beside their name, as the board
 
 test("says in words that a client wearing no piece falls due on no date", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: json(NEW_RECORD) });
-  await expect(meta(page)).toHaveText(["Booked", "2 · expire 3 Jan 2028", "No piece fitted", MOBILE]);
+  await expect(meta(page)).toHaveText(["Booked", "2 · use by 3 Jan 2028", "No piece fitted", MOBILE]);
 });
 
 test("opens on the pieces, as the board draws the page, and lists them in the board's columns", async ({ page }) => {
@@ -419,6 +445,24 @@ test("enters a discount code on a visit not yet paid for, says when one does not
   await expect(row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" })).toBeVisible();
 });
 
+// MON-23: once the one visit was booked, ops no longer saw the code the client gave when booking on the site.
+test("shows the code the client gave when booking, and starts the box from it", async ({ page }) => {
+  const [coming] = RECORD.visits.upcoming;
+  if (coming === undefined) throw new Error("the record has no visit to come");
+  const asked = {
+    ...RECORD,
+    visits: {
+      ...RECORD.visits,
+      upcoming: [{ ...coming, type: "first_fit" as const, prepaid: false, price_open: true, requested_code: "TENPC" }],
+    },
+  } satisfies OpsReply<"/api/clients/{id}">;
+  await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(asked) });
+  const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
+  await expect(row).toContainText("Client gave TENPC when booking");
+  await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
+  await expect(row.getByLabel("Discount code")).toHaveValue("TENPC");
+});
+
 test("offers no code on a visit already paid for", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(RECORD) });
   const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
@@ -478,8 +522,8 @@ test("puts a client's credits right, with the reason, and shows the balance it a
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
     [ADD_CREDITS]: json({ visits: 1, earliest_expiry: "2028-01-03T06:00:00.000Z" }),
   });
-  const credits = page.getByRole("region", { name: "Service-visit credits" });
-  await expect(credits).toContainText("2 visits The soonest expires 3 Jan 2028.");
+  const credits = page.getByRole("region", { name: "Free service visits" });
+  await expect(credits).toContainText("2 visits · use by 3 Jan 2028");
   const save = credits.getByRole("button", { name: "Put the credits right" });
   await expect(save).toBeDisabled();
 
@@ -491,12 +535,12 @@ test("puts a client's credits right, with the reason, and shows the balance it a
 
   await expect(credits.getByRole("status")).toHaveText("Done. They now hold 1 visit.");
   // The head reads the balance the API answered, without the record being read again.
-  await expect(meta(page).nth(1)).toHaveText("1 · expire 3 Jan 2028");
+  await expect(meta(page).nth(1)).toHaveText("1 · use by 3 Jan 2028");
 });
 
 test("offers no change of nought, or of more than twelve visits either way", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`);
-  const credits = page.getByRole("region", { name: "Service-visit credits" });
+  const credits = page.getByRole("region", { name: "Free service visits" });
   await credits.getByRole("radio", { name: "Goodwill: to make up for something" }).check();
   const field = credits.getByLabel("Visits to add, or to take away with a minus");
   const save = credits.getByRole("button", { name: "Put the credits right" });
@@ -512,7 +556,7 @@ test("says so when the API would take away more than the client holds", async ({
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
     [ADD_CREDITS]: fails(400, "invalid_request"),
   });
-  const credits = page.getByRole("region", { name: "Service-visit credits" });
+  const credits = page.getByRole("region", { name: "Free service visits" });
   await credits.getByLabel("Visits to add, or to take away with a minus").fill("-5");
   await credits.getByRole("radio", { name: "Correction: given or taken in error" }).check();
   await credits.getByRole("button", { name: "Put the credits right" }).click();
@@ -620,6 +664,8 @@ test("keeps the photographs locked, and says what opening them records", async (
   });
   await expect(page.getByText("Locked")).toBeVisible();
   await expect(page.getByRole("heading", { name: `Photographs of ${CLIENT.name}` })).toBeVisible();
+  // Why they are kept, whatever the Consents tab says.
+  await expect(page.getByText("Taken for the visit record, at every visit.")).toBeVisible();
   await expect(page.getByText("Opening these records your name, the client and the time.")).toBeVisible();
   // Nothing is fetched while it is locked, so nothing is logged.
   expect(asked).toBe(0);
@@ -736,11 +782,56 @@ test("names a consent given by booking, and says where a place was not recorded"
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
-test("says when the client has asked to be erased", async ({ page }) => {
+test("says when the client has asked to be erased, and leaves it to Deletion requests", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`, {
     [READ_CONSENTS]: json(ERASURE_REQUESTED),
   });
   await expect(page.getByText("Erasure requested 18 Sep 2027. It is not decided here.")).toBeVisible();
+  await expect(page.getByRole("button", { name: `Erase ${CLIENT.name}` })).toHaveCount(0);
+});
+
+// The operators' erasure was a script with a shared secret, on the public host, that left no audit entry (PS-16).
+test("erases a client from their page, once ops confirm the request came from their own number", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/consents`, { [ERASE]: json(ERASED) });
+  const erasing = page.getByRole("region", { name: "Erase this client" });
+  await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();
+
+  const confirm = page.getByRole("group", { name: `Erasing ${CLIENT.name}` });
+  await expect(confirm).toBeFocused();
+  await expect(confirm).toContainText("Their invoices in Books, eight years, by law");
+  const now = confirm.getByRole("button", { name: "Erase now" });
+  await expect(now).toBeDisabled();
+  await confirm
+    .getByRole("checkbox", { name: "I have confirmed this request with them, on their own number." })
+    .check();
+
+  const sent = page.waitForRequest((request) => request.url().endsWith("/erasure") && request.method() === "POST");
+  await now.click();
+  expect((await sent).postDataJSON()).toEqual({});
+  await expect(page.getByRole("heading", { name: "Erased" })).toBeVisible();
+  await expect(page.getByRole("heading", NAME)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Find another client" })).toBeVisible();
+});
+
+test("erases anyway when a visit is booked, once ops say they will settle it by hand today", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/consents`, { [ERASE]: json(VISIT_BOOKED, 409) });
+  const erasing = page.getByRole("region", { name: "Erase this client" });
+  await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();
+  await erasing
+    .getByRole("checkbox", { name: "I have confirmed this request with them, on their own number." })
+    .check();
+  await erasing.getByRole("button", { name: "Erase now" }).click();
+
+  await expect(erasing).toContainText("They still have a visit booked, so nothing was erased.");
+  await answer(page, { [ERASE]: json(ERASED) });
+  const anyway = erasing.getByRole("button", { name: "Erase anyway" });
+  await expect(anyway).toBeDisabled();
+  await erasing.getByRole("checkbox", { name: "I will cancel and refund it by hand today." }).check();
+
+  const sent = page.waitForRequest((request) => request.url().endsWith("/erasure") && request.method() === "POST");
+  await anyway.click();
+  expect((await sent).postDataJSON()).toEqual({ override_open_bookings: true });
+  await expect(page.getByRole("heading", { name: "Erased" })).toBeVisible();
 });
 
 // The owner's ruling of 24 September 2026: what a client has bought and how
@@ -845,7 +936,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await clean("visits");
 
   await page.getByRole("link", { name: "Payments" }).click();
-  await expect(page.getByRole("region", { name: "Service-visit credits" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Free service visits" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Invite" })).toBeVisible();
   await clean("payments");
 

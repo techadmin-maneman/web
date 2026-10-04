@@ -4,7 +4,7 @@ import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefCallback } from "react";
 import type { LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
 import { BUBBLE } from "../icons.ts";
@@ -15,13 +15,18 @@ import styles from "./login.module.css";
 import { masked } from "./mobile.ts";
 
 export type CodeProblem =
-  { readonly kind: "mismatch"; readonly left: number } | { readonly kind: "closed" } | { readonly kind: "failed" };
+  | { readonly kind: "mismatch"; readonly left: number }
+  | { readonly kind: "closed" }
+  | { readonly kind: "failed" }
+  | { readonly kind: "limited" };
 
 interface Props {
   readonly mobile: string;
   readonly challenge: LoginChallenge;
   readonly busy: boolean;
   readonly problem: CodeProblem | null;
+  /** Where Turnstile renders while a new code is offered, which needs its check. */
+  readonly turnstileBox: RefCallback<HTMLDivElement>;
   readonly onVerify: (code: string) => void;
   readonly onResend: () => void;
   readonly onSms: () => void;
@@ -34,6 +39,7 @@ interface Props {
 function problemLine(problem: CodeProblem | null): string | null {
   if (problem === null) return null;
   if (problem.kind === "mismatch") return login.code.mismatch(problem.left);
+  if (problem.kind === "limited") return login.code.limited;
   return problem.kind === "closed" ? login.code.expired : login.code.failed;
 }
 
@@ -161,6 +167,7 @@ export function CodeScreen(props: Props) {
             <span>{copy.noBooking}</span>
           </button>
         </div>
+        {closed && <div ref={props.turnstileBox} className={styles.turnstile} />}
         {/* Said once, as the countdown runs out; the count itself is shown and not spoken. */}
         <VisuallyHidden as="p" role="status">
           {resendIn === 0 && !closed ? copy.canResend : ""}

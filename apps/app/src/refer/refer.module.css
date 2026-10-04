@@ -29,10 +29,6 @@
 
 /* Board F1's credit tile, ruled above and below. */
 .credit {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-16);
   padding: var(--sp-20) 0;
   border-top: var(--hairline) solid var(--paper-line);
   border-bottom: var(--hairline) solid var(--paper-line);
@@ -46,13 +42,6 @@
   margin-top: var(--sp-4);
   font-size: var(--fs-14);
   color: var(--text-muted);
-}
-
-.creditCount {
-  font-family: var(--font-serif);
-  font-size: var(--fs-34);
-  line-height: var(--lh-100);
-  font-variant-numeric: lining-nums;
 }
 
 .noOther {

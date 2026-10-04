@@ -80,6 +80,8 @@ export const states = {
   loading: "Loading",
   failed: "We could not load this.",
   retry: "Try again",
+  /** The failed call's reference, to quote to the developers. */
+  ref: { label: "Ref", copy: "Copy", copied: "Copied" },
 } as const;
 
 export const dispatch = {
@@ -212,8 +214,12 @@ export const dispatch = {
       started: "Technician started",
       closed: "Closed by the technician",
     } as Readonly<Record<string, string>>,
-    /** PLACEHOLDER: a visit the technician has begun has no move. */
+    /** PLACEHOLDER: a visit the technician has started or closed has no move. */
     stays: "Under way, so it stays where it is.",
+    /** PLACEHOLDER: the warning before ops move a visit the technician has checked in at. */
+    checkedIn: (technician: string) =>
+      `${technician} has checked in. Moving it clears the check-in, so they check in again at the new time.`,
+    moveAnyway: "Move anyway",
     /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
@@ -222,6 +228,9 @@ export const dispatch = {
       `Not told of the move to ${when}: no WhatsApp. Call ${mobile}, then record it here.`,
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
+    /** PLACEHOLDER: a visit ops cancel for the client, or close by hand once its technician's phone was lost. */
+    cancel: "Cancel this visit",
+    closeByHand: "Close by hand",
     close: "Close",
   },
   /** Board A2: the reason a move must carry, asked for before anything is written. */
@@ -256,6 +265,8 @@ export const dispatch = {
      */
     soon: (hours: number) =>
       `This visit is inside ${String(hours)} hours. The client is not charged, because we moved it.`,
+    /** PLACEHOLDER: a move of a visit the technician had checked in at, chosen after the drawer's warning. */
+    checkInCleared: "The technician's check-in is cleared. They check in again at the new time.",
     send: "Move and notify",
     /** PLACEHOLDER: the same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",
@@ -295,6 +306,9 @@ export const dispatch = {
     /** PLACEHOLDER: the button that closes the call's task, beside the line that asks for the call. */
     told: "Told by phone",
     toldDone: (name: string) => `Recorded that ${name} was told by phone.`,
+    /** PLACEHOLDER: a visit ops cancelled, or closed by hand, from its drawer. */
+    cancelled: (job: string) => `${job}'s visit is cancelled.`,
+    closedByHand: (job: string) => `${job}'s visit is closed.`,
     /**
      * A refusal names the technician and the window it asked for: the clash check
      * runs before anything is written (ADR 0034), and the API answers with the
@@ -419,7 +433,7 @@ export const clients = {
    * the piece in wear's, as a month, exactly as the board writes it. The
    * mobile is ours: the board draws a WhatsApp button and no number to call.
    */
-  meta: { state: "Status", credits: "Credits", replacement: "Replacement due", mobile: "Mobile" },
+  meta: { state: "Status", credits: "Free service visits", replacement: "Replacement due", mobile: "Mobile" },
   /** Board B1's button beside the name, which opens a chat with the client. */
   whatsapp: "WhatsApp",
   whatsappLabel: (name: string) => `WhatsApp ${name}`,
@@ -427,9 +441,9 @@ export const clients = {
   callLabel: (name: string, mobile: string) => `Call ${name} on ${mobile}`,
   // PLACEHOLDER: the board writes "Active"; the API's three states are these.
   states: { fitted: "Fitted", lead: "Booked", nothing_booked: "Nothing booked" },
-  /** The head's credits, as the board writes them: "2 · expire 3 Jan 2028". */
+  /** The head's free service visits, as the client's Home writes them: "2 · use by 3 Jan 2028". */
   creditLine: (visits: number, expiry: string | null) =>
-    expiry === null ? String(visits) : `${String(visits)} · expire ${expiry}`,
+    expiry === null ? String(visits) : `${String(visits)} · use by ${expiry}`,
   /**
    * PLACEHOLDER: the board draws no client without a piece. A client wearing
    * none falls due on no date at all, so the head says so rather than drawing
@@ -511,6 +525,8 @@ export const clients = {
       givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" } as Readonly<
         Record<string, string>
       >,
+      /** A one visit's code the client typed when booking on the site, which "Enter a code" starts from. */
+      requested: (code: string) => `Client gave ${code} when booking`,
       enter: "Enter a code",
       /** The button's whole name, since every row's says the same. */
       enterLabel: (visit: string) => `Enter a discount code on the visit of ${visit}`,
@@ -563,7 +579,7 @@ export const clients = {
       pays: {
         nothing: "Nothing to pay.",
         oneVisit: "Nothing to pay now. A payment link goes to them once they are fitted.",
-        credit: (left: number) => `Paid with a visit credit. ${String(left)} left.`,
+        credit: (left: number) => `Paid with a free service visit. ${String(left)} left.`,
         link: (amount: string) =>
           `${amount} before any code. A payment link goes to them by SMS; the visit is booked once they pay.`,
       },
@@ -593,6 +609,90 @@ export const clients = {
         not_found: "This client cannot be booked.",
         offline: "You are offline. Connect, then try again.",
         unknown: "That did not go through. Nothing was booked.",
+      } as Readonly<Record<string, string>>,
+    },
+    /**
+     * PLACEHOLDER, all of it: ops cancelling a client's visit, which no board draws. Free to the client unless ops
+     * apply the client's own late terms, with a reason (the owner's ruling of 2 October 2026).
+     */
+    cancel: {
+      open: "Cancel",
+      /** The button's whole name, since every row's says the same. */
+      openLabel: (visit: string) => `Cancel the visit of ${visit}`,
+      drawer: "Cancel this visit",
+      title: (name: string) => `Cancel ${name}'s visit`,
+      close: "Close",
+      loading: "Checking what it gives back…",
+      unreadable: "What the cancel gives back could not be read.",
+      retry: "Try again",
+      paid: {
+        money: (amount: string, method: string) => `Paid ${amount} by ${method}.`,
+        credit: "Paid with a free service visit.",
+        nothing: "Nothing paid.",
+      },
+      /** Where a refund goes, by the payment's method. */
+      destinations: { upi: "UPI", card: "card", netbanking: "bank account" } as Readonly<Record<string, string>>,
+      otherDestination: "payment method",
+      free: "Free to the client",
+      clientTerms: "On their late terms",
+      /** "Free to the client: Rs. 2,000 goes back to their UPI." */
+      terms: (which: string, gives: string) => `${which}: ${gives}`,
+      gives: {
+        refund: (amount: string, to: string) => `${amount} goes back to their ${to}.`,
+        kept: (amount: string) => `${amount} is kept.`,
+        restored: "their free service visit comes back.",
+        lost: "their free service visit is spent.",
+        nothing: "nothing to give back.",
+      },
+      lateTerms: "Apply the client's late terms",
+      lateHint: (hours: number) => `Only when they cancel inside the ${String(hours)} hours' notice themselves.`,
+      reason: "Why",
+      reasonHint: "Kept with the cancel, under your name. The client never sees it.",
+      confirm: "Cancel the visit",
+      cancelling: "Cancelling…",
+      /** "Cancelled. Rs. 2,000 goes back to their UPI." */
+      done: (gives: string) => `Cancelled. ${gives.charAt(0).toUpperCase()}${gives.slice(1)}`,
+      termsChanged: "The client's notice ran out while this was open. Check what it gives back, then cancel again.",
+      errors: {
+        not_permitted: NOT_PERMITTED,
+        not_changeable: "This visit can no longer be cancelled: it has begun, passed or been cancelled already.",
+        invalid_request: "Say why it is cancelled.",
+        unavailable: "FSM did not answer, so nothing changed. Try again in a minute.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was cancelled.",
+      } as Readonly<Record<string, string>>,
+    },
+    /**
+     * PLACEHOLDER, all of it: ops closing a visit by hand, for work whose technician's phone was lost before it sent
+     * it. No board draws it.
+     */
+    handClose: {
+      open: "Close by hand",
+      openLabel: (visit: string) => `Close the visit of ${visit} by hand`,
+      title: (name: string) => `Close ${name}'s visit by hand`,
+      close: "Close",
+      note: "For work done whose record was lost with the technician's phone. What the phone sent before stays.",
+      outcome: "How it went",
+      outcomes: { done: "Done", partial: "Partly done" },
+      started: "Work began at",
+      ended: "Work ended at",
+      /** "On Mon 21 Sep, India time." */
+      timesHint: (day: string) => `On ${day}, India time.`,
+      reason: "What happened, and how you know",
+      reasonHint: "Kept with the visit, under your name.",
+      confirm: "Close the visit",
+      closing: "Closing…",
+      done: { done: "Closed as done.", partial: "Closed as partly done. Its follow-up waits on Tasks." },
+      errors: {
+        not_permitted: NOT_PERMITTED,
+        managed_in_fsm: "FSM holds this visit's record, so close it in FSM.",
+        already_closed: "This visit is closed already, by the technician's phone or from here, or it was cancelled.",
+        too_early_to_close: "This visit's time has not come yet.",
+        times: "The times must fall on the visit's day, begin before they end, and end by now.",
+        reason: "Say what happened.",
+        not_found: "This visit is no longer on our records.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was closed.",
       } as Readonly<Record<string, string>>,
     },
     /** "9 am to 12", as the dispatch drawer writes a window. */
@@ -628,8 +728,10 @@ export const clients = {
       /** "Service visit, Thu 24 Sep, 12:00". */
       what: (visit: string, when: string) => `${visit}, ${when}`,
       paid: (amount: string) => `Paid ${amount}`,
-      credit: "A visit credit covers it",
+      credit: "A free service visit covers it",
       free: "Nothing to pay",
+      /** "Code AUDTEST, Rs. 1,000 off": the code the client booked with. */
+      code: (applied: string) => `Code ${applied}`,
       refusal: (reason: string) => `FSM said: ${reason}`,
       noRefusal: "FSM gave no reason.",
       retrying: (until: string) => `Tried again automatically until ${until}.`,
@@ -725,13 +827,14 @@ export const clients = {
     /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
     code: (applied: string) => `Code ${applied}`,
   },
-  /** Putting a client's service-visit credits right by hand (POST /api/clients/{id}/credits). */
+  /** Putting a client's free service visits right by hand (POST /api/clients/{id}/credits). */
   credits: {
-    title: "Service-visit credits",
+    title: "Free service visits",
     balance: "They hold",
     none: "None",
     visits: (count: number) => `${String(count)} ${Math.abs(count) === 1 ? "visit" : "visits"}`,
-    expiry: (date: string) => `The soonest expires ${date}.`,
+    /** After the count, as the head writes it: "2 visits · use by 3 Jan 2028". */
+    useBy: (date: string) => `use by ${date}`,
     change: "Visits to add, or to take away with a minus",
     changeHint: "A whole number from -12 to 12, never 0.",
     reason: "Why",
@@ -878,6 +981,8 @@ export const clients = {
   photos: {
     locked: "Locked",
     title: (name: string) => `Photographs of ${name}`,
+    /** Why a client's visits are photographed, which no consent switches off. */
+    basis: "Taken for the visit record, at every visit.",
     /** The board's words, with the client's first name where it writes "Rohit". */
     warning: (firstName: string) =>
       `Opening these records your name, the client and the time. The log is visible to the city head and to ${firstName} on request.`,
@@ -942,6 +1047,8 @@ export const clients = {
       app_share_sheet: "Refer",
       technician: "Technician",
       erasure: "Erasure",
+      message_link: "Stop link",
+      whatsapp_stop: "STOP reply",
     },
     /**
      * PLACEHOLDER: a consent with no place kept: given before this release on a notice several places showed, written
@@ -958,6 +1065,44 @@ export const clients = {
       requested: (date: string) => `Erasure requested ${date}. It is not decided here.`,
       rejected: (date: string) => `Erasure requested ${date} and refused.`,
     },
+  },
+  /**
+   * PLACEHOLDER, all of it: no board draws erasing a client from their page. It is for a request made outside the
+   * app, on WhatsApp or the phone; one made in the app is decided in Deletion requests, which tells the client.
+   */
+  erasure: {
+    title: "Erase this client",
+    note: "When they ask us, outside the app, to delete their data. It cannot be undone.",
+    open: "Erase",
+    openLabel: (name: string) => `Erase ${name}`,
+    confirmLabel: (name: string) => `Erasing ${name}`,
+    warning: "This erases them now. It cannot be undone, and there is no copy to put back.",
+    /** The runbook's first step, "Check the request comes from the number's owner". */
+    checked: "I have confirmed this request with them, on their own number.",
+    confirm: "Erase now",
+    cancel: "Keep them",
+    erasing: "Erasing",
+    /** Why nothing was erased, and what ops may do about it. */
+    owed: {
+      visit_booked: "They still have a visit booked, so nothing was erased. Cancel it and refund what they paid first.",
+      payment_held: "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it first.",
+    },
+    /** To erase today all the same, when what is owed cannot be settled first. */
+    settle: "I will cancel and refund it by hand today.",
+    anyway: "Erase anyway",
+    done: {
+      title: "Erased",
+      body:
+        "Their photographs and details are gone. Their records in the CRM, Books and FSM are blanked within a few " +
+        "minutes. Tell them it is done, in the chat they asked in.",
+      back: "Find another client",
+    },
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: "They were erased already. Reload to see.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. They have not been erased.",
+    } as Readonly<Record<string, string>>,
   },
   /*
    * The client's record in figures (src/domain/client-history.ts). The design
@@ -1245,7 +1390,7 @@ export const noShows = {
     wordsErased: "Their words were erased with them.",
     /** PLACEHOLDER: what the charge took, and when the visit was. */
     took: (what: string, day: string) => `The charge kept ${what}, for the visit of ${day}.`,
-    credit: "a visit credit",
+    credit: "a free service visit",
     /** The board's four rows. */
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
     /** PLACEHOLDER: no receipt came back for the reminder or the arrival notice. */
@@ -1578,7 +1723,14 @@ export const technicians = {
     },
   },
   // PLACEHOLDER: the board draws no way to add, change or switch off a technician, so every line below is ours.
-  fields: { name: "Name", mobile: "Mobile", zone: "Zone (optional)" },
+  fields: {
+    name: "Name",
+    mobile: "Mobile",
+    zone: "Zone (optional)",
+    city: "City",
+    cityHint: "Staff with access to this city see him. With no city, only national staff do.",
+    noCity: "No city",
+  },
   add: {
     open: "Add a technician",
     title: "Add a technician",
@@ -1592,6 +1744,7 @@ export const technicians = {
     title: "Details",
     mobile: "Mobile",
     zone: "Zone",
+    city: "City",
     change: "Change details",
     changeLabel: (name: string) => `Change ${name}'s details`,
     save: "Save changes",
@@ -1698,7 +1851,8 @@ export const deletions = {
     deleteLabel: (name: string) => `Delete the account of ${name}`,
     rejectLabel: (name: string) => `Reject the request of ${name}`,
     confirmLabel: (name: string) => `Deleting the account of ${name}`,
-    warning: "This erases the client now. It cannot be undone, and there is no copy to put back.",
+    warning:
+      "This erases the client now, and tells them on WhatsApp. It cannot be undone, and there is no copy to put back.",
     /** What the erasure destroys, in the order src/domain/erasure.ts destroys it. */
     deleted: {
       title: "Deleted",
@@ -1726,7 +1880,8 @@ export const deletions = {
     deleting: "Deleting",
     reason: {
       label: "Why you are rejecting it",
-      hint: "Kept with the decision, under your name.",
+      // PLACEHOLDER: the client is sent this reason on WhatsApp, and their app shows it for thirty days.
+      hint: "Kept with the decision, under your name. The client reads it on WhatsApp and in the app.",
       confirm: "Reject this request",
       cancel: "Leave it waiting",
     },
@@ -1740,7 +1895,8 @@ export const deletions = {
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
       /** The API refuses while something is still owed (docs/decisions/0066-erasure-all-or-nothing.md). */
       visit_booked:
-        "They still have a visit booked, so nothing was erased. Cancel it in FSM, and refund what they paid, then delete.",
+        "They still have a visit booked, so nothing was erased. Cancel it on their Visits tab, which refunds what they " +
+        "paid, then delete.",
       payment_held:
         "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it, then delete.",
       offline: "You are offline. Connect, then try again.",
@@ -1818,8 +1974,8 @@ export const settings = {
     title: "Discount codes",
     note:
       "A code takes money off a first fit, a service visit or a replacement, before GST. The client enters it where " +
-      "they pay or book, the technician before sending a payment link, ops on a visit. It is never taken on a visit " +
-      "a referral credit pays for, and once a visit is paid for or invoiced its code stays as it is.",
+      "they pay or book, the technician before sending a payment link, ops on a visit. It is never taken on a free " +
+      "service visit, and once a visit is paid for or invoiced its code stays as it is.",
     make: "Make codes",
     how: "The code",
     typed: "Type one",
@@ -1919,7 +2075,7 @@ export const settings = {
       late_change_charge: dispatch.typeNames,
       no_show_charge: dispatch.typeNames,
       // PLACEHOLDER: what a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
-      no_show_waiver: { payment: "The visit's payment", credit: "The visit credit it used" },
+      no_show_waiver: { payment: "The visit's payment", credit: "The free service visit it used" },
       task_sla_hours: tasks.groups,
       // PLACEHOLDER: the phone's two bounds (docs/decisions/0088-every-policy-in-the-console.md).
       phone_clock: {
@@ -1955,7 +2111,7 @@ export const settings = {
       referral_reward: {
         referrer_visits: "The client who sent the invite",
         friend_visits: "The friend they invited",
-        valid_days: "The credits last",
+        valid_days: "The free service visits last",
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /**

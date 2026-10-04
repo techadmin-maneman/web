@@ -6,7 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { confirmBooking } from "../../src/domain/bookings.ts";
-import { clawBack, creditBalance, grantCredits } from "../../src/domain/credits.ts";
+import { clawBack, creditBalance, expireCredits, grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
@@ -113,7 +113,7 @@ describe("booking with a credit", () => {
     expect(redeemed).toEqual({ visits: -1 });
     const composed = await composeVisitMessage(env.DB, "payment_receipt", visitId, PERSON);
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hello Rohit, your service visit is booked for Thu 24 Sep, 12 to 4 pm, with Imran. One of your visit credits covers it.",
+      "Hello Rohit, your service visit is booked for Thu 24 Sep, 12 to 4 pm, with Imran. One of your free service visits covers it.",
     );
   });
 
@@ -190,6 +190,34 @@ describe("one credit pays for one visit", () => {
       .bind(second.id)
       .first();
     expect(flipped).toEqual({ use_credit: 0, confirmed_at: null });
+  });
+
+  it("keeps the credit of a booking made before it expired, however much later the visit is written", async () => {
+    const hour = 60 * 60_000;
+    const expiresAt = new Date(NOW.getTime() + hour);
+    await grantCredits(env.DB, {
+      personId: PERSON,
+      visits: 1,
+      source: "ops",
+      sourceId: "o1",
+      now: NOW,
+      expiresAt,
+    }).run();
+    const held = await hold("2026-09-24");
+    expect(await book(held.id)).toEqual({ hold_id: held.id, checkout: null });
+
+    // The credit has expired by the time the visit is written, and the pass that closes expired credits runs between.
+    const later = new Date(NOW.getTime() + 2 * hour);
+    expect(await expireCredits(env.DB, later)).toBe(0);
+    expect(await confirm(held.id, later)).toBe("booked");
+    expect(await redeems()).toHaveLength(1);
+    expect(await expireCredits(env.DB, new Date(later.getTime() + hour))).toBe(1);
+    const ledger = await env.DB.prepare("SELECT kind, visits FROM credit_ledger ORDER BY created_at").all();
+    expect(ledger.results).toEqual([
+      { kind: "grant", visits: 1 },
+      { kind: "redeem", visits: -1 },
+      { kind: "expire", visits: 0 },
+    ]);
   });
 
   it("confirms a replayed booking call once, and redeems one credit for it", async () => {
@@ -300,7 +328,7 @@ describe("changing a visit paid with a credit", () => {
     expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(1);
     const composed = await composeVisitMessage(env.DB, "cancel_confirmation", visitId, PERSON);
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hello Rohit, your service visit on Thu 24 Sep is cancelled. Your visit credit is back.",
+      "Hello Rohit, your service visit on Thu 24 Sep is cancelled. Your free service visit is back.",
     );
   });
 

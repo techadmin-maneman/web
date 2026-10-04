@@ -18,7 +18,7 @@ export interface RouteNeed {
   readonly ownPlaces?: true;
 }
 
-/** Anyone Access lets in: the health check, and who is signed in, which says what they may do. */
+/** Anyone Access lets in: the health check, who is signed in and what they may do, and the console's own errors. */
 export const SIGNED_IN = "signed_in";
 
 const need = (department: Department, level: Level): RouteNeed => ({ department, level });
@@ -29,6 +29,7 @@ const inOwnDepartments = (level: Level): RouteNeed => ({ department: OWN_DEPARTM
 export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>> = {
   "GET /api/health": SIGNED_IN,
   "GET /api/whoami": SIGNED_IN,
+  "POST /api/client-errors": SIGNED_IN,
 
   // Operations: dispatch, today's tasks, visits, technicians, leave and stock.
   "GET /api/dispatch": need("operations", "view"),
@@ -45,6 +46,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/held-bookings/{id}/link": need("operations", "act"),
   "GET /api/visits/availability": need("operations", "view"),
   "POST /api/visits": need("operations", "act"),
+  // Free to the client unless ops apply the client's own terms, as an ops move is free: everyday work, not a waiver.
+  "POST /api/visits/{id}/cancel": need("operations", "act"),
+  "POST /api/visits/{id}/close": need("operations", "act"),
   "GET /api/technicians": need("operations", "view"),
   "GET /api/technicians/work": need("operations", "view"),
   // Who signs in to the technician app, and so sees clients' addresses: access, so MANAGE.
@@ -61,25 +65,26 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/stock/counts": need("operations", "act"),
   "POST /api/stock/write-offs": need("operations", "act"),
 
-  // Customer Care: clients, their requests, grievances, number changes and deletions.
-  "POST /api/clients/search": need("customer_care", "view"),
-  "POST /api/clients/find": need("customer_care", "view"),
-  "GET /api/clients/{id}": need("customer_care", "view"),
-  "GET /api/clients/{id}/photos": need("customer_care", "view"),
-  "POST /api/clients/{id}/photos/view": need("customer_care", "view"),
-  "GET /api/clients/{id}/photos/{photo_id}": need("customer_care", "view"),
-  "GET /api/clients/{id}/consents": need("customer_care", "view"),
-  "GET /api/clients/{id}/pieces": need("customer_care", "view"),
-  "GET /api/clients/{id}/hair-profile": need("customer_care", "view"),
-  "POST /api/clients/{id}/hair-profile": need("customer_care", "act"),
-  "POST /api/clients/{id}/address/suggestions": need("customer_care", "act"),
-  "POST /api/clients/{id}/address": need("customer_care", "act"),
-  "GET /api/grievances": need("customer_care", "view"),
-  "POST /api/grievances/{id}/resolve": need("customer_care", "act"),
-  "GET /api/number-changes": need("customer_care", "view"),
-  "POST /api/number-changes/{id}/decision": need("customer_care", "act"),
-  "GET /api/deletion-requests": need("customer_care", "view"),
-  "POST /api/deletion-requests/{id}/decision": need("customer_care", "manage"),
+  // Customer Care: clients, their requests, grievances, number changes and deletions, each kept to the caller's cities.
+  "POST /api/clients/search": inOwnPlaces("customer_care", "view"),
+  "POST /api/clients/find": inOwnPlaces("customer_care", "view"),
+  "GET /api/clients/{id}": inOwnPlaces("customer_care", "view"),
+  "GET /api/clients/{id}/photos": inOwnPlaces("customer_care", "view"),
+  "POST /api/clients/{id}/photos/view": inOwnPlaces("customer_care", "view"),
+  "GET /api/clients/{id}/photos/{photo_id}": inOwnPlaces("customer_care", "view"),
+  "GET /api/clients/{id}/consents": inOwnPlaces("customer_care", "view"),
+  "GET /api/clients/{id}/pieces": inOwnPlaces("customer_care", "view"),
+  "GET /api/clients/{id}/hair-profile": inOwnPlaces("customer_care", "view"),
+  "POST /api/clients/{id}/hair-profile": inOwnPlaces("customer_care", "act"),
+  "POST /api/clients/{id}/address/suggestions": inOwnPlaces("customer_care", "act"),
+  "POST /api/clients/{id}/address": inOwnPlaces("customer_care", "act"),
+  "GET /api/grievances": inOwnPlaces("customer_care", "view"),
+  "POST /api/grievances/{id}/resolve": inOwnPlaces("customer_care", "act"),
+  "GET /api/number-changes": inOwnPlaces("customer_care", "view"),
+  "POST /api/number-changes/{id}/decision": inOwnPlaces("customer_care", "act"),
+  "GET /api/deletion-requests": inOwnPlaces("customer_care", "view"),
+  "POST /api/deletion-requests/{id}/decision": inOwnPlaces("customer_care", "manage"),
+  "POST /api/clients/{id}/erasure": inOwnPlaces("customer_care", "manage"),
 
   // Finance: payments, refunds, no-show charges and their disputes, discount codes and prices. Waiving a charge and
   // refunding a disputed one ask MANAGE inside their routes (WAIVING_A_NO_SHOW, REFUNDING_A_DISPUTE). The price book

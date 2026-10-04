@@ -10,10 +10,15 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { checkIn } from "../../src/policy/check-in.ts";
 import { RULES as CONSENT_RULES } from "../../src/policy/consents.ts";
 import { RULES as NUMBER_CHANGE_RULES } from "../../src/policy/number-change.ts";
+import { createLogger } from "../../src/log.ts";
+import type { MessagingProvider, OutboundMessage, SendResult } from "../../src/providers/messaging.ts";
+import { sendMessage } from "../../src/queues/messaging.ts";
 import {
   appFor,
+  captureLogs,
   fakeDependencies,
   fakeQueue,
+  LOCAL_CONFIG,
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
@@ -21,6 +26,8 @@ import {
   request,
   type TestDependencies,
 } from "./helpers.ts";
+
+const log = createLogger();
 
 const ORIGIN = "https://maneman.test";
 const OLD = "+919810000001";
@@ -41,13 +48,27 @@ beforeEach(async () => {
   )
     .bind(NOW.toISOString(), OLD)
     .run();
+  await servedPincode("122018", "Gurgaon");
   cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p1", deviceLabel: null, now: NOW })}`;
 });
 
-/** The queues a change of number or address goes out on, to FSM's contact and the CRM lead. */
-let queues: { CRM_QUEUE: ReturnType<typeof fakeQueue>; FSM_QUEUE: ReturnType<typeof fakeQueue> };
+/** A pincode we hold, served unless `served` is false. */
+async function servedPincode(pincode: string, city: string, served = true) {
+  await env.DB.prepare(
+    "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES (?1, ?2, ?2, ?3, ?4)",
+  )
+    .bind(pincode, city, served ? 1 : 0, served ? "2026-09-01T18:30:00.000Z" : null)
+    .run();
+}
+
+/** The queues a change of number or address goes out on, to FSM's contact and the CRM lead, and messages go on. */
+let queues: {
+  CRM_QUEUE: ReturnType<typeof fakeQueue>;
+  FSM_QUEUE: ReturnType<typeof fakeQueue>;
+  MESSAGE_QUEUE: ReturnType<typeof fakeQueue>;
+};
 beforeEach(() => {
-  queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
+  queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() };
 });
 
 function send(app: App, method: string, path: string, body?: unknown) {
@@ -93,6 +114,7 @@ describe("GET /api/profile", () => {
       number_change: null,
       number_change_decided: null,
       deletion: null,
+      deletion_rejected: null,
     });
   });
 
@@ -164,6 +186,69 @@ describe("PATCH /api/profile/address", () => {
     expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
   });
 
+  // BK-08: a client changed only the pincode to Mumbai's, and the address was saved and sent on to FSM.
+  it("refuses a pincode we do not serve, or do not hold, and saves and sends on nothing", async () => {
+    await servedPincode("122019", "Gurgaon", false);
+    for (const pincode of ["122019", "411001"]) {
+      const answer = await send(client, "PATCH", "/api/profile/address", { ...address, pincode });
+      expect(answer.status, pincode).toBe(422);
+      expect(await answer.json()).toMatchObject({ error: { code: "not_served" } });
+    }
+    expect((await profile()).address).toBeNull();
+    expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
+  });
+
+  describe("while a visit is still to come", () => {
+    const inDelhi = { ...address, city: "Delhi", pincode: "110017" };
+    const pincodeSaved = async () => ((await profile()).address as { pincode: string }).pincode;
+
+    beforeEach(async () => {
+      await servedPincode("110017", "Delhi");
+      await servedPincode("122011", "Gurgaon");
+      expect((await send(client, "PATCH", "/api/profile/address", address)).status).toBe(200);
+    });
+
+    it("keeps the address in the visit's city, and lets it move within that city", async () => {
+      await env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+           service_city, service_pincode, fsm_modified_at, synced_at)
+         VALUES ('a1', 'fsm-a1', 'p1', 'service', 'scheduled', 'Scheduled', '2026-09-24T06:30:00.000Z',
+           '2026-09-24T08:30:00.000Z', 'Gurgaon', '122018', ?1, ?1)`,
+      )
+        .bind(NOW.toISOString())
+        .run();
+
+      const elsewhere = await send(client, "PATCH", "/api/profile/address", inDelhi);
+      expect(elsewhere.status).toBe(409);
+      expect(await elsewhere.json()).toMatchObject({ error: { code: "visit_booked" } });
+      expect(await pincodeSaved()).toBe("122018");
+
+      expect((await send(client, "PATCH", "/api/profile/address", { ...address, pincode: "122011" })).status).toBe(200);
+      expect(await pincodeSaved()).toBe("122011");
+
+      // Once the visit is cancelled, the address may go wherever we come.
+      await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = 'a1'").run();
+      expect((await send(client, "PATCH", "/api/profile/address", inDelhi)).status).toBe(200);
+      expect(await pincodeSaved()).toBe("110017");
+    });
+
+    it("counts a visit paid for and still being booked, as the client's booking", async () => {
+      await env.DB.batch([
+        env.DB.prepare(
+          "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'fsm-t1', 'Imran Qureshi', 'IQ', 1, ?1)",
+        ).bind(NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+             amount_ex_gst, gst_percent, state, pincode, expires_at, created_at, updated_at, confirmed_at)
+           VALUES ('hold-1', 'p1', 'service', '2026-09-24', 'afternoon', 't1', 2, 200000, 200000, 0, 'held', '122018',
+             ?1, ?1, ?1, ?1)`,
+        ).bind(NOW.toISOString()),
+      ]);
+      expect((await send(client, "PATCH", "/api/profile/address", inDelhi)).status).toBe(409);
+      expect(await pincodeSaved()).toBe("122018");
+    });
+  });
+
   // REQ-S5-03: FSM's screens and Books showed "To be confirmed with the client" whatever the client saved.
   it("sends the new address on to FSM's contact and the CRM lead", async () => {
     await send(client, "PATCH", "/api/profile/address", address);
@@ -181,7 +266,7 @@ describe("PATCH /api/profile/address", () => {
     expect(await booksChangedAt()).toBeNull();
 
     client = appFor("local", deps, {}, "client", PROVIDERS_FOR.ours);
-    queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
+    queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() };
     await send(client, "PATCH", "/api/profile/address", { ...address, line1: "Silver Oaks" });
     expect(contactSyncs()).toEqual({
       crm: [{ update_person_id: "p1", request_id: expect.any(String) as string }],
@@ -738,21 +823,123 @@ describe("a deletion request", () => {
     expect(await auditActions()).toEqual(["deletion.request"]);
   });
 
-  it("erases the person when ops delete, audited in the same batch as the erasure", async () => {
+  /** A messaging provider that keeps what it was asked to send, and answers as told. */
+  function recordingWhatsApp(answer: SendResult = { ok: true, providerMessageId: "wa-1" }) {
+    const sent: OutboundMessage[] = [];
+    const provider: MessagingProvider = {
+      send: (message) => {
+        sent.push(message);
+        return Promise.resolve(answer);
+      },
+      connection: () => Promise.resolve({ open: true }),
+    };
+    return { provider, sent };
+  }
+
+  /** An ops console whose WhatsApp is `provider`, with staging's allowlist set to `allowlist`. */
+  const opsWith = (provider: MessagingProvider, allowlist: readonly string[] = []) =>
+    appFor(
+      "local",
+      fakeDependencies({ messaging: provider }),
+      { messaging: { ...LOCAL_SETTINGS.messaging, allowlist } },
+      "ops",
+    );
+
+  /** The client asks to be deleted, and ops decide it. */
+  async function decided(decision: "delete" | "reject", reason: string | null, opsApp: App = ops) {
     await send(client, "POST", "/api/deletion-request");
     const { requests } = await (
-      await send(ops, "GET", "/api/deletion-requests")
+      await send(opsApp, "GET", "/api/deletion-requests")
     ).json<{ requests: { id: string }[] }>();
-    const res = await send(ops, "POST", `/api/deletion-requests/${requests[0]?.id ?? ""}/decision`, {
-      decision: "delete",
-      reason: null,
-    });
+    return send(opsApp, "POST", `/api/deletion-requests/${requests[0]?.id ?? ""}/decision`, { decision, reason });
+  }
+
+  it("erases the person when ops delete, audited in the same batch as the erasure", async () => {
+    const res = await decided("delete", null);
 
     expect(await res.json()).toEqual({ state: "done" });
     const person = await env.DB.prepare("SELECT erased_at, name FROM people WHERE id = 'p1'").first();
     expect(person).toMatchObject({ name: "Erased" });
     expect((await send(client, "GET", "/api/profile")).status).toBe(401);
     expect(await auditActions()).toEqual(["deletion.request", "deletion.decide"]);
+  });
+
+  // PS-19: the app promised a confirmation on WhatsApp, and nothing sent one.
+  it("tells the client on WhatsApp that it is done, at the number the erasure has just blanked", async () => {
+    const whatsapp = recordingWhatsApp();
+
+    expect(await (await decided("delete", null, opsWith(whatsapp.provider))).json()).toEqual({ state: "done" });
+
+    expect(whatsapp.sent).toEqual([{ to: OLD, template: "deletion_done_v1", params: ["Rohit"] }]);
+    expect(await env.DB.prepare("SELECT mobile_e164 FROM people WHERE id = 'p1'").first("mobile_e164")).toBe(
+      "erased:p1",
+    );
+  });
+
+  it("holds the word that it is done back off staging's allowlist, as any message ops' action sends", async () => {
+    const whatsapp = recordingWhatsApp();
+
+    expect(await (await decided("delete", null, opsWith(whatsapp.provider, [NEW]))).json()).toEqual({
+      state: "done",
+    });
+
+    expect(whatsapp.sent).toEqual([]);
+  });
+
+  it("still deletes when WhatsApp refuses the word that it is done, and logs the failure", async () => {
+    const logs = captureLogs();
+    const whatsapp = recordingWhatsApp({ ok: false, transient: true, detail: "status 503" });
+
+    expect(await (await decided("delete", null, opsWith(whatsapp.provider))).json()).toEqual({ state: "done" });
+
+    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "deletion_done_failed" }));
+    expect(await env.DB.prepare("SELECT name FROM people WHERE id = 'p1'").first("name")).toBe("Erased");
+  });
+
+  // PS-19: a rejected request went back to "Request deletion", with no outcome and no reason.
+  it("tells the client why ops kept the account, on WhatsApp whatever they chose about visit messages", async () => {
+    expect(await (await decided("reject", "You still have a consultation booked")).json()).toEqual({
+      state: "rejected",
+    });
+
+    const queued = await env.DB.prepare("SELECT id, kind, subject_kind, state FROM outbound_messages").all();
+    expect(queued.results).toEqual([
+      { id: expect.any(String) as string, kind: "deletion_rejected", subject_kind: "deletion", state: "queued" },
+    ]);
+    const messageId = String(queued.results[0]?.id);
+    expect(queues.MESSAGE_QUEUE.sent).toMatchObject([{ message_id: messageId }]);
+
+    const whatsapp = recordingWhatsApp();
+    await sendMessage(env.DB, LOCAL_CONFIG, fakeDependencies({ messaging: whatsapp.provider }), log, messageId);
+    expect(whatsapp.sent).toEqual([
+      { to: OLD, template: "deletion_rejected_v1", params: ["Rohit", "You still have a consultation booked."] },
+    ]);
+  });
+
+  it("shows the client a rejection and its reason, until they ask again", async () => {
+    await decided("reject", "You still have a consultation booked.");
+
+    expect(await profile()).toMatchObject({
+      deletion: null,
+      deletion_rejected: { decided_at: NOW.toISOString(), reason: "You still have a consultation booked." },
+    });
+
+    await send(client, "POST", "/api/deletion-request");
+    expect(await profile()).toMatchObject({ deletion: { state: "requested" }, deletion_rejected: null });
+  });
+
+  it("stops showing a rejection 30 days after it", async () => {
+    const daysAgo = (days: number) => new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+    await env.DB.prepare(
+      `INSERT INTO deletion_requests (id, person_id, created_at, state, decided_at, decided_by, reason)
+       VALUES ('d1', 'p1', ?1, 'rejected', ?1, 'ops@localhost', 'Not the number''s owner')`,
+    )
+      .bind(daysAgo(31))
+      .run();
+    expect((await profile()).deletion_rejected).toBeNull();
+
+    await env.DB.prepare("UPDATE deletion_requests SET decided_at = ?1").bind(daysAgo(29)).run();
+    expect((await profile()).deletion_rejected).toEqual({ decided_at: daysAgo(29), reason: "Not the number's owner" });
   });
 
   it("answers 404 for a request that is not waiting, and audits nothing", async () => {

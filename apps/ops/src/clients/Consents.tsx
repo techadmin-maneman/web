@@ -1,7 +1,8 @@
 // Board B3: what the client has agreed to, read only. Ops can never grant a
 // consent, and no route here would let them (src/routes/ops-clients.ts). The
 // board's fourth column is where each was given
-// (docs/decisions/0094-where-a-consent-was-given.md).
+// (docs/decisions/0094-where-a-consent-was-given.md). Under them, erasing the
+// client, for a request made outside the app.
 
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -11,6 +12,7 @@ import { api, type Consent } from "../api.ts";
 import { clients } from "../content.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
+import { Erase } from "./Erase.tsx";
 
 const copy = clients.consents;
 
@@ -41,12 +43,12 @@ function ConsentRow({ consent }: { consent: Consent }) {
   );
 }
 
-export function Consents({ clientId }: { clientId: string }) {
+export function Consents({ clientId, name, onErased }: { clientId: string; name: string; onErased: () => void }) {
   const load = useCallback(() => api.clientConsents(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const { consents, deletion } = loaded.value;
   return (
@@ -78,6 +80,7 @@ export function Consents({ clientId }: { clientId: string }) {
         <p className={styles.deletion}>{copy.deletion[deletion.state](longDate(deletion.requested_at))}</p>
       )}
       <p className={styles.note}>{copy.note}</p>
+      <Erase clientId={clientId} name={name} requested={deletion?.state === "requested"} onErased={onErased} />
     </section>
   );
 }

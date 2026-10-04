@@ -42,7 +42,6 @@ export const LOCAL_SETTINGS: Settings = {
   leadWebhookUrl: null,
   heartbeatUrl: null,
   analyticsToken: null,
-  erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
   zohoFsm: null,
   zohoBooks: null,
@@ -54,6 +53,7 @@ export const LOCAL_SETTINGS: Settings = {
     codeMobileDailyLimit: 5,
     codeIpHourlyLimit: 10,
     codeDailyCeiling: 300,
+    techCodeDailyCeiling: 100,
     fixedCode: null,
     testRecordCode: null,
   },
@@ -91,7 +91,7 @@ export const LOCAL_CONFIG: StaticConfig = {
   settings: LOCAL_SETTINGS,
 };
 
-/** Erases whoever has this number, as POST /api/erasure does, without the route's checks. */
+/** Erases whoever has this number, as ops do from their page, without the route's checks or queues. */
 export async function eraseByMobile(mobileE164: string, now: Date = NOW): Promise<ErasureSummary | null> {
   const personId = await personWithMobile(env.DB, mobileE164);
   return personId === null ? null : erasePerson(env, personId, now, createLogger());
@@ -181,14 +181,22 @@ export async function provedNumberCode(mobileE164: string, now: Date = NOW): Pro
   return id;
 }
 
-/** The address a client saved in the app, which they must have before any slot is held (ADR 0079). */
+/**
+ * The address a client saved in the app, which they must have before any slot is held (ADR 0079). Its pincode is
+ * served, unless the test set it up otherwise first: no slot is held at an address we do not come to.
+ */
 export async function savedAddress(personId: string, pincode = "122018"): Promise<void> {
-  await env.DB.prepare(
-    `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
-     VALUES (?1, ?2, ?3, 'House 4417, Tower C', 'Sector 65', 'Gurgaon', ?4)`,
-  )
-    .bind(crypto.randomUUID(), personId, NOW.toISOString(), pincode)
-    .run();
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at)
+       VALUES (?1, 'Sector 65', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')
+       ON CONFLICT (pincode) DO NOTHING`,
+    ).bind(pincode),
+    env.DB.prepare(
+      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+       VALUES (?1, ?2, ?3, 'House 4417, Tower C', 'Sector 65', 'Gurgaon', ?4)`,
+    ).bind(crypto.randomUUID(), personId, NOW.toISOString(), pincode),
+  ]);
 }
 
 // ---------------------------------------------------------------------------

@@ -37,6 +37,36 @@ Environment, version and database reachability
 }
 ```
 
+### POST /api/client-errors
+
+Report an error in the app's own page
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientErrorReport"
+}
+```
+
+**204**: Logged
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/search
 
 Find a client by mobile number. A POST, so the number stays out of the URL
@@ -83,7 +113,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -103,7 +133,7 @@ Request body:
 }
 ```
 
-**200**: The clients it matches, by name
+**200**: The clients it matches in the caller's cities, by name
 
 ```json
 {
@@ -131,7 +161,7 @@ The client's record: who they are, their address, their visits, their payments, 
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -151,7 +181,7 @@ Which photographs the client has, by visit, newest first. No image is served her
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -171,7 +201,7 @@ Open the client's photographs: one audit entry, written before any image is serv
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -221,7 +251,7 @@ The client's consents and any deletion request. Ops read them and never grant on
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -537,6 +567,118 @@ Request body:
 }
 ```
 
+### POST /api/visits/{id}/cancel
+
+What cancelling a client's visit gives back, or cancel it: free to the client unless ops choose otherwise
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/OpsCancel"
+}
+```
+
+**200**: The terms, or the cancelled visit
+
+```json
+{
+  "$ref": "#/components/schemas/OpsCancelTerms"
+}
+```
+
+**400**: invalid_request: a cancel with no reason
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_changeable: the visit has begun, passed or gone, or is no client's; terms_changed: the notice is not the one shown, so show the terms again
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: FSM did not answer; nothing changed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/visits/{id}/close
+
+Close a visit by hand, as done or partly done, for work whose technician's phone was lost
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/HandClose"
+}
+```
+
+**200**: Closed
+
+```json
+{
+  "$ref": "#/components/schemas/HandClosed"
+}
+```
+
+**400**: invalid_request: no reason, or times that do not fit the visit's day or end after now
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such visit
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: already_closed: the visit is closed or cancelled, or the technician's phone closed it; managed_in_fsm: FSM holds the record, so the visit is closed there
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**425**: too_early_to_close: the visit's time has not come
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/referral
 
 Attach an invite to a client who booked away from its page, with the reason
@@ -640,7 +782,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -692,7 +834,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -720,7 +862,7 @@ The client's hair profile, and every version of it
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -764,7 +906,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -780,9 +922,53 @@ Request body:
 }
 ```
 
+### POST /api/clients/{id}/erasure
+
+Erase a client now: their photographs and details. The CRM, FSM and Books follow within minutes
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/Erasure"
+}
+```
+
+**200**: Erased
+
+```json
+{
+  "$ref": "#/components/schemas/Erased"
+}
+```
+
+**403**: access_required: a service token, which names no member of staff
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: nobody by that ID in the caller's cities, or erased already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: visit_booked or payment_held: settle what it names first, or say it will be settled today
+
+```json
+{
+  "$ref": "#/components/schemas/ErasureRefused"
+}
+```
+
 ### GET /api/number-changes
 
-Number changes waiting for ops: both numbers proven by code
+Number changes waiting for ops in the caller's cities: both numbers proven by code
 
 **200**: Oldest first
 
@@ -883,7 +1069,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no change waiting for ops by that ID
+**404**: not_found: no change waiting for ops by that ID in the caller's cities
 
 ```json
 {
@@ -901,7 +1087,7 @@ Request body:
 
 ### GET /api/deletion-requests
 
-Deletion requests waiting for ops
+Deletion requests waiting for ops in the caller's cities
 
 **200**: Oldest first
 
@@ -998,7 +1184,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no request waiting for ops by that ID
+**404**: not_found: no request waiting for ops by that ID in the caller's cities
 
 ```json
 {
@@ -1166,7 +1352,7 @@ Request body:
 
 ### GET /api/grievances
 
-Open grievances, oldest first
+Open grievances in the caller's cities, oldest first
 
 **200**: Open grievances
 
@@ -1257,7 +1443,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no open grievance by that ID
+**404**: not_found: no open grievance by that ID in the caller's cities
 
 ```json
 {
@@ -1519,7 +1705,7 @@ Where a job in hand can go in the board's week, before ops pick a reason. Writes
 }
 ```
 
-**404**: not_found: no such live job, or one the technician has begun, which stays where it is
+**404**: not_found: no such live job, or one the technician has started or closed, which stays where it is
 
 ```json
 {
@@ -1631,7 +1817,7 @@ Request body:
 }
 ```
 
-**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit, which stays where it is
+**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is
 
 ```json
 {
@@ -1780,7 +1966,7 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
 }
 ```
 
-**404**: not_found: no such client
+**404**: not_found: no such client, or the client is outside the caller's cities
 
 ```json
 {
@@ -1828,7 +2014,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: no name, or not an Indian mobile
+**400**: invalid_request: no name, not an Indian mobile, or not one of our cities
 
 ```json
 {
@@ -2188,7 +2374,7 @@ A day's money: what was collected, what went back, and each charge kept or ruled
 
 ### PATCH /api/technicians/{id}
 
-Change a technician's name, number or zone
+Change a technician's name, number, zone or city
 
 Request body:
 
@@ -2206,7 +2392,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: nothing to change, no name, or not an Indian mobile
+**400**: invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities
 
 ```json
 {
@@ -4105,6 +4291,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "not_served",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -4124,6 +4311,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",
@@ -4253,6 +4441,76 @@ Request body:
     "version_tag",
     "d1",
     "cron_completed_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientErrorReport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error",
+        "unhandled_rejection",
+        "render",
+        "outbox_gave_up"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "The page's path, with no query or fragment."
+    },
+    "stack": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "The script the error was thrown in."
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "outbox_gave_up: the write's kind, as `checklist`."
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "outbox_gave_up: the code the API refused it with."
+    },
+    "status": {
+      "type": "integer",
+      "description": "outbox_gave_up: the refusal's HTTP status."
+    },
+    "request_id": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+    }
+  },
+  "required": [
+    "kind",
+    "message",
+    "path"
   ],
   "additionalProperties": false
 }
@@ -4821,6 +5079,17 @@ Request body:
     "price_open": {
       "type": "boolean",
       "description": "Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off."
+    },
+    "requested_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a consultation and fit in one visit, the code the client typed on /book for it, honoured as it stood then when entered on the visit; null for none."
     }
   },
   "required": [
@@ -4839,7 +5108,8 @@ Request body:
     "outcome",
     "closed_without_follow_up",
     "discount_code",
-    "price_open"
+    "price_open",
+    "requested_code"
   ],
   "additionalProperties": false
 }
@@ -5773,6 +6043,38 @@ Request body:
     "retrying": {
       "type": "boolean",
       "description": "Still tried every hour: inside its tries, and its visit to come."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null until the visit's price is known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the client booked with (docs/decisions/0108-discount-codes.md)."
     }
   },
   "required": [
@@ -5787,7 +6089,8 @@ Request body:
     "held_at",
     "refusal",
     "retries_end",
-    "retrying"
+    "retrying",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -6049,7 +6352,9 @@ Request body:
                   "app_profile",
                   "app_share_sheet",
                   "technician",
-                  "erasure"
+                  "erasure",
+                  "message_link",
+                  "whatsapp_stop"
                 ]
               },
               {
@@ -6764,6 +7069,235 @@ Request body:
 }
 ```
 
+### OpsCancelTerms
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "notice": {
+      "type": "string",
+      "enum": [
+        "free",
+        "late"
+      ],
+      "description": "free: before the notice the visit was booked under starts; late: inside it."
+    },
+    "notice_hours": {
+      "type": "integer",
+      "description": "The notice the visit was booked under, in hours."
+    },
+    "paid": {
+      "type": "integer",
+      "description": "In paise: what the visit's payment holds."
+    },
+    "destination": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The payment's method: upi, card and so on."
+    },
+    "free": {
+      "$ref": "#/components/schemas/OpsCancelOutcome"
+    },
+    "client_terms": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/OpsCancelOutcome"
+        },
+        {
+          "description": "On the client's own late terms, which ops may apply with a reason."
+        }
+      ]
+    },
+    "cancelled": {
+      "type": "boolean",
+      "description": "false: the terms only; true: the visit is cancelled."
+    }
+  },
+  "required": [
+    "visit_id",
+    "type",
+    "notice",
+    "notice_hours",
+    "paid",
+    "destination",
+    "free",
+    "client_terms",
+    "cancelled"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsCancelOutcome
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "refund": {
+      "type": "integer",
+      "description": "In paise: what goes back to the payment's source."
+    },
+    "kept": {
+      "type": "integer",
+      "description": "In paise: what is kept as a charge."
+    },
+    "credit": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "restored",
+            "lost"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a visit paid with a credit: whether it comes back. Lost on the client's late terms, or where its grant has been taken back or has expired; null for a visit paid otherwise."
+    }
+  },
+  "required": [
+    "refund",
+    "kept",
+    "credit"
+  ],
+  "additionalProperties": false,
+  "description": "Free to the client: what ops cancel on unless they choose."
+}
+```
+
+### OpsCancel
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "confirm": {
+      "type": "boolean"
+    },
+    "notice": {
+      "type": "string",
+      "enum": [
+        "free",
+        "late"
+      ],
+      "description": "With confirm: the notice ops were shown."
+    },
+    "on_client_terms": {
+      "type": "boolean",
+      "description": "With confirm: apply the client's own late terms. Left out, the cancel is free to the client."
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "With confirm, required: why, kept with the cancel and never written to the audit log."
+    }
+  },
+  "required": [
+    "confirm"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HandClosed
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "terminated"
+      ]
+    },
+    "duration_minutes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "visit_id",
+    "status",
+    "duration_minutes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HandClose
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "done",
+        "partial"
+      ]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the work began, on the visit's own day."
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When it ended: after it began, and not later than now."
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "Why it is closed by hand, and, for a visit partly done, why: kept with the visit."
+    }
+  },
+  "required": [
+    "outcome",
+    "started_at",
+    "ended_at",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### AlreadyInvited
 
 ```json
@@ -6809,6 +7343,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "not_served",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -6828,6 +7363,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",
@@ -7864,31 +8400,47 @@ Request body:
 }
 ```
 
-### NumberChangeDecision
+### Erased
 
 ```json
 {
   "type": "object",
   "properties": {
-    "decision": {
+    "erased_at": {
       "type": "string",
-      "enum": [
-        "confirm",
-        "reject"
-      ]
+      "format": "date-time"
     },
-    "reason": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "maxLength": 300,
-      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
+    "photos_deleted": {
+      "type": "integer",
+      "description": "Try-on photographs."
+    },
+    "results_deleted": {
+      "type": "integer",
+      "description": "Try-on results."
+    },
+    "visit_photos_deleted": {
+      "type": "integer"
+    },
+    "messages_cancelled": {
+      "type": "integer",
+      "description": "Messages not yet sent."
+    },
+    "sessions_ended": {
+      "type": "integer",
+      "description": "App sessions signed out."
+    },
+    "addresses_removed": {
+      "type": "integer"
     }
   },
   "required": [
-    "decision",
-    "reason"
+    "erased_at",
+    "photos_deleted",
+    "results_deleted",
+    "visit_photos_deleted",
+    "messages_cancelled",
+    "sessions_ended",
+    "addresses_removed"
   ],
   "additionalProperties": false
 }
@@ -8003,6 +8555,51 @@ Request body:
 }
 ```
 
+### Erasure
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "override_open_bookings": {
+      "type": "boolean",
+      "description": "Erase even with a visit booked or a payment held: only when ops will cancel and refund them today."
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### NumberChangeDecision
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "confirm",
+        "reject"
+      ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
+    }
+  },
+  "required": [
+    "decision",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### DeletionDecision
 
 ```json
@@ -8022,7 +8619,7 @@ Request body:
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
+      "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -8865,6 +9462,13 @@ Request body:
       "type": "string",
       "format": "date-time",
       "description": "The start the board showed the job with."
+    },
+    "clear_check_in": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress."
     }
   },
   "required": [
@@ -9316,6 +9920,17 @@ Request body:
               }
             ]
           },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The city he works in, which staff access by place reads; null for none."
+          },
           "mobile": {
             "anyOf": [
               {
@@ -9387,6 +10002,7 @@ Request body:
           "name",
           "initials",
           "zone",
+          "city",
           "mobile",
           "editable",
           "devices",
@@ -9417,6 +10033,17 @@ Request body:
               }
             ]
           },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The city he works in, which staff access by place reads; null for none."
+          },
           "mobile": {
             "anyOf": [
               {
@@ -9437,17 +10064,26 @@ Request body:
           "id",
           "name",
           "zone",
+          "city",
           "mobile",
           "editable"
         ],
         "additionalProperties": false
       },
       "description": "Technicians switched off, by name: they cannot sign in, and nothing is booked on them."
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The cities a technician may be given, in display order."
     }
   },
   "required": [
     "technicians",
-    "switched_off"
+    "switched_off",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -10222,6 +10858,19 @@ Request body:
         }
       ],
       "description": "Where he mostly works, in ops' words; null for none."
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
     }
   },
   "required": [
@@ -10261,6 +10910,19 @@ Request body:
         }
       ],
       "description": "Where he mostly works, in ops' words; null for none."
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
     }
   },
   "additionalProperties": false,

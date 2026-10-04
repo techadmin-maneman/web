@@ -11,6 +11,8 @@ import { Component, type ReactNode } from "react";
 interface Props {
   /** What the app draws in the screen's place: its words, and a reload or a way home. */
   readonly fallback: ReactNode;
+  /** Told of what was thrown, since an error caught here reaches no listener of the page's. */
+  readonly onError?: (thrown: unknown) => void;
   readonly children: ReactNode;
 }
 
@@ -19,6 +21,10 @@ export class ErrorBoundary extends Component<Props, { failed: boolean }> {
 
   static getDerivedStateFromError(): { failed: boolean } {
     return { failed: true };
+  }
+
+  override componentDidCatch(thrown: unknown): void {
+    this.props.onError?.(thrown);
   }
 
   override render(): ReactNode {

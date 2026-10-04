@@ -76,7 +76,7 @@ The six looks are the backend's presets, in `src/config/presets.ts`, in its orde
 
 The site calls `mm-api` on its own host, `/api/*`. The request and response types in `site/src/lib/api-schema.ts` are generated from `docs/openapi.json` by `npm run openapi`; never edit them by hand. `site/src/lib/api.ts` holds the calls.
 
-- **Turnstile.** A booking and a try-on upload link carry a Turnstile token; the gate's claim takes none (ADR 0022, 20). The widget is managed, rendered invisibly, and appears only if Cloudflare needs the visitor to act (`site/src/lib/turnstile.ts`, site keys in `docs/turnstile.md`).
+- **Turnstile.** A booking and a try-on upload link carry a Turnstile token; the gate's claim takes none (ADR 0022, 20). The widget is managed, rendered invisibly, and appears only if Cloudflare needs the visitor to act (`packages/web-kit/turnstile.ts`, shared with the client app's login; site keys in `docs/turnstile.md`).
 - **Idempotency.** Each submission attempt sends a new `Idempotency-Key`.
 - **Attribution.** The first page of a visit stores its campaign tags, referring site and landing path in `sessionStorage` (`site/src/lib/attribution.ts`). Never a query string.
 

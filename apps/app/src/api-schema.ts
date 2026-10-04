@@ -49,6 +49,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/client-errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report an error in the app's own page */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ClientErrorReport"];
+                };
+            };
+            responses: {
+                /** @description Logged */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: this address has sent its reports for the hour, or every address has */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/otp": {
         parameters: {
             query?: never;
@@ -90,6 +146,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description turnstile_failed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description rate_limited: too many codes for this number today, or from this address this hour */
                 429: {
                     headers: {
@@ -99,7 +164,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description busy: today's ceiling on codes is reached */
+                /** @description busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -157,7 +222,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description too_early, or rate_limited */
+                /** @description too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour */
                 429: {
                     headers: {
                         [name: string]: unknown;
@@ -233,7 +298,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description too_early, or rate_limited */
+                /** @description too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour */
                 429: {
                     headers: {
                         [name: string]: unknown;
@@ -555,6 +620,24 @@ export interface paths {
                 };
                 /** @description session_required */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description visit_booked: a visit still to come is in another city, which the address may not leave */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_served: the pincode is not one we come to */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1610,7 +1693,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system */
+                /** @description not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not come to */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1693,7 +1776,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system */
+                /** @description not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not come to */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1880,7 +1963,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Take a discount code off the hold's price, before Checkout has its order */
+        /** Take a discount code off the hold's price, while nothing is paid for it */
         post: {
             parameters: {
                 query?: never;
@@ -1923,7 +2006,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description already_discounted: the hold carries a code; hold_expired; price_settled: Checkout has its order, or it is paid for; ops_assisted */
+                /** @description already_discounted: the hold carries a code; hold_expired; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1952,7 +2035,7 @@ export interface paths {
                 };
             };
         };
-        /** Take the code off the hold again, before Checkout has its order */
+        /** Take the code off the hold again, while nothing is paid for it */
         delete: {
             parameters: {
                 query?: never;
@@ -1991,7 +2074,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description hold_expired: the hold ran out; price_settled: Checkout has its order, or it is paid for; ops_assisted */
+                /** @description hold_expired: the hold ran out; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -2134,6 +2217,15 @@ export interface paths {
                         "application/json": components["schemas"]["CancelTerms"];
                     };
                 };
+                /** @description The visit is cancelled, and its refund is on its way */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CancelTerms"];
+                    };
+                };
                 /** @description session_required */
                 401: {
                     headers: {
@@ -2152,7 +2244,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description unavailable: FSM did not answer; nothing changed */
+                /** @description unavailable: the visit could not be cancelled just now; nothing changed */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -2531,7 +2623,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2561,6 +2653,26 @@ export interface components {
             /** @description When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
             cron_completed_at: string | null;
         };
+        ClientErrorReport: {
+            /** @enum {string} */
+            kind: "error" | "unhandled_rejection" | "render" | "outbox_gave_up";
+            message: string;
+            /** @description The page's path, with no query or fragment. */
+            path: string;
+            stack?: string;
+            /** @description The script the error was thrown in. */
+            source?: string;
+            line?: number;
+            column?: number;
+            /** @description outbox_gave_up: the write's kind, as `checklist`. */
+            step?: string;
+            /** @description outbox_gave_up: the code the API refused it with. */
+            code?: string;
+            /** @description outbox_gave_up: the refusal's HTTP status. */
+            status?: number;
+            /** @description outbox_gave_up: the refusal's request ID, which its own log lines carry. */
+            request_id?: string;
+        };
         LoginChallenge: {
             /** Format: uuid */
             challenge_id: string;
@@ -2578,6 +2690,7 @@ export interface components {
         LoginRequest: {
             /** @example 98100 00000 */
             mobile: string;
+            turnstile_token: string;
         };
         LoginChallengeRequest: {
             /** Format: uuid */
@@ -2638,6 +2751,8 @@ export interface components {
                 window: "morning" | "afternoon" | "evening";
                 /** @description Paid for in money, rather than free or covered by a credit. */
                 paid: boolean;
+                /** @description A consultation and fit in one visit. */
+                one_visit: boolean;
             } | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
@@ -2751,6 +2866,8 @@ export interface components {
             visits: number;
             /** @description When the soonest expire. */
             earliest_expiry: string | null;
+            /** @description How many of them expire then. */
+            expiring_visits: number;
         };
         OfferedService: {
             /** @enum {string} */
@@ -2811,6 +2928,13 @@ export interface components {
                 state: "requested";
                 /** Format: date-time */
                 requested_at: string;
+            } | null;
+            /** @description The client's latest request to delete their account that ops rejected, for 30 days after, while no other request is waiting. */
+            deletion_rejected: {
+                /** Format: date-time */
+                decided_at: string;
+                /** @description Ops' reason, which they write knowing the client reads it. */
+                reason: string | null;
             } | null;
         };
         Address: {
@@ -3202,6 +3326,8 @@ export interface components {
             } | null;
             /** @description Where credits added came from; null for any other entry. */
             source: ("referral" | "ops" | "import") | null;
+            /** @description For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this client's own fit through an invite. Null for any other entry. */
+            referral_side: ("referrer" | "friend") | null;
             no_show: components["schemas"]["NoShowNote"] | null;
         };
         PaymentDetail: {
@@ -3518,6 +3644,8 @@ export interface components {
             destination: string | null;
             /** @description false: the terms only; true: the visit is cancelled. */
             cancelled: boolean;
+            /** @description true: the visit is cancelled, and its refund is still to be asked of Razorpay, which happens within minutes. */
+            refund_pending: boolean;
         };
         VisitNoted: {
             note: string;

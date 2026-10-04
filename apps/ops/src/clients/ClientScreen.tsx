@@ -11,7 +11,7 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
-import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
+import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useState } from "react";
@@ -23,6 +23,7 @@ import type { ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Consents } from "./Consents.tsx";
+import { Erased } from "./Erase.tsx";
 import { History, replacementDueOf } from "./History.tsx";
 import type { InviteNews } from "./Invite.tsx";
 import { Payments } from "./Payments.tsx";
@@ -105,7 +106,8 @@ function Tab({
   onAttached,
   address,
   onAddress,
-  onBooked,
+  onChanged,
+  onErased,
   photos,
 }: {
   clientId: string;
@@ -117,11 +119,12 @@ function Tab({
   onAttached: (attached: Attached) => void;
   address: Address;
   onAddress: (address: NonNullable<Address>) => void;
-  onBooked: () => void;
+  onChanged: () => void;
+  onErased: () => void;
   photos: ReturnType<typeof usePhotos>;
 }) {
   if (tab === "visits") {
-    return <Visits clientId={clientId} record={record} address={address} onAddress={onAddress} onBooked={onBooked} />;
+    return <Visits clientId={clientId} record={record} address={address} onAddress={onAddress} onChanged={onChanged} />;
   }
   if (tab === "pieces") return <Pieces clientId={clientId} />;
   if (tab === "payments") {
@@ -139,7 +142,7 @@ function Tab({
       />
     );
   }
-  if (tab === "consents") return <Consents clientId={clientId} />;
+  if (tab === "consents") return <Consents clientId={clientId} name={record.name} onErased={onErased} />;
   if (tab === "history") return <History history={record.history} />;
   return <Photos photos={photos} name={record.name} />;
 }
@@ -153,6 +156,15 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   const [attached, setAttached] = useState<Attached | null>(null);
   // An address a client gave on the phone, saved on this page, which stands over the one read on opening.
   const [given, setGiven] = useState<{ address: NonNullable<Address> } | null>(null);
+  const [erasedId, setErasedId] = useState<string | null>(null);
+
+  if (erasedId === clientId) {
+    return (
+      <Shell section="/clients" title={clients.title} flush>
+        <Erased />
+      </Shell>
+    );
+  }
 
   return (
     <Shell section="/clients" title={clients.title} flush>
@@ -164,7 +176,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
         ),
         failed: (
           <div className={styles.waiting}>
-            <PanelFailed onRetry={retry} />
+            <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />
           </div>
         ),
         loaded: (record) => (
@@ -197,7 +209,10 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                 onAddress={(address) => {
                   setGiven({ address });
                 }}
-                onBooked={retry}
+                onChanged={retry}
+                onErased={() => {
+                  setErasedId(clientId);
+                }}
                 photos={photos}
               />
             </div>

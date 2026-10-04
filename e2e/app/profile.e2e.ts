@@ -202,6 +202,7 @@ test("says an address was given to us on the phone, so the client can check it",
         number_change: null,
         number_change_decided: null,
         deletion: null,
+        deletion_rejected: null,
         address: {
           line1: "Sunrise Greens",
           line2: null,
@@ -257,9 +258,10 @@ test("lists the five consents off, and switches one on with its date and off aga
   ]) {
     await expect(page.getByRole("switch", { name })).toHaveAttribute("aria-checked", "false");
   }
-  // Visit messages off, the client is told what that means.
+  // Visit messages off, the client is told what that means; and that visits are photographed all the same.
   const visitsOff = page.getByText("No visit updates on WhatsApp. We will call you about any change.");
   await expect(visitsOff).toBeVisible();
+  await expect(page.getByText("Each visit is still photographed for your visit record.")).toBeVisible();
 
   const visits = page.getByRole("switch", { name: "WhatsApp about your visits" });
   const switched = page.waitForRequest("**/api/consents/whatsapp_visits");
@@ -461,6 +463,30 @@ test("asks before requesting deletion, then says it is requested", async ({ page
   await expect(page.getByRole("status").filter({ hasText: "Deletion requested" })).toHaveText(
     /^Deletion requested on \d{1,2} [A-Z][a-z]{2} \d{4}\. We will confirm on WhatsApp\.$/,
   );
+});
+
+test("says when ops kept the account, and why, and still lets the client ask again", async ({ page }) => {
+  await signIn(page);
+  await page.route("**/api/profile", async (route) => {
+    await route.fulfill({
+      json: {
+        name: "Rohit Malhotra",
+        mobile: "+91 98xxx x4417",
+        consents: [],
+        number_change: null,
+        number_change_decided: null,
+        deletion: null,
+        deletion_rejected: { decided_at: "2026-10-02T06:30:00.000Z", reason: "You still have a consultation booked" },
+        address: null,
+        address_given_to_ops: null,
+      },
+    });
+  });
+  await page.getByRole("link", { name: "Your profile" }).click();
+  await expect(page.getByText("On 2 Oct 2026 we did not delete your account.")).toBeVisible();
+  await expect(page.getByText("Our reason: You still have a consultation booked")).toBeVisible();
+  await expect(page.getByText("Message us if you disagree, or ask again.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Request deletion" })).toBeVisible();
 });
 
 test("logs out from the foot of the profile", async ({ page }) => {

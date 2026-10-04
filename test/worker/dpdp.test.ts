@@ -103,7 +103,6 @@ describe("erasure reaches Phase 2's data", () => {
       FSM_QUEUE: fsmQueue,
     };
     await sweep(bindings, fakeDependencies({ now: () => later }), createLogger(), {
-      creditFloor: 0,
       fsmConnected: true,
       budget: createCallBudget(Infinity),
     });
@@ -118,7 +117,6 @@ describe("erasure reaches Phase 2's data", () => {
 
     const again = fakeQueue();
     await sweep({ ...bindings, FSM_QUEUE: again }, fakeDependencies({ now: () => later }), createLogger(), {
-      creditFloor: 0,
       budget: createCallBudget(Infinity),
       fsmConnected: true,
     });
@@ -181,7 +179,7 @@ describe("erasure reaches Phase 2's data", () => {
       { ...env, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fsmQueue },
       fakeDependencies({ now: () => new Date(NOW.getTime() + 10 * 60_000) }),
       createLogger(),
-      { creditFloor: 0, budget: createCallBudget(Infinity) },
+      { budget: createCallBudget(Infinity) },
     );
     expect(fsmQueue.sent).toEqual([]);
   });
@@ -360,8 +358,7 @@ describe("ops deciding a deletion request", () => {
     );
   }
 
-  // Open point 136: the sweeper would find them minutes later, where POST /api/erasure
-  // queues the CRM within seconds. Both doors are now as quick as each other.
+  // The sweeper would find them only minutes later.
   it("queues the CRM and the FSM contact itself, rather than waiting for the sweeper", async () => {
     const id = await requested();
     const crm = fakeQueue();

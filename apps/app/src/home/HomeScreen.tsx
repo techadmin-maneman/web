@@ -11,13 +11,14 @@
 
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me } from "../api.ts";
-import { BOOKING_URL, CONSULTATION_AND_FIT, home, messages, VISIT_TYPES, visits, windowText } from "../content.ts";
+import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
 import { BookNext } from "../booking/BookNext.tsx";
 import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
-import { visitName } from "../lib/visit.ts";
+import { apiNow } from "../lib/clock.ts";
+import { bookingName, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
 import { monthNow, nextVisitWords, replacementLine } from "./next-visit-words.ts";
@@ -124,7 +125,7 @@ function Consultation(props: {
           {props.requested === true && <p className={styles.free}>{copy.requested}</p>}
           {!begun && (
             <Actions
-              what={oneVisit ? CONSULTATION_AND_FIT : VISIT_TYPES.consultation}
+              what={oneVisit ? ONE_VISIT : VISIT_TYPES.consultation}
               date={date}
               changing={props.changing}
               noting={props.noting}
@@ -168,7 +169,7 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
       <div className={styles.card}>
         <p className={styles.date}>{shortDate(booking.date)}</p>
         <p className={styles.window}>{windowText(booking.window)}</p>
-        <p className={styles.place}>{VISIT_TYPES[booking.type]}</p>
+        <p className={styles.place}>{bookingName(booking)}</p>
         <p className={styles.free}>{booking.paid ? copy.paid : copy.free}</p>
         <p className={styles.free}>{copy.told}</p>
       </div>
@@ -176,20 +177,25 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
   );
 }
 
-/** Board B1's credit tile: the balance, and when the soonest of it expires. */
+/** Board B1's credit tile: how many free service visits, said once, and the day the soonest must be used by. */
 function CreditTile({ credits }: { credits: NonNullable<Me["credits"]> }) {
   const expiry = credits.earliest_expiry;
   return (
     <div className={styles.credits}>
-      <div>
-        <p className={styles.creditsLabel}>{home.credits.count(credits.visits)}</p>
-        {expiry !== null && <p className={styles.creditsExpiry}>{home.credits.expire(fullDate(indiaDate(expiry)))}</p>}
-      </div>
-      <p className={styles.creditsCount} aria-hidden="true">
-        {credits.visits}
-      </p>
+      <p className={styles.creditsLabel}>{home.credits.count(credits.visits)}</p>
+      {expiry !== null && <p className={styles.creditsExpiry}>{useByLine(credits, expiry)}</p>}
     </div>
   );
+}
+
+/** "Use by 2 Oct", "Use by tonight" on the day, or "1 to use by 2 Oct" where only some of them end first. */
+function useByLine(credits: NonNullable<Me["credits"]>, expiry: string): string {
+  const today = indiaDate(new Date(apiNow()).toISOString());
+  const lastDay = indiaDate(expiry);
+  const when = lastDay === today ? home.credits.tonight : listDate(lastDay, Number(today.slice(0, 4)));
+  // False for a Home the phone kept from an earlier release, which does not say how many end first.
+  const someEndFirst = credits.expiring_visits < credits.visits;
+  return someEndFirst ? home.credits.someUseBy(credits.expiring_visits, when) : home.credits.useBy(when);
 }
 
 type PromptOf<Kind extends NonNullable<Me["prompt"]>["kind"]> = Extract<NonNullable<Me["prompt"]>, { kind: Kind }>;

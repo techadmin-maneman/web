@@ -37,6 +37,36 @@ Environment, version and database reachability
 }
 ```
 
+### POST /api/client-errors
+
+Report an error in the app's own page
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientErrorReport"
+}
+```
+
+**204**: Logged
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/tech/auth/otp
 
 Send a login code on WhatsApp. The answer is the same whether or not FSM lists the number
@@ -958,6 +988,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "not_served",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -977,6 +1008,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",
@@ -1106,6 +1138,76 @@ Request body:
     "version_tag",
     "d1",
     "cron_completed_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientErrorReport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error",
+        "unhandled_rejection",
+        "render",
+        "outbox_gave_up"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "The page's path, with no query or fragment."
+    },
+    "stack": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "The script the error was thrown in."
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "outbox_gave_up: the write's kind, as `checklist`."
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "outbox_gave_up: the code the API refused it with."
+    },
+    "status": {
+      "type": "integer",
+      "description": "outbox_gave_up: the refusal's HTTP status."
+    },
+    "request_id": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+    }
+  },
+  "required": [
+    "kind",
+    "message",
+    "path"
   ],
   "additionalProperties": false
 }
@@ -1452,6 +1554,9 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobState"
     }
   },
   "required": [
@@ -1469,9 +1574,47 @@ Request body:
     "badge",
     "slots",
     "unlocked",
-    "unlocks_at"
+    "unlocks_at",
+    "progress"
   ],
   "additionalProperties": false
+}
+```
+
+### TechnicianJobState
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "started_at",
+    "outcome"
+  ],
+  "additionalProperties": false,
+  "description": "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet."
 }
 ```
 
@@ -1601,6 +1744,9 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobProgress"
     },
     "address": {
       "anyOf": [
@@ -1766,9 +1912,6 @@ Request body:
         }
       ],
       "description": "Null until the day before the visit."
-    },
-    "progress": {
-      "$ref": "#/components/schemas/TechnicianJobProgress"
     },
     "no_show_wait_min": {
       "type": "integer",
@@ -1990,10 +2133,10 @@ Request body:
     "slots",
     "unlocked",
     "unlocks_at",
+    "progress",
     "address",
     "access_notes",
     "client",
-    "progress",
     "no_show_wait_min",
     "pieces",
     "last_visit",
