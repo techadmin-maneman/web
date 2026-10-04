@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
+import { useAsync, type Settled } from "./useAsync.ts";
 
 /** A call's answer, as packages/web-kit/api.ts gives it, cut to what a page needs. */
 type Answered<T> =
@@ -17,27 +18,19 @@ export type Loaded<T> =
 /**
  * A page's data, fetched when the page opens and again on "Try again". `load`
  * must keep its identity from one render to the next (a module's function, or
- * one held in useCallback), or it would be fetched on every render.
+ * one held in useCallback), or it would be fetched on every render. A load that
+ * throws fails as one the API never answered.
  */
 export function useLoad<T>(load: () => Promise<Answered<T>>): readonly [Loaded<T>, () => void] {
-  const [loaded, setLoaded] = useState<Loaded<T>>({ state: "loading" });
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    let current = true;
-    void load().then((answer) => {
-      if (current) setLoaded(loadedFrom(answer));
-    });
-    return () => {
-      current = false;
-    };
-  }, [load, attempt]);
-
-  const retry = useCallback(() => {
-    setLoaded({ state: "loading" });
-    setAttempt((count) => count + 1);
-  }, []);
+  const [settled, retry] = useAsync(load);
+  const loaded = useMemo(() => loadedOf(settled), [settled]);
   return [loaded, retry] as const;
+}
+
+function loadedOf<T>(settled: Settled<Answered<T>>): Loaded<T> {
+  if (settled.state === "pending") return { state: "loading" };
+  if (settled.state === "failed") return { state: "failed", notFound: false, requestId: null };
+  return loadedFrom(settled.value);
 }
 
 function loadedFrom<T>(answer: Answered<T>): Loaded<T> {

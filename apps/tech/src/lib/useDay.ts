@@ -7,7 +7,8 @@
 // (apps/tech/src/App.tsx); a 404 says the job is not this technician's. Showing
 // what the phone kept after either would show what the API has just refused.
 
-import { useCallback, useEffect, useState } from "react";
+import { useAsync, valueOr } from "@maneman/ui/useAsync";
+import { useCallback, useMemo } from "react";
 import { api, unreachable, type Job, type JobSummary } from "../api.ts";
 import { forgetOld, keepDay, keepJob, keptDay, keptJob, keptJobs, keptNames, type HeldJob } from "../store/jobs.ts";
 import { unsentJobs } from "../store/outbox.ts";
@@ -58,29 +59,13 @@ export async function loadJob(id: string): Promise<Loaded<Job>> {
   return kept === null ? failed(answer.requestId) : { state: "loaded", value: kept, fromPhone: true };
 }
 
+/** A load that throws, as a store that would not open can, fails as one nothing answered. */
 function useKept<T>(load: () => Promise<Loaded<T>>, watch: unknown = null): readonly [Loaded<T>, () => void] {
-  const [loaded, setLoaded] = useState<Loaded<T>>({ state: "loading" });
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    let current = true;
-    void load().then(
-      (answer) => {
-        if (current) setLoaded(answer);
-      },
-      () => {
-        if (current) setLoaded(failed(null));
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [load, attempt, watch]);
-
-  const retry = useCallback(() => {
-    setLoaded({ state: "loading" });
-    setAttempt((count) => count + 1);
-  }, []);
+  const [settled, retry] = useAsync(load, watch);
+  const loaded = useMemo((): Loaded<T> => {
+    if (settled.state === "pending") return { state: "loading" };
+    return settled.state === "failed" ? failed(null) : settled.value;
+  }, [settled]);
   return [loaded, retry];
 }
 
@@ -117,24 +102,12 @@ export function useJob(id: string, watch: unknown = null): readonly [Loaded<Job>
   return useKept(load, watch);
 }
 
-/** What a read of the phone's store answers, read again whenever `watch` changes. */
+const NO_NAMES: ReadonlyMap<string, string> = new Map();
+const NO_JOBS: ReadonlyMap<string, HeldJob> = new Map();
+
+/** What a read of the phone's store answers, read again whenever `watch` changes. A store that will not open gives nothing. */
 function useStored<T>(read: () => Promise<T>, nothing: T, watch: unknown): T {
-  const [found, setFound] = useState<T>(nothing);
-  useEffect(() => {
-    let current = true;
-    void read().then(
-      (answer) => {
-        if (current) setFound(answer);
-      },
-      () => {
-        // A store that will not open has nothing to give; the screens go without.
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [read, watch]);
-  return found;
+  return valueOr(useAsync(read, watch)[0], nothing);
 }
 
 /**
@@ -143,10 +116,10 @@ function useStored<T>(read: () => Promise<T>, nothing: T, watch: unknown): T {
  * before the day's list carried names.
  */
 export function useNames(watch: unknown = null): ReadonlyMap<string, string> {
-  return useStored<ReadonlyMap<string, string>>(keptNames, new Map(), watch);
+  return useStored(keptNames, NO_NAMES, watch);
 }
 
 /** Each job the phone holds, locked or not, for the screens that must name a job whose card has gone. */
 export function useHeldJobs(watch: unknown = null): ReadonlyMap<string, HeldJob> {
-  return useStored<ReadonlyMap<string, HeldJob>>(keptJobs, new Map(), watch);
+  return useStored(keptJobs, NO_JOBS, watch);
 }
