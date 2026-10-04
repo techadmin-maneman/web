@@ -14,7 +14,7 @@
 // The words for unequal sides and for nothing are ours until the owner's (open
 // point 172); with both sides at 3 they are the design's.
 
-import type { Invite, ReferralReward } from "../lib/api.ts";
+import type { Invite, OpenWindows, ReferralConsultation, ReferralReward } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
 import { booking, notices, pageTitles, type Notice } from "./site.ts";
@@ -175,7 +175,7 @@ export const referral = {
       { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
       { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
       { id: "evening", label: "Evening", hours: "4 to 8 pm" },
-    ],
+    ] satisfies readonly { id: ReferralConsultation["window"]; label: string; hours: string }[],
     // Not drawn: a window nobody is free in, and a fortnight with none open. The owner approves the words.
     full: "Full",
     noneOpen: "Fully booked for the next two weeks.",
@@ -186,7 +186,7 @@ export const referral = {
       options: [
         { id: "consultation", label: `Consultation · ${visitLength.consultation}` },
         { id: "one_visit", label: `Consultation and fit · ${visitLength.firstFit}` },
-      ],
+      ] satisfies readonly { id: OpenWindows["plan"]; label: string }[],
       // The first fit's three hours do not fit in the evening's half-slots, so the one visit starts earlier.
       note: "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.",
       // Not drawn: no hair system is offered in the console yet, so only the consultation can be booked.

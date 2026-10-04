@@ -5,7 +5,8 @@
 
 import type { ErrorCode, JobStatus } from "./api.ts";
 
-export type ErrorKind = "photo" | "renderFailed" | "busy" | "unavailable";
+export const ERROR_KINDS = ["photo", "renderFailed", "busy", "unavailable"] as const;
+export type ErrorKind = (typeof ERROR_KINDS)[number];
 export type FailureCode = NonNullable<JobStatus["failure_code"]>;
 
 /** A failure: what the error screen says, and the code analytics records. */

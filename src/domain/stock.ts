@@ -341,6 +341,22 @@ function placesShown(
 /** How many of the latest movements the screen shows beneath the table. */
 const MOVEMENTS_SHOWN = 30;
 
+type BalanceRow = {
+  consumable_code: string;
+  technician_id: string | null;
+  quantity: number;
+  counted_at: string | null;
+};
+type MovementRow = {
+  created_at: string;
+  consumable_code: string;
+  technician_id: string | null;
+  quantity: number;
+  reason: Reason;
+  actor: string;
+  note: string | null;
+};
+
 /**
  * What the places hold. `kits` are the technicians whose kits the caller's cities reach; null reaches every kit and the
  * central store, which is in no city.
@@ -351,38 +367,35 @@ export async function stockView(
   kits: ReadonlySet<string> | null = null,
 ): Promise<StockView> {
   const today = indiaDate(now);
-  const [balances, technicians, recent] = await db.batch([
-    db.prepare(
-      `SELECT consumable_code, NULLIF(place, 'central') AS technician_id, quantity, counted_at FROM stock_balances`,
-    ),
-    db.prepare(
-      `SELECT id, name, active FROM technicians
-       WHERE active = 1 OR id IN (SELECT place FROM stock_balances WHERE quantity <> 0)
-       ORDER BY name`,
-    ),
+  const [balances, technicians, recent] = await Promise.all([
+    db
+      .prepare(
+        `SELECT consumable_code, NULLIF(place, 'central') AS technician_id, quantity, counted_at FROM stock_balances`,
+      )
+      .all<BalanceRow>(),
+    db
+      .prepare(
+        `SELECT id, name, active FROM technicians
+         WHERE active = 1 OR id IN (SELECT place FROM stock_balances WHERE quantity <> 0)
+         ORDER BY name`,
+      )
+      .all<TechnicianRow>(),
     db
       .prepare(
         `SELECT created_at, consumable_code, technician_id, quantity, reason, actor, note FROM stock_movements
          WHERE ?2 IS NULL OR technician_id IN (SELECT value FROM json_each(?2))
          ORDER BY created_at DESC, rowid DESC LIMIT ?1`,
       )
-      .bind(MOVEMENTS_SHOWN, kits === null ? null : JSON.stringify([...kits])),
+      .bind(MOVEMENTS_SHOWN, kits === null ? null : JSON.stringify([...kits]))
+      .all<MovementRow>(),
   ]);
-  const held = (
-    (balances?.results ?? []) as {
-      consumable_code: string;
-      technician_id: string | null;
-      quantity: number;
-      counted_at: string | null;
-    }[]
-  ).filter((row) => isWithin(kits, row.technician_id));
+  const held = balances.results.filter((row) => isWithin(kits, row.technician_id));
   const holding = held.filter((row) => row.quantity !== 0);
   const heldSomewhere = new Set(holding.map((row) => row.consumable_code));
   const consumables = (await allConsumables(db)).filter(
     (consumable) => isOffered(consumable, today) || heldSomewhere.has(consumable.code),
   );
-  const technicianRows = (technicians?.results ?? []) as TechnicianRow[];
-  const places = placesShown(technicianRows, holding, kits);
+  const places = placesShown(technicians.results, holding, kits);
 
   const holdings = consumables.flatMap((consumable) =>
     places.map((place): Holding => {
@@ -401,17 +414,7 @@ export async function stockView(
     }),
   );
 
-  const movements = (
-    (recent?.results ?? []) as {
-      created_at: string;
-      consumable_code: string;
-      technician_id: string | null;
-      quantity: number;
-      reason: Reason;
-      actor: string;
-      note: string | null;
-    }[]
-  ).map((row) => ({
+  const movements = recent.results.map((row) => ({
     at: row.created_at,
     code: row.consumable_code,
     technicianId: row.technician_id,

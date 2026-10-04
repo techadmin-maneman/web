@@ -165,39 +165,46 @@ function zonesOf(rows: readonly { name: string; city: string | null }[]): Zone[]
 }
 
 export async function readStaffBook(db: D1Database): Promise<StaffBook> {
-  const [mode, people, grants, tokens, zones, cities, zoned] = await db.batch([
-    db.prepare(MODE),
-    db.prepare("SELECT email, active, added_by, added_at, changed_by, changed_at FROM staff ORDER BY email"),
-    db.prepare("SELECT email, department, level, geography, place FROM staff_grants ORDER BY id"),
-    db.prepare("SELECT client_id, label, added_by, added_at FROM staff_service_tokens ORDER BY added_at, client_id"),
-    db.prepare(
-      `SELECT z.name, c.name AS city FROM zones z LEFT JOIN cities c ON c.zone = z.name AND c.active = 1
-       ORDER BY z.sort, z.name, c.sort, c.name`,
-    ),
-    db.prepare("SELECT name FROM cities WHERE active = 1 ORDER BY sort, name"),
-    db.prepare(ZONED_CITIES),
+  const [mode, people, grants, tokens, zones, cities, zoned] = await Promise.all([
+    db.prepare(MODE).first<ModeRow>(),
+    db
+      .prepare("SELECT email, active, added_by, added_at, changed_by, changed_at FROM staff ORDER BY email")
+      .all<StaffRow>(),
+    db
+      .prepare("SELECT email, department, level, geography, place FROM staff_grants ORDER BY id")
+      .all<GrantRow & { email: string }>(),
+    db
+      .prepare("SELECT client_id, label, added_by, added_at FROM staff_service_tokens ORDER BY added_at, client_id")
+      .all<TokenRow>(),
+    db
+      .prepare(
+        `SELECT z.name, c.name AS city FROM zones z LEFT JOIN cities c ON c.zone = z.name AND c.active = 1
+         ORDER BY z.sort, z.name, c.sort, c.name`,
+      )
+      .all<{ name: string; city: string | null }>(),
+    db.prepare("SELECT name FROM cities WHERE active = 1 ORDER BY sort, name").all<{ name: string }>(),
+    db.prepare(ZONED_CITIES).all<CityRow>(),
   ]);
-  const grantRows = (grants?.results ?? []) as (GrantRow & { email: string })[];
   return {
-    mode: modeOf((mode?.results as ModeRow[] | undefined)?.[0]),
-    people: ((people?.results ?? []) as StaffRow[]).map((row) => ({
+    mode: modeOf(mode ?? undefined),
+    people: people.results.map((row) => ({
       email: row.email,
       active: row.active === 1,
-      grants: grantsOf(grantRows.filter((grant) => grant.email === row.email)),
+      grants: grantsOf(grants.results.filter((grant) => grant.email === row.email)),
       addedBy: row.added_by,
       addedAt: row.added_at,
       changedBy: row.changed_by,
       changedAt: row.changed_at,
     })),
-    serviceTokens: ((tokens?.results ?? []) as TokenRow[]).map((row) => ({
+    serviceTokens: tokens.results.map((row) => ({
       clientId: row.client_id,
       label: row.label,
       addedBy: row.added_by,
       addedAt: row.added_at,
     })),
-    zones: zonesOf((zones?.results ?? []) as { name: string; city: string | null }[]),
-    cities: ((cities?.results ?? []) as { name: string }[]).map((row) => row.name),
-    zoneOf: zoneMap((zoned?.results ?? []) as CityRow[]),
+    zones: zonesOf(zones.results),
+    cities: cities.results.map((row) => row.name),
+    zoneOf: zoneMap(zoned.results),
   };
 }
 
