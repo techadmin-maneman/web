@@ -1978,7 +1978,6 @@ export const technicians = {
  * each queue is built as the boards' own queues are (C1 and D1).
  */
 
-/** How long a request has left before the time we have promised runs out, as board D2 words its column. */
 /** How long something waiting on ops has left, on Tasks and in every queue: "2 days left", "3 days overdue". */
 export const waiting = {
   left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"} left`,
