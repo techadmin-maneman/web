@@ -240,21 +240,66 @@ describe("no connection", () => {
   });
 
   it("is a signal that never answers, given up on after the app's patience", async () => {
-    vi.useFakeTimers();
-    vi.stubGlobal(
-      "fetch",
-      (_url: string, init: RequestInit) =>
-        new Promise((_resolve, reject) => {
-          init.signal?.addEventListener("abort", () => {
-            reject(new DOMException("gave up", "AbortError"));
-          });
-        }),
-    );
-    const answer = createClient<Paths, Code>({ patience: 4_000 }).get("/api/visits/{id}", { path: { id: "a" } });
+    neverAnswering();
+    const client = createClient<Paths, Code>({ patience: { read: 4_000, write: 9_000 } });
+    const answer = client.get("/api/visits/{id}", { path: { id: "a" } });
     await vi.advanceTimersByTimeAsync(4_000);
     expect(await answer).toMatchObject({ ok: false, code: "offline" });
   });
+
+  it("waits a write's patience for anything but a GET", async () => {
+    neverAnswering();
+    const client = createClient<Paths, Code>({ patience: { read: 4_000, write: 9_000 } });
+    const answer = settled(client.post("/api/auth/otp", { body: { mobile: "9810000001" } }));
+    await vi.advanceTimersByTimeAsync(8_999);
+    expect(answer.value).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(answer.value).toMatchObject({ ok: false, code: "offline" });
+  });
+
+  it("waits a call's own patience, where it names one, in place of the client's", async () => {
+    neverAnswering();
+    const client = createClient<Paths, Code>({ patience: { read: 4_000, write: 9_000 } });
+    const answer = settled(client.request("PUT", "/api/upload", { body: "jpeg", patience: 60_000 }));
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(answer.value).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(answer.value).toMatchObject({ ok: false, code: "offline" });
+  });
+
+  // CQ-46: an app that sets no patience no longer waits as long as the browser does.
+  it("is given up on after a minute when the app sets no patience", async () => {
+    neverAnswering();
+    const answer = settled(createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } }));
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(answer.value).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(answer.value).toMatchObject({ ok: false, code: "offline" });
+  });
 });
+
+/** A fetch that never answers until it is given up on, on the test's own clock. */
+function neverAnswering(): void {
+  vi.useFakeTimers();
+  vi.stubGlobal(
+    "fetch",
+    (_url: string, init: RequestInit) =>
+      new Promise((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () => {
+          reject(new DOMException("gave up", "AbortError"));
+        });
+      }),
+  );
+}
+
+/** A call's answer once it has one, so a test can see it has none yet. */
+function settled<T>(call: Promise<T>): { value: T | undefined } {
+  const seen: { value: T | undefined } = { value: undefined };
+  void call.then((value) => {
+    seen.value = value;
+  });
+  return seen;
+}
 
 describe("every answer that reached the API", () => {
   it("is shown to the app once read, as the client app sets its clock and the technician app its signal", async () => {

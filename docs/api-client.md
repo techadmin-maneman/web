@@ -2804,6 +2804,17 @@ Request body:
     "name": {
       "type": "string"
     },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The line ops wrote to read under its name; null for none."
+    },
     "minutes": {
       "type": "integer",
       "description": "How long the visit is booked for."
@@ -2816,6 +2827,7 @@ Request body:
     "type",
     "tier",
     "name",
+    "description",
     "minutes",
     "price"
   ],
