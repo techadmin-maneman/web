@@ -67,14 +67,20 @@ const at = (date: string, time: string) => `${date}T${time}:00.000Z`;
 /** 6 pm in India on the day before the visit, when its address unlocks (src/policy/job-visibility.ts). */
 const unlocksAt = (date: string) => at(dayBefore(date), "12:30");
 
+/** Midnight in India as the visit's day begins: a test taps I have arrived whenever on the day it runs. */
+const checkInOpens = (date: string) => at(dayBefore(date), "18:30");
+
 /** The slots each type takes (src/config/scheduling.ts). */
 const SLOTS: Readonly<Record<VisitType, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
+
+/** A job nothing of which has reached us, as the day's list says it. */
+const NOT_BEGUN: Job["progress"] = { started_at: null, outcome: null };
 
 /**
  * Rohit's visit this morning, the first of the day, of the type a test asks for; or, as one visit, his consultation
  * and first fit together, paid for once he is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
  */
-const firstJob = (date: string, type: VisitType, oneVisit = false): Job => ({
+const firstJob = (date: string, type: VisitType, oneVisit = false, progress = NOT_BEGUN): Job => ({
   id: JOB_ID,
   day: "today",
   date,
@@ -83,13 +89,15 @@ const firstJob = (date: string, type: VisitType, oneVisit = false): Job => ({
   window_label: "morning",
   type,
   one_visit: oneVisit,
-  product: null,
+  service: null,
   sector: "Sector 65",
   status: "scheduled",
   badge: oneVisit ? "at_visit" : "prepaid",
   slots: SLOTS[type],
   unlocked: true,
   unlocks_at: unlocksAt(date),
+  client_name: "Rohit M.",
+  progress,
 });
 
 const secondJob = (date: string): Job => ({
@@ -101,16 +109,18 @@ const secondJob = (date: string): Job => ({
   window_label: "morning",
   type: "service",
   one_visit: false,
-  product: null,
+  service: null,
   sector: "DLF Phase 4",
   status: "scheduled",
   badge: "credit",
   slots: 1,
   unlocked: true,
   unlocks_at: unlocksAt(date),
+  client_name: "Vikram S.",
+  progress: NOT_BEGUN,
 });
 
-/** This afternoon's first fit, its card still locked as the list shows it. */
+/** This afternoon's first fit, its card still locked as the list shows it, until 6 pm tomorrow. */
 const lockedJob = (date: string): Job => ({
   id: LOCKED_JOB_ID,
   day: "later",
@@ -120,13 +130,15 @@ const lockedJob = (date: string): Job => ({
   window_label: "afternoon",
   type: "first_fit",
   one_visit: false,
-  product: "Mane Man Natural",
+  service: { tier: "natural", name: "Mane Man Natural" },
   sector: "Sector 43",
   status: "scheduled",
   badge: "prepaid",
   slots: 2,
   unlocked: false,
-  unlocks_at: unlocksAt(date),
+  unlocks_at: at(dayAfter(date), "12:30"),
+  client_name: null,
+  progress: NOT_BEGUN,
 });
 
 /** Tomorrow's one job, unlocked since 6 pm today: its card is open, and its door is not. */
@@ -141,18 +153,21 @@ const tomorrowsJob = (today: string): Job => {
     window_label: "morning",
     type: "service",
     one_visit: false,
-    product: null,
+    service: null,
     sector: "Sector 50",
     status: "scheduled",
     badge: "free",
     slots: 1,
     unlocked: true,
     unlocks_at: unlocksAt(date),
+    client_name: "Rohit M.",
+    progress: NOT_BEGUN,
   };
 };
 
-export function jobsToday(date: string, type: VisitType = "service"): Job[] {
-  return [firstJob(date, type), secondJob(date), lockedJob(date)];
+/** The day's list; `progress` is where Rohit's job stands, as the list carries it. */
+export function jobsToday(date: string, type: VisitType = "service", progress = NOT_BEGUN): Job[] {
+  return [firstJob(date, type, false, progress), secondJob(date), lockedJob(date)];
 }
 
 export function jobsTomorrow(today: string): Job[] {
@@ -165,11 +180,16 @@ const CHECKLIST: Card["checklist"] = [
   { id: "piece_cleaned", label: "PLACEHOLDER Piece cleaned" },
 ];
 
-/** A consultation and fit in one visit: the consultation's three items, then the first fit's six (src/config/job-sheet.ts). */
-export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
+/** A consultation's checklist, which a one visit runs alone once the client decides against the fit. */
+const CONSULTATION_CHECKLIST: Card["checklist"] = [
   { id: "scalp_checked", label: "PLACEHOLDER Scalp and hairline checked" },
   { id: "measurements_taken", label: "PLACEHOLDER Measurements taken" },
   { id: "options_shown", label: "PLACEHOLDER Options and prices shown" },
+];
+
+/** A consultation and fit in one visit: the consultation's three items, then the first fit's six (src/config/job-sheet.ts). */
+export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
+  ...CONSULTATION_CHECKLIST,
   { id: "template_checked", label: "PLACEHOLDER Template checked against the head" },
   { id: "base_trimmed", label: "PLACEHOLDER Base trimmed and shaped" },
   { id: "adhesive_applied", label: "PLACEHOLDER Adhesive applied" },
@@ -250,17 +270,24 @@ export const ROHITS_PROFILE: HairProfile = {
   history: { remedies: ["minoxidil"], transplant_year: null, skin_and_allergies: "Dry at the crown" },
 };
 
-/** The API's steps (src/policy/in-job-steps.ts): a consultation and a one visit take the profile. */
+/**
+ * The API's steps (src/policy/in-job-steps.ts): a consultation and a one visit take the profile, and a consultation
+ * takes no after photographs. A one visit takes the piece, with the client's choice, before the checklist.
+ */
 function stepsFor(type: VisitType, oneVisit = false): Step[] {
-  const takesPiece = oneVisit || type === "replacement" || type === "first_fit";
-  const takesProfile = oneVisit || type === "consultation";
+  if (oneVisit) {
+    return ["before_photos", "piece", "checklist", "consumables", "profile", "after_photos", "outcome"];
+  }
+  const takesPiece = type === "replacement" || type === "first_fit";
+  const takesProfile = type === "consultation";
+  const takesAfterPhotos = type !== "consultation";
   return [
     "before_photos",
     "checklist",
     "consumables",
     ...(takesPiece ? (["piece"] as const) : []),
     ...(takesProfile ? (["profile"] as const) : []),
-    "after_photos",
+    ...(takesAfterPhotos ? (["after_photos"] as const) : []),
     "outcome",
   ];
 }
@@ -272,6 +299,8 @@ export interface CardOptions {
   readonly pin?: boolean;
   readonly type?: VisitType;
   readonly waitMinutes?: number;
+  /** The booked start; the fixture's 9:30 am when null or left out. */
+  readonly startsAt?: string | null;
   readonly pieces?: readonly Piece[];
   readonly lastVisit?: boolean;
   readonly reminderDelivered?: string | null;
@@ -284,13 +313,20 @@ export interface CardOptions {
   readonly checklist?: Card["checklist"];
   /** A one visit's discount code already on it; none unless a test gives one. */
   readonly discountCode?: Card["discount_code"];
+  /** The service the visit was sold as; none unless a test gives one. */
+  readonly service?: Card["service"];
+  /** What a one visit's client decided at the piece step that landed; none unless a test gives it. */
+  readonly clientChoice?: Card["client_choice"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
   const type = options.type ?? "service";
   const oneVisit = options.oneVisit === true;
+  const job = firstJob(date, type, oneVisit);
   return {
-    ...firstJob(date, type, oneVisit),
+    ...job,
+    starts_at: options.startsAt ?? job.starts_at,
+    service: options.service ?? null,
     address: {
       line1: "Tower C, 14th floor",
       line2: null,
@@ -311,6 +347,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     client: { name: "Rohit M.", mobile: "+919810000000", note: null },
     progress,
     no_show_wait_min: options.waitMinutes ?? 15,
+    checkin_from: checkInOpens(date),
     pieces: [...(options.pieces ?? [])],
     last_visit:
       options.lastVisit === true
@@ -319,11 +356,13 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     reminder: options.reminderDelivered === undefined ? null : { delivered_at: options.reminderDelivered },
     steps: stepsFor(oneVisit ? "first_fit" : type, oneVisit),
     checklist: options.checklist ?? CHECKLIST,
+    checklist_if_declined: oneVisit ? CONSULTATION_CHECKLIST : [],
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
     payment_link: null,
     discount_code: options.discountCode ?? null,
+    client_choice: oneVisit ? (options.clientChoice ?? null) : null,
     profile: options.profile ?? null,
   };
 }
@@ -337,23 +376,26 @@ export function lockedCard(date: string): Card {
     client: null,
     progress: NOTHING_DONE,
     no_show_wait_min: 15,
+    checkin_from: checkInOpens(date),
     pieces: null,
     last_visit: null,
     reminder: null,
     steps: stepsFor("first_fit"),
     checklist: CHECKLIST,
+    checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
     products: [],
     payment_link: null,
     discount_code: null,
+    client_choice: null,
     profile: null,
   };
 }
 
 /** Tomorrow's card: unlocked, so the address is there, and on a day that is not today. */
 function tomorrowCard(today: string): Card {
-  return { ...card(today, NOTHING_DONE), ...tomorrowsJob(today) };
+  return { ...card(today, NOTHING_DONE), ...tomorrowsJob(today), progress: NOTHING_DONE };
 }
 
 export interface Write {
@@ -392,16 +434,20 @@ export interface Fake {
   moved: boolean;
   /**
    * Set to move the job to another time: a write that holds any other answers
-   * `409 superseded`, field time. The card goes on answering the old time, as
-   * the copy the phone holds does until it asks again.
+   * `409 superseded`, field time, and the card answers the new time, as the
+   * API does once the phone asks again.
    */
   movedTo: string | null;
   /** Set to make the no-show refuse with `425 too_early_to_close`, as it does before the wait runs. */
   tooEarly: boolean;
+  /** Set to a photograph's slot, as `before-top`, to refuse its file with `422 photo_invalid_file`, as an empty one is. */
+  refusedPhoto: string | null;
   /** What the check-in answers: pass, or a distance outside the radius. */
   checkIn: { passed: boolean; distance_m: number | null };
   /** How long the no-show wait runs from the check-in, in whole minutes, as ops set it. */
   waitMinutes: number;
+  /** The card's booked start, for a test whose wait depends on it; the fixture's 9:30 am when null. */
+  startsAt: string | null;
   /**
    * Set to answer a passing check-in with only this many milliseconds of the wait
    * left, so a test need not wait whole minutes. The API answers so for a check-in
@@ -416,6 +462,10 @@ export interface Fake {
   oneVisit: boolean;
   /** The discount code already on the one visit, or none. */
   discountCode: Card["discount_code"];
+  /** The service the first job was sold as, or none. */
+  service: Card["service"];
+  /** What the one visit's client decided, as its piece step landed; the fake records it as the step lands. */
+  clientChoice: Card["client_choice"];
   /** The client's pieces on the card. */
   pieces: Piece[];
   /** The client's hair profile on the card, or none recorded. */
@@ -443,7 +493,7 @@ export interface Fake {
 const accepted = (fake: Fake, eventId: string | null): TechReply<"/api/tech/jobs/{id}/start", "post", 202> => ({
   event_id: eventId ?? "",
   replayed: false,
-  fsm_write_state: "pending",
+  fsm_write_state: "written",
   progress: fake.progress,
 });
 
@@ -494,13 +544,17 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     moved: false,
     movedTo: null,
     tooEarly: false,
+    refusedPhoto: null,
     checkIn: { passed: true, distance_m: 40 },
     waitMinutes: 15,
+    startsAt: null,
     waitLeftMs: null,
     pin: true,
     type: "service",
     oneVisit: false,
     discountCode: null,
+    service: null,
+    clientChoice: null,
     pieces: [],
     profile: null,
     checklist: CHECKLIST,
@@ -519,6 +573,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       pin: fake.pin,
       type: fake.type,
       waitMinutes: fake.waitMinutes,
+      startsAt: fake.startsAt,
       pieces: fake.pieces,
       lastVisit: fake.lastVisit,
       reminderDelivered: fake.reminderDelivered,
@@ -527,6 +582,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       profile: fake.profile,
       checklist: fake.checklist,
       discountCode: fake.discountCode,
+      service: fake.service,
+      clientChoice: fake.clientChoice,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -563,6 +620,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         fake.thumbnails.push(slot.slice(0, -"/small".length));
         return reply(route, 204);
       }
+      if (slot === fake.refusedPhoto) return refuse(route, 422, "photo_invalid_file");
       fake.photos.push(slot);
       return reply(route, 200, { take: randomUUID() });
     }
@@ -588,12 +646,19 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 425, "too_early_to_close");
 
       // A one visit's client may decide against the fit, when the piece step carries no label.
-      const body = route.request().postDataJSON() as { piece_code?: string; declined?: boolean } | null;
+      const body = route.request().postDataJSON() as {
+        piece_code?: string;
+        declined?: boolean;
+        product?: string;
+      } | null;
       const declined = body?.declined === true;
       if (path.endsWith("/piece") && !declined && !PIECE_LABEL.test(body?.piece_code ?? "")) {
         return refuse(route, 400, "invalid_request", ["piece_code"]);
       }
       fake.writes.push({ path, eventId, startsAt, body });
+      if (path.endsWith("/piece") && fake.oneVisit) {
+        fake.clientChoice = declined ? { declined: true } : { product: body?.product ?? "" };
+      }
 
       if (path.endsWith("/checkin")) {
         const now = new Date();
@@ -650,7 +715,10 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       const date = url.searchParams.get("date") ?? "";
       // Outside the contract on purpose: what a broken release might send, which the app must survive.
       if (fake.malformed) return route.fulfill({ json: { date, jobs: null } });
-      if (date === today) return reply(route, 200, { date, jobs: empty ? [] : jobsToday(date, fake.type) });
+      if (date === today) {
+        const progress = { started_at: fake.progress.started_at, outcome: fake.progress.outcome };
+        return reply(route, 200, { date, jobs: empty ? [] : jobsToday(date, fake.type, progress) });
+      }
       if (date === dayAfter(today) && fake.tomorrow) return reply(route, 200, { date, jobs: jobsTomorrow(today) });
       return reply(route, 200, { date, jobs: [] });
     }
@@ -668,7 +736,9 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }
     if (path === `/api/tech/jobs/${JOB_ID}`) {
-      return fake.moved ? refuse(route, 404, "not_found") : reply(route, 200, jobCard(today));
+      if (fake.moved) return refuse(route, 404, "not_found");
+      const answered = jobCard(today);
+      return reply(route, 200, fake.movedTo === null ? answered : { ...answered, starts_at: fake.movedTo });
     }
     if (path === `/api/tech/jobs/${LOCKED_JOB_ID}`) return reply(route, 200, lockedCard(today));
     if (path === `/api/tech/jobs/${TOMORROW_JOB_ID}` && fake.tomorrow) {
@@ -805,6 +875,53 @@ export async function leftOnPhone(page: Page, records: readonly object[]): Promi
     });
     db.close();
   }, records);
+}
+
+/** A write of the first job's, as the phone's outbox keeps it: refused, or waiting behind one. */
+export interface LeftWrite {
+  readonly id: string;
+  readonly kind: Step;
+  readonly route: string;
+  readonly body: unknown;
+  readonly refused?: { readonly note: string; readonly fields: readonly string[] };
+}
+
+/** Puts writes straight into the phone's outbox, in order, as a refusal or an older build would have left them. */
+export async function queuedOnPhone(page: Page, writes: readonly LeftWrite[]): Promise<void> {
+  await page.evaluate(
+    async ({ job, left }) => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open("mm-tech");
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error("no store"));
+        };
+      });
+      await new Promise<void>((resolve) => {
+        const transaction = db.transaction("outbox", "readwrite");
+        for (const write of left) {
+          transaction.objectStore("outbox").add({
+            id: write.id,
+            job_id: job,
+            kind: write.kind,
+            path: `/tech/jobs/${job}/${write.route}`,
+            body: write.body,
+            queued_at: Date.now(),
+            state: write.refused === undefined ? "waiting" : "refused",
+            note: write.refused?.note ?? null,
+            fields: write.refused?.fields ?? [],
+          });
+        }
+        transaction.oncomplete = () => {
+          resolve();
+        };
+      });
+      db.close();
+    },
+    { job: JOB_ID, left: writes },
+  );
 }
 
 /** The phone's position, so board B5's check-in can run without a real fix. */

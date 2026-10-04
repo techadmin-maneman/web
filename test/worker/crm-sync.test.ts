@@ -137,6 +137,33 @@ describe("crm-sync: syncing a lead", () => {
     expect(crm.calls[0]?.lead).toMatchObject({ inviteCode: "RM7K2Q", askedWindow: "afternoon" });
   });
 
+  // MON-23: while booking is off, the lead carried neither the one visit nor the code given for it.
+  it("sends the plan the request asked for, and the code given for a one visit", async () => {
+    const leadId = await phaseOneLead();
+    const person = await env.DB.prepare("SELECT id FROM people").first<string>("id");
+    await env.DB.prepare(
+      `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at,
+         one_visit, discount_code)
+       VALUES ('request-1', ?1, '122018', '2026-09-23', 'morning', ?2, 1, 'TENPC')`,
+    )
+      .bind(person, NOW.toISOString())
+      .run();
+    const crm = recordingCrm();
+
+    await syncLead(env.DB, fakeDependencies({ crm }), log, leadId);
+
+    expect(crm.calls[0]?.lead).toMatchObject({ plan: "one_visit", discountCode: "TENPC" });
+  });
+
+  it("sends no plan for a lead no Phase 2 booking made", async () => {
+    const leadId = await phaseOneLead();
+    const crm = recordingCrm();
+
+    await syncLead(env.DB, fakeDependencies({ crm }), log, leadId);
+
+    expect(crm.calls[0]?.lead).toMatchObject({ plan: null, discountCode: null });
+  });
+
   it("posts a new-lead notice once the lead is in the CRM, with no personal data, and never twice", async () => {
     const leadId = await phaseOneLead();
     const deps = fakeDependencies({ crm: recordingCrm() });
@@ -206,11 +233,32 @@ describe("crm-sync: syncing a lead", () => {
 
     await syncLead(env.DB, deps, log, leadId);
 
+    const personId = await env.DB.prepare("SELECT person_id FROM leads WHERE id = ?1").bind(leadId).first("person_id");
     expect(deps.alerts).toEqual([
-      `Lead ${leadId} did not reach the CRM after 10 attempts: Zoho 401 invalid_code: could not refresh the access token`,
+      `Lead ${leadId} did not reach the CRM after 10 attempts: Zoho 401 invalid_code: could not refresh the access ` +
+        `token. Send it again from Tasks once Zoho is back. http://ops.localhost:4323/clients/${String(personId)}`,
     ]);
+    expect(await openAlertKeys()).toEqual([`crm_lead:${leadId}`]);
+  });
+
+  it("closes the lead's alert once a later try reaches the CRM", async () => {
+    const leadId = await phaseOneLead();
+    await env.DB.prepare("UPDATE leads SET sync_attempts = ? WHERE id = ?")
+      .bind(MAX_SYNC_ATTEMPTS - 1, leadId)
+      .run();
+    await syncLead(env.DB, fakeDependencies({ crm: stubCrmThatFails("Zoho 503") }), log, leadId);
+    await env.DB.prepare("UPDATE leads SET sync_attempts = 0 WHERE id = ?").bind(leadId).run();
+
+    await syncLead(env.DB, fakeDependencies(), log, leadId);
+
+    expect(await openAlertKeys()).toEqual([]);
   });
 });
+
+const openAlertKeys = () =>
+  env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL ORDER BY key")
+    .all<{ key: string }>()
+    .then((answer) => answer.results.map((row) => row.key));
 
 describe("crm-sync: the queue batch", () => {
   function batchOf(bodies: unknown[]) {
@@ -336,6 +384,10 @@ describe("crm-sync: erasing a person", () => {
     expect(deps.alerts).toEqual([
       expect.stringContaining(`Erasing person ${personId} in the CRM failed 10 times`) as string,
     ]);
+    expect(await openAlertKeys()).toEqual([`crm_erasure:${personId}`]);
+
+    await eraseInCrm(env.DB, fakeDependencies(), log, personId);
+    expect(await openAlertKeys()).toEqual([]);
   });
 
   it("does nothing for a person who was never erased", async () => {

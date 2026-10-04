@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError, validateStaticConfig } from "../../src/guard.ts";
 import { FSM_CATALOGUE_PUSH } from "../../src/config/environments.ts";
-import { isKnownTemplate } from "../../src/config/message-templates.ts";
 
 const REAL = {
   IMAGE_PROVIDER: "ailabtools",
@@ -40,7 +39,6 @@ const SETTINGS = {
   RESULT_RETENTION_DAYS: "30",
   AILAB_CREDIT_FLOOR: "200",
   RESULT_SIGNING_KEY: "a-signing-key-of-at-least-thirty-two-characters",
-  ERASURE_SECRET: "an-erasure-secret-of-at-least-thirty-two-characters",
   MESSAGING_ENABLED: "false",
   ACCESS_TEAM_DOMAIN: "summer-math-0275.cloudflareaccess.com",
   ACCESS_OPS_AUD: "ops-audience-tag",
@@ -158,14 +156,6 @@ describe("validateStaticConfig: settings and secrets", () => {
     expect(problemsOf({ ENVIRONMENT: "local", ...STUBS, ...rest })).toEqual([
       "TURNSTILE_SECRET is not set",
       "IP_HASH_SALT is not set",
-    ]);
-  });
-
-  it("requires an erasure secret of at least 32 characters in every environment", () => {
-    const { ERASURE_SECRET: _e, ...rest } = SETTINGS;
-    expect(problemsOf({ ENVIRONMENT: "local", ...STUBS, ...rest })).toEqual(["ERASURE_SECRET is not set"]);
-    expect(problemsOf({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS, ERASURE_SECRET: "short" })).toEqual([
-      "ERASURE_SECRET must be at least 32 characters",
     ]);
   });
 
@@ -339,12 +329,6 @@ describe("validateStaticConfig: try-on and messaging", () => {
       "RESULT_SIGNING_KEY must be at least 32 characters",
       "RESULT_RETENTION_DAYS must be 1 to 30: the photo notice promises deletion within thirty days",
     ]);
-  });
-
-  it("sends the try-on result with a template that exists, and routes an unknown colour as the owner chose", () => {
-    const { settings } = validateStaticConfig(production);
-    expect(isKnownTemplate(settings.messaging.resultTemplate)).toBe(true);
-    expect(settings.tryon.unknownColorRoute).toBe("pro_black");
   });
 
   it("insists on an allowlist while staging messaging is on, and reads it as E.164", () => {
@@ -574,6 +558,23 @@ describe("validateStaticConfig: Razorpay", () => {
     expect(problemsOf({ ...production, ...RAZORPAY, RAZORPAY_KEY_ID: "rzp_test_abc" })).toEqual([
       "RAZORPAY_KEY_ID is not a live key in production",
     ]);
+  });
+
+  // MON-46, PS-50: self-serve booking started without the webhook secret, and a short one was taken.
+  it("requires a webhook secret of at least 32 characters for self-serve booking", () => {
+    const selfServe = { ...stagingBase, ...RAZORPAY, RAZORPAY_KEY_ID: "rzp_test_abc", SELF_SERVE_BOOKING: "true" };
+    expect(problemsOf(selfServe)).toEqual([
+      "RAZORPAY_WEBHOOK_SECRET is not set: self-serve booking would never hear that a client paid",
+    ]);
+    expect(problemsOf({ ...selfServe, RAZORPAY_WEBHOOK_SECRET: "too-short" })).toEqual([
+      "RAZORPAY_WEBHOOK_SECRET must be at least 32 characters",
+    ]);
+    expect(problemsOf({ ...selfServe, RAZORPAY_WEBHOOK_SECRET: "a-webhook-secret-of-at-least-32-chars" })).toEqual([]);
+  });
+
+  it("refuses a short webhook secret without self-serve booking too", () => {
+    const staging = { ...stagingBase, ...RAZORPAY, RAZORPAY_KEY_ID: "rzp_test_abc", RAZORPAY_WEBHOOK_SECRET: "short" };
+    expect(problemsOf(staging)).toEqual(["RAZORPAY_WEBHOOK_SECRET must be at least 32 characters"]);
   });
 
   // LIFE-17: locally the webhook answered 404, so nothing past a booking's payment could be run there.

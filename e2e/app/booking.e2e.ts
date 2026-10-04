@@ -506,6 +506,23 @@ test("goes back to the address, saying why, when the API holds no slot for want 
   await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
 });
 
+// BK-08: an address in a pincode we do not come to was held, paid for and booked.
+test("offers no day at an address we do not come to, but the address to change and the waitlist", async ({ page }) => {
+  await profileAs(page, {});
+  await page.route(/\/api\/availability\?/, (route) =>
+    route.fulfill({ status: 422, json: { error: { code: "not_served", request_id: "e2e" } } }),
+  );
+  await openSheet(page);
+  const where = page.getByRole("dialog", { name: "Where we come" });
+  await expect(where.getByRole("alert")).toHaveText(
+    "We do not come to 122018 yet. Change the address below, or join the waitlist and we will message you the day we do.",
+    { timeout: 30_000 },
+  );
+  await expect(where.getByLabel("Pincode")).toHaveValue("122018");
+  await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
+  await expect(where.getByRole("link", { name: "Join the waitlist" })).toHaveAttribute("href", /\/book$/);
+});
+
 // The owner's rulings of 27 September 2026 (booking agrees to the photograph purposes never decided on) and of
 // 2 October 2026 (what booking agrees to sits one tap away beneath Pay).
 test("puts Pay above what booking also agrees to, one tap away, while neither is decided, and sends both", async ({

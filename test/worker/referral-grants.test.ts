@@ -103,8 +103,8 @@ describe("the grant", () => {
     expect(await state()).toEqual({ grant_state: "granted", fraud_signals: null });
     // 365 days on, to the end of that day in India: the date the referrer is told (BIZ-14).
     const expiry = "2027-09-21T18:29:59.999Z";
-    expect(await creditBalance(env.DB, FRIEND, NOW)).toEqual({ visits: 3, earliestExpiry: expiry });
-    expect(await creditBalance(env.DB, REFERRER, NOW)).toEqual({ visits: 3, earliestExpiry: expiry });
+    expect(await creditBalance(env.DB, FRIEND, NOW)).toEqual({ visits: 3, earliestExpiry: expiry, expiringFirst: 3 });
+    expect(await creditBalance(env.DB, REFERRER, NOW)).toEqual({ visits: 3, earliestExpiry: expiry, expiringFirst: 3 });
 
     expect(await messagesWritten()).toEqual([
       { person_id: FRIEND, kind: "friend_credited", subject_id: ATTRIBUTION },
@@ -290,7 +290,7 @@ describe("what a referral earns, as ops set it", () => {
 
   describe("a grant held for review", () => {
     const ops = () => appFor("local", fakeDependencies(), {}, "ops");
-    const decide = (decision: "approve" | "reject") =>
+    const decide = (decision: "approve" | "reject", queue: Queue = fakeQueue()) =>
       request(
         ops(),
         `/api/referrals/${ATTRIBUTION}/decision`,
@@ -299,7 +299,7 @@ describe("what a referral earns, as ops set it", () => {
           headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
           body: JSON.stringify({ decision, reason: "Checked with both" }),
         },
-        { MESSAGE_QUEUE: fakeQueue() },
+        { MESSAGE_QUEUE: queue },
       );
 
     async function heldUnder(reward: ReferralReward) {
@@ -315,6 +315,21 @@ describe("what a referral earns, as ops set it", () => {
       await referralsRun();
       expect((await state())?.grant_state).toBe("held");
     }
+
+    // PLAT-24 of the audit, 2 October 2026: a refused send answered 500 for a ruling already made, and ops ruled again.
+    it("is approved, and answers so, when the queue refuses the messages, which the sweeper then sends", async () => {
+      await heldUnder({ referrer_visits: 2, friend_visits: 1, valid_days: 60 });
+      const down = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) };
+
+      expect((await decide("approve", down)).status).toBe(200);
+      expect(await grantsOf(REFERRER)).toEqual([{ visits: 2, expires_at: "2026-11-20T18:29:59.999Z" }]);
+      // In the outbox, still queued: what the sweeper sends.
+      const unsent = await env.DB.prepare("SELECT kind, state FROM outbound_messages ORDER BY kind").all();
+      expect(unsent.results).toEqual([
+        { kind: "friend_credited", state: "queued" },
+        { kind: "friend_fitted", state: "queued" },
+      ]);
+    });
 
     it("is given what was set when the friend was fitted, not what is set when ops approve it", async () => {
       await heldUnder({ referrer_visits: 2, friend_visits: 5, valid_days: 60 });

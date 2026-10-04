@@ -14,27 +14,41 @@ import { PARTIAL_REASONS } from "../config/job-sheet.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { UNTOLD_MOVE, UNTOLD_REASON } from "./dispatch.ts";
 import { LEAVE_ON_THE_DAY } from "./leave.ts";
+import { citiesOf, type PlacedId, type PlacedRecord } from "./places.ts";
+import { reachesCity, type PlacesReached } from "../policy/access.ts";
 import {
   atRiskIfDoneBy,
   firstFitToBookIfConsultedBy,
   NEXT_VISIT_DAYS,
   type NextVisitDays,
 } from "../policy/next-visit.ts";
+import { closedIfSentBy } from "../policy/one-visit.ts";
 import { dueAt, type Slas, type TaskGroup } from "../policy/tasks.ts";
 import { MAX_SYNC_ATTEMPTS } from "../queues/crm-sync.ts";
+
+/** A visit to come, by its id and its start. */
+export interface TaskVisit {
+  readonly id: string;
+  readonly starts_at: string;
+}
 
 export interface Task {
   readonly id: string;
   readonly group: TaskGroup;
-  /** Whose it is; null for an erased client, whose record is gone. */
-  readonly person: { readonly id: string; readonly name: string } | null;
+  /**
+   * Whose it is; null for an erased client, whose record is gone. The mobile is there only on a move the client has
+   * not heard of, for the call.
+   */
+  readonly person: { readonly id: string; readonly name: string; readonly mobile: string | null } | null;
+  /** The visit the dispatch board settles the task on: a move's, a job on leave's. Null for every other group. */
+  readonly visit: TaskVisit | null;
   /**
    * The one fact the group turns on: the start a visit moved to, the day and
    * window asked for (and the first fit asked for with them, or the one visit),
    * the piece's label, the fraud rule met, the technician who attended, the
    * invoice in Books, the contact in FSM, the last visit and the day its next
    * service fell due, the consultation and the window a first fit was asked
-   * for in, a payment link's state, amount and product.
+   * for in, a payment link's state, amount and product, what a disputed charge kept.
    */
   readonly detail: string | null;
   readonly since: string;
@@ -63,12 +77,24 @@ export const NUMBER_CHANGE_WAITING_SINCE = "COALESCE(nc.new_verified_at, nc.crea
 export const READ_CAP = 2000;
 
 /**
+ * The visit a task settled on the dispatch board is about, so the task links to it there: a move's visit, found by
+ * the move, and a job on leave, which is the task's own row. A move also carries its client's mobile, for the call.
+ */
+const BOARD_VISIT = `
+  LEFT JOIN dispatch_moves m ON t."group" = 'untold_move' AND m.id = t.id
+  LEFT JOIN appointments v ON v.id = COALESCE(m.appointment_id, CASE WHEN t."group" = 'leave_conflict' THEN t.id END)
+  LEFT JOIN people caller ON m.id IS NOT NULL AND caller.id = v.person_id`;
+
+/**
  * One statement's arms, each task with the member of staff ops made it theirs, and the longest wait first. The
  * owner is found by the task's group, its row's id and its episode (docs/decisions/0092-task-owners.md), so one left
  * behind by a task since done lands on no new task about the same row.
  */
-const withOwners = (arms: string) => `SELECT t.*, o.owner FROM (${arms}) t
+const withOwners = (arms: string) => `SELECT t.*, o.owner,
+       v.id AS visit_id, v.window_start AS visit_start, caller.mobile_e164 AS person_mobile
+  FROM (${arms}) t
   LEFT JOIN task_owners o ON o.task_group = t."group" AND o.subject_id = t.id AND o.episode = t.episode
+  ${BOARD_VISIT}
  ORDER BY t.since LIMIT ?2`;
 
 /**
@@ -88,18 +114,19 @@ const FIRST_FIT_EPISODE = "s.consulted_start";
  * Every queue, in three statements sent together. D1 takes at most five arms in one
  * compound SELECT, so the queues are split between statements; a batch is still
  * one round trip. A person who has been erased is left out everywhere: their
- * record is gone, and a task about them could not be done. Two things still
- * wait without them: a no-show, which still needs a ruling, and an erasure FSM
- * would not finish, which names FSM's contact and not the person.
+ * record is gone, and a task about them could not be done. Three things still
+ * wait without them: a no-show and a disputed charge, which still need a ruling,
+ * and an erasure FSM would not finish, which names FSM's contact and not the person.
  *
  * The first statement is the one that needs today's date, as `?1`: a move is
  * still to be told of while its visit is today or later. The second
  * needs the attempts after which the sweeper stops asking FSM, as `?1`. The third
  * holds the visits whose booking or closing left ops something to do, and needs
  * the moment ops look, as `?1`, and what the next visit's days make of it (`?3`
- * to `?7`, below). The fourth holds the bookings FSM refused and the one
- * visits' payments still owed, and needs nothing but READ_CAP. Each takes READ_CAP as `?2`, which bounds what one look at the
- * board can cost. The first three hold five arms each; the fourth has room.
+ * to `?7`, below). The fourth holds the bookings FSM refused, the one visits' payments still owed and the
+ * disputed no-show charges, and needs the latest a link can have been sent and be closed now, as `?1`. Each takes
+ * READ_CAP as `?2`, which bounds what one look at the board can cost. The first three hold five arms each; the fourth
+ * has room.
  *
  * A consultation asked for is read only while the client has no consultation
  * booked or done, `booked`, which the database keeps as their consultations are
@@ -220,7 +247,8 @@ const OUTSTANDING = [
      AND NOT EXISTS (SELECT 1 FROM addresses d WHERE d.person_id = a.person_id AND d.replaced_at IS NULL)
   UNION ALL
   SELECT 'partial_visit', a.id, a.person_id, pe.name,
-         COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason), v.partial_reason),
+         COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason), v.partial_reason,
+           v.close_reason),
          COALESCE(v.ended_at, a.window_end, v.updated_at), NULL, ''
     FROM visits v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
    WHERE v.outcome = 'partial' AND v.followed_up = 0 AND COALESCE(v.partial_reason, '') <> 'no_show'
@@ -265,8 +293,12 @@ const OUTSTANDING = [
   // in India. It goes once a try books it, ops link the visit they booked in FSM, or ops refund it.
   //
   // A one visit's payment link still unpaid (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): whether
-  // Razorpay sent it, what it asks for in paise, and the product, by name. It waits from the close that asked for it,
-  // and goes once Razorpay's webhook says it is paid. The index on the links still unpaid reads only those.
+  // Razorpay sent it or it has closed unpaid, what it asks for in paise, and the product, by name. It waits from the
+  // close that asked for it, and goes once Razorpay's webhook says it is paid. The index on the links still unpaid
+  // reads only those.
+  //
+  // A client's dispute of a no-show's charge, still to rule on: what the charge kept, in paise. It waits from when the
+  // client raised it. The index on the open disputes reads only those.
   withOwners(`
   SELECT 'held_booking' AS "group", h.id AS id, h.person_id AS person_id, pe.name AS person_name,
          h.type || ' ' || h.date || ' ' || h.window_label AS detail, h.fsm_held_at AS since,
@@ -275,12 +307,17 @@ const OUTSTANDING = [
    WHERE h.state = 'held' AND h.confirmed_at IS NOT NULL AND h.fsm_held_at IS NOT NULL AND pe.erased_at IS NULL
   UNION ALL
   SELECT 'payment_owed', l.id, a.person_id, pe.name,
-         CASE WHEN l.sent_at IS NULL THEN 'unsent' ELSE 'sent' END || ' ' || l.amount || ' '
-           || COALESCE(s.name, l.tier),
+         CASE WHEN l.sent_at IS NULL THEN 'unsent' WHEN l.sent_at <= ?1 THEN 'closed' ELSE 'sent' END
+           || ' ' || l.amount || ' ' || COALESCE(s.name, l.tier),
          l.created_at, NULL, ''
     FROM payment_links l JOIN appointments a ON a.id = l.appointment_id JOIN people pe ON pe.id = a.person_id
     LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = l.tier
    WHERE l.paid_at IS NULL AND pe.erased_at IS NULL
+  UNION ALL
+  SELECT 'no_show_dispute', d.id, pe.id, pe.name, CAST(n.kept_amount AS TEXT), d.created_at, NULL, ''
+    FROM no_show_disputes d JOIN no_show_cases n ON n.id = d.case_id
+    LEFT JOIN people pe ON pe.id = d.person_id AND pe.erased_at IS NULL
+   WHERE d.ruling IS NULL
 `),
 ] as const;
 
@@ -295,6 +332,9 @@ interface Row {
   due_by: string | null;
   episode: string;
   owner: string | null;
+  visit_id: string | null;
+  visit_start: string | null;
+  person_mobile: string | null;
 }
 
 /** The rules a held grant met, of which the board shows the first (src/domain/referral-grants.ts). */
@@ -357,8 +397,7 @@ export async function outstandingTasks(
         daysOn(days.first_fit_to_book),
         daysOn(days.service_cadence),
       ),
-    // Its one number is READ_CAP, which every statement takes as ?2.
-    db.prepare(OUTSTANDING[3]).bind(null, READ_CAP),
+    db.prepare(OUTSTANDING[3]).bind(closedIfSentBy(now).toISOString(), READ_CAP),
   ]);
   const truncated = answers.some((answer) => answer.results.length >= READ_CAP);
   // Each statement sorted its own rows; the board wants one list, so they are merged on the same column.
@@ -374,18 +413,68 @@ function dueOf(row: Row, since: string, sla: Slas): Date {
   return visit < allowed ? visit : allowed;
 }
 
+function personOf(row: Row): Task["person"] {
+  if (row.person_id === null || row.person_name === null) return null;
+  return { id: row.person_id, name: row.person_name, mobile: row.person_mobile };
+}
+
+function visitOf(row: Row): TaskVisit | null {
+  if (row.visit_id === null || row.visit_start === null) return null;
+  return { id: row.visit_id, starts_at: row.visit_start };
+}
+
 function taskOf(row: Row, sla: Slas): Task {
   const since = instantOf(row.since);
   return {
     id: row.id,
     group: row.group,
-    person: row.person_id === null || row.person_name === null ? null : { id: row.person_id, name: row.person_name },
+    person: personOf(row),
+    visit: visitOf(row),
     detail: detailOf(row),
     since,
     due: dueOf(row, since, sla).toISOString(),
     episode: row.episode,
     owner: row.owner,
   };
+}
+
+/** The record each group's task is read from, which its id names and which says where the task is. */
+const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
+  untold_move: "move",
+  held_booking: "hold",
+  leave_conflict: "visit",
+  address_to_confirm: "visit",
+  consultation_request: "consultation_request",
+  first_fit_to_book: "first_fit_request",
+  replacement_order: "piece",
+  at_risk_client: "visit",
+  partial_visit: "visit",
+  referral_review: "referral",
+  no_show_decision: "no_show",
+  no_show_dispute: "dispute",
+  number_change: "number_change",
+  erasure_request: "deletion_request",
+  grievance: "grievance",
+  draft_invoice: "visit",
+  payment_owed: "payment_link",
+  erasure_unfinished: "client",
+};
+
+const recordOf = (task: Task): PlacedId => ({ kind: TASK_RECORDS[task.group], id: task.id });
+
+/**
+ * The tasks within reach: each group's where the caller's grants in the department that decides it reach its record's
+ * city. A city is looked up only for a task whose group is not reached everywhere.
+ */
+export async function tasksWithin(
+  db: D1Database,
+  tasks: readonly Task[],
+  reachOf: (group: TaskGroup) => PlacesReached,
+): Promise<Task[]> {
+  const toPlace = tasks.filter((task) => reachOf(task.group).kind !== "everywhere");
+  if (toPlace.length === 0) return [...tasks];
+  const cityOf = await citiesOf(db, toPlace.map(recordOf));
+  return tasks.filter((task) => reachesCity(reachOf(task.group), cityOf(recordOf(task))));
 }
 
 /** How many have waited past their day. The console reads the same day, so both agree. */

@@ -38,7 +38,7 @@ import { invoiceHold, type InvoiceHold, type SoldVisit } from "../policy/prepaym
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmInvoice, FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { codeOff, listPrice, soldVisit } from "./books-invoices.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 
@@ -265,7 +265,7 @@ async function tellFailure(pass: Pass, visit: Visit, error: unknown): Promise<vo
   });
 }
 
-const linkTo = (visit: Visit): string => (visit.person_id === null ? "/tasks" : `/clients/${visit.person_id}`);
+const linkTo = (visit: Visit): string => (visit.person_id === null ? "/tasks" : paymentsTab(visit.person_id));
 
 async function checkLater(pass: Pass, appointmentId: string): Promise<void> {
   await pass.db

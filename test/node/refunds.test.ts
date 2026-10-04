@@ -12,8 +12,10 @@ function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[])
   const notAsked = () => Promise.reject(new Error("not asked"));
   const payments: PaymentsProvider = {
     createOrder: notAsked,
+    orderPayments: notAsked,
     createPaymentLink: notAsked,
     findPaymentLink: notAsked,
+    cancelPaymentLink: notAsked,
     refund: (_paymentId, refund) => {
       asked.push(refund.receipt);
       const answer = answers[asked.length - 1];
@@ -55,6 +57,20 @@ describe("askRefund", () => {
     const refusedAfter = razorpay("silent", "refused", "made");
     expect(await askRefund(refusedAfter.payments, "pay_1", ASKED)).toMatchObject({ kind: "unanswered" });
     expect(refusedAfter.asked).toHaveLength(2);
+  });
+
+  it("takes no refusal as one for a refund asked before, which may have been made then", async () => {
+    const refused = razorpay("refused", "refused", "made");
+    expect(await askRefund(refused.payments, "pay_1", ASKED, { askedBefore: true })).toMatchObject({
+      kind: "unanswered",
+    });
+    expect(refused.asked).toHaveLength(2);
+
+    const madeBefore = razorpay("made before");
+    expect(await askRefund(madeBefore.payments, "pay_1", ASKED, { askedBefore: true })).toEqual({
+      kind: "refunded",
+      refundId: null,
+    });
   });
 });
 

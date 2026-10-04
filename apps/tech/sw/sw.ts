@@ -5,11 +5,11 @@
 //                 phone in a basement can close the app, reopen it, and still see
 //                 the day (docs/open-points.md, item 133);
 //   today's jobs  the one answer to GET /api/tech/jobs?date=<today in India>,
-//                 which carries a time, a type, a badge and an area — no client,
-//                 no address, no number.
+//                 which carries a time, a type, a badge, an area and the name of
+//                 each unlocked job's client — no address, no number.
 //
-// Nothing else is cached: not a job's card, which carries the client's name,
-// mobile and address; not GET /tech/me; not a piece; and no photograph, going
+// Nothing else is cached: not a job's card, which carries the client's mobile
+// and address; not GET /tech/me; not a piece; and no photograph, going
 // up or coming down. The app deletes the day cache when the session ends or ops
 // revoke the phone (apps/tech/src/store/db.ts).
 //

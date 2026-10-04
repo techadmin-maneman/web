@@ -49,6 +49,8 @@ const ME = {
     window: "morning",
     window_label: "before noon",
     place: "Sector 65, Gurgaon 122018",
+    requested: false,
+    one_visit: false,
   },
   next_visit: null,
   credits: null,
@@ -735,6 +737,7 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
     kept: 0,
     destination: "upi",
     cancelled: false,
+    refund_pending: false,
   };
   const api = (notice: "free" | "late"): Api => ({
     "/api/me": json(ME_BOOKING),

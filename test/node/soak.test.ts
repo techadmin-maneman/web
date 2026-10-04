@@ -1,10 +1,18 @@
 // The canary's soak judged on real visitors' requests, not only the smoke's
 // (scripts/soak.ts): Workers analytics counts each version's invocations and
-// the ones that errored, and Workers Logs sums what each route read from D1.
+// the ones that errored, and Workers Logs sums what each route read from D1
+// and how long Home and a job card took.
 
 import { describe, expect, it } from "vitest";
 import { OTHER_ROUTE_ROWS_READ, ROUTE_ROWS_READ } from "../../scripts/lib/free-tier-budget.ts";
-import { judgeRouteReads, judgeSoak, readInvocations, readRouteReads } from "../../scripts/lib/soak.ts";
+import {
+  judgeRouteLatency,
+  judgeRouteReads,
+  judgeSoak,
+  readInvocations,
+  readRouteReads,
+  ROUTE_P95_MS,
+} from "../../scripts/lib/soak.ts";
 
 const NEW = "22222222-2222-4222-8222-222222222222";
 const OLD = "11111111-1111-4111-8111-111111111111";
@@ -108,6 +116,32 @@ describe("what each route read from D1 while the new version served", () => {
     expect(judgeRouteReads({ "/api/waitlist": { requests: 3, rowsRead: 3 * 9_000 } }).outcome).toBe("not judged");
   });
 
+  // PLAT-15: Home and a job's card each waited on about 17 D1 round trips in turn, 1.6 to 2.1 s, before their reads
+  // went together.
+  it("passes Home and a job's card within their budgets at p95, and judges no other route on time", () => {
+    const verdict = judgeRouteLatency({
+      "/api/me": { requests: 200, p95Ms: 520 },
+      "/api/tech/jobs/:id": { requests: 40, p95Ms: 760 },
+      "/api/dispatch": { requests: 60, p95Ms: 4_000 },
+    });
+    expect(verdict).toEqual({
+      outcome: "passed",
+      detail: "/api/me took 520 ms at p95; /api/tech/jobs/:id took 760 ms at p95",
+    });
+  });
+
+  it("fails Home once it is as slow as when each read waited for the one before", () => {
+    const verdict = judgeRouteLatency({ "/api/me": { requests: 200, p95Ms: 2_121 } });
+    expect(verdict).toEqual({
+      outcome: "failed",
+      detail: `/api/me took 2121 ms at p95, past its ${String(ROUTE_P95_MS["/api/me"])}`,
+    });
+  });
+
+  it("does not judge time on too few requests", () => {
+    expect(judgeRouteLatency({ "/api/me": { requests: 5, p95Ms: 3_000 } }).outcome).toBe("not judged");
+  });
+
   const readRoutes = (doFetch: typeof fetch) =>
     readRouteReads({
       token: "t",
@@ -127,7 +161,7 @@ describe("what each route read from D1 while the new version served", () => {
     groups: [{ key: "route", value: route }],
   });
 
-  it("asks Workers Logs for the new version's request lines, counted and summed by route", async () => {
+  it("asks Workers Logs for the new version's request lines by route: counted, rows summed, time at p95", async () => {
     const seen: unknown[] = [];
     const calculations = [
       { alias: "requests", calculation: "count", aggregates: [byRoute("/api/dispatch", 60), byRoute("/api/me", 200)] },
@@ -136,6 +170,7 @@ describe("what each route read from D1 while the new version served", () => {
         calculation: "sum",
         aggregates: [byRoute("/api/dispatch", 28_800), byRoute("/api/me", 7_000)],
       },
+      { alias: "p95_ms", calculation: "p95", aggregates: [byRoute("/api/dispatch", 900), byRoute("/api/me", 480)] },
     ];
     const body = { success: true, errors: [], result: { calculations } };
 
@@ -143,14 +178,15 @@ describe("what each route read from D1 while the new version served", () => {
 
     expect(reading).toEqual({
       byRoute: {
-        "/api/dispatch": { requests: 60, rowsRead: 28_800 },
-        "/api/me": { requests: 200, rowsRead: 7_000 },
+        "/api/dispatch": { requests: 60, rowsRead: 28_800, p95Ms: 900 },
+        "/api/me": { requests: 200, rowsRead: 7_000, p95Ms: 480 },
       },
     });
     const asked = JSON.stringify(seen[0]);
     expect(asked).toContain('"value":"mm-api-production"');
     expect(asked).toContain(`"key":"$workers.scriptVersion.id","operation":"eq","type":"string","value":"${NEW}"`);
     expect(asked).toContain('"key":"d1_rows_read"');
+    expect(asked).toContain('{"operator":"p95","key":"duration_ms"');
   });
 
   it("says why when the token may not query Workers Logs, rather than failing the release", async () => {

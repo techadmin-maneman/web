@@ -1,12 +1,21 @@
 // The Staff list on every ops call. Each route asks for a department at a level (src/policy/console-routes.ts); the
-// caller's grants answer it (src/policy/access.ts). While the list is not enforced nothing is refused, and what would
-// have been is logged under the call's request ID, which its audit entry shares.
+// caller's grants answer it (src/policy/access.ts). While the list is not enforced nothing is refused or narrowed, and
+// what would have been refused is logged under the call's request ID, which its audit entry shares.
 
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { routePath } from "hono/route";
-import { callerAccessOf, type CallerAccess } from "../domain/staff.ts";
-import { meetsNeed, needOf, SIGNED_IN, type RouteNeed } from "../policy/console-routes.ts";
+import { cityOf, type PlacedRecord } from "../domain/places.ts";
+import { callerAccessOf } from "../domain/staff.ts";
+import {
+  placesReached,
+  reachesCity,
+  type CallerAccess,
+  type Department,
+  type Level,
+  type PlacesReached,
+} from "../policy/access.ts";
+import { meetsNeed, needOf, OWN_DEPARTMENTS, SIGNED_IN, type RouteNeed } from "../policy/console-routes.ts";
 import type { AppEnv } from "./context.ts";
 import { errorBody } from "./errors.ts";
 
@@ -55,4 +64,49 @@ export const requireStaffAccess = createMiddleware<AppEnv>(async (c, next) => {
 export async function permits(c: Context<AppEnv>, need: RouteNeed): Promise<boolean> {
   const access = await callerAccess(c);
   return goesAhead(c, access, meets(access, need), askedOf(need));
+}
+
+/**
+ * The places this route's work reaches for the caller: everywhere, or the cities their grants name in the route's
+ * department at the route's level. For a route that keeps to the caller's own places (`ownPlaces`).
+ */
+export async function routeReach(c: Context<AppEnv>): Promise<PlacesReached> {
+  const need = needOf(c.req.method, routePath(c, -1));
+  if (need === undefined || need === SIGNED_IN || need.department === OWN_DEPARTMENTS) {
+    throw new Error("only a route of one department keeps to the caller's places");
+  }
+  return reachOf(c, need.department, need.level);
+}
+
+/** The places the caller's work in a department reaches at a level, where the route's own line does not say. */
+export async function reachOf(c: Context<AppEnv>, department: Department, level: Level): Promise<PlacesReached> {
+  return placesReached(await callerAccess(c), department, level);
+}
+
+/** Whether a record is within the places reached. One with no city is reached only everywhere. */
+async function recordWithin(
+  c: Context<AppEnv>,
+  reached: PlacesReached,
+  kind: PlacedRecord,
+  id: string,
+): Promise<boolean> {
+  if (reached.kind === "everywhere") return true;
+  return reachesCity(reached, await cityOf(c.env.DB, kind, id));
+}
+
+/** Whether a record is within this route's reach for the caller. */
+export async function withinRouteReach(c: Context<AppEnv>, kind: PlacedRecord, id: string): Promise<boolean> {
+  return recordWithin(c, await routeReach(c), kind, id);
+}
+
+/**
+ * As `permits`, for a choice on one record, as waiving a no-show's charge is: the caller's grants must reach what it
+ * asks in the record's city.
+ */
+export async function permitsOn(c: Context<AppEnv>, need: RouteNeed, kind: PlacedRecord, id: string): Promise<boolean> {
+  if (need.department === OWN_DEPARTMENTS) throw new Error("a choice on one record asks one department");
+  const access = await callerAccess(c);
+  const reached = placesReached(access, need.department, need.level);
+  const allowed = meets(access, need) && (await recordWithin(c, reached, kind, id));
+  return goesAhead(c, access, allowed, askedOf(need));
 }

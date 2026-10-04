@@ -3,8 +3,8 @@
 //   POST   /api/holds/:id/discount-code   { code }: the code comes off the hold's price before GST
 //   DELETE /api/holds/:id/discount-code   the code comes off again, and the hold is back at its price
 //
-// Only while the hold's price is open: before Checkout has its order, so the order is made for what is left. A code
-// that does not apply is answered code_not_applicable and nothing more, whatever the reason, which is logged; every
+// Only while the hold's price is open: while nothing is paid, so Checkout's order is made for what is left; an order
+// Checkout was closed on unpaid is let go, and the next Pay makes another. A code that does not apply is answered code_not_applicable and nothing more, whatever the reason, which is logged; every
 // check is counted against the client and their address (src/http/code-checks.ts). Behind the session and
 // self-serve booking, as every hold route is (src/routes/client-booking.ts).
 
@@ -27,21 +27,22 @@ const DiscountCodeEntrySchema = z
   .openapi("DiscountCodeEntry");
 
 const settled = errorResponse(
-  "hold_expired: the hold ran out; price_settled: Checkout has its order, or it is paid for; ops_assisted",
+  "hold_expired: the hold ran out; price_settled: it is paid for, or a payment on Checkout's order is under way; " +
+    "ops_assisted",
 );
 
 const enterRoute = createRoute({
   method: "post",
   path: "/api/holds/{id}/discount-code",
-  summary: "Take a discount code off the hold's price, before Checkout has its order",
+  summary: "Take a discount code off the hold's price, while nothing is paid for it",
   request: { params: holdId, body: { required: true, ...json(DiscountCodeEntrySchema) } },
   responses: {
     200: { description: "The hold, priced with the code taken off", ...json(HoldSchema) },
     401: errorResponse("session_required"),
     404: errorResponse("not_found"),
     409: errorResponse(
-      "already_discounted: the hold carries a code; hold_expired; price_settled: Checkout has its order, or it is " +
-        "paid for; ops_assisted",
+      "already_discounted: the hold carries a code; hold_expired; price_settled: it is paid for, or a payment on " +
+        "Checkout's order is under way; ops_assisted",
     ),
     422: errorResponse("code_not_applicable: the code does not apply to this booking"),
     429: errorResponse("rate_limited: too many codes tried today, or from this address this hour"),
@@ -51,7 +52,7 @@ const enterRoute = createRoute({
 const removeRoute = createRoute({
   method: "delete",
   path: "/api/holds/{id}/discount-code",
-  summary: "Take the code off the hold again, before Checkout has its order",
+  summary: "Take the code off the hold again, while nothing is paid for it",
   request: { params: holdId },
   responses: {
     200: { description: "The hold, at its price again", ...json(HoldSchema) },
@@ -86,7 +87,8 @@ export function registerClientDiscountCodes(app: App): void {
     if (!(await mayCheckCode(c, personId))) return c.json(errorBody("rate_limited", requestId), 429);
     const { id } = c.req.valid("param");
     const now = deps.now();
-    const entered = await enterOnHold(c.env.DB, { holdId: id, personId, text: c.req.valid("json").code }, now);
+    const entry = { holdId: id, personId, text: c.req.valid("json").code };
+    const entered = await enterOnHold(c.env.DB, deps.payments, entry, now);
     if (entered.kind === "not_applicable") log.info("discount_code_refused", { hold_id: id, reason: entered.reason });
     const refused = refusalOf(entered);
     if (refused !== null) return c.json(errorBody(refused.code, requestId), refused.status);
@@ -101,7 +103,8 @@ export function registerClientDiscountCodes(app: App): void {
     const { requestId, deps } = c.var;
     const { id } = c.req.valid("param");
     const now = deps.now();
-    const refused = removalRefusalOf(await removeFromHold(c.env.DB, { holdId: id, personId }, now));
+    const removed = await removeFromHold(c.env.DB, deps.payments, { holdId: id, personId }, now);
+    const refused = removalRefusalOf(removed);
     if (refused !== null) return c.json(errorBody(refused.code, requestId), refused.status);
     const held = await clientHold(c.env.DB, id, personId, now);
     if (held === null) return c.json(errorBody("not_found", requestId), 404);

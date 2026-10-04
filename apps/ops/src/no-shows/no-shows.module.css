@@ -28,6 +28,49 @@
 
 /* ---- The day's money, and the charges beneath it --------------------------- */
 
+/* The day the figures are for, and the field that asks for another, across from it. */
+.dayHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-16) var(--sp-20) 0;
+}
+
+.dayTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-18);
+}
+
+.dayLabel {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.dayField {
+  display: block;
+  width: var(--ops-date);
+  height: var(--tap);
+  margin-top: var(--sp-6);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-variant-numeric: tabular-nums;
+}
+
+.dayField:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
 /* Each figure stands on the top line, whatever its own name runs to. */
 .figures {
   display: flex;
@@ -122,12 +165,12 @@
   color: var(--text-muted);
 }
 
-/* Between the cards, where the board draws its disputed charge, as its own captions read. */
-.caption {
-  margin: 0;
+/* A ruling of the day, and when it was made, where a charge's amount stands above. */
+.ruling {
   font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--text-soft);
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 /* ---- One case, with its three facts --------------------------------------- */
@@ -215,6 +258,13 @@
   line-height: var(--lh-160);
 }
 
+.confirmNote {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-150);
+  color: var(--text-muted);
+}
+
 .facts {
   margin: var(--sp-14) 0 0;
   border-top: var(--hairline) solid var(--paper-line);
@@ -248,6 +298,13 @@
   color: var(--error-on-paper);
 }
 
+/* A case closed before the booked start's wait had run: it argues for the client, in the ink kept for that. */
+.closedEarly {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
 .actions {
   display: flex;
   gap: var(--sp-10);
@@ -260,12 +317,7 @@
   color: var(--error-on-paper);
 }
 
-/* ---- A disputed charge, board D1's second card ---------------------------- */
-
-.dispute {
-  padding: var(--sp-22);
-  border: var(--hairline) solid var(--paper-line);
-}
+/* ---- A disputed charge, board D1's second card, one a row of its queue ------ */
 
 .disputeLabel {
   margin: 0;

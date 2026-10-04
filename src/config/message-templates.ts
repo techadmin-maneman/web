@@ -20,6 +20,9 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Paid {{6}}, reference {{7}}. The receipt is in the app.",
   visit_booked_credit_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. One of your free service visits covers it.",
+  // The receipt for a one visit paid by its link once the client is fitted: {{2}} the hair system.
+  link_paid_v1:
+    "Hello {{1}}, thank you for your payment of {{6}} for your {{2}}, reference {{7}}. Welcome to Mane Man. The receipt is in the app.",
   // A visit a discount code made free: booked with nothing to pay.
   visit_booked_code_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Your discount code covers it, so there is nothing to pay.",
@@ -94,9 +97,13 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, we could not give the service visits for {{2}}'s first fit. Message us if you would like to know why.",
   referral_rejected_friend_v1:
     "Hello {{1}}, we could not give the service visits from your invite. Message us if you would like to know why.",
+  // A month, then a week, before free service visits run out: {{2}} how many end that day, {{3}} their last day.
+  credits_expiring_v1:
+    "Hello {{1}}, you have {{2}} free to book by {{3}}. A visit booked by then is covered, even one on a later date. Book in the Mane Man app.",
   visit_cancelled_refund_v1:
     "Hello {{1}}, your {{2}} on {{3}} is cancelled. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
-  // A booking FSM would not take, which ops refunded or let go, with a visit's params.
+  // A booking given back, with a visit's params: one FSM would not take, which ops refunded or let go, one paid after
+  // its hold lapsed, or a move whose visit had begun.
   booking_refunded_v1:
     "Hello {{1}}, we could not book your {{2}} on {{3}}. {{6}} is on its way back to your {{8}}, in 5 to 7 working days. You can book another time in the Mane Man app.",
   booking_not_made_v1:
@@ -114,6 +121,9 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, this number was just used to book on our site. As a Mane Man client, you book your next visit in the Mane Man app. Sign in with this number.",
   address_on_account_v1:
     "Hello {{1}}, we will come to the address already on your account, not the one typed on our site. You can change it in the Mane Man app.",
+  // {{2}} the pincode of the address on the account.
+  address_not_served_v1:
+    "Hello {{1}}, this number was just used to book on our site. The address on your account is at pincode {{2}}, which we do not cover yet, so nothing was booked. If you have moved, change your address in the Mane Man app and book there.",
   // Ops' decision on a client's request to delete their account. {{2}} is ops' reason, which they write knowing the
   // client reads it.
   deletion_rejected_v1:
@@ -155,6 +165,7 @@ export function renderWithStopLink(name: string, params: readonly string[], stop
 export const STOP_LINKS: Readonly<Partial<Record<MessageKind, MessagePurpose>>> = {
   visit_reminder: "whatsapp_visits",
   next_service_reminder: "whatsapp_visits",
+  credits_expiring: "whatsapp_visits",
   launch_alert: "whatsapp_launches",
 };
 
@@ -190,23 +201,27 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   consultation_confirmation: "answering", // the booking they just made
   payment_receipt: "answering",
   nothing_to_pay: "automatic", // the technician's close of a one visit, not the client's own action
+  link_paid: "answering", // the client's own payment
   reschedule_confirmation: "answering", // the client's own move
   cancel_confirmation: "answering", // the client's own cancel
+  visit_cancelled: "automatic", // ops cancelled it, in the console
   waitlist_confirmation: "answering", // their own place on the list, just joined
   visit_reminder: "automatic", // the day-before cron
   visit_moved: "automatic", // ops moved it, on the dispatch board
   arrival_notice: "automatic", // the technician's own action, not the client's
   no_show_decided: "automatic", // ops ruled on it
   no_show_dispute_ruled: "automatic", // ops ruled on the client's dispute
-  booking_refunded: "automatic", // ops refunded a booking that could not be made
+  booking_refunded: "automatic", // a booking given back, by ops or by itself
   next_service_reminder: "automatic", // scheduled
   friend_fitted: "automatic", // to the referrer, for the friend's action
   friend_credited: "automatic", // to the friend, for the job ops closed
   referral_rejected: "automatic", // ops' ruling
+  credits_expiring: "automatic", // scheduled
   launch_alert: "automatic", // scheduled, to someone who asked earlier
   consultation_exists: "answering", // the site's booking form, just sent for this number
   book_in_app: "answering",
   address_on_account: "answering",
+  address_not_served: "answering",
   deletion_rejected: "automatic", // ops' ruling
   messages_stopped: "answering", // their own STOP reply
 };

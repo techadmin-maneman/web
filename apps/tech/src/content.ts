@@ -4,8 +4,9 @@
 // PLACEHOLDER, pending the owner's wording.
 
 import type { Moved } from "@maneman/web-kit/api";
+import { shortDate } from "@maneman/web-kit/dates";
 import type { FitSpec, History } from "./api.ts";
-import { clock, dayMonth, todayInIndia } from "./lib/when.ts";
+import { clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
 
 export const signIn = {
   title: "Technician sign in",
@@ -64,6 +65,9 @@ export const today = {
 
 /** "1 photo set", "3 actions": a count and the word for it. */
 const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
+
+/** "top", "top and left", "top, left and hair". */
+const listed = (words: readonly string[]) => new Intl.ListFormat("en-IN", { type: "conjunction" }).format(words);
 
 /**
  * Signing out wipes the phone, so it asks first when there is work on it that
@@ -128,15 +132,16 @@ export const queue = {
   title: "Waiting to reach us",
   nothing: "Everything has reached us.",
   events: (count: number) => `${String(count)} ${count === 1 ? "action" : "actions"} waiting`,
-  read: "Got it",
   // PLACEHOLDER: the board draws no step the API refused, and no way to put one right.
   correct: "Correct it",
+  retake: "Retake photos",
   back: "Back",
   // PLACEHOLDER: the board draws the sets, not how long they have been waiting.
   since: (time: string) => `Waiting since ${time}`,
-  // PLACEHOLDER: the board draws no deletion. "Got it" lets go of work, so it asks first.
+  // PLACEHOLDER: the board draws no deletion. It lets go of work, so it asks first.
   forget: {
-    title: "Delete what this job holds?",
+    open: "Delete this job's work",
+    title: "Delete this job's work?",
     what: (photos: number, actions: number) => {
       const held: string[] = [];
       if (photos > 0) held.push(counted(photos, "photograph", "photographs"));
@@ -156,17 +161,19 @@ export const queue = {
  * (docs/api-tech.md). A field is named in preference to the code.
  */
 export const stopped: Readonly<Record<string, string>> = {
-  // PLACEHOLDER: the 409 names the fields that moved and never their values; a card fetched afterwards gives the new
-  // time (apps/tech/src/job/JobScreen.tsx), and a job given to another technician is named by movedTo below.
+  // PLACEHOLDER: the 409 names the fields that moved and never their values. The new time, once the card read again
+  // carries it, and whom a job went to are named by whatStopped below.
   superseded: "This job changed while the phone was offline.",
   technician: "This job is someone else's now.",
   time: "Ops moved this job to another time.",
   status: "This job was cancelled while the phone was offline.",
   out_of_order: "A step reached us before the one ahead of it.",
   not_today: "This job is on another day. Arrive and start it on the day.",
+  too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
   already_started: "This job was started, so it cannot close as a no-show.",
   photo_rejected: "The photographs would not upload.",
   not_found: "This job is no longer on your list, so what it holds cannot reach us.",
+  already_closed: "This job is closed, so what it holds cannot reach us.",
   piece_code: "The piece's label was not accepted.",
   old_piece: "The label of the piece that came off was not accepted.",
   // PLACEHOLDER: a one visit's product, no longer offered when the step reached us (ADR 0105).
@@ -192,25 +199,51 @@ function movedTo(moved: Moved, now: Date): string {
   return `Ops moved this job to ${moved.technician} on ${dayMonth(day)} at ${time}.`;
 }
 
+/** "6 pm today", "9 am tomorrow", "9 am on Mon 5 Oct". */
+function timeAndDay(isoInstant: string, now: Date): string {
+  const time = clock(isoInstant);
+  const date = todayInIndia(new Date(isoInstant));
+  const today = todayInIndia(now);
+  if (date === today) return `${time} today`;
+  if (date === dayAfter(today)) return `${time} tomorrow`;
+  return `${time} on ${shortDate(date)}`;
+}
+
+interface Why {
+  readonly note: string | null;
+  readonly fields: readonly string[];
+  readonly moved?: Moved | null;
+  /** The job's start as the phone held it when the stopped write was queued. */
+  readonly startsAt?: string | null;
+}
+
+/** Whether the card the phone now holds starts at another time than the stopped write was sent with. */
+function startMoved(why: Why, startsNow: string | null): startsNow is string {
+  const startsAt = why.startsAt ?? null;
+  return startsAt !== null && startsNow !== null && startsAt !== startsNow;
+}
+
 /**
  * What stopped a job's queue, in the app's words: the fields named if the API
  * named any, else the code. A job the API says went to another technician names
- * them; a cancellation is named first among the fields.
+ * them; a job moved to another time names the new one once `startsNow`, the
+ * start on the card the phone holds, differs; a cancellation is named first.
  */
-export function whatStopped(
-  why: { readonly note: string | null; readonly fields: readonly string[]; readonly moved?: Moved | null },
-  now: Date = new Date(),
-): string {
+export function whatStopped(why: Why, now: Date = new Date(), startsNow: string | null = null): string {
   const field = why.fields.find((each) => stopped[each] !== undefined);
   const moved = why.moved ?? null;
   if (field === "technician" && moved !== null) return movedTo(moved, now);
+  // PLACEHOLDER: the prompt words a move to another technician; this one, to another time, is ours.
+  if (field === "time" && startMoved(why, startsNow)) return `Ops moved this job to ${timeAndDay(startsNow, now)}.`;
   return stopped[field ?? why.note ?? ""] ?? stopped.unknown ?? "";
 }
 
 /** The banner above every screen while a job's queue is stopped. */
 export const changed = {
   // PLACEHOLDER: the board draws what changed on the queue alone.
-  line: (who: string, what: string) => `${who} · ${what}`,
+  line: (job: string, what: string) => `${job}: ${what}`,
+  // PLACEHOLDER: a job the phone holds nothing of, not even its time.
+  someJob: "A job",
   open: "See what is waiting",
 } as const;
 
@@ -221,6 +254,12 @@ export const titles = {
   closeOut: "Closed out",
   of: (screen: string) => `${screen} · Mane Man technician`,
 } as const;
+
+/** When a locked card opens. One that opened while the screen was up says to open the job again. */
+function opensAt(unlocksAt: string, now: Date = new Date()): string {
+  if (Date.parse(unlocksAt) > now.getTime()) return `Opens at ${timeAndDay(unlocksAt, now)}.`;
+  return `Open since ${timeAndDay(unlocksAt, now)}. Go back and open the job again.`;
+}
 
 export const job = {
   back: "Back",
@@ -249,19 +288,22 @@ export const job = {
   // PLACEHOLDER: the board draws what changed on the queue alone (board A2).
   changed: {
     title: "This job changed",
-    movedTo: (time: string) => `Ops moved this job to ${time}.`,
     body: "Nothing more of it can be sent from this phone. Waiting to reach us says what it still holds.",
   },
   locked: {
     title: "Not yet",
-    body: "The address and the client's card open the day before.",
+    // PLACEHOLDER: the board draws no locked card. The hour is the API's unlocks_at.
+    opens: opensAt,
   },
+  // PLACEHOLDER: the board draws the profile's rows inside the piece card; they are a section of their own.
+  profileTitle: "Hair profile",
   piece: {
     title: "The piece",
     // PLACEHOLDER: the board's piece card reads tier, colour, adhesive, template and scalp, which nothing records.
-    // PLACEHOLDER: the board draws no "Hair system" row; on a first fit it is the one the client was sold.
+    // PLACEHOLDER: the board draws no "Paid for" row, nor a warning when the hair profile names another product.
+    mismatch: (inProfile: string) => `The hair profile says ${inProfile}. Check with ops before you fit.`,
     rows: {
-      sold: "Hair system",
+      paidFor: "Paid for",
       piece: "Piece",
       base: "Base",
       lot: "Supplier lot",
@@ -284,6 +326,8 @@ export const notHome = {
     step: "1 · Arrived",
     body: "Tap at the door. We record the time and check you are within 200 m.",
     action: "I have arrived",
+    // PLACEHOLDER: the board draws no check-in before its time.
+    opensAt: (time: string) => `Check-in opens at ${time}.`,
     // PLACEHOLDER: the board draws no screen for a phone that will not give its position.
     noPosition: "This phone will not give its position. Check its permissions, then tap again.",
   },
@@ -298,6 +342,8 @@ export const notHome = {
   waiting: {
     step: "2 · Waiting",
     left: (minutes: number) => `left of ${String(minutes)} minutes`,
+    // PLACEHOLDER: the board draws no arrival before the booked start.
+    fromStart: (time: string) => `The wait starts at ${time}, the booked start.`,
     // PLACEHOLDER: the board draws the wait running, not the moment it ends.
     over: "The wait is over.",
     // PLACEHOLDER: the board draws the check running, not one waiting for signal. The API counts the wait from when
@@ -343,6 +389,12 @@ export const capture = {
   missed: "That photograph did not keep. Capture it again.",
   done: "All five are on the phone. They go up when there is signal.",
   finish: "Done",
+  // PLACEHOLDER: the board draws no set the API refused.
+  refusedPhotos: (angles: readonly string[]) =>
+    angles.length === 1
+      ? `The ${listed(angles)} photograph would not upload. Take it again.`
+      : `The ${listed(angles)} photographs would not upload. Take them again.`,
+  refusedSet: "We could not record this set. Tap Done to send it again.",
 } as const;
 
 /** The six in-job steps (board B), and the hair profile no board draws, in the order the API runs them. */
@@ -434,6 +486,8 @@ export const closeOut = {
   label: "Closed out",
   who: (name: string, outcome: string) => `${name} · ${outcome}`,
   outcomes: { done: "done", partial: "partial", no_show: "no-show" },
+  // PLACEHOLDER: no board draws a consultation and fit in one visit closed as done once the client declined.
+  freeConsultation: "free consultation",
   duration: "Duration",
   // PLACEHOLDER: the board writes "1 h 22 m"; the phone times it from Start job (open point 60).
   length: (hours: number, minutes: number) =>
@@ -473,8 +527,8 @@ export const badges = {
 /**
  * PLACEHOLDER: no board draws a consultation and fit in one visit
  * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). The client chooses the product with the technician
- * at the piece step, or decides against it; closing the visit as done then texts them a payment link, or ends it as
- * a consultation. Never an amount.
+ * at the piece step, before the checklist, or decides against it; closing the visit as done then texts them a payment
+ * link, or ends it as a free consultation. Never an amount.
  */
 export const oneVisit = {
   name: "Consultation and fit",
@@ -485,9 +539,16 @@ export const oneVisit = {
   // PLACEHOLDER: ops offer no hair system for the visit's day, so there is nothing to choose from.
   noProducts: "No hair system is offered for this visit. Speak to ops before you fit anything.",
   chooseFirst: "Choose the hair system, or that the client decided against it",
-  declinedNote: "Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay.",
+  declinedNote: "Nothing is fitted. The visit ends as a free consultation.",
+  /** Closing as done, once the client decided against the fit. */
+  endsAsConsultation: "Ends as a free consultation. Nothing to pay.",
+  /** Closing as done, once the client chose a hair system: by its name in the console. */
+  linkFor: (product: string) => `Closing texts the client a payment link for ${product}.`,
+  /** A product the card no longer names, for linkFor. */
+  chosenProduct: "the hair system they chose",
+  /** Closing as done on a phone that does not know the client's choice, from a card kept by an earlier build. */
   closeNote:
-    "Closing as done texts the client a payment link for the product they chose. If they decided against it, the visit ends as a consultation.",
+    "Closing texts the client a payment link for their hair system, or ends a declined visit as a free consultation.",
   payment: "Payment",
   linkSent: "Link texted to the client",
   linkPaid: "Paid",
@@ -582,9 +643,9 @@ export const profile = {
     year: "The transplant's year",
     skin: "Skin conditions and allergies",
   },
-  // The piece card's rows from the profile: the board's Tier, Colour, Adhesive and Scalp, and the base's size.
+  // The card's rows from the profile: the board's Tier, as the hair system, Colour, Adhesive and Scalp, and the base's size.
   card: {
-    tier: "Tier",
+    tier: "Hair system",
     baseSize: "Base size",
     colour: "Colour",
     adhesive: "Adhesive",

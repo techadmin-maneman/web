@@ -17,8 +17,8 @@ import { cancelVisit, changeableVisit, changeTerms, termsInForce, type ChangeTer
 import { opsInputs } from "../http/ops-inputs.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { queueMessage } from "../http/queue-message.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 import { BookingSchema, moveTermsFor, PriceSchema, startCheckout } from "./client-booking.ts";
 
 const NoticeSchema = z.enum(["free", "late"]).openapi({
@@ -72,6 +72,10 @@ const CancelTermsSchema = z
     kept: z.number().int().openapi({ description: "In paise: what is kept as a charge." }),
     destination: z.union([z.string(), z.null()]).openapi({ description: "The payment's method: upi, card and so on." }),
     cancelled: z.boolean().openapi({ description: "false: the terms only; true: the visit is cancelled." }),
+    refund_pending: z.boolean().openapi({
+      description:
+        "true: the visit is cancelled, and its refund is still to be asked of Razorpay, which happens within minutes.",
+    }),
   })
   .strict()
   .openapi("CancelTerms");
@@ -134,11 +138,15 @@ const cancelRoute = createRoute({
       description: "The terms, or the cancelled visit",
       content: { "application/json": { schema: CancelTermsSchema } },
     },
+    202: {
+      description: "The visit is cancelled, and its refund is on its way",
+      content: { "application/json": { schema: CancelTermsSchema } },
+    },
     401: errorResponse("session_required"),
     409: errorResponse(
       "not_changeable; terms_changed: the notice is not the one shown, so show the terms again; or ops_assisted",
     ),
-    503: errorResponse("unavailable: FSM did not answer; nothing changed"),
+    503: errorResponse("unavailable: the visit could not be cancelled just now; nothing changed"),
   },
 });
 
@@ -180,13 +188,12 @@ export function registerClientChanges(app: App): void {
       kept: terms.cancel.kept,
       destination: terms.payment?.method ?? null,
     };
-    if (!body.confirm) return c.json({ ...shown, cancelled: false }, 200);
+    if (!body.confirm) return c.json({ ...shown, cancelled: false, refund_pending: false }, 200);
     if (body.notice !== terms.notice) return c.json(errorBody("terms_changed", requestId), 409);
 
     let outcome;
     try {
-      const notify = (messageId: string) =>
-        c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
+      const notify = (messageId: string) => queueMessage(c, messageId);
       outcome = await cancelVisit(c.env.DB, { ...deps, notify }, terms, now, {
         labelAsTest: c.var.config.environment !== "production",
         log,
@@ -198,6 +205,7 @@ export function registerClientChanges(app: App): void {
     }
     if (outcome.kind === "not_changeable") return c.json(errorBody("not_changeable", requestId), 409);
     log.info("visit_cancelled", { appointment_id: visit.id, notice: terms.notice, refund: outcome.refund });
-    return c.json({ ...shown, cancelled: true }, 200);
+    if (outcome.refundPending) return c.json({ ...shown, cancelled: true, refund_pending: true }, 202);
+    return c.json({ ...shown, cancelled: true, refund_pending: false }, 200);
   });
 }

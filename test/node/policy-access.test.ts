@@ -11,6 +11,8 @@ import {
   mayRunAccess,
   maySee,
   NATIONAL,
+  placesReached,
+  reachesCity,
   takesIn,
   type Caller,
   type Grant,
@@ -166,5 +168,44 @@ describe("Admin MANAGE nationally", () => {
 
   it("may be given from nothing, on a list that has nobody with it yet", () => {
     expect(leavesNoNationalAdmin([lead], lead.email, { ...lead, active: false })).toBe(false);
+  });
+});
+
+describe("the places a caller reaches", () => {
+  const enforced = (caller: Caller) => ({ enforced: true, caller, zoneOf: ZONES });
+  const citiesOf = (caller: Caller, level: Grant["level"] = "view") => {
+    const reached = placesReached(enforced(caller), "customer_care", level);
+    return reached.kind === "everywhere" ? "everywhere" : [...reached.cities].sort();
+  };
+
+  it("are everywhere for a national grant, and for anyone while the list is not enforced", () => {
+    expect(citiesOf(person(grant("customer_care", "act", NATIONAL)))).toBe("everywhere");
+    const nobody = { enforced: false, caller: person(), zoneOf: ZONES };
+    expect(placesReached(nobody, "customer_care", "manage")).toEqual({ kind: "everywhere" });
+  });
+
+  it("are a zone's cities and each city granted, in the department at the level or above", () => {
+    const lead = person(
+      grant("customer_care", "view", NCR),
+      grant("customer_care", "manage", PUNE),
+      grant("finance", "manage", MUMBAI),
+    );
+    expect(citiesOf(lead)).toEqual(["Delhi", "Faridabad", "Ghaziabad", "Gurgaon", "Noida", "Pune"]);
+    expect(citiesOf(lead, "act")).toEqual(["Pune"]);
+  });
+
+  it("are none for a person switched off, or a service token not on the list", () => {
+    const off: Caller = { kind: "person", active: false, grants: [grant("customer_care", "view", DELHI)] };
+    expect(citiesOf(off)).toEqual([]);
+    expect(citiesOf({ kind: "service", allowed: false })).toEqual([]);
+    expect(citiesOf({ kind: "service", allowed: true })).toBe("everywhere");
+  });
+
+  it("take in a record in one of their cities, and one in no city only everywhere", () => {
+    const delhi = placesReached(enforced(person(grant("customer_care", "view", DELHI))), "customer_care", "view");
+    expect(reachesCity(delhi, "Delhi")).toBe(true);
+    expect(reachesCity(delhi, "Noida")).toBe(false);
+    expect(reachesCity(delhi, null)).toBe(false);
+    expect(reachesCity({ kind: "everywhere" }, null)).toBe(true);
   });
 });

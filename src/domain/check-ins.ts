@@ -13,22 +13,24 @@
 // A check-in keeps three times (docs/decisions/0065-a-technicians-writes-reach-fsm.md):
 // `at`, the phone's time held within bounds, which the no-show wait runs from;
 // `claimed_at`, what the phone said; and `created_at`, when we received it.
+//
+// A check-in that passed is written with the job event it lands as, and names it: once however often the phone sends
+// it, and never for an event that did not land.
 
 import { checkIn, type Point } from "../policy/check-in.ts";
 
-export interface Arrival {
-  readonly id: string;
-  /** Null when the address has no coordinates, so nothing could be measured. */
+/** How far the phone was from the visit's address, and whether that is near enough. */
+export interface Measured {
+  /** The address measured against; null when it had no coordinates, so nothing could be measured. */
+  readonly addressId: string | null;
   readonly distanceM: number | null;
   readonly radiusM: number;
   readonly passed: boolean;
-  readonly at: string;
 }
 
 export interface ArrivalInput {
   readonly appointmentId: string;
   readonly technicianId: string;
-  readonly personId: string | null;
   readonly device: Point;
   readonly accuracyM: number | null;
   /** The phone's time, within bounds (src/policy/phone-clock.ts). */
@@ -36,6 +38,16 @@ export interface ArrivalInput {
   /** What the phone said, before the bounds; null when it said nothing. */
   readonly claimedAt: Date | null;
   readonly now: Date;
+  readonly measured: Measured;
+}
+
+/** A check-in that passed, as recorded: what it measured, and the times a no-show's wait runs from. */
+export interface LatestArrival {
+  readonly id: string;
+  readonly at: Date;
+  readonly receivedAt: Date;
+  /** Null when nothing was measured. */
+  readonly distanceM: number | null;
   readonly radiusM: number;
 }
 
@@ -56,61 +68,110 @@ export async function visitAddress(
   return { id: row.id, point: row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng } };
 }
 
-/** Measures the arrival and records it. The distance is logged either way. */
-export async function recordArrival(db: D1Database, input: ArrivalInput): Promise<Arrival> {
+/** Measures the phone's position against the visit's address. Nothing is written. */
+export async function measureArrival(
+  db: D1Database,
+  input: { personId: string | null; device: Point; radiusM: number },
+): Promise<Measured> {
   const address = await visitAddress(db, input.personId);
   const point = address?.point ?? null;
-  const measured = point === null ? null : checkIn(input.device, point, input.radiusM);
-  const id = crypto.randomUUID();
+  if (address === null || point === null) {
+    return { addressId: null, distanceM: null, radiusM: input.radiusM, passed: true };
+  }
+  const measured = checkIn(input.device, point, input.radiusM);
+  return { addressId: address.id, distanceM: measured.distanceM, radiusM: input.radiusM, passed: measured.passed };
+}
+
+const CHECKIN_COLUMNS = `id, appointment_id, technician_id, job_event_id, address_id, at, claimed_at, lat, lng,
+  accuracy_m, distance_m, radius_m, passed, created_at`;
+
+/** Records a check-in that failed the geofence. It lands no event and starts nothing. */
+export async function recordFailedArrival(db: D1Database, input: ArrivalInput): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO checkins (id, appointment_id, technician_id, address_id, at, claimed_at, lat, lng, accuracy_m,
-         distance_m, radius_m, passed, created_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`,
+      `INSERT INTO checkins (${CHECKIN_COLUMNS})
+       VALUES (?1, ?2, ?3, NULL, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0, ?12)`,
     )
-    .bind(
-      id,
-      input.appointmentId,
-      input.technicianId,
-      measured === null ? null : (address?.id ?? null),
-      input.at.toISOString(),
-      input.claimedAt?.toISOString() ?? null,
-      input.device.lat,
-      input.device.lng,
-      input.accuracyM,
-      measured?.distanceM ?? null,
-      input.radiusM,
-      measured === null || measured.passed ? 1 : 0,
-      input.now.toISOString(),
-    )
+    .bind(crypto.randomUUID(), ...arrivalValues(input))
     .run();
+}
+
+/**
+ * The row of a check-in that passed, for its job event's own batch: it names the event the phone sent, and is written
+ * only where that event landed and only once for it.
+ */
+export function passedArrivalStatement(db: D1Database, input: ArrivalInput, eventId: string): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO checkins (${CHECKIN_COLUMNS})
+       SELECT ?1, ?2, ?3, e.id, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 1, ?12
+       FROM job_events e WHERE e.appointment_id = ?2 AND e.event_id = ?13 AND e.superseded = 0
+       ON CONFLICT DO NOTHING`,
+    )
+    .bind(crypto.randomUUID(), ...arrivalValues(input), eventId);
+}
+
+/** The values ?2 to ?12 of a check-in's row. */
+function arrivalValues(input: ArrivalInput): (string | number | null)[] {
+  return [
+    input.appointmentId,
+    input.technicianId,
+    input.measured.addressId,
+    input.at.toISOString(),
+    input.claimedAt?.toISOString() ?? null,
+    input.device.lat,
+    input.device.lng,
+    input.accuracyM,
+    input.measured.distanceM,
+    input.measured.radiusM,
+    input.now.toISOString(),
+  ];
+}
+
+interface ArrivalRow {
+  id: string;
+  at: string;
+  created_at: string;
+  distance_m: number | null;
+  radius_m: number;
+}
+
+function arrivalOf(row: ArrivalRow): LatestArrival {
   return {
-    id,
-    distanceM: measured?.distanceM ?? null,
-    radiusM: input.radiusM,
-    passed: measured === null || measured.passed,
-    at: input.at.toISOString(),
+    id: row.id,
+    at: new Date(row.at),
+    receivedAt: new Date(row.created_at),
+    distanceM: row.distance_m,
+    radiusM: row.radius_m,
   };
 }
 
-/** The check-in a no-show's wait runs from, with both its times and what it measured. */
-export interface LatestArrival {
-  readonly id: string;
-  readonly at: Date;
-  readonly receivedAt: Date;
-  /** Null when nothing was measured. */
-  readonly distanceM: number | null;
+/** The check-in a job event landed as; null for any other event. */
+export async function arrivalOfEvent(db: D1Database, jobEventId: string): Promise<LatestArrival | null> {
+  const row = await db
+    .prepare("SELECT id, at, created_at, distance_m, radius_m FROM checkins WHERE job_event_id = ?1")
+    .bind(jobEventId)
+    .first<ArrivalRow>();
+  return row === null ? null : arrivalOf(row);
 }
 
-/** The check-in the wait ran from: the latest one of this job that passed. */
-export async function latestArrival(db: D1Database, appointmentId: string): Promise<LatestArrival | null> {
+/**
+ * The check-in a no-show's wait runs from: the latest that passed, by the job's technician, of an event still
+ * standing. A move that clears a check-in supersedes its event, and a check-in by the technician the job was taken
+ * from is not his successor's.
+ */
+export async function latestArrival(
+  db: D1Database,
+  job: { id: string; technicianId: string },
+): Promise<LatestArrival | null> {
   const row = await db
     .prepare(
-      `SELECT id, at, created_at, distance_m FROM checkins WHERE appointment_id = ?1 AND passed = 1
-       ORDER BY at DESC, created_at DESC LIMIT 1`,
+      `SELECT c.id, c.at, c.created_at, c.distance_m, c.radius_m FROM checkins c
+       JOIN job_events e ON e.id = c.job_event_id
+       WHERE c.appointment_id = ?1 AND c.technician_id = ?2 AND c.passed = 1 AND e.superseded = 0
+       ORDER BY c.at DESC, c.created_at DESC LIMIT 1`,
     )
-    .bind(appointmentId)
-    .first<{ id: string; at: string; created_at: string; distance_m: number | null }>();
-  if (row === null) return null;
-  return { id: row.id, at: new Date(row.at), receivedAt: new Date(row.created_at), distanceM: row.distance_m };
+    .bind(job.id, job.technicianId)
+    .first<ArrivalRow>();
+  return row === null ? null : arrivalOf(row);
 }

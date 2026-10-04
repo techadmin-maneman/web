@@ -36,6 +36,7 @@ describe("the message class table", () => {
       "next_service_reminder",
       "launch_alert",
       "visit_moved", // ops moved it, not the client
+      "visit_cancelled", // ops cancelled it in the console
       "arrival_notice", // the technician's own action
       "no_show_decided", // ops ruled on it
       "friend_fitted", // the friend acted; the referrer is told
@@ -67,6 +68,7 @@ describe("the link that stops a message", () => {
     expect(STOP_LINKS).toEqual({
       visit_reminder: "whatsapp_visits",
       next_service_reminder: "whatsapp_visits",
+      credits_expiring: "whatsapp_visits",
       launch_alert: "whatsapp_launches",
     });
     for (const kind of Object.keys(STOP_LINKS)) expect(messageClass(kind), kind).toBe("automatic");

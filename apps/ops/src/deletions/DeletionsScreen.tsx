@@ -31,6 +31,7 @@ import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./deletions.module.css";
+import { ErasureLists } from "./ErasureLists.tsx";
 
 type Choice = "delete" | "reject";
 
@@ -42,21 +43,6 @@ type Deciding =
   | { readonly step: "failed"; readonly code: string };
 
 const copy = deletions.queue;
-
-function What({ title, items }: { title: string; items: readonly string[] }) {
-  return (
-    <div className={styles.what}>
-      <h4 className={styles.whatTitle}>{title}</h4>
-      <ul className={styles.whatItems}>
-        {items.map((item) => (
-          <li key={item} className={styles.whatItem}>
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 /**
  * The second of the two steps: what the erasure destroys, what it leaves, and
@@ -84,8 +70,7 @@ function ConfirmDelete({
   return (
     <div className={styles.confirm} ref={panel} tabIndex={-1} role="group" aria-label={copy.confirmLabel(request.name)}>
       <p className={styles.warning}>{copy.warning}</p>
-      <What title={copy.deleted.title} items={copy.deleted.items} />
-      <What title={copy.kept.title} items={copy.kept.items} />
+      <ErasureLists />
       <Checkbox
         className={styles.checkLine}
         label={copy.checked}

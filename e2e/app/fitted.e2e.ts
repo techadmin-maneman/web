@@ -151,7 +151,7 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
       json: {
         ...me,
         next_visit: { ...(me.next_visit as object), stage: "done" },
-        credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z" },
+        credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z", expiring_visits: 1 },
         prompt,
         invoice,
       },
@@ -164,7 +164,7 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add a note" })).toHaveCount(0);
   await expect(page.getByText("2 free service visits")).toBeVisible();
-  await expect(page.getByText("Use by 3 Jan 2028")).toBeVisible();
+  await expect(page.getByText("1 to use by 3 Jan 2028")).toBeVisible();
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
   await expect(page.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
   // The API prompts the replacement only once its month may be booked, so the prompt always offers it, beside the
@@ -262,6 +262,7 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   const client = fittedClient();
   await logIn(page, client.mobile);
   await tab(page, "Photos").click();
+  await expect(page.getByText("Taken for your visit record.", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: fullDate(client.service.date) })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: fullDate(client.firstFit.date) })).toBeVisible();
 
@@ -442,7 +443,7 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
-  const waiting = { type: "service", date: "2027-09-25", window: "morning", paid: true, one_visit: false };
+  const waiting = { type: "service", date: "2027-09-25", window: "morning", paid: true, one_visit: false, told: true };
   await page.route("**/api/me", (route) =>
     route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
   );
@@ -472,13 +473,23 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
-  const waiting = { type: "first_fit", date: "2027-09-25", window: "morning", paid: false, one_visit: true };
+  const waiting = {
+    type: "first_fit",
+    date: "2027-09-25",
+    window: "morning",
+    paid: false,
+    one_visit: true,
+    told: false,
+  };
   await page.route("**/api/me", (route) =>
     route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
   );
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [] } }));
   await page.reload();
-  await expect(page.getByRole("region", { name: "Your next visit" })).toContainText("Consultation and fit");
+  const home = page.getByRole("region", { name: "Your next visit" });
+  await expect(home).toContainText("Consultation and fit");
+  // MON-14: nothing paid and no consent to visit messages, so no WhatsApp is promised.
+  await expect(home).not.toContainText("We will message you on WhatsApp");
 
   await tab(page, "Visits").click();
   const card = page.getByRole("main").getByRole("listitem").first();

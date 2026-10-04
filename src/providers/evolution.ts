@@ -13,6 +13,7 @@
 import { z } from "zod";
 import { renderWithStopLink } from "../config/message-templates.ts";
 import type { Connection, MessagingProvider, SendResult } from "./messaging.ts";
+import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "./vendor-fetch.ts";
 
 export interface EvolutionSettings {
   /** https://…, no trailing slash. */
@@ -35,7 +36,7 @@ const STATE_TIMEOUT_MS = 10_000;
 
 export function createEvolutionMessaging(
   settings: EvolutionSettings,
-  deps: { fetch: typeof fetch },
+  deps: VendorFetchDependencies,
 ): MessagingProvider {
   return {
     async send({ to, template, params, mediaUrl, stopLink }): Promise<SendResult> {
@@ -59,26 +60,27 @@ export function createEvolutionMessaging(
             ] as const);
       const timeoutMs = SEND_TIMEOUT_MS[path];
 
-      let response: Response;
-      try {
-        response = await deps.fetch(`${settings.baseUrl}/message/${path}/${encodeURIComponent(settings.instance)}`, {
+      const response = await vendorFetch(
+        deps,
+        { vendor: "evolution", step: path, timeoutMs, codeOf: errorCodeIn },
+        `${settings.baseUrl}/message/${path}/${encodeURIComponent(settings.instance)}`,
+        {
           method: "POST",
           headers: { apikey: settings.apiKey, "Content-Type": "application/json" },
           body: JSON.stringify(body),
-          signal: AbortSignal.timeout(timeoutMs),
-        });
-      } catch (error) {
-        const name = error instanceof Error ? error.name : "error";
-        // A timeout means the bridge took the request and did not answer: the message may be on the
-        // phone already, and sending again would duplicate it. Only a failure to connect is retried.
-        if (name === "TimeoutError") {
-          return {
-            ok: false,
-            transient: false,
-            detail: `no reply within ${String(timeoutMs / 1000)} s: delivery unconfirmed`,
-          };
-        }
-        return { ok: false, transient: true, detail: `unreachable: ${name}` };
+        },
+      );
+      // A timeout means the bridge took the request and did not answer: the message may be on the
+      // phone already, and sending again would duplicate it. Only a failure to connect is retried.
+      if (response instanceof VendorUnreachable && response.timedOut) {
+        return {
+          ok: false,
+          transient: false,
+          detail: `no reply within ${String(timeoutMs / 1000)} s: delivery unconfirmed`,
+        };
+      }
+      if (response instanceof VendorUnreachable) {
+        return { ok: false, transient: true, detail: `unreachable: ${response.reason}` };
       }
 
       const reply = await response.text();
@@ -90,15 +92,14 @@ export function createEvolutionMessaging(
 
     // The runbook's first check when WhatsApp is down, made by the cron instead.
     async connection(): Promise<Connection> {
-      let response: Response;
-      try {
-        response = await deps.fetch(
-          `${settings.baseUrl}/instance/connectionState/${encodeURIComponent(settings.instance)}`,
-          { method: "GET", headers: { apikey: settings.apiKey }, signal: AbortSignal.timeout(STATE_TIMEOUT_MS) },
-        );
-      } catch (error) {
-        const name = error instanceof Error ? error.name : "error";
-        return { open: false, fault: "unreachable", detail: `unreachable: ${name}` };
+      const response = await vendorFetch(
+        deps,
+        { vendor: "evolution", step: "connection_state", timeoutMs: STATE_TIMEOUT_MS, codeOf: errorCodeIn },
+        `${settings.baseUrl}/instance/connectionState/${encodeURIComponent(settings.instance)}`,
+        { method: "GET", headers: { apikey: settings.apiKey } },
+      );
+      if (response instanceof VendorUnreachable) {
+        return { open: false, fault: "unreachable", detail: `unreachable: ${response.reason}` };
       }
       const status = String(response.status);
       if (response.status === 404) {
@@ -122,7 +123,7 @@ export function createEvolutionMessaging(
  */
 function refusal(status: number, reply: string, instance: string): SendResult {
   if (status === 404) return { ok: false, transient: false, bridgeDown: true, detail: noInstance(instance) };
-  const detail = `HTTP ${String(status)} ${errorCodeOf(reply)}`;
+  const detail = `HTTP ${String(status)} ${errorCodeIn(jsonOf(reply))}`;
   if (status === 401 || status === 403 || reply.includes("Connection Closed")) {
     return { ok: false, transient: false, bridgeDown: true, detail };
   }
@@ -139,15 +140,18 @@ const State = z.union([z.object({ instance: z.object({ state: z.string() }) }), 
 const Sent = z.object({ key: z.object({ id: z.string() }) });
 const Refused = z.object({ error: z.union([z.object({ code: z.string() }), z.string()]) });
 
-/** The bridge's reply read as `schema`; null when it is not JSON, or not that shape. */
-function read<T>(schema: z.ZodType<T>, reply: string): T | null {
-  let json: unknown;
+/** The bridge's reply as JSON; null when it is not JSON. */
+function jsonOf(reply: string): unknown {
   try {
-    json = JSON.parse(reply);
+    return JSON.parse(reply);
   } catch {
     return null;
   }
-  return schema.safeParse(json).data ?? null;
+}
+
+/** The bridge's reply read as `schema`; null when it is not JSON, or not that shape. */
+function read<T>(schema: z.ZodType<T>, reply: string): T | null {
+  return schema.safeParse(jsonOf(reply)).data ?? null;
 }
 
 function stateOf(reply: string): string {
@@ -159,8 +163,8 @@ function stateOf(reply: string): string {
 const messageIdOf = (reply: string): string | null => read(Sent, reply)?.key.id ?? null;
 
 /** The error code only; the message may echo the number. */
-function errorCodeOf(reply: string): string {
-  const error = read(Refused, reply)?.error;
+function errorCodeIn(json: unknown): string {
+  const error = Refused.safeParse(json).data?.error;
   if (error === undefined) return "";
   if (typeof error === "string") return error.slice(0, 60).replace(/\d/g, "#");
   return error.code;

@@ -33,12 +33,13 @@ function paymentEvent(event: string, overrides: Record<string, unknown> = {}) {
   };
 }
 
-function refundEvent(event: string, amount: number, id = "rfnd_1") {
+function refundEvent(event: string, amount: number, id = "rfnd_1", payment?: Record<string, unknown>) {
   return {
     entity: "event",
     event,
-    contains: ["refund"],
+    contains: payment === undefined ? ["refund"] : ["refund", "payment"],
     payload: {
+      ...(payment === undefined ? {} : { payment: { entity: payment } }),
       refund: {
         entity: {
           id,
@@ -164,7 +165,7 @@ describe("Razorpay's webhook: refunds", () => {
     ]);
   });
 
-  it("asks Razorpay to send a refund again when its payment has not arrived, and takes it then", async () => {
+  it("asks Razorpay to send again a refund of a payment not yet arrived that the event does not carry", async () => {
     const early = await deliver(refundEvent("refund.processed", 1000000), "evt_1");
     expect(early.status).toBe(409);
     await deliver(paymentEvent("payment.captured"), "evt_2");
@@ -180,5 +181,43 @@ describe("Razorpay's webhook: refunds", () => {
     expect(await payment()).toBeNull();
     const seen = await env.DB.prepare("SELECT COUNT(*) AS n FROM razorpay_events").first<{ n: number }>();
     expect(seen?.n).toBe(0);
+  });
+});
+
+// MON-12: each such refund was answered 409 for a day, and on a quiet day Razorpay could disable the whole webhook.
+describe("Razorpay's webhook: a refund of a payment whose own events never reached us", () => {
+  /** The payment as a refund's event carries it. */
+  const refundedPayment = (overrides: Record<string, unknown> = {}) =>
+    paymentEvent("payment.captured", { status: "refunded", captured: true, ...overrides }).payload.payment.entity;
+  const seenEvents = () => env.DB.prepare("SELECT COUNT(*) AS n FROM razorpay_events").first<{ n: number }>();
+  const alertsKept = async () => (await env.DB.prepare("SELECT key, link, count FROM alerts").all()).results;
+
+  it("records the payment from the refund's event, then the refund, and tells ops once", async () => {
+    const payer = await person("+919810000001");
+    const created = await deliver(refundEvent("refund.created", 3540000, "rfnd_1", refundedPayment()), "evt_1");
+    expect(created.status).toBe(200);
+    expect(await payment()).toMatchObject({ person_id: payer, status: "captured", reference: "MM-2026-0001" });
+
+    const processed = await deliver(refundEvent("refund.processed", 3540000, "rfnd_1", refundedPayment()), "evt_2");
+    expect(processed.status).toBe(200);
+    expect(await payment()).toMatchObject({ status: "refunded", refunded_amount: 3540000 });
+    expect((await seenEvents())?.n).toBe(2);
+    expect(await alertsKept()).toEqual([
+      { key: "razorpay_refund_unheard:pay_1", link: `/clients/${payer}/payments`, count: 1 },
+    ]);
+  });
+
+  it("gives no reference to a refunded payment that was never captured", async () => {
+    const refund = refundEvent("refund.processed", 3540000, "rfnd_1", refundedPayment({ captured: false }));
+    expect((await deliver(refund, "evt_1")).status).toBe(200);
+    expect(await payment()).toMatchObject({ status: "refunded", reference: null, captured_at: null });
+  });
+
+  it("takes nothing when the payment the event carries is another, and leaves it for Razorpay to send again", async () => {
+    const refund = refundEvent("refund.processed", 3540000, "rfnd_1", refundedPayment({ id: "pay_other" }));
+    expect((await deliver(refund, "evt_1")).status).toBe(409);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 0 });
+    expect((await seenEvents())?.n).toBe(0);
+    expect(await alertsKept()).toEqual([]);
   });
 });

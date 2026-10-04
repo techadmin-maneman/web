@@ -535,7 +535,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such job */
+                /** @description not_found: no such job, or never this technician's */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -544,7 +544,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -614,7 +614,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such job */
+                /** @description not_found: no such job, or never this technician's */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -623,7 +623,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -701,7 +701,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom */
+                /** @description superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom; already_closed: the job has closed, so it takes no more photographs */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -758,6 +758,15 @@ export interface paths {
                 };
                 /** @description not_found: the link is wrong or expired */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description already_closed: the job has closed, so it takes no more photographs */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -840,7 +849,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since */
+                /** @description upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since; already_closed: the job has closed, so it takes no more photographs */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -933,7 +942,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such job */
+                /** @description not_found: no such job, or never this technician's */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -942,7 +951,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1016,7 +1025,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such job */
+                /** @description not_found: no such job, or never this technician's */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1025,7 +1034,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1099,7 +1108,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such job */
+                /** @description not_found: no such job, or never this technician's */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1108,7 +1117,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1182,7 +1191,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such job */
+                /** @description not_found: no such job, or never this technician's */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1191,7 +1200,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1265,7 +1274,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such job */
+                /** @description not_found: no such job, or never this technician's */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1274,7 +1283,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1348,7 +1357,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such job */
+                /** @description not_found: no such job, or never this technician's */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1357,7 +1366,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1427,7 +1436,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such job */
+                /** @description not_found: no such job, or never this technician's */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1436,7 +1445,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1613,7 +1622,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1624,6 +1633,11 @@ export interface components {
                     /** @description When ops moved the job to them; null when it was moved in FSM itself */
                     at: string | null;
                 };
+                /**
+                 * Format: date-time
+                 * @description too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one.
+                 */
+                earliest_at?: string;
             };
         };
         Health: {
@@ -1730,8 +1744,8 @@ export interface components {
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @description A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step. */
             one_visit: boolean;
-            /** @description On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none. */
-            product: string | null;
+            /** @description The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses. */
+            service: components["schemas"]["TechnicianService"] | null;
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
@@ -1746,6 +1760,20 @@ export interface components {
             unlocked: boolean;
             /** Format: date-time */
             unlocks_at: string;
+            /** @description The client's name, from the day before the visit as the card's client is; null until then. */
+            client_name: string | null;
+            progress: components["schemas"]["TechnicianJobState"];
+        };
+        TechnicianService: {
+            /** @description Its code, which the hair profile names a first fit's product by. */
+            tier: string;
+            /** @description Its name in the console. */
+            name: string;
+        };
+        /** @description When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet. */
+        TechnicianJobState: {
+            started_at: string | null;
+            outcome: string | null;
         };
         TechnicianJobDetail: {
             /** Format: uuid */
@@ -1762,8 +1790,8 @@ export interface components {
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @description A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step. */
             one_visit: boolean;
-            /** @description On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none. */
-            product: string | null;
+            /** @description The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses. */
+            service: components["schemas"]["TechnicianService"] | null;
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
@@ -1778,6 +1806,9 @@ export interface components {
             unlocked: boolean;
             /** Format: date-time */
             unlocks_at: string;
+            /** @description The client's name, from the day before the visit as the card's client is; null until then. */
+            client_name: string | null;
+            progress: components["schemas"]["TechnicianJobProgress"];
             /** @description Null until the day before the visit; the API enforces it, not the screen. */
             address: {
                 line1: string;
@@ -1800,9 +1831,13 @@ export interface components {
                 mobile: string;
                 note: string | null;
             } | null;
-            progress: components["schemas"]["TechnicianJobProgress"];
             /** @description How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it. */
             no_show_wait_min: number;
+            /**
+             * Format: date-time
+             * @description The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow.
+             */
+            checkin_from: string;
             /** @description The client's pieces, newest fit first. Null until the day before the visit. */
             pieces: components["schemas"]["Piece"][] | null;
             /** @description The client's latest earlier visit with after photographs; null for a first visit. */
@@ -1822,6 +1857,8 @@ export interface components {
             steps: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome" | "profile")[];
             /** @description This kind of visit's checklist, as ops set it in the console, in its order. */
             checklist: components["schemas"]["JobSheetItem"][];
+            /** @description On a one visit, the checklist it runs once the client decides against the fit: the consultation's alone. Empty on any other visit. */
+            checklist_if_declined: components["schemas"]["JobSheetItem"][];
             /** @description The reasons a job may be left partly done, as ops set them, in their order. */
             partial_reasons: components["schemas"]["JobSheetItem"][];
             /** @description Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at. */
@@ -1843,12 +1880,20 @@ export interface components {
                  */
                 given_by: "client" | "technician" | "ops";
             } | null;
+            /** @description On a one visit, what the client decided as its piece step recorded it: the product they chose, or that they decided against the fit. Null until the piece step lands, and on any other visit. */
+            client_choice: {
+                /** @enum {boolean} */
+                declined: true;
+            } | {
+                /** @description The product's tier, from the card's products. */
+                product: string;
+            } | null;
             /** @description The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded. */
             profile: components["schemas"]["HairProfile"] | null;
         };
         TechnicianJobProgress: {
             checked_in_at: string | null;
-            /** @description When the job may close as a no-show, from the check-in we hold; null before one landed. */
+            /** @description When the job may close as a no-show, from the check-in we hold, or from the booked start for one before it; null before one landed. */
             wait_ends_at: string | null;
             /** @description How far from the address that check-in was; null when nothing could be measured. */
             distance_m: number | null;

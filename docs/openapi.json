@@ -48,6 +48,7 @@
                   "unauthorized",
                   "visit_booked",
                   "payment_held",
+                  "payment_owed",
                   "forbidden_origin",
                   "access_required",
                   "code_expired",
@@ -59,6 +60,7 @@
                   "not_bookable",
                   "hold_expired",
                   "address_required",
+                  "not_served",
                   "already_booked",
                   "not_changeable",
                   "terms_changed",
@@ -78,6 +80,8 @@
                   "fsm_partly",
                   "in_progress",
                   "too_early_to_close",
+                  "too_early_to_arrive",
+                  "already_closed",
                   "no_service_area",
                   "service_exists",
                   "last_of_kind",
@@ -134,6 +138,11 @@
                 ],
                 "additionalProperties": false,
                 "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+              },
+              "earliest_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
               }
             },
             "required": [
@@ -1155,166 +1164,6 @@
         ],
         "additionalProperties": false,
         "description": "The look this browser has had: its state alone. The look goes to WhatsApp only."
-      },
-      "ErasureResponse": {
-        "type": "object",
-        "properties": {
-          "person_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "erased_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "photos_deleted": {
-            "type": "integer"
-          },
-          "results_deleted": {
-            "type": "integer"
-          },
-          "messages_cancelled": {
-            "type": "integer"
-          },
-          "crm": {
-            "type": "string",
-            "enum": [
-              "queued"
-            ],
-            "description": "The CRM record is blanked by the crm-sync queue, retried until done."
-          }
-        },
-        "required": [
-          "person_id",
-          "erased_at",
-          "photos_deleted",
-          "results_deleted",
-          "messages_cancelled",
-          "crm"
-        ],
-        "additionalProperties": false
-      },
-      "ErasureRefused": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "object",
-            "properties": {
-              "code": {
-                "type": "string",
-                "enum": [
-                  "visit_booked",
-                  "payment_held"
-                ]
-              },
-              "request_id": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "code",
-              "request_id"
-            ],
-            "additionalProperties": false
-          },
-          "visits": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "type": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "enum": [
-                    "consultation",
-                    "first_fit",
-                    "service",
-                    "replacement",
-                    null
-                  ]
-                },
-                "status": {
-                  "type": "string",
-                  "enum": [
-                    "scheduled",
-                    "dispatched",
-                    "in_progress"
-                  ]
-                },
-                "window_start": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "date-time"
-                }
-              },
-              "required": [
-                "id",
-                "type",
-                "status",
-                "window_start"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "payments": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "reference": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "amount": {
-                  "type": "integer",
-                  "description": "In paise."
-                }
-              },
-              "required": [
-                "id",
-                "reference",
-                "amount"
-              ],
-              "additionalProperties": false
-            }
-          }
-        },
-        "required": [
-          "error",
-          "visits",
-          "payments"
-        ],
-        "additionalProperties": false
-      },
-      "ErasureRequest": {
-        "type": "object",
-        "properties": {
-          "mobile": {
-            "type": "string",
-            "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
-            "example": "98100 00000"
-          },
-          "override_open_bookings": {
-            "type": "boolean",
-            "description": "Erase even with a visit booked or a payment held: only once ops have cancelled and refunded them by hand (the runbook's \"Erasure within the day\")."
-          }
-        },
-        "required": [
-          "mobile"
-        ],
-        "additionalProperties": false
       },
       "StoppedMessages": {
         "type": "object",
@@ -2982,84 +2831,6 @@
         }
       }
     },
-    "/api/erasure": {
-      "post": {
-        "summary": "Operators only: erase a person's photos, results and details, found by their number",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "example": "Bearer <ERASURE_SECRET>"
-            },
-            "required": false,
-            "name": "authorization",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ErasureRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Erased",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErasureResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid_request: see error.fields",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not_found: no one with this number, or already erased",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "visit_booked or payment_held: settle what it names first, or say it is settled",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErasureRefused"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/stop": {
       "post": {
         "summary": "Stops the messages a reminder's or alert's link names, by withdrawing the consent they were sent under",
@@ -3215,7 +2986,7 @@
             }
           },
           "409": {
-            "description": "not_ready: a refund for a payment not yet recorded; Razorpay retries it",
+            "description": "not_ready: a refund of a payment not yet recorded, whose event does not carry it; Razorpay retries it",
             "content": {
               "application/json": {
                 "schema": {

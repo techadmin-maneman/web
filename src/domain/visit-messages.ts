@@ -3,19 +3,23 @@
 // ops' ruling on a visit the client was not home for, and since docs/decisions/0096-a-no-shows-charge-and-its-dispute.md
 // their ruling on the client's dispute of its charge. Each is a row in outbound_messages about the appointment, written
 // with the change it tells of, then queued. The messaging consumer writes the text from the visit as it stands when it sends, and
-// sends it only with the client's consent to WhatsApp about visits. The sweeper queues any whose queue message was
-// lost.
+// sends it only with the client's consent to WhatsApp about visits, but for a receipt or a refund, which goes without
+// it (src/policy/consents.ts). The sweeper queues any whose queue message was lost.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import type { BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
+import { isTransactional } from "../policy/consents.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
 import type { OneVisitState } from "../policy/one-visit.ts";
 import { WAIVER_GIVES_BACK, type DisputeRuling, type NoShowDecision, type Waiver } from "../policy/no-show.ts";
+import { tooEarlyToArrive } from "../policy/phone-clock.ts";
+import { latestArrival } from "./check-ins.ts";
 import { codeOnVisit } from "./discount-code-uses.ts";
+import { readOpsInputs } from "./ops-settings.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
@@ -31,6 +35,7 @@ export type VisitMessageKind = Extract<
   | "visit_reminder"
   | "reschedule_confirmation"
   | "cancel_confirmation"
+  | "visit_cancelled"
   | "visit_moved"
   | "arrival_notice"
   | "no_show_decided"
@@ -45,6 +50,8 @@ export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
   "visit_reminder",
   "reschedule_confirmation",
   "cancel_confirmation",
+  // Ops cancelled the visit from the console: the same words as the client's own cancel.
+  "visit_cancelled",
   // Ops moved the visit on the dispatch board; the client is told the new window and never charged.
   "visit_moved",
   // The technician checked in at the door: the no-show evidence reads its receipt (ADR 0047).
@@ -67,6 +74,7 @@ const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentSt
   reschedule_confirmation: ["scheduled", "dispatched"],
   visit_moved: ["scheduled", "dispatched"],
   cancel_confirmation: "any",
+  visit_cancelled: "any",
   arrival_notice: ["scheduled", "dispatched", "in_progress"],
   no_show_decided: "any",
   no_show_dispute_ruled: "any",
@@ -235,6 +243,41 @@ export type Composed = { readonly template: string; readonly params: string[] } 
 /** Why a message about a visit was skipped when the client never agreed to them; the no-show queue reads it back. */
 export const NO_VISITS_CONSENT = "no consent to WhatsApp about visits";
 
+/**
+ * A composed message as it may go: as it is with the client's consent to WhatsApp about visits, or without it when it
+ * is a receipt or a refund. Anything else without that consent is skipped for the want of it.
+ */
+export async function underVisitsConsent(db: D1Database, personId: string, composed: Composed): Promise<Composed> {
+  if (await consentGiven(db, personId, "whatsapp_visits")) return composed;
+  if ("template" in composed && isTransactional(composed.template)) return composed;
+  return { skip: NO_VISITS_CONSENT };
+}
+
+/** Why an arrival or a no-show's ruling is not told: the check-in came before a technician may check in. */
+export const ARRIVED_TOO_EARLY = "the check-in came before the earliest check-in";
+
+/** The visit a check-in is held against: its booked start, and the technician it is on. */
+interface VisitArrivedAt {
+  readonly id: string;
+  readonly technicianId: string | null;
+  readonly start: Date;
+}
+
+/** Whether the visit's technician's check-in reached us before the earliest check-in ops allow. */
+async function arrivedTooEarly(db: D1Database, visit: VisitArrivedAt): Promise<boolean> {
+  if (visit.technicianId === null) return false;
+  const arrival = await latestArrival(db, { id: visit.id, technicianId: visit.technicianId });
+  if (arrival === null) return false;
+  const { phoneClock } = await readOpsInputs(db, arrival.receivedAt);
+  return tooEarlyToArrive(arrival.receivedAt, visit.start, phoneClock);
+}
+
+/** That the technician is at the door, told only of a check-in made in time. */
+async function arrivalMessage(db: D1Database, visit: VisitArrivedAt, params: string[]): Promise<Composed> {
+  if (await arrivedTooEarly(db, visit)) return { skip: ARRIVED_TOO_EARLY };
+  return { template: "technician_arrived_v1", params };
+}
+
 /** What a queued message about a visit says, as the visit stands now; or why it is not sent. */
 export async function composeVisitMessage(
   db: D1Database,
@@ -242,11 +285,18 @@ export async function composeVisitMessage(
   appointmentId: string,
   personId: string,
 ): Promise<Composed> {
-  if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
+  return underVisitsConsent(db, personId, await composeVisitText(db, kind, appointmentId, personId));
+}
 
+async function composeVisitText(
+  db: D1Database,
+  kind: VisitMessageKind,
+  appointmentId: string,
+  personId: string,
+): Promise<Composed> {
   const visit = await db
     .prepare(
-      `SELECT a.type, a.one_visit, a.window_start, a.status, p.name, t.name AS technician
+      `SELECT a.type, a.one_visit, a.window_start, a.status, a.technician_id, p.name, t.name AS technician
        FROM appointments a JOIN people p ON p.id = a.person_id LEFT JOIN technicians t ON t.id = a.technician_id
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL`,
     )
@@ -256,6 +306,7 @@ export async function composeVisitMessage(
       one_visit: OneVisitState | null;
       window_start: string | null;
       status: AppointmentStatus;
+      technician_id: string | null;
       name: string;
       technician: string | null;
     }>();
@@ -280,8 +331,9 @@ export async function composeVisitMessage(
   }
   if (kind === "nothing_to_pay") return { template: "visit_fitted_code_v1", params };
   if (kind === "visit_reminder") return { template: "visit_reminder_v1", params };
-  if (kind === "arrival_notice") return { template: "technician_arrived_v1", params };
-  if (kind === "no_show_decided") return noShowRuling(db, appointmentId, params);
+  const arrivedAt = { id: appointmentId, technicianId: visit.technician_id, start };
+  if (kind === "arrival_notice") return arrivalMessage(db, arrivedAt, params);
+  if (kind === "no_show_decided") return noShowRuling(db, arrivedAt, params);
   if (kind === "no_show_dispute_ruled") return disputeRuling(db, appointmentId, params);
   // A move, whether the client made it or ops did: the same words, the visit's new window.
   if (kind === "reschedule_confirmation" || kind === "visit_moved") return { template: "visit_moved_v1", params };
@@ -299,22 +351,31 @@ export async function composeVisitMessage(
     params[6] = payment.reference;
     return { template: "visit_booked_v1", params };
   }
+  return cancelMessage(db, appointmentId, params);
+}
+
+/** A cancel, the client's own or one ops made: what goes back, and whether the credit it used comes back. */
+async function cancelMessage(db: D1Database, appointmentId: string, params: string[]): Promise<Composed> {
   const cancelled = await db
     .prepare(
-      `SELECT c.refund_amount, c.notice, p.method FROM visit_changes c LEFT JOIN payments p ON p.id = c.payment_id
+      `SELECT c.refund_amount, c.notice, c.ops_terms, p.method FROM visit_changes c
+       LEFT JOIN payments p ON p.id = c.payment_id
        WHERE c.appointment_id = ?1 AND c.kind = 'cancelled'`,
     )
     .bind(appointmentId)
-    .first<{ refund_amount: number; notice: "free" | "late"; method: string | null }>();
-  if (cancelled === null) return { skip: "the visit was not cancelled by the client" };
+    .first<{
+      refund_amount: number;
+      notice: "free" | "late";
+      ops_terms: "free" | "client" | null;
+      method: string | null;
+    }>();
+  if (cancelled === null) return { skip: "the visit was not cancelled" };
   const credit = await creditOfVisit(db, appointmentId);
   if (credit === "restored") return { template: "visit_cancelled_credit_v1", params };
-  // Kept under the 24-hour rule, or drawn on a grant that has since expired or been clawed back.
+  // Kept under the client's late terms, or drawn on a grant that has since expired or been clawed back.
   if (credit === "kept") {
-    return {
-      template: cancelled.notice === "late" ? "visit_cancelled_credit_lost_v1" : "visit_cancelled_credit_gone_v1",
-      params,
-    };
+    const keptAsLate = cancelled.notice === "late" && cancelled.ops_terms !== "free";
+    return { template: keptAsLate ? "visit_cancelled_credit_lost_v1" : "visit_cancelled_credit_gone_v1", params };
   }
   if (cancelled.refund_amount === 0) return { template: "visit_cancelled_v1", params };
   params[5] = rupees(cancelled.refund_amount);
@@ -409,8 +470,13 @@ async function chargedMessage(
   return { template: "no_show_charged_fee_v1", params };
 }
 
-/** The ruling on a visit the client was not home for: how long we waited, and what became of what they paid. */
-async function noShowRuling(db: D1Database, appointmentId: string, params: string[]): Promise<Composed> {
+/**
+ * The ruling on a visit the client was not home for: how long we waited, and what became of what they paid. Never
+ * told of a check-in made before a technician may check in, which was no arrival for this visit.
+ */
+async function noShowRuling(db: D1Database, visit: VisitArrivedAt, params: string[]): Promise<Composed> {
+  if (await arrivedTooEarly(db, visit)) return { skip: ARRIVED_TOO_EARLY };
+  const appointmentId = visit.id;
   const ruling = await db
     .prepare(
       `SELECT decision, wait_started_at, COALESCE(closed_at, wait_ends_at) AS ended_at, waiver_payment, waiver_credit,
