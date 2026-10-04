@@ -1020,8 +1020,8 @@ export const tryOn = {
       taken: "This look is already on its way to another number.",
       other: "That didn't go through. Try again in a minute.",
       // Not drawn: refusals of the WhatsApp code. The owner approves the words.
-      codes: "That is a few too many codes for this number today. Please try again tomorrow.",
-      turnstile: "We could not confirm you are a person. Please try again.",
+      codes: "That’s too many codes for this number today. Try again tomorrow.",
+      turnstile: "We couldn’t confirm you’re a person. Try again.",
       notProved: "Your WhatsApp code has expired. Press Send my look for a new one.",
     },
   },
@@ -1094,7 +1094,7 @@ export const numberCode = {
   wrong: (left: number) =>
     left === 1 ? "That code is not right. One try left." : `That code is not right. ${String(left)} tries left.`,
   expired: "That code has expired. Send a new one.",
-  failed: "That did not go through. Please try again.",
+  failed: "That didn’t go through. Try again.",
   again: "Send a new code",
   checking: "Checking",
 };
@@ -1138,15 +1138,15 @@ export const stopMessages = {
   },
   done: {
     title: "Done.",
-    whatsapp_visits: "We will no longer message you on WhatsApp about your visits. We will call you about any change.",
-    whatsapp_launches: "We will no longer message you when we come to a new area.",
+    whatsapp_visits: "We won’t message you on WhatsApp about your visits any more. We’ll call you about any change.",
+    whatsapp_launches: "We won’t message you when we come to a new area any more.",
     again: "Changed your mind? Switch them back on in the Mane Man app, or message us at {whatsapp}.",
   },
   expired: {
     title: "This link no longer works.",
     body: "Reply STOP to any of our WhatsApp messages, or message us at {whatsapp}, and we will stop them.",
   },
-  offline: "We could not reach Mane Man. Check your connection and try again.",
+  offline: "We couldn’t reach Mane Man. Check your connection and try again.",
 };
 
 export const pageTitles = {

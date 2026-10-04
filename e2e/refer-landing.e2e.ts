@@ -366,7 +366,7 @@ test("a pincode that is not six digits is refused before the API is asked", asyn
 
   await page.getByLabel("Pincode").fill("12");
   await page.getByRole("button", { name: "Check" }).click();
-  await expect(page.getByText("That is not a six-digit Indian pincode.")).toBeVisible();
+  await expect(page.getByText("That isn’t a six-digit Indian pincode.")).toBeVisible();
   expect(asked).toBe(false);
 });
 
@@ -408,11 +408,11 @@ test("the form will not send without the address, a name, a number and the agree
   await page.getByRole("button", { name: "Check" }).click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Please tell us your name.")).toBeVisible();
+  await expect(page.getByText("Enter your name.")).toBeVisible();
   await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
-  await expect(page.getByText("Please give the building or society.")).toBeVisible();
-  await expect(page.getByText("Please give the sector or area.")).toBeVisible();
+  await expect(page.getByText("Enter the building or society.")).toBeVisible();
+  await expect(page.getByText("Enter the sector or area.")).toBeVisible();
   expect(requests).toHaveLength(0);
 });
 
@@ -519,7 +519,7 @@ test("pressing again after a lost answer sends the same request key", async ({ p
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Something went wrong at our end. Please try again.")).toBeVisible();
+  await expect(page.getByText("Something went wrong on our side. Try again.")).toBeVisible();
   await page.getByRole("button", { name: "Book the consultation" }).click();
   await expect(page.getByText("Booking received")).toBeVisible();
 
