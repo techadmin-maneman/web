@@ -4,27 +4,25 @@ The words the code, the database and the API use for the same few things, and wh
 
 ## A visit and its records
 
-| Word            | Means                                                                                                                                                                                                               |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **appointment** | FSM's record of one visit to one client at one time, and our mirror of it, the `appointments` table (ADR 0032). The code's word for the row.                                                                        |
-| **visit**       | The same appointment as the client sees it: the app's _Visits_, `/api/visits`. A consultation, a service, a first fit or a replacement (`VISIT_TYPES`).                                                             |
-| **job**         | The same appointment as its technician sees it: `/api/tech/jobs`. A write to it is a **job event** (`job_events`), landed once by its event ID (ADR 0038).                                                          |
-| **booking**     | Making a visit: a **hold** paid for, or free, and written to FSM (`src/domain/bookings.ts`). Not a record of its own. A Phase 1 booking was a lead with a proposed date.                                            |
-| **hold**        | A client's claim on a time while they pay, ten minutes (`slot_holds`, ADR 0045). Confirmed once paid, it keeps its time until it is booked or refunded (ADR 0068).                                                  |
-| **request**     | A day and window asked for while self-serve booking is off, which ops confirm (`consultation_requests`, ADR 0060). FSM has a Request too: a lead sent to FSM before it is a work order (`src/domain/fsm-leads.ts`). |
-| **work order**  | FSM's container for an appointment and its invoice. We create one with each booking (`src/domain/bookings.ts`).                                                                                                     |
+| Word            | Means                                                                                                                                                                                                    |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **appointment** | One visit to one client at one time: a row of the `appointments` table, our own record (ADR 0110). The code's word for the row.                                                                          |
+| **visit**       | The same appointment as the client sees it: the app's _Visits_, `/api/visits`. A consultation, a service, a first fit or a replacement (`VISIT_TYPES`).                                                  |
+| **job**         | The same appointment as its technician sees it: `/api/tech/jobs`. A write to it is a **job event** (`job_events`), landed once by its event ID (ADR 0038).                                               |
+| **booking**     | Making a visit: a **hold** paid for, or free, written as a visit in the request that confirms it (`src/domain/bookings.ts`). Not a record of its own. A Phase 1 booking was a lead with a proposed date. |
+| **hold**        | A client's claim on a time while they pay, ten minutes (`slot_holds`, ADR 0045). Confirmed once paid, it keeps its time until it is booked or refunded (ADR 0068).                                       |
+| **request**     | A day and window asked for while self-serve booking is off, which ops confirm (`consultation_requests`, ADR 0060).                                                                                       |
 
 ## Services and prices
 
 | Word           | Means                                                                                                                                                                                                                                                                                    |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **kind**       | One of the four kinds of visit: consultation, first fit, service visit, replacement (`VISIT_TYPES`). It decides the technician's steps, the booking rules and the fees, and a new one needs a release. A hold, an appointment and the API call it `type`; the `services` table, `kind`.  |
-| **service**    | What a client books: a kind and a tier of it, with its own name, length, place in the kind's order and FSM item (`services`, ADR 0085). Ops add, rename, time, order, retire and restore them. Also the kind `service`, a service visit: new prose says "service visit" for the kind.    |
+| **service**    | What a client books: a kind and a tier of it, with its own name, length, place in the kind's order and Books item (`services`, ADR 0085). Ops add, rename, time, order, retire and restore them. Also the kind `service`, a service visit: new prose says "service visit" for the kind.  |
 | **tier**       | A service's code within its kind: `standard`, `premium`, or another ops add, made from its first name and never changed. The price book's second key, so a service's prices stay its own whatever it is renamed.                                                                         |
 | **standard**   | Each kind's first service, the one there has always been: what a hold with no tier books, and the site's Standard column. The site's Premium is the services coded `premium`.                                                                                                            |
 | **offered**    | A service not retired by a day (`isOffered`). Clients see one only while it is offered and priced; one retired from a day stays as it was sold to anyone who bought it before.                                                                                                           |
 | **price book** | `price_book`: every price by what it prices (a kind or a late fee), its tier, and the day it applies from, with GST. Never back-dated, so what was sold stays readable; a hold keeps the price it was sold at (ADR 0068). Set in the console's Services and prices (ADR 0061, ADR 0085). |
-| **FSM item**   | A service's item in FSM's catalogue, which FSM books the visit on and invoices it from (`fsm_item_id`). Found by the ID kept on the service, else by its name.                                                                                                                           |
 
 ## Time
 
@@ -36,7 +34,7 @@ The words the code, the database and the API use for the same few things, and wh
 | **window_start**      | An appointment's booked start, an instant; `window_end` its end. Not a window in the sense above.                                                                                                                                                                                                   |
 | **slot**              | One of the dispatch board's four columns a day (`SLOTS_PER_DAY`).                                                                                                                                                                                                                                   |
 | **unit**              | Half a slot, the grain the day is counted in: eight a day (`UNIT_STARTS`), so a replacement's slot and a half is three.                                                                                                                                                                             |
-| **claim**             | A row in `slot_claims` holding one unit, or one window, of one technician's day, for a hold or for a move on the board while it is written to FSM (ADR 0069).                                                                                                                                       |
+| **claim**             | A row in `slot_claims` holding one unit, or one window, of one technician's day, for a hold (ADR 0069).                                                                                                                                                                                             |
 | **rate-limit window** | The India hour or day a counter counts in (`src/domain/rate-limit.ts`). Nothing to do with a visit's time.                                                                                                                                                                                          |
 
 ## People
@@ -46,14 +44,13 @@ The words the code, the database and the API use for the same few things, and wh
 | **person**     | Anyone we hold a number for: a row in `people`. The code's word for the row.                                                                                                            |
 | **client**     | A person who may sign in to the app: one with a booked consultation or a later visit (`src/policy/login.ts`). Fitted, a lead or nothing booked (`clientStateOf`).                       |
 | **lead**       | Two meanings: a row in `leads`, what a form or a try-on left, which reaches the CRM; and, as a client's state, a person booked but not yet fitted. The CRM's own record is also a Lead. |
-| **contact**    | The person's record in FSM (`fsm_contact_id`). Not ours; FSM makes and keeps it.                                                                                                        |
-| **customer**   | The person's record in Books, where invoices and payments are (`customer_id`). Also FSM's and Books' word, never ours.                                                                  |
-| **technician** | A field technician FSM lists as active, mirrored in `technicians`. He signs in on one phone at a time (ADR 0052).                                                                       |
+| **customer**   | The person's record in Books, where invoices and payments are (`books_customer_id`). Books' word, never ours.                                                                           |
+| **technician** | A field technician ops add in the console's Technicians, in `technicians`. He signs in on one phone at a time (ADR 0052).                                                               |
 | **staff**      | Whoever Cloudflare Access let into the ops console: a person's e-mail, or a service token (`staffOf`, `src/http/audit.ts`).                                                             |
 
 ## Removing a person
 
-| Word                 | Means                                                                                                                                                                                                                             |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **deletion request** | A client asking, in the app, for their account to be deleted (`deletion_requests`). Ops decide it within 7 days (`DELETION_DECIDED_WITHIN_DAYS`).                                                                                 |
-| **erasure**          | The act itself (`eraseAndQueue`, ADR 0019 and 0066): photographs deleted, the person blanked, the CRM, FSM and Books told. Done in the console only: a decided deletion request, or Erase on a person's own page. All or nothing. |
+| Word                 | Means                                                                                                                                                                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **deletion request** | A client asking, in the app, for their account to be deleted (`deletion_requests`). Ops decide it within 7 days (`DELETION_DECIDED_WITHIN_DAYS`).                                                                            |
+| **erasure**          | The act itself (`eraseAndQueue`, ADR 0019 and 0066): photographs deleted, the person blanked, the CRM and Books told. Done in the console only: a decided deletion request, or Erase on a person's own page. All or nothing. |

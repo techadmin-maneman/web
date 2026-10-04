@@ -1,6 +1,6 @@
 # 0098. The door in FSM's service address
 
-- Status: accepted, on the owner's rulings of 27 September 2026 (`docs/open-points.md`, items 45 and 150) and 1 October 2026 (ops' form too)
+- Status: superseded by [0110](0110-field-work-without-fsm.md) on 4 October 2026: the door is kept on our own address record; FSM's address is not written. Was: accepted, on the owner's rulings of 27 September 2026 (`docs/open-points.md`, items 45 and 150) and 1 October 2026 (ops' form too)
 - Date: 2026-10-01
 - Amends [0054](0054-address-capture.md) and [0081](0081-the-site-takes-the-address.md), whose flat was optional; the lengths and characters FSM keeps are the trial of 30 September 2026 (`docs/decisions/fsm-trial.md`, "Text FSM keeps")
 

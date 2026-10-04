@@ -1,6 +1,6 @@
 # 0095. A booking FSM refuses is held, not refunded
 
-- Status: accepted, on the owner's ruling of 27 September 2026 (`docs/open-points.md`, item 141)
+- Status: superseded by [0110](0110-field-work-without-fsm.md) on 4 October 2026: no booking waits on FSM, so none is held for ops; a paid hold is booked in the request, or by the cron within the half hour. Was: accepted, on the owner's ruling of 27 September 2026 (`docs/open-points.md`, item 141)
 - Date: 2026-09-29
 - Supersedes the give-up of [0068](0068-a-paid-hold-is-kept.md), whose fifth refusal refunded the client; amends [0088](0088-every-policy-in-the-console.md), adding a setting to its register; records decisions for the owner to confirm in ADR 0025 (items 80 to 83)
 

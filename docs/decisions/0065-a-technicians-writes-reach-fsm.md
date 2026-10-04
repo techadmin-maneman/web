@@ -1,6 +1,6 @@
 # 0065. A technician's writes reach FSM, in order, on a clock we can hold him to
 
-- Status: accepted
+- Status: accepted. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a technician's step is written to our own database alone; nothing reaches FSM.
 - Date: 2026-09-25
 
 ## Context

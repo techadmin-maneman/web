@@ -1,6 +1,6 @@
 # 0070. What we write to Zoho is right, written once, and asked for sparingly
 
-- Status: accepted. Amended 30 September 2026 by [0097](0097-staging-logins-open-reminders-fenced.md): the try-on gate's promise no longer depends on the allowlist. Amended 1 October 2026 by [0104](0104-the-try-ons-look-on-whatsapp-only.md): the gate promises nothing, since a claim whose look could not be sent is refused, and a gated visitor's new photograph has no session to keep.
+- Status: accepted. Amended 30 September 2026 by [0097](0097-staging-logins-open-reminders-fenced.md): the try-on gate's promise no longer depends on the allowlist. Amended 1 October 2026 by [0104](0104-the-try-ons-look-on-whatsapp-only.md): the gate promises nothing, since a claim whose look could not be sent is refused, and a gated visitor's new photograph has no session to keep. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): FSM's checks go; Books' and the CRM's stay.
 - Date: 2026-09-25
 - Amends [0012](0012-zoho-sync.md), [0015](0015-render-pipeline.md), [0030](0030-one-time-codes.md), [0032](0032-fsm-mirror.md), [0050](0050-crm-in-the-real-org.md), [0054](0054-address-capture.md), [0056](0056-issuing-the-invoice.md) and [0063](0063-the-asked-window.md); follows [0067](0067-alerts-and-silent-failures.md) and [0068](0068-a-paid-hold-is-kept.md)
 
