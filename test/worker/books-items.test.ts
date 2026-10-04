@@ -54,7 +54,6 @@ beforeEach(() => {
 describe("each service's Books item", () => {
   it("is found by its name, whatever its case, and kept, so the invoice pass bills on it", async () => {
     const books = createStubBooks({
-      draftTotal: 0,
       items: AGREEING.map((item) => (item.id === "item-service" ? { ...item, name: "Service visit" } : item)),
     });
     expect(await check(books)).toEqual({ differs: [], written: 0 });
@@ -71,7 +70,7 @@ describe("each service's Books item", () => {
     const differing = AGREEING.filter((item) => item.id !== "item-consultation").map((item) =>
       item.id === "item-service" ? { ...item, rate: 150_000 } : item,
     );
-    const books = createStubBooks({ draftTotal: 0, items: differing });
+    const books = createStubBooks({ items: differing });
 
     expect(await check(books)).toEqual({ differs: ["consultation/standard", "service/standard"], written: 0 });
     expect(alerted).toEqual([
@@ -87,7 +86,7 @@ describe("each service's Books item", () => {
     await check(books, { now: anHourOn(1) });
     expect(alerted).toHaveLength(2);
 
-    const agreeing = createStubBooks({ draftTotal: 0, items: AGREEING });
+    const agreeing = createStubBooks({ items: AGREEING });
     expect(await check(agreeing, { now: anHourOn(2) })).toEqual({ differs: [], written: 0 });
     const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
     expect(open).toEqual({ n: 0 });
@@ -97,7 +96,6 @@ describe("each service's Books item", () => {
     // Sunday 20 September, when the book had 5% GST: a service visit was Rs. 2,000 before it.
     const sunday = new Date("2026-09-20T05:02:00.000Z");
     const books = createStubBooks({
-      draftTotal: 0,
       items: AGREEING.filter((item) => item.id !== "item-service").map((item) =>
         item.id === "item-first-fit" ? { ...item, rate: 3_150_000 } : item,
       ),
@@ -117,7 +115,7 @@ describe("each service's Books item", () => {
   it("with the push on, writes the console's name over the item kept on the service, whatever Books calls it", async () => {
     const renamed = AGREEING.map((item) => (item.id === "item-service" ? { ...item, name: "Old service name" } : item));
     await env.DB.prepare("UPDATE services SET books_item_id = 'item-service' WHERE kind = 'service'").run();
-    const books = createStubBooks({ draftTotal: 0, items: renamed });
+    const books = createStubBooks({ items: renamed });
 
     await check(books, { push: true });
     expect(books.made.itemUpdates).toEqual([
@@ -143,7 +141,7 @@ describe("each service's Books item", () => {
   });
 
   it("with the push on, tells ops only of an item still unsettled an hour after a write failed", async () => {
-    const books = createStubBooks({ draftTotal: 0, items: AGREEING.filter((item) => item.id !== "item-service") });
+    const books = createStubBooks({ items: AGREEING.filter((item) => item.id !== "item-service") });
     books.refuseNext("createItem", "1001");
     expect(await check(books, { push: true })).toEqual({ differs: ["service/standard"], written: 0 });
     expect(alerted).toEqual([]);
@@ -162,7 +160,7 @@ describe("each service's Books item", () => {
   });
 
   it("writes the SAC code once the CA has given one", async () => {
-    const books = createStubBooks({ draftTotal: 0, items: AGREEING });
+    const books = createStubBooks({ items: AGREEING });
     await check(books, { push: true, sac: "999721" });
     expect(books.made.itemUpdates).toHaveLength(4);
     expect(books.made.itemUpdates[0]).toMatchObject({ sac: "999721" });
@@ -173,7 +171,7 @@ describe("each service's Books item", () => {
   });
 
   it("closes what ops were told of a service no longer offered", async () => {
-    const books = createStubBooks({ draftTotal: 0, items: AGREEING.filter((item) => item.id !== "item-service") });
+    const books = createStubBooks({ items: AGREEING.filter((item) => item.id !== "item-service") });
     await check(books);
     expect(alerted).toHaveLength(1);
 
@@ -184,7 +182,7 @@ describe("each service's Books item", () => {
   });
 
   it("runs on the hour, and only with calls enough left to read Books' list", async () => {
-    const books = createStubBooks({ draftTotal: 0, items: AGREEING });
+    const books = createStubBooks({ items: AGREEING });
     expect(await check(books, { now: new Date("2026-09-23T05:10:00.000Z") })).toBeNull();
     expect(await check(books, { budget: createCallBudget(BOOKS_ITEM_PAGES - 1) })).toBeNull();
     expect(await check(books, { budget: createCallBudget(BOOKS_ITEM_PAGES) })).toEqual({ differs: [], written: 0 });

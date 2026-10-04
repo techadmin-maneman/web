@@ -15,8 +15,6 @@ import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { recordJobUse } from "../../src/domain/job-use.ts";
 import { count } from "../../src/domain/stock.ts";
-import { createLogger } from "../../src/log.ts";
-import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 import { IMRAN, JOB, SAMEER, working, type Working } from "./job-fixtures.ts";
 
@@ -372,41 +370,6 @@ describe("a job's use", () => {
     );
     expect(retired.status).toBe(202);
     expect(await held("solvent", IMRAN)).toMatchObject({ quantity: 92 });
-  });
-
-  it("names each consumable on FSM's summary, and writes no line on the work order", async () => {
-    await readyToRecord();
-    await job.post(
-      `/api/tech/jobs/${JOB}/consumables`,
-      {
-        items: [
-          { code: "tape_strips", quantity: 4 },
-          { name: "Adhesive", quantity: 2 },
-        ],
-      },
-      "event-consumables-01",
-    );
-
-    for (let delivered = 0; delivered < job.fsmQueue.sent.length; delivered += 1) {
-      const message = {
-        id: `m-${String(delivered)}`,
-        attempts: 1,
-        body: job.fsmQueue.sent[delivered],
-        ack: () => undefined,
-        retry: () => undefined,
-      };
-      await handleFsmSyncBatch(
-        { queue: "mm-fsm-sync-local", messages: [message] } as unknown as MessageBatch,
-        { ...env, MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: job.fsmQueue },
-        job.deps,
-        createLogger(),
-      );
-    }
-    expect(job.fsm.made.appointmentUpdates.at(-1)?.fields.Summary).toContain(
-      "Consumables: Tape strips x4, Adhesive x2",
-    );
-    expect(job.fsm.made.workOrders).toEqual([]);
-    expect(job.fsm.made.invoiced).toEqual([]);
   });
 });
 

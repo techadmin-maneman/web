@@ -52,7 +52,7 @@ export class ZohoError extends ProviderError {
 }
 
 /** The Zoho clients, each with its own access token. */
-export type ZohoClientName = "crm" | "fsm" | "books";
+export type ZohoClientName = "crm" | "books";
 
 export interface ZohoClient {
   readonly clientId: string;

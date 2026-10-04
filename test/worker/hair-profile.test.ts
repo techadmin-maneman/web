@@ -7,7 +7,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../src/domain/sessions.ts";
-import { summaryOf } from "../../src/domain/job-sheet.ts";
 import { appFor, captureLogs, eraseByMobile, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "./job-fixtures.ts";
 
@@ -296,17 +295,6 @@ describe("a profile written from an older copy", () => {
 });
 
 describe("what never leaves our database", () => {
-  it("puts nothing on FSM's queue, and FSM's summary of the visit carries none of it", async () => {
-    const job = await consultation();
-    const queued = job.fsmQueue.sent.length;
-    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
-
-    expect(job.fsmQueue.sent).toHaveLength(queued);
-    const visit = { id: JOB, fsmId: "ap-today", type: "consultation" as const, oneVisit: false, personId: PERSON };
-    const summary = await summaryOf(env.DB, { ...visit, fsmContactId: "contact-1" }, { labelAsTest: false });
-    for (const word of [SKIN, "minoxidil", "1B", "57.5"]) expect(summary).not.toContain(word);
-  });
-
   it("writes none of it to a log line, from the phone or the console", async () => {
     const job = await consultation();
     await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");

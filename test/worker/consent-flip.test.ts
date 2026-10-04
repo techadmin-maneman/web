@@ -73,7 +73,7 @@ async function book(): Promise<string> {
         consent: true,
       }),
     },
-    { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() },
+    { CRM_QUEUE: fakeQueue() },
   );
   expect(answer.status).toBe(201);
   const lead = await env.DB.prepare("SELECT id FROM leads WHERE person_id = ?1").bind(PERSON).first<string>("id");
