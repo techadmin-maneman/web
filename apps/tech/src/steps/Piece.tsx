@@ -2,9 +2,11 @@
 // the API leaves it out of the other types' `steps`, so this screen is never
 // reached for them.
 //
-// A consultation and fit in one visit asks first for the client's choice, which
-// no board draws: the product they chose, by name and never by price, or that
-// they decided against the fit, when nothing is fitted and no label is asked for
+// A consultation and fit in one visit comes here straight after the before
+// photographs, and asks first for the client's choice, which no board draws: the
+// product they chose, by name and never by price, or that they decided against
+// the fit, when nothing is fitted and no label is asked for. The checklist that
+// follows lists the fit's items only for a client being fitted
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Any other visit
 // says first what the client paid for, and warns when the hair profile names
 // another product.

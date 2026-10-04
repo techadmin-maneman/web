@@ -28,6 +28,7 @@ const CHECK_IN = "44444444-4444-4444-8444-444444444441";
 const REQUEST = "33333333-3333-4333-8333-333333333336";
 const CONSULTATION = "22222222-2222-4222-8222-222222222223";
 const GRIEVANCE = "33333333-3333-4333-8333-333333333337";
+const DISPUTE = "33333333-3333-4333-8333-333333333338";
 
 let ops: App;
 
@@ -365,6 +366,35 @@ describe("GET /api/tasks", () => {
     expect(groupNames(await tasks())).toEqual([]);
   });
 
+  // A client's claim for money back once waited on No-shows alone: no Tasks row, no count, no link (OIA-07, MON-17).
+  it("waits on a disputed charge until ops rule on it, naming what the charge kept", async () => {
+    await noShowCase("charged");
+    await env.DB.batch([
+      env.DB.prepare("UPDATE no_show_cases SET charge = 'visit', kept_amount = 200000, refund_amount = 0"),
+      env.DB.prepare(
+        `INSERT INTO no_show_disputes (id, case_id, person_id, reason, created_at)
+         VALUES (?1, ?2, ?3, 'I was home all morning.', '2026-09-20T06:00:00.000Z')`,
+      ).bind(DISPUTE, CASE, PERSON),
+    ]);
+    expect(tasksIn(await tasks(), "no_show_dispute")).toEqual([
+      {
+        id: DISPUTE,
+        person: { id: PERSON, name: "Rohit Malhotra" },
+        detail: "200000",
+        since: "2026-09-20T06:00:00.000Z",
+        due: "2026-09-22T06:00:00.000Z",
+        owner: null,
+      },
+    ]);
+
+    // Their record is gone once they are erased, and the charge still waits for a ruling.
+    await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), PERSON).run();
+    expect(tasksIn(await tasks(), "no_show_dispute")).toMatchObject([{ id: DISPUTE, person: null }]);
+
+    await env.DB.prepare("UPDATE no_show_disputes SET ruling = 'upheld', ruled_at = ?1").bind(NOW.toISOString()).run();
+    expect(groupNames(await tasks())).toEqual([]);
+  });
+
   it("waits for ops on a number change only once both numbers are proven", async () => {
     await numberChange("verifying");
     expect(groupNames(await tasks())).toEqual([]);
@@ -582,6 +612,34 @@ describe("GET /api/tasks", () => {
       ).run();
       expect(groupNames(await tasks())).toEqual([]);
     });
+  });
+
+  // OIA-03, BK-21: "Move it in Dispatch" opened this week's board with no drawer, wherever the job was.
+  it("gives a job on its technician's day off its visit, so the task opens it on the board", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t9', 'fsm-t9', 'Chetan Arora', 'CA', 1, ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
+           fsm_status, fsm_modified_at, synced_at)
+         VALUES (?1, 'fsm-appt-11', ?2, 'service', '2026-09-30T05:00:00.000Z', '2026-09-30T06:30:00.000Z',
+           't9', 'scheduled', 'Scheduled', ?3, ?3)`,
+      ).bind(VISIT, PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+         VALUES ('leave-1', 't9', '2026-09-30', '2026-09-30', 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+
+    expect(tasksIn(await tasks(), "leave_conflict")).toEqual([
+      expect.objectContaining({
+        id: VISIT,
+        // Only a move the client has not heard of carries the mobile.
+        person: { id: PERSON, name: "Rohit Malhotra" },
+        visit: { id: VISIT, starts_at: "2026-09-30T05:00:00.000Z" },
+      }),
+    ]);
   });
 
   it("counts the tasks whose day has passed, and no others", async () => {

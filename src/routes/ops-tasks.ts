@@ -57,8 +57,28 @@ const TaskSchema = z
   .object({
     id: z.uuid().openapi({ description: "The queued row's own id, so the task can be reached where it is decided." }),
     person: z
-      .union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()])
+      .union([
+        z
+          .object({
+            id: z.uuid(),
+            name: z.string(),
+            mobile: z.string().optional().openapi({
+              description: "On a move the client has not heard of, their mobile, for the call. Left out elsewhere.",
+            }),
+          })
+          .strict(),
+        z.null(),
+      ])
       .openapi({ description: "Null for an erased client, whose record is gone." }),
+    visit: z
+      .object({ id: z.uuid(), starts_at: z.iso.datetime() })
+      .strict()
+      .optional()
+      .openapi({
+        description:
+          "The visit to come the dispatch board settles the task on, so the task can open it there: a move the " +
+          "client has not heard of, and a job on its technician's day off. Left out for every other group.",
+      }),
     detail: z.union([z.string(), z.null()]).openapi({
       description:
         "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM " +
@@ -205,6 +225,19 @@ async function readTheBoard(c: Context<AppEnv>, level: Level) {
   return { ...board, tasks: await tasksWithin(c.env.DB, board.tasks, reachOf) };
 }
 
+/** A task as the board answers it: the visit and the client's mobile only where its group carries them. */
+function taskBody(task: Task) {
+  const { id, detail, since, due, owner, visit } = task;
+  const body = { id, person: personBody(task.person), detail, since, due, owner };
+  return visit === null ? body : { ...body, visit };
+}
+
+function personBody(person: Task["person"]) {
+  if (person === null) return null;
+  const { id, name, mobile } = person;
+  return mobile === null ? { id, name } : { id, name, mobile };
+}
+
 /** The members of staff a task may be given to: those who have used the console lately (src/policy/tasks.ts). */
 const staffNow = (c: Context<AppEnv>): Promise<string[]> =>
   staffSeenSince(c.env.DB, new Date(c.var.deps.now().getTime() - STAFF_SEEN_WITHIN_DAYS * DAY_MS));
@@ -239,7 +272,7 @@ export function registerOpsTasks(app: App): void {
           group,
           count: waiting.length,
           closable: isClosable(group),
-          tasks: shown.map(({ id, person, detail, since, due, owner }) => ({ id, person, detail, since, due, owner })),
+          tasks: shown.map(taskBody),
         };
       })
       .filter((each) => each.count > 0);
