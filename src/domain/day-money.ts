@@ -10,6 +10,8 @@
 // a refund from the moment Razorpay reported it processed.
 
 import { addDays, indiaInstant } from "../lib/india-time.ts";
+import type { PlacesReached } from "../policy/access.ts";
+import { reachBinding, withinReach } from "./places.ts";
 
 /** The board's three figures, and what the third leaves out. */
 export interface DayFigures {
@@ -53,20 +55,26 @@ export interface DayMoney extends DayFigures {
 }
 
 /**
- * The day's figures, in one statement. Each is over the rows themselves and
- * joins no person, so erasing a client moves none of them: what was taken on a
- * day stays what was taken, and only the named line beneath goes.
+ * The day's figures in the places reached, in one statement. Each is over the
+ * rows themselves and joins no person, so erasing a client moves none of the
+ * national figures: what was taken on a day stays what was taken, and only the
+ * named line beneath goes.
  */
 const FIGURES = `SELECT
-  (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE captured_at >= ?1 AND captured_at < ?2) AS collected,
-  (SELECT COALESCE(SUM(amount), 0) FROM refunds
-     WHERE status = 'created' AND created_at >= ?1 AND created_at < ?2) AS refunds_processing,
-  (SELECT COALESCE(SUM(amount), 0) FROM refunds
-     WHERE status = 'processed' AND processed_at >= ?1 AND processed_at < ?2) AS refunded,
-  (SELECT COALESCE(SUM(kept_amount), 0) FROM visit_changes
-     WHERE notice = 'late' AND kept_amount > 0 AND created_at >= ?1 AND created_at < ?2)
-  + (SELECT COALESCE(SUM(kept_amount), 0) FROM no_show_cases
-     WHERE decision = 'charged' AND decided_at >= ?1 AND decided_at < ?2) AS charged`;
+  (SELECT COALESCE(SUM(p.amount), 0) FROM payments p
+     WHERE p.captured_at >= ?1 AND p.captured_at < ?2 AND ${withinReach("payment", "p", "?3")}) AS collected,
+  (SELECT COALESCE(SUM(r.amount), 0) FROM refunds r
+     WHERE r.status = 'created' AND r.created_at >= ?1 AND r.created_at < ?2
+       AND ${withinReach("refund", "r", "?3")}) AS refunds_processing,
+  (SELECT COALESCE(SUM(r.amount), 0) FROM refunds r
+     WHERE r.status = 'processed' AND r.processed_at >= ?1 AND r.processed_at < ?2
+       AND ${withinReach("refund", "r", "?3")}) AS refunded,
+  (SELECT COALESCE(SUM(c.kept_amount), 0) FROM visit_changes c
+     WHERE c.notice = 'late' AND c.kept_amount > 0 AND c.created_at >= ?1 AND c.created_at < ?2
+       AND ${withinReach("visit_change", "c", "?3")})
+  + (SELECT COALESCE(SUM(n.kept_amount), 0) FROM no_show_cases n
+     WHERE n.decision = 'charged' AND n.decided_at >= ?1 AND n.decided_at < ?2
+       AND ${withinReach("no_show", "n", "?3")}) AS charged`;
 
 /**
  * Both kinds of charge in one statement, each that kept money: a payment kept
@@ -83,7 +91,7 @@ const CHARGES = `SELECT * FROM (
          c.kind AS change, NULL AS technician
     FROM visit_changes c LEFT JOIN people pe ON pe.id = c.person_id
    WHERE c.notice = 'late' AND c.kept_amount > 0 AND (pe.id IS NULL OR pe.erased_at IS NULL)
-     AND c.created_at >= ?1 AND c.created_at < ?2
+     AND c.created_at >= ?1 AND c.created_at < ?2 AND ${withinReach("visit_change", "c", "?4")}
   UNION ALL
   SELECT 'no_show', n.id, pe.id, pe.name, n.kept_amount, n.decided_at, a.window_start, NULL, t.name
     FROM no_show_cases n
@@ -93,7 +101,7 @@ const CHARGES = `SELECT * FROM (
     LEFT JOIN technicians t ON t.id = ci.technician_id
    WHERE n.decision = 'charged' AND (n.kept_amount IS NULL OR n.kept_amount > 0)
      AND (pe.id IS NULL OR pe.erased_at IS NULL)
-     AND n.decided_at >= ?1 AND n.decided_at < ?2
+     AND n.decided_at >= ?1 AND n.decided_at < ?2 AND ${withinReach("no_show", "n", "?4")}
 ) ORDER BY at LIMIT ?3`;
 
 interface ChargeRow {
@@ -114,13 +122,14 @@ function changeOf(change: ChargeRow["change"]): Charge["change"] {
   return change === "moved" ? "moved" : "cancelled";
 }
 
-/** The day's money and its charges, the earliest first. */
-export async function dayMoney(db: D1Database, date: string, limit: number): Promise<DayMoney> {
+/** The day's money in the places reached, and its charges, the earliest first. */
+export async function dayMoney(db: D1Database, date: string, limit: number, reached: PlacesReached): Promise<DayMoney> {
   const from = indiaInstant(date, "00:00").toISOString();
   const to = indiaInstant(addDays(date, 1), "00:00").toISOString();
+  const cities = reachBinding(reached);
   const [figures, charges] = await Promise.all([
-    db.prepare(FIGURES).bind(from, to).first<DayFigures>(),
-    db.prepare(CHARGES).bind(from, to, limit).all<ChargeRow>(),
+    db.prepare(FIGURES).bind(from, to, cities).first<DayFigures>(),
+    db.prepare(CHARGES).bind(from, to, limit, cities).all<ChargeRow>(),
   ]);
 
   return {
