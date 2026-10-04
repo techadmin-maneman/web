@@ -137,6 +137,8 @@ export interface UnassignedJob extends Visit {
 }
 
 export interface Board {
+  /** The board's version when this was read: it goes up whenever something the board draws changes. */
+  readonly version: number;
   readonly from: string;
   readonly dates: string[];
   /** The city the jobs are narrowed to; null for every city. */
@@ -230,6 +232,15 @@ const BOARD_TECHNICIANS = `SELECT id, name, initials, zone, ${withinReach("techn
 const EVERYWHERE: PlacesReached = { kind: "everywhere" };
 
 /**
+ * A number that triggers raise whenever a visit, move, leave, technician or the day's slot times change, so the open
+ * board reads itself again only when it has moved.
+ */
+export async function boardVersion(db: D1Database): Promise<number> {
+  const row = await db.prepare("SELECT version FROM board_version WHERE id = 1").first<{ version: number }>();
+  return row?.version ?? 0;
+}
+
+/**
  * The board for seven days from `from`, optionally narrowed to one city. `noticeHours` is the notice in force, which a
  * visit no hold sold is changed under (src/domain/visit-changes.ts).
  *
@@ -245,6 +256,8 @@ export async function dispatchBoard(
   const fromAt = indiaInstant(options.from, "00:00").toISOString();
   const toAt = indiaInstant(addDays(last, 1), "00:00").toISOString();
 
+  // Read before the board, so a change made while it is read moves the version past this one.
+  const version = await boardVersion(db);
   const [technicians, scheduled, untold, cities, schedule] = await Promise.all([
     db
       .prepare(BOARD_TECHNICIANS)
@@ -301,6 +314,7 @@ export async function dispatchBoard(
     note: period.note,
   }));
   return {
+    version,
     from: options.from,
     dates,
     city: options.city,

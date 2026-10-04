@@ -12,9 +12,9 @@
 // technician and the window the board asked for, because the API answers with
 // the code alone.
 //
-// The board reads itself again every minute and when the tab comes back, and
-// after a move, without the loading state: the grid keeps its scroll, and the
-// keyboard goes back to the block that moved.
+// The board reads itself again when something on it has changed (useBoard.ts),
+// and after a move, without the loading state: the grid keeps its scroll, and
+// the keyboard goes back to the block that moved.
 //
 // A link may open the board on a week and a search ("?from=2026-10-12&find=Imran"),
 // as a technician's page does to show his days.
