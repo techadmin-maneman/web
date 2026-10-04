@@ -97,7 +97,7 @@ test("says the visit is still booked when the API fails and the phone kept Home"
       route.fulfill({ status: 503, json: { error: { code: "unavailable", message: "Down for a moment." } } }),
     );
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: "We could not load your visit." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toBeVisible();
   await expect(page.getByText("Your visit is still booked.")).toBeVisible();
 });
 
@@ -120,7 +120,7 @@ test("offline on Visits, which the phone does not keep, says the visits load onc
   await expect(page.getByText(OFFLINE)).toHaveCount(0);
   const waiting = page.getByText("Your visits will load when you are back online.");
   await expect(waiting).toBeVisible();
-  await expect(page.getByText("We could not load this. Please try again.")).toHaveCount(0);
+  await expect(page.getByText("We couldn’t load this. Try again.")).toHaveCount(0);
 
   await page.context().setOffline(false);
   await expect(page.getByText("Consultation · 9 am to 12 pm")).toBeVisible();
@@ -135,7 +135,7 @@ test("keeps no API answer but Home, and forgets Home at logout", async ({ page }
   await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
   expect((await keptPaths(page)).filter((path) => path.startsWith("/api/"))).toEqual(["/api/me"]);
 
-  await page.getByRole("button", { name: "Log out" }).click();
+  await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
   expect((await keptPaths(page)).filter((path) => path.startsWith("/api/"))).toEqual([]);
 
@@ -144,5 +144,5 @@ test("keeps no API answer but Home, and forgets Home at logout", async ({ page }
   await page.context().setOffline(true);
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1, name: "We could not load your visit." })).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toHaveCount(0);
 });

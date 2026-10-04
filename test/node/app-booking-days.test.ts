@@ -76,7 +76,7 @@ describe("what the date step says of a full day offered", () => {
 
   it("that it is full, and the next open day is chosen", () => {
     expect(offeredFullLine(days, "2026-10-06", "2026-10-07")).toBe(
-      "Tuesday 6 Oct is full. We have picked the next open day.",
+      "Tuesday 6 Oct is full. We’ve picked the next open day.",
     );
   });
 

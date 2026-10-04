@@ -90,7 +90,7 @@ test("C8 inside 24 hours shows the charge before anything is cancelled, and Keep
   const sheet = await reschedule(page, changingClients().late.mobile);
   await sheet.getByRole("button", { name: "Cancel the visit instead" }).click();
   const cancel = page.getByRole("dialog", { name: /^Cancel \w+day's visit$/ });
-  await expect(cancel.getByText("Charged. The Rs. 2,000 is not refunded.")).toBeVisible();
+  await expect(cancel.getByText("Charged. The Rs. 2,000 isn’t refunded.")).toBeVisible();
   await expect(cancel.getByRole("button", { name: "Cancel and accept charge" })).toBeVisible();
   await cancel.getByRole("button", { name: "Keep it" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
@@ -104,7 +104,7 @@ test("C7 inside 24 hours: a service visit's move is charged, and the new visit i
   await confirmedByRazorpay(page);
   const sheet = await reschedule(page, changingClients().late.mobile);
   await expect(
-    sheet.getByText("Charged. The Rs. 2,000 is not refunded and the new visit is paid separately."),
+    sheet.getByText("Charged. The Rs. 2,000 isn’t refunded and the new visit is paid separately."),
   ).toBeVisible();
   await scan(page);
   await sheet.getByRole("button", { name: "Move and accept charge" }).click();

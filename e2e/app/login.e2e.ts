@@ -51,7 +51,7 @@ test("the session survives a reload, and logging out ends it", async ({ page }) 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
   await page.getByRole("link", { name: "Your profile" }).click();
-  await page.getByRole("button", { name: "Log out" }).click();
+  await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
@@ -71,7 +71,7 @@ test("a session that ends mid-use goes back to the login, says why, and returns 
   await page.context().clearCookies();
   await page.getByRole("navigation").getByRole("link", { name: "Payments" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
-  await expect(page.getByText("Your session has ended. Log in again to carry on.")).toBeVisible();
+  await expect(page.getByText("You’ve been signed out. Sign in again to carry on.")).toBeVisible();
   expect(await page.evaluate(() => caches.has("mm-app-home"))).toBe(false);
   await expect(page).toHaveURL(/\/payments$/);
 
@@ -88,7 +88,7 @@ test("logging out takes the API's word for it: offline it waits, and a refusal k
   await enter(page, CODE);
   await page.getByRole("link", { name: "Your profile" }).click();
   await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
-  const logOut = page.getByRole("button", { name: "Log out" });
+  const logOut = page.getByRole("button", { name: "Sign out" });
 
   await page.context().setOffline(true);
   await expect(logOut).toBeDisabled();
@@ -100,7 +100,7 @@ test("logging out takes the API's word for it: offline it waits, and a refusal k
   );
   await logOut.click();
   await expect(page.getByRole("alert")).toHaveText(
-    "That did not go through, so you are still logged in here. Please try again.",
+    "That didn’t go through, so you’re still signed in here. Try again.",
   );
   await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
 });
@@ -114,7 +114,7 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await expect(page.getByText("Consultation · 9 am to 12 pm")).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Visits" })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: "Photos" }).click();
-  await expect(page.getByText("Your photographs start at your first visit.")).toBeVisible();
+  await expect(page.getByText("Your photos start at your first visit.")).toBeVisible();
   await tabs.getByRole("link", { name: "Payments" }).click();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
   await tabs.getByRole("link", { name: "Refer" }).click();
@@ -129,7 +129,7 @@ test("a wrong code says so, in the design's words, and the fifth voids it", asyn
   const field = page.getByRole("textbox", { name: "The six-digit code" });
   for (const left of ["Four attempts left.", "Three attempts left.", "Two attempts left.", "One attempt left."]) {
     await enter(page, WRONG);
-    await expect(page.getByRole("alert")).toHaveText(`That code did not match. ${left}`);
+    await expect(page.getByRole("alert")).toHaveText(`That code didn’t match. ${left}`);
     await expect(field).toHaveAttribute("aria-invalid", "true");
   }
   // The next code typed takes the line away; a closed code keeps it, since typing cannot help.
@@ -137,10 +137,10 @@ test("a wrong code says so, in the design's words, and the fifth voids it", asyn
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(field).not.toHaveAttribute("aria-invalid", "true");
   await enter(page, WRONG);
-  await expect(page.getByRole("alert")).toHaveText("That code did not match. It no longer works.");
+  await expect(page.getByRole("alert")).toHaveText("That code didn’t match, and it no longer works.");
   await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
   await field.fill("2");
-  await expect(page.getByRole("alert")).toHaveText("That code did not match. It no longer works.");
+  await expect(page.getByRole("alert")).toHaveText("That code didn’t match, and it no longer works.");
 
   await page.getByRole("button", { name: "Send a new code" }).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
@@ -151,7 +151,7 @@ test("a wrong code says so, in the design's words, and the fifth voids it", asyn
 test("asks for one fresh code when the client taps for one twice", async ({ page }) => {
   await sendCode(page, bookedNumber());
   for (let attempt = 0; attempt < 5; attempt += 1) await enter(page, WRONG);
-  await expect(page.getByRole("alert")).toHaveText("That code did not match. It no longer works.");
+  await expect(page.getByRole("alert")).toHaveText("That code didn’t match, and it no longer works.");
 
   // A second code bills a second send, voids the first, and takes another from the day's
   // ceiling for this number: two taps can leave a client unable to log in at all.
@@ -184,7 +184,7 @@ test("says to use the last code when no other can be sent just now", async ({ pa
   );
   await page.getByRole("button", { name: "Resend on WhatsApp" }).click();
   await expect(page.getByRole("alert")).toHaveText(
-    "We cannot send another code just now. Use the last one we sent, or message us.",
+    "We can’t send another code right now. Use the last one we sent, or message us.",
   );
   await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toHaveAttribute(
     "href",
@@ -212,7 +212,7 @@ test("a number with no booking sees the same screen, and no code opens it", asyn
   await sendCode(page, randomMobile());
   await expect(page.getByText("has a booking with us, a code is on its way on WhatsApp.")).toBeVisible();
   await enter(page, CODE);
-  await expect(page.getByRole("alert")).toHaveText("That code did not match. Four attempts left.");
+  await expect(page.getByRole("alert")).toHaveText("That code didn’t match. Four attempts left.");
 });
 
 // The site's booking confirmation opens the app with the number typed there.
@@ -319,7 +319,7 @@ test("names each login screen in the browser's title, and puts focus where the c
   await expect(field).toBeFocused();
 
   await enter(page, WRONG);
-  await expect(page.getByRole("alert")).toHaveText("That code did not match. Four attempts left.");
+  await expect(page.getByRole("alert")).toHaveText("That code didn’t match. Four attempts left.");
   await expect(field).toBeFocused();
 
   await page.getByRole("button", { name: "No booking on this number?" }).click();

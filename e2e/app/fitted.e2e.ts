@@ -125,12 +125,12 @@ test("a visit or a payment that is not the client's says it could not be found",
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   const nobody = "00000000-0000-4000-8000-000000000000";
   await page.goto(`/visits/${nobody}`);
-  await expect(page.getByRole("alert")).toContainText("We could not find this visit.");
+  await expect(page.getByRole("alert")).toContainText("We couldn’t find this visit.");
   await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0);
   await page.getByRole("main").getByRole("link", { name: "Back to visits" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
   await page.goto(`/payments/${nobody}`);
-  await expect(page.getByRole("alert")).toContainText("We could not find this payment.");
+  await expect(page.getByRole("alert")).toContainText("We couldn’t find this payment.");
 });
 
 // Home as the API gives it: a visit FSM has not closed stays, saying where it stands, and nothing is booked in its
@@ -168,7 +168,7 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   await expect(page.getByText("2 free service visits")).toBeVisible();
   await expect(page.getByText("1 to use by 3 Jan 2028")).toBeVisible();
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
-  await expect(page.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
+  await expect(page.getByText(`Your replacement is due in ${month}.`)).toBeVisible();
   // The API prompts the replacement only once its month may be booked, so the prompt always offers it, beside the
   // app's own page on what a replacement involves.
   await expect(page.getByRole("link", { name: "See what that involves" })).toHaveAttribute("href", "/replacement");
@@ -208,7 +208,7 @@ test("Visits heads the client's own record with the month their replacement fall
 
   const record = page.getByRole("region", { name: "Your record" });
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
-  await expect(record.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
+  await expect(record.getByText(`Your replacement is due in ${month}.`)).toBeVisible();
   // Never the day, however the month is written.
   await expect(record).not.toContainText(fullDate(client.piece.due));
 
@@ -247,7 +247,7 @@ test("a past visit carries its own invoice, or says why there is none", async ({
   // no longer true of it, so the client is told it is late and how to ask for it (CLI-25).
   await page.goto(`/visits/${client.firstFit.id}`);
   await expect(
-    page.getByText("The invoice is taking longer than it should. Message us and we will send it."),
+    page.getByText("The invoice is taking longer than it should. Message us and we’ll send it."),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute(
     "href",
@@ -280,7 +280,7 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   // Opened, it is the whole photograph.
   await expect(sheet.locator("img")).toHaveAttribute("src", /\/api\/photos\/file\//);
   await expect.poll(() => sheet.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600);
-  await expect(sheet.getByText("Downloaded photographs sit in your gallery, outside the app.")).toBeVisible();
+  await expect(sheet.getByText("Downloaded photos sit in your gallery, outside the app.")).toBeVisible();
   const download = page.waitForEvent("download");
   await sheet.getByRole("link", { name: "Download" }).click();
   expect((await download).suggestedFilename()).toBe(`mane-man-${client.service.date}-after-front.jpg`);
@@ -293,7 +293,7 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   await expect(page.getByLabel("From", { exact: true })).toHaveValue(client.firstFit.id);
   await expect(page.getByLabel("To", { exact: true })).toHaveValue(client.service.id);
 
-  const divider = page.getByRole("slider", { name: "Divider between the two photographs" });
+  const divider = page.getByRole("slider", { name: "Divider between the two photos" });
   await expect(divider).toHaveAttribute("aria-valuenow", "50");
   await divider.press("ArrowLeft");
   await expect(divider).toHaveAttribute("aria-valuenow", "48");
@@ -359,7 +359,7 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await page.getByRole("button", { name: "Tax invoice" }).click();
   await expect(page.getByText("The invoice is taking longer than it should.")).toBeVisible();
   await page.getByRole("button", { name: "Receipt" }).click();
-  const receipt = page.getByRole("status").filter({ hasText: "The receipt is not ready yet." });
+  const receipt = page.getByRole("status").filter({ hasText: "The receipt isn’t ready yet." });
   await expect(receipt).toBeVisible();
   await expect(receipt.getByRole("link", { name: "Ask us for it" })).toHaveAttribute(
     "href",
@@ -456,7 +456,7 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await expect(card).toContainText("Morning, 9 am to 12 pm");
   await expect(card).toContainText("Service visit");
   await expect(card).toContainText("Your payment is in. We are booking your visit.");
-  await expect(card).toContainText("We will message you on WhatsApp when the visit is booked.");
+  await expect(card).toContainText("We’ll message you on WhatsApp when it’s booked.");
   await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
   const results = await new AxeBuilder({ page })

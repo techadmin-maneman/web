@@ -36,7 +36,7 @@ describe("Home's prompt for the next visit", () => {
   it("says the month an overdue replacement was due, never a day, and the day offered on the button", () => {
     const overdue = prompt({ type: "replacement", due_on: "2026-09-24", date: "2026-10-03", window: null });
     expect(nextVisitWords(overdue, "2026-10")).toEqual({
-      line: "Your replacement piece was due in September.",
+      line: "Your replacement was due in September.",
       book: "Book it for Sat 3 Oct",
     });
   });
@@ -44,7 +44,7 @@ describe("Home's prompt for the next visit", () => {
   it("says the month a replacement falls due, and books it for its own day", () => {
     const coming = prompt({ type: "replacement", due_on: "2026-10-15", date: "2026-10-15", window: null });
     expect(nextVisitWords(coming, "2026-10")).toEqual({
-      line: "Your replacement piece is due in October.",
+      line: "Your replacement is due in October.",
       book: "Book it for then",
     });
   });

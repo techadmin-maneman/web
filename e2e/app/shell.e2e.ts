@@ -77,8 +77,8 @@ test("reaches mm-api as the client surface, on its own host", async ({ page }) =
 test("says board B3's error when the API cannot be reached, with a way to try again", async ({ page }) => {
   await page.route("**/api/me", (route) => route.abort());
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "We could not load your visit." })).toBeVisible();
-  await expect(page).toHaveTitle("We could not load your visit. · Mane Man");
+  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toBeVisible();
+  await expect(page).toHaveTitle("We couldn’t load your visit. · Mane Man");
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute("href", "https://wa.me/919007973247");
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -147,7 +147,7 @@ test("offers a way on, not a blank page, when a page fails to draw", async ({ pa
   // An answer the page cannot draw.
   await page.route("**/api/payments", (route) => route.fulfill({ json: { entries: null } }));
   await page.getByRole("navigation").getByRole("link", { name: "Payments" }).click();
-  await expect(page.getByRole("alert")).toContainText("This page did not open.");
+  await expect(page.getByRole("alert")).toContainText("This page didn’t open.");
   await expect(page.getByRole("button", { name: "Reload" })).toBeVisible();
 });
 

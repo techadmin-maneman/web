@@ -30,19 +30,19 @@ test("Photos shows a booked client's before photo beside its look, each kept, ea
 
   const tryOn = page.getByRole("region", { name: date });
   await expect(tryOn.getByText("Your try-on")).toBeVisible();
-  const photo = tryOn.getByRole("button", { name: `Your photograph, try-on of ${date}` });
+  const photo = tryOn.getByRole("button", { name: `Your photo, try-on of ${date}` });
   const look = tryOn.getByRole("button", { name: `Your look, try-on of ${date}` });
   await arrived(photo);
   await arrived(look);
   // Booked, so the photograph is kept until they ask, and the look until their first fit is photographed.
   await expect(
     tryOn.getByText(
-      "Your photograph is kept in your account until you ask us to delete it. " +
+      "Your photo is kept in your account until you ask us to delete it. " +
         "The look is kept until your first fit is photographed.",
     ),
   ).toBeVisible();
   // No visit has photographs yet: board D3's lines, beneath the try-on.
-  await expect(page.getByText("Your photographs start at your first visit.")).toBeVisible();
+  await expect(page.getByText("Your photos start at your first visit.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Compare" })).toHaveCount(0);
 
   await look.click();
@@ -56,7 +56,7 @@ test("Photos shows a booked client's before photo beside its look, each kept, ea
   await expect(sheet).toBeHidden();
 
   await photo.click();
-  await expect(page.getByRole("dialog", { name: `Your photograph · ${date}` })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: `Your photo · ${date}` })).toBeVisible();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();

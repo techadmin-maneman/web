@@ -25,7 +25,7 @@ export const titles = {
   refer: "Refer",
   fitted: "Who has been fitted",
   profile: "Your profile",
-  replacement: "Replacement piece",
+  replacement: "Replacement",
 } as const;
 
 export const whatsapp = {
@@ -50,15 +50,15 @@ export const login = {
     send: "Send code on WhatsApp",
     hint: "A six-digit code, no password.",
     // PLACEHOLDER: the design draws no session that ended while the app was open.
-    ended: "Your session has ended. Log in again to carry on.",
+    ended: "You’ve been signed out. Sign in again to carry on.",
     // PLACEHOLDER: the design draws no error on A1.
     errors: {
       invalid: "Enter the ten-digit mobile number you booked with.",
       rate_limited: "Too many codes for this number today. Try again tomorrow, or message us.",
-      busy: "We cannot send codes just now. Please try again in a little while.",
-      turnstile_failed: "We could not confirm you are a person. Please try again.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "Something went wrong on our side. Please try again.",
+      busy: "We can’t send codes right now. Try again in a few minutes.",
+      turnstile_failed: "We couldn’t confirm you’re a person. Try again.",
+      offline: "You’re offline. Reconnect and try again.",
+      unknown: "Something went wrong on our side. Try again.",
     },
   },
   code: {
@@ -84,21 +84,21 @@ export const login = {
     /** The design's one line, "That code did not match. Two attempts left." */
     mismatch: (left: number) =>
       left === 0
-        ? "That code did not match. It no longer works."
-        : `That code did not match. ${ATTEMPTS[left] ?? `${String(left)} attempts left.`}`,
+        ? "That code didn’t match, and it no longer works."
+        : `That code didn’t match. ${ATTEMPTS[left] ?? `${String(left)} attempts left.`}`,
     // PLACEHOLDER: the design draws the void code, but not these words or the ones below.
     expired: "This code no longer works.",
     fresh: "Send a new code",
-    failed: "That did not go through. Please try again.",
+    failed: "That didn’t go through. Try again.",
     // PLACEHOLDER: the design draws no resend that is refused.
-    limited: "We cannot send another code just now. Use the last one we sent, or message us.",
+    limited: "We can’t send another code right now. Use the last one we sent, or message us.",
   },
   help: {
     back: "Back",
     // The design's title is "We have no booking on this number"; neutral, it becomes a question (ADR 0030).
     title: "No booking on this number?",
     body: "The app opens once a consultation is booked. The consultation is free.",
-    hint: "Try the number you gave us, or message us and we will link it.",
+    hint: "Try the number you gave us, or message us and we’ll link it.",
     book: "Book a free consultation",
     message: "Message us",
   },
@@ -132,7 +132,7 @@ export const VISIT_TYPES = {
   consultation: "Consultation",
   first_fit: "First fit",
   service: "Service visit",
-  replacement: "Replacement piece",
+  replacement: "Replacement",
 } as const;
 // PLACEHOLDER: a visit of none of the four kinds.
 export const OTHER_VISIT = "Visit";
@@ -164,12 +164,12 @@ export const messages = {
   // PLACEHOLDER
   bookFirstFit: "I would like to book my first fit.",
   // PLACEHOLDER
-  bookReplacement: "I would like to book my replacement piece.",
+  bookReplacement: "I’d like to book my replacement hair system.",
   document: (what: string, reference: string) => `Please send me the ${what.toLowerCase()} for ${reference}.`,
   // PLACEHOLDER: a visit's invoice that has not come in the day it should have.
   lateInvoice: (what: string, date: string) => `Please send me the invoice for my ${what.toLowerCase()} on ${date}.`,
   // PLACEHOLDER: a refund that has taken longer than Razorpay's working days.
-  lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} has not arrived.`,
+  lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} hasn’t arrived.`,
   // PLACEHOLDER: a client moving to another city while a visit is booked.
   moveCity: "I am moving to another city and have a visit booked.",
 } as const;
@@ -192,7 +192,7 @@ const freeVisitsTile = {
 
 /** The booking sheet's words for a paid visit still being booked, which Home repeats while it waits. */
 const PAID_IN = "Your payment is in. We are booking your visit.";
-const TOLD_WHEN_BOOKED = "We will message you on WhatsApp when the visit is booked.";
+const TOLD_WHEN_BOOKED = "We’ll message you on WhatsApp when it’s booked.";
 
 export const home = {
   /** The avatar's name begins with the initials it shows, so "tap RM" reaches it by voice. */
@@ -246,9 +246,9 @@ export const home = {
     // PLACEHOLDER: a lead whose consultation is done.
     bookFirstFit: "Book your first fit",
     // PLACEHOLDER: a fitted client whose piece falls due before their next service would.
-    bookReplacement: "Book your replacement piece",
+    bookReplacement: "Book your replacement",
     // PLACEHOLDER: the other kind of visit a fitted client may book, beside the one the app offers.
-    orReplacement: "Or book a replacement piece",
+    orReplacement: "Or book a replacement",
     orService: "Or book a service visit",
   },
   expect: {
@@ -310,8 +310,8 @@ export const replacement = {
   title: "What a replacement involves",
   back: "Back to Home",
   lines: [
-    "A replacement takes off the piece you wear now and fits a new one in its place, at home, by your technician.",
-    "The new piece is cut in and styled to match, as it was at your first fit.",
+    "A replacement takes off the hair system you wear now and fits a new one in its place, at home, by your technician.",
+    "The new hair system is cut in and styled to match, as it was at your first fit.",
     "It is booked here like any other visit, and paid for when you book it.",
   ],
   book: "Book the replacement",
@@ -328,7 +328,7 @@ export const visits = {
   /** A consultation asked for on the site, which ops have yet to confirm. */
   requested: "Requested",
   // PLACEHOLDER: a visit that is not this client's, or no longer exists.
-  notFound: "We could not find this visit.",
+  notFound: "We couldn’t find this visit.",
   // PLACEHOLDER: offline, the visits are not kept on the phone.
   offline: "Your visits will load when you are back online.",
   // PLACEHOLDER
@@ -336,7 +336,7 @@ export const visits = {
   /*
    * PLACEHOLDER: the client's own record, derived from their visits and
    * payments (src/domain/client-history.ts). No board draws it. Board B1 writes
-   * one sentence about a replacement, "Your replacement piece is due in
+   * one sentence about a replacement, "Your replacement is due in
    * March.", and that sentence is kept word for word.
    *
    * A month and never a day (ADR 0059). Nothing here is shown at all until there is
@@ -344,9 +344,9 @@ export const visits = {
    */
   record: {
     label: "Your record",
-    due: (month: string) => `Your replacement piece is due in ${month}.`,
+    due: (month: string) => `Your replacement is due in ${month}.`,
     /** Past its month, the same fact in the tense it is now true in. */
-    overdue: (month: string) => `Your replacement piece was due in ${month}.`,
+    overdue: (month: string) => `Your replacement was due in ${month}.`,
     rows: { firstFit: "First fit", services: "Service visits", replacements: "Replacements", spend: "Total paid" },
     /** A client fitted before their visits were recorded has no first fit to name, which is not the same as none. */
     noFirstFit: "Not on record",
@@ -357,7 +357,7 @@ export const visits = {
     back: "Back to visits",
     // PLACEHOLDER
     cancelled: "This visit was cancelled.",
-    photographs: "Photographs from this visit",
+    photographs: "Photos from this visit",
     technician: "Technician",
     duration: "Duration",
     type: "Type",
@@ -370,7 +370,7 @@ export const visits = {
       newTab: "PDF, opens in a new tab",
       generating: "The invoice is still generating. Usually ready within the hour.",
       // PLACEHOLDER: a day after the visit, "within the hour" is no longer true.
-      late: "The invoice is taking longer than it should. Message us and we will send it.",
+      late: "The invoice is taking longer than it should. Message us and we’ll send it.",
       message: "Message us",
       // The owner's own words on 23 September 2026: a free visit says "No charge", and never promises a document.
       free: "No charge for this visit, so there is no invoice.",
@@ -422,20 +422,20 @@ export const booking = {
     continue: "Continue",
   },
   /** PLACEHOLDER: no board draws it. A first fit while ops offer no hair system in the console. */
-  firstFitNotYet: "First fits are not available to book yet.",
+  firstFitNotYet: "First fits aren’t open to book yet.",
   /**
    * PLACEHOLDER: no board draws it. A client who has given no address is asked for it before any slot (ADR 0079;
    * ADR 0025, item 60), under Profile's heading, "Where we come".
    */
   address: {
     why: "Your address first, so we know where to come. Then pick a date.",
-    refused: "We need your address before we can hold a slot. Add it, then pick your window again.",
+    refused: "We need your address before we can hold a time. Add it, then pick a time again.",
     save: "Save and continue",
   },
   /** PLACEHOLDER: no board draws it. The client's address is in a pincode we do not come to, so no day is offered. */
   notServed: {
-    line: (pincode: string) => `We do not come to ${pincode} yet.`,
-    body: "Change the address below, or join the waitlist and we will message you the day we do.",
+    line: (pincode: string) => `We don’t come to ${pincode} yet.`,
+    body: "Change the address below, or join the waitlist and we’ll message you the day we do.",
     waitlist: "Join the waitlist",
   },
   date: {
@@ -446,32 +446,32 @@ export const booking = {
     within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue",
     // PLACEHOLDER: no board draws the day offered being full, nor the days past the first fortnight.
-    offeredFull: (day: string) => `${day} is full. We have picked the next open day.`,
+    offeredFull: (day: string) => `${day} is full. We’ve picked the next open day.`,
     offeredFullPickAnother: (day: string) => `${day} is full. Pick another day.`,
     later: "Later dates",
-    laterFailed: "Those dates did not load. Please try again.",
+    laterFailed: "Those dates didn’t load. Try again.",
   },
   window: {
-    title: "Pick a window",
+    title: "Pick a time",
     full: "Full",
     withRegular: (name: string) => `With ${name}`,
     another: "Another technician",
     regularLine: (name: string) => `${name}, your regular technician, is free.`,
     // PLACEHOLDER: the design draws the window step with the regular technician free.
-    anotherLine: (name: string) => `${name} is not free then. Another technician will come.`,
+    anotherLine: (name: string) => `${name} isn’t free then. Another technician will come.`,
     // PLACEHOLDER: a window already inside the notice, which no board draws.
     within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue to payment",
     // PLACEHOLDER: a visit that costs nothing has no payment to continue to.
     continueFree: "Continue",
     // PLACEHOLDER
-    taken: "That window has just gone. Pick another.",
+    taken: "That time has just gone. Pick another.",
   },
   pay: {
     title: "Pay and confirm",
     // PLACEHOLDER: a visit that costs nothing to book, which no board draws.
     titleFree: "Confirm",
-    held: (time: string) => `Slot held ${time}`,
+    held: (time: string) => `Held for ${time}`,
     // PLACEHOLDER: board C4 says "Free to move until"; cancelling is free until then too.
     freeUntil: (when: string) => `Free to move or cancel until ${when}.`,
     afterThat: " After that it is charged.",
@@ -481,9 +481,9 @@ export const booking = {
       lateFee: (hours: number, amount: string) =>
         `This visit is less than ${String(hours)} hours away: moving or cancelling it costs ${amount}`,
       payment: (hours: number, amount: string) =>
-        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the ${amount} paid is not refunded.`,
+        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the ${amount} paid isn’t refunded.`,
       credit: (hours: number) =>
-        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the free service visit is not returned.`,
+        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the free service visit isn’t returned.`,
     },
     // PLACEHOLDER: a booking ops set to cost nothing when changed late (docs/decisions/0088-every-policy-in-the-console.md).
     freeAnyTime: "Free to move or cancel at any time.",
@@ -535,13 +535,13 @@ export const booking = {
       remove: "Remove code",
       removing: "Removing",
       errors: {
-        code_not_applicable: "That code does not apply to this visit.",
+        code_not_applicable: "That code doesn’t apply to this visit.",
         rate_limited: "Too many codes tried. Try again tomorrow.",
         already_discounted: "This visit already has a code.",
         price_settled: "Payment has started, so the code can no longer change.",
-        hold_expired: "Your slot hold has run out. Pick a window again.",
-        offline: "You are offline. Connect, then try again.",
-        unknown: "That did not go through. Try again.",
+        hold_expired: "Your time ran out. Pick a time again.",
+        offline: "You’re offline. Reconnect and try again.",
+        unknown: "That didn’t go through. Try again.",
       } as Readonly<Record<string, string>>,
     },
   },
@@ -556,16 +556,16 @@ export const booking = {
     rest: ". The balance carries over.",
   },
   // PLACEHOLDER: said to a screen reader, once, a minute before the hold lapses.
-  lastMinute: "One minute left to pay. Then the slot goes back.",
+  lastMinute: "One minute left to pay. Then the time is released.",
   failed: {
     label: "Payment failed",
-    title: "The payment did not go through.",
-    held: (time: string) => `Slot held ${time} more.`,
+    title: "The payment didn’t go through.",
+    held: (time: string) => `Held for ${time} more.`,
     retry: "Try again",
   },
   expired: {
-    label: "Hold expired",
-    title: "That slot has gone back.",
+    label: "Time’s up",
+    title: "That time has been released.",
     pickAgain: "Pick again",
   },
   confirmed: {
@@ -580,8 +580,8 @@ export const booking = {
   // PLACEHOLDER: the hold's time ran out on the phone after Razorpay had taken the payment, which keeps it.
   paidIn: PAID_IN,
   slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
-  refunded: "We could not book that visit, so your payment is being refunded in full.",
-  failedToStart: "That did not go through. Please try again.",
+  refunded: "We couldn’t book that visit, so we’re refunding your payment in full.",
+  failedToStart: "That didn’t go through. Try again.",
   creditGone: "Your free service visit is already on another booking, so this visit is charged at the price below.",
   close: "Close",
 } as const;
@@ -606,8 +606,8 @@ export const note = {
     technician === null
       ? "Saved. Your technician reads it before your visit."
       : `Saved. ${technician} reads it before your visit.`,
-  withOps: "Notes go to us on WhatsApp just now.",
-  failed: "That did not go through.",
+  withOps: "For now, notes go to us on WhatsApp.",
+  failed: "That didn’t go through.",
   whatsapp: "Send it on WhatsApp",
 };
 
@@ -620,10 +620,10 @@ export const dispute = {
   label: "Why is the charge wrong?",
   send: "Send",
   sending: "Sending",
-  sent: "We have your dispute. We will look at it and tell you what we decide.",
-  already: "You have disputed this charge already. We will tell you what we decide.",
+  sent: "We have your dispute. We’ll look into it and let you know.",
+  already: "You’ve already disputed this charge. We’ll let you know what we decide.",
   closed: "The days to dispute this charge have passed. If something is wrong, message us.",
-  failed: "That did not go through. Please try again.",
+  failed: "That didn’t go through. Try again.",
   tryAgain: "Try again",
 };
 
@@ -637,7 +637,7 @@ export const change = {
   move: {
     title: (visit: string) => `Move ${visit}`,
     free: (amount: string) => `Free to move. Your ${amount} carries over.`,
-    charged: (amount: string) => `Charged. The ${amount} is not refunded and the new visit is paid separately.`,
+    charged: (amount: string) => `Charged. The ${amount} isn’t refunded and the new visit is paid separately.`,
     pick: "Pick a new date",
     accept: "Move and accept charge",
     keep: "Keep it",
@@ -648,7 +648,7 @@ export const change = {
     carriesOver: (amount: string) => `Your ${amount} carries over.`,
     creditCarriesOver: "Your free service visit carries over.",
     cancelInstead: "Cancel the visit instead",
-    creditCharged: "Charged. The free service visit is not returned and the new visit is paid separately.",
+    creditCharged: "Charged. The free service visit isn’t returned and the new visit is paid separately.",
   },
   cancel: {
     title: (visit: string) => `Cancel ${visit}`,
@@ -658,7 +658,7 @@ export const change = {
     // PLACEHOLDER from here to the end of cancel.
     lessFee: (fee: string, amount: string, destination: string) =>
       `The late fee of ${fee} is kept. ${amount} back to your ${destination} in 5 to 7 working days.`,
-    charged: (amount: string) => `Charged. The ${amount} is not refunded.`,
+    charged: (amount: string) => `Charged. The ${amount} isn’t refunded.`,
     nothingPaid: "Nothing was paid, so nothing is charged.",
     accept: "Cancel and accept charge",
     creditBack: "Your free service visit comes back.",
@@ -677,7 +677,7 @@ export const change = {
   termsChanged: "The free change has just run out. This is what it costs now.",
   notChangeable: "This visit can no longer be changed here.",
   message: "Message us",
-  failed: "That did not go through, and nothing has changed. Please try again.",
+  failed: "That didn’t go through, and nothing has changed. Try again.",
   moved: "Moved",
   moveItem: (what: string) => `${what} · moved`,
   lateFeeItem: (what: string) => `Late fee · ${what.toLowerCase()}`,
@@ -737,8 +737,8 @@ export const refer = {
   credit: freeVisitsTile,
   // PLACEHOLDER: the board draws no line for the credits of the invite a client came with while ops review them.
   inviteCredits: {
-    checking: "The free service visits from the invite you came with are being checked. We will message you.",
-    refused: "We could not give the free service visits from the invite you came with. Message us to know why.",
+    checking: "The free service visits from the invite you came with are being checked. We’ll message you.",
+    refused: "We couldn’t add the free service visits from your invite. Message us to find out why.",
   },
   share: "Share an invite",
   tracker: "See who has been fitted",
@@ -746,14 +746,14 @@ export const refer = {
     title: "Which card?",
     // PLACEHOLDER: in place of the board's line, which said the card carries no name.
     what: "Pick the picture your friend sees. Your name and message go with it, never on it.",
-    mine: { name: "My before and after", note: "Your own photographs" },
+    mine: { name: "My before and after", note: "Your own photos" },
     // PLACEHOLDER: the board always offers their own card; it needs a before and an after from the first fit.
-    mineNotYet: "Your own before and after appears once your first-fit photographs are in.",
+    mineNotYet: "Your own before and after appears once your first-fit photos are in.",
     house: { name: "A Mane Man example", note: "Our house sample" },
     next: "Continue to share",
   },
   consent: {
-    title: "Before you send your own photographs",
+    title: "Before you send your own photos",
     allow: "Allow for referral cards",
     instead: "Use the example instead",
   },
@@ -783,7 +783,7 @@ export const refer = {
     /** Board F6's share failure, and its way on. */
     failed: {
       label: "Share failed",
-      line: "The link did not generate. Nothing was sent.",
+      line: "The link didn’t generate. Nothing was sent.",
       retry: "Try again",
     },
   },
@@ -802,18 +802,18 @@ export const refer = {
   },
   revoke: {
     open: "Revoke the photo card",
-    title: "Switch off your photographs?",
+    title: "Switch off your photos?",
     body: "New opens show the house example. Cards already sent stay in those chats.",
     yes: "Switch off",
     no: "Keep it on",
     // PLACEHOLDER: a revoke the API did not answer leaves the card as it was.
-    failed: "That did not go through, and your photographs are still on the card. Please try again.",
+    failed: "That didn’t go through, and your photos are still on the card. Try again.",
   },
   // PLACEHOLDER: the card is composed on the phone; the design does not draw its waiting or its failures.
   composing: "Making your card.",
-  cardFailed: "We could not make your card. The house example is used instead.",
+  cardFailed: "We couldn’t make your card, so we’ve used our example instead.",
   /** Consent or the example did not go through: nothing changed, and nothing was shared. */
-  notChanged: "That did not go through, so nothing has changed. Please try again.",
+  notChanged: "That didn’t go through, so nothing has changed. Try again.",
   close: "Close",
 } as const;
 
@@ -832,30 +832,29 @@ export const photos = {
   to: "To",
   // PLACEHOLDER: the divider's name for a screen reader, what its place shows, and the compare opened with fewer
   // than two visits.
-  divider: "Divider between the two photographs",
+  divider: "Divider between the two photos",
   dividerAt: (percent: number, from: string, to: string) =>
     `${String(percent)}% of ${from} on the left, ${String(100 - percent)}% of ${to} on the right`,
-  compareNone: "Compare opens once two visits have photographs.",
+  compareNone: "Compare opens once two visits have photos.",
   download: "Download",
-  downloaded: "Downloaded photographs sit in your gallery, outside the app.",
+  downloaded: "Downloaded photos sit in your gallery, outside the app.",
   photoOf: (angle: string, date: string) => `${angle} · ${date}`,
   // PLACEHOLDER
   close: "Close",
   // PLACEHOLDER: no board draws the try-on the client made on the site (ADR 0025, items 63 and 65; ADR 0082 and 0084).
   tryOn: {
     title: "Your try-on",
-    images: { photo: "Your photograph", look: "Your look" },
+    images: { photo: "Your photo", look: "Your look" },
     alt: (image: string, date: string) => `${image}, try-on of ${date}`,
     // How long each is kept: the photograph an hour after the look was asked for, the look the days the site keeps it.
     keptBoth: (photoUntil: string, lookUntil: string) =>
-      `Your photograph is kept until ${photoUntil}, the look until ${lookUntil}.`,
-    keptLook: (lookUntil: string) =>
-      `Your photograph was deleted within the hour. The look is kept until ${lookUntil}.`,
-    keptPhoto: (photoUntil: string) => `The look is still being made. Your photograph is kept until ${photoUntil}.`,
+      `Your photo is kept until ${photoUntil}, the look until ${lookUntil}.`,
+    keptLook: (lookUntil: string) => `Your photo was deleted within the hour. The look is kept until ${lookUntil}.`,
+    keptPhoto: (photoUntil: string) => `The look is still being made. Your photo is kept until ${photoUntil}.`,
     // The small copy of the photograph is held as long as the look, until the client books (ADR 0084).
-    keptTogether: (until: string) => `Your photograph and the look are kept until ${until}.`,
+    keptTogether: (until: string) => `Your photo and the look are kept until ${until}.`,
     // A client's try-on, once they have booked (ADR 0084): the photograph for good, the look until the first fit.
-    photoKept: "Your photograph is kept in your account until you ask us to delete it.",
+    photoKept: "Your photo is kept in your account until you ask us to delete it.",
     lookKeptToFirstFit: "The look is kept until your first fit is photographed.",
     lookKeptUntil: (lookUntil: string) => `The look is kept until ${lookUntil}.`,
   },
@@ -960,7 +959,7 @@ export const payments = {
   lateRefund: "Refund processing · taking longer than it should",
   message: "Message us",
   // PLACEHOLDER: an entry that is not this client's, or no longer exists.
-  notFound: "We could not find this payment.",
+  notFound: "We couldn’t find this payment.",
   /** A method as a list's meta line writes it ("22 Aug · UPI"), and as the detail's row does ("UPI"). */
   methods: {
     upi: ["UPI", "UPI"],
@@ -995,8 +994,8 @@ export const payments = {
     invoiceAfterVisit: "The tax invoice is raised once the visit is done.",
     invoiceLate: "The invoice is taking longer than it should.",
     // PLACEHOLDER: receipts and vouchers wait for the invoicing route (docs/open-points.md, item 3).
-    receipt: "The receipt is not ready yet.",
-    voucher: "The refund voucher is not ready yet.",
+    receipt: "The receipt isn’t ready yet.",
+    voucher: "The refund voucher isn’t ready yet.",
     notify: "Ask us for it",
   },
 } as const;
@@ -1004,7 +1003,7 @@ export const payments = {
 export const empty = {
   photos: {
     title: "Photos",
-    lines: ["Your photographs start at your first visit.", "Five angles at every visit, taken for your visit record."],
+    lines: ["Your photos start at your first visit.", "Five angles at every visit, taken for your visit record."],
   },
   payments: {
     title: "Payments",
@@ -1046,7 +1045,7 @@ export const profile = {
     building: {
       label: "Search for your building",
       hint: "Start typing your building or society. Choose it to help your technician find you.",
-      unavailable: "Search is unavailable just now. Type your address below instead.",
+      unavailable: "Search isn’t available right now. Type your address below instead.",
       found: (count: number) => (count === 1 ? "1 building found" : `${String(count)} buildings found`),
       // Google asks for their name against suggestions shown without a map.
       attribution: "Google Maps",
@@ -1067,7 +1066,7 @@ export const profile = {
     cancel: "Cancel",
     invalid: "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
     // PLACEHOLDER: a pincode we do not come to, and a move to another city while a visit is booked.
-    notServed: (pincode: string) => `We do not come to ${pincode} yet.`,
+    notServed: (pincode: string) => `We don’t come to ${pincode} yet.`,
     waitlist: "Join the waitlist",
     visitBooked: "You have a visit booked in this city. To move to another, message us first.",
     message: "Message us",
@@ -1084,11 +1083,11 @@ export const profile = {
   given: (date: string) => `Given ${date}`,
   notGiven: "Not given",
   // PLACEHOLDER: what switching off visit messages means, since ops then call instead.
-  visitsOff: "No visit updates on WhatsApp. We will call you about any change.",
+  visitsOff: "No visit updates on WhatsApp. We’ll call you about any change.",
   // PLACEHOLDER until counsel rules what this switch means: switched off, visits are photographed all the same.
   ownRecordOff: "Each visit is still photographed for your visit record.",
   // PLACEHOLDER: a switch the API did not answer stays as it was.
-  switchFailed: "That did not go through, so nothing has changed. Please try again.",
+  switchFailed: "That didn’t go through, so nothing has changed. Try again.",
   /**
    * The four lines the design shows before a card is turned on (F3), and the naming line the owner ruled beside
    * them; the consent's notice carries them all.
@@ -1119,13 +1118,13 @@ export const profile = {
     newCode: (number: string) => `Code sent to ${number}`,
     check: "Check the codes",
     proven: "Code accepted.",
-    waiting: (number: string) => `We will confirm the change to ${number} with you, then it takes effect.`,
+    waiting: (number: string) => `We’ll confirm the change to ${number} with you, then it takes effect.`,
     withdraw: "Withdraw this change",
-    failed: "That did not go through. Please try again.",
-    limited: "You have started three changes today. Please try again tomorrow.",
+    failed: "That didn’t go through. Try again.",
+    limited: "You’ve started three changes today. Try again tomorrow.",
     // What ops decided about the last change, for 30 days after (OPS-09). The reason is ops' own words.
     confirmed: (number: string, date: string) => `Your number was changed to ${number} on ${date}.`,
-    rejected: (number: string, date: string) => `On ${date} we did not change your number to ${number}.`,
+    rejected: (number: string, date: string) => `On ${date} we didn’t change your number to ${number}.`,
     why: (reason: string) => `Our reason: ${reason}`,
   },
   support: {
@@ -1144,7 +1143,7 @@ export const profile = {
     cancel: "Not now",
     // Beside support's "Replies within a working day": the 30 days is the most a concern can take, not the usual.
     sent: "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
-    failed: "That did not go through. Please try again.",
+    failed: "That didn’t go through. Try again.",
     limited: "You have reached today's limit. Send it tomorrow, or message us on WhatsApp.",
     // PLACEHOLDER: the client's latest concerns, each with our answer once given.
     concerns: "Your concerns",
@@ -1158,20 +1157,20 @@ export const profile = {
     body: "Photographs deleted within seven days. Invoices kept eight years, by law.",
     request: "Request deletion",
     // PLACEHOLDER: the design draws the button only.
-    confirm: "Ask us to delete your account? We will confirm on WhatsApp before anything is deleted.",
+    confirm: "Ask us to delete your account? We’ll confirm on WhatsApp before anything is deleted.",
     yes: "Yes, request deletion",
     no: "Keep my account",
-    requested: (date: string) => `Deletion requested on ${date}. We will confirm on WhatsApp.`,
-    failed: "That did not go through, so nothing has been requested. Please try again.",
+    requested: (date: string) => `Deletion requested on ${date}. We’ll confirm on WhatsApp.`,
+    failed: "That didn’t go through, so nothing was requested. Try again.",
     // PLACEHOLDER: a request ops rejected, shown for 30 days with their reason, which is their own words.
-    rejected: (date: string) => `On ${date} we did not delete your account.`,
+    rejected: (date: string) => `On ${date} we didn’t delete your account.`,
     why: (reason: string) => `Our reason: ${reason}`,
     disagree: "Message us if you disagree, or ask again.",
   },
   // PLACEHOLDER: the design has no logout; it ends the session on this device.
-  logout: "Log out",
+  logout: "Sign out",
   // PLACEHOLDER: only the API can end the session, so a logout it did not answer leaves the client logged in.
-  logoutFailed: "That did not go through, so you are still logged in here. Please try again.",
+  logoutFailed: "That didn’t go through, so you’re still signed in here. Try again.",
 } as const;
 
 /** Board B3: loading, offline and error. */
@@ -1183,7 +1182,7 @@ export const states = {
   offlineOnly: "No connection.",
   waiting: "This page will load when you are back online.",
   error: {
-    title: "We could not load your visit.",
+    title: "We couldn’t load your visit.",
     /** Said only when the phone has kept a Home with a visit on it. */
     booked: "Your visit is still booked.",
     retry: "Try again",
@@ -1193,14 +1192,14 @@ export const states = {
 
 export const errors = {
   // PLACEHOLDER: the design draws no error for the profile.
-  load: "We could not load this. Please try again.",
+  load: "We couldn’t load this. Try again.",
   retry: "Try again",
 } as const;
 
 /** A page that failed to draw, which React would otherwise leave blank. */
 export const broken = {
   // PLACEHOLDER: the design draws no page that failed.
-  message: "This page did not open.",
+  message: "This page didn’t open.",
   reload: "Reload",
   home: "Home",
 } as const;

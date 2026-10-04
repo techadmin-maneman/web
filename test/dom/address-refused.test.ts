@@ -79,7 +79,7 @@ describe("an address the API will not save", () => {
     refuseWith(422, "not_served");
     await save();
 
-    expect(page.querySelector('[role="alert"]')?.textContent).toBe("We do not come to 400050 yet.");
+    expect(page.querySelector('[role="alert"]')?.textContent).toBe("We don’t come to 400050 yet.");
     const pincode = page.querySelector("#address-pincode");
     expect(pincode?.getAttribute("aria-invalid")).toBe("true");
     expect(document.activeElement).toBe(pincode);
