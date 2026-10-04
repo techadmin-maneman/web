@@ -1,20 +1,14 @@
 // Discount codes in the console (src/routes/ops-discount-codes.ts; docs/decisions/0108-discount-codes.md): ops make
-// one or a batch, switch one off, and enter one on a client's visit or take it off before it is paid for or invoiced;
-// and the invoice, which shows the price, the discount and the total. NOW is Monday 21 September 2026, 12 noon in
-// India. Every name, number and code here is made up.
+// one or a batch, switch one off, and enter one on a client's visit or take it off before it is paid for or invoiced.
+// The invoice that shows the code is tested with the Books pass (test/worker/books-invoices.test.ts). NOW is Monday
+// 21 September 2026, 12 noon in India. Every name, number and code here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
 import { enterOnVisit } from "../../src/domain/discount-code-uses.ts";
 import { makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
-import { raiseInvoices } from "../../src/domain/fsm-invoices.ts";
-import { createCallBudget } from "../../src/lib/call-budget.ts";
-import { createLogger } from "../../src/log.ts";
 import { CODE_ALPHABET } from "../../src/policy/discount-codes.ts";
-import { createStubBooks, type BooksProvider } from "../../src/providers/books.ts";
-import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import type { App } from "../../src/http/context.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 
@@ -84,10 +78,8 @@ async function clientWithVisit(status = "scheduled") {
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
     ).bind(PERSON, NOW.toISOString()),
     env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, status, fsm_status,
-         window_start, window_end, fsm_modified_at, synced_at)
-       VALUES (?1, 'fsm-1', 'fsm-wo-1', ?2, 'service', 'standard', ?3, ?3, '2026-09-23T04:30:00.000Z',
-         '2026-09-23T06:00:00.000Z', ?4, ?4)`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, synced_at)
+       VALUES (?1, ?1, ?2, 'service', 'standard', ?3, '2026-09-23T04:30:00.000Z', '2026-09-23T06:00:00.000Z', ?4)`,
     ).bind(VISIT, PERSON, status, NOW.toISOString()),
   ]);
 }
@@ -257,7 +249,7 @@ describe("a code on a client's visit, in the console", () => {
     await make({ code: "UNQ5", maxUses: 1, oncePerClient: false });
     await post(`/api/visits/${VISIT}/discount-code`, { code: "UNQ5" });
     await env.DB.batch([
-      env.DB.prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled' WHERE id = ?1").bind(
+      env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(
         VISIT,
       ),
       env.DB.prepare(
@@ -305,80 +297,10 @@ async function otherVisit(): Promise<string> {
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('person-2', ?1, '+919810000002', 'Karan Bhatia')",
     ).bind(NOW.toISOString()),
     env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, status, fsm_status,
-         window_start, window_end, fsm_modified_at, synced_at)
-       VALUES (?1, 'fsm-2', 'fsm-wo-2', 'person-2', 'service', 'standard', 'scheduled', 'Scheduled',
-         '2026-09-23T08:30:00.000Z', '2026-09-23T10:00:00.000Z', ?2, ?2)`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, synced_at)
+       VALUES (?1, ?1, 'person-2', 'service', 'standard', 'scheduled', '2026-09-23T08:30:00.000Z',
+         '2026-09-23T10:00:00.000Z', ?2)`,
     ).bind(id, NOW.toISOString()),
   ]);
   return id;
 }
-
-describe("the invoice of a visit a code was entered on", () => {
-  /** After the visit, on Wednesday 23 September, when staging's book has no GST. */
-  const AFTER = new Date("2026-09-23T08:00:00.000Z");
-  let alerted: string[];
-
-  function invoicePass(books: BooksProvider) {
-    alerted = [];
-    const alert = (message: string) => {
-      alerted.push(message);
-      return Promise.resolve();
-    };
-    const alertOnce = createAlertOnce({
-      db: env.DB,
-      alert,
-      now: () => AFTER,
-      environment: "local",
-      log: createLogger(),
-    });
-    const resolveAlert = createResolveAlert({ db: env.DB, now: () => AFTER });
-    const fsm = createStubFsm({ ...EMPTY_FSM, totals: { "fsm-wo-1": 200_000 } });
-    return raiseInvoices(env.DB, { fsm, books, alertOnce, resolveAlert }, AFTER, createLogger(), createCallBudget(40));
-  }
-
-  beforeEach(async () => {
-    await clientWithVisit();
-    await make();
-    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENPC", by: OPS }, NOW);
-    await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(VISIT).run();
-  });
-
-  it("takes the code off the visit's line in Books before GST, then sends it: price, discount and total", async () => {
-    const books = createStubBooks({ draftTotal: 200_000 });
-    expect(await invoicePass(books)).toEqual({ raised: 1, issued: 1 });
-    expect(books.made.discounts).toEqual([
-      { invoiceId: expect.stringMatching(/^stub-invoice-/) as string, amountOff: 20_000 },
-    ]);
-    expect(books.made.issued).toHaveLength(1);
-  });
-
-  it("sends the invoice of a visit paid at the discounted price", async () => {
-    await env.DB.prepare(
-      `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status, captured_at,
-         created_at, updated_at)
-       VALUES ('pay-1', ?1, ?2, 'pay_1', 180000, 'INR', 'captured', ?3, ?3, ?3)`,
-    )
-      .bind(PERSON, VISIT, NOW.toISOString())
-      .run();
-    const books = createStubBooks({ draftTotal: 200_000 });
-    expect(await invoicePass(books)).toEqual({ raised: 1, issued: 1 });
-  });
-
-  it("holds the draft and tells ops what to set when Books will not take the discount", async () => {
-    const books: BooksProvider = {
-      ...createStubBooks({ draftTotal: 200_000 }),
-      discountInvoice: () => Promise.reject(new Error("timeout")),
-    };
-    expect(await invoicePass(books)).toEqual({ raised: 1, issued: 0 });
-    expect(alerted).toHaveLength(1);
-    expect(alerted[0]).toContain("TENPC");
-    expect(alerted[0]).toContain("nothing here sends it");
-  });
-
-  it("holds the draft when what Books leaves is not what the client was sold the visit for", async () => {
-    const books = createStubBooks({ draftTotal: 250_000 });
-    expect(await invoicePass(books)).toEqual({ raised: 1, issued: 0 });
-    expect(books.made.issued).toEqual([]);
-  });
-});
