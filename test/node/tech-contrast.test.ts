@@ -66,7 +66,7 @@ const CONTROLS = [
   { file: "apps/tech/src/steps/steps.module.css", selector: ".box" },
   { file: "apps/tech/src/steps/steps.module.css", selector: ".boxDone" },
   { file: "apps/tech/src/steps/steps.module.css", selector: ".box64" },
-  { file: "apps/tech/src/steps/steps.module.css", selector: ".scan" },
+  { file: "apps/tech/src/steps/steps.module.css", selector: ".labelField" },
   { file: "apps/tech/src/steps/steps.module.css", selector: ".pick" },
 ] as const;
 

@@ -4,7 +4,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { badges, changed, job, today, whatStopped } from "../../apps/tech/src/content.ts";
+import { badges, changed, job, notHome, today, whatStopped } from "../../apps/tech/src/content.ts";
 import { jobLabel } from "../../apps/tech/src/lib/kind.ts";
 import type { HeldJob } from "../../apps/tech/src/store/jobs.ts";
 
@@ -38,6 +38,11 @@ describe("the technician app's content", () => {
     expect(DESIGN).not.toContain(undrawn);
     // "No money anywhere in the technician app": a Prepaid or Credit badge only.
     expect(sources.filter((path) => readFileSync(path, "utf8").includes("@maneman/web-kit/money"))).toEqual([]);
+  });
+
+  // FLD-59, UX-35: the label's field drew a barcode, though the owner ruled a label is typed, never scanned.
+  it("draws no barcode: a piece's label is typed", () => {
+    expect(sources.filter((path) => readFileSync(path, "utf8").includes("pieceId"))).toEqual([]);
   });
 });
 
@@ -137,6 +142,14 @@ describe("a locked card", () => {
     expect(job.locked.opens("2027-01-14T05:30:00.000Z", NOW)).toBe(
       "Open since 11 am today. Go back and open the job again.",
     );
+  });
+});
+
+// FLD-61, CP-38: the door said "within 200 m" whatever radius ops had set.
+describe("the door", () => {
+  it("says the radius ops set, and no number on a card kept without one", () => {
+    expect(notHome.arrived.body(350)).toBe("Tap at the door. We record the time and check you are within 350 m.");
+    expect(notHome.arrived.body(null)).toBe("Tap at the door. We record the time and check you are at the address.");
   });
 });
 

@@ -18,6 +18,7 @@ import { Failed, Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import {
   bodyOf,
+  COLOURS,
   DENSITIES,
   FIRST_TRANSPLANT_YEAR,
   fitFormOf,
@@ -58,6 +59,7 @@ function optionsOf<K extends string>(labels: Readonly<Record<K, string>>): Optio
   return (Object.keys(labels) as K[]).map((id) => ({ id, label: labels[id] }));
 }
 
+const COLOUR_OPTIONS = COLOURS.map((id) => ({ id, label: copy.colours[id] }));
 const DENSITY_OPTIONS = DENSITIES.map((id) => ({ id, label: copy.densities[id] }));
 
 /** The products the card offers, and the one the profile names if it is no longer offered, so it can be seen. */
@@ -216,7 +218,7 @@ function FitFields({
       </section>
       <Chips
         title={copy.sections.colour}
-        options={optionsOf(copy.colours)}
+        options={COLOUR_OPTIONS}
         isChosen={chosen("colour")}
         onChoose={choose("colour")}
       />

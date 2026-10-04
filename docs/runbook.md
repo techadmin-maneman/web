@@ -893,7 +893,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Google refused the address search                                                        | `google_refused`                                                                                          | when Google answers a search         | section 13                                                              |
 | Turnstile could not check _n_ visitors                                                   | `turnstile_unavailable`                                                                                   | when Turnstile answers again         | Cloudflare's status, and `TURNSTILE_SECRET`                             |
 | Deletion request _id_ has waited 5 days                                                  | `deletion_waiting:<request>`                                                                              | when it is decided                   | the console's Deletion requests                                         |
-| A client raised grievance _id_                                                           | none                                                                                                      | not kept                             | the console's Grievances                                                |
+| _n_ grievances were raised in the last hour (one message an hour, at :24)                | none                                                                                                      | not kept                             | the console's Grievances                                                |
 
 ---
 
@@ -1376,7 +1376,7 @@ After 10 failed attempts the sweeper stops asking, ops are alerted with the FSM 
 
 A request waiting 5 days alerts ops: process it before its 7 days run out. The console counts the days left against each request. Invoices stay in Books for 8 years, by law.
 
-**A grievance, and a change of number.** Both are answered in the console too: **Grievances** holds what a client has said about the way we use their data, and recording your answer closes it — it messages nobody, so send your answer on WhatsApp yourself first. **Number changes** holds the changes whose codes both numbers have already proven; confirming one is what moves the client onto the new number. Every decision on all three is written to `audit_log` under the Access identity that made it.
+**A grievance, and a change of number.** Both are answered in the console too: **Grievances** holds what a client has said about the way we use their data, and recording your answer closes it — it messages nobody, so send your answer on WhatsApp yourself first. The client sees what you record, word for word, under Your data in their app. A client may raise five new grievances a day. **Number changes** holds the changes whose codes both numbers have already proven; confirming one is what moves the client onto the new number. Every decision on all three is written to `audit_log` under the Access identity that made it.
 
 ---
 

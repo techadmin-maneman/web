@@ -204,7 +204,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
                 {copy.missed}
               </p>
             ) : (
-              <p className={styles.guide}>{angle === undefined ? copy.done : copy.guide(copy.angles[angle])}</p>
+              <p className={styles.guide}>{angle === undefined ? copy.done : copy.guides[angle]}</p>
             )}
           </>
         )}

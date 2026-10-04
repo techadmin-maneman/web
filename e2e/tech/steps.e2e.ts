@@ -663,6 +663,18 @@ test.describe("the client's hair profile", () => {
     await page.getByRole("textbox", { name: "Circumference" }).fill("57.5");
     await page.getByRole("textbox", { name: "Width" }).fill("8");
     await page.getByRole("textbox", { name: "Length" }).fill("10");
+    // FLD-61, UX-35: the suppliers' order, not #1 … #8 then #1B.
+    await expect(page.getByRole("region", { name: "Colour", exact: true }).getByRole("button")).toHaveText([
+      "#1",
+      "#1B",
+      "#2",
+      "#3",
+      "#4",
+      "#5",
+      "#6",
+      "#7",
+      "#8",
+    ]);
     await page.getByRole("button", { name: "#1B" }).click();
     await page.getByRole("button", { name: "120%" }).click();
     await page.getByRole("button", { name: "Mane Man Natural" }).click();
