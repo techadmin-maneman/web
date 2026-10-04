@@ -103,6 +103,8 @@ describe("the services, before anybody changes one", () => {
       ["2026-01-01", true],
     ]);
     // The generic first fit is left out: a first fit is sold only as a hair system ops set up, and it is retired.
+    const firstFit = body.services.find((service) => service.kind === "first_fit");
+    expect(firstFit?.retired_date).toBe("2026-10-02");
     const others = body.services.filter((service) => service.kind !== "first_fit");
     expect(others.every((service) => service.offered && service.retired_date === null)).toBe(true);
   });

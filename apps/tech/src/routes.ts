@@ -52,6 +52,9 @@ export const JOB_STARTS_AT_HEADER = "X-Job-Starts-At";
 /** FSM changed the job underneath the phone. The job stops and the technician is told what changed. */
 export const SUPERSEDED = "superseded";
 
+/** The job has closed, so nothing more of it lands. The job stops and the technician is told. */
+export const ALREADY_CLOSED = "already_closed";
+
 /** A step reached us before the one ahead of it. The queue is ordered, so this is a fault worth showing. */
 export const OUT_OF_ORDER = "out_of_order";
 

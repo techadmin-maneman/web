@@ -15,7 +15,7 @@ export interface RefundAsked {
   readonly receipt: string;
 }
 
-/** A payment link to make: what it asks for, our reference for it, and whom Razorpay texts it to. */
+/** A payment link to make: what it asks for, our reference for it, whom it is for, and until when. */
 export interface PaymentLinkRequest {
   readonly amount: number;
   /** Ours, unique to the link and shown on Razorpay's page: the reference its payment will have, "MM-2026-0841". */
@@ -24,8 +24,10 @@ export interface PaymentLinkRequest {
   readonly description: string;
   readonly customer: { readonly name: string; readonly contact: string };
   readonly notes: Record<string, string>;
-  /** When it stops taking payment; left out, it stays open. */
-  readonly closesAt?: Date;
+  /** When it stops taking payment. */
+  readonly closesAt: Date;
+  /** Whether Razorpay texts the link, and reminders of it, to the customer; off, the link is only made. */
+  readonly notify: boolean;
 }
 
 export interface PaymentsProvider {
@@ -39,8 +41,8 @@ export interface PaymentsProvider {
    */
   refund(paymentId: string, refund: RefundAsked): Promise<{ id: string | null }>;
   /**
-   * A payment link, which Razorpay texts to the customer itself. Refused for a reference Razorpay already holds a
-   * link under.
+   * A payment link, which Razorpay texts to the customer itself where asked to. Refused for a reference Razorpay
+   * already holds a link under.
    */
   createPaymentLink(link: PaymentLinkRequest): Promise<MadeLink>;
   /** The link made under our reference, if there is one: what a try whose answer never came made. */
