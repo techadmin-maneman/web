@@ -184,6 +184,11 @@ describe("mm-api wrangler config", () => {
       "observability.enabled must be true",
     ],
     [
+      "Cloudflare's own request lines are kept",
+      ["env.production.observability", { enabled: true }],
+      "observability.logs.invocation_logs must be false",
+    ],
+    [
       "the account is inherited",
       ["env.production.account_id", DELETE],
       "env.production: account_id must be set explicitly",

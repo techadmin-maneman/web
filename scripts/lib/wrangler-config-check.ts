@@ -290,6 +290,11 @@ function checkInheritableKeys(
   if (block.observability !== undefined && read(block, "observability.enabled") !== true) {
     problems.push(`${label}: observability.enabled must be true`);
   }
+  // Cloudflare's own line for each request keeps the address, its place and the full path, webhook tokens and signed
+  // links among them, which our logger drops (src/log.ts); our logger writes its own request line instead.
+  if (block.observability !== undefined && read(block, "observability.logs.invocation_logs") !== false) {
+    problems.push(`${label}: observability.logs.invocation_logs must be false`);
+  }
   return problems;
 }
 

@@ -57,6 +57,21 @@ describe("redact", () => {
     expect(scrubString("cb72f987-b7b9-4398-914a-987654321012")).toBe("cb72f987-b7b9-4398-914a-987654321012");
   });
 
+  // An alert's link to a client's page went to ops broken: the ID inside it was masked as a number.
+  it("leaves an ID alone inside a link or a sentence, and still masks a number beside it", () => {
+    const link = "Open https://ops.maneman.in/clients/cb72f987-b7b9-4398-914a-987654321012/payments now.";
+    expect(scrubString(link)).toBe(link);
+    expect(scrubString("Client cb72f987-b7b9-4398-914a-987654321012 gave 9876543210.")).toBe(
+      `Client cb72f987-b7b9-4398-914a-987654321012 gave ${REDACTED}.`,
+    );
+  });
+
+  it("redacts where a client lives, and what anyone wrote about a visit", () => {
+    for (const field of ["flat", "floor", "tower", "building", "landmark", "note", "client_note", "notes"]) {
+      expect(isRedactedField(field), field).toBe(true);
+    }
+  });
+
   it("serialises errors with a scrubbed message and stack", () => {
     const error = new Error("rejected 9876543210");
     const out = redact({ error }) as { error: { name: string; message: string; stack?: string } };
