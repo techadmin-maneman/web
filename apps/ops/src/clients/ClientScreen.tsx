@@ -14,10 +14,11 @@ import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, isErased, type ClientInvite, type ClientRecord } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
+import { rememberClient } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath, type ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -191,6 +192,11 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   // An address a client gave on the phone, saved on this page, which stands over the one read on opening.
   const [given, setGiven] = useState<{ address: NonNullable<Address> } | null>(null);
   const [erasedId, setErasedId] = useState<string | null>(null);
+  // Offered again on the Clients page, for the rest of the session.
+  const opened = loaded.state === "loaded" && !isErased(loaded.value) ? loaded.value.name : null;
+  useEffect(() => {
+    if (opened !== null) rememberClient({ id: clientId, name: opened });
+  }, [clientId, opened]);
 
   if (erasedId === clientId) {
     return (

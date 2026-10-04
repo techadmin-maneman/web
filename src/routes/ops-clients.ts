@@ -32,12 +32,14 @@ import {
   clientStateOf,
   isFitted,
   listVisits,
+  UPCOMING_STATUSES,
   ownPhotoKey,
   visitOutcomes,
 } from "../domain/client-visits.ts";
 import { AUTO_REFUND_REASONS, autoRefundsOf, type AutoRefund } from "../domain/auto-refunds.ts";
 import { INVOICE_STATES, LINK_STATES, paymentLinksOf, visitInvoicesOf } from "../domain/client-billing.ts";
 import { creditBalance } from "../domain/credits.ts";
+import { fittedSql } from "../domain/fitted.ts";
 import { clientVisitCodes } from "../domain/discount-code-uses.ts";
 import { reachBinding, withinReach } from "../domain/places.ts";
 import { clientInviteOf } from "../domain/referrals.ts";
@@ -410,7 +412,19 @@ const findRoute = createRoute({
       ...json(
         z
           .object({
-            clients: z.array(z.object({ id: z.uuid(), name: z.string(), mobile: z.string() }).strict()),
+            clients: z.array(
+              z
+                .object({
+                  id: z.uuid(),
+                  name: z.string(),
+                  mobile: z.string(),
+                  state: z.enum(CLIENT_STATES),
+                  next_visit: z.union([z.iso.datetime(), z.null()]).openapi({
+                    description: "When the client's next visit not yet closed starts; null for none.",
+                  }),
+                })
+                .strict(),
+            ),
             more: z.boolean().openapi({ description: `More than ${String(CLIENTS_FOUND)} match: narrow the search.` }),
           })
           .strict()
@@ -609,18 +623,27 @@ export function registerOpsClients(app: App): void {
     const column = search.by === "number" ? "mobile_e164" : "name";
     const reached = await routeReach(c);
     const { results } = await c.env.DB.prepare(
-      `SELECT client.id, client.name, client.mobile_e164 FROM people client
+      `SELECT client.id, client.name, client.mobile_e164, ${fittedSql("client.id")} AS fitted,
+         (SELECT MIN(a.window_start) FROM appointments a
+          WHERE a.person_id = client.id AND a.deleted_at IS NULL AND a.window_start IS NOT NULL
+            AND a.window_end IS NOT NULL AND a.status IN ${UPCOMING_STATUSES}) AS next_visit
+       FROM people client
        WHERE client.erased_at IS NULL AND client.${column} LIKE ?1 ESCAPE '\\'
          AND ${withinReach("client", "client", "?3")}
        ORDER BY client.name, client.id LIMIT ?2`,
     )
       .bind(containing(search.text), CLIENTS_FOUND + 1, reachBinding(reached))
-      .all<{ id: string; name: string; mobile_e164: string }>();
+      .all<{ id: string; name: string; mobile_e164: string; fitted: number; next_visit: string | null }>();
+    // Each with where it stands and its next visit, so two clients of one name can be told apart.
     return c.json(
       {
-        clients: results
-          .slice(0, CLIENTS_FOUND)
-          .map((row) => ({ id: row.id, name: row.name, mobile: row.mobile_e164 })),
+        clients: results.slice(0, CLIENTS_FOUND).map((row) => ({
+          id: row.id,
+          name: row.name,
+          mobile: row.mobile_e164,
+          state: clientStateOf(row.fitted === 1, row.next_visit !== null),
+          next_visit: row.next_visit,
+        })),
         more: results.length > CLIENTS_FOUND,
       },
       200,

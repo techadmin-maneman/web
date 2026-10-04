@@ -218,6 +218,24 @@
   outline-offset: var(--focus-offset);
 }
 
+.foundTitle {
+  margin: 0 0 var(--sp-8);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-regular);
+  color: var(--text-muted);
+}
+
+.foundWho {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.foundStanding {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
 .foundMobile {
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;

@@ -95,7 +95,7 @@ const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.wind
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
 /** The statuses of a visit not yet closed. */
 const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
-const UPCOMING_STATUSES = `('scheduled', 'dispatched', 'in_progress')`;
+export const UPCOMING_STATUSES = `('scheduled', 'dispatched', 'in_progress')`;
 const PAST_STATUSES = `('completed', 'terminated')`;
 /** A visit cancelled outright, not one a charged move replaced with a new visit, which stands in its place. */
 const CANCELLED = `(a.status = 'cancelled' AND NOT EXISTS (SELECT 1 FROM visit_changes c
