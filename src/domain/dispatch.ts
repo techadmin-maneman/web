@@ -46,7 +46,7 @@ import { FREE_CHANGE_NOTICE_HOURS } from "../policy/moving-a-visit.ts";
 import { namesMoreThanItsKind } from "../policy/services.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { listCities } from "./cities.ts";
+import { boardCities } from "./cities.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
 import { leaveBetween } from "./leave.ts";
@@ -288,7 +288,7 @@ export async function dispatchBoard(
       )
       .bind(fromAt, toAt)
       .all<{ id: string; appointment_id: string; now_start: string; reason: UntoldReason }>(),
-    listCities(db),
+    boardCities(db),
     loadSlotSchedule(db),
   ]);
   const untoldOf = (appointmentId: string) => {
@@ -330,7 +330,7 @@ export async function dispatchBoard(
     from: options.from,
     dates,
     city: options.city,
-    cities: cities.map((city) => city.name).filter((city) => reachesCity(reach, city)),
+    cities: cities.filter((city) => reachesCity(reach, city)),
     technicians: rows,
     unassigned,
     utilisation: utilisationOf(rows, dates, leave),

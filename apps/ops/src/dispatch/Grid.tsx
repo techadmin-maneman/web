@@ -8,6 +8,9 @@
 // recorded leave on offers nothing (ADR 0062). The windows are for the mouse;
 // the keyboard chooses from the list above the board, so the grid's thousands
 // of windows are not each a stop in the tab order (FEO-14).
+//
+// A search that names a client, an area or a pincode outlines the blocks it
+// found, so the one visit is plain among a technician's eight.
 
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { inIndia, shortDate } from "@maneman/web-kit/dates";
@@ -61,8 +64,12 @@ export const isAway = (leave: Board["leave"], technicianId: string, date: string
 /** Takes a job up to move it; null when the person's access does not let them move one. */
 type Take = ((job: Job, from: HTMLElement) => void) | null;
 
+/** Whether a block is one the search found; null when the search names no block. */
+type Found = ((block: Block) => boolean) | null;
+
 interface BlockButtonProps {
   readonly job: Job & { readonly kind: "block" };
+  readonly found: Found;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
   readonly onTake: Take;
 }
@@ -80,7 +87,7 @@ function blockLabel(job: Job & { readonly kind: "block" }): string {
  * One visit on a technician's day. A visit done, or one the technician has begun, opens its drawer and cannot be
  * dragged.
  */
-function BlockButton({ job, onOpen, onTake }: BlockButtonProps) {
+function BlockButton({ job, found, onOpen, onTake }: BlockButtonProps) {
   const { block } = job;
   const movable = isMovable(block);
   const begun = begunWord(block);
@@ -89,6 +96,7 @@ function BlockButton({ job, onOpen, onTake }: BlockButtonProps) {
       className={`${styles.block ?? ""} ${inkOf(block) ?? ""} ${sizeOf(block) ?? ""} ${movable ? "" : (styles.finished ?? "")}`}
       type="button"
       data-appointment={block.appointment_id}
+      data-match={found?.(block) === true ? "" : undefined}
       draggable={movable && onTake !== null}
       aria-label={blockLabel(job)}
       onDragStart={(event) => {
@@ -118,6 +126,7 @@ interface CellProps {
   /** Ops recorded leave for this technician on this day, so it takes no job. */
   readonly away: boolean;
   readonly inHand: InHand | null;
+  readonly found: Found;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
   readonly onTake: Take;
   readonly onLand: (to: Target) => void;
@@ -145,7 +154,7 @@ function AwayMark({ technician, date, blocks }: { technician: BoardRow; date: st
  * leave recorded after a job was assigned must not hide that job — and offers
  * no window to put another one in.
  */
-function Cell({ technician, date, blocks, away, inHand, onOpen, onTake, onLand }: CellProps) {
+function Cell({ technician, date, blocks, away, inHand, found, onOpen, onTake, onLand }: CellProps) {
   const windows = inHand === null || away ? null : inHand.windowsAt(technician.technician_id, date);
   return (
     <td className={away ? `${styles.cell ?? ""} ${styles.away ?? ""}` : styles.cell}>
@@ -154,6 +163,7 @@ function Cell({ technician, date, blocks, away, inHand, onOpen, onTake, onLand }
         <BlockButton
           key={block.appointment_id}
           job={{ kind: "block", block, technician, date }}
+          found={found}
           onOpen={onOpen}
           onTake={onTake}
         />
@@ -200,12 +210,13 @@ interface GridProps {
   /** The technicians to draw: the board's, narrowed by what ops searched for. */
   readonly rows: readonly BoardRow[];
   readonly inHand: InHand | null;
+  readonly found: Found;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
   readonly onTake: Take;
   readonly onLand: (to: Target) => void;
 }
 
-export function Grid({ board, rows, inHand, onOpen, onTake, onLand }: GridProps) {
+export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand }: GridProps) {
   return (
     <table className={styles.grid}>
       <thead>
@@ -234,6 +245,7 @@ export function Grid({ board, rows, inHand, onOpen, onTake, onLand }: GridProps)
                 away={isAway(board.leave, technician.technician_id, date)}
                 blocks={technician.days.find((day) => day.date === date)?.blocks ?? []}
                 date={date}
+                found={found}
                 inHand={inHand}
                 key={date}
                 onLand={onLand}

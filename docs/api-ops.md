@@ -9255,7 +9255,7 @@ Request body:
       "items": {
         "type": "string"
       },
-      "description": "The cities the board can be narrowed to: the caller's."
+      "description": "The cities the board can be narrowed to: the caller's that we serve, or that have a technician."
     },
     "technicians": {
       "type": "array",

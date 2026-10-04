@@ -7721,7 +7721,7 @@ export interface components {
             dates: string[];
             /** @description The city the jobs are narrowed to; null for all. */
             city: string | null;
-            /** @description The cities the board can be narrowed to: the caller's. */
+            /** @description The cities the board can be narrowed to: the caller's that we serve, or that have a technician. */
             cities: string[];
             technicians: {
                 /** Format: uuid */

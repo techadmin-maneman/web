@@ -6,8 +6,10 @@
 // recorded none says so rather than repeating the offered one, and the asked
 // window carries no day, since none was recorded with it (ADR 0063). An
 // offered window that is not the one asked for is lettered in oxblood, as the
-// board draws it.
+// board draws it. An empty tray folds to a rail, so a laptop's width goes to
+// the week's days.
 
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { BookingWindow, Unassigned } from "../api.ts";
 import { dispatch } from "../content.ts";
@@ -89,16 +91,20 @@ interface Props {
 }
 
 export function Tray({ unassigned, onTake }: Props) {
+  const empty = unassigned.length === 0;
   return (
-    <aside className={styles.tray} aria-labelledby="unassigned">
+    <aside
+      className={empty ? `${styles.tray ?? ""} ${styles.trayRail ?? ""}` : styles.tray}
+      aria-labelledby="unassigned"
+    >
       <div className={styles.trayHead}>
         <h2 className={styles.trayTitle} id="unassigned">
           {dispatch.tray.title}
         </h2>
         <span className={styles.count}>{unassigned.length}</span>
       </div>
-      {unassigned.length === 0 ? (
-        <p className={styles.empty}>{dispatch.tray.empty}</p>
+      {empty ? (
+        <VisuallyHidden as="p">{dispatch.tray.empty}</VisuallyHidden>
       ) : (
         <ul className={styles.trayList}>
           {unassigned.map((each) => (
@@ -108,7 +114,7 @@ export function Tray({ unassigned, onTake }: Props) {
           ))}
         </ul>
       )}
-      <p className={styles.note}>{dispatch.tray.same}</p>
+      {!empty && <p className={styles.note}>{dispatch.tray.same}</p>}
     </aside>
   );
 }

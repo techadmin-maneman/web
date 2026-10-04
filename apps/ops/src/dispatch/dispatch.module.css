@@ -305,6 +305,12 @@
   color: var(--ink-soft);
 }
 
+/* A block the search found. */
+.block[data-match] {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
 .block:focus-visible {
   outline: var(--focus-width) solid var(--ink);
   outline-offset: calc(-1 * var(--focus-width));
@@ -439,6 +445,19 @@
   overflow-y: auto;
   border-left: var(--hairline) solid var(--text);
   background: var(--paper-light);
+}
+
+/* Nothing waiting: a rail, its title running down it. */
+.trayRail {
+  width: var(--sp-40);
+}
+
+.trayRail .trayHead {
+  flex-direction: column;
+  align-items: center;
+  padding: var(--sp-11) 0;
+  border-bottom: 0;
+  writing-mode: vertical-rl;
 }
 
 .trayHead {
@@ -758,10 +777,17 @@
     max-height: var(--ops-scroll-max-h);
   }
 
-  .tray {
+  .tray,
+  .trayRail {
     width: auto;
     overflow-y: visible;
     border-top: var(--hairline) solid var(--text);
     border-left: 0;
+  }
+
+  .trayRail .trayHead {
+    flex-direction: row;
+    padding: var(--sp-11) var(--sp-14);
+    writing-mode: horizontal-tb;
   }
 }

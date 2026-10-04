@@ -27,6 +27,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   api,
   type Answer,
+  type Block,
   type Board,
   type BoardQuery,
   type BoardRow,
@@ -109,12 +110,28 @@ function weekOf(dates: readonly string[]): string | undefined {
   return dispatch.week(sameMonth ? from.slice(0, from.indexOf(" ")) : from, to);
 }
 
-/** Whether a row answers to what ops searched for: the technician's name or zone, or a client on one of his days. */
+const includes = (word: string | null, wanted: string) => word?.toLowerCase().includes(wanted) === true;
+
+/** Whether a block answers to what ops searched for: its client, in short or in full, its area or its pincode. */
+const blockAnswersTo = (block: Block, wanted: string): boolean =>
+  [block.client, block.person?.name ?? null, block.sector, block.pincode].some((word) => includes(word, wanted));
+
+/** Whether a row answers to what ops searched for: the technician's name or zone, or a visit on one of his days. */
 function answersTo(row: BoardRow, find: string): boolean {
   const wanted = find.trim().toLowerCase();
   if (wanted === "") return true;
-  const clients = row.days.flatMap((day) => day.blocks.flatMap((block) => [block.client, block.person?.name ?? null]));
-  return [row.name, row.zone, ...clients].some((word) => word?.toLowerCase().includes(wanted) === true);
+  if (includes(row.name, wanted) || includes(row.zone, wanted)) return true;
+  return row.days.some((day) => day.blocks.some((block) => blockAnswersTo(block, wanted)));
+}
+
+/** The blocks the search found, to outline on the grid; null where it names none, a technician say. */
+function foundBy(board: Board | null, find: string): ((block: Block) => boolean) | null {
+  const wanted = find.trim().toLowerCase();
+  if (wanted === "" || board === null) return null;
+  const any = board.technicians.some((row) =>
+    row.days.some((day) => day.blocks.some((b) => blockAnswersTo(b, wanted))),
+  );
+  return any ? (block) => blockAnswersTo(block, wanted) : null;
 }
 
 /** The windows each day offers the job in hand: the server's answer; every window if it could not answer. */
@@ -456,6 +473,7 @@ export function DispatchScreen() {
     () => (board === null ? [] : board.technicians.filter((row) => answersTo(row, find))),
     [board, find],
   );
+  const found = useMemo(() => foundBy(board, find), [board, find]);
   const inHand = useMemo(
     (): InHand | null => (choosing ? { job: move.job, windowsAt: windowsFrom(rooms) } : null),
     [choosing, move, rooms],
@@ -494,6 +512,7 @@ export function DispatchScreen() {
                     board={board}
                     rows={rows}
                     inHand={inHand}
+                    found={found}
                     onOpen={open}
                     onTake={mayMove ? take : null}
                     onLand={land}

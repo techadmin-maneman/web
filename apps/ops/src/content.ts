@@ -142,10 +142,10 @@ export const dispatch = {
     thisWeek: "This week",
     city: "City",
     everyCity: "Every city",
-    /** A technician's name or zone, or a client on one of their days. */
-    find: "Find a technician, zone or client",
+    /** A technician's name or zone, or a visit's client, area or pincode. */
+    find: "Find a technician, client or area",
     // PLACEHOLDER: the board draws no search, and so no search that finds nothing.
-    nothingFound: (text: string) => `No technician, zone or client this week matches “${text}”.`,
+    nothingFound: (text: string) => `Nothing on this week's board matches “${text}”.`,
   },
   board: {
     /** A block, for whoever is reading with a screen reader or moving by keyboard. */

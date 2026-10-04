@@ -121,7 +121,9 @@ const BoardSchema = z
     from: z.iso.date(),
     dates: z.array(z.iso.date()).openapi({ description: `${String(BOARD_DAYS)} days, the board's columns.` }),
     city: z.union([z.string(), z.null()]).openapi({ description: "The city the jobs are narrowed to; null for all." }),
-    cities: z.array(z.string()).openapi({ description: "The cities the board can be narrowed to: the caller's." }),
+    cities: z.array(z.string()).openapi({
+      description: "The cities the board can be narrowed to: the caller's that we serve, or that have a technician.",
+    }),
     technicians: z.array(
       z
         .object({

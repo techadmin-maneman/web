@@ -648,6 +648,15 @@ describe("what the board carries of each visit", () => {
     expect(week.cities).toEqual(expect.arrayContaining(["Gurgaon", "Delhi"]));
     expect((await board("from=2026-09-22")).city).toBeNull();
   });
+
+  // OIA-05 and BK-54: Mumbai and Bengaluru, on the waitlist alone, were offered and gave an empty board.
+  it("offers the cities we serve, and one we do not only once a technician works there", async () => {
+    expect((await board("from=2026-09-22")).cities).toEqual(["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"]);
+
+    await env.DB.prepare("UPDATE technicians SET city = 'Mumbai' WHERE id = ?1").bind(SAMEER).run();
+    expect((await board("from=2026-09-22")).cities).toContain("Mumbai");
+    expect((await board("from=2026-09-22")).cities).not.toContain("Bengaluru");
+  });
 });
 
 interface RoomBody {
