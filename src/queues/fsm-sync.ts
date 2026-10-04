@@ -18,6 +18,9 @@
 // a lead in FSM by hand. A booking FSM would not take is not given up: it is
 // held, with its slot and its payment, tried again every hour for a day, and
 // waits for ops to book it or refund it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+//
+// Where our own database holds the record of field work (src/config/field-record.ts), only a hold is acted on, and
+// booked there; a message for FSM queued before the switch is acknowledged and logged.
 
 import { z } from "zod";
 import type { FieldRecord } from "../config/field-record.ts";
@@ -104,6 +107,10 @@ export async function handleFsmSyncBatch(
         log: bookingLog,
         automatic: true,
       });
+      continue;
+    }
+    if (record === "ours") {
+      setAside(message, parsed.data, log.child({ request_id: parsed.data.request_id }));
       continue;
     }
     if ("catalogue_sync" in parsed.data) {
@@ -247,6 +254,28 @@ async function bookHold(
     }
     message.ack();
   }
+}
+
+/** A message for FSM itself: every kind but a hold to book. */
+type ForFsm = Exclude<FsmSyncMessage, { hold_id: string }>;
+
+/**
+ * A message queued for FSM before it was switched off: FSM is not written. A technician's step it named stays
+ * waiting, for the sweeper to give up on with the rest of its visit's (src/scheduled/sweeper.ts).
+ */
+function setAside(message: Message, body: ForFsm, log: Logger): void {
+  log.info("fsm_message_dropped", { kind: fsmWorkOf(body) });
+  message.ack();
+}
+
+/** What the message asked of FSM, for the log. */
+function fsmWorkOf(body: ForFsm): string {
+  if ("fsm_id" in body) return "appointment_read";
+  if ("erase_person_id" in body) return "contact_erasure";
+  if ("job_event_id" in body) return "job_event";
+  if ("update_contact_person_id" in body) return "contact_update";
+  if ("note_appointment_id" in body) return "client_note";
+  return "catalogue_push";
 }
 
 /**

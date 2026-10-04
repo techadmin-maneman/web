@@ -871,6 +871,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Lead _id_ did not reach FSM                                                              | none                                                                                                      | not kept                             | "FSM is down"                                                           |
 | A technician's _step_ … has waited over an hour to reach FSM                             | `job_event_pending:<job event>`                                                                           | when it is written or given up       | "FSM is down"                                                           |
 | A technician's _step_ did not reach FSM after _n_ attempts                               | none                                                                                                      | not kept                             | "FSM is down"                                                           |
+| A technician's steps on visit _id_ were never written to FSM, which is now switched off  | `job_event_unwritten:<visit>`                                                                             | by hand                              | "Switching staging off FSM"                                             |
 | Booking _id_ was paid for … and is neither booked in FSM nor refunded                    | `unbooked_hold:<hold>`                                                                                    | when booked or given back            | "A booking FSM would not take"                                          |
 | Booking _id_ could not be written to FSM after _n_ attempts. Nothing is refunded …       | `booking_held:<hold>`                                                                                     | when booked or refunded              | "A booking FSM would not take"                                          |
 | Booking _id_ was not written to FSM: visit _id_ … reached FSM after the booking was held | `booking_to_link:<hold>`                                                                                  | when booked or refunded              | "A booking FSM would not take"                                          |
@@ -1072,6 +1073,48 @@ FSM's API deletes no invoice, so the list names FSM's invoices of staging's work
 
 FSM keeps a deleted record in its recycle bin, out of every list the API gives, so production's reconciliation never sees it.
 
+### Switching staging off FSM
+
+Production has never used FSM. Staging leaves it in the order below, once every pull request of the FSM removal before this one is live. From the switch, our own database is the record of field work: a booking, a move, a cancel, a technician's steps, pieces and photographs are written there in the request that makes them, and the Books pass makes each client's customer and each finished visit's invoice itself. Steps 2 and 4 read FSM's API, so finish them before FSM's trial ends (about 7 October 2026).
+
+1. **Empty what is in flight.** Each of these should come back empty:
+
+   ```sql
+   SELECT id, person_id, fsm_held_at FROM slot_holds WHERE state = 'held' AND fsm_held_at IS NOT NULL;
+   SELECT appointment_id, COUNT(*) AS steps FROM job_events
+   WHERE fsm_write_state = 'pending' AND superseded = 0 GROUP BY appointment_id;
+   SELECT id, technician_id, status FROM appointments
+   WHERE status IN ('dispatched', 'in_progress') AND deleted_at IS NULL;
+   ```
+
+   - A **held booking** (the Tasks board's "Booking not in FSM"): **Refund it** from the client's Visits tab ("A booking FSM would not take", above).
+   - A **technician's step still waiting for FSM**: wait for it to be written, or let the switch give it up (below).
+   - A **visit under way**: let the technician finish it before the switch, or close it afterwards from the console.
+   - The `mm-fsm-sync-staging` queue: its backlog on Cloudflare's dashboard (Queues) at 0. What is left in it at the switch is acknowledged without reaching FSM, and a booking in it is booked in our own database.
+
+2. **Clear staging's records from the org**: "Staging's records in the org", above. A client whose FSM contact the owner keeps is linked in step 4; the rest get a Books customer of their own after the switch.
+3. **The owner, in Zoho.**
+   - FSM, Setup → Automation → Workflow Rules: switch off the rules on Service Appointments that call our webhook (step 11b, point 6). Setup → Automation → Webhooks: delete the webhooks they ran.
+   - FSM, Setup → Marketplace (or Integrations): switch off the **Zoho Books** and **Zoho CRM** integrations.
+   - Books → Settings → Zoho Apps → Zoho CRM, already switched on: two-way sync, Contacts only, transaction sync off, duplicates "Skip", and Books' "MM person ID" mapped to a CRM Contacts field of the same name.
+4. **Link each client to the Books customer FSM made for them**, or the Books pass makes them a second one. With `.env.fsm-scripts` (the scripts' FSM token, step 8.7):
+
+   ```sh
+   node --env-file=.env.fsm-scripts scripts/link-books-customers.ts           # lists each link, and why a client is skipped
+   node --env-file=.env.fsm-scripts scripts/link-books-customers.ts --write   # writes them
+   ```
+
+   It prints IDs only. A client FSM made no customer for, or whose contact is gone, is skipped and gets a new customer from the Books pass after the switch. Each linked client is marked for that pass to write their details and ID over the customer, so Books' sync takes "MM person ID" to the CRM.
+
+5. **Switch.** Land the one-line pull request that sets `FSM_PROVIDER` to `"none"` under `env.staging.vars` in `wrangler.jsonc`; the push deploys staging. Check `/api/health`. FSM's secrets may stay set: nothing reads them. From then on:
+   - the fsm-sync consumer acknowledges what is left for FSM and logs `fsm_message_dropped`;
+   - the cron's `requeue_job_events` marks a technician's step still waiting for FSM `rejected`, with the steps behind it, and tells ops once a visit, `job_event_unwritten`: check the visit, and close it from the console if the work was done;
+   - the cron's `fsm_reconcile`, `fsm_catalogue` and `requeue_fsm_erasures` stop, and `books_items` starts.
+
+6. **Prove it** as a real user, with staging's test records and backdating rather than waiting (the live-testing rules), and write each check in `docs/verification.md`, "FSM removal, PR 10".
+
+**Rolling back.** Set `FSM_PROVIDER` back to `"zoho"` for staging and deploy, and the owner switches FSM's workflow rules, webhooks and integrations back on. Visits booked meanwhile stay in our database, with no FSM record. A client given a Books customer meanwhile has none in FSM, so their payments wait until FSM's own integration makes one.
+
 ---
 
 ## Razorpay
@@ -1104,6 +1147,8 @@ For a payment whose delivery Razorpay will not send again (past its 24 hours, or
 ### A refund that failed
 
 "The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a cancel, the client's or ops', `no_show_refund_failed` for a waived no-show). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
+
+A cancel (the client's or ops') whose refund was never asked for, or never recorded (D1 lost, or the Worker stopped, once the visit was cancelled), is no alert: the cron's `cancel_refunds` job asks for it again at its first quarter-hourly run from ten minutes on, under the cancel's receipt. If Razorpay refuses that, the alert is the "may have been made" one, since the first ask may have refunded it: refund by hand only if the payment shows no refund of that amount.
 
 ---
 

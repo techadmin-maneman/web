@@ -84,7 +84,8 @@ test("replays a whole job worked with no signal, in the order it was done, once 
   // All of it is on the phone, and none of it has reached the API but the check-in made before the basement.
   const sentBefore = fake.writes.map((write) => write.path);
   expect(sentBefore).toEqual([`/api/tech/jobs/${JOB_ID}/checkin`]);
-  expect(await heldOnPhone(page)).toMatchObject({ outbox: 6, frames: 10 });
+  // The outcome is queued as the screen moves on, so the count is waited for, not read the instant Next is tapped.
+  await expect.poll(() => heldOnPhone(page)).toMatchObject({ outbox: 6, frames: 10 });
 
   fake.online = true;
   await context.setOffline(false);
@@ -117,7 +118,9 @@ test("keeps a switched-off technician's unsent step, and sends it once he is bac
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
   await expect(page.getByText(/Work not yet sent stays on this phone for 7 days/)).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
-  expect((await keptOnPhone(page)).filter((key) => !key.startsWith("arrival:"))).toEqual([]);
+  // What the check-in measured, and the start it saw, stay with the work; the clients' cards go.
+  const withTheWork = (key: string) => key.startsWith("arrival:") || key.startsWith("start_at_check_in:");
+  expect((await keptOnPhone(page)).filter((key) => !withTheWork(key))).toEqual([]);
 
   fake.switchedOff = false;
   fake.signedIn = false;

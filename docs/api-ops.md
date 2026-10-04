@@ -1705,7 +1705,7 @@ Where a job in hand can go in the board's week, before ops pick a reason. Writes
 }
 ```
 
-**404**: not_found: no such live job, or one the technician has begun, which stays where it is
+**404**: not_found: no such live job, or one the technician has started or closed, which stays where it is
 
 ```json
 {
@@ -1817,7 +1817,7 @@ Request body:
 }
 ```
 
-**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit, which stays where it is
+**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is
 
 ```json
 {
@@ -9462,6 +9462,13 @@ Request body:
       "type": "string",
       "format": "date-time",
       "description": "The start the board showed the job with."
+    },
+    "clear_check_in": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress."
     }
   },
   "required": [

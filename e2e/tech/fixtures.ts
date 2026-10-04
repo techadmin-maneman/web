@@ -447,7 +447,7 @@ export interface Fake {
 const accepted = (fake: Fake, eventId: string | null): TechReply<"/api/tech/jobs/{id}/start", "post", 202> => ({
   event_id: eventId ?? "",
   replayed: false,
-  fsm_write_state: "pending",
+  fsm_write_state: "written",
   progress: fake.progress,
 });
 
