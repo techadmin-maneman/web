@@ -12,7 +12,7 @@ import { errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { readDatabaseBytes, readMeter } from "../domain/storage-meter.ts";
 import { DATABASE_LIMIT_BYTES } from "../policy/database-size.ts";
-import { PHASE_2_SHARE_BYTES, RUNAWAY_CEILING_BYTES } from "../policy/storage-share.ts";
+import { RUNAWAY_CEILING_BYTES, SHARE_BYTES } from "../policy/storage-share.ts";
 
 const StorageSchema = z
   .object({
@@ -50,7 +50,7 @@ export function registerOpsStorage(app: App): void {
     return c.json(
       {
         held_bytes: bytes,
-        share_bytes: PHASE_2_SHARE_BYTES,
+        share_bytes: SHARE_BYTES[c.var.config.environment],
         ceiling_bytes: RUNAWAY_CEILING_BYTES,
         database_bytes: await readDatabaseBytes(c.env.DB),
         database_limit_bytes: DATABASE_LIMIT_BYTES,

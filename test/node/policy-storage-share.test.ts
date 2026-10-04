@@ -9,6 +9,7 @@ import {
   hasRoom,
   markReached,
   PHASE_2_SHARE_BYTES,
+  SHARE_BYTES,
   RULES,
   RUNAWAY_CEILING_BYTES,
 } from "../../src/policy/storage-share.ts";
@@ -23,18 +24,21 @@ describe("the photographs' share of R2", () => {
     ]);
   });
 
-  it("is ADR 0039's 4 GB", () => {
+  it("is ADR 0039's 4 GB, which staging and production share between them", () => {
     expect(PHASE_2_SHARE_BYTES).toBe(4 * GB);
+    expect(SHARE_BYTES.staging + SHARE_BYTES.production).toBe(PHASE_2_SHARE_BYTES);
+    expect(SHARE_BYTES).toEqual({ local: 0.4 * GB, staging: 0.4 * GB, production: 3.6 * GB });
   });
 
   it("tells ops at half the share, at 80% of it, and again when it is full", () => {
-    expect(markReached(0)).toBeNull();
-    expect(markReached(1.99 * GB)).toBeNull();
-    expect(markReached(2 * GB)).toBe(50);
-    expect(markReached(3.19 * GB)).toBe(50);
-    expect(markReached(3.2 * GB)).toBe(80);
-    expect(markReached(4 * GB)).toBe(100);
-    expect(markReached(9 * GB)).toBe(100);
+    const share = 4 * GB;
+    expect(markReached(0, share)).toBeNull();
+    expect(markReached(1.99 * GB, share)).toBeNull();
+    expect(markReached(2 * GB, share)).toBe(50);
+    expect(markReached(3.19 * GB, share)).toBe(50);
+    expect(markReached(3.2 * GB, share)).toBe(80);
+    expect(markReached(4 * GB, share)).toBe(100);
+    expect(markReached(9 * GB, share)).toBe(100);
   });
 });
 
