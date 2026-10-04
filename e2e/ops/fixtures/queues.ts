@@ -162,6 +162,7 @@ export const DISPUTES = {
       credit_spent: false,
       window_start: "2027-09-18T06:00:00.000Z",
       checked_in_at: "2027-09-18T06:01:00.000Z",
+      phone_checked_in_at: "2027-09-18T06:01:00.000Z",
       received_at: "2027-09-18T06:01:00.000Z",
       distance_m: 240,
       radius_m: 200,

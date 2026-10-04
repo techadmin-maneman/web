@@ -58,10 +58,19 @@ function messageOf(each: NoShowDispute): string {
   return lines[each.message_state];
 }
 
+/** The check-in's time, and the phone's own where the bounds moved it (src/policy/phone-clock.ts). */
+function checkInOf(each: NoShowDispute): string {
+  const at = indiaClock(each.checked_in_at);
+  const said = each.phone_checked_in_at;
+  if (said === null || said.slice(0, 16) === each.checked_in_at.slice(0, 16)) return at;
+  const sameDay = indiaDate(said) === indiaDate(each.checked_in_at);
+  return copy.adjusted(at, sameDay ? indiaClock(said) : `${shortDate(indiaDate(said))}, ${indiaClock(said)}`);
+}
+
 /** The board's four rows, in its order. */
 function Evidence({ each }: { each: NoShowDispute }) {
   const rows = [
-    [copy.facts.checkIn, indiaClock(each.checked_in_at)],
+    [copy.facts.checkIn, checkInOf(each)],
     [copy.facts.distance, <Distance key="distance" metres={each.distance_m} radius={each.radius_m} />],
     [copy.facts.whatsapp, messageOf(each)],
     [copy.facts.waited, waitedOf(each)],

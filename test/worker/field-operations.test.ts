@@ -537,6 +537,31 @@ describe("the phone's clock", () => {
     });
   });
 
+  // FLD-52: only the check-in kept what the phone said; a start held over a day kept no phone time at all.
+  it("keeps on every step what the phone said beside the time it was held to", async () => {
+    await postAt(minutesAfterStart(10), `/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, uuidv7At(-90));
+    // Queued an hour and a half before the booked start, by its event ID, and sent ten minutes after it.
+    await postAt(minutesAfterStart(10), `/api/tech/jobs/${TODAY_JOB}/start`, undefined, uuidv7At(-90));
+    const { results } = await env.DB.prepare(
+      "SELECT kind, occurred_at, claimed_at FROM job_events WHERE appointment_id = ?1 ORDER BY rowid",
+    )
+      .bind(TODAY_JOB)
+      .all();
+
+    expect(results).toEqual([
+      {
+        kind: "check_in",
+        occurred_at: minutesAfterStart(-60).toISOString(),
+        claimed_at: minutesAfterStart(-90).toISOString(),
+      },
+      {
+        kind: "start",
+        occurred_at: minutesAfterStart(-60).toISOString(),
+        claimed_at: minutesAfterStart(-90).toISOString(),
+      },
+    ]);
+  });
+
   // The owner kept the hour on 27 September 2026, as a console setting (docs/decisions/0088-every-policy-in-the-console.md).
   it("bounds a back-dated check-in to the margin ops set", async () => {
     await env.DB.prepare(

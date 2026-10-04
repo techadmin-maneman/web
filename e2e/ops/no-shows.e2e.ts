@@ -180,6 +180,28 @@ test("draws a disputed charge: the client's words, what the charge took, and the
   await expect(row("Waited")).toHaveText("16 min · closed 11:47 am");
 });
 
+// FLD-52: a check-in held over a day was re-timed to when it reached us, and read as the phone's own time.
+test("says beside a disputed check-in when the bounds moved the phone's time", async ({ page }) => {
+  const dispute = DISPUTES.disputes[0];
+  const moved = {
+    ...dispute,
+    checked_in_at: "2027-09-18T07:33:00.000Z",
+    phone_checked_in_at: "2027-09-18T03:48:00.000Z",
+  };
+  await answer(page, {
+    "GET /api/payments": json(DAY_MONEY),
+    "GET /api/no-shows": json(NO_SHOWS),
+    "GET /api/no-shows/disputes": json({ disputes: [moved] }),
+    "GET /api/no-shows/decided": json(DECIDED),
+  });
+  await page.goto("/no-shows");
+  const checkIn = disputeCard(page)
+    .getByRole("term")
+    .filter({ hasText: /^Check-in$/ })
+    .locator("+ dd");
+  await expect(checkIn).toHaveText("1:03 pm · phone time adjusted (phone said 9:18 am)");
+});
+
 // OIA-16: the name was plain text, and the client could not be reached from the card.
 test("reaches the client's visits from their name, and the client on WhatsApp or by phone", async ({ page }) => {
   await open(page);

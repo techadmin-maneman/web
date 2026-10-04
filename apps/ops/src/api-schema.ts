@@ -8180,8 +8180,13 @@ export interface components {
             credit_spent: boolean;
             /** @description When the visit was booked for. */
             window_start: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When he arrived, by his phone, held within bounds.
+             */
             checked_in_at: string;
+            /** @description What the phone itself said, before the bounds; null when it said nothing. */
+            phone_checked_in_at: string | null;
             /** Format: date-time */
             received_at: string;
             distance_m: number | null;

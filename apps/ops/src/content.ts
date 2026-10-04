@@ -1616,6 +1616,8 @@ export const noShows = {
     credit: "a free service visit",
     /** The board's four rows. */
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
+    /** Beside a check-in time the bounds moved: "10:33 · phone time adjusted (phone said 9:18)". */
+    adjusted: (time: string, said: string) => `${time} · phone time adjusted (phone said ${said})`,
     /** The board's note, "Your note · required", and its placeholder. */
     reason: {
       label: "Your note · required",

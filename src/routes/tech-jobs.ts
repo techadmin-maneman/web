@@ -858,7 +858,7 @@ export function registerTechJobs(app: App): void {
     const claimed = body.at === undefined ? timeOfUuidV7(eventId) : new Date(body.at);
     const inputs = await opsInputs(c);
     const at = boundedPhoneTime(claimed, { visitStart: job.windowStart, receivedAt: now }, inputs.phoneClock);
-    const write = await writeOf(c, job, "check_in", { at: at.toISOString() }, at);
+    const write = await writeOf(c, job, "check_in", { at: at.toISOString() }, { at, claimed });
     const answered = await answerBeforeLanding(c.env.DB, write);
     if (answered?.kind === "landed") return c.json(await checkInReplayed(c, job, answered.event), 200);
     if (answered !== null) return c.json(refusalOf(c, refusedOf(c, write, answered)), 409);
@@ -1339,7 +1339,7 @@ async function writeOf(
   job: WorkableJob,
   kind: JobEventKind,
   body: Record<string, unknown>,
-  phoneTime?: Date,
+  phone?: { at: Date; claimed: Date | null },
 ): Promise<EventInput> {
   const { technicianId, deviceRowId } = technicianOf(c);
   const now = c.var.deps.now();
@@ -1354,7 +1354,8 @@ async function writeOf(
     eventId,
     kind,
     body,
-    occurredAt: phoneTime ?? boundedPhoneTime(timeOfUuidV7(eventId), bounds, phoneClock),
+    occurredAt: phone?.at ?? boundedPhoneTime(timeOfUuidV7(eventId), bounds, phoneClock),
+    claimedAt: phone === undefined ? timeOfUuidV7(eventId) : phone.claimed,
     expectedStart: heldStart === undefined ? null : new Date(heldStart),
     now,
     phoneClock,
