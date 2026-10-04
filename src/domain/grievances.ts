@@ -1,7 +1,7 @@
-// A client's concerns about how we use their data (docs/decisions/0049-dpdp.md): the ones their profile shows them,
-// and one word an hour to the team chat about new ones.
+// A client's concerns about how we use their data: the ones their profile shows them, and one message an hour to the
+// team chat about new ones.
 
-import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
+import { DAY_MS, HOUR_MS } from "../lib/durations.ts";
 import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import { GRIEVANCES_SHOWN } from "../policy/grievances.ts";
 
@@ -54,8 +54,8 @@ export async function openGrievanceInWords(db: D1Database, personId: string, tex
 }
 
 /**
- * Tells the team chat, in one message, how many concerns raised in the hour up to this minute are still open. Run once
- * an hour, it tells each concern once; Grievances lists every open one, told or not.
+ * Tells the team chat, in one message, how many concerns raised in the last whole hour (9:00 to 10:00 for a run at
+ * 10:24) are still open. Run once an hour, it tells each concern once; Grievances lists every open one, told or not.
  */
 export async function tellOfNewGrievances(
   db: D1Database,
@@ -63,7 +63,7 @@ export async function tellOfNewGrievances(
   queueLink: string,
   now: Date,
 ): Promise<number> {
-  const until = Math.floor(now.getTime() / MINUTE_MS) * MINUTE_MS;
+  const until = Math.floor(now.getTime() / HOUR_MS) * HOUR_MS;
   const row = await db
     .prepare("SELECT COUNT(*) AS raised FROM grievances WHERE state = 'open' AND created_at >= ?1 AND created_at < ?2")
     .bind(new Date(until - HOUR_MS).toISOString(), new Date(until).toISOString())

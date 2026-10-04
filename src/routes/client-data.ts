@@ -139,7 +139,7 @@ export function registerClientData(app: App): void {
 
     const id = crypto.randomUUID();
     // The write settles two taps in the same moment, not the read above: both could find nothing,
-    // and only one may record a grievance (ADR 0058).
+    // and only one may record a grievance.
     const [raised] = await db.batch([
       db
         .prepare(

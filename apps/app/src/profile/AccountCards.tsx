@@ -242,14 +242,18 @@ export function SupportCard() {
 
 type Grievance = Profile["grievances"][number];
 
-/** A concern the client raised: when, whether we have answered, their own words, and our answer. */
+/** Where a concern stands: still waiting for us, or answered on a day. */
+function concernStatus(grievance: Grievance): string {
+  if (grievance.answered_at === null) return profile.data.waiting;
+  return profile.data.answered(longDate(grievance.answered_at));
+}
+
+/** A concern the client raised: when, where it stands, their own words, and our answer. */
 function Concern({ grievance }: { grievance: Grievance }) {
   const copy = profile.data;
-  const status =
-    grievance.answered_at === null ? copy.waiting : copy.answered(longDate(grievance.answered_at));
   return (
     <li className={styles.concern}>
-      <p className={styles.concernHead}>{copy.concern(longDate(grievance.raised_at), status)}</p>
+      <p className={styles.concernHead}>{copy.concern(longDate(grievance.raised_at), concernStatus(grievance))}</p>
       <blockquote className={styles.concernWords}>{grievance.text}</blockquote>
       {grievance.response !== null && <p className={styles.concernAnswer}>{copy.answer(grievance.response)}</p>}
     </li>
