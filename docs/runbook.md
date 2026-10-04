@@ -1097,14 +1097,7 @@ Production has never used FSM. Staging leaves it in the order below, once every 
    - FSM, Setup → Automation → Workflow Rules: switch off the rules on Service Appointments that call our webhook (step 11b, point 6). Setup → Automation → Webhooks: delete the webhooks they ran.
    - FSM, Setup → Marketplace (or Integrations): switch off the **Zoho Books** and **Zoho CRM** integrations.
    - Books → Settings → Zoho Apps → Zoho CRM, already switched on: two-way sync, Contacts only, transaction sync off, duplicates "Skip", and Books' "MM person ID" mapped to a CRM Contacts field of the same name.
-4. **Link each client to the Books customer FSM made for them**, or the Books pass makes them a second one. With `.env.fsm-scripts` (the scripts' FSM token, step 8.7):
-
-   ```sh
-   node --env-file=.env.fsm-scripts scripts/link-books-customers.ts           # lists each link, and why a client is skipped
-   node --env-file=.env.fsm-scripts scripts/link-books-customers.ts --write   # writes them
-   ```
-
-   It prints IDs only. A client FSM made no customer for, or whose contact is gone, is skipped and gets a new customer from the Books pass after the switch. Each linked client is marked for that pass to write their details and ID over the customer, so Books' sync takes "MM person ID" to the CRM.
+4. **Link each client to the Books customer FSM made for them.** Not needed on staging (4 October 2026): step 2 deleted staging's Books customers, so the Books pass makes each client a new one after the switch. FSM-PR11 deleted the script, `scripts/link-books-customers.ts`.
 
 5. **Switch.** Land the one-line pull request that sets `FSM_PROVIDER` to `"none"` under `env.staging.vars` in `wrangler.jsonc`; the push deploys staging. Check `/api/health`. FSM's secrets may stay set: nothing reads them. From then on:
    - the fsm-sync consumer acknowledges what is left for FSM and logs `fsm_message_dropped`;
@@ -1121,9 +1114,7 @@ Production has never used FSM. Staging leaves it in the order below, once every 
    node --env-file=<file> scripts/check-triggers.ts staging --strict
    ```
 
-   FSM-PR11 also deletes `scripts/link-books-customers.ts`, so step 4 must be done before it lands.
-
-**Rolling back.** Set `FSM_PROVIDER` back to `"zoho"` for staging and deploy, and the owner switches FSM's workflow rules, webhooks and integrations back on. Visits booked meanwhile stay in our database, with no FSM record. A client given a Books customer meanwhile has none in FSM, so their payments wait until FSM's own integration makes one.
+**Rolling back.** Until FSM-PR11 lands: set `FSM_PROVIDER` back to `"zoho"` for staging and deploy, and the owner switches FSM's workflow rules, webhooks and integrations back on. Visits booked meanwhile stay in our database, with no FSM record. A client given a Books customer meanwhile has none in FSM, so their payments wait until FSM's own integration makes one. Once FSM-PR11 is live, the only way back is to revert it.
 
 ---
 
