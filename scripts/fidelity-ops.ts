@@ -18,12 +18,22 @@
 // pairs are the console's own frame brought down to 1000; every other pair is a
 // panel beside a panel, at its own size.
 
-import { rmSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
-import { BOARD, DISPUTES, PIECES, ROOM, TASKS } from "../e2e/ops/fixtures.ts";
+import {
+  BOARD,
+  DAY_MONEY,
+  DISPUTES,
+  NO_SHOWS,
+  PIECES,
+  ROOM,
+  TASKS,
+  TECHNICIAN_WORK,
+  TECHNICIANS,
+} from "../e2e/ops/fixtures.ts";
 import { pair, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
@@ -179,116 +189,11 @@ const PHOTOS = {
   ],
 };
 
-// ---- Board D1: the case the board rules on, with its three facts -------------
+// ---- Board D1: the day's money, the case it rules on, and its dispute --------------
+// NO_SHOWS and DAY_MONEY are the browser tests' (e2e/ops/fixtures.ts): the board's own figures, typed against the API.
 
-/**
- * The board's own: Vikram's visit booked for 11:30, checked in at 11:31, 240 m
- * out, the WhatsApp delivered 11:32, closed at 11:47.
- */
-const NO_SHOWS = {
-  cases: [
-    {
-      id: "66000000-0000-4000-8000-000000000001",
-      appointment_id: "77000000-0000-4000-8000-000000000001",
-      person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
-      visit_date: "2027-09-19",
-      technician: "Imran Qureshi",
-      checked_in_at: "2027-09-19T06:01:00.000Z",
-      phone_checked_in_at: "2027-09-19T06:01:00.000Z",
-      received_at: "2027-09-19T06:01:00.000Z",
-      window_start: "2027-09-19T06:00:00.000Z",
-      window_end: "2027-09-19T07:30:00.000Z",
-      minutes_late: 1,
-      distance_m: 240,
-      radius_m: 200,
-      message_state: "delivered",
-      message_delivered_at: "2027-09-19T06:02:00.000Z",
-      wait_ends_at: "2027-09-19T06:16:00.000Z",
-      closed_at: "2027-09-19T06:17:00.000Z",
-      opened_at: "2027-09-19T06:17:00.000Z",
-      due: "2027-09-21T06:17:00.000Z",
-      decision: "undecided",
-      decided_at: null,
-    },
-  ],
-};
-
-/**
- * The day's money over its charges, board D1's first card: its own three
- * figures and its two charges, the no-show priced at Rs. 2,360 like the late
- * cancellation, as the board draws it and its charge now records.
- */
-const DAY_MONEY = {
-  date: "2027-09-22",
-  collected: 8_400_000,
-  refunds_processing: 708_000,
-  refunded: 236_000,
-  charged: 472_000,
-  charges: [
-    {
-      id: "b1000000-0000-4000-8000-000000000001",
-      kind: "no_show",
-      person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
-      amount: 236_000,
-      // Ruled this morning on yesterday's visit, so the list's own order is the route's.
-      at: "2027-09-22T02:30:00.000Z",
-      visit_started_at: "2027-09-21T06:00:00.000Z",
-      change: null,
-      technician: "Imran Qureshi",
-    },
-    {
-      id: "b1000000-0000-4000-8000-000000000002",
-      kind: "late_cancellation",
-      person: { id: "11000000-0000-4000-8000-000000000005", name: "Aman Tyagi" },
-      amount: 236_000,
-      at: "2027-09-22T03:44:00.000Z",
-      visit_started_at: "2027-09-22T04:30:00.000Z",
-      change: "cancelled",
-      technician: null,
-    },
-  ],
-};
-
-// ---- Board D3: the roster, with the phones the board does not draw -----------
-
-const phone = (id: string, label: string | null, seen: string) => ({
-  device_id: id,
-  label,
-  last_seen_at: `${seen}T05:00:00.000Z`,
-  revoked_at: null,
-});
-const worker = (n: number, name: string, initials: string, zone: string, seen: string) => ({
-  id: `88000000-0000-4000-8000-00000000000${String(n)}`,
-  name,
-  initials,
-  zone,
-  devices: [phone(`a41c09e27f3${String(n)}`, "Chrome on Android", seen)],
-  // The board draws no leave; the roster's Leave column then reads as a gap.
-  leave: [],
-});
-const TECHNICIANS = {
-  technicians: [
-    worker(1, "Imran Qureshi", "IQ", "Sec 40–65", "2027-09-22"),
-    worker(2, "Sandeep Yadav", "SY", "Sec 1–39", "2027-09-22"),
-    worker(3, "Arjun Negi", "AN", "DLF 1–5", "2027-09-21"),
-    worker(4, "Faizan Ali", "FA", "Sohna Rd", "2027-09-20"),
-  ],
-};
-
-/** The board's own four averages, against the 90 minutes a service visit is planned for. */
-const figures = (n: number, jobs: number, timed: number, minutes: number) => ({
-  technician_id: `88000000-0000-4000-8000-00000000000${String(n)}`,
-  jobs,
-  timed_jobs: timed,
-  average_minutes: minutes,
-  average_planned_minutes: 90,
-  skill: null,
-});
-const TECHNICIAN_WORK = {
-  from: "2027-06-24",
-  to: "2027-09-23",
-  technicians: [figures(1, 48, 48, 84), figures(2, 41, 41, 91), figures(3, 44, 44, 79), figures(4, 29, 29, 108)],
-};
+// ---- Board D3: the roster and its figures ------------------------------------
+// TECHNICIANS and TECHNICIAN_WORK are the browser tests' (e2e/ops/fixtures.ts): the board's own four, typed against the API.
 
 const consent = (purpose: string, state: string, version: string | null, at: string | null, source: string | null) => ({
   purpose,
@@ -337,9 +242,23 @@ const photoFiles = Object.fromEntries(
   ]),
 );
 
+/** Every call the console's API document names, as "GET /api/dispatch". */
+function everyCall(): string[] {
+  const { paths } = JSON.parse(readFileSync("docs/openapi-ops.json", "utf8")) as { paths: Record<string, object> };
+  return Object.entries(paths).flatMap(([path, operations]) =>
+    Object.keys(operations).map((method) => `${method.toUpperCase()} ${path}`),
+  );
+}
+
 const API: Api = {
   // Board A1's "AK", as Access would name a member of staff whose initials they are.
-  "/api/whoami": json({ signed_in_as: "aditya.kumar@maneman.in", sign_out: "/cdn-cgi/access/logout" }),
+  // The Staff list not yet enforced, so every call the console's API document names may be made, and every
+  // department is drawn, as the boards draw them (ADR 0109).
+  "/api/whoami": json({
+    signed_in_as: "aditya.kumar@maneman.in",
+    sign_out: "/cdn-cgi/access/logout",
+    staff: { enforced: false, listed: false, grants: [], may_call: everyCall() },
+  }),
   // Boards A1 to A3 are answered with the week the browser tests use, so the
   // board's figures are written once and both read beside it (e2e/ops/fixtures.ts).
   "/api/dispatch": json(BOARD),
@@ -363,6 +282,8 @@ const API: Api = {
   "/api/no-shows/disputes": json(DISPUTES),
   // The tasks are read against IN_2027, the day their dates are written for (e2e/ops/fixtures.ts).
   "/api/tasks": answerTasks,
+  // No alert open, as the board draws none: "Needs a hand" stays empty.
+  "/api/alerts": json({ count: 0, alerts: [] }),
   "/api/technicians": json(TECHNICIANS),
   "/api/technicians/work": json(TECHNICIAN_WORK),
   ...photoFiles,
@@ -443,7 +364,7 @@ async function dispatch(browser: Browser, design: Page): Promise<void> {
   await page.getByRole("button", { name: "Move this visit" }).click();
   await page.getByRole("button", { name: "Move Rohit M. to Sandeep Yadav, Sat 20 Sep, morning" }).click();
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await picker.getByText("Fri 19 Sep, morning → Sat 20 Sep, morning").waitFor();
+  await picker.getByText("Fri 19 Sep, 9 am → Sat 20 Sep, 9 am").waitFor();
   await pair(OUT, PANEL, "a2-move-reason", await frame(design, "Dispatch · drag"), await picker.screenshot());
   await page.close();
 }
@@ -495,7 +416,7 @@ async function photos(browser: Browser, design: Page): Promise<void> {
  */
 async function noShows(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/no-shows");
-  const money = page.getByRole("region", { name: "Today", exact: true });
+  const money = page.getByRole("region", { name: /^Today/ });
   await money.getByText("Cancelled 9:14 am · visit was 10 am").waitFor();
   await pair(OUT, PANEL, "d1-day-money", await panelOf(design, "Payments", 0), await money.screenshot());
 
@@ -521,8 +442,9 @@ async function pieces(browser: Browser, design: Page): Promise<void> {
 /** Board D2, the queues ops still have to work through, on the panel the board draws. */
 async function tasks(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/tasks");
+  await page.getByRole("heading", { level: 1, name: "Tasks" }).waitFor();
   const panel = page.getByRole("region", { name: "Tasks" });
-  await panel.getByText("Nothing is closed here.").waitFor();
+  await panel.waitFor();
   await pair(OUT, PANEL, "d2-tasks", await frame(design, "Tasks"), await panel.screenshot());
   await page.close();
 }
