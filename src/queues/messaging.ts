@@ -1,12 +1,17 @@
 // The messaging consumer: the WhatsApp provider's caller for every message but
 // a login code, which src/http/send-code.ts hands to the provider itself once
-// the response has gone, never through this queue (ADR 0030). It sends a person
-// the result they asked for at the gate, as the result template with a signed
-// result link that expires an hour after sending; a client's messages about
-// their visits (src/domain/visit-messages.ts) and the reminder of their next one
-// (src/domain/next-visit.ts); the referral, waitlist and launch messages; and
-// the booking form's notices to a number we know, each composed where its
-// subject lives.
+// the response has gone, never through this queue (ADR 0030), and the word that
+// an account is deleted, which goes the same way to a number the erasure has
+// just blanked (src/routes/ops-profile.ts). It sends a person the result they
+// asked for at the gate, as the result template with a signed result link that
+// expires an hour after sending; a client's messages about their visits
+// (src/domain/visit-messages.ts) and the reminder of their next one
+// (src/domain/next-visit.ts); the receipt for a hair system paid by its link
+// (src/domain/payment-links.ts); the referral, waitlist and launch messages; the
+// booking form's notices to a number we know; ops' rejection of a request to
+// delete an account; and the answer to a STOP reply, each composed where its
+// subject lives. A reminder or the launch alert ends with the signed link that
+// stops them (src/domain/stop-messages.ts).
 //
 // Skipped, never sent: messaging off, a person erased, an automatic kind to a
 // number outside the staging allowlist (a kind that answers the person who
@@ -15,14 +20,15 @@
 // reached, or a reminder or arrival notice whose moment has passed.
 //
 // A transient failure is retried three times; then the message fails and an
-// alert names it. So does a message that throws on each of four deliveries,
-// such as one that cannot be composed. A bridge that cannot send at all leaves
-// the message queued: the sweeper sends it again once the bridge is open, and
-// fails it if it is still unsent a day on (src/scheduled/unsent-messages.ts).
+// alert names it, which ops may send again from Tasks. So does a message that
+// throws on each of four deliveries, such as one that cannot be composed. A
+// bridge that cannot send at all leaves the message queued: the sweeper sends
+// it again once the bridge is open, and fails it if it is still unsent a day on
+// (src/scheduled/unsent-messages.ts).
 
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
-import { messageClass } from "../config/message-templates.ts";
+import { messageClass, RESULT_TEMPLATE, stopLinkPurpose } from "../config/message-templates.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
@@ -32,11 +38,15 @@ import { takeOne, type Limit } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
+import { composeCreditsExpiring } from "../domain/credit-reminders.ts";
+import { composeDeletionRejected } from "../domain/deletion.ts";
 import { composeBookingRefunded } from "../domain/held-bookings.ts";
 import { composeNextServiceReminder } from "../domain/next-visit.ts";
+import { composeLinkPaid } from "../domain/payment-links.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
 import { composeSiteNotice, isSiteNoticeKind } from "../domain/site-notices.ts";
+import { composeMessagesStopped, stopLink } from "../domain/stop-messages.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
 import {
   composeVisitMessage,
@@ -44,6 +54,7 @@ import {
   VISIT_MESSAGE_KINDS,
   type VisitMessageKind,
 } from "../domain/visit-messages.ts";
+import { messageFailedKey } from "../policy/alerts.ts";
 import { isStagingTestRecord } from "../policy/staging-test-records.ts";
 import type { SendResult } from "../providers/messaging.ts";
 import { scrubString, type Logger } from "../log.ts";
@@ -101,16 +112,32 @@ async function failAfterErrors(
     .prepare(
       `UPDATE outbound_messages SET state = 'failed', last_error = ?2, sending_at = NULL
        WHERE id = ?1 AND state = 'queued'
-       RETURNING kind`,
+       RETURNING kind, person_id`,
     )
     .bind(messageId, detail)
-    .first<{ kind: string }>();
+    .first<{ kind: string; person_id: string }>();
   if (failed === null) return {};
   log.error("message_failed", { attempts: MAX_SEND_ATTEMPTS, detail });
-  await deps.alert(
-    `Message ${messageId} (${failed.kind}) failed after ${String(MAX_SEND_ATTEMPTS)} attempts: ${detail}`,
-  );
+  await alertFailed(deps, {
+    messageId,
+    kind: failed.kind,
+    personId: failed.person_id,
+    attempts: MAX_SEND_ATTEMPTS,
+    detail,
+  });
   return {};
+}
+
+/** Ops are told of a message that failed for good, and may send it again from Tasks. */
+async function alertFailed(
+  deps: Dependencies,
+  failed: { messageId: string; kind: string; personId: string; attempts: number; detail: string },
+): Promise<void> {
+  await deps.alertOnce({
+    key: messageFailedKey(failed.messageId),
+    message: `Message ${failed.messageId} (${failed.kind}) failed after ${String(failed.attempts)} attempts: ${failed.detail}`,
+    link: `/clients/${failed.personId}`,
+  });
 }
 
 interface MessageRow {
@@ -125,11 +152,15 @@ interface MessageRow {
   erased_at: string | null;
 }
 
-/** What to send: a template, its params, and for the try-on result its image's link, made fresh for each try. */
+/**
+ * What to send: a template, its params, for the try-on result its image's link, made fresh for each try, and for a
+ * reminder or alert the link that stops them.
+ */
 interface Sendable {
   readonly template: string;
   readonly params: string[];
   readonly mediaUrl?: () => Promise<string>;
+  readonly stopLink?: string;
 }
 
 type Content = Sendable | { readonly skip: string };
@@ -164,7 +195,7 @@ export async function resultMessageCap(
 
 /** The try-on result: the person's result image, within the daily cap on result messages to one number. */
 async function resultContent(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
-  const { messaging, tryon } = config.settings;
+  const { tryon } = config.settings;
   const job = await db
     .prepare("SELECT result_key, state FROM tryon_jobs WHERE id = ?1")
     .bind(row.subject_id)
@@ -176,7 +207,7 @@ async function resultContent(db: D1Database, config: StaticConfig, row: MessageR
   }
   const resultKey = job.result_key;
   return {
-    template: messaging.resultTemplate,
+    template: RESULT_TEMPLATE,
     params: [row.name],
     // The provider fetches the image when it sends.
     mediaUrl: async () => {
@@ -206,13 +237,25 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
     return composeNextServiceReminder(db, row.subject_id, row.person_id, days);
   }
   if (row.kind === "booking_refunded") return composeBookingRefunded(db, row.subject_id, row.person_id);
+  if (row.kind === "link_paid") return composeLinkPaid(db, row.subject_id, row.person_id);
   if (row.kind === "friend_fitted") return composeFriendFitted(db, row.subject_id, row.person_id);
   if (row.kind === "friend_credited") return composeFriendCredited(db, row.subject_id, row.person_id);
   if (row.kind === "referral_rejected") return composeReferralRejected(db, row.subject_id, row.person_id);
+  if (row.kind === "credits_expiring") return composeCreditsExpiring(db, row.subject_id, row.person_id, now);
   if (row.kind === "launch_alert") return composeLaunchAlert(db, row.subject_id, row.person_id, config.environment);
   if (row.kind === "waitlist_confirmation") return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
   if (isSiteNoticeKind(row.kind)) return composeSiteNotice(db, row.kind, row.person_id);
+  if (row.kind === "deletion_rejected") return composeDeletionRejected(db, row.subject_id, row.person_id);
+  if (row.kind === "messages_stopped") return composeMessagesStopped(db, row.person_id);
   return { skip: "unknown kind" };
+}
+
+/** The link a reminder or the launch alert ends with, which stops them; none on any other kind. */
+async function stopLinkOf(config: StaticConfig, row: MessageRow, now: Date): Promise<string | undefined> {
+  const purpose = stopLinkPurpose(row.kind);
+  if (purpose === null) return undefined;
+  const origin = PUBLIC_ORIGIN[config.environment];
+  return stopLink(origin, config.settings.tryon.linkSigningKey, { personId: row.person_id, purpose }, now);
 }
 
 export async function sendMessage(
@@ -253,6 +296,7 @@ export async function sendMessage(
   if (heldBackByAllowlist(messaging, row)) return skip("number not on the allowlist");
   const content = await contentOf(db, config, row, now);
   if ("skip" in content) return skip(content.skip);
+  const stopLink = await stopLinkOf(config, row, now);
 
   // Claim this send; another delivery of the same message now leaves it alone.
   const claim = await db
@@ -265,7 +309,7 @@ export async function sendMessage(
     .first<{ attempts: number }>();
   if (claim === null) return {};
 
-  const result = await sendContent(deps, row.mobile_e164, content);
+  const result = await sendContent(deps, row.mobile_e164, { ...content, stopLink });
 
   if (result.ok) {
     await db
@@ -297,7 +341,7 @@ export async function sendMessage(
     .bind(messageId, detail)
     .run();
   log.error("message_failed", { attempts: claim.attempts, detail });
-  await deps.alert(`Message ${messageId} (${row.kind}) failed after ${String(claim.attempts)} attempts: ${detail}`);
+  await alertFailed(deps, { messageId, kind: row.kind, personId: row.person_id, attempts: claim.attempts, detail });
   return {};
 }
 
@@ -318,6 +362,7 @@ async function sendContent(deps: Dependencies, to: string, content: Sendable): P
       template: content.template,
       params: content.params,
       ...(mediaUrl === undefined ? {} : { mediaUrl }),
+      ...(content.stopLink === undefined ? {} : { stopLink: content.stopLink }),
     });
   } catch (error) {
     return { ok: false, transient: true, detail: `threw ${error instanceof Error ? error.name : "error"}` };

@@ -21,6 +21,9 @@
 // back (./useCamera.ts). A frame that fails to keep — the phone full, say, which
 // App says above every screen — is said here and can be taken again: it is not
 // a camera that failed.
+//
+// A set the API refused opens here again with the photographs that reached us
+// counted, and only the refused angles to take.
 
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -30,17 +33,18 @@ import { capture as copy, job as jobCopy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { StepFrame, useSettled } from "../steps/StepFrame.tsx";
 import { useStep } from "../steps/useStep.ts";
-import { dropFrame, frames as keptFrames, keepFrame } from "../store/outbox.ts";
+import { dropFrame, events as queuedEvents, frames as keptFrames, keepFrame } from "../store/outbox.ts";
+import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../waiting/sets.ts";
 import { captureFrame } from "./capture.ts";
 import { useCamera } from "./useCamera.ts";
 import styles from "./capture.module.css";
 
-/** The five angles, in the order the design guides them (board B1). */
-const ANGLES: readonly Angle[] = ["front", "top", "left", "right", "hair"];
-
-interface Taken {
-  readonly angle: Angle;
-  readonly frameId: string;
+/** Why a refused set is open again: the angles still to take again, or the set as a whole. Null once nothing is. */
+function refusalNotice(refused: readonly Angle[], taken: readonly TakenAngle[]): string | null {
+  if (refused.length === 0) return copy.refusedSet;
+  const stillToTake = refused.filter((angle) => !taken.some((one) => one.angle === angle));
+  if (stillToTake.length === 0) return null;
+  return copy.refusedPhotos(stillToTake.map((angle) => copy.angles[angle].toLowerCase()));
 }
 
 /** Board B1's framing guide, drawn over the camera in the board's own 320 by 420 box. */
@@ -63,11 +67,12 @@ function FramingGuide() {
 
 export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   const step = phase === "before" ? "before_photos" : "after_photos";
-  const { loaded, retry, finish, back } = useStep(id, step);
+  const { loaded, retry, refused, finish, back } = useStep(id, step);
   const video = useRef<HTMLVideoElement | null>(null);
   const [camera, reopen] = useCamera();
   const stream = camera.state === "open" ? camera.stream : null;
-  const [taken, setTaken] = useState<readonly Taken[]>([]);
+  const [taken, setTaken] = useState<readonly TakenAngle[]>([]);
+  const [refusedAngles, setRefusedAngles] = useState<readonly Angle[]>([]);
   const [ready, setReady] = useState(false);
   const [missed, setMissed] = useState(false);
   const [, once] = useOneAtATime();
@@ -89,15 +94,11 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
     [stream],
   );
 
-  // Anything already on the phone for this job and phase counts: a capture interrupted resumes.
+  // What is already taken counts: a capture interrupted resumes, and a refused set keeps what reached us.
   useEffect(() => {
-    void keptFrames().then((held) => {
-      setTaken(
-        held
-          .filter((frame) => frame.job_id === id && frame.phase === phase)
-          .sort((a, b) => a.kept_at - b.kept_at)
-          .map((frame) => ({ angle: frame.angle, frameId: frame.id })),
-      );
+    void Promise.all([keptFrames(), queuedEvents()]).then(([held, queued]) => {
+      setTaken(anglesTaken(held, queued, id, phase));
+      setRefusedAngles(anglesRefused(held, id, phase));
     });
   }, [id, phase]);
 
@@ -116,16 +117,19 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
       }
     });
 
+  // Only a frame on the phone can be taken again: a photograph that reached us stays.
+  const lastOnPhone = taken.at(-1)?.frameId ?? null;
   const retake = () =>
     once(async () => {
-      const last = taken.at(-1);
-      if (last === undefined) return;
-      await dropFrame(last.frameId);
+      if (lastOnPhone === null) return;
+      await dropFrame(lastOnPhone);
       setTaken((already) => already.slice(0, -1));
     });
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
 
   const all = angle === undefined;
   // A tap while a frame is being kept is ignored (`once`), not drawn dim: the key never flickers between angles.
@@ -137,7 +141,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
         variant="outlineOnInk"
         size="action"
         className={styles.retake}
-        disabled={taken.length === 0}
+        disabled={lastOnPhone === null}
         onClick={() => void retake()}
       >
         {copy.retake}
@@ -167,6 +171,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
       of={ANGLES.length}
       action={copy.finish}
       ready={all}
+      notice={refused === null ? null : refusalNotice(refusedAngles, taken)}
       still
       foot={shutter}
       onBack={back}
@@ -217,7 +222,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
 }
 
 /** A tile is taken, the one to take now, or still to take. */
-function tileState(name: Angle, taken: readonly Taken[], now: Angle | undefined): "done" | "now" | "todo" {
+function tileState(name: Angle, taken: readonly TakenAngle[], now: Angle | undefined): "done" | "now" | "todo" {
   if (taken.some((one) => one.angle === name)) return "done";
   return name === now ? "now" : "todo";
 }

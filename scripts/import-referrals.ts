@@ -15,6 +15,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EXPECTED_DATABASE_NAME, isEnvironmentName } from "../src/config/environments.ts";
+import { newReferralCode } from "../src/domain/referrals.ts";
 import { CREDIT_TTL_DAYS, CREDITS_PER_REFERRAL } from "../src/policy/referral-reward.ts";
 import { fields } from "./lib/pincodes.ts";
 
@@ -30,22 +31,6 @@ const expiresAt = new Date(now.getTime() + CREDIT_TTL_DAYS * 86_400_000).toISOSt
 
 const quote = (value: string | number | null) =>
   value === null ? "NULL" : typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
-
-const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-/** The same shape as a code made in the app: initials and four random characters. */
-function newReferralCode(name: string): string {
-  const initials =
-    name
-      .split(/\s+/)
-      .map((word) => word.replace(/[^A-Za-z]/g, "").charAt(0))
-      .filter((letter) => letter !== "")
-      .slice(0, 2)
-      .join("")
-      .toUpperCase()
-      .replace(/[OI]/g, "X") || "MM";
-  const bytes = crypto.getRandomValues(new Uint8Array(4));
-  return initials + [...bytes].map((byte) => ALPHABET[byte % ALPHABET.length] ?? "X").join("");
-}
 
 /** The same pair always gets the same IDs, so running the import again writes nothing twice. */
 function idFor(seed: string): string {

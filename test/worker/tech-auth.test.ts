@@ -8,6 +8,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
+import { takeFromCeiling } from "../../src/domain/ceilings.ts";
 import { syncTechnicians } from "../../src/domain/fsm-mirror.ts";
 import { buildOpenApiDocument } from "../../src/openapi.ts";
 import { createStubFsm, EMPTY_FSM, type FsmTechnician } from "../../src/providers/fsm.ts";
@@ -214,8 +215,8 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     expect(deps.sentCodes).toHaveLength(5);
   });
 
-  it("answers busy, and sends nothing, once the day's ceiling on codes is reached", async () => {
-    tech = appFor("local", deps, { login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } }, "tech");
+  it("answers busy, and sends nothing, once the technicians' day's ceiling on codes is reached", async () => {
+    tech = appFor("local", deps, { login: { ...LOCAL_SETTINGS.login, techCodeDailyCeiling: 1 } }, "tech");
     await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
 
     const refused = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
@@ -223,14 +224,68 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     expect(refused.status).toBe(503);
     expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
     expect(deps.sentCodes).toHaveLength(1);
-    // The ceiling is the client's too, and its alert names both apps.
     expect(deps.alerts).toEqual([
-      'The daily login_code ceiling (1) is reached; the client and technician apps\' login codes answer "busy" until midnight IST.',
+      'The daily tech_code ceiling (1) is reached; the technician app\'s login codes answer "busy" until midnight IST.',
+      `Technician ${IMRAN} was refused a login code: today's 1 technician login codes are spent, so no technician ` +
+        "can sign in on a new phone until midnight IST. http://ops.localhost:4323/technicians",
     ]);
   });
 
-  it("spends none of the day's ceiling on a number FSM does not list", async () => {
+  // FLD-27: clients' logins and number changes spent the one ceiling technicians shared, so a technician on a new
+  // phone could not start his day.
+  it("still sends a technician his code once the client app's ceiling is spent", async () => {
+    await takeFromCeiling(env.DB, "login_code", 1, NOW);
     tech = appFor("local", deps, { login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } }, "tech");
+
+    const answer = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+
+    expect(answer.status).toBe(202);
+    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000009"]);
+  });
+
+  it("tells ops when an active technician is refused a code, and closes the alert once he is given one", async () => {
+    let clock = NOW;
+    deps = fakeDependencies({ now: () => clock });
+    tech = appFor("local", deps, {}, "tech");
+    for (let sent = 0; sent < 6; sent += 1)
+      await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+
+    expect(deps.alerts).toEqual([
+      `Technician ${IMRAN} was refused a login code: his number has had its 5 codes for today, so he can sign in ` +
+        "again after midnight IST. If he did not ask for them all, someone else is asking for codes for his number. " +
+        "http://ops.localhost:4323/technicians",
+    ]);
+
+    clock = new Date(NOW.getTime() + 24 * 60 * 60_000);
+    expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(202);
+    const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
+    expect(open).toEqual({ n: 0 });
+  });
+
+  it("tells ops when a technician's network has asked for its codes this hour", async () => {
+    // Without FSM, so the numbers nobody knows do not read a list that leaves Imran out.
+    tech = appFor("local", deps, {}, "tech", { FSM_PROVIDER: "none" });
+    for (let other = 0; other < 10; other += 1) {
+      await post("/api/tech/auth/otp", { mobile: `98200 0000${String(other)}`, device_id: DEVICE });
+    }
+
+    const refused = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+
+    expect(refused.status).toBe(429);
+    expect(deps.alerts).toEqual([
+      `Technician ${IMRAN} was refused a login code: his network has asked for 10 codes this hour. He can sign in ` +
+        "on mobile data now, or on this network from the next hour. http://ops.localhost:4323/technicians",
+    ]);
+  });
+
+  it("tells ops nothing when a number FSM does not list is refused", async () => {
+    for (let sent = 0; sent < 6; sent += 1)
+      await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
+    expect(deps.alerts).toEqual([]);
+  });
+
+  it("spends none of the day's ceiling on a number FSM does not list", async () => {
+    tech = appFor("local", deps, { login: { ...LOCAL_SETTINGS.login, techCodeDailyCeiling: 1 } }, "tech");
     expect((await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE })).status).toBe(202);
     expect((await post("/api/tech/auth/otp", { mobile: "98100 00007", device_id: DEVICE })).status).toBe(202);
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000007"]);

@@ -1,9 +1,13 @@
 // The technicians themselves, behind Access (Ops Console, board D3):
 //   GET   /api/technicians/work?from=&to=   jobs finished, and how long they took
 //   POST  /api/technicians                  add a technician
-//   PATCH /api/technicians/:id              change his name, number or zone
+//   PATCH /api/technicians/:id              change his name, number, zone or city
 //   POST  /api/technicians/:id/deactivate   switch him off: signed out, his visits still to come unassigned
 //   POST  /api/technicians/:id/reactivate   switch him back on
+//
+// Each keeps to the caller's cities: a technician elsewhere, or with no city
+// when the caller's grants name cities, is not found, and is given only a city
+// the caller's grants reach.
 //
 // The roster itself, and the phones each technician works from, are on
 // GET /api/technicians (src/routes/ops-field.ts). The work route answers the two
@@ -18,6 +22,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { fieldRecord } from "../config/field-record.ts";
+import { isActiveCity } from "../domain/cities.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import type { AuditAction, AuditEntry } from "../domain/audit.ts";
 import {
@@ -31,6 +36,10 @@ import {
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { technicianWork, type TechnicianWork } from "../domain/technician-work.ts";
+import { isWithin, techniciansWithin } from "../domain/places.ts";
+import { permits, routeReach } from "../http/staff-access.ts";
+import { reachesCity } from "../policy/access.ts";
+import { GIVING_NO_CITY } from "../policy/console-routes.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { runsOver } from "../policy/technician-work.ts";
@@ -69,9 +78,9 @@ const WorkSchema = z
   .object({
     from: z.iso.date(),
     to: z.iso.date().openapi({ description: "Exclusive: the day after the last one counted." }),
-    technicians: z
-      .array(TechnicianWorkSchema)
-      .openapi({ description: "Every active technician, by name, including those who finished nothing." }),
+    technicians: z.array(TechnicianWorkSchema).openapi({
+      description: "Every active technician in the caller's cities, by name, including those who finished nothing.",
+    }),
   })
   .strict()
   .openapi("TechniciansWork", { description: "Counted at read time from the appointments themselves." });
@@ -108,14 +117,24 @@ const MobileSchema = z
 const ZoneSchema = z
   .union([z.string().trim().min(1).max(60), z.null()])
   .openapi({ description: "Where he mostly works, in ops' words; null for none." });
+const CitySchema = z.union([z.string().min(1).max(60), z.null()]).openapi({
+  description:
+    "The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with " +
+    "a grant of that city or its zone see him; with none, only a national grant does.",
+});
 
 const NewTechnicianSchema = z
-  .object({ name: NameSchema, mobile: MobileSchema, zone: ZoneSchema.optional() })
+  .object({ name: NameSchema, mobile: MobileSchema, zone: ZoneSchema.optional(), city: CitySchema.optional() })
   .strict()
   .openapi("NewTechnician");
 
 const TechnicianChangeSchema = z
-  .object({ name: NameSchema.optional(), mobile: MobileSchema.optional(), zone: ZoneSchema.optional() })
+  .object({
+    name: NameSchema.optional(),
+    mobile: MobileSchema.optional(),
+    zone: ZoneSchema.optional(),
+    city: CitySchema.optional(),
+  })
   .strict()
   .refine((change) => Object.keys(change).length > 0, { message: "nothing to change" })
   .openapi("TechnicianChange", { description: "Only what is sent changes." });
@@ -157,7 +176,9 @@ const addRoute = createRoute({
   request: { body: { required: true, ...json(NewTechnicianSchema) } },
   responses: {
     201: { description: "Added", ...json(TechnicianIdSchema) },
-    400: errorResponse("invalid_request: no name, or not an Indian mobile"),
+    400: errorResponse(
+      "invalid_request: no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach",
+    ),
     403: errorResponse(MANAGE_ONLY),
     409: errorResponse("number_in_use: another active technician signs in with that number"),
   },
@@ -166,13 +187,15 @@ const addRoute = createRoute({
 const changeRoute = createRoute({
   method: "patch",
   path: "/api/technicians/{id}",
-  summary: "Change a technician's name, number or zone",
+  summary: "Change a technician's name, number, zone or city",
   request: { ...technicianPath, body: { required: true, ...json(TechnicianChangeSchema) } },
   responses: {
     200: { description: "Changed", ...json(TechnicianIdSchema) },
-    400: errorResponse("invalid_request: nothing to change, no name, or not an Indian mobile"),
+    400: errorResponse(
+      "invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach",
+    ),
     403: errorResponse(MANAGE_ONLY),
-    404: errorResponse("not_found: no such technician"),
+    404: errorResponse("not_found: no such technician in the caller's cities"),
     409: errorResponse(`number_in_use: another active technician signs in with that number; ${notOurs}`),
   },
 });
@@ -185,7 +208,7 @@ const deactivateRoute = createRoute({
   responses: {
     200: { description: "Switched off", ...json(ReturnedVisitsSchema) },
     403: errorResponse(MANAGE_ONLY),
-    404: errorResponse("not_found: no such technician"),
+    404: errorResponse("not_found: no such technician in the caller's cities"),
     409: errorResponse(notOurs),
   },
 });
@@ -198,7 +221,7 @@ const reactivateRoute = createRoute({
   responses: {
     200: { description: "Switched on", ...json(z.object({ active: z.literal(true) }).strict()) },
     403: errorResponse(MANAGE_ONLY),
-    404: errorResponse("not_found: no such technician"),
+    404: errorResponse("not_found: no such technician in the caller's cities"),
     409: errorResponse(`number_in_use: another active technician signs in with his number now; ${notOurs}`),
   },
 });
@@ -219,10 +242,12 @@ type Found =
   | { readonly kind: "found"; readonly technician: RosterTechnician }
   | { readonly kind: "refused"; readonly code: "not_found" | "managed_in_fsm" };
 
-/** The technician the path names, if there is one and he is ops' to change. */
+/** The technician the path names, if there is one in the caller's cities and he is ops' to change. */
 async function technicianToChange(c: Context<AppEnv>, id: string): Promise<Found> {
   const technician = await rosterTechnician(c.env.DB, id);
-  if (technician === null) return { kind: "refused", code: "not_found" };
+  if (technician === null || !reachesCity(await routeReach(c), technician.city)) {
+    return { kind: "refused", code: "not_found" };
+  }
   if (!isOursToChange(fieldRecord(c.var.config.providers), technician.handWritten)) {
     return { kind: "refused", code: "managed_in_fsm" };
   }
@@ -232,18 +257,41 @@ async function technicianToChange(c: Context<AppEnv>, id: string): Promise<Found
 const statusOf = (code: "not_found" | "managed_in_fsm"): 404 | 409 => (code === "not_found" ? 404 : 409);
 
 /** The fields a change names, in a fixed order, for its audit entry: never their values. */
-const CHANGEABLE = ["name", "mobile", "zone"] as const;
+const CHANGEABLE = ["name", "mobile", "zone", "city"] as const;
+
+/**
+ * Whether the caller may give a technician this city: one of ours that their grants reach, or none (GIVING_NO_CITY).
+ * Undefined, a change that leaves his city alone, may always be sent.
+ */
+async function mayGiveCity(c: Context<AppEnv>, city: string | null | undefined): Promise<boolean> {
+  if (city === undefined) return true;
+  if (city === null) return permits(c, GIVING_NO_CITY);
+  if (!reachesCity(await routeReach(c), city)) return false;
+  return isActiveCity(c.env.DB, city);
+}
+
+/** Each technician's work over the period, for the technicians in the caller's cities. */
+async function workInReach(c: Context<AppEnv>, period: { from: string; to: string }): Promise<TechnicianWork[]> {
+  const [everyone, reached] = await Promise.all([
+    technicianWork(c.env.DB, period),
+    routeReach(c).then((reach) => techniciansWithin(c.env.DB, reach)),
+  ]);
+  return everyone.filter((each) => isWithin(reached, each.technician_id));
+}
 
 export function registerOpsTechnicians(app: App): void {
   app.openapi(addRoute, async (c) => {
-    const { name, mobile, zone } = c.req.valid("json");
+    const { name, mobile, zone, city } = c.req.valid("json");
     const mobileE164 = toE164(mobile);
     if (mobileE164 === null) return c.json(errorBody("invalid_request", c.var.requestId, ["mobile"]), 400);
+    if (!(await mayGiveCity(c, city ?? null))) {
+      return c.json(errorBody("invalid_request", c.var.requestId, ["city"]), 400);
+    }
 
     const id = crypto.randomUUID();
     const added = await addTechnician(
       c.env.DB,
-      { id, name, mobileE164, zone: zone ?? null },
+      { id, name, mobileE164, zone: zone ?? null, city: city ?? null },
       auditOf(c, "technician.add", id),
       c.var.deps.now(),
     );
@@ -256,6 +304,9 @@ export function registerOpsTechnicians(app: App): void {
     const change = c.req.valid("json");
     const mobileE164 = change.mobile === undefined ? undefined : toE164(change.mobile);
     if (mobileE164 === null) return c.json(errorBody("invalid_request", c.var.requestId, ["mobile"]), 400);
+    if (!(await mayGiveCity(c, change.city))) {
+      return c.json(errorBody("invalid_request", c.var.requestId, ["city"]), 400);
+    }
 
     const found = await technicianToChange(c, id);
     if (found.kind === "refused") return c.json(errorBody(found.code, c.var.requestId), statusOf(found.code));
@@ -263,7 +314,7 @@ export function registerOpsTechnicians(app: App): void {
     const changed = await changeTechnician(
       c.env.DB,
       found.technician,
-      { name: change.name, mobileE164, zone: change.zone },
+      { name: change.name, mobileE164, zone: change.zone, city: change.city },
       auditOf(c, "technician.change", id, { fields }),
       c.var.deps.now(),
     );
@@ -307,7 +358,7 @@ export function registerOpsTechnicians(app: App): void {
     const from = asked.from ?? addDays(to, -figures.period);
     if (from >= to) return c.json(errorBody("invalid_request", c.var.requestId, ["from"]), 400);
 
-    const work = await technicianWork(c.env.DB, { from, to });
+    const work = await workInReach(c, { from, to });
     const runningOver = (each: TechnicianWork) =>
       each.average_minutes !== null &&
       each.average_planned_minutes !== null &&

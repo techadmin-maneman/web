@@ -3,10 +3,11 @@
 // five-minute cron, not in the payment's path: Books is never on the way to a
 // booking.
 //
-// Each pass does a little of five things, oldest first:
+// Each pass does a little of six things, oldest first:
 //   - without FSM, makes the Books customer of each client with money or a
 //     finished visit to record (src/domain/books-customers.ts); on FSM's path,
 //     FSM's own sync makes it every two to three hours;
+//   - without FSM, writes a client's new number or address to their customer;
 //   - records each captured payment whose client Books has, once;
 //   - applies a visit's payment to its invoice, once Books has sent it, and tells
 //     ops of any part the invoice did not owe;
@@ -35,8 +36,8 @@ import { failureReason, type Logger } from "../log.ts";
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
-import { customerFor } from "./books-customers.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
+import { customerFor, updateCustomerOf } from "./books-customers.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 
 /** How many of each a pass handles at most. */
@@ -64,7 +65,13 @@ export interface BooksSyncDeps {
   readonly resolveAlert: ResolveAlert;
 }
 
-export type BooksSyncSummary = { customers: number; recorded: number; applied: number; refunded: number };
+export type BooksSyncSummary = {
+  customers: number;
+  customersUpdated: number;
+  recorded: number;
+  applied: number;
+  refunded: number;
+};
 
 const describe = (error: unknown): string => failureReason(error, 200);
 
@@ -97,12 +104,16 @@ export async function syncBooks(
     recheck: new Date(now.getTime() - RECHECK_AFTER_MS).toISOString(),
     label: options.labelAsTest ? "Staging test: " : "",
   };
-  const summary: BooksSyncSummary = { customers: 0, recorded: 0, applied: 0, refunded: 0 };
+  const summary: BooksSyncSummary = { customers: 0, customersUpdated: 0, recorded: 0, applied: 0, refunded: 0 };
 
   if (options.fieldRecord === "ours") {
     for (const personId of await customersToAdd(pass)) {
       if (!budget.spend(CALLS_PER_CUSTOMER)) return summary;
       if (await addCustomer(pass, personId)) summary.customers += 1;
+    }
+    for (const personId of await customersToUpdate(pass)) {
+      if (!budget.spend(CALLS_PER_CUSTOMER)) return summary;
+      if (await updateCustomer(pass, personId)) summary.customersUpdated += 1;
     }
   }
   for (const payment of await paymentsToRecord(pass)) {
@@ -178,6 +189,61 @@ async function addCustomer(pass: Pass, personId: string): Promise<boolean> {
     await tellFailure(pass, failed, error);
     return false;
   }
+  await closeFailures(pass, failed);
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Writing a client's new number or address to their customer, without FSM
+// ---------------------------------------------------------------------------
+
+/** People with a customer whose number or address changed after it was last written. */
+async function customersToUpdate(pass: Pass): Promise<string[]> {
+  const { results } = await pass.db
+    .prepare(
+      `SELECT id FROM people
+       WHERE books_details_changed_at IS NOT NULL AND books_customer_id IS NOT NULL AND erased_at IS NULL
+         AND (books_checked_at IS NULL OR books_checked_at < ?1)
+       ORDER BY books_details_changed_at LIMIT ?2`,
+    )
+    .bind(pass.recheck, PER_PASS)
+    .all<{ id: string }>();
+  return results.map((row) => row.id);
+}
+
+/** True when Books has the client's details as they were when this pass read them. */
+async function updateCustomer(pass: Pass, personId: string): Promise<boolean> {
+  const claimed = await pass.db
+    .prepare(
+      `UPDATE people SET books_checked_at = ?1
+       WHERE id = ?2 AND books_details_changed_at IS NOT NULL AND (books_checked_at IS NULL OR books_checked_at < ?3)
+       RETURNING books_details_changed_at`,
+    )
+    .bind(pass.at, personId, pass.recheck)
+    .first<{ books_details_changed_at: string }>();
+  if (claimed === null) return false;
+
+  const failed = {
+    kind: "customer_update",
+    id: personId,
+    personId,
+    what: `client ${personId}'s new number or address`,
+    then: "It is asked again every hour.",
+  } as const;
+  try {
+    const updated = await updateCustomerOf(pass.db, pass.deps.books, personId, pass.options.gst);
+    if (!updated) return false;
+  } catch (error) {
+    await tellFailure(pass, failed, error);
+    return false;
+  }
+  await pass.db.batch([
+    // A change made while Books was being written keeps its mark, for the next pass.
+    pass.db
+      .prepare("UPDATE people SET books_details_changed_at = NULL WHERE id = ?1 AND books_details_changed_at = ?2")
+      .bind(personId, claimed.books_details_changed_at),
+    pass.db.prepare("UPDATE people SET books_checked_at = NULL WHERE id = ?1").bind(personId),
+  ]);
   await closeFailures(pass, failed);
   return true;
 }
@@ -349,7 +415,7 @@ async function tellLeftOver(pass: Pass, payment: PaymentToApply, owed: number): 
       `Payment ${payment.id} (Books ${payment.books_payment_id}) was ${rupees(payment.amount)}, and invoice ` +
       `${payment.fsm_invoice_id} owed ${rupees(owed)} of it, so ${rupees(left)} has nothing to be set against. ` +
       "It stays in Books as credit owed to the client until it is settled by hand.",
-    link: `/clients/${payment.person_id}`,
+    link: paymentsTab(payment.person_id),
   });
 }
 
@@ -425,7 +491,7 @@ async function tellUnapplied(
     message:
       `Payment ${payment.id} (Books ${payment.books_payment_id}) has nothing to be set against: ${why}. ` +
       "It stays in Books as credit owed to the client until it is settled by hand.",
-    link: `/clients/${payment.person_id}`,
+    link: paymentsTab(payment.person_id),
   });
 }
 
@@ -502,7 +568,7 @@ async function recordRefund(pass: Pass, refund: RefundToRecord, fromAccountId: s
 
 /** A record Books failed on, in the words its alert uses. */
 interface FailedRecord {
-  readonly kind: "customer" | "payment" | "apply" | "refund";
+  readonly kind: "customer" | "customer_update" | "payment" | "apply" | "refund";
   readonly id: string;
   readonly personId: string;
   /** "payment <id> (Razorpay <id>)", or what Books was asked to do with it. */
@@ -514,15 +580,22 @@ interface FailedRecord {
 /** The field of the log line that names the record. */
 const ID_FIELDS: Readonly<Record<FailedRecord["kind"], string>> = {
   customer: "person_id",
+  customer_update: "person_id",
   payment: "payment_id",
   apply: "payment_id",
   refund: "refund_id",
 };
 
+/** Where ops act on it: the client's page for their customer in Books, their Payments tab for their money. */
+function linkOf(record: FailedRecord): string {
+  const aboutTheCustomer = record.kind === "customer" || record.kind === "customer_update";
+  return aboutTheCustomer ? `/clients/${record.personId}` : paymentsTab(record.personId);
+}
+
 /** Logs the failure, and tells ops of a refusal at once and of any other failure on its third time. */
 async function tellFailure(pass: Pass, record: FailedRecord, error: unknown): Promise<void> {
   const idField = ID_FIELDS[record.kind];
-  const link = `/clients/${record.personId}`;
+  const link = linkOf(record);
   if (isRefusal(error)) {
     pass.log.warn(`books_${record.kind}_refused`, { [idField]: record.id, status: error.status, code: error.code });
     await pass.deps.alertOnce({

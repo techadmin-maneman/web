@@ -8,7 +8,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CheckIn, Job, JobSummary, Me } from "../../apps/tech/src/api.ts";
-import { loadDay, loadJob } from "../../apps/tech/src/lib/useDay.ts";
+import { keepCards, loadDay, loadJob } from "../../apps/tech/src/lib/useDay.ts";
 import { dayAfter, todayInIndia } from "../../apps/tech/src/lib/when.ts";
 import { all, wipe } from "../../apps/tech/src/store/db.ts";
 import { deviceId, enrolled, enrolledAt, keepMe, keptMe } from "../../apps/tech/src/store/device.ts";
@@ -18,11 +18,14 @@ import {
   keepClosed,
   keepDay,
   keepJob,
+  keepLanded,
   keptArrival,
   keptClosed,
   keptDay,
   keptJob,
+  keptJobs,
   keptNames,
+  keptStates,
 } from "../../apps/tech/src/store/jobs.ts";
 import { queue } from "../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../apps/tech/src/store/persist.ts";
@@ -47,13 +50,15 @@ const summary = (id: string, date: string) =>
     window_label: "morning",
     type: "service",
     one_visit: false,
-    product: null,
+    service: null,
     sector: "Sector 65",
     status: "scheduled",
     badge: "prepaid",
     slots: 1,
     unlocked: true,
     unlocks_at: `${date}T00:00:00.000Z`,
+    client_name: null,
+    progress: { started_at: null, outcome: null },
   }) as JobSummary;
 
 const card = (id: string, date: string) =>
@@ -84,16 +89,19 @@ const card = (id: string, date: string) =>
       outcome: null,
     },
     no_show_wait_min: 15,
+    checkin_from: `${date}T03:00:00.000Z`,
     pieces: [],
     last_visit: null,
     reminder: null,
     steps: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
     checklist: [],
+    checklist_if_declined: [],
     partial_reasons: [],
     consumables: [],
     products: [],
     payment_link: null,
     discount_code: null,
+    client_choice: null,
     profile: null,
   }) as Job;
 
@@ -169,6 +177,31 @@ describe("what the phone lets go of", () => {
   });
 });
 
+// BK-43: a job whose card locked again has no client left on the phone, and is still named by what it does hold.
+describe("what the phone holds of each job", () => {
+  it("is the card where there is one, else the day's list, whether or not the card is open", async () => {
+    const moved = { ...card("a", TOMORROW), starts_at: `${TOMORROW}T03:30:00.000Z`, client: null };
+    await keepDay(TODAY, [summary("a", TODAY), summary("b", TODAY)]);
+    await keepJob(moved);
+    await keepJob(card("b", TODAY));
+
+    const held = await keptJobs();
+    expect(held.get("a")).toEqual({
+      starts_at: moved.starts_at,
+      type: "service",
+      one_visit: false,
+      sector: "Sector 65",
+      client: null,
+    });
+    expect(held.get("b")).toMatchObject({ starts_at: `${TODAY}T04:00:00.000Z`, client: "Client b" });
+  });
+
+  it("names a job on the day's list whose card the phone never fetched", async () => {
+    await keepDay(TOMORROW, [{ ...summary("c", TOMORROW), unlocked: false }]);
+    expect((await keptJobs()).get("c")).toMatchObject({ type: "service", sector: "Sector 65", client: null });
+  });
+});
+
 describe("a day's jobs", () => {
   it("comes from the API when there is signal, and is kept for the next basement", async () => {
     api({ [`/api/tech/jobs?date=${TODAY}`]: { status: 200, json: { date: TODAY, jobs: [summary("a", TODAY)] } } });
@@ -197,6 +230,34 @@ describe("a day's jobs", () => {
     expect(await keptJob("old")).not.toBeNull();
   });
 
+  // FLD-42: the cards were fetched one after another, so the last of a day's came seconds after the list.
+  it("asks for every unlocked card at once, and keeps each one", async () => {
+    const asked: string[] = [];
+    const askedByEachAnswer: number[] = [];
+    vi.stubGlobal("fetch", async (url: string) => {
+      asked.push(url);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      askedByEachAnswer.push(asked.length);
+      const id = url.split("/").pop() ?? "";
+      return new Response(JSON.stringify(card(id, TODAY)), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    const locked = { ...summary("c", TODAY), unlocked: false };
+
+    await keepCards([summary("a", TODAY), summary("b", TODAY), locked]);
+
+    expect(asked).toEqual(["/api/tech/jobs/a", "/api/tech/jobs/b"]);
+    expect(askedByEachAnswer).toEqual([2, 2]);
+    expect(await keptNames()).toEqual(
+      new Map([
+        ["a", "Client a"],
+        ["b", "Client b"],
+      ]),
+    );
+  });
+
   it("with no signal, is what the phone kept, and says so", async () => {
     await keepDay(TODAY, [summary("a", TODAY)]);
     api({});
@@ -212,7 +273,7 @@ describe("a day's jobs", () => {
   it("never shows what the phone kept once the API has ended the session", async () => {
     await keepDay(TODAY, [summary("a", TODAY)]);
     api({ [`/api/tech/jobs?date=${TODAY}`]: revoked });
-    expect(await loadDay(TODAY)).toEqual({ state: "failed" });
+    expect(await loadDay(TODAY)).toEqual({ state: "failed", requestId: "test" });
   });
 
   it("still shows a fresh day that a full phone could not keep", async () => {
@@ -228,7 +289,30 @@ describe("a day's jobs", () => {
       throw new DOMException("gone", "InvalidStateError");
     });
     api({});
-    expect(await loadDay(TODAY)).toEqual({ state: "failed" });
+    expect(await loadDay(TODAY)).toEqual({ state: "failed", requestId: null });
+  });
+
+  // FLD-36: with no signal, the row of a job started since the list was kept lost its "In progress".
+  it("keeps where a job stands as a write's answer said, so the list says it with no signal", async () => {
+    await keepDay(TODAY, [summary("a", TODAY), summary("b", TODAY)]);
+    await keepLanded("a", { started_at: "2030-09-19T04:05:00.000Z", outcome: null });
+
+    api({});
+    const day = await loadDay(TODAY);
+    const states = day.state === "loaded" ? day.value.map((job) => job.progress) : [];
+    expect(states).toEqual([
+      { started_at: "2030-09-19T04:05:00.000Z", outcome: null },
+      { started_at: null, outcome: null },
+    ]);
+    expect((await keptStates()).get("a")).toEqual({ started_at: "2030-09-19T04:05:00.000Z", outcome: null });
+  });
+
+  it("kept by an earlier build, before the list said where a job stood, reads as begun on neither", async () => {
+    const { progress: _none, ...earlier } = summary("a", TODAY);
+    await keepDay(TODAY, [earlier as unknown as JobSummary]);
+
+    expect((await keptDay(TODAY))?.[0]?.progress).toEqual({ started_at: null, outcome: null });
+    expect((await keptStates()).get("a")).toEqual({ started_at: null, outcome: null });
   });
 });
 
@@ -242,13 +326,13 @@ describe("a job's card", () => {
   it("is never read from the phone after a 401, which ends the session", async () => {
     await keepJob(card("a", TODAY));
     api({ "/api/tech/jobs/a": revoked });
-    expect(await loadJob("a")).toEqual({ state: "failed" });
+    expect(await loadJob("a")).toEqual({ state: "failed", requestId: "test" });
   });
 
   it("is not read from the phone when the API says the job is not this technician's", async () => {
     await keepJob(card("a", TODAY));
     api({ "/api/tech/jobs/a": { status: 404, json: { error: { code: "not_found", request_id: "test" } } } });
-    expect(await loadJob("a")).toEqual({ state: "failed" });
+    expect(await loadJob("a")).toEqual({ state: "failed", requestId: "test" });
   });
 
   // Kept by a build from before ops set the job sheet and the consumables (docs/decisions/0087-consumables-and-stock.md):
@@ -269,6 +353,19 @@ describe("a job's card", () => {
     const { discount_code: _none, ...earlier } = card("a", TODAY);
     await keepJob(earlier as unknown as Job);
     expect((await keptJob("a"))?.discount_code).toBeNull();
+  });
+
+  it("kept before a one visit's choice was on the card, knows none, and runs the whole checklist", async () => {
+    const whole = [{ id: "scalp_checked", label: "Scalp checked" }];
+    const {
+      checklist_if_declined: _list,
+      client_choice: _choice,
+      ...earlier
+    } = { ...card("a", TODAY), checklist: whole };
+    await keepJob(earlier as unknown as Job);
+    const kept = await keptJob("a");
+    expect(kept?.client_choice).toBeNull();
+    expect(kept?.checklist_if_declined).toEqual(whole);
   });
 });
 

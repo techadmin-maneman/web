@@ -33,8 +33,8 @@ import {
 import { heldAlertKey, heldBookingById, holdForFsm, refundedMessage, toLinkAlertKey } from "../domain/held-bookings.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { queueMessage } from "../http/queue-message.ts";
 import { failureReason } from "../log.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 
 const heldId = z.object({ id: z.uuid().openapi({ description: "The booking's hold." }) });
 const notWaiting = errorResponse("not_found: no booking held for FSM with that id; it may be booked or refunded");
@@ -240,12 +240,11 @@ const auditOf = (c: Context<AppEnv>, action: AuditAction, holdId: string) =>
 
 /** What booking it needs, as the queue's consumer books it: the client told, and ops told of FSM's leftovers. */
 function bookingOptions(c: Context<AppEnv>): ConfirmOptions {
-  const { deps, requestId, config, log } = c.var;
+  const { deps, config, log } = c.var;
   return {
     labelAsTest: config.environment !== "production",
     record: fieldRecord(config.providers),
-    notify: (messageId) =>
-      c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
+    notify: (messageId) => queueMessage(c, messageId),
     alertOnce: deps.alertOnce,
     log,
   };
@@ -340,7 +339,7 @@ export function registerOpsBookings(app: App): void {
     const givenBack = !["refund_refused", "refund_unanswered", "booked"].includes(gaveUp.money.kind);
     if (givenBack) {
       await closeAlerts(c, id);
-      await c.env.MESSAGE_QUEUE.send({ message_id: message.id, request_id: requestId } satisfies MessagingMessage);
+      await queueMessage(c, message.id);
     }
     return c.json({ money: moneyOf(gaveUp.money), fsm: leftOf(gaveUp.fsm) }, 200);
   });

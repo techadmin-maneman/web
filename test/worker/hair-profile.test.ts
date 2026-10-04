@@ -83,10 +83,10 @@ const fromPhone = (fit: object, history: object | null, basedOn: string | null =
 const fromOps = async (fit: object, history: object | null) => fromPhone(fit, history, await latestId());
 
 describe("the technician's profile step", () => {
-  it("comes before the after photographs at a consultation, and the card offers the products", async () => {
+  it("comes before the outcome at a consultation, which takes no after photographs, and the card offers the products", async () => {
     const job = await working("consultation");
     expect(await card(job)).toMatchObject({
-      steps: ["before_photos", "checklist", "consumables", "profile", "after_photos", "outcome"],
+      steps: ["before_photos", "checklist", "consumables", "profile", "outcome"],
       products: [{ tier: "standard", name: "First fit" }],
       profile: null,
     });
@@ -169,6 +169,28 @@ describe("the technician's profile step", () => {
     expect((await versions()).results).toEqual([]);
   });
 
+  it("is refused once the job has closed, and keeps nothing of it", async () => {
+    const job = await working("consultation");
+    await job.workTo("outcome");
+    await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+    const answer = await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "already_closed" } });
+    expect((await versions()).results).toEqual([]);
+  });
+
+  it("is not found on a job that was never this technician's, and keeps nothing of it", async () => {
+    const job = await working("consultation");
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
+
+    const answer = await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+
+    expect(answer.status).toBe(404);
+    expect(await answer.json()).not.toHaveProperty("progress");
+    expect((await versions()).results).toEqual([]);
+  });
+
   it.each([
     [
       "a measurement past its range",
@@ -202,9 +224,9 @@ describe("the technician's profile step", () => {
     await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(JOB).run();
     expect((await card(job)).steps).toEqual([
       "before_photos",
+      "piece",
       "checklist",
       "consumables",
-      "piece",
       "profile",
       "after_photos",
       "outcome",
@@ -225,14 +247,14 @@ describe("the technician's profile step", () => {
     await env.DB.prepare("UPDATE appointments SET person_id = NULL WHERE id = ?1").bind(JOB).run();
     expect((await card(job)).steps).not.toContain("profile");
 
-    // A phone that queued it before the client was unlinked: answered as taken, so its after photographs follow.
+    // A phone that queued it before the client was unlinked: answered as taken, so its outcome follows.
     const answer = await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
     expect(answer.status).toBe(202);
     expect((await versions()).results).toEqual([]);
     await job.post(`/api/tech/jobs/${JOB}/checklist`, { done: [] }, "event-checklist-01");
     await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
-    const after = await job.post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
-    expect(after.status).toBe(202);
+    const outcome = await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+    expect(outcome.status).toBe(202);
   });
 
   it("is refused on a visit that takes no profile, as the piece is on one that takes no piece", async () => {

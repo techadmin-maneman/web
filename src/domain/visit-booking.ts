@@ -10,6 +10,7 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { HOLD_SECONDS, type BookingWindow } from "../config/scheduling.ts";
+import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
@@ -27,8 +28,9 @@ import { spendableCredits } from "./credits.ts";
 import { checkForOneVisit, codeOnHold } from "./discount-code-holds.ts";
 import { checkCode, useStatement } from "./discount-code-uses.ts";
 import { termsOf } from "./discount-codes.ts";
+import { typedOnWaitingRequest } from "./requested-codes.ts";
 import type { OpsInputs } from "./ops-settings.ts";
-import { recordPayment } from "./payments.ts";
+import { recordPayment, referenceHold } from "./payments.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { graceEnds, holdSlot, liveVisitOf, ONE_AT_A_TIME, type Hold } from "./scheduling.ts";
@@ -59,6 +61,8 @@ export type Pays = (typeof PAYS)[number];
 interface AppliedCode {
   readonly id: string;
   readonly amountOff: number | null;
+  /** When the client typed it on /book, for the one visit asked for there; null for a code judged now. */
+  readonly typedAt: Date | null;
 }
 
 /** What a visit is sold as, before its slot is held. */
@@ -130,7 +134,10 @@ export async function paysByCredit(db: D1Database, personId: string, kind: Visit
   return (await spendableCredits(db, personId, now)).visits > 0;
 }
 
-/** The code ops typed, if it applies to this booking for this client; null for none typed, false for one refused. */
+/**
+ * The code ops typed, if it applies to this booking for this client; null for none typed, false for one refused. The
+ * code the client typed on /book for the one visit ops book from their request is honoured as it stood when typed.
+ */
 async function codeFor(
   db: D1Database,
   asked: VisitAsked,
@@ -139,13 +146,14 @@ async function codeFor(
 ): Promise<AppliedCode | null | false> {
   if (asked.code === undefined) return null;
   if (asked.oneVisit) {
-    const checked = await checkForOneVisit(db, asked.code, asked.personId, now);
-    return checked.ok ? { id: checked.codeId, amountOff: null } : false;
+    const typedAt = await typedOnWaitingRequest(db, asked.personId, asked.code);
+    const checked = await checkForOneVisit(db, asked.code, asked.personId, now, typedAt ?? now);
+    return checked.ok ? { id: checked.codeId, amountOff: null, typedAt } : false;
   }
   const codeBooking = { type: asked.kind, onCredit: booking.onCredit, moves: false };
   const checked = await checkCode(db, asked.code, codeBooking, asked.personId, now);
   if (!checked.ok) return false;
-  return { id: checked.code.id, amountOff: amountOff(termsOf(checked.code), booking.priceExGst) };
+  return { id: checked.code.id, amountOff: amountOff(termsOf(checked.code), booking.priceExGst), typedAt: null };
 }
 
 /** Nothing paid at booking, with the service's GST kept for the record. */
@@ -228,6 +236,8 @@ function bookingAudit(db: D1Database, booked: Booked, now: Date): D1PreparedStat
     pays: sale.pays,
   };
   if (asked.code !== undefined) detail.code = asked.code.toUpperCase();
+  const typedAt = sale.code?.typedAt ?? null;
+  if (typedAt !== null) detail.code_typed_at = typedAt.toISOString();
   const entry = {
     surface: "ops",
     actor: by.actor,
@@ -249,6 +259,7 @@ function codeUse(db: D1Database, asked: VisitAsked, code: AppliedCode, holdId: s
     visitId: null,
     amountOff: code.amountOff,
     by: { kind: "ops", actor: by.actor },
+    typedAt: code.typedAt ?? now,
   } as const;
   return useStatement(db, use, "new_hold", now);
 }
@@ -300,26 +311,36 @@ export async function codeStands(db: D1Database, asked: VisitAsked, holdId: stri
   return (await codeOnHold(db, holdId)) !== null;
 }
 
-/** What the client reads on Razorpay's page: "Mane Man Natural, Fri 25 Sep, morning". */
+/** What the client reads on Razorpay's page: "Mane Man Natural · Fri 25 Sep, morning", as Checkout writes it. */
 const linkDescription = (sale: Sale, asked: VisitAsked) =>
-  `${sale.service.name}, ${shortDate(asked.date)}, ${asked.window}`;
+  `${sale.service.name} · ${shortDate(asked.date)}, ${asked.window}`;
 
 /** The link Razorpay made under the hold, if a try whose answer never came made one; null where none or unknown. */
-async function linkMadeBefore(payments: PaymentsProvider, holdId: string): Promise<MadeLink | null> {
+async function linkMadeBefore(payments: PaymentsProvider, reference: string): Promise<MadeLink | null> {
   try {
-    return await payments.findPaymentLink(holdId);
+    return await payments.findPaymentLink(reference);
   } catch {
     return null;
   }
 }
 
+/** The hold's link's reference, "MM-2026-0841", which its payment then takes: given it now, or kept from a try before. */
+async function holdReference(db: D1Database, holdId: string, now: Date): Promise<string> {
+  const [, kept] = await db.batch<{ reference: string | null }>([
+    referenceHold(db, holdId, now),
+    db.prepare("SELECT reference FROM slot_holds WHERE id = ?1").bind(holdId),
+  ]);
+  return kept?.results[0]?.reference ?? holdId;
+}
+
 /**
- * Asks Razorpay for the hold's payment link, which it texts to the client, closing as the hold does, and keeps it on
- * the hold. Null when Razorpay made none that can be found, and the hold is then the caller's to let go.
+ * Asks Razorpay for the hold's payment link, closing as the hold does, and keeps it on the hold. Razorpay texts it to
+ * a client whose number is on the allowlist, which in production is every client. Null when Razorpay made none that
+ * can be found, and the hold is then the caller's to let go.
  */
 export async function sendHoldLink(
   db: D1Database,
-  deps: { readonly payments: PaymentsProvider; readonly log: Logger },
+  deps: { readonly payments: PaymentsProvider; readonly log: Logger; readonly messagingSettings: MessagingSettings },
   held: { readonly hold: Hold; readonly asked: VisitAsked; readonly sale: Sale; readonly closesAt: Date },
   now: Date,
 ): Promise<MadeLink | null> {
@@ -328,21 +349,26 @@ export async function sendHoldLink(
     .prepare("SELECT name, mobile_e164 FROM people WHERE id = ?1")
     .bind(asked.personId)
     .first<{ name: string; mobile_e164: string }>();
+  const reference = await holdReference(db, hold.id, now);
+  const contact = client?.mobile_e164 ?? "";
+  const notify = onAllowlist(deps.messagingSettings, contact);
   let made: MadeLink | null;
   try {
     made = await deps.payments.createPaymentLink({
       amount: sale.price.amount,
-      reference: hold.id,
+      reference,
       description: linkDescription(sale, asked),
-      customer: { name: client?.name ?? "", contact: client?.mobile_e164 ?? "" },
+      customer: { name: client?.name ?? "", contact },
       notes: { hold_id: hold.id, person_id: asked.personId },
       closesAt,
+      notify,
     });
   } catch (error) {
     deps.log.warn("hold_link_failed", { hold_id: hold.id, reason: failureReason(error) });
-    made = await linkMadeBefore(deps.payments, hold.id);
+    made = await linkMadeBefore(deps.payments, reference);
   }
   if (made === null) return null;
+  if (!notify) deps.log.info("payment_link_not_texted", { hold_id: hold.id });
   await db
     .prepare("UPDATE slot_holds SET payment_link_id = ?2, payment_link_url = ?3, updated_at = ?4 WHERE id = ?1")
     .bind(hold.id, made.id, made.shortUrl, now.toISOString())
@@ -365,7 +391,10 @@ export interface LinkHold {
   readonly personId: string;
 }
 
-/** The hold a paid link was for: by the link's ID, or by its reference, the hold's own ID. Null for no hold of ours. */
+/**
+ * The hold a paid link was for: by the link's ID, or by its reference, which is the hold's, or the hold's own ID on a
+ * link made before holds had one. Null for no hold of ours.
+ */
 export async function holdOfLink(
   db: D1Database,
   link: { readonly razorpayLinkId: string; readonly reference: string | null },
@@ -373,7 +402,7 @@ export async function holdOfLink(
   return db
     .prepare(
       `SELECT id, person_id AS personId FROM slot_holds
-       WHERE pay_by_link = 1 AND (payment_link_id = ?1 OR id = ?2) LIMIT 1`,
+       WHERE pay_by_link = 1 AND (payment_link_id = ?1 OR reference = ?2 OR id = ?2) LIMIT 1`,
     )
     .bind(link.razorpayLinkId, link.reference)
     .first<LinkHold>();

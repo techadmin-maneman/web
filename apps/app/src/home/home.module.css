@@ -161,31 +161,13 @@
   line-height: var(--lh-110);
 }
 
+/* Home's way to book (packages/ui/Button.tsx), the width of the page. */
 .book {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--btn-lg);
-  border: 0;
-  background: var(--ink);
-  font: inherit;
-  font-size: var(--fs-16);
-  font-weight: var(--weight-medium);
-  color: var(--paper);
-  text-decoration: none;
-}
-
-.book:disabled {
-  background: var(--paper-shade);
-  color: var(--text-quiet);
+  width: 100%;
 }
 
 /* Board B1's credit tile, ruled above and below. */
 .credits {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-16);
   padding: var(--sp-18) 0;
   border-top: var(--hairline) solid var(--paper-line);
   border-bottom: var(--hairline) solid var(--paper-line);
@@ -204,13 +186,6 @@
   margin-top: var(--sp-4);
   font-size: var(--fs-14);
   color: var(--text-muted);
-}
-
-.creditsCount {
-  font-family: var(--font-serif);
-  font-size: var(--fs-30);
-  line-height: var(--lh-100);
-  font-variant-numeric: lining-nums;
 }
 
 /* Board B1's one prompt: a line, and a quiet way on, underlined in brass. */

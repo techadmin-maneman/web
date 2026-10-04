@@ -15,10 +15,10 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
+import { addressChangeRefusal } from "../domain/address-change.ts";
 import { auditStatementIfWritten, type AuditEntry } from "../domain/audit.ts";
-import { openDeletion, requestDeletion } from "../domain/deletion.ts";
+import { lastRejectedDeletion, openDeletion, requestDeletion } from "../domain/deletion.ts";
 import {
-  DECISION_SHOWN_DAYS,
   lastDecidedChange,
   openNumberChange,
   startNumberChange,
@@ -26,7 +26,7 @@ import {
   withdrawNumberChange,
   type NumberChange,
 } from "../domain/number-change.ts";
-import { CURRENT_NOTICE } from "../config/notices.ts";
+import { switchNotice } from "../config/notices.ts";
 import { recordConsent } from "../domain/consents.ts";
 import { consentsOf, currentAddress, liveContact, maskedMobile, type Address } from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
@@ -39,6 +39,7 @@ import { visitorOf } from "../http/visitor.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { APP_SWITCH_SOURCES, CONSENT_PURPOSES, screenAsks } from "../policy/consents.ts";
+import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import { revokeCard } from "../domain/referral-cards.ts";
 
 /** Number changes a client may start in a day. */
@@ -157,6 +158,21 @@ export const ProfileSchema = z
       .object({ state: z.literal("requested"), requested_at: z.iso.datetime() })
       .strict()
       .nullable(),
+    deletion_rejected: z
+      .union([
+        z
+          .object({
+            decided_at: z.iso.datetime(),
+            reason: z
+              .union([z.string(), z.null()])
+              .openapi({ description: "Ops' reason, which they write knowing the client reads it." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description: `The client's latest request to delete their account that ops rejected, for ${String(DECISION_SHOWN_DAYS)} days after, while no other request is waiting.`,
+      }),
   })
   .strict()
   .openapi("Profile");
@@ -229,6 +245,8 @@ export const addressRoute = createRoute({
   responses: {
     200: { description: "Saved", ...json(AddressSchema) },
     400: errorResponse("invalid_request"),
+    409: errorResponse("visit_booked: a visit still to come is in another city, which the address may not leave"),
+    422: errorResponse("not_served: the pincode is not one we come to"),
     ...signedIn,
   },
 });
@@ -372,12 +390,14 @@ export function registerClientProfile(app: App): void {
     const person = await liveContact(db, personId);
     if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
 
-    const [address, consents, change, decided, deletion] = await Promise.all([
+    const now = c.var.deps.now();
+    const [address, consents, change, decided, deletion, deletionRejected] = await Promise.all([
       currentAddress(db, personId),
       consentsOf(db, personId),
       openNumberChange(db, personId),
-      lastDecidedChange(db, personId, c.var.deps.now()),
+      lastDecidedChange(db, personId, now),
       openDeletion(db, personId),
+      lastRejectedDeletion(db, personId, now),
     ]);
     return c.json(
       {
@@ -413,6 +433,10 @@ export function registerClientProfile(app: App): void {
                 reason: decided.reason,
               },
         deletion: deletion === null ? null : { state: "requested" as const, requested_at: deletion.createdAt },
+        deletion_rejected:
+          deletion !== null || deletionRejected === null
+            ? null
+            : { decided_at: deletionRejected.decidedAt, reason: deletionRejected.reason },
       },
       200,
     );
@@ -434,6 +458,9 @@ export function registerClientProfile(app: App): void {
     const personId = clientOf(c).subjectId;
     const body = c.req.valid("json");
     const address = addressOf(body);
+    const refusal = await addressChangeRefusal(c.env.DB, personId, address.pincode);
+    if (refusal === "not_served") return c.json(errorBody("not_served", c.var.requestId), 422);
+    if (refusal === "visit_booked") return c.json(errorBody("visit_booked", c.var.requestId), 409);
     await saveClientAddress(c, {
       personId,
       address,
@@ -473,7 +500,7 @@ export function registerClientProfile(app: App): void {
       person: { id: personId },
       purpose,
       granted,
-      notice: CURRENT_NOTICE[purpose],
+      notice: switchNotice(purpose, source),
       source,
       rule: "if_changed",
       ipHash: (await visitorOf(c)).ipHash,

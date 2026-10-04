@@ -17,9 +17,11 @@ import type { App, AppEnv } from "../http/context.ts";
 import { attribute, clientInviteOf, CODE_PATTERN, GRANT_STATES, howTheyCame, inviteOf } from "../domain/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { withinRouteReach } from "../http/staff-access.ts";
 import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../config/crm.ts";
 import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
+import { enqueue } from "../queues/enqueue.ts";
 
 /** The invite a client came with, as their page shows it. */
 export const ClientInviteSchema = z
@@ -82,7 +84,7 @@ const attachRoute = createRoute({
     201: { description: "Attached", ...json(ClientInviteSchema) },
     400: errorResponse("invalid_request: no reason, or a code that is not shaped like one"),
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such client, or one who has been erased"),
+    404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     409: {
       description:
         "own_invite: the client is the code's own referrer; already_invited: the client came with an invite " +
@@ -106,20 +108,13 @@ function writtenByHand(): string {
 /** Sends the client to the CRM again, which then reads the invite they now carry and notes it (src/queues/crm-sync.ts). */
 async function queueCrmUpdate(c: Context<AppEnv>, personId: string): Promise<void> {
   const { requestId, log, deps } = c.var;
-  try {
-    await c.env.CRM_QUEUE.send({
-      update_person_id: personId,
-      request_id: requestId,
-      invite_attached: true,
-    } satisfies CrmSyncMessage);
-  } catch (error) {
-    log.warn("crm_enqueue_failed", { person_id: personId, error });
-    await deps.alertOnce({
-      key: `crm_contact_update:${personId}`,
-      message: `Client ${personId}'s invite could not be sent on to the CRM. By hand, ${writtenByHand()}.`,
-      link: `/clients/${personId}`,
-    });
-  }
+  const alert = {
+    key: `crm_contact_update:${personId}`,
+    message: `Client ${personId}'s invite could not be sent on to the CRM. By hand, ${writtenByHand()}.`,
+    link: `/clients/${personId}`,
+  };
+  const body = { update_person_id: personId, request_id: requestId, invite_attached: true } satisfies CrmSyncMessage;
+  await enqueue(c.env.CRM_QUEUE, body, { log, ifLost: { alertOnce: deps.alertOnce, alert } });
 }
 
 export function registerOpsClientReferral(app: App): void {
@@ -132,7 +127,9 @@ export function registerOpsClientReferral(app: App): void {
       .prepare("SELECT id FROM people WHERE id = ?1 AND erased_at IS NULL")
       .bind(personId)
       .first<{ id: string }>();
-    if (person === null) return c.json(errorBody("not_found", requestId), 404);
+    if (person === null || !(await withinRouteReach(c, "client", personId))) {
+      return c.json(errorBody("not_found", requestId), 404);
+    }
     const invite = await inviteOf(db, code, false);
     if (invite === null) return c.json(errorBody("unknown_invite", requestId), 422);
 

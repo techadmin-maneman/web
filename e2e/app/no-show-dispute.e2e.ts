@@ -14,8 +14,11 @@ const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 type Dispute = "open" | "refunded" | "upheld" | null;
 
-/** The first fit as a no-show ops charged Rs. 4,000, with its dispute where it stands. */
-async function charged(page: Page, dispute: Dispute): Promise<string> {
+/**
+ * The first fit as a no-show ops charged Rs. 4,000, with its dispute where it stands, and when the days to dispute it
+ * ended, once they have.
+ */
+async function charged(page: Page, dispute: Dispute, closedAt: string | null = null): Promise<string> {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
@@ -30,7 +33,8 @@ async function charged(page: Page, dispute: Dispute): Promise<string> {
       waited_minutes: 16,
       charge: { kept: 400_000, credit_spent: false },
       dispute,
-      disputable: dispute === null,
+      disputable: dispute === null && closedAt === null,
+      dispute_closed_at: closedAt,
     },
   };
   assertInContract("client", "GET", path, 200, body);
@@ -77,6 +81,13 @@ test("says the days to dispute have passed, when they pass while the sheet is op
   await expect(page.getByRole("dialog").getByRole("status")).toContainText(
     "The days to dispute this charge have passed.",
   );
+});
+
+// A charge past its days once showed no Dispute button and no reason why (MON-17).
+test("says when the days to dispute the charge ended, and offers no dispute", async ({ page }) => {
+  await charged(page, null, "2026-09-17T09:30:00.000Z");
+  await expect(page.getByText("The days to dispute this charge ended on Thu 17 Sep.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dispute this charge" })).toHaveCount(0);
 });
 
 test("says a dispute is being looked at, and offers no second one", async ({ page }) => {

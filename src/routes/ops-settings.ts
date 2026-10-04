@@ -43,8 +43,8 @@ import {
 import { serviceArea, setServiceArea } from "../domain/service-area.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { queuePacedMessages } from "../http/queue-message.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 
 /** One number, or one per key: the two shapes a rule of numbers takes. */
 const NumberValue = z.union([z.number().int(), z.record(z.string(), z.number().int())]);
@@ -59,7 +59,6 @@ const Described = {
   name: SettingName,
   title: z.string(),
   note: z.string(),
-  source: z.string().openapi({ description: "The module the default lives in." }),
   set_by: z.union([z.string(), z.null()]),
   set_at: z.union([z.iso.datetime(), z.null()]),
 };
@@ -369,7 +368,6 @@ const stateBody = ({ setting, value, setBy, setAt }: State) => {
     name: setting.name,
     title: setting.title,
     note: setting.note,
-    source: setting.source,
     set_by: setBy,
     set_at: setAt,
   };
@@ -517,14 +515,7 @@ export function registerOpsSettings(app: App): void {
       if (result.kind === "empty_area") return c.json(errorBody("no_service_area", c.var.requestId), 400);
       return c.json(errorBody("invalid_request", c.var.requestId, result.pincodes), 400);
     }
-    if (result.alerts.length > 0) {
-      await c.env.MESSAGE_QUEUE.sendBatch(
-        result.alerts.map((alert) => ({
-          body: { message_id: alert.id, request_id: c.var.requestId } satisfies MessagingMessage,
-          delaySeconds: alert.delaySeconds,
-        })),
-      );
-    }
+    await queuePacedMessages(c, result.alerts);
     return c.json({ changed: result.changed.length, served: result.served, alerted: result.alerts.length }, 200);
   });
 }

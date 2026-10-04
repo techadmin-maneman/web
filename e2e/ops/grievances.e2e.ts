@@ -36,7 +36,7 @@ test("lists every open grievance with the client's own words, number and day", a
 test("says how long is left of the answer time, and marks one that has run over", async ({ page }) => {
   await open(page);
   await expect(row(page, "Rohit Malhotra")).toContainText("22 days left");
-  await expect(row(page, "Vikram Sethi")).toContainText("Overdue 22");
+  await expect(row(page, "Vikram Sethi")).toContainText("22 days overdue");
   await expect(page.getByText("we answer within 30 days")).toBeVisible();
 });
 

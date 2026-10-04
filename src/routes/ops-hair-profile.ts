@@ -13,7 +13,6 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { memberOfStaffOf } from "../http/audit.ts";
 import { correctByOps, versionsOf } from "../domain/hair-profiles.ts";
-import { liveContact } from "../domain/profile.ts";
 import { offeredProducts } from "../domain/services.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -25,9 +24,12 @@ import {
   HairProfileVersionSchema,
   HistorySchema,
 } from "./hair-profile-schemas.ts";
+import { clientInReach } from "./ops-clients.ts";
 
 const clientId = z.object({ id: z.uuid() });
-const unknownClient = errorResponse("not_found: no such client, or the client has been erased");
+const unknownClient = errorResponse(
+  "not_found: no such client, or the client has been erased or is outside the caller's cities",
+);
 
 const ClientHairProfileSchema = z
   .object({
@@ -90,7 +92,7 @@ async function pageOf(c: Context<AppEnv>, personId: string): Promise<z.infer<typ
 export function registerOpsHairProfile(app: App): void {
   app.openapi(readRoute, async (c) => {
     const { id } = c.req.valid("param");
-    if ((await liveContact(c.env.DB, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     return c.json(await pageOf(c, id), 200);
   });
 
@@ -100,7 +102,7 @@ export function registerOpsHairProfile(app: App): void {
     const { requestId, deps } = c.var;
     const staff = memberOfStaffOf(c);
     if (staff === null) return c.json(errorBody("access_required", requestId), 403);
-    if ((await liveContact(c.env.DB, id)) === null) return c.json(errorBody("not_found", requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", requestId), 404);
 
     const written = await correctByOps(c.env.DB, {
       personId: id,

@@ -18,6 +18,9 @@
 // a lead in FSM by hand. A booking FSM would not take is not given up: it is
 // held, with its slot and its payment, tried again every hour for a day, and
 // waits for ops to book it or refund it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+//
+// Where our own database holds the record of field work (src/config/field-record.ts), only a hold is acted on, and
+// booked there; a message for FSM queued before the switch is acknowledged and logged.
 
 import { z } from "zod";
 import type { FieldRecord } from "../config/field-record.ts";
@@ -104,6 +107,10 @@ export async function handleFsmSyncBatch(
         log: bookingLog,
         automatic: true,
       });
+      continue;
+    }
+    if (record === "ours") {
+      setAside(message, parsed.data, log.child({ request_id: parsed.data.request_id }));
       continue;
     }
     if ("catalogue_sync" in parsed.data) {
@@ -247,6 +254,28 @@ async function bookHold(
     }
     message.ack();
   }
+}
+
+/** A message for FSM itself: every kind but a hold to book. */
+type ForFsm = Exclude<FsmSyncMessage, { hold_id: string }>;
+
+/**
+ * A message queued for FSM before it was switched off: FSM is not written. A technician's step it named stays
+ * waiting, for the sweeper to give up on with the rest of its visit's (src/scheduled/sweeper.ts).
+ */
+function setAside(message: Message, body: ForFsm, log: Logger): void {
+  log.info("fsm_message_dropped", { kind: fsmWorkOf(body) });
+  message.ack();
+}
+
+/** What the message asked of FSM, for the log. */
+function fsmWorkOf(body: ForFsm): string {
+  if ("fsm_id" in body) return "appointment_read";
+  if ("erase_person_id" in body) return "contact_erasure";
+  if ("job_event_id" in body) return "job_event";
+  if ("update_contact_person_id" in body) return "contact_update";
+  if ("note_appointment_id" in body) return "client_note";
+  return "catalogue_push";
 }
 
 /**
@@ -427,6 +456,7 @@ async function eraseContact(
   }
   try {
     await blankClientNotes(db, deps.fsm, personId);
+    await keepBooksCustomer(db, deps.fsm, personId, contactId);
     await deps.fsm.eraseContact(contactId);
     await db
       .prepare("UPDATE people SET fsm_erased_at = ?2 WHERE id = ?1")
@@ -457,6 +487,22 @@ async function eraseContact(
   message.ack();
 }
 
+/**
+ * The Books customer FSM's own integration made for the contact, kept on the person before the contact is blanked, so
+ * the Books erasure pass reaches it (src/domain/books-erasure.ts). Not where another person already holds it.
+ */
+async function keepBooksCustomer(db: D1Database, fsm: FsmProvider, personId: string, contactId: string) {
+  const customerId = (await fsm.contact(contactId))?.booksCustomerId ?? null;
+  if (customerId === null) return;
+  await db
+    .prepare(
+      `UPDATE people SET books_customer_id = ?2 WHERE id = ?1 AND books_customer_id IS NULL
+         AND NOT EXISTS (SELECT 1 FROM people other WHERE other.books_customer_id = ?2)`,
+    )
+    .bind(personId, customerId)
+    .run();
+}
+
 /** Blanks an erased client's notes on their appointments in FSM, which FSM's API cannot delete. */
 async function blankClientNotes(db: D1Database, fsm: FsmProvider, personId: string): Promise<void> {
   const noted = await db
@@ -471,8 +517,8 @@ async function blankClientNotes(db: D1Database, fsm: FsmProvider, personId: stri
 
 /**
  * Writes a client's note on their visit over the one on its FSM appointment, read afresh from D1, so a note sent
- * late never stands over a later one. Nothing is written for an erased client. The fifth failure tells ops; the
- * technician reads the note in their app whether or not FSM has it.
+ * late never stands over a later one. Nothing is written for an erased client, nor for a visit FSM never held. The
+ * fifth failure tells ops; the technician reads the note in their app whether or not FSM has it.
  */
 async function writeClientNote(
   message: Message,
@@ -484,7 +530,8 @@ async function writeClientNote(
   const visit = await db
     .prepare(
       `SELECT a.fsm_id, a.person_id, a.client_note FROM appointments a JOIN people p ON p.id = a.person_id
-       WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.client_note IS NOT NULL AND p.erased_at IS NULL`,
+       WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.client_note IS NOT NULL AND p.erased_at IS NULL
+         AND a.fsm_id <> a.id`,
     )
     .bind(visitId)
     .first<{ fsm_id: string; person_id: string; client_note: string }>();

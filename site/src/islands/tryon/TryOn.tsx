@@ -19,6 +19,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { mobileDigits } from "@maneman/web-kit/mobile";
+import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { looks, notices, stageOptions, tryOn, tryOnSendsCopy } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
 import { claimLook, jobStatus, type ErrorCode } from "../../lib/api.ts";
@@ -26,11 +27,11 @@ import { keyPerRequest } from "../../lib/idempotency.ts";
 import { preparePhoto, type PreparedPhoto } from "../../lib/photo.ts";
 import { onArrival, startRender, startUpload, type Arrival, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import { jobProblem, type Failure } from "../../lib/tryon-errors.ts";
-import { turnstileWidget } from "../../lib/turnstile.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { Icon } from "../Drawings.tsx";
 import { Consent } from "./Consent.tsx";
 import { Failed } from "./Failed.tsx";
+import { useInvalidFocus } from "../useInvalidFocus.ts";
 import { useNumberCode } from "../useNumberCode.ts";
 import { Gate, type GateCode } from "./Gate.tsx";
 import { useReleased, useRenderWatch } from "./hooks.ts";
@@ -45,6 +46,8 @@ interface Props {
   turnstileSiteKey: string;
   /** Allow ?state= to open a screen directly (never in production). */
   allowStateSwitch: boolean;
+  /** The look picker's pictures, in the looks' order, or null until every look has one. */
+  lookThumbnails: readonly string[] | null;
 }
 
 /** The gate's line for each refusal of the claim the visitor can act on there. */
@@ -53,6 +56,9 @@ const GATE_REFUSALS: Partial<Record<ErrorCode | "network", string>> = {
   job_not_claimable: tryOn.gate.errors.taken,
   number_not_proved: tryOn.gate.errors.notProved,
 };
+
+/** The gate's fields, which it marks when a refusal names them, by the API's names. */
+const GATE_FIELDS: readonly string[] = ["name", "mobile"];
 
 /** The gate's line for each refusal of a WhatsApp code to the number. */
 const CODE_REFUSALS: Partial<Record<ErrorCode | "network", string>> = {
@@ -66,11 +72,15 @@ export default function TryOn(props: Props) {
   const [gateTouched, setGateTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [gateFailure, setGateFailure] = useState<string | null>(null);
+  // The gate's fields the last refusal named.
+  const [gateRefused, setGateRefused] = useState<readonly string[]>([]);
+  const gateForm = useRef<HTMLFormElement>(null);
+  const showInvalid = useInvalidFocus(gateForm);
   const numberCode = useNumberCode();
   const heading = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
   const turnstileBox = useRef<HTMLDivElement>(null);
-  const turnstile = useRef<ReturnType<typeof turnstileWidget> | null>(null);
+  const turnstile = useRef<TurnstileWidget | null>(null);
   const keyFor = useMemo(keyPerRequest, []);
   // The current photograph's work. Each is replaced when a new photograph is chosen.
   const preparing = useRef<Promise<PreparedPhoto> | null>(null);
@@ -167,8 +177,22 @@ export default function TryOn(props: Props) {
     else send({ type: "back" });
   }
 
+  /** A refusal that names the gate's fields marks them and focuses the first; false when it names none. */
+  function markRefused(code: ErrorCode | "network", fields: readonly string[]): boolean {
+    const marked = code === "invalid_request" ? fields.filter((field) => GATE_FIELDS.includes(field)) : [];
+    setGateRefused(marked);
+    if (marked.length === 0) return false;
+    showInvalid();
+    return true;
+  }
+
+  /** A field the API refused is no longer marked once it has been changed. */
+  function unmark(field: string) {
+    setGateRefused((refused) => refused.filter((named) => named !== field));
+  }
+
   /** A claim refused: a line on the gate where the visitor can act on it, else the error screen. */
-  async function claimRefused(code: ErrorCode | "network", job: string) {
+  async function claimRefused(code: ErrorCode | "network", fields: readonly string[], job: string) {
     if (code === "whatsapp_unavailable") {
       fail({ kind: "unavailable", code });
       return;
@@ -189,6 +213,7 @@ export default function TryOn(props: Props) {
     // A code entered more than 30 minutes ago no longer proves the number: the next press sends a new one.
     if (code === "number_not_proved") numberCode.forget();
     if (code === "invalid_request") setGateTouched(true);
+    if (markRefused(code, fields)) return;
     setGateFailure(GATE_REFUSALS[code] ?? tryOn.gate.errors.other);
   }
 
@@ -212,7 +237,7 @@ export default function TryOn(props: Props) {
     };
     const answer = await claimLook(claim, keyFor(claim));
     if (!answer.ok) {
-      await claimRefused(answer.code, upload.jobId);
+      await claimRefused(answer.code, answer.fields, upload.jobId);
       return;
     }
     // A claim answered again is the same lead, and the same conversion.
@@ -232,14 +257,16 @@ export default function TryOn(props: Props) {
     else refused(render);
   }
 
-  const nameBad = gateTouched && name.trim() === "";
-  const mobileBad = gateTouched && mobileDigits(mobile) === null;
+  const nameBad = (gateTouched && name.trim() === "") || gateRefused.includes("name");
+  const mobileBad = (gateTouched && mobileDigits(mobile) === null) || gateRefused.includes("mobile");
   async function submitGate(event: Event) {
     event.preventDefault();
     if (sending || numberCode.checking) return;
     const digits = mobileDigits(mobile);
     if (name.trim() === "" || digits === null) {
       setGateTouched(true);
+      setGateFailure(null);
+      showInvalid();
       return;
     }
     if (demo) {
@@ -248,6 +275,7 @@ export default function TryOn(props: Props) {
     }
 
     setGateFailure(null);
+    setGateRefused([]);
     const numberCodeId = await provedNumber(digits);
     if (numberCodeId === null) return;
     setSending(true);
@@ -271,6 +299,7 @@ export default function TryOn(props: Props) {
   async function askForCode(digits: string) {
     setSending(true);
     setGateFailure(null);
+    setGateRefused([]);
     const token = (await turnstile.current?.token()) ?? null;
     if (token === null) {
       setGateFailure(tryOn.gate.errors.turnstile);
@@ -280,7 +309,8 @@ export default function TryOn(props: Props) {
     const answer = await numberCode.ask(digits, name.trim(), token);
     void turnstile.current?.renew();
     setSending(false);
-    if (!answer.ok) setGateFailure(CODE_REFUSALS[answer.code] ?? tryOn.gate.errors.other);
+    if (answer.ok || markRefused(answer.code, answer.fields)) return;
+    setGateFailure(CODE_REFUSALS[answer.code] ?? tryOn.gate.errors.other);
   }
 
   function askAgain(event: Event) {
@@ -345,6 +375,7 @@ export default function TryOn(props: Props) {
         {screen === "looks" && (
           <Looks
             look={state.look}
+            thumbnails={props.lookThumbnails}
             heading={heading}
             onChoose={(look) => {
               send({ type: "lookChosen", look });
@@ -365,10 +396,13 @@ export default function TryOn(props: Props) {
             sending={sending}
             code={gateCode}
             heading={heading}
+            form={gateForm}
             onName={(typed) => {
+              unmark("name");
               send({ type: "nameTyped", name: typed });
             }}
             onMobile={(typed) => {
+              unmark("mobile");
               send({ type: "mobileTyped", mobile: typed });
             }}
             onSubmit={(event) => void submitGate(event)}

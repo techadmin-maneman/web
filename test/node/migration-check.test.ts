@@ -54,6 +54,15 @@ describe("migration check", () => {
     expect(problems[1]).toBe("0002_b.sql: applied migrations must not be deleted");
   });
 
+  it("accepts a migration renumbered before any environment applied it, and only under its new name", () => {
+    const atBase = new Map([["0077_consents_shown.sql", "ALTER TABLE t ADD COLUMN a TEXT;"]]);
+    const renumbered = create("0078_consents_shown.sql", "ALTER TABLE t ADD COLUMN a TEXT;");
+    expect(checkMigrations([renumbered], { atBase }).filter((problem) => problem.includes("deleted"))).toEqual([]);
+    expect(checkMigrations([create("0078_other.sql")], { atBase })).toContain(
+      "0077_consents_shown.sql: applied migrations must not be deleted",
+    );
+  });
+
   // A migration the deploy refused and rolled back has reached nothing, so there is
   // nothing for a later migration to correct and the next deploy fails on the same
   // statement. It may be withdrawn, and only withdrawn.

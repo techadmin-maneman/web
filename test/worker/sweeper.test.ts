@@ -4,7 +4,7 @@ import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import type { Connection } from "../../src/providers/messaging.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
-import { sweep, type SweepEnv } from "../../src/scheduled/sweeper.ts";
+import { checkAilabCredits, sweep, type SweepEnv } from "../../src/scheduled/sweeper.ts";
 import { NOW, captureLogs, fakeDependencies, fakeQueue, markDatabase } from "./helpers.ts";
 import { insertJob, insertPerson } from "./tryon-fixtures.ts";
 
@@ -36,7 +36,7 @@ function sweepEnv() {
   return { bindings, queues };
 }
 
-const OPTIONS = { creditFloor: 200, budget: createCallBudget(Infinity) };
+const OPTIONS = { budget: createCallBudget(Infinity) };
 
 beforeEach(async () => {
   await markDatabase();
@@ -481,46 +481,40 @@ describe("sweeper: try-on", () => {
 });
 
 describe("sweeper: AILabTools credits", () => {
-  const onTheHour = new Date("2026-09-21T07:00:00Z");
+  /** The balance check, as the cron's hourly job runs it. */
+  const check = (deps: ReturnType<typeof fakeDependencies>, floor: number, budget = createCallBudget(Infinity)) =>
+    checkAilabCredits({ env: sweepEnv().bindings, deps, log: createLogger(), budget }, floor);
 
-  it("reads the balance once an hour and alerts below the floor", async () => {
-    const deps = fakeDependencies({ now: () => onTheHour });
-    const summary = await sweep(sweepEnv().bindings, deps, createLogger(), { ...OPTIONS, creditFloor: 5000 });
-    expect(summary.credits).toBe(1000); // the stub's two pools, summed
+  it("reads the balance and alerts below the floor", async () => {
+    const deps = fakeDependencies();
+    expect(await check(deps, 5000)).toBe(1000); // the stub's two pools, summed
     expect(deps.alerts).toEqual([expect.stringContaining("credits are down to 1000") as string]);
   });
 
   it("tells ops once, not every hour, until a top-up lifts the balance over the floor", async () => {
-    const deps = fakeDependencies({ now: () => onTheHour });
-    const low = { ...OPTIONS, creditFloor: 5000 };
-    await sweep(sweepEnv().bindings, deps, createLogger(), low);
-    await sweep(sweepEnv().bindings, deps, createLogger(), low);
+    const deps = fakeDependencies();
+    await check(deps, 5000);
+    await check(deps, 5000);
     expect(deps.alerts).toHaveLength(1);
 
-    await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS);
-    await sweep(sweepEnv().bindings, deps, createLogger(), low);
+    await check(deps, 200);
+    await check(deps, 5000);
     expect(deps.alerts).toHaveLength(2);
   });
 
-  it("stays quiet above the floor, and skips the check between hours", async () => {
-    const deps = fakeDependencies({ now: () => onTheHour });
-    expect((await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS)).credits).toBe(1000);
+  it("stays quiet above the floor", async () => {
+    const deps = fakeDependencies();
+    expect(await check(deps, 200)).toBe(1000);
     expect(deps.alerts).toEqual([]);
-    expect((await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS)).credits).toBeUndefined();
   });
 
   it("leaves the balance to the next hour when the cron run has no call left for it", async () => {
-    const deps = fakeDependencies({ now: () => onTheHour });
-    const spent = { ...OPTIONS, budget: createCallBudget(0) };
-    expect((await sweep(sweepEnv().bindings, deps, createLogger(), spent)).credits).toBeUndefined();
+    expect(await check(fakeDependencies(), 200, createCallBudget(0))).toBeUndefined();
   });
 
   it("logs, and does not alert, when the balance cannot be read", async () => {
-    const deps = fakeDependencies({
-      now: () => onTheHour,
-      image: { ...fakeDependencies().image, credits: () => Promise.resolve(null) },
-    });
-    expect((await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS)).credits).toBeNull();
+    const deps = fakeDependencies({ image: { ...fakeDependencies().image, credits: () => Promise.resolve(null) } });
+    expect(await check(deps, 200)).toBeNull();
     expect(deps.alerts).toEqual([]);
   });
 });

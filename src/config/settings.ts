@@ -5,11 +5,9 @@
 
 import { toE164 } from "../lib/mobile.ts";
 import type { EvolutionSettings } from "../providers/evolution.ts";
-import { RESULT_TEMPLATE } from "./message-templates.ts";
 import { ENABLED_SURFACES, FSM_CATALOGUE_PUSH, type EnvironmentName, type ProviderVar } from "./environments.ts";
 import { GSTIN_FORMAT, SAC_FORMAT, STATE_CODE_FORMAT, type GstRegistration } from "./gst.ts";
 import { FIXED_LIMITS, type FixedLimit } from "./limits.ts";
-import { UNKNOWN_COLOR_ROUTE, type UnknownColorRoute } from "./tryon.ts";
 
 export interface TryonSettings {
   /** Per salted IP hash, per India clock hour. */
@@ -27,7 +25,6 @@ export interface TryonSettings {
   readonly resultReadDailyCeiling: number;
   /** Days a result is kept once ready: 30 in production, as the photo notice promises; less on staging. */
   readonly resultRetentionDays: number;
-  readonly unknownColorRoute: UnknownColorRoute;
   /** Alert when the AILabTools balance falls below this many credits. */
   readonly creditFloor: number;
   /** Signs upload and result links. */
@@ -39,8 +36,6 @@ export interface TryonSettings {
 export interface MessagingSettings {
   /** Off: every result message is skipped and the gate promises no WhatsApp copy. */
   readonly enabled: boolean;
-  /** The approved WhatsApp template that carries a result. */
-  readonly resultTemplate: string;
   /**
    * When not empty, an automatic message (a reminder, or one to someone other than who acted) goes only to these
    * E.164 numbers (staging: the founders' handsets); a login code and a message that answers the person who just
@@ -109,7 +104,10 @@ export interface RazorpaySettings {
   /** Public: Checkout takes it in the browser. rzp_test_ on staging, rzp_live_ in production. */
   readonly keyId: string;
   readonly keySecret: string;
-  /** Signs the webhook's events. Without it the webhook answers 404. */
+  /**
+   * Signs the webhook's events: at least 32 characters, and required for self-serve booking. Without it the webhook
+   * answers 404.
+   */
   readonly webhookSecret: string | null;
 }
 
@@ -144,6 +142,8 @@ export interface LoginSettings {
   readonly codeIpHourlyLimit: number;
   /** Codes sent a day across every number: the hard limit on what a flood of requests can send. */
   readonly codeDailyCeiling: number;
+  /** The same limit for the technician app's codes, which only an active technician's number is sent. */
+  readonly techCodeDailyCeiling: number;
   /**
    * Locally only, every code is this one, so the browser tests can log in
    * through the stub messaging provider. The guard refuses it anywhere else.
@@ -190,8 +190,6 @@ export interface Settings {
    * the daily free allowances (src/scheduled/daily-allowances.ts). Optional; without it nobody is told.
    */
   readonly analyticsToken: string | null;
-  /** The operators' secret for POST /api/erasure (docs/decisions/0019-erasure.md). */
-  readonly erasureSecret: string;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zoho: ZohoSettings | null;
   /** Present when FSM_PROVIDER is "zoho". */
@@ -364,7 +362,7 @@ export function readSettings(
   const watchers = readWatchers(read);
 
   const zohoClients = readZohoClients(read, providers);
-  const razorpay = readRazorpay(read, providers, environment);
+  const razorpay = readRazorpay(read, providers, environment, selfServeBooking);
   const geocode = readGeocode(read, providers);
   const access = readAccess(read, providers, environment);
 
@@ -398,7 +396,6 @@ export function readSettings(
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
     ...watchers,
-    erasureSecret: read.key("ERASURE_SECRET"),
     ...zohoClients,
     razorpay,
     access,
@@ -522,6 +519,7 @@ function readRazorpay(
   read: Reader,
   providers: ProvidersRead,
   environment: EnvironmentName | undefined,
+  selfServeBooking: boolean,
 ): RazorpaySettings | null {
   if (providers.PAYMENTS_PROVIDER === "stub") {
     return { keyId: "", keySecret: "", webhookSecret: read.optionalText("RAZORPAY_WEBHOOK_SECRET") };
@@ -530,7 +528,7 @@ function readRazorpay(
   const razorpay: RazorpaySettings = {
     keyId: read.text("RAZORPAY_KEY_ID"),
     keySecret: read.text("RAZORPAY_KEY_SECRET"),
-    webhookSecret: read.optionalText("RAZORPAY_WEBHOOK_SECRET"),
+    webhookSecret: readWebhookSecret(read, selfServeBooking),
   };
   // Test keys move no money; live keys must never be anywhere else.
   if (environment === "production" && !razorpay.keyId.startsWith("rzp_live_") && razorpay.keyId !== "") {
@@ -540,6 +538,22 @@ function readRazorpay(
     read.problems.push("RAZORPAY_KEY_ID is a live key outside production: it would take real money");
   }
   return razorpay;
+}
+
+/**
+ * The only proof a payment event is Razorpay's. Self-serve booking hears of every payment through it, so it must be
+ * set then; set, it must be long enough to sign with.
+ */
+function readWebhookSecret(read: Reader, selfServeBooking: boolean): string | null {
+  const secret = read.optionalText("RAZORPAY_WEBHOOK_SECRET");
+  if (secret === null) {
+    if (selfServeBooking) {
+      read.problems.push("RAZORPAY_WEBHOOK_SECRET is not set: self-serve booking would never hear that a client paid");
+    }
+    return null;
+  }
+  if (secret.length < 32) read.problems.push("RAZORPAY_WEBHOOK_SECRET must be at least 32 characters");
+  return secret;
 }
 
 /** The address search: its key when there is one, and its daily ceiling always. */
@@ -587,6 +601,7 @@ function readLogin(read: Reader, environment: EnvironmentName | undefined, clien
     codeMobileDailyLimit: read.fixedLimit("OTP_MOBILE_DAILY_LIMIT", isLocal),
     codeIpHourlyLimit: read.fixedLimit("OTP_IP_HOURLY_LIMIT", isLocal),
     codeDailyCeiling: read.fixedLimit("OTP_DAILY_CEILING", isLocal),
+    techCodeDailyCeiling: read.fixedLimit("OTP_TECH_DAILY_CEILING", isLocal),
     fixedCode: read.optionalText("OTP_FIXED_CODE"),
     testRecordCode: read.optionalText("STAGING_TEST_RECORD_CODE"),
   };
@@ -614,7 +629,6 @@ function readTryon(read: Reader, providers: ProvidersRead, isLocal: boolean): Tr
     uploadDailyCeiling: read.count("UPLOAD_DAILY_CEILING"),
     resultReadDailyCeiling: read.count("RESULT_READ_DAILY_CEILING"),
     resultRetentionDays: read.count("RESULT_RETENTION_DAYS"),
-    unknownColorRoute: UNKNOWN_COLOR_ROUTE,
     creditFloor: read.count("AILAB_CREDIT_FLOOR"),
     linkSigningKey: read.key("RESULT_SIGNING_KEY"),
     ailabApiKey: providers.IMAGE_PROVIDER === "ailabtools" ? read.text("AILAB_API_KEY") : null,
@@ -652,7 +666,6 @@ function readMessaging(
   const evolution = readEvolution(read, providers);
   const messaging: MessagingSettings = {
     enabled: read.flag("MESSAGING_ENABLED"),
-    resultTemplate: RESULT_TEMPLATE,
     allowlist: read.mobiles("MESSAGING_ALLOWLIST"),
     evolution,
   };

@@ -39,6 +39,8 @@ export interface Queued {
   readonly fields: readonly string[];
   /** On a job given to another technician, whom and when, as the API said. Absent on what an older build kept. */
   readonly moved?: Moved | null;
+  /** On a refusal, the API's ID for it, for the technician to quote. Absent on what an older build kept. */
+  readonly request_id?: string | null;
 }
 
 const inOrder = (queue: readonly Queued[]): Queued[] => [...queue].sort((a, b) => a.seq - b.seq);
@@ -70,6 +72,9 @@ export interface JobAccount {
     readonly note: string | null;
     readonly fields: readonly string[];
     readonly moved: Moved | null;
+    readonly requestId: string | null;
+    /** The job's start as the phone held it when the write was queued. */
+    readonly startsAt: string | null;
   } | null;
 }
 
@@ -89,6 +94,8 @@ export function account(queue: readonly Queued[]): JobAccount[] {
         note: event.note,
         fields: event.fields,
         moved: event.moved ?? null,
+        requestId: event.request_id ?? null,
+        startsAt: event.starts_at ?? null,
       };
     }
     accounts.set(event.job_id, held);

@@ -2,6 +2,7 @@
 // both for the client app; the others follow its shapes. Each app gives them
 // its words, its ground and its own class for the spacing its boards draw.
 
+import type { ReactNode } from "react";
 import { Button, type ButtonVariant } from "./Button.tsx";
 import { classes } from "./classes.ts";
 import { VisuallyHidden } from "./VisuallyHidden.tsx";
@@ -35,6 +36,7 @@ export function Failed({
   button = "outline",
   className,
   messageClassName,
+  reference = null,
 }: {
   message: string;
   retry: string;
@@ -43,10 +45,13 @@ export function Failed({
   button?: ButtonVariant;
   className?: string;
   messageClassName?: string;
+  /** The failed call's reference (./ErrorRef.tsx), under the line. */
+  reference?: ReactNode;
 }) {
   return (
     <div className={classes(styles.failed, className)} role="alert">
       <p className={classes(styles.message, messageClassName)}>{message}</p>
+      {reference}
       <Button variant={button} size="small" onClick={onRetry}>
         {retry}
       </Button>

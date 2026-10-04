@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { routePath } from "hono/route";
@@ -13,7 +13,7 @@ import { requireStaffAccess } from "./http/staff-access.ts";
 import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
-import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
+import { meterDatabase, serverTiming, usageFields } from "./lib/d1-meter.ts";
 import { createLogger } from "./log.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
@@ -26,6 +26,7 @@ import { registerClientDiscountCodes } from "./routes/client-discount-codes.ts";
 import { registerOpsDiscountCodes } from "./routes/ops-discount-codes.ts";
 import { registerTechDiscountCodes } from "./routes/tech-discount-codes.ts";
 import { registerClientDisputes } from "./routes/client-disputes.ts";
+import { registerClientErrors } from "./routes/client-errors.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsBlackouts } from "./routes/ops-blackouts.ts";
 import { registerOpsBookings } from "./routes/ops-bookings.ts";
@@ -36,13 +37,16 @@ import { registerOpsConsumables } from "./routes/ops-consumables.ts";
 import { registerOpsCredits } from "./routes/ops-credits.ts";
 import { registerOpsDispatch } from "./routes/ops-dispatch.ts";
 import { registerOpsDisputes } from "./routes/ops-disputes.ts";
+import { registerOpsErasure } from "./routes/ops-erasure.ts";
 import { registerOpsField } from "./routes/ops-field.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
 import { registerOpsHairProfile } from "./routes/ops-hair-profile.ts";
 import { registerOpsJobSheet } from "./routes/ops-job-sheet.ts";
+import { registerOpsNoShowRulings } from "./routes/ops-no-show-rulings.ts";
 import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
 import { registerOpsTasks } from "./routes/ops-tasks.ts";
+import { registerOpsAlerts } from "./routes/ops-alerts.ts";
 import { registerOpsTechnicians } from "./routes/ops-technicians.ts";
 import { registerOpsServices } from "./routes/ops-services.ts";
 import { registerOpsSettings } from "./routes/ops-settings.ts";
@@ -56,13 +60,14 @@ import { registerReferralLanding } from "./routes/referral-landing.ts";
 import { registerClientPayments } from "./routes/client-payments.ts";
 import { registerClientVisits } from "./routes/client-visits.ts";
 import { registerDevFsm } from "./routes/dev-fsm.ts";
-import { registerErasure } from "./routes/erasure.ts";
 import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerFsmHook } from "./routes/fsm-hook.ts";
 import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
+import { registerStopMessages } from "./routes/stop-messages.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerOpsStorage } from "./routes/ops-storage.ts";
+import { registerOpsVisitChanges } from "./routes/ops-visit-changes.ts";
 import { registerOpsVisits } from "./routes/ops-visits.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
@@ -96,7 +101,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerTryonGenerate,
     registerTryonClaim,
     registerTryonResult,
-    registerErasure,
+    // The page a reminder's or alert's link opens, which stops them without signing in.
+    registerStopMessages,
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
     registerFsmHook,
@@ -104,6 +110,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
   ],
   client: [
     registerHealth,
+    // What goes wrong in the app's own page; the console and the technician app have it too.
+    registerClientErrors,
     registerClientAuth,
     registerClientMe,
     registerClientProfile,
@@ -122,25 +130,33 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
   ],
   ops: [
     registerHealth,
+    registerClientErrors,
     registerOpsClients,
     registerOpsCredits,
     // A booking FSM refused, held for ops to book or refund (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
     registerOpsBookings,
     // A visit ops book for a client: at once, or by a payment link.
     registerOpsVisits,
+    // A visit ops cancel for a client, or close by hand for a technician whose phone was lost.
+    registerOpsVisitChanges,
     registerOpsClientReferral,
     // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
     registerOpsClientAddress,
     // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
     registerOpsHairProfile,
+    // Erasing a client from their page, the day they ask.
+    registerOpsErasure,
     registerOpsProfile,
     registerOpsReferrals,
     registerOpsGrievances,
     registerOpsWaitlist,
     registerOpsDispatch,
     registerOpsField,
+    registerOpsNoShowRulings,
     registerOpsDisputes,
     registerOpsTasks,
+    // The alerts on Tasks' "Needs a hand".
+    registerOpsAlerts,
     registerOpsPayments,
     registerOpsTechnicians,
     registerOpsSettings,
@@ -163,7 +179,14 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsStaff,
   ],
   // The discount code after the jobs, which put the technician's session on every /api/tech/jobs/* route.
-  tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces, registerTechDiscountCodes],
+  tech: [
+    registerHealth,
+    registerClientErrors,
+    registerTechAuth,
+    registerTechJobs,
+    registerTechPieces,
+    registerTechDiscountCodes,
+  ],
 };
 
 export function createApp(
@@ -209,7 +232,7 @@ export function createApp(
 
 /**
  * Gives each request an ID, a logger, its dependencies and a metered database; sets common headers; logs the request
- * with what it cost D1.
+ * with what it cost D1 and how long it waited on it.
  */
 function requestContext(
   config: StaticConfig,
@@ -240,6 +263,9 @@ function requestContext(
     c.header("X-Content-Type-Options", "nosniff");
     if (!c.res.headers.has("Cache-Control")) c.header("Cache-Control", "no-store");
     if (config.environment !== "production") c.header("X-Robots-Tag", "noindex, nofollow");
+    const waits = meter.waits();
+    // Only to a caller who signed in: before that, how long D1 took could tell a number we know from a new one.
+    if (signedIn(c)) c.header("Server-Timing", serverTiming(waits));
 
     log.info("request", {
       method: c.req.method,
@@ -247,9 +273,15 @@ function requestContext(
       status: c.res.status,
       duration_ms: Date.now() - started,
       ...usageFields(meter.usage()),
+      d1_trips: waits.trips,
+      d1_wait_ms: waits.ms,
     });
   });
 }
+
+/** A client or technician with a session, or staff through Cloudflare Access. */
+const signedIn = (c: Context<AppEnv>): boolean =>
+  c.var.clientSession !== undefined || c.var.technicianSession !== undefined || c.var.accessIdentity !== undefined;
 
 /** Answers 503 unless this Worker's database is marked as its own environment's. */
 const requireOwnDatabase = createMiddleware<AppEnv>(async (c, next) => {

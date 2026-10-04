@@ -5,7 +5,9 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { autoRefundsOf } from "../../src/domain/auto-refunds.ts";
 import { confirmBooking } from "../../src/domain/bookings.ts";
+import { composeBookingRefunded } from "../../src/domain/held-bookings.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
@@ -105,7 +107,8 @@ describe("POST /api/bookings", () => {
         amount: 200000,
         currency: "INR",
         name: "Mane Man",
-        description: "Service visit, 2026-09-22",
+        // The day as the app writes it, never "2026-09-22" (MON-42).
+        description: "Service visit · Tue 22 Sep",
         prefill: { name: "Rohit Malhotra", contact: "+919810000001" },
       },
     });
@@ -209,6 +212,69 @@ describe("confirmBooking", () => {
     expect(fsm.made.visits).toEqual([]);
   });
 
+  // MON-14: a lapse refund sent no message and showed nowhere in the console.
+  it("tells the client of a refund made because the hold had lapsed, once, without their visits consent", async () => {
+    const app = appFor("local", fakeDependencies(), {}, "client");
+    const holdId = await heldService(app);
+    await post(app, "/api/bookings", { hold_id: holdId });
+    const later = new Date(NOW.getTime() + 13 * 60_000);
+    await captured(holdId, later.toISOString());
+    const notified: string[] = [];
+    const options = {
+      labelAsTest: true,
+      notify: (messageId: string) => {
+        notified.push(messageId);
+        return Promise.resolve();
+      },
+    };
+    const fsm = createStubFsm(world());
+    const payments = createStubPayments();
+    expect(await confirmBooking(env.DB, fsm, payments, holdId, later, options)).toBe("refunded");
+    expect(await confirmBooking(env.DB, fsm, payments, holdId, later, options)).toBe("refunded");
+
+    const { results } = await env.DB.prepare(
+      "SELECT id, kind, subject_kind, subject_id, state FROM outbound_messages WHERE person_id = ?1",
+    )
+      .bind(PERSON)
+      .all();
+    expect(results).toEqual([
+      { id: notified[0], kind: "booking_refunded", subject_kind: "slot_hold", subject_id: holdId, state: "queued" },
+    ]);
+    expect(notified).toHaveLength(1);
+    expect(await composeBookingRefunded(env.DB, holdId, PERSON)).toEqual({
+      template: "booking_refunded_v1",
+      params: ["Rohit", "service visit", "Tue 22 Sep", "", "", "Rs. 2,000", "", "UPI"],
+    });
+    expect(await autoRefundsOf(env.DB, PERSON)).toEqual([
+      {
+        holdId,
+        type: "service",
+        serviceName: "Service visit",
+        date: "2026-09-22",
+        amount: 200000,
+        reason: "lapsed",
+        refundedAt: later.toISOString(),
+      },
+    ]);
+  });
+
+  it("tells no one, and lists nothing as refunded, when a lapsed hold took no payment", async () => {
+    await env.DB.prepare("DELETE FROM appointments").run(); // a lead: a consultation is what they may book
+    const app = appFor("local", fakeDependencies(), {}, "client");
+    const consult = await (
+      await post(app, "/api/holds", { type: "consultation", date: "2026-09-22", window: "morning" })
+    ).json<{ id: string }>();
+    await post(app, "/api/bookings", { hold_id: consult.id }, { FSM_QUEUE: fakeQueue() });
+    await env.DB.prepare("UPDATE slot_holds SET state = 'released' WHERE id = ?1").bind(consult.id).run();
+    const later = new Date(NOW.getTime() + 13 * 60_000);
+    const fsm = createStubFsm(world());
+    expect(await confirmBooking(env.DB, fsm, createStubPayments(), consult.id, later, { labelAsTest: true })).toBe(
+      "lapsed",
+    );
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first()).toEqual({ n: 0 });
+    expect(await autoRefundsOf(env.DB, PERSON)).toEqual([]);
+  });
+
   // Before the owner's ruling of 27 September 2026 the fifth refusal refunded the client (ADR 0095).
   it("holds the booking for ops, refunding nothing, when FSM will not take the visit after five tries", async () => {
     const app = appFor("local", fakeDependencies(), {}, "client");
@@ -276,7 +342,7 @@ describe("booking a service ops added", () => {
       .first();
     expect(held).toEqual({ type: "service", tier: "premium", minutes: 120, amount: 250000 });
     const started = await (await post(app, "/api/bookings", { hold_id: holdId })).json<{ checkout: object }>();
-    expect(started.checkout).toMatchObject({ amount: 250000, description: "Premium service, 2026-09-22" });
+    expect(started.checkout).toMatchObject({ amount: 250000, description: "Premium service · Tue 22 Sep" });
 
     await captured(holdId);
     const fsm = createStubFsm(withItem());

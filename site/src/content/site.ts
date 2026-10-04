@@ -27,7 +27,7 @@ import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 import { LOSS_EXTENTS, type LossExtent } from "../../../src/config/booking.ts";
 import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "../../../src/config/notices.ts";
-import { PRESETS } from "../../../src/config/presets.ts";
+import { PRESETS, type PresetId } from "../../../src/config/presets.ts";
 import { KEEPING_NOTICES } from "../../../src/policy/kept-try-ons.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
 
@@ -278,7 +278,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         heading: "Who holds it",
         paragraphs: [
           "Your details are held in our own database, hosted by Cloudflare, and in the customer system our team works from, Zoho CRM; your name, number and address also go to Zoho FSM, where our technicians' visits are arranged, so that the technician finds your door. Your hair profile stays in our own database. Payments are made through Razorpay, and our invoices are kept in Zoho Books.",
-          "We use your details to arrange and look after your visits, and for anything else only with your agreement, which you can withdraw in the app. We never sell them.",
+          "We use your details to arrange and look after your visits, and for anything else only with your agreement, which you can withdraw in the app or by messaging us at {whatsapp}. To stop our WhatsApp messages, reply STOP to any of them. We never sell your details.",
         ],
       },
       {
@@ -903,11 +903,24 @@ if (stageOptions.map((stage) => stage.id).join() !== LOSS_EXTENTS.join()) {
   throw new Error("stageOptions must list the backend's LOSS_EXTENTS in order");
 }
 
+/**
+ * Each look's picture for the look picker, by look id: a file in site/src/assets. The picker draws pictures only
+ * once all six looks have one, and until then shows each look's words alone.
+ */
+const LOOK_PICTURES: Partial<Record<PresetId, string>> = {};
+
 /** The six looks: the backend's presets, in its order. The design splits each label at its first " · ". */
 export const looks = PRESETS.map((preset) => {
   const [density = preset.label, ...rest] = preset.label.split(" · ");
-  return { id: preset.id, label: preset.label, density, detail: rest.join(" · ") };
+  const picture = LOOK_PICTURES[preset.id];
+  return { id: preset.id, label: preset.label, density, detail: rest.join(" · "), picture };
 });
+
+/** Every look's picture, in the looks' order, or null while any look has none. */
+export function lookPictures(list: readonly { readonly picture?: string | undefined }[] = looks): string[] | null {
+  const pictures = list.flatMap((look) => (look.picture === undefined ? [] : [look.picture]));
+  return pictures.length === list.length ? pictures : null;
+}
 
 /** The consent screen's words, from the photo notice: its title, its rows and the agreement. */
 export function consentCopy(photo: Notice) {
@@ -954,7 +967,7 @@ export const tryOn = {
     error: "28%",
   },
   upload: {
-    title: "One photograph, taken straight on.",
+    title: "One photo, taken straight on.",
     body: "The simulation is only as good as the photo. Three things matter, and none of them need a good camera.",
     guidelines: [
       { n: "1", title: "Face the window", body: "Daylight from the front, nothing bright behind you." },
@@ -971,9 +984,9 @@ export const tryOn = {
   consent: {
     continue: "Continue",
     privacy: {
-      before: "The full ",
+      before: "Read the full ",
       link: "privacy notice",
-      after: " is two paragraphs long, and it is linked in the footer.",
+      after: ".",
     },
   },
   stage: {
@@ -983,8 +996,7 @@ export const tryOn = {
   },
   looks: {
     title: "Choose a look.",
-    body: "Six to choose from, and one simulation each, so choose the one you would wear.",
-    preview: "Preview",
+    body: "You get one look, so pick the one you'd wear.",
     choose: "Choose one to continue",
     continue: "Continue",
   },
@@ -996,15 +1008,15 @@ export const tryOn = {
     nameError: "Tell us what to call you.",
     mobile: "Mobile",
     mobilePlaceholder: "98100 00000",
-    mobileError: "Enter all ten digits so we can send your look.",
+    mobileError: "Enter a valid 10-digit mobile number.",
     submit: "Send my look",
     // Not drawn: once the WhatsApp code is on its way, the button confirms it and sends the look.
     confirm: "Confirm and send my look",
     sending: "Sending",
     errors: {
-      rateLimited: "This number has had its looks for today. Please try again tomorrow.",
+      rateLimited: "This number is out of tries for today. Try again tomorrow.",
       taken: "This look is already on its way to another number.",
-      other: "That did not go through. Please try again in a minute.",
+      other: "That didn't go through. Try again in a minute.",
       // Not drawn: refusals of the WhatsApp code. The owner approves the words.
       codes: "That is a few too many codes for this number today. Please try again tomorrow.",
       turnstile: "We could not confirm you are a person. Please try again.",
@@ -1016,9 +1028,9 @@ export const tryOn = {
     frame: "On its way to your WhatsApp",
     title: "Your new look is on its way.",
     /** The number the visitor gave goes between the two. */
-    to: { before: "Watch WhatsApp on ", after: ": it arrives within minutes." },
-    // The simulation's retention in production, RESULT_RETENTION_DAYS, as the privacy notice gives it (ADR 0039).
-    privacy: "For your privacy, it is never shown on this site, and we delete it after fourteen days.",
+    to: { before: "It'll reach WhatsApp on ", after: " within minutes." },
+    // Production's RESULT_RETENTION_DAYS, as the privacy notice gives it.
+    privacy: "We delete it after 14 days.",
     disclaimer:
       "An illustrative simulation, not a photograph of a result. Your hair system is matched to your own hair colour, density and growth pattern.",
     book: "Book a free consultation",
@@ -1026,7 +1038,7 @@ export const tryOn = {
     /** A visitor who has had their look, back again, whose number the page does not know. */
     returning: {
       title: "Your look has already been sent.",
-      body: "It went to the WhatsApp number you gave. Each visitor gets one look, and for your privacy it is never shown on this site.",
+      body: "We sent it to the WhatsApp number you gave. It's one look per person, every 30 days.",
     },
   },
   error: {
@@ -1038,7 +1050,7 @@ export const tryOn = {
         step: "Cannot use this photograph",
         frame: "Cannot read the photograph",
         title: "We cannot use this photograph.",
-        body: "Either the face is turned too far, something is covering the hairline, or the frame is too dark to read. A photograph taken facing a window, straight on, works almost every time.",
+        body: "Your face may be turned, your hairline covered, or the light too low. Face a window and shoot straight on.",
       },
       renderFailed: {
         step: "Something went wrong",
@@ -1050,14 +1062,14 @@ export const tryOn = {
         step: "Please try again shortly",
         frame: "The simulation is busy",
         title: "The simulation is busy just now.",
-        body: "Too many people are trying it at once, or it could not be reached. Please try again in a little while, or book a consultation and see it in person.",
+        body: "Try again in a few minutes, or book a consultation and see it in person.",
       },
       /** While WhatsApp cannot send a look, the try-on does not run (ADR 0104). It has no Choose another. */
       unavailable: {
         step: "Not available right now",
-        frame: "The try-on is paused",
-        title: "The try-on is not available right now.",
-        body: "Every look is sent privately on WhatsApp, which is not open yet. Book a free consultation and see the real thing, in person.",
+        frame: "Paused",
+        title: "The try-on is paused.",
+        body: "We send every look on WhatsApp, and that isn't switched on yet. Book a free consultation and see the real thing.",
       },
     },
   },
@@ -1112,6 +1124,29 @@ export const notFound = {
   home: "Back to the site",
 };
 
+/**
+ * PLACEHOLDER COPY: the page the link at the foot of a reminder or the launch alert opens. "Done" names what
+ * stopped. "{whatsapp}" is the business number, as a chat link.
+ */
+export const stopMessages = {
+  ask: {
+    title: "Stop these messages",
+    body: "One tap, and we stop sending them on WhatsApp.",
+    button: "Stop them",
+  },
+  done: {
+    title: "Done.",
+    whatsapp_visits: "We will no longer message you on WhatsApp about your visits. We will call you about any change.",
+    whatsapp_launches: "We will no longer message you when we come to a new area.",
+    again: "Changed your mind? Switch them back on in the Mane Man app, or message us at {whatsapp}.",
+  },
+  expired: {
+    title: "This link no longer works.",
+    body: "Reply STOP to any of our WhatsApp messages, or message us at {whatsapp}, and we will stop them.",
+  },
+  offline: "We could not reach Mane Man. Check your connection and try again.",
+};
+
 export const pageTitles = {
   home: `Mane Man — hair systems, fitted at your home across ${serviceArea}`,
   tryOn: "Try a new look — Mane Man",
@@ -1119,6 +1154,7 @@ export const pageTitles = {
   privacy: "Privacy — Mane Man",
   terms: "Terms — Mane Man",
   notFound: "Not found — Mane Man",
+  stop: "Stop messages — Mane Man",
 };
 
 /** Each page's description, for search results and shared links. */

@@ -35,6 +35,18 @@ function paidOf(booking: HeldBooking): string {
   return booking.uses_credit ? copy.credit : copy.free;
 }
 
+/** The code it was booked with, and what that takes off once the price is known; null for none. */
+function codeOf(booking: HeldBooking): string | null {
+  if (booking.discount_code === null) return null;
+  const { code, amount_off: off } = booking.discount_code;
+  return copy.code(clients.visits.code.applied(code, off === null ? null : rupees(off)));
+}
+
+function CodeLine({ booking }: { booking: HeldBooking }) {
+  const code = codeOf(booking);
+  return code === null ? null : <p className={styles.heldLine}>{code}</p>;
+}
+
 /** Whether it is still tried by itself, has stopped being tried, or its time has passed. */
 function triesOf(booking: HeldBooking, retrying: boolean, now: Date): string {
   if (Date.parse(booking.starts_at) <= now.getTime()) return copy.passed;
@@ -246,6 +258,7 @@ function Booking({ booking, visits, now }: { booking: HeldBooking; visits: reado
     <li className={styles.heldItem}>
       <p className={styles.heldWhat}>{what}</p>
       <p className={styles.heldLine}>{paidOf(booking)}</p>
+      <CodeLine booking={booking} />
       <p className={styles.heldLine}>{booking.refusal === null ? copy.noRefusal : copy.refusal(booking.refusal)}</p>
       {!settled && <p className={styles.heldLine}>{triesOf(booking, retrying, now)}</p>}
       {!settled && open === "none" && (

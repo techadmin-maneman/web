@@ -58,6 +58,13 @@ test("heads the Visits tab with the booking, what was paid, what FSM said and un
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
+// D-03: ops about to link or refund it could not see the code it was booked with.
+test("names the discount code the booking was made with, and what it takes off", async ({ page }) => {
+  const withCode = { ...HELD_BOOKING, discount_code: { code: "STGCHECK", amount_off: 50_000 } };
+  await openVisits(page, { [`GET /api/clients/${CLIENT.id}`]: json({ ...RECORD, held_bookings: [withCode] }) });
+  await expect(held(page).getByRole("listitem")).toContainText("Code STGCHECK, Rs. 500 off");
+});
+
 test("tries FSM again, and says it is booked and the client told", async ({ page }) => {
   await openVisits(page, { [RETRY]: json({ outcome: "booked", refusal: null }) });
   await held(page)
@@ -249,7 +256,27 @@ test("is a task on the board that leads to the client's Visits tab", async ({ pa
   await answer(page, { "GET /api/tasks": json(board) });
   await page.goto("/tasks");
   const tasks = page.getByRole("region", { name: "Tasks" });
-  await expect(tasks.getByRole("heading", { level: 3 })).toHaveText(["Booking not in FSM"]);
+  await expect(tasks.getByRole("heading", { level: 3 })).toHaveText(["Operations"]);
+  await expect(tasks.getByRole("heading", { level: 4 })).toHaveText(["Booking not in FSM"]);
   await expect(tasks.getByRole("listitem")).toContainText("Service visit, Sat 25 Sep, morning; FSM refused it");
   await expect(tasks.getByRole("link", { name: CLIENT.name })).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
+});
+
+// MON-14: a booking that refunded its payment by itself showed nowhere in the console.
+test("lists a booking that refunded its payment by itself beneath the visits, and why", async ({ page }) => {
+  const refunded = {
+    hold_id: "66000000-0000-4000-8000-000000000002",
+    type: "service",
+    service: "Service visit",
+    date: "2027-09-24",
+    amount: 200_000,
+    reason: "lapsed",
+    refunded_at: "2027-09-22T06:00:00.000Z",
+  } satisfies OpsReply<"/api/clients/{id}">["auto_refunds"][number];
+  await openVisits(page, { [`GET /api/clients/${CLIENT.id}`]: json({ ...RECORD, auto_refunds: [refunded] }) });
+  const item = page.getByRole("region", { name: "Refunded bookings" }).getByRole("listitem");
+  await expect(item).toContainText("Service visit, 24 Sep 2027 · Rs. 2,000");
+  await expect(item).toContainText("Refunded automatically on 22 Sep 2027: paid after the hold lapsed.");
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });

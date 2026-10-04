@@ -22,7 +22,7 @@
   --wa-dark-text: #e9edef; /* and the words in it */
 
   /* The apps' sizes (docs/prompts/phase2-frontend.md, "Layout and targets"). */
-  --app-column: 390px; /* the design's width; wider screens centre it */
+  --app-column: 390px; /* the design's width */
   --fs-app-title: var(--fs-34); /* a screen's title */
   --fs-app-title-long: 32px; /* a longer title, as board A3's */
   --fs-19: 19px; /* a day's number in the date strip (board C2) */
@@ -32,7 +32,7 @@
   --fs-28: 28px; /* a confirmed booking's day and window (board C6) */
   --fs-25: 25px; /* the empty tracker's line (board F6) */
   --fs-30: 30px; /* what a referral earns (board F1); the client's name at the head of their ops page (board B1) */
-  --fs-34: 34px; /* the credit tile's count (board F1) */
+  --fs-34: 34px; /* the tracker's two figures (board F5) */
   --fs-40: 40px; /* an entry's amount on its own page (board E2) */
   --lh-118: 1.18; /* what a referral earns, and the consent before a card is made (boards F1, F2) */
   /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
@@ -66,7 +66,7 @@
   --ops-waitlist-ref: 60px;
   --ops-waitlist-alerts: 62px;
   --ops-task-owner: 72px; /* a task's owner, and how long it has left, beside what it is (board D2) */
-  --ops-task-due: 84px;
+  --ops-task-due: 120px; /* "18 days overdue" on one line */
 
   /* The technician app's targets (design/phase2/Technician App.dc.html, "Targets" and "Gloved use"). */
   --tech-primary: 64px; /* the one primary action, bottom of every screen, and the fields beside it */

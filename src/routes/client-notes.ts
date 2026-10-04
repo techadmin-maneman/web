@@ -2,8 +2,9 @@
 // SELF_SERVE_BOOKING, as the brief puts it among booking's routes: while it is
 // off, the app sends the note to ops on WhatsApp instead (ADR 0043).
 //
-//   POST /api/appointments/:id/note   { note }: kept on the visit, for the technician's card, and sent on to the
-//                                     visit's appointment in FSM (docs/decisions/0099-the-clients-note-in-fsm.md)
+//   POST /api/appointments/:id/note   { note }: kept on the visit, for the technician's card, and while FSM holds the
+//                                     record of field work, sent on to the visit's appointment there
+//                                     (docs/decisions/0099-the-clients-note-in-fsm.md)
 //
 // Every /api/appointments/* route takes the client's session and the switch
 // from src/routes/client-changes.ts, which is registered first (src/app.ts).
@@ -11,7 +12,9 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
+import { fieldRecord } from "../config/field-record.ts";
 import { CLIENT_NOTE_MAX_CHARS, clientNoteAlertKey, saveClientNote } from "../domain/client-notes.ts";
+import { enqueue } from "../queues/enqueue.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { clientOf } from "../http/client-session.ts";
@@ -47,18 +50,15 @@ const noteRoute = createRoute({
 /** The note, sent on to FSM by the fsm-sync queue; one that cannot be queued is told to ops once. */
 async function sendOnToFsm(c: Context<AppEnv>, personId: string, visitId: string): Promise<void> {
   const { requestId, log, deps } = c.var;
-  try {
-    await c.env.FSM_QUEUE.send({ note_appointment_id: visitId, request_id: requestId } satisfies FsmSyncMessage);
-  } catch (error) {
-    log.warn("client_note_enqueue_failed", { appointment_id: visitId, error });
-    await deps.alertOnce({
-      key: clientNoteAlertKey(visitId),
-      message:
-        `The client's note on visit ${visitId} could not be sent on to FSM. The technician reads it in their app; ` +
-        "add it to the appointment in FSM by hand.",
-      link: `/clients/${personId}`,
-    });
-  }
+  const alert = {
+    key: clientNoteAlertKey(visitId),
+    message:
+      `The client's note on visit ${visitId} could not be sent on to FSM. The technician reads it in their app; ` +
+      "add it to the appointment in FSM by hand.",
+    link: `/clients/${personId}`,
+  };
+  const body = { note_appointment_id: visitId, request_id: requestId } satisfies FsmSyncMessage;
+  await enqueue(c.env.FSM_QUEUE, body, { log, ifLost: { alertOnce: deps.alertOnce, alert } });
 }
 
 export function registerClientNotes(app: App): void {
@@ -74,7 +74,7 @@ export function registerClientNotes(app: App): void {
     });
     if (saved.kind === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
     if (saved.kind === "closed") return c.json(errorBody("not_changeable", c.var.requestId), 409);
-    if (c.var.config.providers.FSM_PROVIDER !== "none") await sendOnToFsm(c, session.subjectId, visitId);
+    if (fieldRecord(c.var.config.providers) === "fsm") await sendOnToFsm(c, session.subjectId, visitId);
     return c.json({ note: saved.note, noted_at: saved.notedAt }, 200);
   });
 }

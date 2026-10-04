@@ -138,6 +138,9 @@ const RECORD = {
   credits: { visits: 2, earliest_expiry: "2028-01-03T06:00:00.000Z" },
   visits: { upcoming: [], past: [] },
   payments: [],
+  payment_links: [],
+  invoices: [],
+  invite: null,
   /*
    * The board's own client, counted from the visits and ledger the client app's
    * boards draw of him: a first fit, two service visits and a replacement, and
@@ -481,7 +484,7 @@ async function photos(browser: Browser, design: Page): Promise<void> {
  */
 async function noShows(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/no-shows");
-  const money = page.getByRole("region", { name: "Today" });
+  const money = page.getByRole("region", { name: "Today", exact: true });
   await money.getByText("Cancelled 9:14 am · visit was 10 am").waitFor();
   await pair(OUT, PANEL, "d1-day-money", await panelOf(design, "Payments", 0), await money.screenshot());
 

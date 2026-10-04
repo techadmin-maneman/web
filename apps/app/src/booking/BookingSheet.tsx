@@ -10,8 +10,10 @@
 // With more than one service open to them, a client picks theirs first, from
 // every one ops offer (docs/decisions/0085-services-ops-can-edit.md). A client
 // who has given no address is asked for it before the date, since no slot is
-// held without one (ADR 0079). The pay step of a new visit says what booking
-// also agrees to, and its tap sends that on (ADR 0080).
+// held without one (ADR 0079); one whose address is in a pincode we do not come
+// to is offered no day, and changes the address or joins the waitlist. The pay
+// step of a new visit says what booking also agrees to, and its tap sends that
+// on (ADR 0080).
 //
 // Opened with the visit the app offers next, the sheet starts its strip a week
 // before the day offered and has that day and window chosen where they are
@@ -27,6 +29,7 @@ import { Sheet } from "@maneman/ui/Sheet";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
+  type Address,
   type Availability,
   type BookableType,
   type Booking,
@@ -51,6 +54,7 @@ import {
   ExpiredStep,
   FailedStep,
   LoadingStep,
+  NotServedStep,
   paysNothing,
   PayStep,
   ServiceStep,
@@ -64,6 +68,8 @@ type Step =
   | { readonly kind: "loading" }
   /** No address yet (ADR 0079). `refused`: the API refused a hold for want of one. */
   | { readonly kind: "address"; readonly refused: boolean }
+  /** The address saved is in a pincode we do not come to. */
+  | { readonly kind: "notServed"; readonly address: Address }
   /** More than one service is open to the client, and they pick one (ADR 0085). */
   | { readonly kind: "service" }
   | { readonly kind: "date" }
@@ -166,6 +172,8 @@ export function BookingSheet({
   const [addressFirst, setAddressFirst] = useState(false);
   // The profile had no address when it was last read, so the address comes before the date.
   const addressMissing = useRef(false);
+  // The address the profile had when it was last read.
+  const savedAddress = useRef<Address | null>(null);
   /** The photograph purposes the client has never decided on, which booking a new visit also agrees to. */
   const [undecided, setUndecided] = useState<readonly BookingConsent[]>([]);
   // True once the client has paid, or booked without paying, so Home is fetched again when the sheet closes.
@@ -181,6 +189,12 @@ export function BookingSheet({
   const askForAddress = (refused: boolean) => {
     setAddressFirst(true);
     setStep({ kind: "address", refused });
+  };
+
+  /** The API offers nothing at the address saved, which the client changes, or they join the waitlist. */
+  const showNotServed = () => {
+    const address = savedAddress.current;
+    setStep(address === null ? { kind: "broken" } : { kind: "notServed", address });
   };
 
   /**
@@ -213,12 +227,14 @@ export function BookingSheet({
         visit === null ? null : api.availability(visit, movingId, firstDay),
         api.profile(),
       ]);
-      if (answer !== null && !answer.ok) {
-        setStep({ kind: "broken" });
-        return;
-      }
       setReminders(profile.ok ? remindersOn(profile.body) : null);
       setUndecided(profile.ok ? undecidedOf(profile.body) : []);
+      savedAddress.current = profile.ok ? profile.body.address : null;
+      if (answer !== null && !answer.ok) {
+        if (answer.code === "not_served") showNotServed();
+        else setStep({ kind: "broken" });
+        return;
+      }
       addressMissing.current = profile.ok && profile.body.address === null;
       // Known now, so the step that picks the visit counts the address among the steps to come.
       if (addressMissing.current) setAddressFirst(true);
@@ -239,6 +255,7 @@ export function BookingSheet({
     setStep({ kind: "loading" });
     const answer = await api.availability(visit, movingId, firstDay);
     if (answer.ok) showDays(answer.body);
+    else if (answer.code === "not_served") showNotServed();
     else setStep({ kind: "broken" });
   };
 
@@ -348,6 +365,7 @@ export function BookingSheet({
       }
       setChosenWindow(null);
     } else if (answer.code === "address_required") askForAddress(true);
+    else if (answer.code === "not_served") showNotServed();
     else setProblem(booking.failedToStart);
   };
 
@@ -374,7 +392,7 @@ export function BookingSheet({
     return outcome;
   };
 
-  /** The client ticked "Remind me": their yes to WhatsApp about their visits, on that purpose's own notice. */
+  /** The client ticked "Remind me": their yes to WhatsApp about their visits, recorded under the box's own line. */
   const switchOnReminders = async () => {
     const answer = await api.switchConsent("whatsapp_visits", true, "app_booking");
     if (answer.ok) setReminders(true);
@@ -470,6 +488,7 @@ export function BookingSheet({
         {step.kind === "address" && (
           <AddressStep refused={step.refused} before={before} onSaved={() => void load(wanted)} />
         )}
+        {step.kind === "notServed" && <NotServedStep address={step.address} onSaved={() => void load(wanted)} />}
         {step.kind === "date" && availability !== null && (
           <DateStep
             before={before}

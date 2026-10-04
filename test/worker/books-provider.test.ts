@@ -1,6 +1,7 @@
-// Zoho Books' adapter (src/providers/books-zoho.ts) on a Zoho client of its own. Customers, the invoices we raise
-// and items are read from answers the org gave on 2 October 2026 (test/fixtures/vendors/books, cut to the fields
-// around those read, numbers made up); the rest from Books' documentation.
+// Zoho Books' adapter (src/providers/books-zoho.ts) on a Zoho client of its own. Customers, invoices, items and the
+// searches for a payment or a refund are read from answers the org gave (test/fixtures/vendors/books, recorded by
+// scripts/books-proof.ts and scripts/zoho-contract-probe.ts, with no one's details in them); the rest from Books'
+// documentation.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -28,6 +29,8 @@ import invoicesByReference from "../fixtures/vendors/books/invoices-by-reference
 import itemAdded from "../fixtures/vendors/books/item-added.json";
 import itemSaved from "../fixtures/vendors/books/item-saved.json";
 import itemsPage from "../fixtures/vendors/books/items-page.json";
+import paymentsByReference from "../fixtures/vendors/books/payments-by-reference.json";
+import refundsOfPayment from "../fixtures/vendors/books/refunds-of-payment.json";
 
 const SETTINGS: ZohoBooksSettings = {
   clientId: "1000.BOOKSCLIENT",
@@ -413,31 +416,31 @@ describe("Books: items", () => {
 });
 
 describe("Books: invoices", () => {
-  it("reads an invoice's number, date, total in paise and status, from the configured organisation", async () => {
+  it("reads an invoice's number, date, total in paise, status and reference, from the configured organisation", async () => {
+    const { invoice } = invoiceCreated;
     const { books, calls } = zohoBooks({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
-      [`${BOOKS_API}/invoices/inv-1`]: () =>
-        json({
-          invoice: {
-            invoice_id: "inv-1",
-            invoice_number: "INV-000041",
-            date: "2026-09-24",
-            total: 2360.5,
-            balance: 1000,
-            status: "sent",
-          },
-        }),
+      [`${BOOKS_API}/invoices/${invoice.invoice_id}`]: () => json({ code: 0, message: "success", invoice }),
     });
-    expect(await books.invoice("inv-1")).toEqual({
-      id: "inv-1",
-      number: "INV-000041",
-      date: "2026-09-24",
-      total: 236050,
-      balance: 100000,
-      status: "sent",
-      reference: null,
+    expect(await books.invoice(invoice.invoice_id)).toEqual({
+      id: "4242595000000257006",
+      number: "INV-000004",
+      date: "2026-10-02",
+      total: 185_000,
+      balance: 185_000,
+      status: "draft",
+      reference: invoice.reference_number,
     });
     expect(new URL(calls[1]?.url ?? "").searchParams.get("organization_id")).toBe("60088931635");
+  });
+
+  it("reads an invoice Books gives no reference or balance as having none, and owing its total", async () => {
+    const { reference_number: _, balance: __, ...plain } = invoiceCreated.invoice;
+    const { books } = zohoBooks({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/invoices/${plain.invoice_id}`]: () => json({ ...invoiceCreated, invoice: plain }),
+    });
+    expect(await books.invoice(plain.invoice_id)).toMatchObject({ total: 185_000, balance: 185_000, reference: null });
   });
 
   it("streams an invoice's PDF, and answers null for one Books does not have", async () => {
@@ -573,36 +576,35 @@ describe("Books: payments, receipts and refunds", () => {
     });
   });
 
-  // Books' documented list shapes (ADR 0070); neither search has been tried on the org yet.
   it("finds a payment by our reference for the customer, matching the reference exactly", async () => {
+    const [found] = paymentsByReference.customerpayments;
+    const customerId = found?.customer_id ?? "";
+    const reference = found?.reference_number ?? "";
+    const nearMiss = { ...found, payment_id: "near-miss", reference_number: `${reference}0` };
     const { books, calls } = zohoBooks({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
-      [`${BOOKS_API}/customerpayments`]: () =>
-        json({
-          code: 0,
-          customerpayments: [
-            { payment_id: "bp-2", reference_number: "MM-2026-08410" },
-            { payment_id: "bp-1", reference_number: "MM-2026-0841" },
-          ],
-        }),
+      [`${BOOKS_API}/customerpayments`]: () => json({ ...paymentsByReference, customerpayments: [nearMiss, found] }),
     });
-    expect(await books.findPayment("books-customer-9", "MM-2026-0841")).toBe("bp-1");
+    expect(await books.findPayment(customerId, reference)).toBe("4242595000000250002");
     const searched = new URL(calls[1]?.url ?? "");
     expect(calls[1]?.method).toBe("GET");
-    expect(searched.searchParams.get("customer_id")).toBe("books-customer-9");
-    expect(searched.searchParams.get("reference_number")).toBe("MM-2026-0841");
-    expect(await books.findPayment("books-customer-9", "MM-2026-0999")).toBeNull();
+    expect(searched.searchParams.get("customer_id")).toBe(customerId);
+    expect(searched.searchParams.get("reference_number")).toBe(reference);
+    expect(await books.findPayment(customerId, "MM-2026-0999")).toBeNull();
   });
 
   it("finds a refund of a payment by Razorpay's refund ID, and answers null when there is none", async () => {
+    const [refund] = refundsOfPayment.payment_refunds;
+    const paymentId = refund?.payment_id ?? "";
+    const reference = refund?.reference_number ?? "";
     const { books } = zohoBooks({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
-      [`${BOOKS_API}/customerpayments/bp-1/refunds`]: () =>
-        json({ code: 0, payment_refunds: [{ payment_refund_id: "br-1", reference_number: "rfnd_test7" }] }),
-      [`${BOOKS_API}/customerpayments/bp-2/refunds`]: () => json({ code: 0, payment_refunds: [] }),
+      [`${BOOKS_API}/customerpayments/${paymentId}/refunds`]: () => json(refundsOfPayment),
+      [`${BOOKS_API}/customerpayments/bp-2/refunds`]: () => json({ ...refundsOfPayment, payment_refunds: [] }),
     });
-    expect(await books.findRefund("bp-1", "rfnd_test7")).toBe("br-1");
-    expect(await books.findRefund("bp-2", "rfnd_test7")).toBeNull();
+    expect(await books.findRefund(paymentId, reference)).toBe("4242595000000247023");
+    expect(await books.findRefund(paymentId, "rfnd_other")).toBeNull();
+    expect(await books.findRefund("bp-2", reference)).toBeNull();
   });
 
   it("fails loudly when Books refuses a payment", async () => {

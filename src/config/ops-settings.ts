@@ -48,8 +48,6 @@ interface Described {
   readonly title: string;
   /** Why it matters, in the words a non-developer needs to set it. */
   readonly note: string;
-  /** The module the fallback lives in, so the figure can be found in the code. */
-  readonly source: string;
 }
 
 /** A rule whose figures are numbers: a radius, a wait, an hour, a number of days. */
@@ -97,94 +95,86 @@ export const OPS_SETTINGS = [
   {
     name: "checkin_radius_m",
     title: "Check-in radius",
-    note: "How close to the address a technician must be for “I have arrived” to pass. Every check-in records the distance it measured and the radius in force, whether it passed or not, so this can be tuned from real arrivals.",
+    note: "How close to the address a technician must be for “I have arrived” to pass.",
     unit: "metres",
     min: 50,
     max: 1000,
     keys: null,
     fallback: CHECKIN_RADIUS_M,
-    source: "src/policy/check-in.ts",
   },
   {
     name: "no_show_wait_min",
     title: "No-show wait",
-    note: "How long a technician waits, from check-in, before they may close a job as a no-show. One figure per kind of visit.",
+    note: "How long a technician waits for the client before a job may close as a no-show.",
     unit: "minutes",
     min: 5,
     max: 120,
     keys: VISIT_TYPES,
     fallback: NO_SHOW_WAIT_MIN,
-    source: "src/policy/no-show.ts",
   },
   {
     // The owner's terms of 27 September 2026 (docs/open-points.md, item 7), which a booking keeps as it was made under.
     name: "change_notice_hours",
     title: "Free to move or cancel until",
-    note: "How long before a visit's window moving or cancelling it stops being free. Inside it, each kind of visit costs what is set below. A booking keeps the terms it was made under, and a move ops make never costs the client anything.",
+    note: "How long before the window a client may move or cancel free. Each booking keeps its terms.",
     unit: "hours before the window",
     min: 1,
     max: 168,
     keys: null,
     fallback: FREE_CHANGE_NOTICE_HOURS,
-    source: "src/policy/moving-a-visit.ts",
   },
   {
     name: "late_change_charge",
     title: "What a late move or cancel costs",
-    note: "What each kind of visit costs when the client moves or cancels it inside that notice: nothing, its late fee, which is a price in Services and prices, or the visit itself, whose payment is kept or whose credit is spent. A late fee is offered only for a kind that has one.",
+    note: "What each kind of visit costs when the client moves or cancels inside that notice.",
     keys: VISIT_TYPES,
     choices: Object.fromEntries(VISIT_TYPES.map((type) => [type, chargesFor(type)])),
     fallback: LATE_CHANGE_CHARGES,
-    source: "src/policy/moving-a-visit.ts",
   },
   {
     // Item 60 of docs/open-points.md: set apart from the late-cancel terms, so either can change alone.
     name: "no_show_charge",
     title: "What a no-show costs",
-    note: "What each kind of visit costs when you charge a no-show, set apart from a late cancel so either can change alone: its late fee kept from what was paid and the rest refunded, the visit kept or its credit spent, or nothing. Each booking keeps what was set when it was made.",
+    note: "What each kind of visit costs when you charge a no-show. Each booking keeps its terms.",
     keys: VISIT_TYPES,
     choices: Object.fromEntries(VISIT_TYPES.map((type) => [type, chargesFor(type)])),
     fallback: NO_SHOW_CHARGES,
-    source: "src/policy/no-show.ts",
   },
   {
     name: "no_show_waiver",
     title: "What waiving a no-show gives back",
-    note: "When you waive a no-show, whether the visit's payment is refunded and whether its visit credit is returned. The client's message says which, and each ruling keeps what it gave.",
+    note: "Whether waiving a no-show refunds the visit's payment and returns the free service visit it used.",
     keys: WAIVER_KEYS,
     choices: { payment: ["refunded", "kept"], credit: ["returned", "spent"] },
     fallback: WAIVER_GIVES_BACK,
-    source: "src/policy/no-show.ts",
   },
   {
     name: "address_unlock_hour",
     title: "When a job's address unlocks",
-    note: "The hour on the day before a visit when the technician's phone may show the address, the access notes and the client card. It is a privacy boundary: it keeps a whole day's client list off a phone that might be lost.",
+    note: "When, the day before a visit, the technician's phone shows the address and the client card.",
     unit: "hour of the day, in India",
     min: 0,
     max: 23,
     keys: null,
     fallback: UNLOCK_HOUR,
-    source: "src/policy/job-visibility.ts",
   },
   {
     name: "reminder_hour",
     title: "When reminders go",
-    note: "The hour from which the WhatsApp reminder of tomorrow's visit goes, and the reminder of a next service falling due. The address unlocks at its own hour, so moving one does not move the other.",
+    note: "When the WhatsApp reminders of tomorrow's visit and of a next service falling due go.",
     unit: "hour of the day, in India",
     // Not in the night: a message about a visit wakes nobody.
     min: 8,
     max: 21,
     keys: null,
     fallback: DAY_BEFORE_REMINDER_HOUR,
-    source: "src/policy/job-visibility.ts",
   },
   {
     // The owner's three bounds on the phone's clock (docs/open-points.md, item 58). The third, that the no-show wait
     // runs on our clock too, is the wait above, measured from when the check-in reached us.
     name: "phone_clock",
     title: "How far a phone is trusted about time",
-    note: "How long before the booked start a check-in may say the technician arrived, and how long a phone may hold something done without signal and still have its time believed. A time earlier than either is taken as the bound. The no-show wait also runs from when a check-in reaches us, whatever time the phone gave it.",
+    note: "How early a technician may check in, and how long a phone offline is believed about time.",
     unit: "minutes",
     min: 0,
     max: 240,
@@ -195,36 +185,33 @@ export const OPS_SETTINGS = [
       held_offline: { min: 1, max: 72, unit: "hours" },
     },
     fallback: PHONE_CLOCK,
-    source: "src/policy/phone-clock.ts",
   },
   {
     name: "task_sla_hours",
     title: "How long a task may wait",
-    note: "How long each queue on the Tasks board has before it counts as overdue. Its own section counts down to the same day.",
+    note: "How long each queue on the Tasks board has before a task in it is overdue.",
     unit: "hours",
     min: 1,
     // A month, so the 30 days the app promises a grievance its answer within can stand (src/policy/tasks.ts).
     max: 720,
     keys: TASK_GROUPS,
     fallback: TASK_SLA_HOURS,
-    source: "src/policy/tasks.ts",
   },
   {
     name: "piece_cycle_days",
     title: "Replacement cycle",
-    note: "How long a piece on each base lasts before it is due for replacement. Name a base exactly as FSM's part item names it; every base without a figure of its own takes the figure for every other base.",
+    note: "How long a hair system on each base lasts before it is due for replacement.",
     unit: "days",
     min: 30,
     max: 1095,
     keys: "open",
     fallback: { ...PIECE_CYCLE_DAYS, [DEFAULT_KEY]: DEFAULT_PIECE_CYCLE_DAYS },
-    source: "src/config/pieces.ts",
   },
   {
     // Board C4's ten minutes, and the two minutes' grace of ADR 0025, ruling 42 (docs/decisions/0068-a-paid-hold-is-kept.md).
     name: "payment_hold",
     title: "Holding a slot while the client pays",
-    note: "How long the app holds a slot while the client pays, which is the countdown they see, and how long after it a payment still counts as made in time, since a payment begun at the last moment lands a little later. A slot not paid for is free to others once both have passed. A hold keeps the figures it was made with.",
+    note: "How long a slot is held while the client pays, and how late a payment still counts.",
     unit: "minutes",
     min: 1,
     max: 30,
@@ -234,13 +221,12 @@ export const OPS_SETTINGS = [
       grace: { min: 1, max: 10 },
     },
     fallback: PAYMENT_HOLD,
-    source: "src/config/scheduling.ts",
   },
   {
     // The owner's ruling of 27 September 2026 on a booking FSM refuses (docs/open-points.md, item 141).
     name: "fsm_retry",
     title: "Trying again a booking FSM refused",
-    note: "When FSM has refused a booking five times running, its slot and its payment are kept and you are told once. It is then tried again this often, for this long after the fifth refusal, and after that waits for you on the Tasks board, to book in FSM or refund. A change reaches the bookings already waiting at their next try.",
+    note: "How often, and for how long, a booking FSM refused is tried again before it waits on Tasks.",
     unit: "hours",
     min: 1,
     max: 168,
@@ -251,25 +237,23 @@ export const OPS_SETTINGS = [
       for: { min: 1, max: 168 },
     },
     fallback: FSM_RETRY,
-    source: "src/policy/held-bookings.ts",
   },
   {
     // The owner's ruling of 30 September 2026 (docs/open-points.md, item 60; ADR 0025, item 85).
     name: "dispute_window_days",
     title: "How long a no-show charge can be disputed",
-    note: "How many days after you charge a no-show the client may dispute it in the app. Each charge keeps the days it was given, so a change reaches new charges only.",
+    note: "How many days a client has to dispute a no-show charge. Each charge keeps its days.",
     unit: "days",
     min: 1,
     max: 365,
     keys: null,
     fallback: DISPUTE_WINDOW_DAYS,
-    source: "src/policy/no-show.ts",
   },
   {
     // Board D3's two figures, the owner's of 27 September 2026 (docs/open-points.md, item 59).
     name: "technician_work",
     title: "The technicians' figures",
-    note: "How many days back the Technicians screen counts each technician's jobs and average service, and how many minutes over the length the visits were planned for an average must run to be shown as running over.",
+    note: "How far back the Technicians screen counts, and when an average counts as running over.",
     unit: "days",
     min: 1,
     max: 365,
@@ -279,26 +263,24 @@ export const OPS_SETTINGS = [
       over_by: { min: 1, max: 120, unit: "minutes" },
     },
     fallback: TECHNICIAN_WORK,
-    source: "src/policy/technician-work.ts",
   },
   {
     // One input for the seven figures the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
     name: "booking_days",
     title: "Booking and the next visit",
-    note: "When the app offers each next visit and how far ahead a client may book it, when the WhatsApp reminder of the next service goes while nothing is booked, when the Tasks board asks you to step in, and how long Home shows an invoice just issued. Each figure has its own range.",
+    note: "When each next visit is offered and reminded, and how far ahead a client may book.",
     unit: "days",
     min: 0,
     max: 90,
     keys: NEXT_VISIT_DAY_KEYS,
     bounds: NEXT_VISIT_DAY_BOUNDS,
     fallback: NEXT_VISIT_DAYS,
-    source: "src/policy/next-visit.ts",
   },
   {
     // The owner's ruling of 1 October 2026: each side's visits, and how long they last (ADR 0025, item 94).
     name: "referral_reward",
     title: "What a referral earns",
-    note: "The free service visits the client who sent an invite gets, and those their friend gets, once the friend's first fit is done, and how long the credits last from then. Either side may get 0. A change reaches every friend fitted after it, and the site, the app and the WhatsApp messages say the new figures; credits already given keep their visits and their date.",
+    note: "The free service visits each side earns once the friend is fitted, and how long they last.",
     unit: "service visits",
     min: 0,
     max: 1095,
@@ -310,7 +292,6 @@ export const OPS_SETTINGS = [
       valid_days: { min: 30, max: 1095, unit: "days" },
     },
     fallback: REFERRAL_REWARD,
-    source: "src/policy/referral-reward.ts",
   },
 ] as const satisfies readonly OpsSetting[];
 

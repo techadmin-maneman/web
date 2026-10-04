@@ -13,7 +13,8 @@
 //
 // A consultation and fit in one visit closed with the client fitted says where
 // its payment link stands, once the card the API gives back has one, which no
-// board draws (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// board draws; one the client declined closes as a free consultation
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -22,7 +23,7 @@ import { useEffect, useState } from "react";
 import type { Job, JobSummary } from "../api.ts";
 import { closeOut as copy, job as jobCopy, oneVisit, titles } from "../content.ts";
 import { STROKE } from "../icons.ts";
-import { outcomeOf } from "../lib/progress.ts";
+import { declinedTheFit, outcomeOf, type Outcome } from "../lib/progress.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
@@ -30,6 +31,7 @@ import { clock, clockShort, lengthOf, metres, todayInIndia, where } from "../lib
 import { go } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { keptArrival, keptClosed } from "../store/jobs.ts";
+import type { Queued } from "../store/outbox.ts";
 import styles from "./steps.module.css";
 
 /** Five angles before and five after: the ten the board counts. */
@@ -38,6 +40,12 @@ const IN_A_SET = 5;
 /** The next job of the day after this one's time, which the board's last action opens. */
 function nextAfter(jobs: readonly JobSummary[], after: string): JobSummary | null {
   return jobs.find((job) => job.starts_at > after) ?? null;
+}
+
+/** How the job closed, in the heading's words: a one visit done once the client declined is a free consultation. */
+function closedAs(job: Job, outcome: Outcome, queued: readonly Queued[]): string {
+  if (outcome === "done" && declinedTheFit(job, queued)) return copy.freeConsultation;
+  return copy.outcomes[outcome];
 }
 
 /** Where a one visit's payment link stands: texted to the client, or paid. */
@@ -109,7 +117,7 @@ export function CloseOut({ id }: { id: string }) {
   if (loaded.state === "failed") {
     return (
       <main className={styles.screen}>
-        <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />
+        <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />
       </main>
     );
   }
@@ -145,7 +153,7 @@ export function CloseOut({ id }: { id: string }) {
         <p className={styles.closeLabel}>{copy.label}</p>
         <Icon className={styles.closeTick} d={ICONS.tick} size={28} stroke={STROKE} />
         <h1 className={styles.closeWho} ref={heading} tabIndex={-1}>
-          {copy.who(who, copy.outcomes[outcome])}
+          {copy.who(who, closedAs(job, outcome, waiting.events))}
         </h1>
         {outcome === "no_show" ? (
           <Evidence job={job} />

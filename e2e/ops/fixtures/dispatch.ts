@@ -65,6 +65,7 @@ const job = (
 ): Block => ({
   appointment_id: `77000000-0000-4000-8000-${String(++jobs).padStart(12, "0")}`,
   type,
+  service: null,
   client,
   sector,
   pincode: "122018",
@@ -76,6 +77,7 @@ const job = (
   status: "scheduled",
   notice_hours: 24,
   untold: null,
+  begun: null,
 });
 
 /** One technician's row: their seven days, from the blocks given against the day each falls on. */
@@ -106,6 +108,7 @@ const tray = (
 ): TrayJob => ({
   appointment_id: `78000000-0000-4000-8000-${String(id).padStart(12, "0")}`,
   type,
+  service: null,
   client:
     person === null ? null : `${person.name.split(" ")[0] ?? ""} ${(person.name.split(" ")[1] ?? "").slice(0, 1)}.`,
   sector,

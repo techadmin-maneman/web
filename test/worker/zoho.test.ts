@@ -2,7 +2,13 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ZohoSettings } from "../../src/config/settings.ts";
 import { createLogger } from "../../src/log.ts";
-import { contactRecordFor, createZohoCrm, noteFor, recordFor } from "../../src/providers/zoho-crm.ts";
+import {
+  contactRecordFor,
+  createZohoCrm,
+  createZohoLeadFinder,
+  noteFor,
+  recordFor,
+} from "../../src/providers/zoho-crm.ts";
 import { crmLead } from "./crm-rules.test.ts";
 import { NOW, captureLogs, fakeFetch, json, type RecordedCall } from "./helpers.ts";
 
@@ -86,11 +92,11 @@ describe("Zoho: a person the CRM has not seen", () => {
     });
     await crm.syncLead(crmLead(), null);
 
-    const lines = logs.lines().filter((line) => line.event === "zoho_call");
-    expect(lines.map(({ step, status, lead_id }) => ({ step, status, lead_id }))).toEqual([
-      { step: "token", status: 200, lead_id: "lead-1" },
-      { step: "search", status: 204, lead_id: "lead-1" },
-      { step: "insert", status: 201, lead_id: "lead-1" },
+    const lines = logs.lines().filter((line) => line.event === "vendor_call");
+    expect(lines.map(({ vendor, step, status, lead_id }) => ({ vendor, step, status, lead_id }))).toEqual([
+      { vendor: "zoho-crm", step: "token", status: 200, lead_id: "lead-1" },
+      { vendor: "zoho-crm", step: "search", status: 204, lead_id: "lead-1" },
+      { vendor: "zoho-crm", step: "insert", status: 201, lead_id: "lead-1" },
     ]);
     expect(lines.every((line) => typeof line.duration_ms === "number")).toBe(true);
     expect(JSON.stringify(lines)).not.toMatch(/https:|client-secret|1000\.refresh|access-1/);
@@ -271,20 +277,40 @@ describe("Zoho: access tokens", () => {
         throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
       },
     });
-    await expect(crm.syncLead(crmLead(), "z")).rejects.toThrow("Zoho 0 TIMEOUT: token got no answer within 20 s");
+    await expect(crm.syncLead(crmLead(), "z")).rejects.toThrow("Zoho CRM 0 TIMEOUT: token got no answer within 20 s");
     expect(logs.lines()).toContainEqual(
-      expect.objectContaining({ event: "zoho_call", step: "token", status: 0, reason: "TimeoutError" }),
+      expect.objectContaining({
+        event: "vendor_call",
+        vendor: "zoho-crm",
+        step: "token",
+        status: 0,
+        reason: "TimeoutError",
+      }),
     );
   });
 
-  it("passes on a network failure unchanged", async () => {
+  it("names the step that could not be reached, as a failure tried again rather than a refusal", async () => {
     const { crm } = zoho({
       [TOKEN_URL]: () => tokenIssued(),
       [LEADS_URL]: () => {
         throw new TypeError("Network connection lost.");
       },
     });
-    await expect(crm.syncLead(crmLead(), "z")).rejects.toThrow("Network connection lost.");
+    const failure = crm.syncLead(crmLead(), "z");
+    await expect(failure).rejects.toThrow("Zoho CRM 0 UNREACHABLE: update could not be reached (TypeError)");
+    await expect(failure).rejects.toMatchObject({ code: "UNREACHABLE", refusal: false });
+  });
+
+  // CQ-03: an answer that failed our schema reached ops as a bare zod dump naming neither the step nor the answer.
+  it("names where a search answer differs from what is read, and none of its values", async () => {
+    const { crm } = zoho({
+      [TOKEN_URL]: () => tokenIssued(),
+      [SEARCH_URL]: () => json({ data: [{ Last_Name: "Arjun Mehta" }] }),
+    });
+    await expect(crm.syncLead(crmLead(), null)).rejects.toThrow(
+      "Zoho 200 UNEXPECTED_ANSWER: search: data.0.id: Invalid input: expected string, received undefined; " +
+        "data.0 has keys Last_Name",
+    );
   });
 
   it("names Zoho's error code, never the record, when a call fails", async () => {
@@ -337,6 +363,25 @@ describe("Zoho record and note contents", () => {
         title: "New booking request",
         content: "Asked for a visit in Gurgaon, afternoon, proposed 2026-09-23. Came through an invite.",
       });
+    });
+  });
+
+  // MON-23: while booking is off, the lead carried neither the one visit nor the code given for it.
+  describe("a consultation and fit in one visit, with a discount code", () => {
+    const oneVisit = crmLead({ firstChoiceWindow: null, plan: "one_visit", discountCode: "TENPC" });
+
+    it("says both in the record's Description", () => {
+      expect(recordFor(oneVisit, "New", true).Description).toBe(
+        "Consultation and fit in one visit. Discount code TENPC.",
+      );
+      expect(recordFor(crmLead({ plan: "consultation" }), "New", true).Description).toBe("Consultation.");
+      expect(recordFor(crmLead(), "New", true)).not.toHaveProperty("Description");
+    });
+
+    it("notes the plan on a record the CRM already has, and never the code, which an erasure would keep", () => {
+      expect(noteFor(oneVisit).content).toBe(
+        "Asked for a visit in Gurgaon, proposed 2026-09-23. Consultation and fit in one visit.",
+      );
     });
   });
 
@@ -419,7 +464,7 @@ describe("Zoho: erasing a person", () => {
       "POST /crm/v8/Leads/zoho-9/Notes",
     ]);
     expect(bodyOf(calls[1])).toEqual({
-      data: [{ Last_Name: "Erased", Mobile: null, Email: null, Contact_Consent: false }],
+      data: [{ Last_Name: "Erased", Mobile: null, Email: null, Contact_Consent: false, Description: null }],
       trigger: [],
     });
     expect(bodyOf(calls[2]).data).toEqual([
@@ -442,5 +487,27 @@ describe("Zoho: erasing a person", () => {
     const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [SEARCH_URL]: noMatch });
     expect(await crm.erasePerson("person-1", null)).toEqual({ found: false });
     expect(calls).toHaveLength(2);
+  });
+});
+
+describe("Zoho: the CRM's one read on its own", () => {
+  it("finds a person's Lead by their person ID, answers null for one it does not have, and only reads", async () => {
+    const http = fakeFetch({
+      [TOKEN_URL]: () => tokenIssued(),
+      [SEARCH_URL]: (call) =>
+        decodeURIComponent(call.url).includes("(D1_Person_ID:equals:person-1)")
+          ? json({ data: [{ id: "zoho-existing" }], info: { count: 1 } })
+          : noMatch(),
+    });
+    const deps = { db: env.DB, fetch: http.fetch, now: () => NOW, log: createLogger() };
+    const findLead = createZohoLeadFinder(SETTINGS, deps);
+
+    expect(await findLead("person-1")).toBe("zoho-existing");
+    expect(await findLead("person-2")).toBeNull();
+    expect(http.calls.map((call) => `${call.method} ${new URL(call.url).pathname}`)).toEqual([
+      "POST /oauth/v2/token",
+      "GET /crm/v8/Leads/search",
+      "GET /crm/v8/Leads/search",
+    ]);
   });
 });

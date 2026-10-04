@@ -13,6 +13,7 @@ import type { App } from "../http/context.ts";
 import { ADJUST_REASONS, adjustCredits } from "../domain/credits.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { withinRouteReach } from "../http/staff-access.ts";
 
 /** More than a year of monthly visits either way is not a correction. */
 const MOST_VISITS = 12;
@@ -59,7 +60,7 @@ const adjustRoute = createRoute({
     },
     400: errorResponse("invalid_request: visits takes away more than the client has"),
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such client, or one who has been erased"),
+    404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
   },
 });
 
@@ -73,7 +74,9 @@ export function registerOpsCredits(app: App): void {
       .prepare("SELECT id FROM people WHERE id = ?1 AND erased_at IS NULL")
       .bind(personId)
       .first<{ id: string }>();
-    if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (person === null || !(await withinRouteReach(c, "client", personId))) {
+      return c.json(errorBody("not_found", c.var.requestId), 404);
+    }
 
     const balance = await adjustCredits(db, {
       personId,

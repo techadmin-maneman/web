@@ -9,6 +9,9 @@
 //   GET  /api/og/:code.jpg?v=         the invite's preview image: the referrer's card while it is live, else the
 //                                     house card; the version in the link is what makes a revoke reach new shares
 //
+// Looking up a code that is not there, as the invite or as its preview, counts against the address it comes from;
+// past its misses for the hour the address is refused every code (src/domain/invite-lookups.ts).
+//
 // Posting takes a Turnstile token, and the same limits per number and address as the booking form. A consultation
 // takes the full address it is at, as the booking form's does (docs/decisions/0081-the-site-takes-the-address.md),
 // and may book the consultation and fit in one visit, as it may there
@@ -22,12 +25,15 @@ import type { App, AppEnv } from "../http/context.ts";
 import { HOUSE_CARD } from "../config/house-card.ts";
 import { TOLD_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
-import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
+import { countInviteMiss, countInviteOpen, inviteMissesSpent } from "../domain/invite-lookups.ts";
+import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
+import { pincodeOf } from "../domain/service-area.ts";
 import { liveCard } from "../domain/referral-cards.ts";
 import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
+import { visitorOf } from "../http/visitor.ts";
 import { addressOf } from "./client-profile.ts";
 import {
   BOOKED_DESCRIPTION,
@@ -128,16 +134,25 @@ const ogRoute = createRoute({
   request: { params: z.object({ file: z.string().regex(/^[A-Za-z0-9]{4,12}\.jpg$/) }) },
   responses: {
     200: { description: "The referrer's card", content: { "image/jpeg": { schema: z.string() } } },
-    302: { description: "The house card, on the site" },
+    302: { description: "The house card, on the site; for every code from an address past its misses this hour" },
   },
 });
+
+const UNKNOWN_INVITE = {
+  state: "unknown" as const,
+  referrer_first_name: null,
+  card: { state: "house" as const, version: 1 },
+};
 
 const inviteRoute = createRoute({
   method: "get",
   path: "/api/r/{code}",
   summary: "An invite: valid or unknown",
   request: { params: CodeParams },
-  responses: { 200: { description: "The invite", content: { "application/json": { schema: InviteSchema } } } },
+  responses: {
+    200: { description: "The invite", content: { "application/json": { schema: InviteSchema } } },
+    429: errorResponse("rate_limited: this address looked up too many codes that are not there this hour"),
+  },
 });
 
 const pincodeRoute = createRoute({
@@ -242,27 +257,37 @@ export function registerReferralLanding(app: App): void {
     inviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
 
   app.openapi(inviteRoute, async (c) => {
+    const db = c.env.DB;
+    const now = c.var.deps.now();
+    const { ipHash } = await visitorOf(c);
+    if (await inviteMissesSpent(db, ipHash, now)) return c.json(errorBody("rate_limited", c.var.requestId), 429);
+
     const found = await invite(c, c.req.valid("param").code);
+    if (found === null) {
+      await countInviteMiss(db, ipHash, now);
+      return c.json(UNKNOWN_INVITE, 200);
+    }
     // Ops' funnel counts opens; the referrer never sees them (the tracker shows fits only). A chat app fetching the
     // link for its preview is not an open: the site's Worker passes the visitor's user agent on.
-    if (found !== null && !LINK_PREVIEW.test(c.req.header("User-Agent") ?? "")) {
-      await c.env.DB.prepare("UPDATE referral_codes SET opens = opens + 1 WHERE code = ?1").bind(found.code).run();
-    }
-    return c.json(
-      found === null
-        ? { state: "unknown" as const, referrer_first_name: null, card: { state: "house" as const, version: 1 } }
-        : { state: "valid" as const, referrer_first_name: found.referrerFirstName, card: found.card },
-      200,
-    );
+    if (!LINK_PREVIEW.test(c.req.header("User-Agent") ?? "")) await countInviteOpen(db, found.code, ipHash, now);
+    return c.json({ state: "valid" as const, referrer_first_name: found.referrerFirstName, card: found.card }, 200);
   });
 
   app.openapi(ogRoute, async (c) => {
+    const db = c.env.DB;
+    const now = c.var.deps.now();
+    const { ipHash } = await visitorOf(c);
+    if (await inviteMissesSpent(db, ipHash, now)) return c.redirect(HOUSE_CARD, 302);
+
     const code = c.req
       .valid("param")
       .file.replace(/\.jpg$/, "")
       .toUpperCase();
-    const card = await liveCard(c.env.DB, c.env.REFERRAL_CARDS, code);
-    if (card === null) return c.redirect(HOUSE_CARD, 302);
+    const card = await liveCard(db, c.env.REFERRAL_CARDS, code);
+    if (card === null) {
+      await countInviteMiss(db, ipHash, now);
+      return c.redirect(HOUSE_CARD, 302);
+    }
     // A version's card never changes: a new one gets a new link. The length tells a chat's crawler the card's size
     // before it reads it, as the house card's static file does.
     return c.body(card.body, 200, {

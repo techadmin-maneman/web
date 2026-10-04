@@ -88,11 +88,12 @@ beforeEach(async () => {
 });
 
 describe("referral codes", () => {
-  it("are the client's initials and four random characters, with none that look alike", () => {
+  // PS-54: six random characters, too many to guess.
+  it("are the client's initials and six random characters, with none that look alike", () => {
     const codes = Array.from({ length: 500 }, () => newReferralCode("Rohit Malhotra"));
-    expect(codes.every((code) => /^RM[A-HJ-NP-Z2-9]{4}$/.test(code))).toBe(true);
-    expect(new Set(codes).size).toBeGreaterThan(450);
-    expect(newReferralCode("")).toMatch(/^MM[A-HJ-NP-Z2-9]{4}$/);
+    expect(codes.every((code) => /^RM[A-HJ-NP-Z2-9]{6}$/.test(code))).toBe(true);
+    expect(new Set(codes).size).toBeGreaterThan(495);
+    expect(newReferralCode("")).toMatch(/^MM[A-HJ-NP-Z2-9]{6}$/);
     expect(newReferralCode("Ishaan Oberoi")).toMatch(/^XX/);
   });
 
@@ -109,7 +110,7 @@ describe("referral codes", () => {
       // Locally the site, where /r/:code is served, is on :4321; mm-api on :8787 has no such page (LIFE-17).
       link: `http://localhost:4321/r/${first.code}`,
       named: false,
-      credits: { visits: 0, earliest_expiry: null },
+      credits: { visits: 0, earliest_expiry: null, expiring_visits: 0 },
       card: { state: "house", version: 1, consented: false },
       fitted: [],
       invite_credits: null,
@@ -597,6 +598,7 @@ describe("POST /api/r/:code/waitlist", () => {
       await person(KNOWN, "Karan Bhatia", "+919810000002");
     });
 
+    // The page answers as it would a new number, so it never says the number is known.
     it("carries no invite for someone who has had a consultation, and keeps the launch alert they switched off", async () => {
       await env.DB.prepare(
         `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
@@ -617,7 +619,7 @@ describe("POST /api/r/:code/waitlist", () => {
 
       const answer = await join(code);
       expect(answer.status).toBe(201);
-      expect(await answer.json()).toEqual({ area: "Bandra", credits: false, invite: "unknown" });
+      expect(await answer.json()).toEqual({ area: "Bandra", credits: true, invite: "valid" });
       expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM referral_attributions").first())?.n).toBe(0);
       const entry = await env.DB.prepare("SELECT referral_code FROM waitlist_entries WHERE person_id = ?1")
         .bind(KNOWN)
@@ -635,8 +637,56 @@ describe("POST /api/r/:code/waitlist", () => {
         .run();
       const code = await codeOf();
 
-      expect(await (await join(code)).json()).toEqual({ area: "Bandra", credits: false, invite: "unknown" });
+      expect(await (await join(code)).json()).toEqual({ area: "Bandra", credits: true, invite: "valid" });
       expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM referral_attributions").first())?.n).toBe(0);
+    });
+
+    // Decision 7: joining a waitlist says nothing of whether a number is known.
+    it("answers the referrer, a fitted client and someone who asked for a visit exactly as a new number", async () => {
+      await env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+           fsm_modified_at, synced_at)
+         VALUES ('fitted', 'fsm-fitted', ?1, 'first_fit', 'completed', 'Completed',
+           '2026-09-10T04:30:00.000Z', '2026-09-10T07:30:00.000Z', ?2, ?2)`,
+      )
+        .bind(KNOWN, NOW.toISOString())
+        .run();
+      const code = await codeOf();
+      const joinAs = async (mobile: string) =>
+        (
+          await request(
+            site(),
+            `/api/r/${code}/waitlist`,
+            post({
+              ...FRIEND,
+              mobile,
+              pincode: "400050",
+              contact_consent: true,
+              launch_alert: false,
+              invite_told: true,
+            }),
+            { CRM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() },
+          )
+        ).json();
+
+      const asNew = await joinAs("98100 00009");
+      expect(asNew).toEqual({ area: "Bandra", credits: true, invite: "valid" });
+      expect(await joinAs("98100 00002")).toEqual(asNew);
+      expect(await joinAs("98100 00001")).toEqual(asNew);
+    });
+
+    it("says an invite has lapsed to a number we know where it would to a new one", async () => {
+      await env.DB.prepare(
+        "UPDATE serviceable_pincodes SET launched_at = '2025-08-16T18:30:00.000Z' WHERE pincode = '400050'",
+      ).run();
+      await env.DB.prepare(
+        `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
+         VALUES ('asked', ?1, '122018', '2026-09-23', 'morning', ?2)`,
+      )
+        .bind(KNOWN, NOW.toISOString())
+        .run();
+      const code = await codeOf();
+      expect(await (await join(code)).json()).toEqual({ area: "Bandra", credits: false, invite: "expired" });
     });
 
     it("still carries the invite, and the launch alert, for someone we know who has asked for nothing", async () => {
@@ -713,7 +763,11 @@ describe("the credit ledger", () => {
       now: NOW,
       expiresAt: soon,
     }).run();
-    expect(await creditBalance(db, REFERRER, NOW)).toEqual({ visits: 5, earliestExpiry: soon.toISOString() });
+    expect(await creditBalance(db, REFERRER, NOW)).toEqual({
+      visits: 5,
+      earliestExpiry: soon.toISOString(),
+      expiringFirst: 2,
+    });
 
     await redeemCredit(db, REFERRER, "visit-1", NOW).run();
     const drawn = await db
@@ -740,6 +794,15 @@ describe("the credit ledger", () => {
     expect(await me()).toBeNull();
     await grantCredits(env.DB, { personId: REFERRER, visits: 3, source: "ops", sourceId: "o1", now: NOW }).run();
     // To the end of 21 September 2027 in India, a year on (BIZ-14).
-    expect(await me()).toEqual({ visits: 3, earliest_expiry: "2027-09-21T18:29:59.999Z" });
+    expect(await me()).toEqual({ visits: 3, earliest_expiry: "2027-09-21T18:29:59.999Z", expiring_visits: 3 });
+    // A later grant ends later, so Home can say how many end first.
+    await grantCredits(env.DB, {
+      personId: REFERRER,
+      visits: 2,
+      source: "ops",
+      sourceId: "o2",
+      now: new Date(NOW.getTime() + 86_400_000),
+    }).run();
+    expect(await me()).toEqual({ visits: 5, earliest_expiry: "2027-09-21T18:29:59.999Z", expiring_visits: 3 });
   });
 });

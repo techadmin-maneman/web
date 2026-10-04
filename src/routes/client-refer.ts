@@ -10,7 +10,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
-import { spendableCredits } from "../domain/credits.ts";
+import { spendableCredits, type Balance } from "../domain/credits.ts";
 import { liveCard, MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";
 import { inviteOf, referralCodeOf } from "../domain/referrals.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
@@ -22,9 +22,16 @@ export const CreditsSchema = z
   .object({
     visits: z.number().int().openapi({ description: "Service-visit credits left." }),
     earliest_expiry: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When the soonest expire." }),
+    expiring_visits: z.number().int().openapi({ description: "How many of them expire then." }),
   })
   .strict()
   .openapi("Credits");
+
+export const creditsBody = (balance: Balance): z.infer<typeof CreditsSchema> => ({
+  visits: balance.visits,
+  earliest_expiry: balance.earliestExpiry,
+  expiring_visits: balance.expiringFirst,
+});
 
 const ReferSchema = z
   .object({
@@ -238,7 +245,7 @@ export function registerClientRefer(app: App): void {
         code,
         link: `${PUBLIC_ORIGIN[c.var.config.environment]}/r/${code}`,
         named: consented && c.var.config.settings.referrerNameOnInvite,
-        credits: { visits: balance.visits, earliest_expiry: balance.earliestExpiry },
+        credits: creditsBody(balance),
         card: { state: card?.card_state ?? ("house" as const), version: card?.card_version ?? 1, consented },
         fitted: fitted.results.map((friend) => ({
           first_name: friendName(friend),

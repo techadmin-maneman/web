@@ -6,9 +6,13 @@ import { describe, expect, it } from "vitest";
 import type { Block, BoardRow, Unassigned } from "../../apps/ops/src/api.ts";
 import {
   addDays,
+  begunWord,
+  blockOn,
+  changeOf,
   changesTime,
   firstNameOf,
   isMovable,
+  movesIfCheckInCleared,
   nameOf,
   shownOf,
   whenOf,
@@ -29,6 +33,7 @@ const ROHIT = {
 const block = (overrides: Partial<Block> = {}): Block => ({
   appointment_id: "a1",
   type: "service",
+  service: null,
   client: "Rohit M.",
   sector: "Sec 65",
   pincode: "122018",
@@ -40,6 +45,7 @@ const block = (overrides: Partial<Block> = {}): Block => ({
   status: "scheduled",
   notice_hours: 24,
   untold: null,
+  begun: null,
   ...overrides,
 });
 
@@ -57,6 +63,7 @@ const inTray = (overrides: Partial<Unassigned> = {}): TrayJob => ({
   job: {
     appointment_id: "a2",
     type: "first_fit",
+    service: null,
     client: null,
     sector: "DLF 3",
     pincode: null,
@@ -109,9 +116,53 @@ describe("where a job stands, and what a move changes", () => {
     expect(changesTime(onBoard(), { technician: ROW, date: "2025-09-20", window: "morning" })).toBe(true);
   });
 
-  it("moves anything not yet done, and nothing done", () => {
-    expect(isMovable(block({ status: "in_progress" }))).toBe(true);
+  it("moves a visit the technician has not begun, and nothing done or under way", () => {
+    expect(isMovable(block({ status: "scheduled" }))).toBe(true);
+    expect(isMovable(block({ status: "dispatched" }))).toBe(true);
+    expect(isMovable(block({ status: "in_progress" }))).toBe(false);
+    expect(isMovable(block({ status: "scheduled", begun: "arrived" }))).toBe(false);
     expect(isMovable(block({ status: "completed" }))).toBe(false);
+  });
+
+  it("moves a visit the technician has only checked in at once ops clear the check-in, and none further on", () => {
+    expect(movesIfCheckInCleared(block({ status: "scheduled", begun: "arrived" }))).toBe(true);
+    expect(movesIfCheckInCleared(block({ status: "dispatched", begun: "arrived" }))).toBe(true);
+    expect(movesIfCheckInCleared(block({ status: "scheduled", begun: null }))).toBe(false);
+    expect(movesIfCheckInCleared(block({ status: "dispatched", begun: "started" }))).toBe(false);
+    expect(movesIfCheckInCleared(block({ status: "in_progress", begun: "arrived" }))).toBe(false);
+  });
+
+  it("says how far the technician has got on a visit not yet done, from his phone", () => {
+    expect(begunWord(block({ begun: "started" }))).toBe("Started");
+    expect(begunWord(block({ begun: null }))).toBeNull();
+    expect(begunWord(block({ status: "completed", begun: "closed" }))).toBeNull();
+  });
+
+  it("offers a cancel while the visit is ahead and not begun, and a close by hand once its time has come", () => {
+    const before = Date.parse("2025-09-19T03:00:00.000Z");
+    const after = Date.parse("2025-09-19T06:00:00.000Z");
+    expect(changeOf(block({ status: "scheduled" }), before)).toBe("cancel");
+    expect(changeOf(block({ status: "dispatched" }), before)).toBe("cancel");
+    expect(changeOf(block({ status: "scheduled", begun: "arrived" }), before)).toBeNull();
+    expect(changeOf(block({ status: "in_progress" }), before)).toBeNull();
+    expect(changeOf(block({ status: "scheduled" }), after)).toBe("close");
+    expect(changeOf(block({ status: "in_progress", begun: "started" }), after)).toBe("close");
+    expect(changeOf(block({ status: "in_progress", begun: "closed" }), after)).toBeNull();
+    expect(changeOf(block({ status: "completed" }), after)).toBeNull();
+    expect(changeOf(block({ status: "terminated" }), after)).toBeNull();
+  });
+
+  // OIA-03, BK-21: a link names the visit, and the board opens its drawer from the block it finds.
+  it("finds a visit's block on a technician's day, and nothing for a visit it does not hold", () => {
+    const tuesday = block({ appointment_id: "a7" });
+    const board = { technicians: [{ ...ROW, days: [{ date: "2025-09-23", blocks: [block(), tuesday] }] }] };
+    expect(blockOn(board, "a7")).toEqual({
+      kind: "block",
+      block: tuesday,
+      technician: board.technicians[0],
+      date: "2025-09-23",
+    });
+    expect(blockOn(board, "a9")).toBeNull();
   });
 
   it("counts the board's weeks in whole days, across a month and a year's end", () => {

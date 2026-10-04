@@ -18,7 +18,16 @@ import { REFERRAL_REWARD } from "../../src/policy/referral-reward.ts";
 import { lateFeeOn } from "../../src/domain/price-book.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
 import { pincodeUpsert } from "../../scripts/lib/pincodes.ts";
-import { appFor, countRowsRead, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  countRowsRead,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  NOW,
+  request,
+} from "./helpers.ts";
 
 let ops: App;
 
@@ -36,7 +45,6 @@ interface Setting {
   keys: string[] | "open" | null;
   value: number | Record<string, number>;
   default: number | Record<string, number>;
-  source: string;
   set_by: string | null;
   set_at: string | null;
 }
@@ -49,6 +57,12 @@ const named = async (name: string): Promise<Setting> => {
   if (found === undefined) throw new Error(`${name} is not in the answer`);
   return found;
 };
+
+/** A row as an earlier release, or a runbook's SQL, left it in the store. */
+const storeByHand = (name: string, value: unknown) =>
+  env.DB.prepare("INSERT INTO ops_settings (name, value, set_by, set_at) VALUES (?1, ?2, 'ops', ?3)")
+    .bind(name, JSON.stringify(value), NOW.toISOString())
+    .run();
 
 const auditFor = (action: string) =>
   env.DB.prepare("SELECT actor, actor_kind, subject_id, detail FROM audit_log WHERE action = ?1 ORDER BY id")
@@ -77,8 +91,14 @@ describe("the rules, before anybody sets one", () => {
       unit: "metres",
       set_by: null,
       set_at: null,
-      source: "src/policy/check-in.ts",
     });
+  });
+
+  it("sends the browser no repository paths", async () => {
+    for (const setting of await settings()) {
+      expect(Object.keys(setting), setting.name).not.toContain("source");
+      expect(JSON.stringify(setting), setting.name).not.toMatch(/src\/(config|policy)\//);
+    }
   });
 
   it("says the unit and the bounds of every number, so a form can show them", async () => {
@@ -244,12 +264,36 @@ describe("what the routes that read them do", () => {
     expect((await named("task_sla_hours")).set_by).toBe("ops");
   });
 
-  it("ignores a stored row the register would no longer accept", async () => {
-    await env.DB.prepare("INSERT INTO ops_settings (name, value, set_by, set_at) VALUES (?1, ?2, 'ops', ?3)")
-      .bind("checkin_radius_m", "0", NOW.toISOString())
-      .run();
+  it("keeps every other figure ops set when a release removes a task group", async () => {
+    const logs = captureLogs();
+    const setByOps = Object.fromEntries(Object.keys(COMMITTED.taskSlaHours).map((group) => [group, 48]));
+    await storeByHand("task_sla_hours", { ...setByOps, group_since_removed: 24 });
+
+    expect((await readOpsInputs(env.DB, NOW)).taskSlaHours).toEqual(setByOps);
+    expect(await named("task_sla_hours")).toMatchObject({ value: setByOps, set_by: "ops" });
+    expect(logs.lines().map((line) => line.event)).not.toContain("ops_setting_ignored");
+  });
+
+  it("keeps the choices ops made when a release removes a kind of visit", async () => {
+    const chosen = { consultation: "nothing", first_fit: "visit", service: "nothing", replacement: "visit" };
+    await storeByHand("late_change_charge", { ...chosen, kind_since_removed: "late_fee" });
+
+    expect((await readOpsInputs(env.DB, NOW)).lateChangeCharges).toEqual(chosen);
+    expect((await named("late_change_charge")).set_by).toBe("ops");
+  });
+
+  it("ignores a stored row the register would no longer accept, and logs which rule it ignored", async () => {
+    const logs = captureLogs();
+    await storeByHand("checkin_radius_m", 0);
     expect((await createCachedOpsInputs()(env.DB, NOW)).checkinRadiusM).toBe(COMMITTED.checkinRadiusM);
     expect((await named("checkin_radius_m")).set_by).toBeNull();
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({
+        event: "ops_setting_ignored",
+        setting: "checkin_radius_m",
+        fields: ["checkin_radius_m"],
+      }),
+    );
   });
 });
 
@@ -329,7 +373,6 @@ describe("the next visit's days", () => {
       unit: "days",
       value: NEXT_VISIT_DAYS,
       default: NEXT_VISIT_DAYS,
-      source: "src/policy/next-visit.ts",
       set_by: null,
     });
     // Each key's bounds, and the unit its figure counts in, which for these is every figure's.
@@ -394,7 +437,6 @@ describe("what a referral earns", () => {
       keys: ["referrer_visits", "friend_visits", "valid_days"],
       value: REFERRAL_REWARD,
       default: REFERRAL_REWARD,
-      source: "src/policy/referral-reward.ts",
       set_by: null,
     });
     expect((rule as Setting & { bounds: unknown }).bounds).toEqual({
@@ -804,6 +846,12 @@ describe("the name ops give an area", () => {
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000021', 'Karan Bhatia')",
     )
       .bind(PERSON, NOW.toISOString())
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+       VALUES (?1, ?2, 'whatsapp_launches', 'waitlist-v1', 1, ?3)`,
+    )
+      .bind(crypto.randomUUID(), PERSON, NOW.toISOString())
       .run();
     await env.DB.prepare("UPDATE serviceable_pincodes SET served = 1 WHERE pincode = '122018'").run();
     const composed = await composeLaunchAlert(env.DB, "122018", PERSON, "local");

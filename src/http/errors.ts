@@ -27,11 +27,13 @@ export const ERROR_CODES = [
   "whatsapp_unavailable",
   // A site form that acts on a number only once its WhatsApp code was entered: the one visit, and the try-on's gate.
   "number_not_proved",
-  // Erasure (docs/decisions/0019-erasure.md), and what it waits for: a visit still booked, or a payment
-  // held with no visit behind it (docs/decisions/0066-erasure-all-or-nothing.md).
+  // A webhook whose token or signature does not match.
   "unauthorized",
+  // What an erasure waits for: a visit or booking still to happen, a payment held with no visit behind it, or a payment
+  // link unpaid (docs/decisions/0066-erasure-all-or-nothing.md).
   "visit_booked",
   "payment_held",
+  "payment_owed",
   // Phase 2 surfaces: a write from another page's origin (docs/decisions/0026-hosts-and-surfaces.md).
   "forbidden_origin",
   // The ops surface: no valid Cloudflare Access token (docs/decisions/0031-access-and-audit.md).
@@ -51,6 +53,8 @@ export const ERROR_CODES = [
   "hold_expired",
   // No slot is held for a client who has not given their address (docs/decisions/0079-an-address-before-a-slot.md).
   "address_required",
+  // An address in a pincode we do not come to: no visit is booked there, and the app saves no such address.
+  "not_served",
   // Ops booking a consultation or first fit for a client who has one still to come, or a payment link open for one.
   "already_booked",
   // Moving or cancelling a visit (docs/decisions/0046-moving-and-cancelling.md): it has started, passed or gone;
@@ -68,6 +72,9 @@ export const ERROR_CODES = [
   "out_of_order",
   "not_today",
   "already_started",
+  // A piece label already on record, for another client or as this client's piece from an earlier visit: the
+  // technician corrects it on the phone.
+  "piece_code",
   // Ops switched the technician off: the phone sets his unsent work aside rather than wiping it.
   "technician_inactive",
   // A technician FSM lists is changed in FSM, while FSM is the record of field work.
@@ -80,8 +87,15 @@ export const ERROR_CODES = [
   "does_not_fit",
   "fsm_refused",
   "fsm_partly",
-  // The no-show wait has not run out yet (src/policy/no-show.ts).
+  // The technician has begun the visit, so a move would leave his work on another day or with another technician.
+  "in_progress",
+  // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
   "too_early_to_close",
+  // A check-in or a start before the earliest check-in (src/policy/phone-clock.ts).
+  "too_early_to_arrive",
+  // A visit ops would close by hand is closed or cancelled already, or the technician's phone closed it; or a
+  // technician's step or photograph sent for a job that has closed.
+  "already_closed",
   // A service-area change that would leave no pincode served at all, and every
   // client on the waitlist (docs/decisions/0061-ops-editable-inputs.md).
   "no_service_area",
@@ -141,6 +155,10 @@ export const ErrorResponseSchema = z
             description:
               "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92).",
           }),
+        earliest_at: z.iso.datetime().optional().openapi({
+          description:
+            "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one.",
+        }),
       })
       .strict(),
   })
