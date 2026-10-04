@@ -228,14 +228,14 @@ test("a no-show the API refuses as early stays open on the card, and never reads
   await page.getByRole("dialog").getByRole("button", { name: "Close as no-show" }).click();
 
   // The phone's clock ran ahead of ours: nothing was recorded, and the card says so.
-  await expect(page.getByText("Our clock says the wait has not run out yet. Try again in a minute.")).toBeVisible();
+  await expect(page.getByText("Our clock says the wait hasn’t run out yet. Try again in a minute.")).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
   expect(fake.writes.filter((write) => write.path.endsWith("/no-show"))).toHaveLength(0);
 
   // And the close-out, opened by hand, does not claim the job was done.
   await page.goto(`/jobs/${JOB_ID}/done`);
   await expect(page.getByText("Rohit M. · done")).toHaveCount(0);
-  await expect(page.getByText("This job is not closed yet.")).toBeVisible();
+  await expect(page.getByText("This job isn’t closed yet.")).toBeVisible();
 });
 
 test("a phone that lost its copy of the check-in still counts the wait and can close the no-show", async ({ page }) => {

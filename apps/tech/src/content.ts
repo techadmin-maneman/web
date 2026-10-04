@@ -18,16 +18,16 @@ export const signIn = {
   submit: "Sign in",
   // PLACEHOLDER: the Prototype draws one screen and no errors.
   errors: {
-    mismatch: "That code did not match.",
+    mismatch: "That code didn’t match.",
     code_expired: "That code no longer works. Send the code again.",
     invalid_request: "Check the number and the code.",
     rate_limited: "Too many codes for this number today. Ask ops.",
     sign_in_stopped: "Ops have stopped sign-in on your number. Ask them to let you back in.",
-    busy: "Codes are not going out just now. Try again shortly.",
-    offline: "You are offline. Connect, then sign in.",
-    unknown: "That did not go through. Try again.",
+    busy: "Codes aren’t going out right now. Try again shortly.",
+    offline: "You’re offline. Reconnect, then sign in.",
+    unknown: "That didn’t go through. Try again.",
   },
-  attemptsLeft: (left: number) => `That code did not match. ${String(left)} ${left === 1 ? "try" : "tries"} left.`,
+  attemptsLeft: (left: number) => `That code didn’t match. ${String(left)} ${left === 1 ? "try" : "tries"} left.`,
   sendCode: "Send the code",
   // PLACEHOLDER: the Prototype shows the code field from the start.
   codeSent: "A six-digit code is on its way.",
@@ -60,7 +60,7 @@ export const today = {
     body: "Today's jobs and cards are on the phone. Photos go up when signal returns.",
   },
   // PLACEHOLDER: the board draws no failure for the day's list.
-  failed: "The day's jobs did not load.",
+  failed: "The day’s jobs didn’t load.",
   retry: "Try again",
 } as const;
 
@@ -92,13 +92,13 @@ export const leaving = {
 export const storage = {
   // PLACEHOLDER: neither file draws a phone that is full.
   title: "This phone's storage is full",
-  body: "Nothing more can be kept on it until there is room. Delete photos or apps you do not need, then try again.",
+  body: "Nothing more can be kept on it until there is room. Delete photos or apps you don’t need, then try again.",
 } as const;
 
 /** A screen that failed to draw, which React would otherwise leave blank. */
 export const broken = {
   // PLACEHOLDER: neither file draws a screen that failed.
-  message: "This screen did not open. Nothing you recorded is lost.",
+  message: "This screen didn’t open. Nothing you recorded is lost.",
   reload: "Reload",
 } as const;
 
@@ -142,10 +142,10 @@ export const queue = {
   // PLACEHOLDER: the board draws no deletion. It lets go of work, so it asks first.
   forget: {
     open: "Delete this job's work",
-    title: "Delete this job's work?",
+    title: "Delete this job’s work?",
     what: (photos: number, actions: number) => {
       const held: string[] = [];
-      if (photos > 0) held.push(counted(photos, "photograph", "photographs"));
+      if (photos > 0) held.push(counted(photos, "photo", "photos"));
       if (actions > 0) held.push(counted(actions, "action", "actions"));
       return `This deletes ${held.join(" and ")} from this phone.`;
     },
@@ -171,18 +171,18 @@ export const stopped: Readonly<Record<string, string>> = {
   out_of_order: "A step reached us before the one ahead of it.",
   not_today: "This job is on another day. Arrive and start it on the day.",
   too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
-  already_started: "This job was started, so it cannot close as a no-show.",
-  photo_rejected: "The photographs would not upload.",
-  not_found: "This job is no longer on your list, so what it holds cannot reach us.",
-  already_closed: "This job is closed, so what it holds cannot reach us.",
+  already_started: "This job was started, so it can’t close as a no-show.",
+  photo_rejected: "The photos wouldn’t upload.",
+  not_found: "This job is no longer on your list, so what it holds can’t reach us.",
+  already_closed: "This job is closed, so what it holds can’t reach us.",
   piece_code: "The piece's label was not accepted.",
   old_piece: "The label of the piece that came off was not accepted.",
   // PLACEHOLDER: a one visit's product, no longer offered when the step reached us (ADR 0105).
-  product: "That product is not offered that day.",
+  product: "That product isn’t offered that day.",
   done: "A checklist item was not recognised.",
   reason: "That reason was not accepted.",
-  invalid_request: "We could not record this.",
-  unknown: "We could not record this.",
+  invalid_request: "We couldn’t record this.",
+  unknown: "We couldn’t record this.",
 } as const;
 
 /**
@@ -285,7 +285,7 @@ export const job = {
   seeCloseOut: "See the close-out",
   notToday: {
     tomorrow: "This job is tomorrow. Arrive and start it on the day.",
-    other: "This job is not today's. Arrive and start it on its day.",
+    other: "This job isn’t today’s. Arrive and start it on its day.",
   },
   // PLACEHOLDER: the board draws what changed on the queue alone (board A2).
   changed: {
@@ -318,7 +318,7 @@ export const job = {
     lastVisitImage: "Last visit, after",
   },
   // PLACEHOLDER: the board draws no failure for a job's card.
-  failed: "This job's card did not load.",
+  failed: "This job’s card didn’t load.",
   retry: "Try again",
 } as const;
 
@@ -335,14 +335,14 @@ export const notHome = {
     // PLACEHOLDER: the board draws no check-in before its time.
     opensAt: (time: string) => `Check-in opens at ${time}.`,
     // PLACEHOLDER: the board draws no screen for a phone that will not give its position.
-    noPosition: "This phone will not give its position. Check its permissions, then tap again.",
+    noPosition: "This phone won’t give its position. Check its permissions, then tap again.",
   },
   failed: {
     title: "Check-in failed",
     away: (km: string) => `You are ${km} from the address.`,
     // PLACEHOLDER: the board draws a distance; an address with no coordinates has none (ADR 0036).
-    unmeasured: "We could not measure how far you are from the address.",
-    body: "Get to the door and tap again. At the door and still refused? Ask ops to let you check in. No-show cannot be recorded from here.",
+    unmeasured: "We couldn’t measure how far you are from the address.",
+    body: "Get to the door and tap again. At the door and still refused? Ask ops to let you check in. No-show can’t be recorded from here.",
     action: "Try again",
   },
   waiting: {
@@ -356,7 +356,7 @@ export const notHome = {
     // the check-in reaches it as well as from the tap (ADR 0065), so a no-show cannot close before it has.
     fromTap: "No signal. The wait counts from your tap, and closing as a no-show needs signal, since we count it too.",
     // PLACEHOLDER: the board draws no no-show refused.
-    early: "Our clock says the wait has not run out yet. Try again in a minute.",
+    early: "Our clock says the wait hasn’t run out yet. Try again in a minute.",
     close: "Close as no-show",
     // PLACEHOLDER: the board's "Rohit messaged on WhatsApp" reads as if the client wrote, so the receipt names him
     // as who it went to. The board draws only the delivered one.
@@ -374,7 +374,7 @@ export const notHome = {
   },
   appears: {
     // PLACEHOLDER: the board writes "He appears".
-    title: "Client's here",
+    title: "Client’s here",
     atTheDoor: (who: string) => `${who} is at the door`,
     body: "The timer stops. Nothing is charged.",
   },
@@ -396,18 +396,18 @@ export const capture = {
     hair: "Hair · close in, sharp focus",
   } satisfies Record<Angle, string>,
   // PLACEHOLDER: the board draws neither a refused camera nor the finished set.
-  unavailable: "This phone will not open its camera. Check its permissions, then try again.",
+  unavailable: "This phone won’t open its camera. Check its permissions, then try again.",
   retry: "Try again",
   // PLACEHOLDER: the board draws no capture that failed.
-  missed: "That photo did not save. Take it again.",
+  missed: "That photo didn’t save. Take it again.",
   done: "All five are on the phone. They go up when there is signal.",
   finish: "Done",
   // PLACEHOLDER: the board draws no set the API refused.
   refusedPhotos: (angles: readonly string[]) =>
     angles.length === 1
-      ? `The ${listed(angles)} photograph would not upload. Take it again.`
-      : `The ${listed(angles)} photographs would not upload. Take them again.`,
-  refusedSet: "We could not record this set. Tap Done to send it again.",
+      ? `The ${listed(angles)} photo wouldn’t upload. Take it again.`
+      : `The ${listed(angles)} photos wouldn’t upload. Take them again.`,
+  refusedSet: "We couldn’t record this set. Tap Done to send it again.",
 } as const;
 
 /** The six in-job steps (board B), and the hair profile no board draws, in the order the API runs them. */
@@ -435,8 +435,8 @@ export const steps = {
   next: "Next",
   // PLACEHOLDER: the board draws no step the API refused.
   corrected: {
-    piece: "We could not record the label you gave. Correct it and tap Next.",
-    other: "We could not record this step as it was. Correct it and tap Next.",
+    piece: "We couldn’t record the label you gave. Correct it and tap Next.",
+    other: "We couldn’t record this step as it was. Correct it and tap Next.",
   },
   checklist: {
     // The board's dim bar while the list is unfinished.
@@ -463,11 +463,11 @@ export const steps = {
     malformed: "A label reads MM, the base, the number and a letter: MM-STD-4417-B.",
     checkFirst: "Check the label to continue",
     look: "Check the label",
-    unknown: "We do not know that label. It goes on the job as you typed it.",
+    unknown: "We don’t know that label. It goes on the job as you typed it.",
     // PLACEHOLDER: the board draws no lookup with no signal.
-    offline: "No signal, so the label is not checked. It goes on the job as you typed it.",
-    notThisClient: "That piece is not this client's.",
-    notThisClientAction: "That piece is not this client's",
+    offline: "No signal, so the label isn’t checked. It goes on the job as you typed it.",
+    notThisClient: "That piece isn’t this client’s.",
+    notThisClientAction: "That piece isn’t this client’s",
     rows: { piece: "Piece", base: "Base", lot: "Supplier lot" },
     // PLACEHOLDER: the board draws the base as read, not typed; the pieces tab needs it and the lot (open point 28).
     base: "Base",
@@ -524,7 +524,7 @@ export const closeOut = {
     unmeasured: "Not measured",
   },
   // PLACEHOLDER: the board draws no close-out opened before the job closed.
-  notClosed: "This job is not closed yet.",
+  notClosed: "This job isn’t closed yet.",
   backToJob: "Back to the job",
 } as const;
 
@@ -578,12 +578,12 @@ export const oneVisit = {
     /** A code the client gave as they booked, or ops on the booking: there is no box to type another in. */
     appliedAtBooking: (code: string) => `Code ${code} applied at booking. The payment link will take it off.`,
     errors: {
-      code_not_applicable: "That code does not apply to this visit.",
+      code_not_applicable: "That code doesn’t apply to this visit.",
       already_discounted: "This visit already has a code.",
       price_settled: "The payment link has gone, so the code can no longer change.",
       rate_limited: "Too many codes tried. Try again tomorrow.",
-      offline: "You are offline. A code needs a signal: try again once you have one.",
-      unknown: "That did not go through. Try again.",
+      offline: "You’re offline. A code needs a signal: try again once you have one.",
+      unknown: "That didn’t go through. Try again.",
     } as Readonly<Record<string, string>>,
   },
 } as const;
