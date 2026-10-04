@@ -16,7 +16,15 @@ import type { ZohoSettings } from "../config/settings.ts";
 import type { Plan } from "../policy/one-visit.ts";
 
 import type { CrmContact, CrmLead, CrmProvider, CrmSyncResult, LeadSource, LeadStatus } from "./crm.ts";
-import { createZohoRequester, ZohoError, type ZohoRequesterDependencies, type ZohoWrite } from "./zoho-http.ts";
+import {
+  answerOf,
+  createZohoRequester,
+  readAnswer,
+  ZohoError,
+  type ZohoAnswer,
+  type ZohoRequesterDependencies,
+  type ZohoWrite,
+} from "./zoho-http.ts";
 import {
   assertStatusAllowed,
   shouldAssign,
@@ -277,16 +285,14 @@ function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
   const request = createZohoRequester("crm", settings, deps);
 
   /** One API call's answer: its JSON, or null for Zoho's empty 204. */
-  async function call(step: Step, path: string, write?: ZohoWrite): Promise<unknown> {
-    const response = await request(step, path, write);
-    if (response.status === 204) return null;
-    return response.json();
+  async function call(step: Step, path: string, write?: ZohoWrite): Promise<ZohoAnswer> {
+    return answerOf(step, await request(step, path, write));
   }
 
   /** The first record's outcome is ours. */
-  function firstRecord(json: unknown): { id: string } {
-    const answer = RecordOutcomes.safeParse(json);
-    const record = answer.success ? answer.data.data[0] : undefined;
+  function firstRecord(answer: ZohoAnswer): { id: string } {
+    const outcomes = RecordOutcomes.safeParse(answer.body);
+    const record = outcomes.success ? outcomes.data.data[0] : undefined;
     const id = record?.details?.id;
     if (record?.status !== "success" || id === null || id === undefined) {
       throw new ZohoError(200, record?.code ?? "UNKNOWN", record?.message ?? "no record in the response");
@@ -297,9 +303,9 @@ function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
   return {
     async findLeadByPersonId(personId: string): Promise<string | null> {
       const criteria = encodeURIComponent(`(D1_Person_ID:equals:${personId})`);
-      const json = await call("search", `/crm/v8/Leads/search?criteria=${criteria}`);
-      if (json === null) return null;
-      return SearchAnswer.parse(json).data[0]?.id ?? null;
+      const answer = await call("search", `/crm/v8/Leads/search?criteria=${criteria}`);
+      if (answer.body === null) return null;
+      return readAnswer(answer, SearchAnswer).data[0]?.id ?? null;
     },
 
     async insertLead(

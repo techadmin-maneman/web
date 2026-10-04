@@ -211,6 +211,18 @@ describe("Razorpay: payment links", () => {
     const { payments } = razorpay({ [`${API}/payment_links`]: () => json({ id: "plink_9" }) });
     await expect(payments.createPaymentLink(LINK)).rejects.toThrow();
   });
+
+  it("cancels a link by its ID in the path, and names Razorpay's refusal of one already paid", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/payment_links/plink_9/cancel`]: () => json({ id: "plink_9", status: "cancelled" }),
+      [`${API}/payment_links/plink_paid/cancel`]: () =>
+        json({ error: { code: "BAD_REQUEST_ERROR", description: "Payment link cannot be cancelled" } }, 400),
+    });
+
+    await payments.cancelPaymentLink("plink_9");
+    expect(calls[0]?.method).toBe("POST");
+    await expect(payments.cancelPaymentLink("plink_paid")).rejects.toMatchObject({ status: 400, refusal: true });
+  });
 });
 
 describe("payments where none is connected", () => {
@@ -232,6 +244,7 @@ describe("payments where none is connected", () => {
       }),
     ).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     await expect(none.findPaymentLink("visit-1")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
+    await expect(none.cancelPaymentLink("plink_9")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     await expect(none.orderPayments("order_9")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     expect(calls).toEqual([]);
   });

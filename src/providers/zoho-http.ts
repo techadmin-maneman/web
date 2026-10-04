@@ -1,6 +1,6 @@
 // One requester for every Zoho client (docs/decisions/0070-vendor-correctness.md):
-// the CRM, FSM and Books each on a client of its own. Each request is
-// timed and logged by step, and a failed one becomes a ZohoError.
+// the CRM, FSM and Books each on a client of its own. Each request goes through
+// vendorFetch, and a failed one becomes a ZohoError.
 //
 // The access token lasts an hour and is kept in D1 (`zoho_access_tokens`), so
 // every invocation uses the same one. Zoho mints at most 10 per 10 minutes per
@@ -17,6 +17,8 @@ import { z } from "zod";
 import type { Logger } from "../log.ts";
 import { ProviderError } from "./provider-error.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
+import { parseAnswer, shapeOf, vendorAnswerOf, type VendorAnswer } from "./vendor-answer.ts";
+import { vendorFetch, VendorUnreachable, type Vendor } from "./vendor-fetch.ts";
 
 /**
  * Nobody waits on most calls; queue consumers and the cron make them. On
@@ -53,6 +55,8 @@ export class ZohoError extends ProviderError {
 
 /** The Zoho clients, each with its own access token. */
 export type ZohoClientName = "crm" | "fsm" | "books";
+
+const vendorOf = (name: ZohoClientName): Vendor => `zoho-${name}`;
 
 export interface ZohoClient {
   readonly clientId: string;
@@ -105,7 +109,7 @@ export function createZohoRequester(
 
   async function send(step: string, path: string, token: string, write: ZohoWrite | undefined): Promise<Response> {
     // A multipart upload sets its own Content-Type, with the boundary.
-    return zohoSend(deps, timeoutMs, step, `https://${client.apiHost}${path}`, {
+    return zohoSend(deps, { vendor: vendorOf(name), step, timeoutMs }, `https://${client.apiHost}${path}`, {
       headers: { Authorization: `Zoho-oauthtoken ${token}`, ...headersOf(write) },
       ...(write === undefined ? {} : { method: write.method, body: bodyOf(write) }),
     });
@@ -127,36 +131,16 @@ async function checked(response: Response): Promise<Response> {
   throw zohoErrorFrom(response.status, await response.json().catch(() => null));
 }
 
-/**
- * One HTTP request to Zoho, timed and logged by step. The URL is never logged:
- * the token URL carries the client secret. A timeout becomes a ZohoError that
- * names the step, so an error says which call was slow.
- */
+/** One HTTP request to Zoho. A call that gets no answer throws a VendorUnreachable naming the step. */
 async function zohoSend(
   deps: ZohoRequesterDependencies,
-  timeoutMs: number,
-  step: string,
+  call: { vendor: Vendor; step: string; timeoutMs: number },
   url: string,
   init: RequestInit,
 ): Promise<Response> {
-  const started = Date.now();
-  try {
-    const response = await deps.fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
-    const call = { step, status: response.status, duration_ms: Date.now() - started };
-    if (response.ok) {
-      deps.log.info("zoho_call", call);
-    } else {
-      deps.log.info("zoho_call", { ...call, code: await errorCodeOf(response) });
-    }
-    return response;
-  } catch (error) {
-    const reason = error instanceof Error ? error.name : "unknown";
-    deps.log.warn("zoho_call", { step, status: 0, reason, duration_ms: Date.now() - started });
-    if (reason === "TimeoutError") {
-      throw new ZohoError(0, "TIMEOUT", `${step} got no answer within ${String(timeoutMs / 1000)} s`);
-    }
-    throw error;
-  }
+  const sent = await vendorFetch(deps, { ...call, codeOf: zohoCodeOf }, url, init);
+  if (sent instanceof VendorUnreachable) throw sent;
+  return sent;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,7 +223,8 @@ function createTokenKeeper(
     const url = `https://${client.accountsHost}/oauth/v2/token?${query.toString()}`;
     let response: Response;
     try {
-      response = await zohoSend(deps, deps.timeoutMs, "token", url, { method: "POST" });
+      const call = { vendor: vendorOf(name), step: "token", timeoutMs: deps.timeoutMs };
+      response = await zohoSend(deps, call, url, { method: "POST" });
     } catch (error) {
       await release();
       throw error;
@@ -310,19 +295,27 @@ interface ZohoErrorBody {
   details?: unknown;
 }
 
+/** The record a failed answer is about: the first in `data`, else the body itself. */
+function failedRecord(json: unknown): ZohoErrorBody | null {
+  const body = json as (ZohoErrorBody & { data?: ZohoErrorBody[] }) | null;
+  return Array.isArray(body?.data) ? (body.data[0] ?? body) : body;
+}
+
+/** Zoho's code in a failed answer. Books' codes are numbers, CRM's and FSM's words. */
+function zohoCodeOf(json: unknown): string {
+  const code = failedRecord(json)?.code;
+  return typeof code === "string" || typeof code === "number" ? String(code) : "HTTP_ERROR";
+}
+
 /**
  * Zoho's error body, as a ZohoError: the code and message of the first record, else of the body, and the field Zoho
  * names, e.g. "Zoho 400 INVALID_DATA: invalid data (field Mobile, expected phone, at $.data[0].Mobile)".
  */
 export function zohoErrorFrom(status: number, json: unknown): ZohoError {
-  const body = json as (ZohoErrorBody & { data?: ZohoErrorBody[] }) | null;
-  const detail = Array.isArray(body?.data) ? (body.data[0] ?? body) : body;
-  // Books' codes are numbers, CRM's and FSM's words.
-  const code =
-    typeof detail?.code === "string" || typeof detail?.code === "number" ? String(detail.code) : "HTTP_ERROR";
+  const detail = failedRecord(json);
   const message = typeof detail?.message === "string" ? detail.message : "request failed";
   const field = refusedField(detail?.details);
-  return new ZohoError(status, code, field === "" ? message : `${message} (${field})`);
+  return new ZohoError(status, zohoCodeOf(json), field === "" ? message : `${message} (${field})`);
 }
 
 /**
@@ -340,99 +333,23 @@ function refusedField(details: unknown): string {
   return parts.join(", ");
 }
 
-/** Zoho's code on a failed answer, read from a copy so the caller can still read the answer itself. */
-async function errorCodeOf(response: Response): Promise<string> {
-  const copy = response.clone();
-  const body: unknown = await copy.json().catch(() => null);
-  return zohoErrorFrom(response.status, body).code;
-}
-
 // ---------------------------------------------------------------------------
 // Reading an answer
 // ---------------------------------------------------------------------------
 
 /** What Zoho answered one step: the status, and the body as JSON, null for an empty 204. */
-export interface ZohoAnswer {
-  readonly step: string;
-  readonly status: number;
-  readonly body: unknown;
-}
-
-const unexpectedAnswer = (answer: Omit<ZohoAnswer, "body">, what: string): ZohoError =>
-  new ZohoError(answer.status, "UNEXPECTED_ANSWER", `${answer.step}: ${what}`, false);
+export type ZohoAnswer = VendorAnswer;
 
 /** A successful call's answer. One that is not JSON fails as an unexpected answer naming the step. */
-export async function answerOf(step: string, response: Response): Promise<ZohoAnswer> {
-  if (response.status === 204) return { step, status: 204, body: null };
-  try {
-    return { step, status: response.status, body: await response.json() };
-  } catch (error) {
-    if (!(error instanceof SyntaxError)) throw error;
-    throw unexpectedAnswer({ step, status: response.status }, "the answer is not JSON");
-  }
+export function answerOf(step: string, response: Response): Promise<ZohoAnswer> {
+  return vendorAnswerOf("Zoho", step, response);
 }
 
-/**
- * The value under `at` in an answer, read by `schema`. A value the schema does not fit fails as an unexpected answer
- * naming the step, the first place it differs and the keys beside it, e.g. "attach_file: data.0.id: Invalid input:
- * expected string, received undefined; data.0 has keys code, details, message, status". Field names, never values.
- */
+/** The value under `at` in an answer, read by `schema`; a misfit names the step and where it differs. */
 export function readAnswer<T extends z.ZodType>(
   answer: ZohoAnswer,
   schema: T,
   at: readonly PropertyKey[] = [],
 ): z.infer<T> {
-  const parsed = schema.safeParse(valueAt(answer.body, at));
-  if (parsed.success) return parsed.data;
-  const issue = firstIssue(parsed.error.issues, at);
-  throw unexpectedAnswer(answer, describeIssue(answer.body, issue));
-}
-
-interface AnswerIssue {
-  readonly path: readonly PropertyKey[];
-  readonly message: string;
-}
-
-/** The first issue, with its path from the top of the answer. In a union, the first issue of the first shape tried. */
-function firstIssue(issues: z.ZodError["issues"], under: readonly PropertyKey[]): AnswerIssue {
-  const [issue] = issues;
-  if (issue === undefined) return { path: under, message: "Invalid input" };
-  const path = [...under, ...issue.path];
-  const firstShape = issue.code === "invalid_union" ? issue.errors[0] : undefined;
-  if (firstShape !== undefined && firstShape.length > 0) return firstIssue(firstShape, path);
-  return { path, message: issue.message };
-}
-
-/** At most this many of an object's keys are named, so the line stays short enough to keep whole. */
-const KEYS_NAMED = 10;
-
-function describeIssue(body: unknown, issue: AnswerIssue): string {
-  if (issue.path.length === 0) return `the answer: ${issue.message}`;
-  const around = issue.path.slice(0, -1);
-  const aroundName = around.length === 0 ? "the answer" : pathName(around);
-  return `${pathName(issue.path)}: ${issue.message}; ${aroundName} has ${shapeOf(valueAt(body, around))}`;
-}
-
-/** ["data", 0, "id"] -> "data.0.id" */
-const pathName = (path: readonly PropertyKey[]): string => path.map(String).join(".");
-
-/** What a value is, by its keys or its length, never its contents. */
-function shapeOf(value: unknown): string {
-  if (Array.isArray(value)) return `a list of ${String(value.length)}`;
-  if (value === null) return "null";
-  if (typeof value !== "object") return typeof value;
-  const keys = Object.keys(value);
-  if (keys.length === 0) return "no keys";
-  const more = keys.length > KEYS_NAMED ? ", …" : "";
-  return `keys ${keys.slice(0, KEYS_NAMED).join(", ")}${more}`;
-}
-
-/** The value at `path` inside `value`; undefined where the path leaves objects and lists. */
-function valueAt(value: unknown, path: readonly PropertyKey[]): unknown {
-  let found = value;
-  for (const key of path) {
-    if (typeof found !== "object" || found === null) return undefined;
-    found = (found as Record<PropertyKey, unknown>)[key];
-  }
-  return found;
+  return parseAnswer(schema, answer, at);
 }
