@@ -321,7 +321,7 @@ test("asks why before a move onto a blacked-out day, and sends the reason with i
   await picker.getByLabel("Why it goes ahead that day").fill("His only free day before he travels");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toContainText("Rohit M. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Rohit M. the new window on WhatsApp;");
   expect(sent).toEqual([expect.objectContaining({ blackout_reason: "His only free day before he travels" })]);
 });
 
