@@ -15,11 +15,13 @@ import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { HOUR_OF_DAY } from "../../../../src/config/setting-units.ts";
 import { api, type ChoiceRule, type NumberRule, type OpsSetting, type SettingValue } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { useTargetRow } from "../lib/target.ts";
+import { whoWords } from "../lib/who.ts";
 import type { SectionPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CHARGES_A_LATE_FEE, CONSOLE_GROUP, sectionsOf, type RuleGroupId, type RuleSection } from "./rule-groups.ts";
@@ -114,9 +116,14 @@ interface Moved {
   readonly now: string;
 }
 
+/** "6 pm" for an hour of the day; else the figure and its unit. */
+function figureWords(figure: number, unit: string): string {
+  return unit === HOUR_OF_DAY ? copy.hour(figure) : copy.confirm.figure(figure, unit);
+}
+
 /** A number as the check reads it, with its unit. Null before is a base not yet named; null after, one unnamed. */
 function numberWords(rule: NumberRule, key: string, figure: number | undefined, side: "was" | "now"): string {
-  if (figure !== undefined) return copy.confirm.figure(figure, boundsOf(rule, key).unit);
+  if (figure !== undefined) return figureWords(figure, boundsOf(rule, key).unit);
   return side === "was" ? copy.confirm.noFigure : copy.confirm.otherBases;
 }
 
@@ -178,6 +185,12 @@ function Field({
   onChange: (text: string) => void;
 }) {
   const hint = `${id}-allowed`;
+  // An hour of the day is typed on a 24-hour clock and read beside the box as the clock says it.
+  const clock = bounds.unit === HOUR_OF_DAY;
+  const typed = Number(text);
+  const anHour = text !== "" && Number.isInteger(typed) && typed >= 0 && typed <= 23;
+  let unit = bounds.unit;
+  if (clock) unit = anHour ? copy.hour(typed) : "";
   return (
     <div className={styles.field}>
       <label className={styles.fieldLabel} htmlFor={id}>
@@ -198,10 +211,12 @@ function Field({
             onChange(event.target.value);
           }}
         />
-        <span className={styles.unit}>{bounds.unit}</span>
+        <span className={styles.unit}>{unit}</span>
       </div>
       <p className={styles.hint} id={hint}>
-        {copy.allowed(bounds.min, bounds.max, bounds.unit)}
+        {clock
+          ? copy.allowedHours(copy.hour(bounds.min), copy.hour(bounds.max))
+          : copy.allowed(bounds.min, bounds.max, bounds.unit)}
       </p>
     </div>
   );
@@ -305,7 +320,7 @@ function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string, text: 
 /** Who set a rule and when, or that nobody has. */
 function setLine(rule: OpsSetting): string {
   if (rule.set_by === null || rule.set_at === null) return copy.committed;
-  return copy.setBy(rule.set_by, longDate(rule.set_at));
+  return copy.setBy(whoWords(rule.set_by), longDate(rule.set_at));
 }
 
 /** The old figure beside the new, for every one the section's change moves, before anything is sent. */

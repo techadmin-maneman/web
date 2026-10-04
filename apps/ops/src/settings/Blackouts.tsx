@@ -16,6 +16,7 @@ import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content.ts";
 import { addDays } from "../dispatch/job.ts";
 import { useAccess } from "../lib/access.ts";
+import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { refusalOf, type Failure } from "./refusal.ts";
@@ -66,7 +67,7 @@ const periodWords = (period: { from: string; to: string }) => copy.period(shortD
 /** Who added a run of days and when, or that nobody recorded it. */
 function setLine(period: Period): string {
   if (period.setBy === null || period.setAt === null) return copy.unrecorded;
-  return copy.setBy(period.setBy, longDate(period.setAt));
+  return copy.setBy(whoWords(period.setBy), longDate(period.setAt));
 }
 
 type Draft = { readonly from: string; readonly to: string; readonly reason: string };

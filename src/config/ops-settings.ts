@@ -28,6 +28,7 @@ import { MAX_REWARD_VISITS, REFERRAL_REWARD, REFERRAL_REWARD_KEYS } from "../pol
 import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "../policy/technician-work.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "./pieces.ts";
+import { HOUR_OF_DAY } from "./setting-units.ts";
 import { PAYMENT_HOLD, PAYMENT_HOLD_KEYS } from "./scheduling.ts";
 import { VISIT_TYPES } from "./visit-types.ts";
 
@@ -151,7 +152,7 @@ export const OPS_SETTINGS = [
     name: "address_unlock_hour",
     title: "When a job's address unlocks",
     note: "When, the day before a visit, the technician's phone shows the address and the client card.",
-    unit: "hour of the day, in India",
+    unit: HOUR_OF_DAY,
     min: 0,
     max: 23,
     keys: null,
@@ -161,7 +162,7 @@ export const OPS_SETTINGS = [
     name: "reminder_hour",
     title: "When reminders go",
     note: "When the WhatsApp reminders of tomorrow's visit and of a next service falling due go.",
-    unit: "hour of the day, in India",
+    unit: HOUR_OF_DAY,
     // Not in the night: a message about a visit wakes nobody.
     min: 8,
     max: 21,

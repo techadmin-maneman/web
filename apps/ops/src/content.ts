@@ -27,6 +27,8 @@ const DEPARTMENT_NAMES = {
 } as const;
 
 export const shell = {
+  /** Who did something, where it was a service token rather than a person. */
+  serviceToken: "a service token",
   /**
    * PLACEHOLDER: the sidebar's own title. Boards A1 and B1 letter it "Operations", which is now the name of one of the
    * departments beneath it.
@@ -934,7 +936,8 @@ export const clients = {
       codeHint: "The letters and digits after maneman.in/r/ in the friend's link.",
       reason: "Why",
       reasonHint: "What the client or their friend told you.",
-      note: "The reason is kept with the invite; the attach is in the audit log under your name. The invite's own rules apply: never the code's own referrer, never a client who came with an invite already, and never one already fitted.",
+      /** The rules the API holds an attach to (src/routes/ops-client-referral.ts), the late one the owner's (src/policy/fraud-holds.ts). */
+      note: "Logged under your name. Not allowed: the code's own referrer, or a client who already came with an invite. Attached after their first fit, it waits for your review in Referrals.",
       save: "Attach the invite",
       saving: "Attaching",
       errors: {
@@ -1132,7 +1135,8 @@ export const clients = {
     erasing: "Erasing",
     /** Why nothing was erased, and what ops may do about it. */
     owed: {
-      visit_booked: "They still have a visit booked, so nothing was erased. Cancel it and refund what they paid first.",
+      visit_booked:
+        "They still have a visit booked, so nothing was erased. Cancel it on their Visits tab, which refunds what they paid, then erase.",
       payment_held:
         "We still owe them money back, so nothing was erased. Erase once their Payments tab shows it refunded.",
       payment_owed: "A payment link of theirs is still unpaid, so nothing was erased.",
@@ -1193,9 +1197,6 @@ export const clients = {
     /** The day ops order a piece against, with the piece it is for, as board D2's task queue names one. */
     due: (date: string, piece: string) => `${date} · ${piece}`,
     noPiece: "No piece fitted, so no date",
-    note:
-      "Counted from the visits and payments themselves when this page is opened. " +
-      "Nothing keeps a tally, so no figure here can drift from the records beneath it.",
   },
 } as const;
 
@@ -1967,7 +1968,6 @@ export const technicians = {
     period: (from: string, to: string) =>
       `Jobs finished from ${from} to ${to}. Average service is against the length each visit was planned for, over the jobs the phone timed from Start to the outcome.`,
     /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
-    skill: "Nothing records what a technician is trained for, so the board's Skill column is not drawn.",
   },
   /** PLACEHOLDER, all of it: the board draws the roster and no page for one technician. */
   page: {
@@ -2418,6 +2418,13 @@ export const settings = {
     jump: "Rules by subject",
     lateFees: "Late fees are set in Prices",
     allowed: (min: number, max: number, unit: string) => `${String(min)} to ${String(max)} ${unit}, a whole number`,
+    /** An hour of the day, typed on a 24-hour clock and read as "6 pm". */
+    allowedHours: (min: string, max: string) => `An hour from ${min} to ${max}, typed on a 24-hour clock`,
+    hour: (hour: number) => {
+      if (hour === 0) return "midnight";
+      if (hour === 12) return "noon";
+      return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
+    },
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
     committed: "Nobody has set this, so the standard figure stands.",
     save: "Save",

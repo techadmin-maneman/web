@@ -102,6 +102,31 @@ test.describe("the rules", () => {
     await expect(page.getByRole("main")).not.toContainText("src/");
   });
 
+  // OIA-21 and CP-28: an hour read "18 hour of the day, in India", and a token's setter its 40-character ID.
+  test("shows an hour of the day as a clock, and a service token as one", async ({ page }) => {
+    const reminders = {
+      ...ruleNamed("checkin_radius_m"),
+      name: "reminder_hour",
+      title: "When reminders go",
+      note: "When the WhatsApp reminders of tomorrow's visit go.",
+      unit: "hour of the day, in India",
+      min: 8,
+      max: 21,
+      value: 18,
+      default: 18,
+      set_by: "5ef59a45a8ca607281f5b3ae02bf8103.access",
+      set_at: "2027-09-20T06:00:00.000Z",
+    };
+    await open(page, "/settings", { "GET /api/settings": json({ settings: [reminders] }) });
+    const rule = page.getByRole("main");
+    await expect(rule.getByText("6 pm", { exact: true })).toBeVisible();
+    await expect(rule.getByText("An hour from 8 am to 9 pm, typed on a 24-hour clock")).toBeVisible();
+    await page.getByLabel("When reminders go").fill("9");
+    await expect(rule.getByText("9 am", { exact: true })).toBeVisible();
+    await expect(rule.getByText("Set by a service token on 20 Sep 2027")).toBeVisible();
+    await expect(rule).not.toContainText(".access");
+  });
+
   test("names each box of a keyed rule as the rest of the console names it", async ({ page }) => {
     await open(page);
     const wait = page.getByRole("group", { name: "No-show wait" });

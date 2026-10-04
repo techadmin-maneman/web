@@ -11,6 +11,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import type { Answer, JobSheet, JobSheetItemSent, JobSheetList } from "../api.ts";
 import { settings } from "../content.ts";
+import { whoWords } from "../lib/who.ts";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { refusalOf, type Failure } from "./refusal.ts";
 import own from "./consumables.module.css";
@@ -127,7 +128,9 @@ function Item({
 }
 
 const setLineOf = (list: JobSheetList): string =>
-  list.set_by === null || list.set_at === null ? copy.committed : copy.setBy(list.set_by, longDate(list.set_at));
+  list.set_by === null || list.set_at === null
+    ? copy.committed
+    : copy.setBy(whoWords(list.set_by), longDate(list.set_at));
 
 /** The list as a person whose access does not let them change it reads it: its items, in their order. */
 export function ListRead({ title, list }: { title: string; list: JobSheetList }) {

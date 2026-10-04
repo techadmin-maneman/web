@@ -833,6 +833,8 @@ test("attaches an invite to a client who came with none, with why, and shows it 
   });
   const invite = page.getByRole("region", { name: "Invite" });
   await expect(invite).toContainText("They came with no invite.");
+  // PS-25: the note forbade a fitted client, though the owner allows one, held for review.
+  await expect(invite).toContainText("Attached after their first fit, it waits for your review in Referrals.");
   const attach = invite.getByRole("button", { name: "Attach the invite" });
   await expect(attach).toBeDisabled();
 
@@ -1063,6 +1065,7 @@ test("erases anyway when a visit is booked, once ops say they will settle it by 
   await erasing.getByRole("button", { name: "Erase now" }).click();
 
   await expect(erasing).toContainText("They still have a visit booked, so nothing was erased.");
+  await expect(erasing).toContainText("Cancel it on their Visits tab, which refunds what they paid, then erase.");
   await answer(page, { [ERASE]: json(ERASED) });
   const anyway = erasing.getByRole("button", { name: "Erase anyway" });
   await expect(anyway).toBeDisabled();

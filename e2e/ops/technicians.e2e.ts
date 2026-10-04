@@ -166,12 +166,13 @@ test("reads as a gap, never as a nought, when the phone timed none of the jobs",
 });
 
 // Nothing records what a technician is trained for, so the board's fifth column
-// holds leave instead, and the table says why (docs/open-points.md, item 59).
-test("puts Leave where the board draws Skill, and says beneath the table why", async ({ page }) => {
+// holds leave instead (docs/open-points.md, item 59). The design note that said so
+// beneath the table was ours, not ops', and is gone (OIA-21).
+test("puts Leave where the board draws Skill, with no design note beneath the table", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("columnheader", { name: "Skill" })).toBeHidden();
   await expect(page.getByRole("columnheader", { name: "Leave" })).toBeVisible();
-  await expect(page.getByText("Nothing records what a technician is trained for")).toBeVisible();
+  await expect(page.getByText("Nothing records what a technician is trained for")).toBeHidden();
   await expect(page.getByText("Jobs finished from 24 Jun 2027 to 22 Sep 2027.")).toBeVisible();
 });
 
