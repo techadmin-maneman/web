@@ -813,7 +813,7 @@ The provider's new calls, run through the real adapter against the owner's org w
 
 ## FSM removal, PR 10: staging off FSM
 
-Run once staging is switched (docs/runbook.md, "Switching staging off FSM"), as a real user with staging's test records, backdating rather than waiting. Not run yet.
+Run once staging is switched (docs/runbook.md, "Staging left FSM"), as a real user with staging's test records, backdating rather than waiting. Not run yet.
 
 | #   | Check                                                                    | Answer |
 | --- | ------------------------------------------------------------------------ | ------ |
