@@ -12,6 +12,9 @@
 // step lands (src/routes/tech-jobs.ts). A place that falls to its reorder level
 // raises one alert, and the table marks it low. Every write answers the whole
 // of GET's answer, so the screen follows it without reading again.
+//
+// Each keeps to the caller's cities: the kits of the technicians there, and the
+// central store, which is in no city, only with a national grant.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -27,10 +30,12 @@ import {
   type Moved,
   type Place,
 } from "../domain/stock.ts";
+import { isWithin, techniciansWithin } from "../domain/places.ts";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { reachOf, routeReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 
 /** A place: a technician's kit by his ID, or the central store as null. */
@@ -63,7 +68,8 @@ const StockSchema = z
           .strict(),
       )
       .openapi({
-        description: "The central store first, then each active technician's kit, and any other still holding stock.",
+        description:
+          "The central store first, then each active technician's kit, and any other still holding stock: those in the caller's cities, and the store only with a national grant.",
       }),
     holdings: z.array(
       z
@@ -111,7 +117,7 @@ const Note = z
   .regex(/^[^\p{Cc}]+$/u);
 
 const REFUSED = errorResponse(
-  "invalid_request: fields names consumable_code for one nobody added, or the place no technician is",
+  "invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities",
 );
 
 const stockRoute = createRoute({
@@ -156,7 +162,9 @@ const transferRoute = createRoute({
   },
   responses: {
     200: STOCK,
-    400: errorResponse("invalid_request: fields names consumable_code, from, or to for the place it came from"),
+    400: errorResponse(
+      "invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities",
+    ),
     403: errorResponse("access_required"),
   },
 });
@@ -204,7 +212,8 @@ const writeOffRoute = createRoute({
 
 async function answer(c: Context<AppEnv>) {
   const now = c.var.deps.now();
-  const view = await stockView(c.env.DB, now);
+  const kits = await techniciansWithin(c.env.DB, await reachOf(c, "operations", "view"));
+  const view = await stockView(c.env.DB, now, kits);
   const today = indiaDate(now);
   return {
     consumables: view.consumables.map((consumable) => ({
@@ -239,6 +248,17 @@ async function answer(c: Context<AppEnv>) {
 
 const written = (c: Context<AppEnv>) => ({ actor: staffOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
+/** The fields that name a place outside the caller's cities; the central store is in none of them. */
+async function placesOutOfReach(c: Context<AppEnv>, places: Readonly<Record<string, Place>>): Promise<string[]> {
+  const kits = await techniciansWithin(c.env.DB, await routeReach(c));
+  return Object.entries(places)
+    .filter(([, place]) => !isWithin(kits, place))
+    .map(([field]) => field);
+}
+
+const outOfReach = (c: Context<AppEnv>, fields: string[]) =>
+  c.json(errorBody("invalid_request", c.var.requestId, fields), 400);
+
 /** The movement's answer: refused, or the stock as it now stands, once each place it touched is checked for low. */
 async function after(c: Context<AppEnv>, moved: Moved, touched: readonly Place[]) {
   if (!moved.ok) return c.json(errorBody("invalid_request", c.var.requestId, moved.fields), 400);
@@ -261,6 +281,8 @@ export function registerOpsStock(app: App): void {
 
   app.openapi(transferRoute, async (c) => {
     const body = c.req.valid("json");
+    const refused = await placesOutOfReach(c, { from: body.from, to: body.to });
+    if (refused.length > 0) return outOfReach(c, refused);
     const moved = await transfer(
       c.env.DB,
       { code: body.consumable_code, quantity: body.quantity, from: body.from, to: body.to },
@@ -271,6 +293,8 @@ export function registerOpsStock(app: App): void {
 
   app.openapi(countRoute, async (c) => {
     const body = c.req.valid("json");
+    const refused = await placesOutOfReach(c, { technician_id: body.technician_id });
+    if (refused.length > 0) return outOfReach(c, refused);
     const moved = await count(
       c.env.DB,
       { code: body.consumable_code, place: body.technician_id, counted: body.counted, note: body.note ?? null },
@@ -281,6 +305,8 @@ export function registerOpsStock(app: App): void {
 
   app.openapi(writeOffRoute, async (c) => {
     const body = c.req.valid("json");
+    const refused = await placesOutOfReach(c, { technician_id: body.technician_id });
+    if (refused.length > 0) return outOfReach(c, refused);
     const moved = await writeOff(
       c.env.DB,
       { code: body.consumable_code, place: body.technician_id, quantity: body.quantity, note: body.note },
