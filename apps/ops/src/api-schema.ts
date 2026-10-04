@@ -6738,6 +6738,10 @@ export interface components {
                 id: string;
                 name: string;
                 mobile: string;
+                /** @enum {string} */
+                state: "fitted" | "lead" | "nothing_booked";
+                /** @description When the client's next visit not yet closed starts; null for none. */
+                next_visit: string | null;
             }[];
             /** @description More than 20 match: narrow the search. */
             more: boolean;
@@ -7726,7 +7730,7 @@ export interface components {
             dates: string[];
             /** @description The city the jobs are narrowed to; null for all. */
             city: string | null;
-            /** @description The cities the board can be narrowed to: the caller's. */
+            /** @description The cities the board can be narrowed to: the caller's that we serve, or that have a technician. */
             cities: string[];
             technicians: {
                 /** Format: uuid */

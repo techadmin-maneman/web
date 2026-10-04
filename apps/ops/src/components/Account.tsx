@@ -4,6 +4,7 @@
 import { useLoad } from "@maneman/ui/useLoad";
 import { shell } from "../content.ts";
 import { whoami } from "../lib/access.ts";
+import { forgetClients } from "../lib/client-search.ts";
 import styles from "./shell.module.css";
 
 /** "aditya.kumar@maneman.in" reads "AK", and "ops@maneman.in" "OP", as the board's box holds two letters. */
@@ -25,7 +26,7 @@ export function Account() {
         {initialsOf(who)}
       </span>
       {signOut !== null && (
-        <a className={styles.signOut} href={signOut}>
+        <a className={styles.signOut} href={signOut} onClick={forgetClients}>
           {shell.account.signOut}
         </a>
       )}

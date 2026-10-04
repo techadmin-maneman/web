@@ -23,10 +23,11 @@
 
 import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   api,
   type Answer,
+  type Block,
   type Board,
   type BoardQuery,
   type BoardRow,
@@ -110,12 +111,28 @@ function weekOf(dates: readonly string[]): string | undefined {
   return dispatch.week(sameMonth ? from.slice(0, from.indexOf(" ")) : from, to);
 }
 
-/** Whether a row answers to what ops searched for: the technician's name or zone, or a client on one of his days. */
+const includes = (word: string | null, wanted: string) => word?.toLowerCase().includes(wanted) === true;
+
+/** Whether a block answers to what ops searched for: its client, in short or in full, its area or its pincode. */
+const blockAnswersTo = (block: Block, wanted: string): boolean =>
+  [block.client, block.person?.name ?? null, block.sector, block.pincode].some((word) => includes(word, wanted));
+
+/** Whether a row answers to what ops searched for: the technician's name or zone, or a visit on one of his days. */
 function answersTo(row: BoardRow, find: string): boolean {
   const wanted = find.trim().toLowerCase();
   if (wanted === "") return true;
-  const clients = row.days.flatMap((day) => day.blocks.flatMap((block) => [block.client, block.person?.name ?? null]));
-  return [row.name, row.zone, ...clients].some((word) => word?.toLowerCase().includes(wanted) === true);
+  if (includes(row.name, wanted) || includes(row.zone, wanted)) return true;
+  return row.days.some((day) => day.blocks.some((block) => blockAnswersTo(block, wanted)));
+}
+
+/** The blocks the search found, to outline on the grid; null where it names none, a technician say. */
+function foundBy(board: Board | null, find: string): ((block: Block) => boolean) | null {
+  const wanted = find.trim().toLowerCase();
+  if (wanted === "" || board === null) return null;
+  const any = board.technicians.some((row) =>
+    row.days.some((day) => day.blocks.some((b) => blockAnswersTo(b, wanted))),
+  );
+  return any ? (block) => blockAnswersTo(block, wanted) : null;
 }
 
 /** The windows each day offers the job in hand: the server's answer; every window if it could not answer. */
@@ -306,24 +323,29 @@ export function DispatchScreen() {
     else moved.focus();
   }, []);
 
-  /** Asks where the job would land in the week on screen, so the board offers only those windows. */
-  const askRooms = useCallback(
-    (job: Job) => {
-      setRooms({ state: "checking" });
-      if (board === null) {
-        setRooms({ state: "unknown" });
-        return;
-      }
-      void api.room(idOf(job), board.from).then((answer) => {
-        if (!answer.ok) {
-          setRooms({ state: "unknown" });
-          return;
-        }
-        setRooms({ state: "known", rooms: answer.body.rooms, blackouts: answer.body.blackouts });
-      });
-    },
-    [board],
-  );
+  // Where the job in hand would land in the week on screen, so the board offers only those windows. It is asked
+  // again for each week the board turns to with the job still in hand, and after a refusal; an answer that comes
+  // back once another job is in hand, or another week is on screen, is dropped.
+  const [roomsAsked, askRooms] = useReducer((asked: number) => asked + 1, 0);
+  const inHandId = move === null ? null : idOf(move.job);
+  const weekFrom = board?.from ?? null;
+  useEffect(() => {
+    if (inHandId === null) return undefined;
+    setRooms({ state: "checking" });
+    if (weekFrom === null) return undefined;
+    let current = true;
+    void api.room(inHandId, weekFrom).then((answer) => {
+      if (!current) return;
+      setRooms(
+        answer.ok
+          ? { state: "known", rooms: answer.body.rooms, blackouts: answer.body.blackouts }
+          : { state: "unknown" },
+      );
+    });
+    return () => {
+      current = false;
+    };
+  }, [inHandId, weekFrom, roomsAsked]);
 
   const open = useCallback((job: Job, from: HTMLElement) => {
     opener.current = from;
@@ -331,16 +353,13 @@ export function DispatchScreen() {
     setOpened(job);
   }, []);
 
-  const take = useCallback(
-    (job: Job, from: HTMLElement | null, clearingCheckIn = false) => {
-      opener.current = from;
-      setOpened(null);
-      setNotice(null);
-      setMove({ job, to: null, sending: false, clearingCheckIn });
-      askRooms(job);
-    },
-    [askRooms],
-  );
+  const take = useCallback((job: Job, from: HTMLElement | null, clearingCheckIn = false) => {
+    opener.current = from;
+    setOpened(null);
+    setNotice(null);
+    setMove({ job, to: null, sending: false, clearingCheckIn });
+    askRooms();
+  }, []);
 
   /** A job taken up, with no window chosen for it yet. */
   const choosing = move?.to === null;
@@ -440,9 +459,9 @@ export function DispatchScreen() {
       // Nothing was written: the job stays in hand, and the board asks again where it fits.
       setMove({ ...move, to: null, sending: false });
       setNotice({ tone: "refusal", text: refusalOf(job, to, answer.code), call: null });
-      askRooms(job);
+      askRooms();
     },
-    [move, refresh, focusBlock, askRooms],
+    [move, refresh, focusBlock],
   );
 
   // Escape lets go of the move in hand when no panel is open; an open panel closes itself.
@@ -461,6 +480,7 @@ export function DispatchScreen() {
     () => (board === null ? [] : board.technicians.filter((row) => answersTo(row, find))),
     [board, find],
   );
+  const found = useMemo(() => foundBy(board, find), [board, find]);
   const inHand = useMemo(
     (): InHand | null => (choosing ? { job: move.job, windowsAt: windowsFrom(rooms) } : null),
     [choosing, move, rooms],
@@ -499,6 +519,7 @@ export function DispatchScreen() {
                     board={board}
                     rows={rows}
                     inHand={inHand}
+                    found={found}
                     onOpen={open}
                     onTake={mayMove ? take : null}
                     onLand={land}

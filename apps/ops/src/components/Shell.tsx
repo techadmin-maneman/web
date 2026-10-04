@@ -17,6 +17,7 @@ import { mayOpen, SECTION_NAMES, SECTIONS, type MayCall, type Section, type Sect
 import { DEPARTMENTS, type Department } from "../settings/grants.ts";
 import { waitingIn, type Waiting } from "../tasks/decided.ts";
 import { Account } from "./Account.tsx";
+import { ClientFinder } from "./ClientFinder.tsx";
 import styles from "./shell.module.css";
 
 /** A link within the console: the shared one, which leaves a click asking for a new tab to the browser. */
@@ -158,10 +159,12 @@ interface Props {
   readonly sub?: string;
   /** The dispatch board fills the frame to its edges, where every other section is padded. */
   readonly flush?: boolean;
+  /** The Clients page has its own search, so its header has none. */
+  readonly finder?: boolean;
   readonly children: ReactNode;
 }
 
-export function Shell({ section, title, sub, flush, children }: Props) {
+export function Shell({ section, title, sub, flush, finder = true, children }: Props) {
   const lapsed = useLapsed();
   const heading = useRef<HTMLHeadingElement>(null);
   const main = useRef<HTMLElement>(null);
@@ -187,6 +190,7 @@ export function Shell({ section, title, sub, flush, children }: Props) {
             </h1>
             {sub !== undefined && <span className={styles.sub}>{sub}</span>}
           </div>
+          {finder && <ClientFinder />}
           <Account />
         </header>
         {lapsed && <Lapsed />}

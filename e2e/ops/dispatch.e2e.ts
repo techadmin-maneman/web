@@ -199,7 +199,7 @@ test("opens a block's drawer with the client, the badge, and both ways to reach 
   await press(page, ROHIT_BLOCK);
 
   const drawer = page.getByRole("dialog", { name: "Rohit Malhotra" });
-  await expect(drawer).toContainText("Fri 19 Sep · 9 am to 12 · Imran Qureshi");
+  await expect(drawer).toContainText("Fri 19 Sep · 9 am to 12 pm · Imran Qureshi");
   await expect(drawer).toContainText("Prepaid");
   await expect(drawer).toContainText("Service visit · 1 slot");
   await expect(drawer).toContainText("Sec 65 · 122018");
@@ -274,7 +274,9 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
   // BK-17: the exact start the move takes, not the window alone.
   await expect(picker).toContainText("Fri 19 Sep, 9 am → Sat 20 Sep, 9 am");
-  await expect(picker).toContainText("Rohit M. is messaged on WhatsApp with the new window.");
+  await expect(picker).toContainText(
+    "Rohit M. is messaged on WhatsApp with the new window. Their payment carries over.",
+  );
   // Nothing has gone out, and nothing can until a reason is chosen.
   expect(sent).toEqual([]);
   await expect(picker.getByRole("button", { name: "Move and notify" })).toBeDisabled();
@@ -299,6 +301,88 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   ]);
   // The board is read again without the loading state, and the keyboard goes back to the block.
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeFocused();
+});
+
+// BK-52: a free visit, or one paid once the client is fitted, has no payment to carry over.
+test("says a payment carries over only where one was made", async ({ page }) => {
+  const free = structuredClone(BOARD);
+  const block = free.technicians[0]?.days[0]?.blocks[0];
+  if (block !== undefined) block.badge = "free";
+  await open(page, { [READ_BOARD]: json(free) });
+
+  await press(page, ROHIT_BLOCK);
+  await press(page, "Move this visit");
+  await page.getByLabel("Or choose where from a list").selectOption({ label: "Sandeep Yadav · Sat 20 Sep · morning" });
+  await press(page, "Choose");
+
+  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
+  await expect(picker).toContainText("Rohit M. is messaged on WhatsApp with the new window.");
+  await expect(picker).not.toContainText("carries over");
+  // No technician's skills are recorded, so a move cannot claim one.
+  await expect(picker.getByRole("radio")).toHaveCount(4);
+});
+
+// OIA-04 and BK-19: with a visit in hand, another week was never asked about, and said nowhere had room.
+test("carries a job in hand to the next week, asks where it fits there, and moves it", async ({ page }) => {
+  const NEXT = ["2025-09-26", "2025-09-27", "2025-09-28", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02"];
+  const nextWeek = {
+    ...BOARD,
+    from: NEXT[0],
+    dates: NEXT,
+    technicians: BOARD.technicians.map((row) => ({
+      ...row,
+      days: row.days.map((day, index) => ({ ...day, date: NEXT[index] ?? day.date, blocks: [] })),
+    })),
+    unassigned: [],
+    utilisation: NEXT.map((date) => ({ date, percent: 0 })),
+    leave: [],
+  };
+  const sandeep = BOARD.technicians[1]?.technician_id ?? "";
+  const nextRoom = {
+    ...ROOM,
+    rooms: [
+      {
+        technician_id: sandeep,
+        date: NEXT[0],
+        windows: ["morning"],
+        starts: [{ window: "morning", starts_at: "2025-09-26T03:30:00.000Z" }],
+      },
+    ],
+  };
+  const fromOf = (route: Route) => new URL(route.request().url()).searchParams.get("from");
+  await open(page, {
+    [READ_BOARD]: (route) => json(fromOf(route) === NEXT[0] ? nextWeek : BOARD)(route),
+    [READ_ROOM]: (route) => json(fromOf(route) === NEXT[0] ? nextRoom : ROOM)(route),
+    [MOVE_IT]: json(MOVED),
+  });
+  const sent = sentTo(page, MOVE);
+
+  await press(page, ROHIT_BLOCK);
+  await press(page, "Move this visit");
+  await page.getByRole("button", { name: "Next week" }).click();
+
+  const list = page.getByLabel("Or choose where from a list");
+  await expect(list.getByRole("option")).toHaveText([
+    "A technician, day and window",
+    "Sandeep Yadav · Fri 26 Sep · morning",
+  ]);
+  await list.selectOption({ label: "Sandeep Yadav · Fri 26 Sep · morning" });
+  await press(page, "Choose");
+  await reason(page, "Client asked to move it");
+  await press(page, "Move and notify");
+
+  await expect(page.getByRole("status")).toContainText("Moved.");
+  expect(sent).toEqual([
+    {
+      appointment_id: ROHIT_JOB?.appointment_id,
+      technician_id: sandeep,
+      date: NEXT[0],
+      window: "morning",
+      reason: "client_asked",
+      expected_technician_id: BOARD.technicians[0]?.technician_id,
+      expected_starts_at: ROHIT_JOB?.starts_at,
+    },
+  ]);
 });
 
 test("drags a block onto a window, which asks for the same reason", async ({ page }) => {
@@ -564,7 +648,7 @@ test("opens on the week and the search a link asks for", async ({ page }) => {
   await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
   await page.goto("/dispatch?from=2025-09-19&find=Sohna");
 
-  await expect(page.getByLabel("Find a technician, zone or client")).toHaveValue("Sohna");
+  await expect(page.getByLabel("Find a technician, client or area")).toHaveValue("Sohna");
   await expect(page.getByRole("rowheader")).toHaveText(["Faizan AliSohna Rd"]);
   await expect.poll(() => asked[0]).toBe("?from=2025-09-19");
 });
@@ -586,7 +670,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   await open(page);
   await page.getByRole("button", { name: "Next week" }).click();
   await page.getByLabel("City", { exact: true }).selectOption("Delhi");
-  await page.getByLabel("Find a technician, zone or client").fill("Rohit");
+  await page.getByLabel("Find a technician, client or area").fill("Rohit");
   await press(page, ROHIT_BLOCK);
   const kept = `?from=2025-09-26&city=Delhi&find=Rohit&visit=${ROHIT_JOB?.appointment_id ?? ""}`;
   await expect.poll(() => new URL(page.url()).search).toBe(kept);
@@ -597,7 +681,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
   await expect(page.getByLabel("City", { exact: true })).toHaveValue("Delhi");
-  await expect(page.getByLabel("Find a technician, zone or client")).toHaveValue("Rohit");
+  await expect(page.getByLabel("Find a technician, client or area")).toHaveValue("Rohit");
 });
 
 // OPS-10: 168 technicians made a board 15,000 px tall whose day headers scrolled away, with no way to find a row.
@@ -609,13 +693,43 @@ test("keeps its header row and technicians' column in place, and finds a row by 
   expect(await page.getByRole("columnheader").first().evaluate(position)).toBe("sticky");
   expect(await page.getByRole("rowheader").first().evaluate(position)).toBe("sticky");
 
-  const find = page.getByLabel("Find a technician, zone or client");
+  const find = page.getByLabel("Find a technician, client or area");
   await find.fill("Sohna");
   await expect(page.getByRole("rowheader")).toHaveText(["Faizan AliSohna Rd"]);
   await find.fill("kabir");
   await expect(page.getByRole("rowheader")).toHaveText(["Arjun NegiDLF 1–5"]);
   await find.fill("nobody");
-  await expect(page.getByText("No technician, zone or client this week matches “nobody”.")).toBeVisible();
+  await expect(page.getByText("Nothing on this week's board matches “nobody”.")).toBeVisible();
+});
+
+// BK-22 and OIA-05: an area on a block found nothing, and a client found left a row of eight with no sign of his.
+test("finds a visit by its area or its client, and outlines the blocks it found", async ({ page }) => {
+  await open(page);
+  const find = page.getByLabel("Find a technician, client or area");
+  const found = page.locator("[data-match]");
+
+  await find.fill("dlf 4");
+  await expect(page.getByRole("rowheader")).toHaveCount(2);
+  await expect(found).toHaveCount(2);
+  await expect(found.first()).toHaveAccessibleName("Vikram S., Fri 19 Sep, afternoon");
+
+  await find.fill("Sanjay");
+  await expect(found).toHaveCount(1);
+  await expect(found).toHaveAccessibleName("Sanjay B., Sat 20 Sep, morning");
+
+  // A technician found by name has no one block to point at.
+  await find.fill("Faizan");
+  await expect(page.getByRole("rowheader")).toHaveCount(1);
+  await expect(found).toHaveCount(0);
+});
+
+// BK-54: an empty tray kept its 236 px, so a 1024 px laptop showed five of the week's seven days.
+test("folds an empty tray to a rail, so the week has the width", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await open(page, { [READ_BOARD]: json({ ...BOARD, unassigned: [] }) });
+  const tray = page.getByRole("complementary", { name: "Unassigned" });
+  expect((await tray.boundingBox())?.width ?? 0).toBeLessThanOrEqual(41);
+  await expect(tray).toContainText("Nothing is waiting for a technician.");
 });
 
 // VIS-22: at 1280 wide and 200% zoom the days shrank to 15 px and the navigation ran off the page.

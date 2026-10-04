@@ -54,8 +54,10 @@ describe("the dispatch board's words", () => {
     expect(hours, "the end").toMatch(new RegExp(`\\b${hour(times.end)}\\b`));
   });
 
-  it("offers every reason the policy allows, and no other", () => {
-    expect(dispatch.move.reasons.map((each) => each.reason)).toEqual([...MOVE_REASONS]);
+  it("offers every reason the policy allows but a skill, which nothing records yet, and no other", () => {
+    expect(dispatch.move.reasons.map((each) => each.reason)).toEqual(
+      MOVE_REASONS.filter((reason) => reason !== "skill_needed"),
+    );
   });
 
   it("names every kind of visit the board can draw", () => {
