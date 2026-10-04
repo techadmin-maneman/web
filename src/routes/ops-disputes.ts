@@ -15,12 +15,12 @@ import { afterRuling } from "../domain/after-a-ruling.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { queueMessage } from "../http/queue-message.ts";
 import { permitsOn, routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { REFUNDING_A_DISPUTE } from "../policy/console-routes.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { DISPUTE_RULINGS } from "../policy/no-show.ts";
 import { dueAt } from "../policy/tasks.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 
 /** As many as the board can usefully hold. */
 const LIMIT = 50;
@@ -122,8 +122,7 @@ export function registerOpsDisputes(app: App): void {
       now: c.var.deps.now(),
     });
     if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    const notify = (messageId: string) =>
-      c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
+    const notify = (messageId: string) => queueMessage(c, messageId);
     await afterRuling(c.env.DB, { ...c.var.deps, notify }, ruled);
     return c.json({ ruled: true }, 200);
   });
