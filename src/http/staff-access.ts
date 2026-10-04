@@ -17,7 +17,7 @@ import {
 } from "../policy/access.ts";
 import { meetsNeed, needOf, OWN_DEPARTMENTS, SIGNED_IN, type RouteNeed } from "../policy/console-routes.ts";
 import type { AppEnv } from "./context.ts";
-import { errorBody } from "./errors.ts";
+import { refuse } from "./errors.ts";
 
 /** The caller as the Staff list sees them, read once per call. */
 export async function callerAccess(c: Context<AppEnv>): Promise<CallerAccess> {
@@ -57,7 +57,7 @@ export const requireStaffAccess = createMiddleware<AppEnv>(async (c, next) => {
   const access = await callerAccess(c);
   const allowed = need !== undefined && meets(access, need);
   if (goesAhead(c, access, allowed, askedOf(need))) return next();
-  return c.json(errorBody("not_permitted", c.var.requestId), 403);
+  return refuse(c, "not_permitted");
 });
 
 /** For a choice inside a route that asks more than the route does, as waiving a no-show's charge does. */

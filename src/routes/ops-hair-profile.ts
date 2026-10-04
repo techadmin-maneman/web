@@ -14,7 +14,7 @@ import type { App, AppEnv } from "../http/context.ts";
 import { staffMemberOf } from "../http/audit.ts";
 import { correctByOps, versionsOf } from "../domain/hair-profiles.ts";
 import { offeredProducts } from "../domain/services.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import {
@@ -92,7 +92,7 @@ async function pageOf(c: Context<AppEnv>, personId: string): Promise<z.infer<typ
 export function registerOpsHairProfile(app: App): void {
   app.openapi(readRoute, async (c) => {
     const { id } = c.req.valid("param");
-    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
     return c.json(await pageOf(c, id), 200);
   });
 
@@ -101,8 +101,8 @@ export function registerOpsHairProfile(app: App): void {
     const { fit, history, based_on } = c.req.valid("json");
     const { requestId, deps } = c.var;
     const staff = staffMemberOf(c);
-    if (staff === null) return c.json(errorBody("access_required", requestId), 403);
-    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", requestId), 404);
+    if (staff === null) return refuse(c, "access_required");
+    if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
 
     const written = await correctByOps(c.env.DB, {
       personId: id,
@@ -113,8 +113,8 @@ export function registerOpsHairProfile(app: App): void {
       now: deps.now(),
       audit: { surface: "ops", actor: staff, requestId },
     });
-    if (written.kind === "invalid") return c.json(errorBody("invalid_request", requestId, written.fields), 400);
-    if (written.kind === "moved") return c.json(errorBody("superseded", requestId), 409);
+    if (written.kind === "invalid") return refuse(c, "invalid_request", written.fields);
+    if (written.kind === "moved") return refuse(c, "superseded");
     return c.json(await pageOf(c, id), 200);
   });
 }

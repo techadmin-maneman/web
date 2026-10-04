@@ -24,7 +24,7 @@ import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
 import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { clientOf } from "../http/client-session.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { fileExtension, type ImageType } from "../lib/image-bytes.ts";
 import { verifyToken } from "../lib/signed-token.ts";
 
@@ -405,7 +405,7 @@ export function registerClientVisits(app: App): void {
       c.var.config.settings.tryon.linkSigningKey,
       c.var.deps.now(),
     );
-    if (visit === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (visit === null) return refuse(c, "not_found");
     return c.json(visit, 200);
   });
 
@@ -433,7 +433,7 @@ export function registerClientVisits(app: App): void {
     const { from, to, angle, phase } = c.req.valid("query");
     const { past } = await listVisits(c.env.DB, session.subjectId, c.var.deps.now());
     const [first, second] = [from, to].map((id) => past.find((visit) => visit.id === id));
-    if (first === undefined || second === undefined) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (first === undefined || second === undefined) return refuse(c, "not_found");
     const sets = await photoSets(
       c.env.DB,
       [first.id, second.id],
@@ -458,7 +458,7 @@ export function registerClientVisits(app: App): void {
     );
     const photo = photoId === null ? null : await ownPhotoKey(c.env.DB, session.subjectId, photoId);
     const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
-    if (photo === null || object === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (photo === null || object === null) return refuse(c, "not_found");
     return imageResponse(object.body, photo.contentType);
   });
 
@@ -471,11 +471,11 @@ export function registerClientVisits(app: App): void {
       c.var.deps.now(),
     );
     const photo = photoId === null ? null : await ownPhotoKey(c.env.DB, session.subjectId, photoId);
-    if (photo === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (photo === null) return refuse(c, "not_found");
     const small = photo.thumbnailKey === null ? null : await c.env.CLIENT_PHOTOS.get(photo.thumbnailKey);
     if (small !== null) return imageResponse(small.body, "image/jpeg");
     const whole = await c.env.CLIENT_PHOTOS.get(photo.key);
-    if (whole === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (whole === null) return refuse(c, "not_found");
     return imageResponse(whole.body, photo.contentType);
   });
 
@@ -490,18 +490,18 @@ function registerTryOnImages(app: App): void {
   app.openapi(tryOnFileRoute, async (c) => {
     const session = clientOf(c);
     const { image, token } = c.req.valid("param");
-    const { deps, requestId } = c.var;
+    const { deps } = c.var;
     const { tryon } = c.var.config.settings;
     const now = deps.now();
     const jobId = await verifyToken(tryon.linkSigningKey, TRY_ON_TOKEN_PURPOSES[image], token, now);
     const held = jobId === null ? null : await ownTryOnImage(c.env.DB, session.subjectId, jobId, image, now);
-    if (held === null) return c.json(errorBody("not_found", requestId), 404);
+    if (held === null) return refuse(c, "not_found");
 
     if (!(await takeOne(c.env.DB, "tryon_image:person", session.subjectId, { now, settings: c.var.config.settings }))) {
-      return c.json(errorBody("rate_limited", requestId), 429);
+      return refuse(c, "rate_limited");
     }
     const object = await c.env[held.bucket].get(held.key);
-    if (object === null) return c.json(errorBody("not_found", requestId), 404);
+    if (object === null) return refuse(c, "not_found");
     // Each bucket holds only JPEG and PNG, each checked on its way in (src/domain/photo.ts, src/queues/render.ts).
     const type: ImageType = object.httpMetadata?.contentType === "image/png" ? "image/png" : "image/jpeg";
     // The app names the download the same, less the extension, which only the file's type gives.

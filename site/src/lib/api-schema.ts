@@ -306,7 +306,7 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: {
+            requestBody: {
                 content: {
                     "application/json": {
                         /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
@@ -450,7 +450,7 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: {
+            requestBody: {
                 content: {
                     "application/json": {
                         /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
@@ -724,7 +724,7 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody?: {
+            requestBody: {
                 content: {
                     "application/json": {
                         /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
@@ -851,7 +851,7 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody?: {
+            requestBody: {
                 content: {
                     "application/json": {
                         /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */

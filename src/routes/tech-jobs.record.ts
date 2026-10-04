@@ -18,7 +18,7 @@ import {
 import { jobRecordOf, type LandingStep } from "../domain/job-record.ts";
 import { type PieceField } from "../domain/pieces.ts";
 import { progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
-import { errorBody, type ErrorResponse } from "../http/errors.ts";
+import { errorBody, type ErrorResponse, refuse } from "../http/errors.ts";
 import { technicianOf } from "../http/technician-session.ts";
 import { timeOfUuidV7 } from "../lib/uuidv7.ts";
 import { type JobEventKind } from "../policy/in-job-steps.ts";
@@ -58,13 +58,13 @@ export async function step(
   afterRecorded?: (job: WorkableJob) => Promise<void>,
 ) {
   const job = await namedJob(c, c.req.param("id") ?? "");
-  if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+  if (job === null) return refuse(c, "not_found");
   const built = await build(job);
   if ("invalid" in built && Array.isArray(built.invalid)) {
-    return c.json(errorBody("invalid_request", c.var.requestId, built.invalid), 400);
+    return refuse(c, "invalid_request", built.invalid);
   }
   if ("labelTaken" in built && typeof built.labelTaken === "string") {
-    return c.json(errorBody("piece_code", c.var.requestId, [built.labelTaken]), 409);
+    return refuse(c, "piece_code", [built.labelTaken]);
   }
   const landing = await recordStep(c, job, kind, built);
   if (!landing.ok) return c.json(refusalOf(c, landing), 409);

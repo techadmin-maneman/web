@@ -42,7 +42,7 @@ import { GIVING_NO_CITY } from "../policy/console-routes.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { runsOver } from "../policy/technician-work.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 
@@ -267,9 +267,9 @@ export function registerOpsTechnicians(app: App): void {
   app.openapi(addRoute, async (c) => {
     const { name, mobile, zone, city } = c.req.valid("json");
     const mobileE164 = toE164(mobile);
-    if (mobileE164 === null) return c.json(errorBody("invalid_request", c.var.requestId, ["mobile"]), 400);
+    if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
     if (!(await mayGiveCity(c, city ?? null))) {
-      return c.json(errorBody("invalid_request", c.var.requestId, ["city"]), 400);
+      return refuse(c, "invalid_request", ["city"]);
     }
 
     const id = crypto.randomUUID();
@@ -279,7 +279,7 @@ export function registerOpsTechnicians(app: App): void {
       auditOf(c, "technician.add", id),
       c.var.deps.now(),
     );
-    if (added === "number_in_use") return c.json(errorBody("number_in_use", c.var.requestId), 409);
+    if (added === "number_in_use") return refuse(c, "number_in_use");
     return c.json({ id }, 201);
   });
 
@@ -287,13 +287,13 @@ export function registerOpsTechnicians(app: App): void {
     const { id } = c.req.valid("param");
     const change = c.req.valid("json");
     const mobileE164 = change.mobile === undefined ? undefined : toE164(change.mobile);
-    if (mobileE164 === null) return c.json(errorBody("invalid_request", c.var.requestId, ["mobile"]), 400);
+    if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
     if (!(await mayGiveCity(c, change.city))) {
-      return c.json(errorBody("invalid_request", c.var.requestId, ["city"]), 400);
+      return refuse(c, "invalid_request", ["city"]);
     }
 
     const technician = await technicianToChange(c, id);
-    if (technician === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (technician === null) return refuse(c, "not_found");
     const fields = CHANGEABLE.filter((field) => change[field] !== undefined).join(",");
     const changed = await changeTechnician(
       c.env.DB,
@@ -302,14 +302,14 @@ export function registerOpsTechnicians(app: App): void {
       auditOf(c, "technician.change", id, { fields }),
       c.var.deps.now(),
     );
-    if (changed === "number_in_use") return c.json(errorBody("number_in_use", c.var.requestId), 409);
+    if (changed === "number_in_use") return refuse(c, "number_in_use");
     return c.json({ id }, 200);
   });
 
   app.openapi(deactivateRoute, async (c) => {
     const { id } = c.req.valid("param");
     const technician = await technicianToChange(c, id);
-    if (technician === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (technician === null) return refuse(c, "not_found");
     if (!technician.active) return c.json({ visits: [] }, 200);
 
     const visits = await deactivateTechnician(c.env.DB, id, auditOf(c, "technician.deactivate", id), c.var.deps.now());
@@ -320,7 +320,7 @@ export function registerOpsTechnicians(app: App): void {
   app.openapi(reactivateRoute, async (c) => {
     const { id } = c.req.valid("param");
     const technician = await technicianToChange(c, id);
-    if (technician === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (technician === null) return refuse(c, "not_found");
     if (technician.active) return c.json({ active: true as const }, 200);
 
     const reactivated = await reactivateTechnician(
@@ -329,7 +329,7 @@ export function registerOpsTechnicians(app: App): void {
       auditOf(c, "technician.reactivate", id),
       c.var.deps.now(),
     );
-    if (reactivated === "number_in_use") return c.json(errorBody("number_in_use", c.var.requestId), 409);
+    if (reactivated === "number_in_use") return refuse(c, "number_in_use");
     return c.json({ active: true as const }, 200);
   });
 
@@ -340,7 +340,7 @@ export function registerOpsTechnicians(app: App): void {
     const figures = (await opsInputs(c)).technicianWork;
     const to = asked.to ?? addDays(today, 1);
     const from = asked.from ?? addDays(to, -figures.period);
-    if (from >= to) return c.json(errorBody("invalid_request", c.var.requestId, ["from"]), 400);
+    if (from >= to) return refuse(c, "invalid_request", ["from"]);
 
     const work = await workInReach(c, { from, to });
     const runningOver = (each: TechnicianWork) =>

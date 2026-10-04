@@ -38,7 +38,7 @@ import { reachesCity } from "../policy/access.ts";
 import { WAIVING_A_NO_SHOW } from "../policy/console-routes.ts";
 import { allowSignIn, devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { roster, rosterTechnician, type RosterTechnician } from "../domain/technician-roster.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
@@ -383,11 +383,11 @@ export function registerOpsField(app: App): void {
     const { id } = c.req.valid("param");
     const { decision, reason } = c.req.valid("json");
     if (needsReason("no_show", decision) && (reason ?? "") === "") {
-      return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
+      return refuse(c, "invalid_request", ["reason"]);
     }
-    if (!(await withinRouteReach(c, "no_show", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await withinRouteReach(c, "no_show", id))) return refuse(c, "not_found");
     if (decision === "waived" && !(await permitsOn(c, WAIVING_A_NO_SHOW, "no_show", id))) {
-      return c.json(errorBody("not_permitted", c.var.requestId), 403);
+      return refuse(c, "not_permitted");
     }
     const now = c.var.deps.now();
     const inputs = await opsInputs(c);
@@ -410,7 +410,7 @@ export function registerOpsField(app: App): void {
       terms: inputs,
       disputeWindowDays: inputs.disputeWindowDays,
     });
-    if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (ruled === null) return refuse(c, "not_found");
     const notify = (messageId: string) => queueMessage(c, messageId);
     await afterRuling(c.env.DB, { ...c.var.deps, notify }, ruled);
     return c.json({ decided: true }, 200);
@@ -422,7 +422,7 @@ export function registerOpsField(app: App): void {
       .bind(id)
       .first<{ id: string }>();
     if (client === null || !(await withinRouteReach(c, "client", id))) {
-      return c.json(errorBody("not_found", c.var.requestId), 404);
+      return refuse(c, "not_found");
     }
     const pieces = await piecesOf(c.env.DB, id);
     return c.json(
@@ -479,7 +479,7 @@ export function registerOpsField(app: App): void {
     const { id } = c.req.valid("param");
     const technician = await rosterTechnician(c.env.DB, id);
     if (technician === null || !(await withinRouteReach(c, "technician", id))) {
-      return c.json(errorBody("not_found", c.var.requestId), 404);
+      return refuse(c, "not_found");
     }
     const periods = await standingLeave(c.env.DB, id, indiaDate(c.var.deps.now()));
     const leave = periods.map((period) => ({
@@ -497,7 +497,7 @@ export function registerOpsField(app: App): void {
     const { id } = c.req.valid("param");
     const { from, to, note } = c.req.valid("json");
     const now = c.var.deps.now();
-    if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
 
     const outcome = await recordLeave(
       c.env.DB,
@@ -513,8 +513,8 @@ export function registerOpsField(app: App): void {
         detail: { from, to },
       },
     );
-    if (outcome.kind === "no_such_technician") return c.json(errorBody("not_found", c.var.requestId), 404);
-    if (outcome.kind === "bad_dates") return c.json(errorBody("invalid_request", c.var.requestId, ["to"]), 400);
+    if (outcome.kind === "no_such_technician") return refuse(c, "not_found");
+    if (outcome.kind === "bad_dates") return refuse(c, "invalid_request", ["to"]);
     return c.json({ id: outcome.id, jobs: outcome.jobs }, 200);
   });
 
@@ -522,7 +522,7 @@ export function registerOpsField(app: App): void {
     const staff = actorOf(c);
     const { id, leave } = c.req.valid("param");
     const now = c.var.deps.now();
-    if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
 
     const cancelled = await cancelLeave(
       c.env.DB,
@@ -541,7 +541,7 @@ export function registerOpsField(app: App): void {
       },
       now,
     );
-    if (!cancelled) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!cancelled) return refuse(c, "not_found");
     return c.json({ cancelled: true }, 200);
   });
 
@@ -549,7 +549,7 @@ export function registerOpsField(app: App): void {
     const staff = actorOf(c);
     const { id, device } = c.req.valid("param");
     const now = c.var.deps.now();
-    if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
 
     const revoked = await revokeDevice(c.env.DB, {
       technicianId: id,
@@ -566,14 +566,14 @@ export function registerOpsField(app: App): void {
       now,
     });
     const revokedAt = revoked?.revokedAt ?? null;
-    if (revokedAt === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (revokedAt === null) return refuse(c, "not_found");
     c.var.log.info("technician_device_revoked", { technician_id: id, device_id: device });
     return c.json({ revoked_at: revokedAt }, 200);
   });
 
   app.openapi(allowSignInRoute, async (c) => {
     const { id } = c.req.valid("param");
-    if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
     const audit = {
       surface: "ops",
       actor: actorOf(c),
@@ -582,7 +582,7 @@ export function registerOpsField(app: App): void {
       requestId: c.var.requestId,
     } as const;
     if (!(await allowSignIn(c.env.DB, id, audit, c.var.deps.now()))) {
-      return c.json(errorBody("not_found", c.var.requestId), 404);
+      return refuse(c, "not_found");
     }
     c.var.log.info("technician_sign_in_allowed", { technician_id: id });
     return c.json({ allowed: true as const }, 200);

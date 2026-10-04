@@ -11,7 +11,7 @@ import type { App } from "../http/context.ts";
 import { FAILURE_CODES, JOB_STATES } from "../config/tryon.ts";
 import { withinCeiling } from "../domain/ceilings.ts";
 import { loadJob } from "../domain/tryon.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { lookCookieJob } from "../http/look-cookie.ts";
 import { verifyToken } from "../lib/signed-token.ts";
 import { tryOnRuns } from "../policy/tryon-delivery.ts";
@@ -87,18 +87,18 @@ export function registerTryonResult(app: App): void {
 
   app.openapi(resultImageRoute, async (c) => {
     const { settings } = c.var.config;
-    const { deps, requestId } = c.var;
+    const { deps } = c.var;
     const now = deps.now();
 
     const resultKey = await verifyToken(settings.tryon.linkSigningKey, "result", c.req.valid("param").token, now);
-    if (resultKey === null) return c.json(errorBody("not_found", requestId), 404);
+    if (resultKey === null) return refuse(c, "not_found");
 
     if (!(await withinCeiling(c.env.DB, deps.alert, "result_read", { now, settings }))) {
-      return c.json(errorBody("busy", requestId), 503);
+      return refuse(c, "busy");
     }
 
     const object = await c.env.RESULTS.get(resultKey);
-    if (object === null) return c.json(errorBody("not_found", requestId), 404);
+    if (object === null) return refuse(c, "not_found");
     return c.body(object.body, 200, {
       "Content-Type": object.httpMetadata?.contentType ?? "image/png",
       "Content-Length": String(object.size),

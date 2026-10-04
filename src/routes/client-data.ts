@@ -18,7 +18,7 @@ import { openGrievanceInWords } from "../domain/grievances.ts";
 import { myDataPage } from "../domain/my-data-page.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { clientOf } from "../http/client-session.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { GRIEVANCES_PER_DAY } from "../policy/grievances.ts";
 
 const exportRoute = clientRoute({
@@ -126,7 +126,7 @@ export function registerClientData(app: App): void {
     if (already !== null) return c.json({ id: already, state: "open" as const }, 201);
 
     const allowed = await takeOne(db, "grievance:person", session.subjectId, { now, settings: c.var.config.settings });
-    if (!allowed) return c.json(errorBody("rate_limited", c.var.requestId), 429);
+    if (!allowed) return refuse(c, "rate_limited");
 
     const id = crypto.randomUUID();
     // The write settles two taps in the same moment, not the read above: both could find nothing,

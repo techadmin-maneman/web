@@ -8,7 +8,7 @@ import { z } from "@hono/zod-openapi";
 import { selfServeRoute } from "../http/session-routes.ts";
 import type { App } from "../http/context.ts";
 import { CLIENT_NOTE_MAX_CHARS, saveClientNote } from "../domain/client-notes.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { clientOf } from "../http/client-session.ts";
 
 const NoteSchema = z
@@ -50,8 +50,8 @@ export function registerClientNotes(app: App): void {
       note: c.req.valid("json").note,
       now: c.var.deps.now(),
     });
-    if (saved.kind === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
-    if (saved.kind === "closed") return c.json(errorBody("not_changeable", c.var.requestId), 409);
+    if (saved.kind === "not_found") return refuse(c, "not_found");
+    if (saved.kind === "closed") return refuse(c, "not_changeable");
     return c.json({ note: saved.note, noted_at: saved.notedAt }, 200);
   });
 }

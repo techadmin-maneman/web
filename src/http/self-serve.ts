@@ -3,9 +3,9 @@
 
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "./context.ts";
-import { errorBody } from "./errors.ts";
+import { refuse } from "./errors.ts";
 
 export const requireSelfServe = createMiddleware<AppEnv>(async (c, next) => {
-  if (!c.var.config.settings.selfServeBooking) return c.json(errorBody("ops_assisted", c.var.requestId), 409);
+  if (!c.var.config.settings.selfServeBooking) return refuse(c, "ops_assisted");
   return next();
 });

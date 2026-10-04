@@ -5,7 +5,7 @@ import { type VisitType } from "../config/visit-types.ts";
 import { offeredForJob, serviceOfJob } from "../domain/consumables.ts";
 import { checklistOf, declinedChecklistOf, jobSheet } from "../domain/job-sheet-settings.ts";
 import { jobDetail, jobsOn, lastVisitPhoto } from "../domain/tech-jobs.ts";
-import { errorBody } from "../http/errors.ts";
+import { refuse } from "../http/errors.ts";
 import { technicianOf } from "../http/technician-session.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { listableDate } from "../policy/job-visibility.ts";
@@ -19,7 +19,7 @@ export function registerTechJobReads(app: App): void {
     const now = c.var.deps.now();
     const date = c.req.valid("query").date ?? indiaDate(now);
     // Nothing before yesterday: paging back through every date read every past client's card (FLD-18).
-    if (!listableDate(date, now)) return c.json(errorBody("invalid_request", c.var.requestId, ["date"]), 400);
+    if (!listableDate(date, now)) return refuse(c, "invalid_request", ["date"]);
     const { addressUnlockHour } = await opsInputs(c);
     return c.json({ date, jobs: await jobsOn(c.env.DB, technicianId, date, now, addressUnlockHour) }, 200);
   });
@@ -39,7 +39,7 @@ export function registerTechJobReads(app: App): void {
       }),
       jobSheet(c.env.DB),
     ]);
-    if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (job === null) return refuse(c, "not_found");
     const type: VisitType = job.type ?? "service";
     return c.json(
       {
@@ -62,7 +62,7 @@ export function registerTechJobReads(app: App): void {
       unlockHour: (await opsInputs(c)).addressUnlockHour,
     });
     const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
-    if (photo === null || object === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (photo === null || object === null) return refuse(c, "not_found");
     // A client's photograph stays off a technician's phone: neither the browser nor the service worker keeps it.
     return new Response(object.body, {
       headers: { "Content-Type": photo.contentType, "Cache-Control": "private, no-store" },

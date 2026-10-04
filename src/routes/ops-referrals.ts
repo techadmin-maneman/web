@@ -9,7 +9,7 @@ import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { reachBinding, withinReach } from "../domain/places.ts";
 import { decideHeldReferral } from "../domain/referral-grants.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { queueMessage } from "../http/queue-message.ts";
@@ -132,9 +132,9 @@ export function registerOpsReferrals(app: App): void {
     const { decision, reason } = c.req.valid("json");
     const { requestId, deps } = c.var;
     if (needsReason("referral", decision) && (reason ?? "") === "") {
-      return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
+      return refuse(c, "invalid_request", ["reason"]);
     }
-    if (!(await withinRouteReach(c, "referral", id))) return c.json(errorBody("not_found", requestId), 404);
+    if (!(await withinRouteReach(c, "referral", id))) return refuse(c, "not_found");
     const staff = actorOf(c);
     const now = deps.now();
     const outcome = await decideHeldReferral(c.env.DB, {
@@ -153,8 +153,8 @@ export function registerOpsReferrals(app: App): void {
       rewardNow: (await opsInputs(c)).referralReward,
       now,
     });
-    if (outcome === null) return c.json(errorBody("not_found", requestId), 404);
-    if (outcome === "not_paid") return c.json(errorBody("not_paid", requestId), 409);
+    if (outcome === null) return refuse(c, "not_found");
+    if (outcome === "not_paid") return refuse(c, "not_paid");
     for (const messageId of outcome.messageIds) await queueMessage(c, messageId);
     return c.json({ state: outcome.state }, 200);
   });

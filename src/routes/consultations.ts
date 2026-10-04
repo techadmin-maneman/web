@@ -47,7 +47,7 @@ import { DISCOUNT_KINDS } from "../policy/discount-codes.ts";
 import { PLANS, type Plan } from "../policy/one-visit.ts";
 import { CODE_PATTERN } from "../config/invite-codes.ts";
 import { inviteOf, type Invite } from "../domain/referrals.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema } from "../http/idempotency.ts";
 import { PersonNameSchema } from "../http/openapi.ts";
 import { addressOf, AddressSchema, RequiredFlatSchema } from "./client-profile.ts";
@@ -283,7 +283,7 @@ const consultationRoute = createRoute({
   summary: "Book a free consultation",
   request: {
     headers: IdempotencyKeyHeaderSchema,
-    body: { content: { "application/json": { schema: ConsultationRequestSchema } } },
+    body: { required: true, content: { "application/json": { schema: ConsultationRequestSchema } } },
   },
   responses: {
     201: { description: BOOKED_DESCRIPTION, content: { "application/json": { schema: ConsultationSchema } } },
@@ -309,7 +309,7 @@ const waitlistRoute = createRoute({
   summary: "Wait for a pincode we do not serve yet",
   request: {
     headers: IdempotencyKeyHeaderSchema,
-    body: { content: { "application/json": { schema: WaitlistRequestSchema } } },
+    body: { required: true, content: { "application/json": { schema: WaitlistRequestSchema } } },
   },
   responses: {
     201: { description: "On the list", content: { "application/json": { schema: WaitlistSchema } } },
@@ -341,7 +341,7 @@ function rememberedInvite(
 export function registerConsultations(app: App): void {
   app.openapi(openWindowsRoute, async (c) => {
     const { pincode, plan } = c.req.valid("query");
-    if (!(await isServed(c.env.DB, pincode))) return c.json(errorBody("not_bookable", c.var.requestId), 422);
+    if (!(await isServed(c.env.DB, pincode))) return refuse(c, "not_bookable");
     const { settings } = c.var.config;
     const days = await openDays(c.env.DB, plan, settings.selfServeBooking, c.var.deps.now());
     return c.json({ plan, days }, 200, { "Cache-Control": "public, max-age=60" });

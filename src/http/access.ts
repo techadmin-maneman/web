@@ -5,7 +5,7 @@
 
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "./context.ts";
-import { errorBody } from "./errors.ts";
+import { refuse } from "./errors.ts";
 
 /** Refuses a request without a valid Access token; otherwise sets c.var.accessIdentity. */
 export const requireAccess = createMiddleware<AppEnv>(async (c, next) => {
@@ -16,8 +16,8 @@ export const requireAccess = createMiddleware<AppEnv>(async (c, next) => {
   }
   if (result.reason === "keys_unavailable") {
     c.var.log.error("access_keys_unavailable", { error: result.error });
-    return c.json(errorBody("unavailable", c.var.requestId), 503);
+    return refuse(c, "unavailable");
   }
   c.var.log.warn("access_refused", { reason: result.reason });
-  return c.json(errorBody("access_required", c.var.requestId), 403);
+  return refuse(c, "access_required");
 });

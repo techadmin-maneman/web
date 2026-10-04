@@ -36,7 +36,7 @@ import {
 import { actorOf } from "../http/audit.ts";
 import { bookHold } from "../http/book-hold.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, refuse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
@@ -303,7 +303,7 @@ export function registerOpsVisits(app: App): void {
     const { client, kind, tier, from } = c.req.valid("query");
     const db = c.env.DB;
     const now = c.var.deps.now();
-    if (!(await isClientInReach(c, client))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await isClientInReach(c, client))) return refuse(c, "not_found");
 
     const range = bookableRange(now, await opsInputs(c));
     const start = stripStart(from, range, BOOKING_DAYS);
@@ -347,15 +347,15 @@ export function registerOpsVisits(app: App): void {
     }
     const { sale } = checked;
     const closesAt = sale.pays === "link" ? await linkClosesAt(db, asked, now) : null;
-    if (sale.pays === "link" && closesAt === null) return c.json(errorBody("not_bookable", c.var.requestId), 422);
+    if (sale.pays === "link" && closesAt === null) return refuse(c, "not_bookable");
 
     const by = { actor: actorOf(c), requestId: c.var.requestId };
     const graceSeconds = inputs.paymentHold.grace * 60;
     const hold = await holdForSale(db, asked, sale, { closesAt, graceSeconds, by }, now);
-    if (hold === null) return c.json(errorBody("taken", c.var.requestId), 409);
+    if (hold === null) return refuse(c, "taken");
     if (!(await codeStands(db, asked, hold.id))) {
       await letGo(c, hold.id, "code_taken");
-      return c.json(errorBody("code_not_applicable", c.var.requestId), 422);
+      return refuse(c, "code_not_applicable");
     }
     c.var.log.info("visit_booked_by_ops", { hold_id: hold.id, kind: asked.kind, pays: sale.pays });
 
@@ -364,7 +364,7 @@ export function registerOpsVisits(app: App): void {
       const made = await sendHoldLink(db, deps, { hold, asked, sale, closesAt }, now);
       if (made === null) {
         await letGo(c, hold.id, "link_not_made");
-        return c.json(errorBody("unavailable", c.var.requestId), 503);
+        return refuse(c, "unavailable");
       }
       const link = { url: made.shortUrl, open_until: closesAt.toISOString() };
       return c.json(bookingBody({ hold, sale, outcome: "awaiting_payment", visitId: null, link }), 201);
@@ -372,7 +372,7 @@ export function registerOpsVisits(app: App): void {
 
     if (!(await confirmUnpaid(db, hold.id, now))) {
       await letGo(c, hold.id, "credit_spent");
-      return c.json(errorBody("terms_changed", c.var.requestId), 409);
+      return refuse(c, "terms_changed");
     }
     await bookHold(c, hold.id);
     const visitId = await visitOfHold(db, hold.id);

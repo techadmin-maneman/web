@@ -8,7 +8,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { closeVisit, moveVisit } from "../domain/visit-status.ts";
 import type { App } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 
 const CLOSED_AS = { done: "completed", partial: "terminated" } as const;
 
@@ -40,7 +40,7 @@ const closeRoute = createRoute({
 
 export function registerDevVisits(app: App): void {
   app.openapi(closeRoute, async (c) => {
-    const { requestId, deps, log } = c.var;
+    const { deps, log } = c.var;
     const { id } = c.req.valid("param");
     const { outcome } = c.req.valid("json");
     const db = c.env.DB;
@@ -50,12 +50,12 @@ export function registerDevVisits(app: App): void {
       .prepare("SELECT window_start, window_end FROM appointments WHERE id = ?1 AND deleted_at IS NULL")
       .bind(id)
       .first<{ window_start: string | null; window_end: string | null }>();
-    if (visit === null) return c.json(errorBody("not_found", requestId), 404);
+    if (visit === null) return refuse(c, "not_found");
 
     const times = { startedAt: visit.window_start, endedAt: visit.window_end };
     const [moved] = await db.batch([moveVisit(db, id, outcome, at), closeVisit(db, id, outcome, times, null, at)]);
     // The board version's trigger counts among the changes, so any change at all is the move.
-    if ((moved?.meta.changes ?? 0) === 0) return c.json(errorBody("not_changeable", requestId), 409);
+    if ((moved?.meta.changes ?? 0) === 0) return refuse(c, "not_changeable");
 
     const status = CLOSED_AS[outcome];
     log.info("dev_visit_closed", { appointment_id: id, status });

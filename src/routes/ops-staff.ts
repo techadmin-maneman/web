@@ -13,7 +13,7 @@ import type { Context } from "hono";
 import { routePath } from "hono/route";
 import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { callerAccess, goesAhead } from "../http/staff-access.ts";
 import {
@@ -257,19 +257,19 @@ export function registerOpsStaff(app: App): void {
     const email = sent.email.toLowerCase();
     const staff = await readStaffBook(c.env.DB);
     const checked = grantsOf(sent.grants, staff);
-    if ("field" in checked) return c.json(errorBody("invalid_request", c.var.requestId, [checked.field]), 400);
+    if ("field" in checked) return refuse(c, "invalid_request", [checked.field]);
 
     const access = await callerAccess(c);
     // A grant is given by a person: a service token is refused even while the list is not enforced.
-    if (access.caller.kind === "service") return c.json(errorBody("not_permitted", c.var.requestId), 403);
+    if (access.caller.kind === "service") return refuse(c, "not_permitted");
     const entry = { active: sent.active, grants: checked.grants };
     const before = staff.people.find((person) => person.email === email) ?? null;
     const allowed = mayEdit(access.caller, before, entry, staff.zoneOf);
     if (!goesAhead(c, access, allowed, "admin:manage:places")) {
-      return c.json(errorBody("not_permitted", c.var.requestId), 403);
+      return refuse(c, "not_permitted");
     }
     if (leavesNoNationalAdmin(staff.people, email, entry)) {
-      return c.json(errorBody("last_admin", c.var.requestId), 409);
+      return refuse(c, "last_admin");
     }
 
     await saveStaffMember(c.env.DB, {
@@ -285,7 +285,7 @@ export function registerOpsStaff(app: App): void {
 
   app.openapi(enforcementRoute, async (c) => {
     const access = await callerAccess(c);
-    if (!runsAccess(c, access)) return c.json(errorBody("not_permitted", c.var.requestId), 403);
+    if (!runsAccess(c, access)) return refuse(c, "not_permitted");
     await setEnforced(c.env.DB, {
       enforced: c.req.valid("json").on,
       actor: actorOf(c),
@@ -297,7 +297,7 @@ export function registerOpsStaff(app: App): void {
 
   app.openapi(addTokenRoute, async (c) => {
     const access = await callerAccess(c);
-    if (!runsAccess(c, access)) return c.json(errorBody("not_permitted", c.var.requestId), 403);
+    if (!runsAccess(c, access)) return refuse(c, "not_permitted");
     const { client_id: clientId, label } = c.req.valid("json");
     await addServiceToken(c.env.DB, {
       clientId,
@@ -311,14 +311,14 @@ export function registerOpsStaff(app: App): void {
 
   app.openapi(removeTokenRoute, async (c) => {
     const access = await callerAccess(c);
-    if (!runsAccess(c, access)) return c.json(errorBody("not_permitted", c.var.requestId), 403);
+    if (!runsAccess(c, access)) return refuse(c, "not_permitted");
     const removed = await removeServiceToken(c.env.DB, {
       clientId: c.req.valid("json").client_id,
       actor: actorOf(c),
       requestId: c.var.requestId,
       now: c.var.deps.now(),
     });
-    if (!removed) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!removed) return refuse(c, "not_found");
     return c.json(await currentBook(c, access), 200);
   });
 }

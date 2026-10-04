@@ -18,8 +18,8 @@ import { isTestNumber } from "../domain/test-records.ts";
 import { testRecordAtCreation } from "../policy/staging-test-records.ts";
 import { loadJob, type JobRow } from "../domain/tryon.ts";
 import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../domain/tryon-claims.ts";
-import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
-import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
+import { errorResponse, type ErrorCode } from "../http/errors.ts";
+import { answerKeyed, IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { provedNumber } from "../http/number-proof.ts";
 import { PersonNameSchema } from "../http/openapi.ts";
 import { visitorOf } from "../http/visitor.ts";
@@ -116,17 +116,10 @@ type Outcome =
 export function registerTryonClaim(app: App): void {
   app.openapi(claimRoute, async (c) => {
     const request = c.req.valid("json");
-    const { requestId } = c.var;
     const key = c.req.valid("header")["idempotency-key"];
 
     const run = await onceForKey(c, { route: IDEMPOTENCY_ROUTE, key, request }, () => claim(c, request));
-    if (run.kind === "replay") return c.json(run.body, 201);
-    if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
-    if (run.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
-
-    const { outcome } = run;
-    if (!outcome.ok) return c.json(errorBody(outcome.code, requestId, outcome.fields), outcome.status);
-    return c.json(outcome.body, 201);
+    return answerKeyed(c, run);
   });
 }
 

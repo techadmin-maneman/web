@@ -16,7 +16,7 @@ import type { Entered, Removed } from "../domain/discount-code-uses.ts";
 import { clientHold } from "../domain/holds.ts";
 import { clientOf } from "../http/client-session.ts";
 import { mayCheckCode } from "../http/code-checks.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { HoldSchema } from "./client-booking.ts";
 
@@ -85,7 +85,7 @@ export function registerClientDiscountCodes(app: App): void {
   app.openapi(enterRoute, async (c) => {
     const { subjectId: personId } = clientOf(c);
     const { requestId, log, deps } = c.var;
-    if (!(await mayCheckCode(c, personId))) return c.json(errorBody("rate_limited", requestId), 429);
+    if (!(await mayCheckCode(c, personId))) return refuse(c, "rate_limited");
     const { id } = c.req.valid("param");
     const now = deps.now();
     const entry = { holdId: id, personId, text: c.req.valid("json").code };
@@ -95,7 +95,7 @@ export function registerClientDiscountCodes(app: App): void {
     if (refused !== null) return c.json(errorBody(refused.code, requestId), refused.status);
     log.info("discount_code_applied", { hold_id: id });
     const held = await clientHold(c.env.DB, id, personId, now);
-    if (held === null) return c.json(errorBody("not_found", requestId), 404);
+    if (held === null) return refuse(c, "not_found");
     return c.json(held, 200);
   });
 
@@ -108,7 +108,7 @@ export function registerClientDiscountCodes(app: App): void {
     const refused = removalRefusalOf(removed);
     if (refused !== null) return c.json(errorBody(refused.code, requestId), refused.status);
     const held = await clientHold(c.env.DB, id, personId, now);
-    if (held === null) return c.json(errorBody("not_found", requestId), 404);
+    if (held === null) return refuse(c, "not_found");
     return c.json(held, 200);
   });
 }

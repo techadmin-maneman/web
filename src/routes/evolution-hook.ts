@@ -14,7 +14,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { queueMessage } from "../http/queue-message.ts";
 import { secretsMatch } from "../lib/hash.ts";
 import { stopByReply } from "../domain/stop-messages.ts";
@@ -72,12 +72,12 @@ export const evolutionHookRoute = createRoute({
 
 export function registerEvolutionHook(app: App): void {
   app.openapi(evolutionHookRoute, async (c) => {
-    const { requestId, log } = c.var;
+    const { log } = c.var;
     const expected = c.var.config.settings.messaging.evolution?.webhookToken ?? null;
-    if (expected === null) return c.json(errorBody("not_found", requestId), 404);
+    if (expected === null) return refuse(c, "not_found");
     if (!(await secretsMatch(c.req.valid("param").token, expected))) {
       log.warn("evolution_hook_unauthorized");
-      return c.json(errorBody("unauthorized", requestId), 401);
+      return refuse(c, "unauthorized");
     }
 
     const body = await c.req.json<unknown>().catch(() => null);

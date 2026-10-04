@@ -32,7 +32,7 @@ import { recordConsent } from "../domain/consents.ts";
 import { consentsOf, currentAddress, liveContact, maskedMobile, type Address } from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { clientOf } from "../http/client-session.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
 import { numberChangeCodes, sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
@@ -404,7 +404,7 @@ export function registerClientProfile(app: App): void {
     const personId = clientOf(c).subjectId;
     const db = c.env.DB;
     const person = await liveContact(db, personId);
-    if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
+    if (person === null) return refuse(c, "session_required");
 
     const now = c.var.deps.now();
     const [address, consents, change, decided, deletion, deletionRejected, grievances] = await Promise.all([
@@ -477,8 +477,8 @@ export function registerClientProfile(app: App): void {
     const body = c.req.valid("json");
     const address = addressOf(body);
     const refusal = await addressChangeRefusal(c.env.DB, personId, address.pincode);
-    if (refusal === "not_served") return c.json(errorBody("not_served", c.var.requestId), 422);
-    if (refusal === "visit_booked") return c.json(errorBody("visit_booked", c.var.requestId), 409);
+    if (refusal === "not_served") return refuse(c, "not_served");
+    if (refusal === "visit_booked") return refuse(c, "visit_booked");
     await saveClientAddress(c, {
       personId,
       address,
@@ -510,7 +510,7 @@ export function registerClientProfile(app: App): void {
     const { granted, source = null } = c.req.valid("json");
     // A screen is kept against a consent only if it asks for it (docs/decisions/0094-where-a-consent-was-given.md).
     if (source !== null && !screenAsks(source, purpose)) {
-      return c.json(errorBody("invalid_request", c.var.requestId, ["source"]), 400);
+      return refuse(c, "invalid_request", ["source"]);
     }
     const now = c.var.deps.now();
     const db = c.env.DB;
@@ -552,13 +552,12 @@ export function registerClientProfile(app: App): void {
     // A live session's person is never erased: the erasure ends their sessions.
     const contact = await liveContact(db, personId);
     const current = contact?.mobileE164 ?? null;
-    if (newMobile === null || newMobile === current)
-      return c.json(errorBody("invalid_request", requestId, ["new_mobile"]), 400);
+    if (newMobile === null || newMobile === current) return refuse(c, "invalid_request", ["new_mobile"]);
 
     const allowed = await takeOne(db, "number_change:person", personId, { now, settings: config.settings });
-    if (!allowed) return c.json(errorBody("rate_limited", requestId), 429);
+    if (!allowed) return refuse(c, "rate_limited");
     if (!(await withinCodeCeiling(c, now)) || !(await withinCodeCeiling(c, now))) {
-      return c.json(errorBody("busy", requestId), 503);
+      return refuse(c, "busy");
     }
 
     const testRecord = contact?.testRecord ?? false;
@@ -588,11 +587,11 @@ export function registerClientProfile(app: App): void {
   });
 
   app.openapi(numberChangeVerifyRoute, async (c) => {
-    const { requestId, deps, config } = c.var;
+    const { deps, config } = c.var;
     const personId = clientOf(c).subjectId;
     const { request_id: id, number, code } = c.req.valid("json");
     const change = await openNumberChange(c.env.DB, personId);
-    if (change?.id !== id) return c.json(errorBody("code_expired", requestId), 410);
+    if (change?.id !== id) return refuse(c, "code_expired");
 
     const result = await verifyNumberChange(c.env.DB, {
       change,
@@ -601,7 +600,7 @@ export function registerClientProfile(app: App): void {
       pepper: config.settings.login.codePepper,
       now: deps.now(),
     });
-    if (result.verification.outcome === "closed") return c.json(errorBody("code_expired", requestId), 410);
+    if (result.verification.outcome === "closed") return refuse(c, "code_expired");
     const attemptsLeft = result.verification.outcome === "mismatch" ? result.verification.attemptsLeft : null;
     return c.json({ ...numberChangeBody(result.change), attempts_left: attemptsLeft }, 200);
   });

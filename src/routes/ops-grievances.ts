@@ -8,7 +8,7 @@ import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { auditStatement } from "../domain/audit.ts";
 import { reachBinding, withinReach } from "../domain/places.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
@@ -104,7 +104,7 @@ export function registerOpsGrievances(app: App): void {
     const db = c.env.DB;
     const open = await db.prepare("SELECT 1 FROM grievances WHERE id = ?1 AND state = 'open'").bind(id).first();
     if (open === null || !(await withinRouteReach(c, "grievance", id))) {
-      return c.json(errorBody("not_found", c.var.requestId), 404);
+      return refuse(c, "not_found");
     }
     // The answer and its audit entry, together or not at all (src/domain/audit.ts).
     await db.batch([

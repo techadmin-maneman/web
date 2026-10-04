@@ -13,7 +13,7 @@ import type { AppEnv } from "./context.ts";
 import { findSession, revokeSession, SESSION_TOUCH_MS, SESSION_TTL_MS, touchSession } from "../domain/sessions.ts";
 import { deviceOfSession, markWiped, touchDevice } from "../domain/technicians.ts";
 import { sha256Hex } from "../lib/hash.ts";
-import { errorBody } from "./errors.ts";
+import { refuse } from "./errors.ts";
 
 /** __Host-: the browser holds it to this host, over HTTPS, at path /, whatever a page sets. */
 export const TECHNICIAN_COOKIE = "__Host-mm_tech";
@@ -54,7 +54,7 @@ export const requireTechnicianSession = createMiddleware<AppEnv>(async (c, next)
   const token = getCookie(c, TECHNICIAN_COOKIE) ?? getCookie(c, OLD_TECHNICIAN_COOKIE);
   const now = c.var.deps.now();
   if (token === undefined || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
-    return c.json(errorBody("session_required", c.var.requestId), 401);
+    return refuse(c, "session_required");
   }
 
   // The device is read first: revoking one, or switching its technician off, ends its session too, and the phone
@@ -64,7 +64,7 @@ export const requireTechnicianSession = createMiddleware<AppEnv>(async (c, next)
   if (device !== null && device.revokedAt !== null) {
     await markWiped(c.env.DB, device.id, now);
     clearTechnicianCookie(c);
-    return c.json(errorBody("device_revoked", c.var.requestId), 401);
+    return refuse(c, "device_revoked");
   }
 
   // A technician switched off has left, or is away from the work: the app drops the clients' cards it holds and
@@ -72,11 +72,11 @@ export const requireTechnicianSession = createMiddleware<AppEnv>(async (c, next)
   if (device !== null && !device.technicianActive) {
     await revokeSession(c.env.DB, sessionId, now);
     clearTechnicianCookie(c);
-    return c.json(errorBody("technician_inactive", c.var.requestId), 401);
+    return refuse(c, "technician_inactive");
   }
 
   const session = await findSession(c.env.DB, "technician", token, now);
-  if (session === null || device === null) return c.json(errorBody("session_required", c.var.requestId), 401);
+  if (session === null || device === null) return refuse(c, "session_required");
 
   if (now.getTime() - session.lastSeenAt.getTime() > SESSION_TOUCH_MS) {
     await touchSession(c.env.DB, session, now);

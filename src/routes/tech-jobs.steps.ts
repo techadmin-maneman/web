@@ -37,7 +37,7 @@ import {
 } from "../domain/tech-photos.ts";
 import { type Phase } from "../domain/visit-photos.ts";
 import { cappedBody } from "../http/capped-body.ts";
-import { errorBody } from "../http/errors.ts";
+import { refuse } from "../http/errors.ts";
 import { technicianOf } from "../http/technician-session.ts";
 import { timeOfUuidV7 } from "../lib/uuidv7.ts";
 import { takesStep } from "../policy/in-job-steps.ts";
@@ -91,11 +91,11 @@ function registerArrival(app: App): void {
   // Nothing is measured or recorded until the check-in may land: the job is his, today's, and as his phone holds it.
   // One sent again is answered from the check-in it landed as, and tells the client nothing.
   app.openapi(checkinRoute, async (c) => {
-    const { deps, requestId } = c.var;
+    const { deps } = c.var;
     const now = deps.now();
     const body = c.req.valid("json");
     const job = await namedJob(c, c.req.valid("param").id);
-    if (job === null) return c.json(errorBody("not_found", requestId), 404);
+    if (job === null) return refuse(c, "not_found");
 
     const eventId = c.req.valid("header")["x-client-event-id"];
     const claimed = body.at === undefined ? timeOfUuidV7(eventId) : new Date(body.at);
@@ -160,10 +160,10 @@ function registerNoShow(app: App): void {
   // A job that changed under the phone is refused before its wait is read. The wait runs from the job's technician's
   // own check-in, so one given the job after another arrived must arrive himself.
   app.openapi(noShowRoute, async (c) => {
-    const { requestId, deps } = c.var;
+    const { deps } = c.var;
     const now = deps.now();
     const job = await namedJob(c, c.req.valid("param").id);
-    if (job === null) return c.json(errorBody("not_found", requestId), 404);
+    if (job === null) return refuse(c, "not_found");
     const write = await writeOf(c, job, "outcome", { outcome: "no_show" });
     const answered = await answerBeforeLanding(c.env.DB, write);
     if (answered !== null && answered.kind !== "landed") {
@@ -171,8 +171,8 @@ function registerNoShow(app: App): void {
     }
 
     const readiness = noShowReadiness(await latestArrival(c.env.DB, job), job, now, (await opsInputs(c)).noShowWaitMin);
-    if (readiness.kind === "no_check_in") return c.json(errorBody("out_of_order", requestId), 409);
-    if (readiness.kind === "too_early") return c.json(errorBody("too_early_to_close", requestId), 425);
+    if (readiness.kind === "no_check_in") return refuse(c, "out_of_order");
+    if (readiness.kind === "too_early") return refuse(c, "too_early_to_close");
 
     // The close lands first, so a job started opens no case.
     const landing = answered ?? (await landInOrder(c.env.DB, { ...write, records: await recordsOf(c, write) }));
@@ -205,15 +205,15 @@ function registerPhotographs(app: App): void {
     const now = c.var.deps.now();
     const id = c.req.valid("param").id;
     const job = await namedJob(c, id);
-    if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (job === null) return refuse(c, "not_found");
     const superseding = await whatChanged(c.env.DB, job, technicianId, null);
     if (superseding.changed.length > 0) {
       c.var.log.info("upload_link_superseded", { appointment_id: job.id, changed: superseding.changed });
       return c.json(refusalOf(c, superseded(superseding)), 409);
     }
-    if (await hasClosed(c, job.id)) return c.json(errorBody("already_closed", c.var.requestId), 409);
+    if (await hasClosed(c, job.id)) return refuse(c, "already_closed");
     const { phase, angle } = c.req.valid("json");
-    if (!takesPhotoSet(job, phase)) return c.json(errorBody("invalid_request", c.var.requestId, ["phase"]), 400);
+    if (!takesPhotoSet(job, phase)) return refuse(c, "invalid_request", ["phase"]);
     const link = await uploadLink(c.var.config.settings.tryon.linkSigningKey, { appointmentId: id, phase, angle }, now);
     return c.json(
       { upload_url: link.url, small_upload_url: link.smallUrl, expires_at: link.expiresAt.toISOString() },
@@ -222,37 +222,37 @@ function registerPhotographs(app: App): void {
   });
 
   app.openapi(uploadRoute, async (c) => {
-    const { deps, requestId } = c.var;
+    const { deps } = c.var;
     const now = deps.now();
     const slot = await uploadSlot(c, c.req.valid("param").token);
-    if (slot === null) return c.json(errorBody("not_found", requestId), 404);
-    if (await hasClosed(c, slot.appointmentId)) return c.json(errorBody("already_closed", requestId), 409);
+    if (slot === null) return refuse(c, "not_found");
+    if (await hasClosed(c, slot.appointmentId)) return refuse(c, "already_closed");
 
     const bytes = await cappedBody(c.req.raw, MAX_PHOTO_BYTES);
-    if (bytes === null || bytes.byteLength === 0) return c.json(errorBody("photo_invalid_file", requestId), 422);
+    if (bytes === null || bytes.byteLength === 0) return refuse(c, "photo_invalid_file");
     if (!(await hasStorageRoom(c.env.DB, deps.alertOnce, bytes.byteLength))) {
-      return c.json(errorBody("busy", requestId), 503);
+      return refuse(c, "busy");
     }
     const stored = await storeTechnicianPhoto(c.env.DB, c.env.CLIENT_PHOTOS, slot, bytes, now, now);
-    if (stored.kind === "not_an_image") return c.json(errorBody("photo_invalid_file", requestId), 422);
+    if (stored.kind === "not_an_image") return refuse(c, "photo_invalid_file");
     c.var.log.info("technician_photo_stored", { appointment_id: slot.appointmentId, phase: slot.phase });
     return c.json({ take: stored.take }, 200);
   });
 
   app.openapi(smallUploadRoute, async (c) => {
-    const { deps, requestId } = c.var;
+    const { deps } = c.var;
     const slot = await uploadSlot(c, c.req.valid("param").token);
-    if (slot === null) return c.json(errorBody("not_found", requestId), 404);
-    if (await hasClosed(c, slot.appointmentId)) return c.json(errorBody("already_closed", requestId), 409);
+    if (slot === null) return refuse(c, "not_found");
+    if (await hasClosed(c, slot.appointmentId)) return refuse(c, "already_closed");
 
     const bytes = await cappedBody(c.req.raw, MAX_THUMBNAIL_BYTES);
-    if (bytes === null) return c.json(errorBody("photo_invalid_file", requestId), 422);
+    if (bytes === null) return refuse(c, "photo_invalid_file");
     if (!(await hasStorageRoom(c.env.DB, deps.alertOnce, bytes.byteLength))) {
-      return c.json(errorBody("busy", requestId), 503);
+      return refuse(c, "busy");
     }
     const stored = await storeThumbnail(c.env.DB, c.env.CLIENT_PHOTOS, slot, c.req.valid("query").take, bytes);
-    if (stored === "not_a_thumbnail") return c.json(errorBody("photo_invalid_file", requestId), 422);
-    if (stored === "no_photograph") return c.json(errorBody("upload_missing", requestId), 409);
+    if (stored === "not_a_thumbnail") return refuse(c, "photo_invalid_file");
+    if (stored === "no_photograph") return refuse(c, "upload_missing");
     return c.body(null, 204);
   });
 
@@ -322,9 +322,9 @@ function registerProfileAndOutcome(app: App): void {
   // 202 and writes nothing, so the phone's queue for the job still sends its after photographs and its outcome.
   app.openapi(profileRoute, async (c) => {
     const { technicianId } = technicianOf(c);
-    const { requestId, deps } = c.var;
+    const { deps } = c.var;
     const job = await namedJob(c, c.req.valid("param").id);
-    if (job === null) return c.json(errorBody("not_found", requestId), 404);
+    if (job === null) return refuse(c, "not_found");
     const headers = c.req.valid("header");
     const eventId = headers["x-client-event-id"];
     const { personId } = job;
@@ -347,12 +347,12 @@ function registerProfileAndOutcome(app: App): void {
       c.var.log.info("profile_superseded", { appointment_id: job.id, changed: superseding.changed });
       return c.json(refusalOf(c, superseded(superseding)), 409);
     }
-    if (await hasClosed(c, job.id)) return c.json(errorBody("already_closed", requestId), 409);
+    if (await hasClosed(c, job.id)) return refuse(c, "already_closed");
     if (!(await kindsLanded(c.env.DB, job.id)).has("start")) {
-      return c.json(errorBody("out_of_order", requestId, ["start"]), 409);
+      return refuse(c, "out_of_order", ["start"]);
     }
     if (!takesProfile(job.type, job.oneVisit !== null)) {
-      return c.json(errorBody("invalid_request", requestId, ["visit"]), 400);
+      return refuse(c, "invalid_request", ["visit"]);
     }
 
     const { fit, history, based_on } = c.req.valid("json");
@@ -366,7 +366,7 @@ function registerProfileAndOutcome(app: App): void {
       basedOn: based_on,
       now: deps.now(),
     });
-    if (written.kind === "invalid") return c.json(errorBody("invalid_request", requestId, written.fields), 400);
+    if (written.kind === "invalid") return refuse(c, "invalid_request", written.fields);
     if (written.fromOlder) await tellOfOlderBase(c, personId, written.versionId);
     return c.json(await profileRecorded(c, job, eventId, written.replayed), 202);
   });

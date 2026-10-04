@@ -28,7 +28,7 @@ import {
 } from "../domain/visit-changes.ts";
 import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, refuse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { queueMessage } from "../http/queue-message.ts";
@@ -210,11 +210,11 @@ export function registerOpsVisitChanges(app: App): void {
   app.openapi(cancelRoute, (c) => cancelForClient(c, c.req.valid("param").id, c.req.valid("json")));
   app.openapi(closeRoute, (c) => closeForTechnician(c, c.req.valid("param").id, c.req.valid("json")));
   app.openapi(letInRoute, async (c) => {
-    const { requestId, deps, log } = c.var;
+    const { deps, log } = c.var;
     const visitId = c.req.valid("param").id;
     const { reason } = c.req.valid("json");
-    if (reason === "") return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
-    if (!(await withinRouteReach(c, "visit", visitId))) return c.json(errorBody("not_found", requestId), 404);
+    if (reason === "") return refuse(c, "invalid_request", ["reason"]);
+    if (!(await withinRouteReach(c, "visit", visitId))) return refuse(c, "not_found");
     const waived = await waiveCheckIn(c.env.DB, {
       appointmentId: visitId,
       by: actorOf(c).id,
@@ -222,7 +222,7 @@ export function registerOpsVisitChanges(app: App): void {
       audit: visitAudit(c, "visit.checkin_waive", visitId, undefined),
       now: deps.now(),
     });
-    if (!waived) return c.json(errorBody("not_changeable", requestId), 409);
+    if (!waived) return refuse(c, "not_changeable");
     log.info("visit_checkin_waived", { appointment_id: visitId });
     return c.json({ let_in: true as const }, 200);
   });
@@ -250,17 +250,17 @@ function opsCancelOf(c: Context<AppEnv>, terms: ChangeTerms, onClientTerms: bool
  */
 async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: CancelAsked) {
   const db = c.env.DB;
-  const { deps, requestId, log } = c.var;
+  const { deps, log } = c.var;
   const now = deps.now();
-  if (!(await withinRouteReach(c, "visit", visitId))) return c.json(errorBody("not_changeable", requestId), 409);
+  if (!(await withinRouteReach(c, "visit", visitId))) return refuse(c, "not_changeable");
   const visit = await changeableVisitFor(db, visitId, now);
-  if (visit === null) return c.json(errorBody("not_changeable", requestId), 409);
+  if (visit === null) return refuse(c, "not_changeable");
   const terms = await changeTerms(db, visit, now, termsInForce(await opsInputs(c), visit.type));
   const shown = cancelTermsOf(terms);
   if (!asked.confirm) return c.json({ ...shown, cancelled: false }, 200);
   const reason = asked.reason ?? "";
-  if (reason === "") return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
-  if (asked.notice !== terms.notice) return c.json(errorBody("terms_changed", requestId), 409);
+  if (reason === "") return refuse(c, "invalid_request", ["reason"]);
+  if (asked.notice !== terms.notice) return refuse(c, "terms_changed");
 
   const { applied, ops } = opsCancelOf(c, terms, asked.on_client_terms === true, reason);
   const notify = (messageId: string) => queueMessage(c, messageId);
@@ -269,9 +269,9 @@ async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: Cance
     outcome = await cancelVisit(db, { ...deps, notify }, applied, now, { log, ops });
   } catch (error) {
     log.error("cancel_failed", { appointment_id: visit.id, error });
-    return c.json(errorBody("unavailable", requestId), 503);
+    return refuse(c, "unavailable");
   }
-  if (outcome.kind === "not_changeable") return c.json(errorBody("not_changeable", requestId), 409);
+  if (outcome.kind === "not_changeable") return refuse(c, "not_changeable");
   log.info("visit_cancelled_by_ops", {
     appointment_id: visit.id,
     terms: ops.terms,
@@ -284,8 +284,8 @@ async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: Cance
 /** A visit closed by hand for its technician, whose phone was lost before it sent anything. */
 async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.infer<typeof HandCloseSchema>) {
   const { requestId, deps, log } = c.var;
-  if (asked.reason === "") return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
-  if (!(await withinRouteReach(c, "visit", visitId))) return c.json(errorBody("not_found", requestId), 404);
+  if (asked.reason === "") return refuse(c, "invalid_request", ["reason"]);
+  if (!(await withinRouteReach(c, "visit", visitId))) return refuse(c, "not_found");
 
   const close = {
     appointmentId: visitId,
@@ -301,9 +301,9 @@ async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.
     log.info("visit_closed_by_hand", { appointment_id: visitId, outcome: asked.outcome });
     return c.json({ visit_id: visitId, status: closed.status, duration_minutes: closed.durationMinutes }, 200);
   }
-  if (closed.code === "not_found") return c.json(errorBody("not_found", requestId), 404);
+  if (closed.code === "not_found") return refuse(c, "not_found");
   if (closed.code === "bad_times") {
-    return c.json(errorBody("invalid_request", requestId, ["started_at", "ended_at"]), 400);
+    return refuse(c, "invalid_request", ["started_at", "ended_at"]);
   }
   if (closed.code === "too_early_to_close") return c.json(errorBody(closed.code, requestId), 425);
   return c.json(errorBody(closed.code, requestId), 409);

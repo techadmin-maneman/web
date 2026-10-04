@@ -17,7 +17,7 @@ import { codeOnVisit, enterOnVisit, removeFromVisit } from "../domain/discount-c
 import { BATCH_MOST, listCodes, LISTED_MOST, makeCodes, switchOff, type NewCodes } from "../domain/discount-codes.ts";
 import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -247,9 +247,9 @@ export function registerOpsDiscountCodes(app: App): void {
     const now = deps.now();
     const body = c.req.valid("json");
     const refused = makeRefusal(body, indiaDate(now));
-    if (refused !== null) return c.json(errorBody("invalid_request", requestId, [refused]), 400);
+    if (refused !== null) return refuse(c, "invalid_request", [refused]);
     const made = await makeCodes(c.env.DB, newCodesOf(body), { actor: actorOf(c), requestId, now });
-    if (made.kind === "code_exists") return c.json(errorBody("code_exists", requestId), 409);
+    if (made.kind === "code_exists") return refuse(c, "code_exists");
     return c.json({ codes: [...made.codes] }, 201);
   });
 
@@ -257,14 +257,14 @@ export function registerOpsDiscountCodes(app: App): void {
     const { requestId, deps } = c.var;
     const change = { actor: actorOf(c), requestId, now: deps.now() };
     const switched = await switchOff(c.env.DB, c.req.valid("param").id, change);
-    if (switched === "not_found") return c.json(errorBody("not_found", requestId), 404);
+    if (switched === "not_found") return refuse(c, "not_found");
     return c.body(null, 204);
   });
 
   app.openapi(enterRoute, async (c) => {
     const { requestId, log, deps } = c.var;
     const { id } = c.req.valid("param");
-    if (!(await withinRouteReach(c, "visit", id))) return c.json(errorBody("not_found", requestId), 404);
+    if (!(await withinRouteReach(c, "visit", id))) return refuse(c, "not_found");
     const by = { kind: "ops", actor: actorOf(c) } as const;
     const entered = await enterOnVisit(
       c.env.DB,
@@ -276,22 +276,22 @@ export function registerOpsDiscountCodes(app: App): void {
       const refused = entered.reason === "switched_off" ? "code_off" : "code_not_applicable";
       return c.json(errorBody(refused, requestId), 422);
     }
-    if (entered.kind === "not_found") return c.json(errorBody("not_found", requestId), 404);
-    if (entered.kind === "already_discounted") return c.json(errorBody("already_discounted", requestId), 409);
-    if (entered.kind !== "applied") return c.json(errorBody("price_settled", requestId), 409);
+    if (entered.kind === "not_found") return refuse(c, "not_found");
+    if (entered.kind === "already_discounted") return refuse(c, "already_discounted");
+    if (entered.kind !== "applied") return refuse(c, "price_settled");
     const onVisit = await codeOnVisit(c.env.DB, id);
-    if (onVisit === null) return c.json(errorBody("not_found", requestId), 404);
+    if (onVisit === null) return refuse(c, "not_found");
     return c.json({ code: onVisit.code, amount_off: onVisit.amountOff, given_by: onVisit.givenBy }, 200);
   });
 
   app.openapi(removeRoute, async (c) => {
     const { requestId, deps } = c.var;
     const { id } = c.req.valid("param");
-    if (!(await withinRouteReach(c, "visit", id))) return c.json(errorBody("not_found", requestId), 404);
+    if (!(await withinRouteReach(c, "visit", id))) return refuse(c, "not_found");
     const by = { kind: "ops", actor: actorOf(c) } as const;
     const removed = await removeFromVisit(c.env.DB, { visitId: id, by, requestId }, deps.now());
-    if (removed === "price_settled") return c.json(errorBody("price_settled", requestId), 409);
-    if (removed !== "removed") return c.json(errorBody("not_found", requestId), 404);
+    if (removed === "price_settled") return refuse(c, "price_settled");
+    if (removed !== "removed") return refuse(c, "not_found");
     return c.body(null, 204);
   });
 }

@@ -19,7 +19,7 @@ import { createChallenge, type Challenge } from "../domain/one-time-codes.ts";
 import { liveContact } from "../domain/profile.ts";
 import { deviceLabel, openSession, revokeSession } from "../domain/sessions.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../http/client-session.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
@@ -160,28 +160,28 @@ async function contactOf(
 }
 
 const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
-  const { requestId, deps, config } = c.var;
+  const { deps, config } = c.var;
   const { login: limits, ipHashSalt } = config.settings;
   const db = c.env.DB;
   const now = deps.now();
 
   const body = c.req.valid("json");
   const mobileE164 = toE164(body.mobile);
-  if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
+  if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
   const visitor = await visitorOf(c);
   const turnstile = await checkTurnstile(c, body.turnstile_token, visitor);
-  if (turnstile === "rejected") return c.json(errorBody("turnstile_failed", requestId), 403);
-  if (turnstile === "unavailable") return c.json(errorBody("unavailable", requestId), 503);
+  if (turnstile === "rejected") return refuse(c, "turnstile_failed");
+  if (turnstile === "unavailable") return refuse(c, "unavailable");
 
   const person = await findEligiblePerson(db, mobileE164);
   const sendsTo = person?.mobileE164 ?? null;
   const testRecord = person?.testRecord ?? false;
   const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
   const asked = await mayAskForCode(c, { surface: "login", mobileHash, ipHash: visitor.ipHash, now, testRecord });
-  if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
-  if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
+  if (asked === "busy") return refuse(c, "busy");
+  if (asked !== "open") return refuse(c, "rate_limited");
 
-  if (!(await countCode(c, "login", sendsTo, testRecord, now))) return c.json(errorBody("busy", requestId), 503);
+  if (!(await countCode(c, "login", sendsTo, testRecord, now))) return refuse(c, "busy");
 
   const code = knownCode(limits, testRecord) ?? newLoginCode();
   const challenge = await createChallenge(db, {
@@ -201,27 +201,27 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
  * counts against the number's day and the address's hour like a first code, whoever holds the number.
  */
 async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
-  const { requestId, deps, config } = c.var;
+  const { deps, config } = c.var;
   const db = c.env.DB;
   const now = deps.now();
 
   const challenge = await openChallenge(db, challengeId, now);
-  if (challenge === null) return c.json(errorBody("code_expired", requestId), 410);
+  if (challenge === null) return refuse(c, "code_expired");
   const allowedAt = channel === "sms" ? smsOfferedAt(challenge.createdAt) : whatsappResendAt(challenge.lastSentAt);
-  if (now < allowedAt) return c.json(errorBody("too_early", requestId), 429);
-  if (challenge.sends >= MAX_SENDS_PER_CHALLENGE) return c.json(errorBody("rate_limited", requestId), 429);
+  if (now < allowedAt) return refuse(c, "too_early");
+  if (challenge.sends >= MAX_SENDS_PER_CHALLENGE) return refuse(c, "rate_limited");
   // A challenge that does not keep its number cannot count a code against it, so the client starts again.
-  if (challenge.mobileHash === null) return c.json(errorBody("code_expired", requestId), 410);
+  if (challenge.mobileHash === null) return refuse(c, "code_expired");
 
   const contact = await contactOf(db, challenge.holderId);
   const sendsTo = contact?.mobileE164 ?? null;
   const testRecord = contact?.testRecord ?? false;
   const { ipHash } = await visitorOf(c);
   const asked = await mayAskForCode(c, { surface: "login", mobileHash: challenge.mobileHash, ipHash, now, testRecord });
-  if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
-  if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
+  if (asked === "busy") return refuse(c, "busy");
+  if (asked !== "open") return refuse(c, "rate_limited");
 
-  if (!(await countCode(c, "login", sendsTo, testRecord, now))) return c.json(errorBody("busy", requestId), 503);
+  if (!(await countCode(c, "login", sendsTo, testRecord, now))) return refuse(c, "busy");
 
   const code = knownCode(config.settings.login, testRecord) ?? newLoginCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
@@ -236,18 +236,18 @@ export function registerClientAuth(app: App): void {
   app.openapi(resendRoute, (c) => sendAgain(c, c.req.valid("json").challenge_id, "whatsapp"));
 
   app.openapi(smsRoute, (c) => {
-    if (!c.var.deps.codes.smsAvailable) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!c.var.deps.codes.smsAvailable) return refuse(c, "not_found");
     return sendAgain(c, c.req.valid("json").challenge_id, "sms");
   });
 
   app.openapi(verifyRoute, async (c) => {
-    const { requestId, deps, config, log } = c.var;
+    const { deps, config, log } = c.var;
     const db = c.env.DB;
     const now = deps.now();
     const { challenge_id: challengeId, code } = c.req.valid("json");
 
     const verification = await verifyCode(db, { challengeId, code, pepper: config.settings.login.codePepper, now });
-    if (verification.outcome === "closed") return c.json(errorBody("code_expired", requestId), 410);
+    if (verification.outcome === "closed") return refuse(c, "code_expired");
     if (verification.outcome === "mismatch") {
       log.info("login_code_mismatch", { attempts_left: verification.attemptsLeft });
       return c.json({ verified: false as const, attempts_left: verification.attemptsLeft }, 200);

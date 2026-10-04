@@ -18,7 +18,7 @@ import { withinCeiling } from "../domain/ceilings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob } from "../domain/tryon.ts";
 import { cappedBody } from "../http/capped-body.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { lookCookieJob } from "../http/look-cookie.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 import { copyKey } from "../domain/kept-try-ons.ts";
@@ -118,28 +118,28 @@ export function registerTryonUpload(app: App): void {
     const now = deps.now();
 
     if (request.notice_version !== CURRENT_NOTICE.tryon_photo) {
-      return c.json(errorBody("invalid_request", requestId, ["notice_version"]), 400);
+      return refuse(c, "invalid_request", ["notice_version"]);
     }
-    if (!tryOnRuns(settings.messaging)) return c.json(errorBody("whatsapp_unavailable", requestId), 503);
+    if (!tryOnRuns(settings.messaging)) return refuse(c, "whatsapp_unavailable");
 
     // One look per visitor: a browser whose last render did not fail gets no second photo.
     const lastJobId = await lookCookieJob(c);
     const lastJob = lastJobId === null ? null : await loadJob(db, lastJobId);
-    if (lastJob !== null && lastJob.state !== "failed") return c.json(errorBody("look_limit_reached", requestId), 403);
+    if (lastJob !== null && lastJob.state !== "failed") return refuse(c, "look_limit_reached");
 
     const visitor = await visitorOf(c);
     const turnstile = await checkTurnstile(c, request.turnstile_token, visitor);
-    if (turnstile === "rejected") return c.json(errorBody("turnstile_failed", requestId), 403);
-    if (turnstile === "unavailable") return c.json(errorBody("unavailable", requestId), 503);
+    if (turnstile === "rejected") return refuse(c, "turnstile_failed");
+    if (turnstile === "unavailable") return refuse(c, "unavailable");
 
     const { tryon } = settings;
     const at = { now, settings };
     if (!(await takeOne(db, "tryon:upload:ip", visitor.ipHash, at))) {
-      return c.json(errorBody("rate_limited", requestId), 429);
+      return refuse(c, "rate_limited");
     }
 
     if (!(await withinCeiling(db, deps.alert, "upload", at))) {
-      return c.json(errorBody("busy", requestId), 503);
+      return refuse(c, "busy");
     }
 
     const jobId = crypto.randomUUID();
@@ -165,23 +165,23 @@ export function registerTryonUpload(app: App): void {
     const { job_id: jobId } = c.req.valid("param");
     const { token } = c.req.valid("query");
     const { settings } = c.var.config;
-    const { deps, requestId } = c.var;
+    const { deps } = c.var;
     const db = c.env.DB;
     const now = deps.now();
 
     const subject = await verifyToken(settings.tryon.linkSigningKey, "upload", token, now);
     const job = subject === jobId ? await loadJob(db, jobId) : null;
-    if (job === null) return c.json(errorBody("not_found", requestId), 404);
+    if (job === null) return refuse(c, "not_found");
     if (job.state !== "awaiting_upload" || job.uploaded_at !== null) {
-      return c.json(errorBody("upload_already_received", requestId), 409);
+      return refuse(c, "upload_already_received");
     }
 
     const bytes = await cappedBody(c.req.raw, MAX_UPLOAD_BYTES);
-    if (bytes === null) return c.json(errorBody("photo_invalid_file", requestId), 422);
+    if (bytes === null) return refuse(c, "photo_invalid_file");
     const photo = checkPhoto(bytes);
     if (!photo.ok) {
       c.var.log.info("tryon_upload_refused", { job_id: jobId, problem: photo.problem });
-      return c.json(errorBody("photo_invalid_file", requestId), 422);
+      return refuse(c, "photo_invalid_file");
     }
 
     // Claim the one write this job gets, before making it.
@@ -191,7 +191,7 @@ export function registerTryonUpload(app: App): void {
       )
       .bind(jobId, now.toISOString())
       .first();
-    if (claimed === null) return c.json(errorBody("upload_already_received", requestId), 409);
+    if (claimed === null) return refuse(c, "upload_already_received");
 
     try {
       await c.env.UPLOADS.put(job.upload_key, bytes, { httpMetadata: { contentType: photo.type } });
@@ -210,27 +210,27 @@ function registerCopyUpload(app: App): void {
   app.openapi(copyRoute, async (c) => {
     const { job_id: jobId } = c.req.valid("param");
     const { token } = c.req.valid("query");
-    const { deps, requestId } = c.var;
+    const { deps } = c.var;
     const db = c.env.DB;
     const now = deps.now();
 
     const subject = await verifyToken(c.var.config.settings.tryon.linkSigningKey, "upload", token, now);
     const job = subject === jobId ? await loadJob(db, jobId) : null;
-    if (job === null) return c.json(errorBody("not_found", requestId), 404);
+    if (job === null) return refuse(c, "not_found");
     if (!KEEPING_NOTICES.includes(job.photo_consent_version)) {
-      return c.json(errorBody("consent_required", requestId), 409);
+      return refuse(c, "consent_required");
     }
     if (job.uploaded_at === null || job.upload_deleted_at !== null) {
-      return c.json(errorBody("upload_missing", requestId), 409);
+      return refuse(c, "upload_missing");
     }
-    if (job.copy_key !== null) return c.json(errorBody("upload_already_received", requestId), 409);
+    if (job.copy_key !== null) return refuse(c, "upload_already_received");
 
     const bytes = await cappedBody(c.req.raw, MAX_COPY_BYTES);
-    if (bytes === null) return c.json(errorBody("photo_invalid_file", requestId), 422);
+    if (bytes === null) return refuse(c, "photo_invalid_file");
     const copy = checkCopy(bytes);
     if (!copy.ok) {
       c.var.log.info("tryon_copy_refused", { job_id: jobId, problem: copy.problem });
-      return c.json(errorBody("photo_invalid_file", requestId), 422);
+      return refuse(c, "photo_invalid_file");
     }
 
     // Claim the one write the copy gets, before making it.
@@ -241,7 +241,7 @@ function registerCopyUpload(app: App): void {
       )
       .bind(jobId, key)
       .first();
-    if (claimed === null) return c.json(errorBody("upload_already_received", requestId), 409);
+    if (claimed === null) return refuse(c, "upload_already_received");
 
     try {
       await putCounted(db, c.env.CLIENT_PHOTOS, key, bytes, copy.type);

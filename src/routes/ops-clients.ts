@@ -47,7 +47,7 @@ import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
 import { consentRecordsOf, currentAddress, type ConsentState, type SavedAddress } from "../domain/profile.ts";
 import { partialVisitsClosed } from "../domain/task-closures.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -605,21 +605,21 @@ interface PhotoListRow {
 export function registerOpsClients(app: App): void {
   app.openapi(searchRoute, async (c) => {
     const mobile = toE164(c.req.valid("json").mobile);
-    if (mobile === null) return c.json(errorBody("invalid_request", c.var.requestId, ["mobile"]), 400);
+    if (mobile === null) return refuse(c, "invalid_request", ["mobile"]);
     const person = await c.env.DB.prepare(
       "SELECT id, name, mobile_e164, created_at FROM people WHERE mobile_e164 = ?1 AND erased_at IS NULL",
     )
       .bind(mobile)
       .first<PersonRow>();
     if (person === null || !(await withinRouteReach(c, "client", person.id))) {
-      return c.json(errorBody("not_found", c.var.requestId), 404);
+      return refuse(c, "not_found");
     }
     return c.json({ id: person.id, name: person.name, mobile: person.mobile_e164 }, 200);
   });
 
   app.openapi(findRoute, async (c) => {
     const search = searchOf(c.req.valid("json").text);
-    if (search === null) return c.json(errorBody("invalid_request", c.var.requestId, ["text"]), 400);
+    if (search === null) return refuse(c, "invalid_request", ["text"]);
     const column = search.by === "number" ? "mobile_e164" : "name";
     const reached = await routeReach(c);
     const { results } = await c.env.DB.prepare(
@@ -654,7 +654,7 @@ export function registerOpsClients(app: App): void {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
     const person = await anyClientInReach(c, id);
-    if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (person === null) return refuse(c, "not_found");
     const now = c.var.deps.now();
     if (person.erased_at !== null) {
       return c.json(await erasedRecord(db, { id, erasedAt: person.erased_at }, now), 200);
@@ -698,7 +698,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(photosRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
 
     const { results } = await db
       .prepare(
@@ -744,13 +744,13 @@ export function registerOpsClients(app: App): void {
   app.openapi(viewRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
     const now = c.var.deps.now();
     try {
       await logPhotoView(db, { personId: id, actor: actorOf(c), requestId: c.var.requestId, now });
     } catch (error) {
       c.var.log.error("audit_write_failed", { action: "photo.view", error });
-      return c.json(errorBody("unavailable", c.var.requestId), 503);
+      return refuse(c, "unavailable");
     }
     return c.json({ logged_at: now.toISOString(), before: await earlierViews(db, id, now) }, 200);
   });
@@ -758,11 +758,11 @@ export function registerOpsClients(app: App): void {
   app.openapi(photoRoute, async (c) => {
     const { id, photo_id: photoId } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
     // The same lookup the client's own photographs go through: a photograph of
     // anyone else is not found, whatever ID is asked for.
     const photo = await ownPhotoKey(db, id, photoId);
-    if (photo === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (photo === null) return refuse(c, "not_found");
 
     // Within an opening already logged, the image goes; outside one, the opening
     // is logged first, and a failure serves no photograph (ADR 0031).
@@ -773,12 +773,12 @@ export function registerOpsClients(app: App): void {
         await logPhotoView(db, { personId: id, actor: staff, requestId: c.var.requestId, now });
       } catch (error) {
         c.var.log.error("audit_write_failed", { action: "photo.view", error });
-        return c.json(errorBody("unavailable", c.var.requestId), 503);
+        return refuse(c, "unavailable");
       }
     }
 
     const object = await c.env.CLIENT_PHOTOS.get(photo.key);
-    if (object === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (object === null) return refuse(c, "not_found");
     return new Response(object.body, {
       headers: { "Content-Type": photo.contentType, "Cache-Control": "private, no-store" },
     });
@@ -787,7 +787,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(consentsRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
 
     const [consents, deletion] = await Promise.all([
       consentRecordsOf(db, id),

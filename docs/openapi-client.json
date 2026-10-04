@@ -6294,6 +6294,7 @@
       "post": {
         "summary": "Hold a window for ten minutes while the client pays",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -6486,6 +6487,7 @@
       "post": {
         "summary": "Book a held window: pay through Checkout, or, if free, book it at once",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -6737,6 +6739,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -6817,6 +6820,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {

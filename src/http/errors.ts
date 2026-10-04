@@ -2,6 +2,9 @@
 // stack trace, never a provider's message.
 
 import { z } from "@hono/zod-openapi";
+import type { Context } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
+import type { AppEnv } from "./context.ts";
 
 export const ERROR_CODES = [
   "not_found",
@@ -182,6 +185,97 @@ export function errorBody(code: ErrorCode, requestId: string, fields?: readonly 
     ? { error: { code, request_id: requestId } }
     : { error: { code, request_id: requestId, fields: [...fields] } };
 }
+
+/**
+ * The status each code is answered with, the same wherever it is answered: a route lists the code under this status
+ * in its OpenAPI responses (test/node/contract.test.ts holds the two together).
+ */
+export const ERROR_STATUS = {
+  not_found: 404,
+  invalid_request: 400,
+  turnstile_failed: 403,
+  rate_limited: 429,
+  idempotency_in_progress: 409,
+  idempotency_key_reused: 422,
+  environment_mismatch: 503,
+  unavailable: 503,
+  internal_error: 500,
+  busy: 503,
+  photo_invalid_file: 422,
+  upload_already_received: 409,
+  upload_missing: 409,
+  session_required: 401,
+  job_not_claimable: 409,
+  look_limit_reached: 403,
+  claim_required: 409,
+  whatsapp_unavailable: 503,
+  number_not_proved: 403,
+  unauthorized: 401,
+  visit_booked: 409,
+  payment_held: 409,
+  payment_owed: 409,
+  forbidden_origin: 403,
+  access_required: 403,
+  code_expired: 410,
+  too_early: 429,
+  number_in_use: 409,
+  not_ready: 409,
+  ops_assisted: 409,
+  taken: 409,
+  not_bookable: 422,
+  hold_expired: 409,
+  address_required: 409,
+  not_served: 422,
+  already_booked: 409,
+  not_changeable: 409,
+  terms_changed: 409,
+  consent_required: 409,
+  not_fitted: 403,
+  not_paid: 409,
+  device_revoked: 401,
+  sign_in_stopped: 403,
+  superseded: 409,
+  out_of_order: 409,
+  not_today: 409,
+  already_started: 409,
+  piece_code: 409,
+  technician_inactive: 401,
+  clash: 409,
+  on_leave: 409,
+  does_not_fit: 409,
+  past_day: 409,
+  window_passed: 409,
+  blackout: 409,
+  in_progress: 409,
+  too_early_to_close: 425,
+  too_early_to_arrive: 409,
+  already_closed: 409,
+  no_service_area: 400,
+  launch_in_future: 400,
+  pincode_held: 409,
+  service_exists: 409,
+  last_of_kind: 409,
+  service_retired: 400,
+  no_product: 422,
+  unknown_invite: 422,
+  own_invite: 409,
+  already_invited: 409,
+  already_disputed: 409,
+  not_disputable: 409,
+  dispute_window_closed: 409,
+  code_not_applicable: 422,
+  code_off: 422,
+  already_discounted: 409,
+  price_settled: 409,
+  code_exists: 409,
+  slot_times_too_soon: 409,
+  not_permitted: 403,
+  last_admin: 409,
+} as const satisfies Record<ErrorCode, ContentfulStatusCode>;
+
+/** A refusal: the code, answered with its own status and the request's ID, and the fields it names. */
+export const refuse = <Code extends ErrorCode>(c: Context<AppEnv>, code: Code, fields?: readonly string[]) =>
+  c.json(errorBody(code, c.var.requestId, fields), ERROR_STATUS[code]);
 
 /** The OpenAPI entry for an error response. */
 export function errorResponse(description: string) {

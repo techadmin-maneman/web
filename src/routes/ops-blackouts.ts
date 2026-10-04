@@ -18,7 +18,7 @@ import {
   periodRefusal,
   removeBlackouts,
 } from "../domain/blackouts.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 
@@ -116,7 +116,7 @@ export function registerOpsBlackouts(app: App): void {
     const today = indiaDate(now);
     const { from, to, reason } = c.req.valid("json");
     const refused = additionRefusal({ from, to }, today);
-    if (refused !== null) return c.json(errorBody("invalid_request", c.var.requestId, [refused]), 400);
+    if (refused !== null) return refuse(c, "invalid_request", [refused]);
     await addBlackouts(c.env.DB, { from, to, reason, actor: actorOf(c), requestId: c.var.requestId, now });
     return c.json(await list(c.env.DB, today), 200);
   });
@@ -126,9 +126,9 @@ export function registerOpsBlackouts(app: App): void {
     const today = indiaDate(now);
     const { from, to } = c.req.valid("json");
     const refused = periodRefusal({ from, to }, today);
-    if (refused !== null) return c.json(errorBody("invalid_request", c.var.requestId, [refused]), 400);
+    if (refused !== null) return refuse(c, "invalid_request", [refused]);
     const removed = await removeBlackouts(c.env.DB, { from, to, actor: actorOf(c), requestId: c.var.requestId, now });
-    if (removed === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (removed === "not_found") return refuse(c, "not_found");
     return c.json(await list(c.env.DB, today), 200);
   });
 }

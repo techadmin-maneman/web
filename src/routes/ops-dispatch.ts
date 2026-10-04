@@ -34,7 +34,7 @@ import {
   type MoveInput,
 } from "../domain/dispatch.ts";
 import { isWithin, techniciansWithin } from "../domain/places.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, refuse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { queueMessage } from "../http/queue-message.ts";
@@ -364,10 +364,9 @@ export function registerOpsDispatch(app: App): void {
   app.openapi(roomRoute, async (c) => {
     const now = c.var.deps.now();
     const { appointment_id: appointmentId, from } = c.req.valid("query");
-    if (!(await withinRouteReach(c, "visit", appointmentId)))
-      return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await withinRouteReach(c, "visit", appointmentId))) return refuse(c, "not_found");
     const room = await dispatchRoomFor(c.env.DB, { appointmentId, from: from ?? indiaDate(now) }, now);
-    if (room === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (room === null) return refuse(c, "not_found");
     const technicians = await techniciansWithin(c.env.DB, await routeReach(c));
     const reached = room.rooms.filter((each) => isWithin(technicians, each.technician_id));
     return c.json({ appointment_id: appointmentId, rooms: reached, blackouts: room.blackouts }, 200);
@@ -379,7 +378,7 @@ export function registerOpsDispatch(app: App): void {
   app.openapi(toldRoute, async (c) => {
     const { requestId, deps } = c.var;
     const { id } = c.req.valid("param");
-    if (!(await withinRouteReach(c, "move", id))) return c.json(errorBody("not_found", requestId), 404);
+    if (!(await withinRouteReach(c, "move", id))) return refuse(c, "not_found");
     const actor = actorOf(c);
     const recorded = await recordToldByPhone(c.env.DB, {
       moveId: id,
@@ -393,7 +392,7 @@ export function registerOpsDispatch(app: App): void {
       },
       now: deps.now(),
     });
-    if (!recorded) return c.json(errorBody("not_found", requestId), 404);
+    if (!recorded) return refuse(c, "not_found");
     return c.json({ told: true as const }, 200);
   });
 }
@@ -424,9 +423,9 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   const { requestId, deps, log } = c.var;
   const staff = actorOf(c);
   if (!(await withinRouteReach(c, "visit", request.appointment_id))) {
-    return c.json(errorBody("not_found", requestId), 404);
+    return refuse(c, "not_found");
   }
-  if (!(await mayGoTo(c, request))) return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
+  if (!(await mayGoTo(c, request))) return refuse(c, "invalid_request", ["technician_id"]);
 
   const input: MoveInput = {
     appointmentId: request.appointment_id,
@@ -448,13 +447,13 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     deps.now(),
   );
 
-  if (outcome.kind === "not_found") return c.json(errorBody("not_found", requestId), 404);
-  if (outcome.kind === "superseded") return c.json(errorBody("superseded", requestId, outcome.changed), 409);
-  if (outcome.kind === "in_progress") return c.json(errorBody("in_progress", requestId), 409);
+  if (outcome.kind === "not_found") return refuse(c, "not_found");
+  if (outcome.kind === "superseded") return refuse(c, "superseded", outcome.changed);
+  if (outcome.kind === "in_progress") return refuse(c, "in_progress");
   if (outcome.kind === "nothing_to_move") {
-    return c.json(errorBody("invalid_request", requestId, ["technician_id", "date", "window"]), 400);
+    return refuse(c, "invalid_request", ["technician_id", "date", "window"]);
   }
-  if (outcome.kind === "no_technician") return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
+  if (outcome.kind === "no_technician") return refuse(c, "invalid_request", ["technician_id"]);
   if (outcome.kind === "refused") return c.json(errorBody(outcome.reason, requestId), 409);
   log.info("dispatch_moved", { appointment_id: input.appointmentId, move_id: outcome.moveId, reason: input.reason });
   return c.json({ move_id: outcome.moveId, client_notice: outcome.clientNotice }, 200);

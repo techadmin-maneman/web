@@ -42,7 +42,7 @@ import {
 } from "../domain/price-book.ts";
 import { listCities } from "../domain/cities.ts";
 import { addPincode, serviceArea, setServiceArea } from "../domain/service-area.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { queuePacedMessages } from "../http/queue-message.ts";
 import { routeReach } from "../http/staff-access.ts";
@@ -452,13 +452,10 @@ export function registerOpsSettings(app: App): void {
       const checked = checkValue(setting, value);
       if (!checked.ok) {
         c.var.log.warn("setting_refused", { setting: setting.name, refusals: checked.refusals.length });
-        return c.json(
-          errorBody(
-            "invalid_request",
-            c.var.requestId,
-            checked.refusals.map((refusal) => refusal.field),
-          ),
-          400,
+        return refuse(
+          c,
+          "invalid_request",
+          checked.refusals.map((refusal) => refusal.field),
         );
       }
       await setOpsSetting(c.env.DB, {
@@ -521,10 +518,10 @@ export function registerOpsSettings(app: App): void {
     }
     const was = { item: price.item, tier: price.tier, valid_from: wasValidFrom };
     const result = await correctPrice(c.env.DB, { was, price, actor: actorOf(c), requestId: c.var.requestId, now });
-    if (result === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (result === "not_found") return refuse(c, "not_found");
     if (result === "not_to_come") {
       c.var.log.warn("price_correction_refused", { item: price.item });
-      return c.json(errorBody("invalid_request", c.var.requestId, ["was_valid_from"]), 400);
+      return refuse(c, "invalid_request", ["was_valid_from"]);
     }
     return c.json({ prices: await priceBook(c.env.DB, today) }, 200);
   });
@@ -533,10 +530,10 @@ export function registerOpsSettings(app: App): void {
     const now = c.var.deps.now();
     const row = c.req.valid("json");
     const result = await withdrawPrice(c.env.DB, { row, actor: actorOf(c), requestId: c.var.requestId, now });
-    if (result === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (result === "not_found") return refuse(c, "not_found");
     if (result === "not_to_come") {
       c.var.log.warn("price_withdrawal_refused", { item: row.item });
-      return c.json(errorBody("invalid_request", c.var.requestId, ["valid_from"]), 400);
+      return refuse(c, "invalid_request", ["valid_from"]);
     }
     return c.json({ prices: await priceBook(c.env.DB, indiaDate(now)) }, 200);
   });
@@ -555,11 +552,11 @@ export function registerOpsSettings(app: App): void {
     });
     if ("kind" in result) {
       c.var.log.warn("service_area_refused", { reason: result.kind });
-      if (result.kind === "empty_area") return c.json(errorBody("no_service_area", c.var.requestId), 400);
+      if (result.kind === "empty_area") return refuse(c, "no_service_area");
       if (result.kind === "launch_in_future") {
-        return c.json(errorBody("launch_in_future", c.var.requestId, result.pincodes), 400);
+        return refuse(c, "launch_in_future", result.pincodes);
       }
-      return c.json(errorBody("invalid_request", c.var.requestId, result.pincodes), 400);
+      return refuse(c, "invalid_request", result.pincodes);
     }
     await queuePacedMessages(c, result.alerts);
     return c.json({ changed: result.changed.length, served: result.served, alerted: result.alerts.length }, 200);
@@ -569,7 +566,7 @@ export function registerOpsSettings(app: App): void {
     const pincode = c.req.valid("json");
     // Whether we serve a pincode is no secret, as the site says so to anyone, so one elsewhere is refused, not hidden.
     if (!reachesCity(await routeReach(c), pincode.city)) {
-      return c.json(errorBody("not_permitted", c.var.requestId), 403);
+      return refuse(c, "not_permitted");
     }
     const added = await addPincode(c.env.DB, {
       pincode,
@@ -577,8 +574,8 @@ export function registerOpsSettings(app: App): void {
       requestId: c.var.requestId,
       now: c.var.deps.now(),
     });
-    if (added === "held") return c.json(errorBody("pincode_held", c.var.requestId), 409);
-    if (added === "unknown_city") return c.json(errorBody("invalid_request", c.var.requestId, ["city"]), 400);
+    if (added === "held") return refuse(c, "pincode_held");
+    if (added === "unknown_city") return refuse(c, "invalid_request", ["city"]);
     return c.json(added, 201);
   });
 }
