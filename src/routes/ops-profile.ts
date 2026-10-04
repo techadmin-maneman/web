@@ -10,7 +10,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { afterResponse } from "../http/after-response.ts";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { type AuditAction, type AuditEntry } from "../domain/audit.ts";
 import { decideDeletion, deletionDoneMessage, deletionsWaiting, type ErasedContact } from "../domain/deletion.ts";
@@ -154,7 +154,7 @@ function decisionAudit(
   subject: { kind: string; id: string },
   decision: string,
 ): AuditEntry {
-  return { surface: "ops", actor: staffOf(c), action, subject, requestId: c.var.requestId, detail: { decision } };
+  return { surface: "ops", actor: actorOf(c), action, subject, requestId: c.var.requestId, detail: { decision } };
 }
 
 export function registerOpsProfile(app: App): void {
@@ -196,7 +196,7 @@ export function registerOpsProfile(app: App): void {
     const outcome = await decideNumberChange(c.env.DB, {
       id,
       decision,
-      staff: staffOf(c).id,
+      staff: actorOf(c).id,
       reason,
       audit: decisionAudit(c, "number_change.decide", { kind: "number_change", id }, decision),
       now: c.var.deps.now(),
@@ -240,7 +240,7 @@ export function registerOpsProfile(app: App): void {
     const outcome = await decideDeletion(c.env, {
       id,
       decision,
-      staff: staffOf(c).id,
+      staff: actorOf(c).id,
       reason,
       audit: decisionAudit(c, "deletion.decide", { kind: "deletion", id }, decision),
       payments: c.var.deps.payments,

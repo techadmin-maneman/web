@@ -11,7 +11,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { routePath } from "hono/route";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -276,7 +276,7 @@ export function registerOpsStaff(app: App): void {
       email,
       entry,
       before,
-      actor: staffOf(c),
+      actor: actorOf(c),
       requestId: c.var.requestId,
       now: c.var.deps.now(),
     });
@@ -288,7 +288,7 @@ export function registerOpsStaff(app: App): void {
     if (!runsAccess(c, access)) return c.json(errorBody("not_permitted", c.var.requestId), 403);
     await setEnforced(c.env.DB, {
       enforced: c.req.valid("json").on,
-      actor: staffOf(c),
+      actor: actorOf(c),
       requestId: c.var.requestId,
       now: c.var.deps.now(),
     });
@@ -302,7 +302,7 @@ export function registerOpsStaff(app: App): void {
     await addServiceToken(c.env.DB, {
       clientId,
       label,
-      actor: staffOf(c),
+      actor: actorOf(c),
       requestId: c.var.requestId,
       now: c.var.deps.now(),
     });
@@ -314,7 +314,7 @@ export function registerOpsStaff(app: App): void {
     if (!runsAccess(c, access)) return c.json(errorBody("not_permitted", c.var.requestId), 403);
     const removed = await removeServiceToken(c.env.DB, {
       clientId: c.req.valid("json").client_id,
-      actor: staffOf(c),
+      actor: actorOf(c),
       requestId: c.var.requestId,
       now: c.var.deps.now(),
     });

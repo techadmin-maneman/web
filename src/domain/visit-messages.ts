@@ -23,7 +23,8 @@ import { codeOnVisit } from "./discount-code-uses.ts";
 import { readOpsInputs } from "./ops-settings.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
-import { consentGiven, type MessageKind } from "./messages.ts";
+import type { MessageKind } from "./messages.ts";
+import { consentGiven } from "./consents.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 import { firstNameOf } from "../lib/names.ts";
@@ -90,10 +91,8 @@ function waivedTemplate(paid: PaidAhead["kind"], waiver: Waiver, credit: VisitCr
   return credit === "restored" ? "no_show_waived_credit_back_v1" : "no_show_waived_credit_gone_v1";
 }
 
-const stillTrue = (kind: VisitMessageKind, status: AppointmentStatus): boolean => {
-  const statuses = STILL_TRUE_WHILE[kind];
-  return statuses === "any" || statuses.includes(status);
-};
+const stillTrue = (kind: VisitMessageKind, status: AppointmentStatus): boolean =>
+  STILL_TRUE_WHILE[kind] === "any" || STILL_TRUE_WHILE[kind].includes(status);
 
 /**
  * How long after the technician arrived the client may still be told of it. A check-in that reaches us later, from

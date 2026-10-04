@@ -23,7 +23,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
 import type { Context } from "hono";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { earlierViews, logPhotoView, PHOTO_VIEW_MINUTES, viewInForce } from "../domain/photo-views.ts";
@@ -747,7 +747,7 @@ export function registerOpsClients(app: App): void {
     if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const now = c.var.deps.now();
     try {
-      await logPhotoView(db, { personId: id, actor: staffOf(c), requestId: c.var.requestId, now });
+      await logPhotoView(db, { personId: id, actor: actorOf(c), requestId: c.var.requestId, now });
     } catch (error) {
       c.var.log.error("audit_write_failed", { action: "photo.view", error });
       return c.json(errorBody("unavailable", c.var.requestId), 503);
@@ -766,7 +766,7 @@ export function registerOpsClients(app: App): void {
 
     // Within an opening already logged, the image goes; outside one, the opening
     // is logged first, and a failure serves no photograph (ADR 0031).
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const now = c.var.deps.now();
     if (!(await viewInForce(db, id, staff, now))) {
       try {

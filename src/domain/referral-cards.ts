@@ -5,7 +5,7 @@
 // WhatsApp caches a link's preview by its URL: a revoke only reaches new shares.
 
 import { inspectImage } from "../lib/image-bytes.ts";
-import { consentGiven } from "./messages.ts";
+import { consentGiven } from "./consents.ts";
 import { deleteCounted, putCounted } from "./storage-meter.ts";
 
 export const CARD_WIDTH = 1200;

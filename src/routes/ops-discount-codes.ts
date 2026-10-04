@@ -15,7 +15,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { PRICE_BOUNDS } from "../config/ops-settings.ts";
 import { codeOnVisit, enterOnVisit, removeFromVisit } from "../domain/discount-code-uses.ts";
 import { BATCH_MOST, listCodes, LISTED_MOST, makeCodes, switchOff, type NewCodes } from "../domain/discount-codes.ts";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -248,14 +248,14 @@ export function registerOpsDiscountCodes(app: App): void {
     const body = c.req.valid("json");
     const refused = makeRefusal(body, indiaDate(now));
     if (refused !== null) return c.json(errorBody("invalid_request", requestId, [refused]), 400);
-    const made = await makeCodes(c.env.DB, newCodesOf(body), { actor: staffOf(c), requestId, now });
+    const made = await makeCodes(c.env.DB, newCodesOf(body), { actor: actorOf(c), requestId, now });
     if (made.kind === "code_exists") return c.json(errorBody("code_exists", requestId), 409);
     return c.json({ codes: [...made.codes] }, 201);
   });
 
   app.openapi(offRoute, async (c) => {
     const { requestId, deps } = c.var;
-    const change = { actor: staffOf(c), requestId, now: deps.now() };
+    const change = { actor: actorOf(c), requestId, now: deps.now() };
     const switched = await switchOff(c.env.DB, c.req.valid("param").id, change);
     if (switched === "not_found") return c.json(errorBody("not_found", requestId), 404);
     return c.body(null, 204);
@@ -265,7 +265,7 @@ export function registerOpsDiscountCodes(app: App): void {
     const { requestId, log, deps } = c.var;
     const { id } = c.req.valid("param");
     if (!(await withinRouteReach(c, "visit", id))) return c.json(errorBody("not_found", requestId), 404);
-    const by = { kind: "ops", actor: staffOf(c) } as const;
+    const by = { kind: "ops", actor: actorOf(c) } as const;
     const entered = await enterOnVisit(
       c.env.DB,
       { visitId: id, text: c.req.valid("json").code, by, requestId },
@@ -288,7 +288,7 @@ export function registerOpsDiscountCodes(app: App): void {
     const { requestId, deps } = c.var;
     const { id } = c.req.valid("param");
     if (!(await withinRouteReach(c, "visit", id))) return c.json(errorBody("not_found", requestId), 404);
-    const by = { kind: "ops", actor: staffOf(c) } as const;
+    const by = { kind: "ops", actor: actorOf(c) } as const;
     const removed = await removeFromVisit(c.env.DB, { visitId: id, by, requestId }, deps.now());
     if (removed === "price_settled") return c.json(errorBody("price_settled", requestId), 409);
     if (removed !== "removed") return c.json(errorBody("not_found", requestId), 404);

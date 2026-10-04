@@ -92,13 +92,13 @@ describe("validateStaticConfig: environment and providers", () => {
     const config = validateStaticConfig({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS });
     expect(config.environment).toBe("local");
     expect(config.providers).toEqual(STUBS);
-    expect(config.settings.zoho).toBeNull();
+    expect(config.settings.zohoCrm).toBeNull();
   });
 
   it("accepts production with real providers and every secret", () => {
     const config = validateStaticConfig(production);
     expect(config.environment).toBe("production");
-    expect(config.settings.zoho?.apiHost).toBe("www.zohoapis.in");
+    expect(config.settings.zohoCrm?.apiHost).toBe("www.zohoapis.in");
     expect(config.settings.leadMobileDailyLimit).toBe(5);
   });
 

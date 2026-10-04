@@ -14,7 +14,7 @@ import type { Context } from "hono";
 import { JOB_SHEET_BOUNDS } from "../config/job-sheet.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { jobSheet, saveList, type JobSheet, type JobSheetList, type ListName } from "../domain/job-sheet-settings.ts";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -126,7 +126,7 @@ async function save(c: Context<AppEnv>, which: ListName, items: z.infer<typeof L
   const saved = await saveList(c.env.DB, {
     which,
     items,
-    actor: staffOf(c),
+    actor: actorOf(c),
     requestId: c.var.requestId,
     now: c.var.deps.now(),
   });

@@ -74,7 +74,7 @@ import { formPerson, personWithMobile } from "./form-person.ts";
 import { checkForOneVisit, codeOnHold, useOnNewHold, type OneVisitCode } from "./discount-code-holds.ts";
 import { attribute, hasAskedForAVisit, type Invite, type InviteState, type Via } from "./referrals.ts";
 import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } from "./scheduling.ts";
-import { saveBookingLead, type Attribution } from "./leads.ts";
+import { saveBookingLead, type LeadAttribution } from "./leads.ts";
 import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
 import { pincodeOf, type Pincode } from "./service-area.ts";
@@ -207,7 +207,7 @@ async function recordLead(
     pincode: Pincode | null;
     lossExtent: LossExtent | null;
     date: string | null;
-    attribution: Attribution;
+    attribution: LeadAttribution;
     served: boolean;
     now: Date;
   },
@@ -328,7 +328,7 @@ export interface ConsultationRequest {
   readonly window: BookingWindow;
   readonly lossExtent: LossExtent | null;
   readonly turnstileToken: string;
-  readonly attribution: Attribution;
+  readonly attribution: LeadAttribution;
   /** The invite the friend arrived with, where there is one. */
   readonly invite: Invite | null;
   /** The line beside the invite that told the friend their referrer hears of the fit; null where the page showed none. */
@@ -615,7 +615,7 @@ export interface WaitlistRequest {
   readonly lossExtent: LossExtent | null;
   readonly launchAlert: boolean;
   readonly turnstileToken: string;
-  readonly attribution: Attribution;
+  readonly attribution: LeadAttribution;
   readonly invite: Invite | null;
   /** The line beside the invite that told the friend their referrer hears of the fit; null where the page showed none. */
   readonly toldNotice: ToldNotice | null;

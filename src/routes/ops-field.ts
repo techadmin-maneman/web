@@ -23,7 +23,7 @@
 // their consent to messages about visits.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { listCities } from "../domain/cities.ts";
@@ -379,7 +379,7 @@ export function registerOpsField(app: App): void {
   });
 
   app.openapi(decisionRoute, async (c) => {
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const { id } = c.req.valid("param");
     const { decision, reason } = c.req.valid("json");
     if (needsReason("no_show", decision) && (reason ?? "") === "") {
@@ -493,7 +493,7 @@ export function registerOpsField(app: App): void {
   });
 
   app.openapi(leaveRoute, async (c) => {
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const { id } = c.req.valid("param");
     const { from, to, note } = c.req.valid("json");
     const now = c.var.deps.now();
@@ -519,7 +519,7 @@ export function registerOpsField(app: App): void {
   });
 
   app.openapi(cancelLeaveRoute, async (c) => {
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const { id, leave } = c.req.valid("param");
     const now = c.var.deps.now();
     if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
@@ -546,7 +546,7 @@ export function registerOpsField(app: App): void {
   });
 
   app.openapi(revokeRoute, async (c) => {
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const { id, device } = c.req.valid("param");
     const now = c.var.deps.now();
     if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
@@ -576,7 +576,7 @@ export function registerOpsField(app: App): void {
     if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
     const audit = {
       surface: "ops",
-      actor: staffOf(c),
+      actor: actorOf(c),
       action: "technician.allow_sign_in",
       subject: { kind: "technician", id },
       requestId: c.var.requestId,

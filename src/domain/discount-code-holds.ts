@@ -9,7 +9,7 @@ import type { PaymentsProvider } from "../providers/payments.ts";
 import { spendableCredits } from "./credits.ts";
 import { termsOf } from "./discount-codes.ts";
 import {
-  checkCode,
+  checkDiscountCode,
   enteredAs,
   unpaidHold,
   useStatement,
@@ -127,7 +127,7 @@ export async function enterOnHold(
 
   const onCredit = await creditStillCovers(db, hold, entry.personId, now);
   const booking = { type: hold.type, onCredit, moves: hold.moves_appointment_id !== null };
-  const checked = await checkCode(db, entry.text, booking, entry.personId, now);
+  const checked = await checkDiscountCode(db, entry.text, booking, entry.personId, now);
   if (!checked.ok) return { kind: "not_applicable", reason: checked.reason };
 
   const off = amountOff(termsOf(checked.code), hold.amount_ex_gst);
@@ -242,7 +242,7 @@ export async function checkForOneVisit(
 ): Promise<OneVisitCode | { readonly ok: false; readonly reason: Refused }> {
   const booking = { type: "first_fit", onCredit: false, moves: false } as const;
   // Someone new has used nothing, which no person's ID matches.
-  const checked = await checkCode(db, text, booking, personId ?? "", now, typedAt);
+  const checked = await checkDiscountCode(db, text, booking, personId ?? "", now, typedAt);
   if (!checked.ok) return checked;
   return { ok: true, codeId: checked.code.id, code: checked.code.code, terms: termsOf(checked.code) };
 }

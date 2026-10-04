@@ -32,7 +32,7 @@ import {
 } from "../policy/next-visit.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
-import { consentGiven } from "./messages.ts";
+import { consentGiven } from "./consents.ts";
 import { serviceToOffer } from "./services.ts";
 import { NO_VISITS_CONSENT, remindersFrom, type Composed } from "./visit-messages.ts";
 

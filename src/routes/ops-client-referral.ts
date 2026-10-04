@@ -12,7 +12,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { attribute, clientInviteOf, CODE_PATTERN, GRANT_STATES, howTheyCame, inviteOf } from "../domain/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
@@ -133,7 +133,7 @@ export function registerOpsClientReferral(app: App): void {
     const invite = await inviteOf(db, code, false);
     if (invite === null) return c.json(errorBody("unknown_invite", requestId), 422);
 
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const outcome = await attribute(db, {
       invite,
       personId,

@@ -11,7 +11,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import { memberOfStaffOf } from "../http/audit.ts";
+import { staffMemberOf } from "../http/audit.ts";
 import { correctByOps, versionsOf } from "../domain/hair-profiles.ts";
 import { offeredProducts } from "../domain/services.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -100,7 +100,7 @@ export function registerOpsHairProfile(app: App): void {
     const { id } = c.req.valid("param");
     const { fit, history, based_on } = c.req.valid("json");
     const { requestId, deps } = c.var;
-    const staff = memberOfStaffOf(c);
+    const staff = staffMemberOf(c);
     if (staff === null) return c.json(errorBody("access_required", requestId), 403);
     if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", requestId), 404);
 

@@ -26,7 +26,7 @@ import type { RazorpayPayment } from "../providers/razorpay.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { spendableCredits } from "./credits.ts";
 import { checkForOneVisit, codeOnHold } from "./discount-code-holds.ts";
-import { checkCode, useStatement } from "./discount-code-uses.ts";
+import { checkDiscountCode, useStatement } from "./discount-code-uses.ts";
 import { termsOf } from "./discount-codes.ts";
 import { typedOnWaitingRequest } from "./requested-codes.ts";
 import type { OpsInputs } from "./ops-settings.ts";
@@ -151,7 +151,7 @@ async function codeFor(
     return checked.ok ? { id: checked.codeId, amountOff: null, typedAt } : false;
   }
   const codeBooking = { type: asked.kind, onCredit: booking.onCredit, moves: false };
-  const checked = await checkCode(db, asked.code, codeBooking, asked.personId, now);
+  const checked = await checkDiscountCode(db, asked.code, codeBooking, asked.personId, now);
   if (!checked.ok) return false;
   return { id: checked.code.id, amountOff: amountOff(termsOf(checked.code), booking.priceExGst), typedAt: null };
 }
