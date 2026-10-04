@@ -10,6 +10,7 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { HOLD_SECONDS, type BookingWindow } from "../config/scheduling.ts";
+import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
@@ -333,12 +334,13 @@ async function holdReference(db: D1Database, holdId: string, now: Date): Promise
 }
 
 /**
- * Asks Razorpay for the hold's payment link, which it texts to the client, closing as the hold does, and keeps it on
- * the hold. Null when Razorpay made none that can be found, and the hold is then the caller's to let go.
+ * Asks Razorpay for the hold's payment link, closing as the hold does, and keeps it on the hold. Razorpay texts it to
+ * a client whose number is on the allowlist, which in production is every client. Null when Razorpay made none that
+ * can be found, and the hold is then the caller's to let go.
  */
 export async function sendHoldLink(
   db: D1Database,
-  deps: { readonly payments: PaymentsProvider; readonly log: Logger },
+  deps: { readonly payments: PaymentsProvider; readonly log: Logger; readonly messagingSettings: MessagingSettings },
   held: { readonly hold: Hold; readonly asked: VisitAsked; readonly sale: Sale; readonly closesAt: Date },
   now: Date,
 ): Promise<MadeLink | null> {
@@ -348,21 +350,25 @@ export async function sendHoldLink(
     .bind(asked.personId)
     .first<{ name: string; mobile_e164: string }>();
   const reference = await holdReference(db, hold.id, now);
+  const contact = client?.mobile_e164 ?? "";
+  const notify = onAllowlist(deps.messagingSettings, contact);
   let made: MadeLink | null;
   try {
     made = await deps.payments.createPaymentLink({
       amount: sale.price.amount,
       reference,
       description: linkDescription(sale, asked),
-      customer: { name: client?.name ?? "", contact: client?.mobile_e164 ?? "" },
+      customer: { name: client?.name ?? "", contact },
       notes: { hold_id: hold.id, person_id: asked.personId },
       closesAt,
+      notify,
     });
   } catch (error) {
     deps.log.warn("hold_link_failed", { hold_id: hold.id, reason: failureReason(error) });
     made = await linkMadeBefore(deps.payments, reference);
   }
   if (made === null) return null;
+  if (!notify) deps.log.info("payment_link_not_texted", { hold_id: hold.id });
   await db
     .prepare("UPDATE slot_holds SET payment_link_id = ?2, payment_link_url = ?3, updated_at = ?4 WHERE id = ?1")
     .bind(hold.id, made.id, made.shortUrl, now.toISOString())

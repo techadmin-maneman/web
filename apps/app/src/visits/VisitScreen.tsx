@@ -20,7 +20,7 @@ import { messages, visits } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
 import { VisitCard } from "../home/VisitCard.tsx";
 import { apiNow } from "../lib/clock.ts";
-import { duration, invoiceState, visitName } from "../lib/visit.ts";
+import { duration, invoiceState, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { PhotoRow, type OpenPhoto } from "../photos/PhotoRow.tsx";
 import { PhotoSheet } from "../photos/PhotoSheet.tsx";
@@ -159,7 +159,7 @@ function PastVisit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => 
         {visit.duration_minutes !== null && (
           <Fact name={copy.duration} value={duration(visit.duration_minutes)} numeric />
         )}
-        <Fact name={copy.type} value={visitName(visit.type)} />
+        <Fact name={copy.type} value={visitTitle(visit)} />
         {visit.what_was_done !== null && visit.what_was_done.length > 0 && (
           <div className={styles.done}>
             <dt>{copy.done}</dt>
