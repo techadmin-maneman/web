@@ -1,8 +1,8 @@
 // Tasks (board D2): the queues ops still have to work through, with how long
 // each has left. The API is answered from e2e/ops/fixtures.ts, since a local
 // database holds no held grant, no no-show and no piece. The clock is fixed to
-// the day the fixture's dates are read against, so "2 days" and "Overdue 3"
-// mean the same thing on every run.
+// the day the fixture's dates are read against, so "2 days left" and "3 days
+// overdue" mean the same thing on every run.
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
@@ -27,29 +27,79 @@ const list = (page: Page) => page.getByRole("region", { name: "Tasks" });
 /** A task's row, found by the line that heads it. */
 const row = (page: Page, heading: string) => list(page).getByRole("listitem").filter({ hasText: heading });
 
-test("groups the queues as the policy orders them, each with its count", async ({ page }) => {
+/** The groups' names, as each department lists them. */
+const groupNames = (page: Page) => list(page).getByRole("heading", { level: 4 });
+
+// The groups were one 484 px column on a 1440 px screen, money between a call about a move and a job on a day off
+// (OIA-02).
+test("stands each group under its department, in the navigation's order, side by side", async ({ page }) => {
   await open(page);
-  await expect(page.getByRole("heading", { level: 3 })).toHaveText([
+  await expect(list(page).getByRole("heading", { level: 3 })).toHaveText([
+    "Operations",
+    "Customer Care",
+    "Finance",
+    "Growth",
+  ]);
+  await expect(groupNames(page)).toHaveText([
     "Replacement order",
-    "Referral review",
-    "No-show decision",
     "Number change",
     "Erasure request",
+    "No-show decision",
+    "Referral review",
   ]);
   await expect(list(page).getByRole("listitem")).toHaveCount(8);
+
+  // Customer Care's two groups share a row of the desk's screen.
+  const left = await groupNames(page).nth(1).boundingBox();
+  const right = await groupNames(page).nth(2).boundingBox();
+  if (left === null || right === null) throw new Error("the two groups are not drawn");
+  expect(right.y).toBeCloseTo(left.y, 0);
+  expect(right.x).toBeGreaterThan(left.x);
 });
 
-test("heads the list with how many have run over", async ({ page }) => {
+test("heads the list with how many have run over, and takes the keyboard to the first", async ({ page }) => {
   await open(page);
-  await expect(page.getByText("4 overdue")).toBeVisible();
+  await list(page).getByRole("button", { name: "4 overdue, go to the first" }).click();
+  await expect(row(page, "Kunal Mehta")).toBeFocused();
 });
 
-test("writes the days left as the board writes them, and marks what has run over", async ({ page }) => {
+test("writes how long each has left in words, and marks what has run over", async ({ page }) => {
   await open(page);
-  await expect(row(page, "Kunal Mehta")).toContainText("Overdue 3");
-  await expect(row(page, "Rohit Malhotra")).toContainText("2 days");
-  await expect(row(page, "Karan Bose")).toContainText("Today");
-  await expect(row(page, "Ashish Gill")).toContainText("1 day");
+  await expect(row(page, "Kunal Mehta")).toContainText("3 days overdue");
+  await expect(row(page, "Rohit Malhotra")).toContainText("2 days left");
+  await expect(row(page, "Karan Bose")).toContainText("Due today");
+  await expect(row(page, "Ashish Gill")).toContainText("1 day left");
+});
+
+// On staging, 19 to 29 rows of one group pushed every other group out of sight (OIA-02).
+test("shows a group's five longest waits, the rest on asking, and unfolds it for an overdue task past them", async ({
+  page,
+}) => {
+  const [first] = TASKS.groups;
+  if (first === undefined) throw new Error("the board's tasks have no group");
+  const [template] = first.tasks;
+  if (template === undefined) throw new Error("the board's first group has no task");
+  const names = ["Amit", "Bharat", "Chirag", "Dev", "Eshan", "Farhan", "Gautam"];
+  const tasks = names.map((name, index) => ({
+    ...template,
+    id: `91000000-0000-4000-8000-00000000010${String(index)}`,
+    person: { id: `22000000-0000-4000-8000-00000000010${String(index)}`, name: `${name} Sharma` },
+    // The last is the one past its day.
+    due: name === "Gautam" ? "2027-09-18T18:30:00.000Z" : "2027-09-24T18:30:00.000Z",
+  }));
+  await open(page, { ...TASKS, overdue: 1, groups: [{ ...first, count: tasks.length, tasks }] });
+
+  await expect(list(page).getByRole("listitem")).toHaveCount(5);
+  await list(page).getByRole("button", { name: "Show 2 more · Replacement order" }).click();
+  await expect(list(page).getByRole("listitem")).toHaveCount(7);
+  const fewer = list(page).getByRole("button", { name: "Show fewer · Replacement order" });
+  await expect(fewer).toHaveAttribute("aria-expanded", "true");
+  await fewer.click();
+  await expect(list(page).getByRole("listitem")).toHaveCount(5);
+
+  await list(page).getByRole("button", { name: "1 overdue, go to the first" }).click();
+  await expect(list(page).getByRole("listitem")).toHaveCount(7);
+  await expect(row(page, "Gautam Sharma")).toBeFocused();
 });
 
 test("names the one fact each group turns on", async ({ page }) => {
@@ -88,7 +138,7 @@ test("names the day and window a consultation was asked for", async ({ page }) =
       },
     ],
   });
-  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["Consultation request"]);
+  await expect(groupNames(page)).toHaveText(["Consultation request"]);
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon");
 });
 
@@ -150,17 +200,13 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
     ],
   };
   await open(page, body);
-  await expect(page.getByRole("heading", { level: 3 })).toHaveText([
-    "Consultation request",
-    "First fit to book",
-    "At-risk client",
-  ]);
+  await expect(groupNames(page)).toHaveText(["Consultation request", "First fit to book", "At-risk client"]);
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon + first fit, morning");
   await expect(row(page, "Sanjay Arora")).toContainText(
     "Consultation Fri 10 Sep; first fit asked for in the afternoon",
   );
   await expect(row(page, "Deepak Rao")).toContainText("9 weeks since the last visit · due Fri 20 Aug");
-  await expect(row(page, "Deepak Rao")).toContainText("Overdue 24");
+  await expect(row(page, "Deepak Rao")).toContainText("24 days overdue");
   // The client books; ops reach them from their page, on their visits.
   await expect(row(page, "Deepak Rao").getByRole("link", { name: "Deepak Rao", exact: true })).toHaveAttribute(
     "href",
@@ -211,7 +257,8 @@ test("names a draft invoice's visit, and heads an unfinished erasure with the da
       },
     ],
   });
-  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["Draft invoice", "Erasure left in FSM"]);
+  // Customer Care's before Finance's, as the navigation orders the departments.
+  await expect(groupNames(page)).toHaveText(["Erasure left in FSM", "Draft invoice"]);
   await expect(row(page, "Sanjay Arora")).toContainText("Visit of Mon 20 Sep, still a draft in Books");
   const erased = row(page, "FSM contact 8229000000500123 still holds their details");
   await expect(erased).toContainText("Client erased Mon 20 Sep");
@@ -253,7 +300,7 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
       },
     ],
   });
-  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["Consultation request", "Payment owed"]);
+  await expect(groupNames(page)).toHaveText(["Consultation request", "Payment owed"]);
   await expect(row(page, "Arjun Kapoor")).toContainText("+ consultation and fit in one visit");
   await expect(row(page, "Nikhil Suri")).toContainText("Mane Man Natural, Rs. 35,000; link sent");
   await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000; link not sent");
@@ -308,7 +355,7 @@ test("names a disputed charge and what it kept, and leads to the dispute in Paym
       },
     ],
   });
-  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["Disputed charge"]);
+  await expect(groupNames(page)).toHaveText(["Disputed charge"]);
   const vikram = row(page, "Vikram Sethi");
   await expect(vikram).toContainText("Disputes the charge that kept Rs. 2,360");
   await expect(vikram.getByRole("link", { name: "Vikram Sethi", exact: true })).toHaveAttribute(
@@ -378,10 +425,10 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
       },
     ],
   });
-  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["Grievance"]);
+  await expect(groupNames(page)).toHaveText(["Grievance"]);
   const grievance = row(page, "Neha Kapoor");
   await expect(grievance).toContainText("Raised in the client's own app");
-  await expect(grievance).toContainText("22 days");
+  await expect(grievance).toContainText("22 days left");
   await expect(grievance.getByRole("link", { name: /^Answer it in Grievances/ })).toHaveAttribute(
     "href",
     "/grievances#grievance-97000000-0000-4000-8000-000000000001",
@@ -399,7 +446,8 @@ test("counts a group whole when it lists only its longest waits, and says when i
     truncated: true,
     groups: [{ ...first, count: 73 }],
   });
-  await expect(list(page).getByText("73", { exact: true })).toBeVisible();
+  // The group's whole count, and so its department's.
+  await expect(list(page).getByText("73", { exact: true })).toHaveCount(2);
   await expect(page.getByText("The 2 longest waits of 73.")).toBeVisible();
   await expect(page.getByText("More are waiting than one look reads, so a count here may be short.")).toBeVisible();
 });
