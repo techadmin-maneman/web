@@ -13,7 +13,7 @@
 // subrequests (src/lib/call-budget.ts). Their calls to D1, R2 and the queues are a separate allowance of 1,000 a run,
 // kept by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
 
-import { BOOKS_ITEM_PUSH } from "../config/environments.ts";
+import { BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { bookUnbookedHolds } from "../domain/bookings.ts";
@@ -26,6 +26,7 @@ import { finishRun, startRun, type RunStart } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
+import { tellOfNewGrievances } from "../domain/grievances.ts";
 import { queueCreditReminders } from "../domain/credit-reminders.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { sendUnsentLinks } from "../domain/payment-links.ts";
@@ -148,6 +149,10 @@ async function booksErasuresJob({ env, deps, log, budget }: CronContext): Promis
 
 async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
+}
+
+async function grievanceAlertsJob({ env, deps, config }: CronContext): Promise<void> {
+  await tellOfNewGrievances(env.DB, deps.alert, `${OPS_ORIGIN[config.environment]}/grievances`, deps.now());
 }
 
 /** R2's share and the database fill over months, so an hourly look is enough. */
@@ -280,6 +285,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "ailab_credits", needs: "nothing", every: 60, at: 14, run: ailabCreditsJob },
   { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
+  // The grievances raised in the hour, in one message, so one client cannot flood the chat.
+  { name: "grievance_alerts", needs: "nothing", every: 60, at: 24, run: grievanceAlertsJob },
   { name: "housekeeping", needs: "nothing", every: 60, at: 28, run: housekeep },
   // An erased client's customer in Books, deleted, or blanked where an invoice names it.
   { name: "books_erasures", needs: "books", every: 60, at: 29, run: booksErasuresJob },

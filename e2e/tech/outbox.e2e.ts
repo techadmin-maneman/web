@@ -198,7 +198,7 @@ test("warns when the phone will not promise to keep the queue, and says how long
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "Back" }).click();
 
-  await expect(page.getByText("This phone has not promised to keep unsent work")).toBeVisible();
+  await expect(page.getByText("Unsent work could be lost")).toBeVisible();
   const onToday = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
@@ -206,7 +206,7 @@ test("warns when the phone will not promise to keep the queue, and says how long
 
   // And the queue itself names how long the work has been on the phone alone.
   await page.getByRole("link", { name: /1 action waiting/ }).click();
-  await expect(page.getByText("This phone has not promised to keep unsent work")).toBeVisible();
+  await expect(page.getByText("Unsent work could be lost")).toBeVisible();
   await expect(page.getByText(/^Waiting since /)).toBeVisible();
 
   const onWaiting = await new AxeBuilder({ page })
@@ -229,7 +229,7 @@ test("says nothing about keeping the queue when the phone has promised to", asyn
   await page.getByRole("button", { name: "Back" }).click();
 
   await expect(page.getByRole("link", { name: /1 action waiting/ })).toBeVisible();
-  await expect(page.getByText("This phone has not promised to keep unsent work")).toHaveCount(0);
+  await expect(page.getByText("Unsent work could be lost")).toHaveCount(0);
 });
 
 test("accounts plainly for what has not reached us, and says what changed on a supersede", async ({

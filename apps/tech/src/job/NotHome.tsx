@@ -4,7 +4,7 @@
 //   Check-in failed   how far away it was, and no way to close a no-show from there
 //   2 · Waiting       what is left of the wait, from the booked start at the earliest, and Close as no-show,
 //                     dim until it runs out
-//   He appears        the timer stops and the job starts
+//   Client's here     the timer stops and the job starts
 //
 // The stage's one action — I have arrived, then Start job — sits at the foot of
 // the screen where every screen keeps it. Close as no-show is never gold and
@@ -191,7 +191,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
       {!here && !failed && (
         <section className={styles.stage}>
           <p className={styles.stageLabel}>{copy.arrived.step}</p>
-          <p className={styles.stageBody}>{copy.arrived.body}</p>
+          <p className={styles.stageBody}>{copy.arrived.body(job.checkin_radius_m)}</p>
           {saysWhenItOpens && (
             <p className={styles.stageWarn} role="status">
               {copy.arrived.opensAt(clock(job.checkin_from))}

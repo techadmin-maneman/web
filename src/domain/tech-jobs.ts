@@ -68,8 +68,10 @@ export interface JobSummary {
   readonly sector: string | null;
   readonly status: AppointmentStatus;
   readonly badge: PaymentBadge;
-  /** How much of the day the visit takes, as board A1 writes it beneath the time: 1, 1.5 or 2 slots. */
+  /** How much of the day the visit takes: 1, 1.5 or 2 slots. */
   readonly slots: number | null;
+  /** How long the visit is booked for, which the technician's day reads beside the time. */
+  readonly minutes: number | null;
   readonly unlocked: boolean;
   readonly unlocks_at: string;
   /** The client's name once the job unlocks, as the card gives it, so the day's list can say whom each job is for. */
@@ -578,6 +580,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSch
     status: row.status,
     badge: badgeOf(row),
     slots: row.type === null ? null : slotsFor(unitsFor(bookedMinutes(row))),
+    minutes: row.type === null ? null : bookedMinutes(row),
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
     client_name: open ? row.client_name : null,

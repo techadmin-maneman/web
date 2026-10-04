@@ -205,6 +205,7 @@ function profileOf({ reminders = false, undecided = [], address = true }: Standi
     number_change_decided: null,
     deletion: null,
     deletion_rejected: null,
+    grievances: [],
   };
   return { ...answer, address: address ? ADDRESS : null, ...rest };
 }

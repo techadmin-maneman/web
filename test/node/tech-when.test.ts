@@ -2,15 +2,7 @@
 // and the times and counts the boards write.
 
 import { describe, expect, it } from "vitest";
-import {
-  clockShort,
-  countdown,
-  dayAfter,
-  dayMonth,
-  lengthOf,
-  metres,
-  todayInIndia,
-} from "../../apps/tech/src/lib/when.ts";
+import { clock, countdown, dayAfter, dayMonth, lengthOf, metres, todayInIndia } from "../../apps/tech/src/lib/when.ts";
 
 describe("the day", () => {
   it("is India's, which is five and a half hours ahead of UTC", () => {
@@ -30,9 +22,11 @@ describe("the day", () => {
 });
 
 describe("the times and counts", () => {
-  it("writes a row's time without am or pm (board A1)", () => {
-    expect(clockShort("2030-09-19T04:00:00.000Z")).toBe("9:30");
-    expect(clockShort("2030-09-19T06:30:00.000Z")).toBe("12:00");
+  // FLD-58, UX-34: a 4 pm visit read "4:00" under "First at 9 am".
+  it("writes a row's time with am or pm, as the head of Today does", () => {
+    expect(clock("2030-09-19T04:00:00.000Z")).toBe("9:30 am");
+    expect(clock("2030-09-19T06:30:00.000Z")).toBe("12 pm");
+    expect(clock("2030-09-19T10:30:00.000Z")).toBe("4 pm");
   });
 
   it("counts the wait in whole minutes and seconds, and never below nothing", () => {

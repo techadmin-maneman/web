@@ -279,7 +279,7 @@ The Home card: who the client is and what is booked
 
 ### GET /api/profile
 
-The profile: name, number, address, consents, and any number change or deletion under way
+The profile: name, number, address, consents, any number change or deletion under way, and the latest concerns raised
 
 **200**: The profile
 
@@ -1651,7 +1651,7 @@ Everything held about the client, as a page to download and read
 
 ### POST /api/grievances
 
-Raise a grievance about how the client's data is handled. The same words, still open, are one
+Raise a grievance about how the client's data is handled. The same words, still open, are one; 5 new ones a day
 
 Request body:
 
@@ -1681,6 +1681,14 @@ Request body:
 ```
 
 **401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: 5 new grievances a day
 
 ```json
 {
@@ -3023,6 +3031,64 @@ Request body:
         }
       ],
       "description": "The client's latest request to delete their account that ops rejected, for 30 days after, while no other request is waiting."
+    },
+    "grievances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "text": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "resolved"
+            ]
+          },
+          "raised_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "response": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ops' answer, which they write knowing the client reads it; null while open."
+          },
+          "answered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "state",
+          "raised_at",
+          "response",
+          "answered_at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The client's latest 5 concerns about their data, newest first: every one still open, and those answered within 30 days."
     }
   },
   "required": [
@@ -3034,7 +3100,8 @@ Request body:
     "number_change",
     "number_change_decided",
     "deletion",
-    "deletion_rejected"
+    "deletion_rejected",
+    "grievances"
   ],
   "additionalProperties": false
 }

@@ -1757,6 +1757,8 @@ export interface components {
             badge: "prepaid" | "credit" | "free" | "at_visit";
             /** @description How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type. */
             slots: number | null;
+            /** @description How long the visit is booked for, in minutes. Null for an unknown type. */
+            minutes: number | null;
             unlocked: boolean;
             /** Format: date-time */
             unlocks_at: string;
@@ -1803,6 +1805,8 @@ export interface components {
             badge: "prepaid" | "credit" | "free" | "at_visit";
             /** @description How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type. */
             slots: number | null;
+            /** @description How long the visit is booked for, in minutes. Null for an unknown type. */
+            minutes: number | null;
             unlocked: boolean;
             /** Format: date-time */
             unlocks_at: string;
@@ -1838,6 +1842,8 @@ export interface components {
              * @description The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow.
              */
             checkin_from: string;
+            /** @description How near the address a check-in must be, in metres, as ops set it. */
+            checkin_radius_m: number;
             /** @description The client's pieces, newest fit first. Null until the day before the visit. */
             pieces: components["schemas"]["Piece"][] | null;
             /** @description The client's latest earlier visit with after photographs; null for a first visit. */

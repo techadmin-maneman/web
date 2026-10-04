@@ -939,8 +939,8 @@ export const profile = {
   // PLACEHOLDER: the design draws the profile with an address already given, and no form.
   noAddress: "No address yet. Add it before you book.",
   addAddress: "Add your address and access notes",
-  // PLACEHOLDER: the design draws no landmark line (ADR 0054).
-  near: (landmark: string) => `Near ${landmark}`,
+  // PLACEHOLDER: the design draws no landmark; the client types it as they like, so it shows as typed.
+  landmark: "Landmark",
   // PLACEHOLDER: an address the client gave ops on the phone, which ops saved for them (ADR 0092).
   givenToOps: (date: string) =>
     `You gave us this address on the phone on ${date}. If anything is wrong, change it here.`,
@@ -1049,8 +1049,15 @@ export const profile = {
     send: "Send",
     cancel: "Not now",
     // Beside support's "Replies within a working day": the 30 days is the most a concern can take, not the usual.
-    sent: "Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest.",
+    sent: "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
     failed: "That did not go through. Please try again.",
+    limited: "You have reached today's limit. Send it tomorrow, or message us on WhatsApp.",
+    // PLACEHOLDER: the client's latest concerns, each with our answer once given.
+    concerns: "Your concerns",
+    concern: (date: string, status: string) => `Your concern of ${date} · ${status}`,
+    waiting: "Awaiting our reply",
+    answered: (date: string) => `Answered ${date}`,
+    answer: (response: string) => `Our answer: ${response}`,
   },
   deletion: {
     label: "Delete your account",

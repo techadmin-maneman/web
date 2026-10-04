@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bodyOf,
+  COLOURS,
   DENSITIES,
   figureOf,
   FIRST_TRANSPLANT_YEAR,
@@ -45,6 +46,12 @@ describe("the profile form", () => {
     });
     expect(fitOf(typed({ grey_percent: "20.5" }))).toBeNull();
     expect(fitOf(typed({ base_width_in: "80" }))).toBeNull();
+  });
+
+  // FLD-61, UX-35: the chips ran #1 … #8, #1B, as an object's integer-like keys come first.
+  it("offers the colours in the suppliers' order, #1B after #1", () => {
+    expect(COLOURS).toEqual(policy.COLOURS);
+    expect(COLOURS.slice(0, 3)).toEqual(["1", "1B", "2"]);
   });
 
   it("takes none of the remedies alone", () => {
