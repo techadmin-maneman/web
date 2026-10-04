@@ -5,7 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, randomMobile, test } from "../support.ts";
 import { holdOpen } from "./one-tap.ts";
-import { CODE, signIn } from "./signed-in.ts";
+import { CODE, logIn, signIn } from "./signed-in.ts";
 
 async function loggedIn(page: Page): Promise<string> {
   const mobile = await signIn(page);
@@ -535,6 +535,27 @@ test("logs out from the foot of the profile", async ({ page }) => {
   await loggedIn(page);
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+});
+
+// PS-14: a lost or handed-on phone stayed signed in for 90 days, with no way to end it short of erasure.
+test("lists where the client is signed in, and signs another browser out", async ({ page, browser }) => {
+  const mobile = await signIn(page);
+  const iPhone =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Safari/604.1";
+  const phone = await (
+    await browser.newContext({ baseURL: test.info().project.use.baseURL, userAgent: iPhone })
+  ).newPage();
+  await logIn(phone, mobile);
+  await expect(phone.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Your profile" }).click();
+  const card = page.getByRole("region", { name: "Signed in on" });
+  await expect(card.getByText("This device")).toBeVisible();
+  await card.getByRole("button", { name: "Sign out Safari on iOS" }).click();
+  await expect(card.getByText("Safari on iOS")).toHaveCount(0);
+
+  await phone.reload();
+  await expect(phone.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 });
 
 test("meets WCAG 2.2 AA, with the address form and the card's lines open", async ({ page }) => {

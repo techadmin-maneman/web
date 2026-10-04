@@ -18,6 +18,7 @@ export type Address = Schemas["Address"];
 export type AddressSave = Schemas["AddressSave"];
 export type Suggestion = Schemas["AddressSuggestions"]["suggestions"][number];
 export type NumberChange = Schemas["NumberChange"];
+export type SignedIn = Schemas["SignedIn"];
 export type ConsentPurpose = Profile["consents"][number]["purpose"];
 /** The screen a consent is switched on, which the consent keeps (docs/decisions/0094-where-a-consent-was-given.md). */
 export type ConsentScreen = NonNullable<Schemas["ConsentSwitch"]["source"]>;
@@ -144,6 +145,9 @@ export const api = {
   verifyNumberChange: (requestId: string, number: "old" | "new", code: string) =>
     client.post("/api/number-change/verify", { body: { request_id: requestId, number, code } }),
   withdrawNumberChange: () => client.delete("/api/number-change"),
+  sessions: () => client.get("/api/sessions"),
+  signOutSession: (id: string) => client.delete("/api/sessions/{id}", { path: { id } }),
+  signOutOthers: () => client.delete("/api/sessions/others"),
   requestDeletion: () => client.post("/api/deletion-request"),
   raiseGrievance: (text: string) => client.post("/api/grievances", { body: { text } }),
   refer: () => client.get("/api/refer"),

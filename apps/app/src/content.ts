@@ -1120,6 +1120,18 @@ export const profile = {
     rejected: (number: string, date: string) => `On ${date} we didn’t change your number to ${number}.`,
     why: (reason: string) => `Our reason: ${reason}`,
   },
+  // The design has no card for where the client is signed in (docs/decisions/0029-sessions.md).
+  sessions: {
+    label: "Signed in on",
+    thisDevice: "This device",
+    unknown: "A browser",
+    used: (date: string) => `Last used ${date}`,
+    signOut: "Sign out",
+    /** The button's name to a screen reader, which hears every row's "Sign out". */
+    signOutOf: (device: string) => `Sign out ${device}`,
+    signOutOthers: "Sign out everywhere else",
+    failed: "That didn’t go through. Try again.",
+  },
   support: {
     label: "Support",
     message: "Message us on WhatsApp",

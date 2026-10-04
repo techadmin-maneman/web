@@ -11,6 +11,7 @@ import { useSession } from "../session.ts";
 import { AddressSection } from "./AddressSection.tsx";
 import { Loading } from "../states/Loading.tsx";
 import { ConsentList } from "./ConsentList.tsx";
+import { SessionsCard } from "./SessionsCard.tsx";
 import { DataCard, DeletionCard, NumberChangeCard, SupportCard } from "./AccountCards.tsx";
 import styles from "./profile.module.css";
 
@@ -55,6 +56,7 @@ export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
           decided={loaded.number_change_decided}
           onChanged={() => void load()}
         />
+        <SessionsCard />
         <SupportCard />
         <DataCard grievances={loaded.grievances} onRaised={() => void load()} />
         <DeletionCard deletion={loaded.deletion} rejected={loaded.deletion_rejected} onRequested={() => void load()} />

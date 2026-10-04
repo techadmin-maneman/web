@@ -10,6 +10,8 @@ import { verifyCode, type Verification } from "./login.ts";
 import { createChallenge, type Challenge, type ChallengePurpose } from "./one-time-codes.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import { DAY_MS } from "../lib/durations.ts";
+import { failedUniqueOn } from "../lib/d1-errors.ts";
+import { revokeOthersStatement } from "./sessions.ts";
 
 export type NumberChangeState = "verifying" | "awaiting_ops" | "confirmed" | "rejected" | "withdrawn";
 export type WhichNumber = "old" | "new";
@@ -22,6 +24,8 @@ export interface NumberChange {
   readonly oldVerified: boolean;
   readonly newVerified: boolean;
   readonly createdAt: string;
+  /** The session that asked; null for a change asked for before it was kept. */
+  readonly sessionId: string | null;
 }
 
 interface Row {
@@ -32,9 +36,10 @@ interface Row {
   old_verified_at: string | null;
   new_verified_at: string | null;
   created_at: string;
+  session_id: string | null;
 }
 
-const COLUMNS = "id, person_id, new_mobile_e164, state, old_verified_at, new_verified_at, created_at";
+const COLUMNS = "id, person_id, new_mobile_e164, state, old_verified_at, new_verified_at, created_at, session_id";
 
 function changeOf(row: Row): NumberChange {
   return {
@@ -45,6 +50,7 @@ function changeOf(row: Row): NumberChange {
     oldVerified: row.old_verified_at !== null,
     newVerified: row.new_verified_at !== null,
     createdAt: row.created_at,
+    sessionId: row.session_id,
   };
 }
 
@@ -111,6 +117,8 @@ export async function startNumberChange(
   db: D1Database,
   options: {
     personId: string;
+    /** The session asking, which a confirmed change leaves signed in. */
+    sessionId: string;
     newMobileE164: string;
     pepper: string;
     /** The request's audit entry, written with the change it names (src/domain/audit.ts). */
@@ -132,10 +140,10 @@ export async function startNumberChange(
       .bind(options.personId, at),
     db
       .prepare(
-        `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state)
-         VALUES (?1, ?2, ?3, ?4, 'verifying')`,
+        `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state, session_id)
+         VALUES (?1, ?2, ?3, ?4, 'verifying', ?5)`,
       )
-      .bind(id, options.personId, at, options.newMobileE164),
+      .bind(id, options.personId, at, options.newMobileE164, options.sessionId),
   ]);
 
   const codeFor = async (which: WhichNumber) => {
@@ -229,7 +237,7 @@ export async function changesAwaitingOps(
 ): Promise<(NumberChange & { oldMobileE164: string })[]> {
   const rows = await db
     .prepare(
-      `SELECT r.id, r.person_id, r.new_mobile_e164, r.state, r.old_verified_at, r.new_verified_at, r.created_at,
+      `SELECT r.id, r.person_id, r.new_mobile_e164, r.state, r.old_verified_at, r.new_verified_at, r.created_at, r.session_id,
          p.mobile_e164 AS old_mobile_e164
        FROM number_change_requests r JOIN people p ON p.id = r.person_id
        WHERE r.state = 'awaiting_ops' AND p.erased_at IS NULL AND ${withinReach("number_change", "r", "?1")}
@@ -245,9 +253,11 @@ export type Decision = "confirm" | "reject";
 /**
  * Ops' decision. Confirming moves the person to the new number, unless
  * someone else already holds it, and keeps the number it replaced, which the
- * referral fraud rules compare (src/domain/referral-grants.ts). Only a change
- * waiting for ops can be decided. The caller sends a confirmed number on to
- * the client's Books customer and the CRM lead.
+ * referral fraud rules compare (src/domain/referral-grants.ts). It signs out
+ * every session of theirs but the one that asked, so a phone that went with the
+ * old number is signed in no longer. Only a change waiting for ops can be
+ * decided. The caller sends a confirmed number on to the client's Books
+ * customer and the CRM lead.
  */
 export async function decideNumberChange(
   db: D1Database,
@@ -276,16 +286,24 @@ export async function decideNumberChange(
     .bind(change.newMobileE164, change.personId)
     .first<string>("id");
   if (holder !== null) return "number_in_use";
-  await db.batch([
-    decide,
-    // Read before the next statement moves the person off it.
-    db
-      .prepare(
-        "UPDATE number_change_requests SET replaced_mobile_e164 = (SELECT mobile_e164 FROM people WHERE id = ?2) WHERE id = ?1",
-      )
-      .bind(change.id, change.personId),
-    db.prepare("UPDATE people SET mobile_e164 = ?2 WHERE id = ?1").bind(change.personId, change.newMobileE164),
-    audit,
-  ]);
+  const client = { kind: "client", id: change.personId } as const;
+  try {
+    await db.batch([
+      decide,
+      // Read before the next statement moves the person off it.
+      db
+        .prepare(
+          "UPDATE number_change_requests SET replaced_mobile_e164 = (SELECT mobile_e164 FROM people WHERE id = ?2) WHERE id = ?1",
+        )
+        .bind(change.id, change.personId),
+      db.prepare("UPDATE people SET mobile_e164 = ?2 WHERE id = ?1").bind(change.personId, change.newMobileE164),
+      revokeOthersStatement(db, client, change.sessionId, options.now),
+      audit,
+    ]);
+  } catch (error) {
+    // Someone took the number between the check and the batch: the batch wrote nothing.
+    if (failedUniqueOn(error, "people")) return "number_in_use";
+    throw error;
+  }
   return decided;
 }

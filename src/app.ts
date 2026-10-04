@@ -19,6 +19,7 @@ import { createLogger } from "./log.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
 import { registerClientProfile } from "./routes/client-profile.ts";
+import { registerClientSessions } from "./routes/client-sessions.ts";
 import { registerClientBooking } from "./routes/client-booking.ts";
 import { registerClientChanges } from "./routes/client-changes.ts";
 import { registerClientNotes } from "./routes/client-notes.ts";
@@ -114,6 +115,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientAuth,
     registerClientMe,
     registerClientProfile,
+    registerClientSessions,
     registerClientVisits,
     // After the visits: they put the session on every /api/visits/* route.
     registerClientDisputes,
