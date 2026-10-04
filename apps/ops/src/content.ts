@@ -344,6 +344,8 @@ export const dispatch = {
     },
     /** PLACEHOLDER: the call's record did not go through. */
     toldFailed: "That was not recorded. Try again.",
+    /** A link asked for a visit this board does not hold. */
+    notOnBoard: "That visit is no longer on this board. It may have moved to another week, or been cancelled.",
   },
 } as const;
 
@@ -522,6 +524,9 @@ export const clients = {
     upcoming: "To come",
     past: "Done",
     columns: ["Date", "Time", "Visit", "Technician", "State", "Discount code"],
+    onBoard: "Show on board",
+    /** The link's whole name, since every row's says the same. */
+    onBoardLabel: (visit: string) => `Show on board: the visit of ${visit}`,
     /**
      * PLACEHOLDER: a discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md).
      * Entered or taken off only while the visit is not paid for or invoiced.
@@ -1527,7 +1532,7 @@ export const tasks = {
    * decides nothing.
    */
   decide: {
-    untold_move: "Record the call in Dispatch",
+    untold_move: "Open it in Dispatch",
     leave_conflict: "Move it in Dispatch",
     referral_review: "Decide it in Referrals",
     no_show_decision: "Rule on it in Payments",
@@ -1539,11 +1544,18 @@ export const tasks = {
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
   /** PLACEHOLDER: what a consultation asked for, a first fit to book and a replacement due are done with. */
   book: "Book a visit",
+  /** A move the client has not heard of, settled from its row. */
+  call: {
+    call: (mobile: string) => `Call ${mobile}`,
+    told: "Told by phone",
+    recording: "Recording…",
+    failed: "That was not recorded. Try again.",
+  },
   /** PLACEHOLDER: more were waiting than one look reads. */
   truncated: "More are waiting than one look reads, so a count here may be short.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
-    /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the dispatch board. */
+    /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the row. */
     untold_move: (when: string) => `Moved to ${when}; not on WhatsApp`,
     /**
      * PLACEHOLDER: "Service visit, Thu 24 Sep, afternoon; FSM refused it": booked or refunded from the client's
@@ -2266,6 +2278,9 @@ export const settings = {
       `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} still booked on these days. Move ${
         visits === 1 ? "it" : "them"
       } on the dispatch board.`,
+    show: "Show on board",
+    /** The link's whole name, since the list holds many and each link says the same. */
+    showLabel: (period: string) => `Show on board: ${period}`,
     remove: "Offer these days again",
     /** The button's whole name, since the list holds many and each button says the same. */
     removeLabel: (period: string) => `Offer ${period} again`,
