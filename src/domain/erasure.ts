@@ -173,8 +173,7 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
     // Expired jobs stop any render storing its result; the files go after the batch.
     db
       .prepare(
-        `UPDATE tryon_jobs SET state = CASE WHEN state = 'failed' THEN state ELSE 'expired' END, ip_hash = NULL
-         WHERE person_id = ?1`,
+        "UPDATE tryon_jobs SET state = CASE WHEN state = 'failed' THEN state ELSE 'expired' END WHERE person_id = ?1",
       )
       .bind(personId),
     db.prepare("DELETE FROM tryon_sessions WHERE person_id = ?1").bind(personId),

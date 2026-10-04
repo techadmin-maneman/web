@@ -6592,6 +6592,33 @@
         }
       }
     },
+    "/api/me/export.html": {
+      "get": {
+        "summary": "Everything held about the client, as a page to download and read",
+        "responses": {
+          "200": {
+            "description": "An HTML file, maneman-my-data.html, labelled and in India's time",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/grievances": {
       "post": {
         "summary": "Raise a grievance about how the client's data is handled. The same words, still open, are one",

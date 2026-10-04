@@ -401,8 +401,8 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut:
       "How each look was made, by our and AILabTools' keys; where the files are kept; and a one-way hash of the network address, which reads as nothing.",
     erasure: {
-      blanks: ["result_key", "copy_key", "kept_look_key", "ip_hash"],
-      why: "The photograph and every look made from it are deleted, and the hashed network address goes; the job stays, as a count.",
+      blanks: ["result_key", "copy_key", "kept_look_key"],
+      why: "The photograph and every look made from it are deleted; the job stays, as a count, with its one-way hash of the network address.",
     },
   },
   tryon_sessions: {
