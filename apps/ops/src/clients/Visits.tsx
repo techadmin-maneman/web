@@ -17,6 +17,7 @@ import type { AutoRefund, ClientRecord, ClientVisit } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";
 import styles from "./clients.module.css";
 import { BookVisit } from "./BookVisit.tsx";
@@ -56,7 +57,12 @@ function AddressRows({ address }: { address: SavedAddress }) {
     ...(address.access_notes === null ? [] : [{ key: copy.access, value: address.access_notes }]),
     ...(address.given_to_ops === null
       ? []
-      : [{ key: copy.givenToOps, value: copy.givenTo(address.given_to_ops.by, longDate(address.given_to_ops.at)) }]),
+      : [
+          {
+            key: copy.givenToOps,
+            value: copy.givenTo(whoWords(address.given_to_ops.by), longDate(address.given_to_ops.at)),
+          },
+        ]),
   ];
   return (
     <dl className={styles.address}>
@@ -133,7 +139,7 @@ function ClosedWithoutFollowUp({ visit }: { visit: ClientVisit }) {
   if (closed === null) return null;
   return (
     <span className={styles.closedLine}>
-      {copy.closedWithout(closed.by, longDate(closed.at))}
+      {copy.closedWithout(whoWords(closed.by), longDate(closed.at))}
       {closed.reason === null ? "" : `: ${closed.reason}`}
     </span>
   );

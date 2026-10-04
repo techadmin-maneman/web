@@ -14,6 +14,7 @@ import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Photo, type PhotoView, type PhotoVisit } from "../api.ts";
 import { clients } from "../content.ts";
+import { whoWords } from "../lib/who.ts";
 import { Loading } from "../states/States.tsx";
 import styles from "./clients.module.css";
 
@@ -182,7 +183,7 @@ function Before({ view }: { view: PhotoView }) {
         <ul className={styles.beforeList}>
           {view.before.map((each) => (
             <li className={styles.caption} key={each.at}>
-              {copy.beforeRow(each.by, longDate(each.at), indiaClock(each.at))}
+              {copy.beforeRow(whoWords(each.by), longDate(each.at), indiaClock(each.at))}
             </li>
           ))}
         </ul>

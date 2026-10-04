@@ -45,7 +45,6 @@ export function History({ history }: { history: ClientRecord["history"] }) {
         />
         <Row label={copy.rows.spend} value={rupees(history.spend)} />
       </dl>
-      <p className={styles.note}>{copy.note}</p>
     </section>
   );
 }

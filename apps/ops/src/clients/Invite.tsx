@@ -13,6 +13,7 @@ import { useState } from "react";
 import { api, isErased, type ClientInvite } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { whoWords } from "../lib/who.ts";
 import styles from "./clients.module.css";
 
 const copy = clients.invite;
@@ -34,7 +35,7 @@ function Details({ invite, news }: { invite: ClientInvite; news: InviteNews | nu
     ...(invite.attached === null
       ? []
       : [
-          { key: copy.attachedBy, value: invite.attached.by },
+          { key: copy.attachedBy, value: whoWords(invite.attached.by) },
           { key: copy.why, value: invite.attached.reason ?? clients.unknown },
         ]),
   ];

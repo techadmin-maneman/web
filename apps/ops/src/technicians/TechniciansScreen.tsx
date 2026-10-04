@@ -199,7 +199,6 @@ function Roster() {
       <p className={styles.note}>
         {technicians.work.period(fullDate(work.value.from), fullDate(lastDay(work.value.to)))}
       </p>
-      <p className={styles.note}>{technicians.work.skill}</p>
       {book.switched_off.length > 0 && <SwitchedOff list={book.switched_off} />}
       {adding && (
         <AddTechnician
