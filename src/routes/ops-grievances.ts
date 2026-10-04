@@ -17,7 +17,7 @@ import { dueAt } from "../policy/tasks.ts";
 const openRoute = createRoute({
   method: "get",
   path: "/api/grievances",
-  summary: "Open grievances in the caller's cities, oldest first",
+  summary: "Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's",
   responses: {
     200: {
       description: "Open grievances",
@@ -75,7 +75,8 @@ export function registerOpsGrievances(app: App): void {
     const { results } = await c.env.DB.prepare(
       `SELECT g.id, g.person_id, p.name, p.mobile_e164, g.text, g.created_at FROM grievances g
        JOIN people p ON p.id = g.person_id
-       WHERE g.state = 'open' AND ${withinReach("grievance", "g", "?1")} ORDER BY g.created_at`,
+       WHERE g.state = 'open' AND p.erased_at IS NULL AND ${withinReach("grievance", "g", "?1")}
+       ORDER BY g.created_at`,
     )
       .bind(reachBinding(reached))
       .all<{ id: string; person_id: string; name: string; mobile_e164: string; text: string; created_at: string }>();

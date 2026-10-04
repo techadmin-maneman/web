@@ -12,6 +12,9 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
 /** PLACEHOLDER: the API refused a call the person's access does not reach. */
 export const NOT_PERMITTED = "Your access doesn't include this. Ask an admin.";
 
+/** PLACEHOLDER: shown wherever a number would be, for a client erased since, whose number is gone. */
+export const ERASED_MOBILE = "Erased client";
+
 /** The five departments, as the navigation heads its sections and the Staff page names a grant. */
 const DEPARTMENT_NAMES = {
   operations: "Operations",
@@ -223,9 +226,13 @@ export const dispatch = {
     /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
-    /** PLACEHOLDER: a move the client has not heard of, which ops tell him of by phone (ADR 0069). */
-    untold: (when: string, mobile: string) =>
-      `Not told of the move to ${when}: no WhatsApp. Call ${mobile}, then record it here.`,
+    /** PLACEHOLDER: a move the client has not heard of, and why, which ops tell him of by phone (ADR 0069). */
+    untold: {
+      no_consent: (when: string, mobile: string) =>
+        `Not told of the move to ${when}: they have not agreed to WhatsApp. Call ${mobile}, then record it here.`,
+      not_sent: (when: string, mobile: string) =>
+        `Not told of the move to ${when}: the WhatsApp did not go. Call ${mobile}, then record it here.`,
+    },
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
     /** PLACEHOLDER: a visit ops cancel for the client, or close by hand once its technician's phone was lost. */
@@ -296,7 +303,8 @@ export const dispatch = {
     stop: "Stop moving it",
     /** What happened, from the move's own answer: a message is claimed only where one was queued. */
     moved: {
-      messaged: (job: string) => `${job} moved. The client was sent the new window on WhatsApp.`,
+      messaged: (job: string) =>
+        `Moved. We're sending ${job} the new window on WhatsApp; if it fails, a call task appears.`,
       call: (job: string, name: string, mobile: string) =>
         `${job} moved. ${name} has not agreed to WhatsApp: call ${mobile} with the new window.`,
       unchanged: (job: string, technician: string) =>
@@ -572,7 +580,7 @@ export const clients = {
       why: (when: string, reason: string) => `Refunded automatically on ${when}: ${reason}.`,
       reasons: {
         lapsed: "paid after the hold lapsed",
-        not_movable: "the visit had begun, so it could not be moved",
+        not_movable: "the visit had begun, or its technician or time had changed, so it could not be moved",
       },
     },
     /**
@@ -1156,6 +1164,15 @@ export const clients = {
         "minutes. Tell them it is done, in the chat they asked in.",
       back: "Find another client",
     },
+    /** PLACEHOLDER: the page of a client erased since, which keeps only their visits and money. */
+    record: {
+      title: "Erased client",
+      /** Whose visit the panels that cancel or close one name. */
+      whose: "the erased client",
+      on: (date: string) =>
+        `Erased on ${date}. Their name, number, address and photographs are gone; their visits and payments stay on ` +
+        "record.",
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "They were erased already. Reload to see.",
@@ -1608,8 +1625,6 @@ export const noShows = {
     credit: "a free service visit",
     /** The board's four rows. */
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
-    /** PLACEHOLDER: no receipt came back for the reminder or the arrival notice. */
-    notDelivered: "Not delivered",
     /** The board's note, "Your note · required", and its placeholder. */
     reason: {
       label: "Your note · required",
@@ -1722,8 +1737,15 @@ export const tasks = {
   truncated: "More are waiting than one look reads, so a count here may be short.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
-    /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the row. */
-    untold_move: (when: string) => `Moved to ${when}; not on WhatsApp`,
+    /**
+     * PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; has not agreed to WhatsApp": ops call, then say so on the row. A
+     * reason the API does not name says only that the client was not told.
+     */
+    untold_move: {
+      no_consent: (when: string) => `Moved to ${when}; has not agreed to WhatsApp`,
+      not_sent: (when: string) => `Moved to ${when}; the WhatsApp did not go`,
+      unknown: (when: string) => `Moved to ${when}; not told yet`,
+    },
     /**
      * PLACEHOLDER: "Service visit, Thu 24 Sep, afternoon; FSM refused it": booked or refunded from the client's
      * Visits tab (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
@@ -2167,7 +2189,7 @@ export const deletions = {
         "Every photograph of them, their visits' and their try-ons', the files as well as the records",
         "Their referral card, so an invite they sent shows the house card from now on",
         "Their saved addresses, and any number change under way",
-        "Their name, number and e-mail on the record, and the words of any grievance",
+        "Their name, number and e-mail on the record, and the words of any grievance; one still open is closed",
         "Their sessions, so their phone is signed out at once",
       ],
     },
@@ -2193,6 +2215,11 @@ export const deletions = {
       cancel: "Leave it waiting",
     },
     rejecting: "Rejecting",
+    /** PLACEHOLDER: above the queue once a decision is made. */
+    done: {
+      delete: "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within the hour.",
+      reject: "Request rejected. The client is told why on WhatsApp.",
+    },
     empty: "No deletion request is waiting.",
     note: (days: number) =>
       `Each request is processed within ${String(days)} days of being made. ` +

@@ -224,7 +224,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The client's record: who they are, their address, their visits, their money, their history and their invite */
+        /** The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits, their money and any booking still held for them */
         get: {
             parameters: {
                 query?: never;
@@ -242,10 +242,10 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ClientRecord"];
+                        "application/json": components["schemas"]["ClientRecord"] | components["schemas"]["ErasedClientRecord"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
+                /** @description not_found: no such client, or the client is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1953,7 +1953,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Open grievances in the caller's cities, oldest first */
+        /** Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's */
         get: {
             parameters: {
                 query?: never;
@@ -7186,6 +7186,26 @@ export interface components {
             /** Format: date-time */
             refunded_at: string;
         };
+        /** @description What is kept of a client once erased: their visits, their money and any booking still held for them. Nothing names them. */
+        ErasedClientRecord: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            erased_at: string;
+            /** @description Upcoming soonest first; past newest first. No discount code may be entered or taken off: price_open is false. */
+            visits: {
+                upcoming: components["schemas"]["ClientVisit"][];
+                past: components["schemas"]["ClientVisit"][];
+            };
+            /** @description Payments and refunds as one list, newest first. */
+            payments: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
+            /** @description Every payment link, newest first. */
+            payment_links: components["schemas"]["ClientPaymentLink"][];
+            /** @description Each finished visit sold for a price, with its invoice; the latest visit first. */
+            invoices: components["schemas"]["ClientInvoice"][];
+            /** @description Bookings FSM refused, waiting for a try or for ops; the soonest visit first. */
+            held_bookings: components["schemas"]["HeldBooking"][];
+        };
         ClientPhotos: {
             visits: {
                 /** Format: uuid */
@@ -7872,12 +7892,14 @@ export interface components {
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does. */
             notice_hours: number;
-            /** @description The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told. */
+            /** @description The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told. */
             untold: {
                 /** Format: uuid */
                 move_id: string;
                 /** Format: date-time */
                 starts_at: string;
+                /** @enum {string} */
+                reason: "no_consent" | "not_sent";
             } | null;
             /** @description How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved. */
             begun: ("arrived" | "started" | "closed") | null;
@@ -8214,6 +8236,11 @@ export interface components {
             distance_m: number | null;
             /** @description The check-in radius in force when he checked in. */
             radius_m: number;
+            /**
+             * @description What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.
+             * @enum {string}
+             */
+            message_state: "delivered" | "sent" | "not_sent" | "no_consent" | "none";
             message_delivered_at: string | null;
             closed_at: string | null;
         };
@@ -8263,7 +8290,7 @@ export interface components {
                 /** Format: date-time */
                 starts_at: string;
             };
-            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
+            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
             detail: string | null;
             /**
              * Format: date-time
