@@ -11304,10 +11304,6 @@ Request body:
     "note": {
       "type": "string"
     },
-    "source": {
-      "type": "string",
-      "description": "The module the default lives in."
-    },
     "set_by": {
       "anyOf": [
         {
@@ -11427,7 +11423,6 @@ Request body:
     "name",
     "title",
     "note",
-    "source",
     "set_by",
     "set_at",
     "kind",
@@ -11476,10 +11471,6 @@ Request body:
     },
     "note": {
       "type": "string"
-    },
-    "source": {
-      "type": "string",
-      "description": "The module the default lives in."
     },
     "set_by": {
       "anyOf": [
@@ -11542,7 +11533,6 @@ Request body:
     "name",
     "title",
     "note",
-    "source",
     "set_by",
     "set_at",
     "kind",

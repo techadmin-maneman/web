@@ -31,24 +31,24 @@ After changing the public site, rebuild it with `npm run build:site -- --env loc
 
 Locally nothing happens by itself that, on staging, another system does. Each has a command:
 
-| On staging                                        | Locally                                                                                        |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| The cron, every five minutes                      | `npm run tick`: one run of every job (`wrangler dev --test-scheduled`)                         |
-| Razorpay's webhook after a client pays            | `npm run pay:local`: pays the last booking held, by the same signed webhook                    |
-| FSM closing a visit once its technician closes it | `npm run close:local`: lists open visits; `npm run close:local -- <id> [--partial]` closes one |
-| WhatsApp messages, login codes                    | the stub: nothing is sent, and every code is `246810`                                          |
-| The address search (Google)                       | the stub: a few made-up suggestions                                                            |
+| On staging                                | Locally                                                                                        |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| The cron, every five minutes              | `npm run tick`: one run of every job (`wrangler dev --test-scheduled`)                         |
+| Razorpay's webhook after a client pays    | `npm run pay:local`: pays the last booking held, by the same signed webhook                    |
+| A technician closing a visit on his phone | `npm run close:local`: lists open visits; `npm run close:local -- <id> [--partial]` closes one |
+| WhatsApp messages, login codes            | the stub: nothing is sent, and every code is `246810`                                          |
+| The address search (Google)               | the stub: a few made-up suggestions                                                            |
 
 `close:local` calls `POST /api/dev/appointments/:id/close`, which exists only where `DEV_ROUTES=on`. `dev:all` sets it; the startup guard refuses it anywhere but locally, so it can never be reached on a deployed Worker.
 
-The FSM reconciliation does not run locally: the stub keeps no record of any visit, and the repair would take every visit it read for one FSM had deleted.
+Locally FSM is off (`FSM_PROVIDER` is `none`): our own database is the record of field work, as it will be on staging once it leaves FSM.
 
 ## The story, end to end
 
 1. **Book.** On the site, book a free consultation at `/book` with any made-up number; or sign in to the client app as a seeded client (`db:seed:local` prints three).
-2. **Pay for a visit.** In the client app, as the fitted client, book a service visit. A client with no address is asked for it first, in the booking sheet, since no slot is held without one (ADR 0079). At _Pay and confirm_, Razorpay's Checkout cannot take a payment locally (the stub has no key): close Checkout's window but leave the booking sheet open, since closing the sheet lets the hold go, and run `npm run pay:local` within the hold's ten minutes. The visit is booked within a few seconds, through the same queue as on staging, and Visits shows it.
+2. **Pay for a visit.** In the client app, as the fitted client, book a service visit. A client with no address is asked for it first, in the booking sheet, since no slot is held without one (ADR 0079). At _Pay and confirm_, Razorpay's Checkout cannot take a payment locally (the stub has no key): close Checkout's window but leave the booking sheet open, since closing the sheet lets the hold go, and run `npm run pay:local` within the hold's ten minutes. The webhook books the visit, and Visits shows it.
 3. **Do the job.** Sign in to the technician app as the seeded technician (`98100 99001`): his jobs today are at a client's address with no coordinates, so _I have arrived_ passes wherever the laptop is.
-4. **Close it.** `npm run close:local` lists the open visits; close one as FSM would once its technician closes it.
+4. **Close it.** `npm run close:local` lists the open visits; close one as its technician would.
 5. **What follows.** `npm run tick` runs the cron: invoices for closed visits, referral grants after a first fit, reminders and the rest.
 6. **Share.** An invite from Refer links to `http://localhost:4321/r/<code>`, which the local site answers.
 

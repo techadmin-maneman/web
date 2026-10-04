@@ -18,11 +18,14 @@ import {
   keepClosed,
   keepDay,
   keepJob,
+  keepLanded,
   keptArrival,
   keptClosed,
   keptDay,
   keptJob,
+  keptJobs,
   keptNames,
+  keptStates,
 } from "../../apps/tech/src/store/jobs.ts";
 import { queue } from "../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../apps/tech/src/store/persist.ts";
@@ -54,6 +57,7 @@ const summary = (id: string, date: string) =>
     slots: 1,
     unlocked: true,
     unlocks_at: `${date}T00:00:00.000Z`,
+    progress: { started_at: null, outcome: null },
   }) as JobSummary;
 
 const card = (id: string, date: string) =>
@@ -169,6 +173,31 @@ describe("what the phone lets go of", () => {
   });
 });
 
+// BK-43: a job whose card locked again has no client left on the phone, and is still named by what it does hold.
+describe("what the phone holds of each job", () => {
+  it("is the card where there is one, else the day's list, whether or not the card is open", async () => {
+    const moved = { ...card("a", TOMORROW), starts_at: `${TOMORROW}T03:30:00.000Z`, client: null };
+    await keepDay(TODAY, [summary("a", TODAY), summary("b", TODAY)]);
+    await keepJob(moved);
+    await keepJob(card("b", TODAY));
+
+    const held = await keptJobs();
+    expect(held.get("a")).toEqual({
+      starts_at: moved.starts_at,
+      type: "service",
+      one_visit: false,
+      sector: "Sector 65",
+      client: null,
+    });
+    expect(held.get("b")).toMatchObject({ starts_at: `${TODAY}T04:00:00.000Z`, client: "Client b" });
+  });
+
+  it("names a job on the day's list whose card the phone never fetched", async () => {
+    await keepDay(TOMORROW, [{ ...summary("c", TOMORROW), unlocked: false }]);
+    expect((await keptJobs()).get("c")).toMatchObject({ type: "service", sector: "Sector 65", client: null });
+  });
+});
+
 describe("a day's jobs", () => {
   it("comes from the API when there is signal, and is kept for the next basement", async () => {
     api({ [`/api/tech/jobs?date=${TODAY}`]: { status: 200, json: { date: TODAY, jobs: [summary("a", TODAY)] } } });
@@ -229,6 +258,29 @@ describe("a day's jobs", () => {
     });
     api({});
     expect(await loadDay(TODAY)).toEqual({ state: "failed", requestId: null });
+  });
+
+  // FLD-36: with no signal, the row of a job started since the list was kept lost its "In progress".
+  it("keeps where a job stands as a write's answer said, so the list says it with no signal", async () => {
+    await keepDay(TODAY, [summary("a", TODAY), summary("b", TODAY)]);
+    await keepLanded("a", { started_at: "2030-09-19T04:05:00.000Z", outcome: null });
+
+    api({});
+    const day = await loadDay(TODAY);
+    const states = day.state === "loaded" ? day.value.map((job) => job.progress) : [];
+    expect(states).toEqual([
+      { started_at: "2030-09-19T04:05:00.000Z", outcome: null },
+      { started_at: null, outcome: null },
+    ]);
+    expect((await keptStates()).get("a")).toEqual({ started_at: "2030-09-19T04:05:00.000Z", outcome: null });
+  });
+
+  it("kept by an earlier build, before the list said where a job stood, reads as begun on neither", async () => {
+    const { progress: _none, ...earlier } = summary("a", TODAY);
+    await keepDay(TODAY, [earlier as unknown as JobSummary]);
+
+    expect((await keptDay(TODAY))?.[0]?.progress).toEqual({ started_at: null, outcome: null });
+    expect((await keptStates()).get("a")).toEqual({ started_at: null, outcome: null });
   });
 });
 
