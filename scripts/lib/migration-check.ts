@@ -52,6 +52,21 @@ const DESTRUCTIVE_STATEMENTS = [
   { pattern: /\bDELETE\s+FROM\b/i, label: "DELETE FROM" },
 ];
 
+/** The first migration the rules on comments and backfills hold for: those before it have run, and stay as they are. */
+const WRITTEN_RULES_FROM = 101;
+
+/** The most comment lines a migration opens with: what it does, in a few words. Its reasoning lives in its ADR. */
+const HEADER_LINES = 5;
+
+/** An open point's number, which goes wrong when the open points are renumbered, as on 27 September 2026. */
+const OPEN_POINT = /\b(?:open[ -]points?\b[^\n]*?\b(?:item\s+)?\d+|item\s+\d+)\b/i;
+
+/** One environment's own records, which belong in a script run there, never in every environment's schema. */
+const TEST_DATA = /staging test|load test|tech-tester|tech-proof|STAGING_TEST/i;
+
+/** The estimate a backfill of a whole table carries: "-- backfill: about 2,000 rows x (1 + 2 indexes)". */
+const BACKFILL_ESTIMATE = /^--[ \t]*backfill:[ \t]*\S.*$/m;
+
 export function checkMigrations(files: readonly MigrationFile[], options: MigrationCheckOptions = {}): string[] {
   const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name));
   const problems: string[] = [];
@@ -59,6 +74,7 @@ export function checkMigrations(files: readonly MigrationFile[], options: Migrat
     problems.push(...checkName(file, index + 1));
     problems.push(...checkDestructive(file, options.adrExists));
     problems.push(...checkTriggers(file));
+    if (index + 1 >= WRITTEN_RULES_FROM) problems.push(...checkWriting(file));
   }
   if (options.atBase !== undefined) problems.push(...checkUnchanged(files, options.atBase));
   return problems;
@@ -110,6 +126,45 @@ function checkTriggers(file: MigrationFile): string[] {
     }
   }
   return problems;
+}
+
+/**
+ * A short header, no open point's number, no one environment's test data, and an estimate on a backfill of a whole
+ * table: D1 stops a statement at 30 seconds, and the free plan allows 100,000 rows written a day (docs/migrations.md).
+ */
+function checkWriting(file: MigrationFile): string[] {
+  const problems: string[] = [];
+  const lines = file.sql.split("\n");
+  const firstStatement = lines.findIndex((line) => line.trim() !== "" && !line.trim().startsWith("--"));
+  const header = (firstStatement === -1 ? lines : lines.slice(0, firstStatement)).filter((line) =>
+    line.trim().startsWith("--"),
+  );
+  if (header.length > HEADER_LINES) {
+    problems.push(
+      `${file.name}: ${String(header.length)} comment lines open it; at most ${String(HEADER_LINES)}, the rest in its ADR`,
+    );
+  }
+  if (OPEN_POINT.test(file.sql))
+    problems.push(`${file.name}: names an open point by number, which renumbering makes wrong`);
+  if (TEST_DATA.test(withoutComments(file.sql))) {
+    problems.push(`${file.name}: holds one environment's test data; write it from a script run there`);
+  }
+  if (backfillsAWholeTable(file.sql) && !BACKFILL_ESTIMATE.test(file.sql)) {
+    problems.push(
+      `${file.name}: backfills a whole table; estimate its writes in a "-- backfill:" line (docs/migrations.md)`,
+    );
+  }
+  return problems;
+}
+
+/** An UPDATE with no WHERE, or an INSERT that copies from a SELECT: every row of a table, written. */
+function backfillsAWholeTable(sql: string): boolean {
+  const statements = withoutComments(sql).split(";");
+  return statements.some(
+    (statement) =>
+      (/\bUPDATE\s+\w+\s+SET\b/i.test(statement) && !/\bWHERE\b/i.test(statement)) ||
+      /\bINSERT\s+(?:OR\s+\w+\s+)?INTO\s+\w+(?:\s*\([^)]*\))?\s*SELECT\b/i.test(statement),
+  );
 }
 
 const withoutComments = (sql: string): string => sql.replace(/--[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
