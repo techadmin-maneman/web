@@ -290,18 +290,26 @@ describe("GET /api/tasks", () => {
     expect(groupNames(await tasks())).toContain("consultation_request");
   });
 
-  it("names the client, the piece and when the replacement fell due", async () => {
+  it("names the client, the piece and the day it falls due, waiting from the lead time before it", async () => {
     await pieceDue("2026-09-01");
     expect(tasksIn(await tasks(), "replacement_order")).toEqual([
       {
         id: PIECE,
         person: { id: PERSON, name: "Rohit Malhotra" },
-        detail: "MM-STD-4417-C",
-        // India's midnight on the day it fell due, and two days later it was overdue.
-        since: "2026-08-31T18:30:00.000Z",
-        due: "2026-09-02T18:30:00.000Z",
+        detail: "MM-STD-4417-C 2026-09-01",
+        // India's midnight thirty days before it fell due, and two days later it was overdue.
+        since: "2026-08-01T18:30:00.000Z",
+        due: "2026-08-03T18:30:00.000Z",
         owner: null,
       },
+    ]);
+  });
+
+  // FLD-41, BK-42: a hair system made to measure was asked for on the day it fell due, with no time to order it.
+  it("lists a piece falling due within the lead time, due by its own day at the latest", async () => {
+    await pieceDue("2026-10-06");
+    expect(tasksIn(await tasks(), "replacement_order")).toMatchObject([
+      { detail: "MM-STD-4417-C 2026-10-06", since: "2026-09-05T18:30:00.000Z", due: "2026-09-07T18:30:00.000Z" },
     ]);
   });
 

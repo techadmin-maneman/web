@@ -191,7 +191,7 @@ export const TASKS = {
         {
           id: "91000000-0000-4000-8000-000000000001",
           person: { id: "22000000-0000-4000-8000-000000000002", name: "Kunal Mehta" },
-          detail: "MM-STD-4417-K",
+          detail: "MM-STD-4417-K 2027-09-17",
           since: "2027-09-16T18:30:00.000Z",
           due: "2027-09-18T18:30:00.000Z",
           owner: "priya@maneman.in",
@@ -199,7 +199,7 @@ export const TASKS = {
         {
           id: "91000000-0000-4000-8000-000000000002",
           person: { id: CLIENT.id, name: CLIENT.name },
-          detail: "MM-STD-4417-C",
+          detail: "MM-STD-4417-C 2027-09-22",
           since: "2027-09-21T18:30:00.000Z",
           due: "2027-09-23T18:30:00.000Z",
           owner: "priya@maneman.in",

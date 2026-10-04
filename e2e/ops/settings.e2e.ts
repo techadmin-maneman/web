@@ -314,6 +314,7 @@ test.describe("the rules", () => {
         first_fit_to_book: 7,
         horizon: 45,
         invoice_prompt: 14,
+        replacement_order_lead: 30,
       },
     });
     await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();

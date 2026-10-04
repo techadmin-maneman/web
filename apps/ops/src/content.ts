@@ -2406,6 +2406,7 @@ export const settings = {
         first_fit_to_book: "First fit to book, after the consultation",
         horizon: "How far ahead a visit may be booked",
         invoice_prompt: "A new invoice on Home",
+        replacement_order_lead: "Replacement order, before the hair system is due",
       },
       // PLACEHOLDER: what a referral earns, each side apart (docs/decisions/0107-referral-rewards-in-the-console.md).
       referral_reward: {
