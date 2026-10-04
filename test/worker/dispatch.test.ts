@@ -74,6 +74,8 @@ async function insertJob(
     status?: string;
     city?: string;
     pincode?: string;
+    /** A visit FSM never held, whose record is our own database. */
+    ownRecord?: boolean;
   },
 ): Promise<void> {
   await env.DB.prepare(
@@ -83,7 +85,7 @@ async function insertJob(
   )
     .bind(
       id,
-      `ap-${id}`,
+      options.ownRecord === true ? id : `ap-${id}`,
       `wo-${id}`,
       options.person === undefined ? ROHIT : options.person,
       options.type,
@@ -853,7 +855,8 @@ describe("what the board carries of each visit", () => {
 
 interface RoomBody {
   appointment_id: string;
-  rooms: { technician_id: string; date: string; windows: string[] }[];
+  rooms: { technician_id: string; date: string; windows: string[]; starts: { window: string; starts_at: string }[] }[];
+  blackouts: string[];
 }
 
 const roomFor = (id: string, from: string) =>
@@ -889,6 +892,181 @@ describe("where a job in hand can go", () => {
   it("answers not found for a job no longer live", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN, status: "completed" });
     expect((await roomFor(FIT, "2026-09-22")).status).toBe(404);
+  });
+});
+
+/** Monday 21 September, today, in India, as UTC: each half-slot's start. NOW is 12:00. */
+const TODAY = {
+  date: "2026-09-21",
+  "09:00": "2026-09-21T03:30:00.000Z",
+  "12:00": "2026-09-21T06:30:00.000Z",
+  "13:00": "2026-09-21T07:30:00.000Z",
+  "16:00": "2026-09-21T10:30:00.000Z",
+} as const;
+
+const dispatchMoves = () =>
+  env.DB.prepare("SELECT appointment_id, now_start, blackout_reason FROM dispatch_moves").all<{
+    appointment_id: string;
+    now_start: string;
+    blackout_reason: string | null;
+  }>();
+
+// BK-17, FLD-23: at 09:58 four visits moved to that morning all landed at 09:00, at 10:02 one landed at 09:00 to
+// 10:00, and a move to yesterday answered 200. The technician, FSM and the client were told a time nobody could meet.
+describe("a move lands only at a start still ahead", () => {
+  beforeEach(async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+  });
+
+  it("takes today's window at its first start still to come, not one already under way", async () => {
+    const answer = await move({
+      appointment_id: A,
+      technician_id: SAMEER,
+      date: TODAY.date,
+      window: "afternoon",
+      reason: "client_asked",
+    });
+
+    expect(answer.status).toBe(200);
+    // 12:00 is now, so the afternoon's next start, 13:00, is where it lands.
+    expect(fsm.made.rescheduled).toEqual([
+      { appointmentId: `ap-${A}`, start: "2026-09-21T13:00:00+05:30", end: "2026-09-21T14:30:00+05:30" },
+    ]);
+    expect(await shown(A)).toEqual({ technician_id: SAMEER, window_start: TODAY["13:00"] });
+  });
+
+  it("refuses today's window once every start in it has passed, and a day gone, writing nothing", async () => {
+    const morning = await move({ appointment_id: A, date: TODAY.date, window: "morning", reason: "client_asked" });
+    const yesterday = await move({ appointment_id: A, date: "2026-09-20", window: "evening", reason: "client_asked" });
+
+    expect(morning.status).toBe(409);
+    expect(await morning.json()).toMatchObject({ error: { code: "window_passed" } });
+    expect(yesterday.status).toBe(409);
+    expect(await yesterday.json()).toMatchObject({ error: { code: "past_day" } });
+    expect(fsm.made.assigned).toEqual([]);
+    expect(fsm.made.rescheduled).toEqual([]);
+    expect((await dispatchMoves()).results).toEqual([]);
+    expect(await shown(A)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["09:00"] });
+  });
+
+  it("moves a visit whose own start has come to the window's next start, and tells the client of it", async () => {
+    await insertJob(B, { type: "service", start: TODAY["12:00"], technician: IMRAN });
+
+    const answer = await move({ appointment_id: B, date: TODAY.date, window: "afternoon", reason: "running_over" });
+
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toMatchObject({ client_notice: "call" });
+    expect(await shown(B)).toEqual({ technician_id: IMRAN, window_start: TODAY["13:00"] });
+  });
+
+  it("gives a visit whose window has passed to another technician only at a later start", async () => {
+    await insertJob(B, { type: "service", start: TODAY["09:00"], technician: IMRAN });
+
+    const sameTime = await move({
+      appointment_id: B,
+      technician_id: SAMEER,
+      date: TODAY.date,
+      window: "morning",
+      reason: "technician_unavailable",
+    });
+
+    expect(sameTime.status).toBe(409);
+    expect(await sameTime.json()).toMatchObject({ error: { code: "window_passed" } });
+    expect(fsm.made.assigned).toEqual([]);
+  });
+
+  it("offers today only at starts still ahead, with the start each window would take, and no day gone", async () => {
+    const answer = await roomFor(A, "2026-09-20");
+    expect(answer.status).toBe(200);
+    const { rooms } = await answer.json<RoomBody>();
+    const roomOf = (technician: string, date: string) =>
+      rooms.find((room) => room.technician_id === technician && room.date === date);
+
+    expect(roomOf(SAMEER, "2026-09-20")).toBeUndefined();
+    expect(roomOf(SAMEER, TODAY.date)).toEqual({
+      technician_id: SAMEER,
+      date: TODAY.date,
+      windows: ["afternoon", "evening"],
+      starts: [
+        { window: "afternoon", starts_at: TODAY["13:00"] },
+        { window: "evening", starts_at: TODAY["16:00"] },
+      ],
+    });
+    // Imran's Tuesday morning is where it already is.
+    expect(roomOf(IMRAN, "2026-09-22")?.starts).toEqual([
+      { window: "afternoon", starts_at: TUESDAY["12:00"] },
+      { window: "evening", starts_at: "2026-09-22T10:30:00.000Z" },
+    ]);
+  });
+});
+
+// Owner decision 16: a move onto a blacked-out day is allowed, with a warning and a typed reason kept with the move.
+describe("a move onto a blacked-out day", () => {
+  const ontoWednesday = (id: string, extra: Record<string, unknown> = {}) =>
+    move({ appointment_id: id, date: WEDNESDAY, window: "morning", reason: "client_asked", ...extra });
+
+  beforeEach(async () => {
+    await env.DB.prepare("INSERT INTO visit_blackouts (date, reason) VALUES (?1, 'Dussehra')").bind(WEDNESDAY).run();
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+  });
+
+  it("is refused without a reason, and nothing reaches FSM", async () => {
+    const answer = await ontoWednesday(A);
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "blackout" } });
+    expect(fsm.made.rescheduled).toEqual([]);
+    expect((await dispatchMoves()).results).toEqual([]);
+  });
+
+  it("refuses a reason of nothing but spaces", async () => {
+    const answer = await ontoWednesday(A, { blackout_reason: "   " });
+    expect(answer.status).toBe(400);
+  });
+
+  it("goes ahead with a reason, kept with the move in FSM's record and in ours", async () => {
+    await insertJob(B, { type: "service", start: TUESDAY["12:00"], technician: SAMEER, ownRecord: true });
+    const reason = "The client's only free day; Imran agreed to work it";
+
+    const inFsm = await ontoWednesday(A, { blackout_reason: reason });
+    const inOurs = await ontoWednesday(B, { blackout_reason: reason });
+
+    expect(inFsm.status).toBe(200);
+    expect(inOurs.status).toBe(200);
+    expect(fsm.made.rescheduled).toEqual([
+      { appointmentId: `ap-${A}`, start: "2026-09-23T09:00:00+05:30", end: "2026-09-23T10:30:00+05:30" },
+    ]);
+    const moves = (await dispatchMoves()).results;
+    expect(moves.map((each) => [each.appointment_id, each.blackout_reason]).sort()).toEqual(
+      [
+        [A, reason],
+        [B, reason],
+      ].sort(),
+    );
+  });
+
+  it("keeps no reason for a move onto any other day", async () => {
+    const answer = await move({
+      appointment_id: A,
+      date: "2026-09-24",
+      window: "morning",
+      reason: "client_asked",
+      blackout_reason: "Sent by habit",
+    });
+
+    expect(answer.status).toBe(200);
+    expect((await dispatchMoves()).results[0]?.blackout_reason).toBeNull();
+  });
+
+  it("is offered on the board, which is told the day is blacked out", async () => {
+    const { rooms, blackouts } = await (await roomFor(A, "2026-09-22")).json<RoomBody>();
+
+    expect(blackouts).toEqual([WEDNESDAY]);
+    expect(rooms.find((room) => room.technician_id === SAMEER && room.date === WEDNESDAY)?.windows).toEqual([
+      "morning",
+      "afternoon",
+      "evening",
+    ]);
   });
 });
 

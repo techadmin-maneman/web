@@ -87,6 +87,11 @@ export const ERROR_CODES = [
   "does_not_fit",
   "fsm_refused",
   "fsm_partly",
+  // A dispatch move to a day gone, or to today's window once every start in it has passed; or onto a day ops blacked
+  // out, without the reason that lets it through.
+  "past_day",
+  "window_passed",
+  "blackout",
   // The technician has begun the visit, so a move would leave his work on another day or with another technician.
   "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
