@@ -139,6 +139,14 @@ Request body:
 }
 ```
 
+**403**: sign_in_stopped: ops revoked a phone of his, and have not yet let him sign in again
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **410**: code_expired: expired, used, or void after five wrong codes
 
 ```json
@@ -1003,6 +1011,7 @@ Request body:
             "terms_changed",
             "consent_required",
             "device_revoked",
+            "sign_in_stopped",
             "superseded",
             "out_of_order",
             "not_today",

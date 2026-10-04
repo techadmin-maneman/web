@@ -66,6 +66,7 @@
                   "terms_changed",
                   "consent_required",
                   "device_revoked",
+                  "sign_in_stopped",
                   "superseded",
                   "out_of_order",
                   "not_today",
@@ -2729,6 +2730,16 @@
           },
           "400": {
             "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "sign_in_stopped: ops revoked a phone of his, and have not yet let him sign in again",
             "content": {
               "application/json": {
                 "schema": {

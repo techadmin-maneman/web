@@ -138,6 +138,7 @@ const verifyRoute = createRoute({
   responses: {
     200: { description: "Right, with a session; or wrong, with the attempts left", ...json(TechVerifySchema) },
     400: errorResponse("invalid_request"),
+    403: errorResponse("sign_in_stopped: ops revoked a phone of his, and have not yet let him sign in again"),
     410: errorResponse("code_expired: expired, used, or void after five wrong codes"),
   },
 });
@@ -247,10 +248,16 @@ export function registerTechAuth(app: App): void {
       return c.json({ verified: false as const, attempts_left: verification.attemptsLeft }, 200);
     }
 
-    const name = await db
-      .prepare("SELECT name FROM technicians WHERE id = ?1")
+    const technician = await db
+      .prepare("SELECT name, sign_in_stopped_at FROM technicians WHERE id = ?1")
       .bind(verification.technicianId)
-      .first<string>("name");
+      .first<{ name: string; sign_in_stopped_at: string | null }>();
+    // A revoke sticks: the code reaches whoever has his WhatsApp, a lost phone included.
+    if (technician !== null && technician.sign_in_stopped_at !== null) {
+      log.warn("technician_sign_in_stopped", { technician_id: verification.technicianId });
+      return c.json(errorBody("sign_in_stopped", requestId), 403);
+    }
+    const name = technician?.name ?? null;
     const token = await openTechnicianSession(db, {
       technicianId: verification.technicianId,
       deviceId,

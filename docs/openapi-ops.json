@@ -66,6 +66,7 @@
                   "terms_changed",
                   "consent_required",
                   "device_revoked",
+                  "sign_in_stopped",
                   "superseded",
                   "out_of_order",
                   "not_today",
@@ -3034,6 +3035,7 @@
                   "terms_changed",
                   "consent_required",
                   "device_revoked",
+                  "sign_in_stopped",
                   "superseded",
                   "out_of_order",
                   "not_today",
@@ -5651,6 +5653,18 @@
                   ],
                   "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
                 },
+                "sign_in_stopped_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "When revoking a phone of his stopped him signing in; null while he may. Ops let him again."
+                },
                 "devices": {
                   "type": "array",
                   "items": {
@@ -5714,6 +5728,7 @@
                 "zone",
                 "city",
                 "mobile",
+                "sign_in_stopped_at",
                 "devices",
                 "leave"
               ],
@@ -12790,6 +12805,66 @@
           },
           "404": {
             "description": "not_found: no such phone of that technician's, or he is not in the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/technicians/{id}/allow-sign-in": {
+      "post": {
+        "summary": "Let a technician sign in again, on any phone, after ops revoked one of his",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "He may sign in again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "allowed": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "allowed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such technician stopped signing in, or he is not in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {

@@ -198,27 +198,31 @@ const WIPE_WAIT_MS = 3_000;
  * (apps/tech/sw/sw.ts).
  *
  * A delete held up by another connection is not abandoned when the wait runs
- * out: the browser carries it out the moment that connection closes.
+ * out: the browser carries it out the moment that connection closes. Answers
+ * false when the browser refused the delete, so the caller can try again.
  */
-export async function wipe(patience: number = WIPE_WAIT_MS): Promise<void> {
+export async function wipe(patience: number = WIPE_WAIT_MS): Promise<boolean> {
   // No cache storage outside a secure context, and none in the development server.
   if (typeof caches !== "undefined") await caches.delete(DAY_CACHE).catch(() => false);
   const db = await open().catch(() => null);
   db?.close();
   opening = null;
-  await new Promise<void>((resolve) => {
+  const deleted = await new Promise<boolean>((resolve) => {
     const request = indexedDB.deleteDatabase(DATABASE);
     request.onsuccess = () => {
-      resolve();
+      resolve(true);
     };
-    // A wipe that cannot finish must not strand the sign-out; the next open finds an empty store either way.
+    // A wipe that cannot finish must not strand the sign-out, but the caller hears of it.
     request.onerror = () => {
-      resolve();
+      resolve(false);
     };
     request.onblocked = () => {
-      setTimeout(resolve, patience);
+      setTimeout(() => {
+        resolve(true);
+      }, patience);
     };
   });
   // Whatever the phone was full of has just gone.
-  for (const name of STORES) roomIn(name, true);
+  if (deleted) for (const name of STORES) roomIn(name, true);
+  return deleted;
 }

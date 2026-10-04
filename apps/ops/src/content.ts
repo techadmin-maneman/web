@@ -1951,7 +1951,13 @@ export const technicians = {
     revoking: "Revoking",
     revoked: (date: string) => `Revoked ${date}`,
     /** PLACEHOLDER: the board draws no revoke, so nothing writes what one does. */
-    warning: "The session ends, and the phone drops its cached jobs when it is next online.",
+    warning:
+      "The session ends, the phone drops its cached jobs when it is next online, and he cannot sign in again until you let him.",
+    // PLACEHOLDER: the board draws no revoke, so nothing writes what follows one.
+    stopped: (date: string) => `Sign-in stopped since ${date}, when a phone was revoked.`,
+    allow: "Let him sign in again",
+    allowing: "Letting him in",
+    allowed: "He can sign in again.",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "That phone is not this technician's any more. Reload to see the roster as it stands.",

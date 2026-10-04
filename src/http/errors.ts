@@ -66,8 +66,10 @@ export const ERROR_CODES = [
   // The technician app (docs/decisions/0052-technician-sessions.md, 0038-offline-writes.md):
   // ops revoked this phone, so it drops its cached jobs; the job moved under it while it
   // was offline; the step before this one has not been sent; a check-in or start on a day
-  // that is not the job's; a no-show on a job already started (ADR 0065).
+  // that is not the job's; a no-show on a job already started (ADR 0065). And a technician who may not sign in
+  // until ops let him, since they revoked a phone of his.
   "device_revoked",
+  "sign_in_stopped",
   "superseded",
   "out_of_order",
   "not_today",
