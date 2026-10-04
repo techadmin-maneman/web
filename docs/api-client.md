@@ -2251,6 +2251,10 @@ Request body:
             "one_visit": {
               "type": "boolean",
               "description": "A consultation and fit in one visit."
+            },
+            "told": {
+              "type": "boolean",
+              "description": "Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits."
             }
           },
           "required": [
@@ -2258,7 +2262,8 @@ Request body:
             "date",
             "window",
             "paid",
-            "one_visit"
+            "one_visit",
+            "told"
           ],
           "additionalProperties": false
         },

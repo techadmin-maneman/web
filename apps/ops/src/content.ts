@@ -566,6 +566,19 @@ export const clients = {
     },
     noUpcoming: "Nothing booked.",
     noPast: "No visit done yet.",
+    /** PLACEHOLDER: a booking that refunded its payment by itself, which no board draws. The client is told. */
+    autoRefunds: {
+      title: "Refunded bookings",
+      /** "Service visit, 24 Sep 2027 · Rs. 2,000". */
+      what: (visit: string, date: string, amount: string | null) =>
+        amount === null ? `${visit}, ${date}` : `${visit}, ${date} · ${amount}`,
+      /** "Refunded automatically on 22 Sep 2027: paid after the hold lapsed." */
+      why: (when: string, reason: string) => `Refunded automatically on ${when}: ${reason}.`,
+      reasons: {
+        lapsed: "paid after the hold lapsed",
+        not_movable: "the visit had begun, so it could not be moved",
+      },
+    },
     /**
      * PLACEHOLDER, all of it: booking a visit for the client from the console, which no board draws. Every kind; a
      * paid visit goes out as a payment link, and is booked once the client pays.
