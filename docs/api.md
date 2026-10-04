@@ -2294,7 +2294,7 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "photo-v3",
+      "example": "photo-v4",
       "description": "The photo notice shown: the current one, the only one recorded."
     },
     "turnstile_token": {
@@ -2455,7 +2455,7 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "gate-v3",
+      "example": "gate-v4",
       "description": "The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md)."
     },
     "attribution": {

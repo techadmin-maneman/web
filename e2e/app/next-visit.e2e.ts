@@ -45,13 +45,14 @@ async function everyWindowOpen(page: Page): Promise<URL[]> {
         date: daysAfter(start, index),
         price,
         windows: [
-          { window: "morning", start: "09:00", end: "12:00", with: "another" },
-          { window: "afternoon", start: "12:00", end: "16:00", with: "another" },
-          { window: "evening", start: "16:00", end: "20:00", with: "another" },
+          { window: "morning", start: "09:00", end: "12:00", with: "another", change_charged: false },
+          { window: "afternoon", start: "12:00", end: "16:00", with: "another", change_charged: false },
+          { window: "evening", start: "16:00", end: "20:00", with: "another", change_charged: false },
         ],
       }));
       const last = daysAfter(tomorrow(), 44);
-      return route.fulfill({ json: { type: url.searchParams.get("type"), price, regular: null, last, days } });
+      const type = url.searchParams.get("type");
+      return route.fulfill({ json: { type, price, regular: null, change_notice_hours: 24, last, days } });
     },
   );
   return asked;

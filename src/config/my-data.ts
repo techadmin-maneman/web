@@ -54,7 +54,7 @@ export const MY_DATA = {
     site_waitlist: "The site's waitlist",
     try_on: "Try-on",
     lapsed: "Paid after the slot's hold ran out",
-    not_movable: "The visit had begun, so it could not be moved",
+    not_movable: "The visit had begun, or its technician or time had changed, so it could not be moved",
   } satisfies Readonly<Record<string, string>>,
   parts: {
     person: {

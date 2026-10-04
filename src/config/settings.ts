@@ -8,6 +8,7 @@ import type { EvolutionSettings } from "../providers/evolution.ts";
 import { ENABLED_SURFACES, FSM_CATALOGUE_PUSH, type EnvironmentName, type ProviderVar } from "./environments.ts";
 import { GSTIN_FORMAT, SAC_FORMAT, STATE_CODE_FORMAT, type GstRegistration } from "./gst.ts";
 import { FIXED_LIMITS, type FixedLimit } from "./limits.ts";
+import { MAX_RESULT_RETENTION_DAYS } from "./tryon.ts";
 
 export interface TryonSettings {
   /** Per salted IP hash, per India clock hour. */
@@ -23,7 +24,7 @@ export interface TryonSettings {
   readonly renderDailyCeiling: number;
   readonly uploadDailyCeiling: number;
   readonly resultReadDailyCeiling: number;
-  /** Days a result is kept once ready: 30 in production, as the photo notice promises; less on staging. */
+  /** Days a result is kept once ready: 14 in production, the photo notice's limit; less on staging. */
   readonly resultRetentionDays: number;
   /** Alert when the AILabTools balance falls below this many credits. */
   readonly creditFloor: number;
@@ -633,8 +634,10 @@ function readTryon(read: Reader, providers: ProvidersRead, isLocal: boolean): Tr
     linkSigningKey: read.key("RESULT_SIGNING_KEY"),
     ailabApiKey: providers.IMAGE_PROVIDER === "ailabtools" ? read.text("AILAB_API_KEY") : null,
   };
-  if (tryon.resultRetentionDays < 1 || tryon.resultRetentionDays > 30) {
-    read.problems.push("RESULT_RETENTION_DAYS must be 1 to 30: the photo notice promises deletion within thirty days");
+  if (tryon.resultRetentionDays < 1 || tryon.resultRetentionDays > MAX_RESULT_RETENTION_DAYS) {
+    read.problems.push(
+      `RESULT_RETENTION_DAYS must be 1 to ${String(MAX_RESULT_RETENTION_DAYS)}: the photo notice promises the look is deleted within fourteen days`,
+    );
   }
   return tryon;
 }

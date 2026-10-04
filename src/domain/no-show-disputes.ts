@@ -11,7 +11,7 @@ import { isDisputable, withinDisputeWindow, type DisputeRuling } from "../policy
 import type { Charge } from "../policy/moving-a-visit.ts";
 import { auditStatementIfRuled, auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 import type { Ruled } from "./after-a-ruling.ts";
-import { CHARGE_TAKEN } from "./no-shows.ts";
+import { caseMessage, CHARGE_TAKEN, messageStateOf, type MessageColumns, type MessageState } from "./no-shows.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 
@@ -95,11 +95,13 @@ export interface OpenDispute {
   readonly received_at: string;
   readonly distance_m: number | null;
   readonly radius_m: number;
+  /** What became of the day-before or arrival WhatsApp, as the no-show case reads it. */
+  readonly message_state: MessageState;
   readonly message_delivered_at: string | null;
   readonly closed_at: string | null;
 }
 
-interface OpenDisputeRow {
+interface OpenDisputeRow extends MessageColumns {
   id: string;
   case_id: string;
   appointment_id: string;
@@ -114,7 +116,6 @@ interface OpenDisputeRow {
   received_at: string;
   distance_m: number | null;
   radius_m: number;
-  message_delivered_at: string | null;
   closed_at: string | null;
 }
 
@@ -125,6 +126,7 @@ export async function openDisputes(db: D1Database, limit: number, reached: Place
       `SELECT d.id, d.case_id, n.appointment_id, pe.id AS person_id, pe.name AS person_name, d.reason,
          d.created_at AS raised_at, ${CHARGE_TAKEN}, a.window_start, c.at AS checked_in_at,
          c.created_at AS received_at, c.distance_m, c.radius_m,
+         n.message_id, o.state AS message_status, o.last_error AS message_error,
          COALESCE(n.message_delivered_at, o.delivered_at) AS message_delivered_at, n.closed_at
        FROM no_show_disputes d
        JOIN no_show_cases n ON n.id = d.case_id
@@ -152,6 +154,7 @@ export async function openDisputes(db: D1Database, limit: number, reached: Place
     received_at: row.received_at,
     distance_m: row.distance_m,
     radius_m: row.radius_m,
+    message_state: messageStateOf(caseMessage(row)),
     message_delivered_at: row.message_delivered_at,
     closed_at: row.closed_at,
   }));

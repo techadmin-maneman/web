@@ -46,6 +46,8 @@ export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const MAX_RESULT_BYTES = 5 * 1024 * 1024;
 /** An upload link lasts 5 minutes and a session 30; a photo is deleted an hour after its last look. */
 export const PHOTO_RETENTION_MS = HOUR_MS;
+/** The longest a look may be kept (RESULT_RETENTION_DAYS): the photo notice says fourteen days at most. */
+export const MAX_RESULT_RETENTION_DAYS = 14;
 export const MIN_SIDE_PX = 200;
 /** Premium's documented maximum; Pro's is 4095. */
 export const MAX_SIDE_PX = 4090;

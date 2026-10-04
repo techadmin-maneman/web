@@ -46,6 +46,7 @@ import { pingHeartbeat } from "../providers/heartbeat.ts";
 import { enqueue, enqueueBatch } from "../queues/enqueue.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { checkDailyAllowances } from "./daily-allowances.ts";
+import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
 import {
@@ -100,7 +101,7 @@ const ALERT_AFTER_FAILED_RUNS = 3;
  * no appointment, so a job that trusts FSM's word on what exists would take it that every visit had been deleted.
  * "books_without_fsm" is Books where D1, not FSM, is the record of field work (src/config/field-record.ts).
  */
-type Needs = "nothing" | "fsm" | "fsm_record" | "books" | "books_without_fsm" | "messaging";
+type Needs = "nothing" | "fsm" | "fsm_record" | "books" | "books_without_fsm" | "messaging" | "payments";
 
 /** A job, and when it runs (src/scheduled/schedule.ts). */
 export interface CronJob extends Timing {
@@ -130,6 +131,8 @@ function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
       return books && fieldRecord(config.providers) === "ours";
     case "messaging":
       return config.settings.messaging.enabled;
+    case "payments":
+      return config.providers.PAYMENTS_PROVIDER !== "none";
   }
 }
 
@@ -355,6 +358,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // A finished job's invoice (ADRs 0055 and 0056), before the Books pass, which sets a client's advance against the
   // invoice once it is issued.
   { name: "invoices", needs: "books", every: 15, at: 3, run: invoicesJob },
+  // A payment Razorpay's webhook never told us of, read from Razorpay, before the Books pass that records it there.
+  { name: "razorpay_catch_up", needs: "payments", every: 15, at: 3, run: razorpayCatchUpJob },
   { name: "referrals", needs: "nothing", every: 15, at: 6, run: referralsJob },
   { name: "release_unfinished_moves", needs: "nothing", every: 15, at: 7, run: letUnfinishedMovesGo },
   { name: "books_sync", needs: "books", every: 15, at: 8, run: booksJob },

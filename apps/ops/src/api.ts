@@ -23,7 +23,11 @@ export type Launch = Body<paths["/api/pincodes/{pin}/launch"]["post"]>;
 export type Decision = Body<paths["/api/referrals/{id}/decision"]["post"]>;
 
 export type ClientsFound = Body<paths["/api/clients/find"]["post"]>;
-export type ClientRecord = Body<paths["/api/clients/{id}"]["get"]>;
+/** A client's page: their record, or what is kept of them once erased. */
+type ClientPage = Body<paths["/api/clients/{id}"]["get"]>;
+export type ClientRecord = components["schemas"]["ClientRecord"];
+export type ErasedClientRecord = components["schemas"]["ErasedClientRecord"];
+export const isErased = (page: ClientPage): page is ErasedClientRecord => "erased_at" in page;
 export type ClientVisit = ClientRecord["visits"]["past"][number];
 export type ClientPayment = ClientRecord["payments"][number];
 export type ClientPaymentLink = ClientRecord["payment_links"][number];
@@ -437,6 +441,9 @@ export const api = {
   /** Its code stays, and with it every price it has and every visit sold under them. */
   renameService: (kind: Kind, tier: string, name: string) =>
     client.post("/api/services/{kind}/{tier}/name", { path: { kind, tier }, body: { name } }),
+  /** The line clients read under its name as they choose; an empty one clears it. */
+  describeService: (kind: Kind, tier: string, description: string) =>
+    client.post("/api/services/{kind}/{tier}/description", { path: { kind, tier }, body: { description } }),
   /** How long visits booked from now on are held and booked for. */
   setServiceLength: (kind: Kind, tier: string, minutes: number) =>
     client.post("/api/services/{kind}/{tier}/length", { path: { kind, tier }, body: { minutes } }),

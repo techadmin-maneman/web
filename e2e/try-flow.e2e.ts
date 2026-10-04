@@ -132,7 +132,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
   await expect.poll(() => named(seen, "upload").length).toBe(1);
   expect(named(seen, "uploadUrl")[0]?.postDataJSON()).toEqual({
     photo_consent: true,
-    notice_version: "photo-v3",
+    notice_version: "photo-v4",
     turnstile_token: DUMMY_TOKEN,
   });
   expect(await named(seen, "upload")[0]?.headerValue("content-type")).toBe("image/jpeg");
@@ -163,7 +163,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
     mobile: "9810000000",
     number_code_id: CODE_ID,
     stage: "crown",
-    notice_version: "gate-v3",
+    notice_version: "gate-v4",
     attribution: { landing_path: "/try" },
   });
   expect(await claim?.headerValue("idempotency-key")).toMatch(/^[0-9a-f-]{36}$/);

@@ -2058,6 +2058,95 @@
         ],
         "additionalProperties": false
       },
+      "ErasedClientRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "erased_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "visits": {
+            "type": "object",
+            "properties": {
+              "upcoming": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ClientVisit"
+                }
+              },
+              "past": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ClientVisit"
+                }
+              }
+            },
+            "required": [
+              "upcoming",
+              "past"
+            ],
+            "additionalProperties": false,
+            "description": "Upcoming soonest first; past newest first. No discount code may be entered or taken off: price_open is false."
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/PaymentEntry"
+                },
+                {
+                  "$ref": "#/components/schemas/RefundEntry"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "payment": "#/components/schemas/PaymentEntry",
+                  "refund": "#/components/schemas/RefundEntry"
+                }
+              }
+            },
+            "description": "Payments and refunds as one list, newest first."
+          },
+          "payment_links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientPaymentLink"
+            },
+            "description": "Every payment link, newest first."
+          },
+          "invoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientInvoice"
+            },
+            "description": "Each finished visit sold for a price, with its invoice; the latest visit first."
+          },
+          "held_bookings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeldBooking"
+            },
+            "description": "Bookings FSM refused, waiting for a try or for ops; the soonest visit first."
+          }
+        },
+        "required": [
+          "id",
+          "erased_at",
+          "visits",
+          "payments",
+          "payment_links",
+          "invoices",
+          "held_bookings"
+        ],
+        "additionalProperties": false,
+        "description": "What is kept of a client once erased: their visits, their money and any booking still held for them. Nothing names them."
+      },
       "ClientPhotos": {
         "type": "object",
         "properties": {
@@ -4362,7 +4451,8 @@
                 "amount"
               ],
               "additionalProperties": false
-            }
+            },
+            "description": "Money owed back: a payment held with no visit behind it, or what a cancelled visit's refund has still to return."
           },
           "links": {
             "type": "array",
@@ -5002,11 +5092,19 @@
                   "starts_at": {
                     "type": "string",
                     "format": "date-time"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "no_consent",
+                      "not_sent"
+                    ]
                   }
                 },
                 "required": [
                   "move_id",
-                  "starts_at"
+                  "starts_at",
+                  "reason"
                 ],
                 "additionalProperties": false
               },
@@ -5014,7 +5112,7 @@
                 "type": "null"
               }
             ],
-            "description": "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told."
+            "description": "The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told."
           },
           "begun": {
             "anyOf": [
@@ -6293,6 +6391,17 @@
             "type": "integer",
             "description": "The check-in radius in force when he checked in."
           },
+          "message_state": {
+            "type": "string",
+            "enum": [
+              "delivered",
+              "sent",
+              "not_sent",
+              "no_consent",
+              "none"
+            ],
+            "description": "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered."
+          },
           "message_delivered_at": {
             "anyOf": [
               {
@@ -6331,6 +6440,7 @@
           "received_at",
           "distance_m",
           "radius_m",
+          "message_state",
           "message_delivered_at",
           "closed_at"
         ],
@@ -6508,7 +6618,7 @@
                 "type": "null"
               }
             ],
-            "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's (\"any\" where a fit cannot start in it)."
+            "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's (\"any\" where a fit cannot start in it)."
           },
           "since": {
             "type": "string",
@@ -8081,6 +8191,10 @@
           "max_minutes": {
             "type": "integer"
           },
+          "max_description": {
+            "type": "integer",
+            "description": "The most characters a description may have."
+          },
           "max_amount_ex_gst": {
             "type": "integer"
           },
@@ -8095,6 +8209,7 @@
           "late_fees",
           "min_minutes",
           "max_minutes",
+          "max_description",
           "max_amount_ex_gst",
           "max_gst_percent"
         ],
@@ -8118,6 +8233,17 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The line clients read under its name as they choose; null until ops write one."
           },
           "minutes": {
             "type": "integer",
@@ -8172,6 +8298,7 @@
           "kind",
           "tier",
           "name",
+          "description",
           "minutes",
           "sort",
           "retired_date",
@@ -8225,6 +8352,19 @@
         },
         "required": [
           "name"
+        ],
+        "additionalProperties": false
+      },
+      "ServiceDescribe": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        "required": [
+          "description"
         ],
         "additionalProperties": false
       },
@@ -10114,7 +10254,7 @@
     },
     "/api/clients/{id}": {
       "get": {
-        "summary": "The client's record: who they are, their address, their visits, their money, their history and their invite",
+        "summary": "The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits, their money and any booking still held for them",
         "parameters": [
           {
             "schema": {
@@ -10132,13 +10272,20 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ClientRecord"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ClientRecord"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErasedClientRecord"
+                    }
+                  ]
                 }
               }
             }
           },
           "404": {
-            "description": "not_found: no such client, or the client has been erased or is outside the caller's cities",
+            "description": "not_found: no such client, or the client is outside the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -11919,7 +12066,7 @@
     },
     "/api/grievances": {
       "get": {
-        "summary": "Open grievances in the caller's cities, oldest first",
+        "summary": "Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's",
         "responses": {
           "200": {
             "description": "Open grievances",
@@ -14887,6 +15034,98 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ServiceRename"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Every service as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsServices"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names the box refused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no service of that kind has that code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/services/{kind}/{tier}/description": {
+      "post": {
+        "summary": "The line clients read under a service's name as they choose. An empty one clears it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,31}$"
+            },
+            "required": true,
+            "name": "tier",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceDescribe"
               }
             }
           }

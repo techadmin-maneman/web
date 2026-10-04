@@ -206,10 +206,10 @@
         // The ops-staging Access application's audience tag.
         "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",
         "SMS_PROVIDER": "none",
-        // Zoho FSM and Books, in the real org (ADR 0025, item 26; docs/decisions/0032-fsm-mirror.md).
-        // Secrets ZOHO_FSM_CLIENT_ID, _SECRET and _REFRESH_TOKEN, and ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN:
-        // the org's one Self Client, so the IDs and secrets match, and a refresh token each.
-        "FSM_PROVIDER": "zoho",
+        // Zoho FSM is off: our own database is the record of field work (docs/runbook.md, "Switching staging off FSM").
+        // Books is in the real org (ADR 0025, item 26). Secrets ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN: the
+        // org's one Self Client, with a refresh token of Books' own. FSM's secrets may stay set; nothing reads them.
+        "FSM_PROVIDER": "none",
         "BOOKS_PROVIDER": "zoho",
         "ZOHO_FSM_ACCOUNTS_HOST": "accounts.zoho.in",
         "ZOHO_FSM_API_HOST": "www.zohoapis.in",

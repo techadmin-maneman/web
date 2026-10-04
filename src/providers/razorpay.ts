@@ -1,15 +1,17 @@
 // Razorpay, for taking payment and giving it back (docs/decisions/0045-self-serve-booking.md), and what its
 // webhook carries. Orders, refunds and payment links are made here; what happened to a payment arrives by the signed
-// webhook (docs/decisions/0044-payments-mirror.md), which is the authority. Amounts are in paise. Only
+// webhook (docs/decisions/0044-payments-mirror.md), and the cron reads an order's payments or a link from here only
+// when the webhook may have missed one (src/domain/razorpay-catch-up.ts). Amounts are in paise. Only
 // src/providers/payments.ts chooses this client.
 //
 //   POST https://api.razorpay.com/v1/orders                   { id }
-//   GET  https://api.razorpay.com/v1/orders/{id}/payments     { items: [{ status }] }
+//   GET  https://api.razorpay.com/v1/orders/{id}/payments     { items: [payment] }
 //   POST https://api.razorpay.com/v1/payments/{id}/refund     { id }; a receipt used before on the payment is
 //        refused as "Duplicate receipt found for this refund request.", Razorpay's idempotency for refunds
 //        (https://razorpay.com/docs/api/refunds/create-normal/)
 //   POST https://api.razorpay.com/v1/payment_links            { id, short_url }
 //   GET  https://api.razorpay.com/v1/payment_links?reference_id=  { payment_links: [{ id, short_url }] }
+//   GET  https://api.razorpay.com/v1/payment_links/{id}       { id, status, reference_id, order_id }
 //   POST https://api.razorpay.com/v1/payment_links/{id}/cancel     { id, status: "cancelled" }
 //
 // A payment link is texted to the client by Razorpay itself, so it needs no template of ours and no secret beyond the
@@ -29,7 +31,7 @@ export async function signedByRazorpay(secret: string, body: string, signature: 
   return secretsMatch(signature, await saltedHash(secret, body));
 }
 
-/** The fields of Razorpay's payment entity, as its webhook carries it, that the mirror reads. */
+/** The fields of Razorpay's payment entity, as its webhook and an order's payments carry it, that the mirror reads. */
 export const RazorpayPaymentSchema = z.object({
   id: z.string(),
   amount: z.number(),
@@ -49,7 +51,7 @@ export const RazorpayPaymentSchema = z.object({
 });
 export type RazorpayPayment = z.infer<typeof RazorpayPaymentSchema>;
 
-/** The fields of Razorpay's payment link entity, as its webhook carries it, that the mirror reads. */
+/** The fields of Razorpay's payment link entity, as its webhook and a read of the link carry it, that the mirror reads. */
 export const RazorpayPaymentLinkSchema = z.object({
   id: z.string(),
   status: z.string(),
@@ -82,7 +84,7 @@ const TIMEOUT_MS = 10_000;
 /** Razorpay's refusal of a refund under a receipt a refund of the payment already carries. */
 const DUPLICATE_RECEIPT = "Duplicate receipt found for this refund request.";
 const Created = z.object({ id: z.string() });
-const OrderPayments = z.object({ items: z.array(z.object({ status: z.string() })) });
+const OrderPayments = z.object({ items: z.array(RazorpayPaymentSchema) });
 const LinkMade = z.object({ id: z.string(), short_url: z.string() });
 const LinksFound = z.object({ payment_links: z.array(LinkMade) });
 
@@ -152,8 +154,7 @@ export function createRazorpay(
     createOrder: (order) => call("create_order", "/orders", { ...order, currency: "INR" }, Created),
     orderPayments: async (orderId) => {
       const path = `/orders/${encodeURIComponent(orderId)}/payments`;
-      const { items } = await call("order_payments", path, null, OrderPayments);
-      return items.map((payment) => payment.status);
+      return (await call("order_payments", path, null, OrderPayments)).items;
     },
     // Only a refusal Razorpay gave in words is one; a timeout, a failure of its own or an answer we cannot read
     // leaves the refund made or not.
@@ -193,6 +194,8 @@ export function createRazorpay(
       const [found] = (await call("find_payment_link", path, null, LinksFound)).payment_links;
       return found === undefined ? null : { id: found.id, shortUrl: found.short_url };
     },
+    paymentLink: (linkId) =>
+      call("payment_link", `/payment_links/${encodeURIComponent(linkId)}`, null, RazorpayPaymentLinkSchema),
     cancelPaymentLink: async (linkId) => {
       await call("cancel_payment_link", `/payment_links/${encodeURIComponent(linkId)}/cancel`, {}, Created);
     },
