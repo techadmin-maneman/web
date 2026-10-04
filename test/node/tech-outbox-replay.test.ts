@@ -45,9 +45,7 @@ interface Sent {
  * by what was sent where it needs to, and every call is recorded in order. A
  * thrown TypeError is how fetch says there is no signal.
  */
-function api(
-  answer: (method: string, url: string, body: unknown) => { status: number; json?: unknown } | "offline",
-) {
+function api(answer: (method: string, url: string, body: unknown) => { status: number; json?: unknown } | "offline") {
   const sent: Sent[] = [];
   vi.stubGlobal("fetch", (url: string, init: RequestInit = {}) => {
     const method = init.method ?? "GET";
