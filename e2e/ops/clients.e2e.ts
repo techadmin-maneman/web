@@ -1021,7 +1021,7 @@ test("says when the client has asked to be erased, and leaves it to Deletion req
   await openClient(page, `/clients/${CLIENT.id}/consents`, {
     [READ_CONSENTS]: json(ERASURE_REQUESTED),
   });
-  await expect(page.getByText("Erasure requested 18 Sep 2027. It is not decided here.")).toBeVisible();
+  await expect(page.getByText("Deletion requested 18 Sep 2027. It is not decided here.")).toBeVisible();
   await expect(page.getByRole("button", { name: `Erase ${CLIENT.name}` })).toHaveCount(0);
 });
 

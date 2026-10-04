@@ -199,7 +199,7 @@ test("opens a block's drawer with the client, the badge, and both ways to reach 
   await press(page, ROHIT_BLOCK);
 
   const drawer = page.getByRole("dialog", { name: "Rohit Malhotra" });
-  await expect(drawer).toContainText("Fri 19 Sep · 9 am to 12 · Imran Qureshi");
+  await expect(drawer).toContainText("Fri 19 Sep · 9 am to 12 pm · Imran Qureshi");
   await expect(drawer).toContainText("Prepaid");
   await expect(drawer).toContainText("Service visit · 1 slot");
   await expect(drawer).toContainText("Sec 65 · 122018");
