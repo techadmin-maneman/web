@@ -860,7 +860,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -938,7 +938,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -947,7 +947,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before */
+                /** @description taken: nobody chosen is free in that window now, or the technician chosen is not in the caller's cities; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1035,7 +1035,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_changeable: the visit has begun, passed or gone, or is no client's; terms_changed: the notice is not the one shown, so show the terms again */
+                /** @description not_changeable: the visit has begun, passed or gone, is no client's, or is not in the caller's cities; terms_changed: the notice is not the one shown, so show the terms again */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1114,7 +1114,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such visit */
+                /** @description not_found: no such visit in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2219,7 +2219,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The dispatch board: seven days of every active technician, with the unassigned tray */
+        /** The dispatch board: seven days of the visits and active technicians in the caller's cities, with the unassigned tray */
         get: {
             parameters: {
                 query?: {
@@ -2298,7 +2298,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such live job, or one the technician has started or closed, which stays where it is */
+                /** @description not_found: no such live job in the caller's cities, or one the technician has started or closed, which stays where it is */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2349,7 +2349,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchMoved"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: fields names technician_id for one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2367,7 +2367,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such live job */
+                /** @description not_found: no such live job in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2434,7 +2434,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchMoved"];
                     };
                 };
-                /** @description invalid_request, including a move to the technician, day and window the job already has */
+                /** @description invalid_request, including a move to the technician, day and window the job already has, or to a technician not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2452,7 +2452,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such live job */
+                /** @description not_found: no such live job in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2529,7 +2529,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no move of a live visit whose client is still to be told */
+                /** @description not_found: no move of a live visit in the caller's cities whose client is still to be told */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2727,7 +2727,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Active technicians, the phones they have logged in on and their leave, and those switched off */
+        /** Active technicians in the caller's cities, the phones they have logged in on and their leave, and those switched off */
         get: {
             parameters: {
                 query?: never;
@@ -2781,7 +2781,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianId"];
                     };
                 };
-                /** @description invalid_request: no name, not an Indian mobile, or not one of our cities */
+                /** @description invalid_request: no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2868,7 +2868,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such active technician */
+                /** @description not_found: no such active technician in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2927,7 +2927,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such leave of that technician's */
+                /** @description not_found: no such leave of that technician's, or he is not in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2987,7 +2987,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such phone of that technician's */
+                /** @description not_found: no such phone of that technician's, or he is not in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3139,7 +3139,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The groups with something in them, of the caller's own departments once the Staff list is enforced */
+                /** @description The groups with something in them, of the caller's own departments and cities once the Staff list is enforced */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -3219,7 +3219,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such task on the board now; its thing may be done already */
+                /** @description not_found: no such task on the board now in the caller's cities; its thing may be done already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3288,7 +3288,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such task on the board now; a follow-up may be booked, or it is closed already */
+                /** @description not_found: no such task on the board now in the caller's cities; a follow-up may be booked, or it is closed already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3400,7 +3400,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianId"];
                     };
                 };
-                /** @description invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities */
+                /** @description invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -3418,7 +3418,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such technician */
+                /** @description not_found: no such technician in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3479,7 +3479,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such technician */
+                /** @description not_found: no such technician in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3547,7 +3547,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such technician */
+                /** @description not_found: no such technician in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -5393,7 +5393,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is */
+                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5451,7 +5451,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code, from, or to for the place it came from */
+                /** @description invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5509,7 +5509,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is */
+                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5567,7 +5567,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is */
+                /** @description invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -6830,7 +6830,7 @@ export interface components {
                     /** @description When the window starts that day, in India's time. */
                     start: string;
                     end: string;
-                    /** @description Who is free for the visit, the client's regular technician first. */
+                    /** @description Who in the caller's cities is free for the visit, the client's regular technician first. */
                     technicians: components["schemas"]["FreeTechnician"][];
                 }[];
             }[];
@@ -7253,7 +7253,7 @@ export interface components {
             dates: string[];
             /** @description The city the jobs are narrowed to; null for all. */
             city: string | null;
-            /** @description The cities the board can be narrowed to. */
+            /** @description The cities the board can be narrowed to: the caller's. */
             cities: string[];
             technicians: {
                 /** Format: uuid */
@@ -7363,7 +7363,7 @@ export interface components {
             /** @description Who invited him, by name; null when he came on his own. */
             referred_by: string | null;
         };
-        /** @description Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is. */
+        /** @description Each technician's day in the caller's cities with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is. */
         DispatchRoom: {
             /** Format: uuid */
             appointment_id: string;
@@ -7555,7 +7555,7 @@ export interface components {
                 /** @description Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs. */
                 editable: boolean;
             }[];
-            /** @description The cities a technician may be given, in display order. */
+            /** @description The cities the caller may give a technician, those their Operations MANAGE reaches, in display order. */
             cities: string[];
         };
         TechnicianLeave: {
@@ -7647,7 +7647,7 @@ export interface components {
             groups: {
                 /** @enum {string} */
                 group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
-                /** @description How many are waiting in the group, all of them. */
+                /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
                 closable: boolean;
@@ -7751,7 +7751,7 @@ export interface components {
             mobile: string;
             /** @description Where he mostly works, in ops' words; null for none. */
             zone?: string | null;
-            /** @description The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
+            /** @description The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
             city?: string | null;
         };
         /** @description Only what is sent changes. */
@@ -7762,7 +7762,7 @@ export interface components {
             mobile?: string;
             /** @description Where he mostly works, in ops' words; null for none. */
             zone?: string | null;
-            /** @description The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
+            /** @description The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
             city?: string | null;
         };
         TechnicianDeactivated: {
@@ -7785,7 +7785,7 @@ export interface components {
              * @description Exclusive: the day after the last one counted.
              */
             to: string;
-            /** @description Every active technician, by name, including those who finished nothing. */
+            /** @description Every active technician in the caller's cities, by name, including those who finished nothing. */
             technicians: components["schemas"]["TechnicianWork"][];
         };
         TechnicianWork: {
@@ -8258,7 +8258,7 @@ export interface components {
                 reorder_kit: number | null;
                 reorder_central: number | null;
             }[];
-            /** @description The central store first, then each active technician's kit, and any other still holding stock. */
+            /** @description The central store first, then each active technician's kit, and any other still holding stock: those in the caller's cities, and the store only with a national grant. */
             places: {
                 /** @description A technician's kit, by the technician's ID; null for the central store. */
                 technician_id: string | null;
