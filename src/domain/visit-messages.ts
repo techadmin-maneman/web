@@ -245,22 +245,25 @@ export const NO_VISITS_CONSENT = "no consent to WhatsApp about visits";
 /** Why an arrival or a no-show's ruling is not told: the check-in came before a technician may check in. */
 export const ARRIVED_TOO_EARLY = "the check-in came before the earliest check-in";
 
-/** Whether the visit's check-in reached us before the earliest check-in ops allow. */
-async function arrivedTooEarly(db: D1Database, appointmentId: string, visitStart: Date): Promise<boolean> {
-  const arrival = await latestArrival(db, appointmentId);
+/** The visit a check-in is held against: its booked start, and the technician it is on. */
+interface VisitArrivedAt {
+  readonly id: string;
+  readonly technicianId: string | null;
+  readonly start: Date;
+}
+
+/** Whether the visit's technician's check-in reached us before the earliest check-in ops allow. */
+async function arrivedTooEarly(db: D1Database, visit: VisitArrivedAt): Promise<boolean> {
+  if (visit.technicianId === null) return false;
+  const arrival = await latestArrival(db, { id: visit.id, technicianId: visit.technicianId });
   if (arrival === null) return false;
   const { phoneClock } = await readOpsInputs(db, arrival.receivedAt);
-  return tooEarlyToArrive(arrival.receivedAt, visitStart, phoneClock);
+  return tooEarlyToArrive(arrival.receivedAt, visit.start, phoneClock);
 }
 
 /** That the technician is at the door, told only of a check-in made in time. */
-async function arrivalMessage(
-  db: D1Database,
-  appointmentId: string,
-  visitStart: Date,
-  params: string[],
-): Promise<Composed> {
-  if (await arrivedTooEarly(db, appointmentId, visitStart)) return { skip: ARRIVED_TOO_EARLY };
+async function arrivalMessage(db: D1Database, visit: VisitArrivedAt, params: string[]): Promise<Composed> {
+  if (await arrivedTooEarly(db, visit)) return { skip: ARRIVED_TOO_EARLY };
   return { template: "technician_arrived_v1", params };
 }
 
@@ -275,7 +278,7 @@ export async function composeVisitMessage(
 
   const visit = await db
     .prepare(
-      `SELECT a.type, a.one_visit, a.window_start, a.status, p.name, t.name AS technician
+      `SELECT a.type, a.one_visit, a.window_start, a.status, a.technician_id, p.name, t.name AS technician
        FROM appointments a JOIN people p ON p.id = a.person_id LEFT JOIN technicians t ON t.id = a.technician_id
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL`,
     )
@@ -285,6 +288,7 @@ export async function composeVisitMessage(
       one_visit: OneVisitState | null;
       window_start: string | null;
       status: AppointmentStatus;
+      technician_id: string | null;
       name: string;
       technician: string | null;
     }>();
@@ -309,8 +313,9 @@ export async function composeVisitMessage(
   }
   if (kind === "nothing_to_pay") return { template: "visit_fitted_code_v1", params };
   if (kind === "visit_reminder") return { template: "visit_reminder_v1", params };
-  if (kind === "arrival_notice") return arrivalMessage(db, appointmentId, start, params);
-  if (kind === "no_show_decided") return noShowRuling(db, appointmentId, start, params);
+  const arrivedAt = { id: appointmentId, technicianId: visit.technician_id, start };
+  if (kind === "arrival_notice") return arrivalMessage(db, arrivedAt, params);
+  if (kind === "no_show_decided") return noShowRuling(db, arrivedAt, params);
   if (kind === "no_show_dispute_ruled") return disputeRuling(db, appointmentId, params);
   // A move, whether the client made it or ops did: the same words, the visit's new window.
   if (kind === "reschedule_confirmation" || kind === "visit_moved") return { template: "visit_moved_v1", params };
@@ -451,13 +456,9 @@ async function chargedMessage(
  * The ruling on a visit the client was not home for: how long we waited, and what became of what they paid. Never
  * told of a check-in made before a technician may check in, which was no arrival for this visit.
  */
-async function noShowRuling(
-  db: D1Database,
-  appointmentId: string,
-  visitStart: Date,
-  params: string[],
-): Promise<Composed> {
-  if (await arrivedTooEarly(db, appointmentId, visitStart)) return { skip: ARRIVED_TOO_EARLY };
+async function noShowRuling(db: D1Database, visit: VisitArrivedAt, params: string[]): Promise<Composed> {
+  if (await arrivedTooEarly(db, visit)) return { skip: ARRIVED_TOO_EARLY };
+  const appointmentId = visit.id;
   const ruling = await db
     .prepare(
       `SELECT decision, wait_started_at, COALESCE(closed_at, wait_ends_at) AS ended_at, waiver_payment, waiver_credit,

@@ -2823,7 +2823,47 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** A technician's leave that has not ended, each with the jobs still booked on its days */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The leave */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianStandingLeave"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such technician, or he is outside the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
         /** Record leave. Those days are then refused to booking and to the dispatch board alike */
         post: {
@@ -7546,6 +7586,8 @@ export interface components {
                     /** Format: date-time */
                     last_seen_at: string;
                     revoked_at: string | null;
+                    /** @description Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it. */
+                    signed_in: boolean;
                 }[];
                 /** @description Leave that has not ended yet, soonest first (ADR 0062). */
                 leave: components["schemas"]["TechnicianLeave"][];
@@ -7578,18 +7620,37 @@ export interface components {
             to: string;
             note: string | null;
         };
+        TechnicianStandingLeave: {
+            /** @description His leave that has not ended yet, soonest first. */
+            leave: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                from: string;
+                /**
+                 * Format: date
+                 * @description Inclusive: a single day's leave has the same date twice.
+                 */
+                to: string;
+                note: string | null;
+                /** @description The jobs still booked on its days from today on, soonest first. */
+                jobs: components["schemas"]["TechnicianJobOnLeave"][];
+            }[];
+        };
+        /** @description A job booked on a day the technician is away, which the leave moves nowhere: ops move it on the dispatch board, and it waits on the Tasks board until they do. */
+        TechnicianJobOnLeave: {
+            /** Format: uuid */
+            appointment_id: string;
+            /** Format: date-time */
+            starts_at: string;
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            client: string | null;
+        };
         TechnicianLeaveRecorded: {
             /** Format: uuid */
             id: string;
-            /** @description The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch board, and each waits on the Tasks board until they do (OPS-07). */
-            jobs: {
-                /** Format: uuid */
-                appointment_id: string;
-                /** Format: date-time */
-                starts_at: string;
-                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
-                client: string | null;
-            }[];
+            /** @description The jobs already booked on those days, soonest first. */
+            jobs: components["schemas"]["TechnicianJobOnLeave"][];
         };
         TechnicianLeaveRequest: {
             /** Format: date */

@@ -1630,16 +1630,8 @@ export const technicians = {
    * records a skill, and a day off is what ops need to see down the roster.
    */
   columns: ["Technician", "Zone", "Jobs", "Avg service", "Leave"],
-  /**
-   * PLACEHOLDER: the technician's name opens his details, phones and leave,
-   * which the board's rows have no room for, in a panel over the roster.
-   */
-  open: (name: string) => `${name}: details, phones and leave`,
-  /** A technician switched off has no phone signed in and no leave to record: his name opens his details. */
-  openSwitchedOff: (name: string) => `${name}: details`,
-  close: "Close",
-  /** The Leave column: away today, the first day of leave to come, or nothing. */
-  away: "Away",
+  /** The Leave column: away today until when, the first day of leave to come, or nothing. */
+  away: (until: string) => `Away to ${until}`,
   from: (date: string) => `From ${date}`,
   /** A zone the FSM mirror has nothing for, written as the design's tables write a gap. */
   unknown: "—",
@@ -1661,8 +1653,24 @@ export const technicians = {
     /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
     skill: "Nothing records what a technician is trained for, so the board's Skill column is not drawn.",
   },
+  /** PLACEHOLDER, all of it: the board draws the roster and no page for one technician. */
+  page: {
+    back: "All technicians",
+    tabsLabel: (name: string) => `${name}: his week, leave, phones and kit`,
+    notFound: "That technician is not on the roster any more.",
+  },
+  tabs: { week: "This week", leave: "Leave", phones: "Phones", kit: "Kit" },
+  week: {
+    lead: "His jobs this week are on the dispatch board, with his row alone in view.",
+    open: "Open his week on the board",
+  },
+  kit: {
+    lead: "What his kit holds, as the stock ledger counts it.",
+    columns: ["Consumable", "Held", "Last counted"],
+    none: "Nothing in his kit on record.",
+    stock: "Record a movement in Stock",
+  },
   phones: {
-    title: "Phones",
     /** PLACEHOLDER: a phone whose browser gave no label at login. */
     unlabelled: "Phone",
     /**
@@ -1670,7 +1678,10 @@ export const technicians = {
      * app's own ID for the phone, so two phones alike can be told apart.
      */
     label: (label: string, id: string) => `${label} · ${id}`,
-    seen: (date: string) => `last used ${date}`,
+    /** "Last used 22 Sep 2027, 10:30 am". */
+    seen: (when: string) => `Last used ${when}`,
+    signedIn: "Signed in",
+    signedOut: "Signed out",
     none: "No phone logged in.",
     revoke: "Revoke",
     /** The button's whole name, since a roster holds many phones and each button says "Revoke". */
@@ -1694,7 +1705,6 @@ export const technicians = {
    * below is ours.
    */
   leave: {
-    title: "Leave",
     none: "No leave recorded.",
     /** "19 Sep to 23 Sep", and "19 Sep" for a single day. */
     period: (from: string, to: string) => (from === to ? from : `${from} to ${to}`),
@@ -1706,24 +1716,32 @@ export const technicians = {
     save: "Record it",
     saving: "Recording",
     cancel: "Cancel",
-    /** Taking leave back, which lets those days be worked again. */
+    /** Taking leave back, which lets those days be worked again, asked once more before it is sent. */
     take: "Take it back",
     takeLabel: (period: string, technician: string) => `Take back ${technician}'s leave, ${period}`,
-    taking: "Taking it back",
+    check: {
+      title: (period: string) => `Take back leave, ${period}?`,
+      line: "He can be booked again on those days.",
+      send: "Take it back",
+      sending: "Taking it back",
+      back: "Keep the leave",
+    },
+    recorded: "Leave recorded.",
     effect: "Nobody can be booked or assigned on these days until the leave is taken back.",
-    // PLACEHOLDER: leave recorded over jobs already booked moves none of them (OPS-07).
+    // PLACEHOLDER: leave recorded over jobs already booked moves none of them.
     stranded: {
       title: (count: number) =>
-        `${String(count)} ${count === 1 ? "job is" : "jobs are"} still booked on this leave. Recording it moved none.`,
+        `${String(count)} ${count === 1 ? "job is" : "jobs are"} still booked on these days. Leave moves none.`,
       job: (when: string, client: string) => `${when} · ${client}`,
       noClient: "No client on our records",
-      move: "Move them on the dispatch board",
+      show: "Show on board",
+      showLabel: (when: string, client: string) => `Show on board: ${when} · ${client}`,
     },
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request:
         "Those dates do not work: the last day cannot come before the first, and leave runs a year at most.",
-      not_found: "That technician or that leave is no longer here. Reload to see the roster as it stands.",
+      not_found: "That technician or that leave is no longer here. Reload to see it as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     },
