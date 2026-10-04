@@ -116,3 +116,13 @@
   font-size: var(--fs-14);
   color: var(--error-on-paper);
 }
+
+.settleOn {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.settleOn:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}

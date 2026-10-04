@@ -32,6 +32,20 @@ test("shows both numbers, the day it was asked for, and that each was proven", a
   await expect(only).toContainText("A code went to both numbers, and both were entered.");
 });
 
+// OIA-16: the change is confirmed with the client on the new number, which had to be copied by hand.
+test("reaches the client on the new number, on WhatsApp or by phone", async ({ page }) => {
+  await open(page);
+  const only = queue(page).getByRole("listitem");
+  await expect(only.getByRole("link", { name: "WhatsApp Rohit Malhotra" })).toHaveAttribute(
+    "href",
+    "https://wa.me/919810004421",
+  );
+  await expect(only.getByRole("link", { name: "Call Rohit Malhotra on +91 98100 04421" })).toHaveAttribute(
+    "href",
+    "tel:+919810004421",
+  );
+});
+
 // A number change once showed no age at all (OPS-08); it falls due when the Tasks board says it does.
 test("says how long the change has left, as the Tasks board counts it", async ({ page }) => {
   await open(page);
@@ -45,7 +59,7 @@ test("says what confirming does before it is confirmed", async ({ page }) => {
 
 test("reaches the client's record from the name", async ({ page }) => {
   await open(page);
-  await queue(page).getByRole("link", { name: "Rohit Malhotra" }).click();
+  await queue(page).getByRole("link", { name: "Rohit Malhotra", exact: true }).click();
   expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/visits");
 });
 

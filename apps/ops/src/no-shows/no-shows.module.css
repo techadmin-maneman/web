@@ -347,3 +347,13 @@
 .over {
   color: var(--error-on-paper);
 }
+
+.disputeName {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.disputeName:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}

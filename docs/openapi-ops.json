@@ -6224,11 +6224,15 @@
                   },
                   "name": {
                     "type": "string"
+                  },
+                  "mobile": {
+                    "type": "string"
                   }
                 },
                 "required": [
                   "id",
-                  "name"
+                  "name",
+                  "mobile"
                 ],
                 "additionalProperties": false
               },
@@ -6236,7 +6240,7 @@
                 "type": "null"
               }
             ],
-            "description": "Whose visit it was; null once they have been erased."
+            "description": "Whose visit it was, and the number to reach them on; null once they have been erased."
           },
           "reason": {
             "anyOf": [
@@ -12128,6 +12132,11 @@
                           "code": {
                             "type": "string"
                           },
+                          "person_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "Whose code it is: the client page to open."
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -12150,6 +12159,7 @@
                         },
                         "required": [
                           "code",
+                          "person_id",
                           "name",
                           "opens",
                           "consultations",

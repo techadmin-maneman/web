@@ -82,8 +82,8 @@ export interface OpenDispute {
   readonly id: string;
   readonly case_id: string;
   readonly appointment_id: string;
-  /** Whose visit it was; null once they have been erased. */
-  readonly person: { readonly id: string; readonly name: string } | null;
+  /** Whose visit it was, and the number to reach them on; null once they have been erased. */
+  readonly person: { readonly id: string; readonly name: string; readonly mobile: string } | null;
   /** The client's own words; null once they have been erased. */
   readonly reason: string | null;
   readonly raised_at: string;
@@ -107,6 +107,7 @@ interface OpenDisputeRow extends MessageColumns {
   appointment_id: string;
   person_id: string | null;
   person_name: string | null;
+  person_mobile: string | null;
   reason: string | null;
   raised_at: string;
   kept_amount: number | null;
@@ -123,8 +124,8 @@ interface OpenDisputeRow extends MessageColumns {
 export async function openDisputes(db: D1Database, limit: number, reached: PlacesReached): Promise<OpenDispute[]> {
   const { results } = await db
     .prepare(
-      `SELECT d.id, d.case_id, n.appointment_id, pe.id AS person_id, pe.name AS person_name, d.reason,
-         d.created_at AS raised_at, ${CHARGE_TAKEN}, a.window_start, c.at AS checked_in_at,
+      `SELECT d.id, d.case_id, n.appointment_id, pe.id AS person_id, pe.name AS person_name, pe.mobile_e164 AS person_mobile,
+         d.reason, d.created_at AS raised_at, ${CHARGE_TAKEN}, a.window_start, c.at AS checked_in_at,
          c.created_at AS received_at, c.distance_m, c.radius_m,
          n.message_id, o.state AS message_status, o.last_error AS message_error,
          COALESCE(n.message_delivered_at, o.delivered_at) AS message_delivered_at, n.closed_at
@@ -144,7 +145,10 @@ export async function openDisputes(db: D1Database, limit: number, reached: Place
     id: row.id,
     case_id: row.case_id,
     appointment_id: row.appointment_id,
-    person: row.person_id === null || row.person_name === null ? null : { id: row.person_id, name: row.person_name },
+    person:
+      row.person_id === null || row.person_name === null || row.person_mobile === null
+        ? null
+        : { id: row.person_id, name: row.person_name, mobile: row.person_mobile },
     reason: row.reason,
     raised_at: row.raised_at,
     kept: row.kept_amount ?? 0,

@@ -91,7 +91,7 @@ const noShowNote = async () =>
 
 interface OpsDispute {
   id: string;
-  person: { id: string; name: string } | null;
+  person: { id: string; name: string; mobile: string } | null;
   reason: string | null;
   kept: number;
   credit_spent: boolean;
@@ -247,7 +247,7 @@ describe("GET /api/no-shows/disputes", () => {
     await raised();
     const [open] = await disputes(opsApp().app);
     expect(open).toMatchObject({
-      person: { id: PERSON, name: "Rohit Malhotra" },
+      person: { id: PERSON, name: "Rohit Malhotra", mobile: MOBILE },
       reason: "I was home all morning; the bell is broken",
       kept: 400000,
       credit_spent: false,

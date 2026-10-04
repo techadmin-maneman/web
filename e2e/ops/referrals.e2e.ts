@@ -113,13 +113,29 @@ test("shows every referrer's figures, the busiest first, as the route orders the
   const rows = page.getByRole("row");
   await expect(rows.nth(1)).toContainText("Karan Bose");
   await expect(rows.nth(1)).toContainText("19");
+  // OIA-16: each name opens the referrer's page.
+  await expect(rows.nth(1).getByRole("link", { name: "Karan Bose" })).toHaveAttribute(
+    "href",
+    `/clients/${REFERRERS.referrers[0]?.person_id ?? ""}/referrals`,
+  );
   await expect(page.getByText("Opens and consultations stay here.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Show more referrers" })).toBeHidden();
 });
 
 test("reads the referrers a page at a time", async ({ page }) => {
   const second = {
-    referrers: [{ code: "NA1234", name: "Nikhil Arora", opens: 5, consultations: 1, fits: 1, granted: 3, redeemed: 1 }],
+    referrers: [
+      {
+        code: "NA1234",
+        person_id: "11000000-0000-4000-8000-000000000006",
+        name: "Nikhil Arora",
+        opens: 5,
+        consultations: 1,
+        fits: 1,
+        granted: 3,
+        redeemed: 1,
+      },
+    ],
     more: false,
   };
   await page.clock.setFixedTime(TASKS_READ_ON);

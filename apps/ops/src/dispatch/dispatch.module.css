@@ -547,14 +547,6 @@
   background: var(--paper-shade);
 }
 
-.trayJobStill {
-  cursor: auto;
-}
-
-.trayJobStill:hover {
-  background: transparent;
-}
-
 .trayJob:focus-visible {
   outline: var(--focus-width) solid var(--ink);
   outline-offset: calc(-1 * var(--focus-width));

@@ -16,6 +16,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import { api, type NumberChange } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
+import { Reach } from "../components/Reach.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { numberChanges } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -70,6 +71,8 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
       </div>
       <p className={styles.when}>{copy.requested(longDate(change.requested_at))}</p>
       <p className={styles.move}>{copy.move(phoneWords(change.old_mobile), phoneWords(change.new_mobile))}</p>
+      {/* The new number: the one to confirm the change on. */}
+      <Reach name={change.name} mobile={change.new_mobile} />
       <p className={styles.proven}>{copy.proven}</p>
       {asking && (
         <div className={styles.reason}>
