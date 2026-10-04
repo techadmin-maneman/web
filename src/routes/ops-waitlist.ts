@@ -12,10 +12,10 @@ import { reachBinding, withinReach } from "../domain/places.ts";
 import { launchPincode, launchPreview, waitlistByPincode } from "../domain/waitlist.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { queuePacedMessages } from "../http/queue-message.ts";
 import { routeReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { reachesCity, type PlacesReached } from "../policy/access.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 
 /** The pincodes the waitlist lists at once, the longest waits: far more than a launch is chosen from. */
 export const WAITLIST_AREAS = 200;
@@ -188,14 +188,7 @@ export function registerOpsWaitlist(app: App): void {
       },
       now,
     });
-    if (alerts.length > 0) {
-      await c.env.MESSAGE_QUEUE.sendBatch(
-        alerts.map((alert) => ({
-          body: { message_id: alert.id, request_id: c.var.requestId } satisfies MessagingMessage,
-          delaySeconds: alert.delaySeconds,
-        })),
-      );
-    }
+    await queuePacedMessages(c, alerts);
     const waiting = await launchPreview(db, pin);
     return c.json({ pincode: pin, waiting: waiting.waiting, alerts: alerts.length, launched: true }, 200);
   });
