@@ -27,9 +27,10 @@ async function checkPerson(c: Context<AppEnv>, mobile: string, token: string, na
   const { settings, environment } = c.var.config;
   const today = indiaDate(c.var.deps.now());
   const db = c.env.DB;
-  // The address first: a refusal of the address costs the number nothing.
+  // The address first: a refusal of the address costs the number nothing. Only staging lets a test record past it.
+  const testRecord = environment === "staging" && (await isTestNumber(db, environment, mobileE164, name));
   const within =
-    (skipsAddressLimits(environment, await isTestNumber(db, environment, mobileE164, name)) ||
+    (skipsAddressLimits(environment, testRecord) ||
       (await takeOne(db, {
         scope: "booking:ip",
         key: visitor.ipHash,
