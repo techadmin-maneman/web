@@ -14,7 +14,7 @@ import type { LossExtent } from "../../../src/config/booking.ts";
 import type { BookingWindow } from "../../../src/config/scheduling.ts";
 import { ANALYTICS_IDS } from "./analytics-ids.ts";
 import { ENVIRONMENT } from "./build.ts";
-import { INVITE_PATH_IN_URL } from "../../../src/config/invite-codes.ts";
+import { INVITE_PATH_IN_URL } from "./invite.ts";
 
 /** Which booking page: the site's own /book, or a friend's invite at /r/:code. */
 type BookingPage = "book" | "invite";
