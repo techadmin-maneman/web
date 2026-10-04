@@ -2803,6 +2803,8 @@ export interface components {
                 paid: boolean;
                 /** @description A consultation and fit in one visit. */
                 one_visit: boolean;
+                /** @description Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits. */
+                told: boolean;
             } | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;

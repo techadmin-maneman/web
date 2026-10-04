@@ -21,6 +21,8 @@ import { saltedHash, secretsMatch } from "../lib/hash.ts";
 import type { Logger } from "../log.ts";
 import { PaymentUnanswered, type PaymentsProvider } from "./payments.ts";
 import { ProviderError } from "./provider-error.ts";
+import { parseAnswer, vendorAnswerOf } from "./vendor-answer.ts";
+import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
 
 /** Whether a webhook body is Razorpay's: X-Razorpay-Signature is the HMAC-SHA256 of the raw body under the secret. */
 export async function signedByRazorpay(secret: string, body: string, signature: string): Promise<boolean> {
@@ -76,6 +78,7 @@ export const RazorpayRefundSchema = z.object({
 export type RazorpayRefund = z.infer<typeof RazorpayRefundSchema>;
 
 const API = "https://api.razorpay.com/v1";
+const TIMEOUT_MS = 10_000;
 /** Razorpay's refusal of a refund under a receipt a refund of the payment already carries. */
 const DUPLICATE_RECEIPT = "Duplicate receipt found for this refund request.";
 const Created = z.object({ id: z.string() });
@@ -99,6 +102,9 @@ const Refused = z.object({
     description: z.string().optional().catch(undefined),
   }),
 });
+
+/** Razorpay's own code in a refusal, for the log. */
+const refusalCodeOf = (body: unknown): string | null => Refused.safeParse(body).data?.error.code ?? null;
 
 /** Razorpay's refusal, or its failure, read as any vendor's is (src/providers/provider-error.ts). */
 export class RazorpayError extends ProviderError {
@@ -124,20 +130,22 @@ export function createRazorpay(
     body: object | null,
     shape: z.ZodType<Answer>,
   ): Promise<Answer> {
-    const started = Date.now();
-    const response = await deps.fetch(`${API}${path}`, {
-      method: body === null ? "GET" : "POST",
-      headers: { Authorization: authorization, "Content-Type": "application/json" },
-      ...(body === null ? {} : { body: JSON.stringify(body) }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    deps.log.info("razorpay_call", { step, status: response.status, duration_ms: Date.now() - started });
-    const answer: unknown = await response.json().catch(() => null);
+    const response = await vendorFetch(
+      deps,
+      { vendor: "razorpay", step, timeoutMs: TIMEOUT_MS, codeOf: refusalCodeOf },
+      `${API}${path}`,
+      {
+        method: body === null ? "GET" : "POST",
+        headers: { Authorization: authorization, "Content-Type": "application/json" },
+        ...(body === null ? {} : { body: JSON.stringify(body) }),
+      },
+    );
+    if (response instanceof VendorUnreachable) throw response;
     if (!response.ok) {
-      const error = Refused.safeParse(answer).data?.error;
+      const error = Refused.safeParse(await response.json().catch(() => null)).data?.error;
       throw new RazorpayError(response.status, error?.code ?? "UNKNOWN", error?.description ?? "no description");
     }
-    return shape.parse(answer);
+    return parseAnswer(shape, await vendorAnswerOf("Razorpay", step, response));
   }
 
   return {

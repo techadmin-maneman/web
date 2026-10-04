@@ -66,6 +66,9 @@ export const today = {
 /** "1 photo set", "3 actions": a count and the word for it. */
 const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
 
+/** "top", "top and left", "top, left and hair". */
+const listed = (words: readonly string[]) => new Intl.ListFormat("en-IN", { type: "conjunction" }).format(words);
+
 /**
  * Signing out wipes the phone, so it asks first when there is work on it that
  * has not reached us, and says so when there is no signal to sign out with.
@@ -129,15 +132,16 @@ export const queue = {
   title: "Waiting to reach us",
   nothing: "Everything has reached us.",
   events: (count: number) => `${String(count)} ${count === 1 ? "action" : "actions"} waiting`,
-  read: "Got it",
   // PLACEHOLDER: the board draws no step the API refused, and no way to put one right.
   correct: "Correct it",
+  retake: "Retake photos",
   back: "Back",
   // PLACEHOLDER: the board draws the sets, not how long they have been waiting.
   since: (time: string) => `Waiting since ${time}`,
-  // PLACEHOLDER: the board draws no deletion. "Got it" lets go of work, so it asks first.
+  // PLACEHOLDER: the board draws no deletion. It lets go of work, so it asks first.
   forget: {
-    title: "Delete what this job holds?",
+    open: "Delete this job's work",
+    title: "Delete this job's work?",
     what: (photos: number, actions: number) => {
       const held: string[] = [];
       if (photos > 0) held.push(counted(photos, "photograph", "photographs"));
@@ -382,6 +386,12 @@ export const capture = {
   missed: "That photograph did not keep. Capture it again.",
   done: "All five are on the phone. They go up when there is signal.",
   finish: "Done",
+  // PLACEHOLDER: the board draws no set the API refused.
+  refusedPhotos: (angles: readonly string[]) =>
+    angles.length === 1
+      ? `The ${listed(angles)} photograph would not upload. Take it again.`
+      : `The ${listed(angles)} photographs would not upload. Take them again.`,
+  refusedSet: "We could not record this set. Tap Done to send it again.",
 } as const;
 
 /** The six in-job steps (board B), and the hair profile no board draws, in the order the API runs them. */

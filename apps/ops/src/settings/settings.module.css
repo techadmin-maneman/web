@@ -50,6 +50,52 @@
   color: var(--text-muted);
 }
 
+/* ---- The rules, a section per subject ------------------------------------- */
+
+.jump {
+  margin: var(--sp-14) var(--sp-20) 0;
+}
+
+.jumpList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8) var(--sp-20);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+}
+
+.link {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: var(--sp-4);
+}
+
+.link:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+/* Each section is a link's target, not a control, so it takes focus without a ring. */
+.ruleGroup {
+  margin-top: var(--sp-24);
+  border-top: var(--hairline) solid var(--text);
+}
+
+.ruleGroup:focus {
+  outline: none;
+}
+
+.ruleGroupTitle {
+  margin: 0;
+  padding: var(--sp-14) var(--sp-20) 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-20);
+}
+
 /* ---- One rule ------------------------------------------------------------ */
 
 .rules {
@@ -61,6 +107,12 @@
 .rule {
   padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+/* A rule a link led to takes focus, its ring inside the rule so the panel's edge never cuts it. */
+.rule:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 /* A rule's fields are one question, so they are grouped and the rule names the group. */
@@ -560,9 +612,9 @@
   padding: 0 var(--sp-14);
 }
 
-/* The storage meter's line and the database's above the tabs (docs/decisions/0093-the-storage-meter.md); no board
-   draws them. */
+/* What storage and the database hold, two plain lines under The console's heading; no board draws them. */
 .storage {
+  margin: var(--sp-8) var(--sp-20) var(--sp-4);
   font-size: var(--fs-14);
   line-height: var(--lh-160);
   color: var(--text-muted);

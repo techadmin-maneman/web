@@ -25,7 +25,7 @@ export const EXPORT_QUERIES = {
     FROM visit_changes WHERE person_id = ?1 ORDER BY created_at`,
   bookings_started: `SELECT reference, type, tier, minutes, date, window_label, pincode, move_kind, one_visit, amount,
       use_credit, pay_by_link, change_notice_hours, late_change_charge, no_show_charge, consents_shown, state,
-      created_at, confirmed_at
+      auto_refund_reason, created_at, confirmed_at
     FROM slot_holds WHERE person_id = ?1 ORDER BY created_at`,
   hair_systems: `SELECT piece_code, base, fitted_at, replacement_due_at, failed_at, failure_reason FROM pieces
     WHERE person_id = ?1 AND deleted_at IS NULL ORDER BY fitted_at`,
