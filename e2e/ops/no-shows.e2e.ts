@@ -180,6 +180,24 @@ test("draws a disputed charge: the client's words, what the charge took, and the
   await expect(row("Waited")).toHaveText("16 min · closed 11:47 am");
 });
 
+// FLD-35: a reminder that was skipped read "Not delivered" on the evidence a refund is ruled on.
+test("says on a disputed charge that the reminder never went, where it was not sent", async ({ page }) => {
+  const disputes = [{ ...DISPUTES.disputes[0], message_state: "not_sent", message_delivered_at: null }];
+  await answer(page, {
+    "GET /api/payments": json(DAY_MONEY),
+    "GET /api/no-shows": json(NO_SHOWS),
+    "GET /api/no-shows/disputes": json({ disputes }),
+    "GET /api/no-shows/decided": json(DECIDED),
+  });
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await page.goto("/no-shows");
+  const whatsapp = disputeCard(page)
+    .getByRole("term")
+    .filter({ hasText: /^WhatsApp$/ })
+    .locator("+ dd");
+  await expect(whatsapp).toHaveText("Not sent");
+});
+
 test("offers Refund and Uphold only once the note is written, and sends the ruling with it", async ({ page }) => {
   await open(page);
   const card = disputeCard(page);

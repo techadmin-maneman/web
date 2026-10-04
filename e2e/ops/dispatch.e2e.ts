@@ -295,7 +295,7 @@ test("assigns a tray job through the assign route, with no technician expected",
   await page.getByRole("radio", { name: "Client asked to move it" }).check();
   await page.getByRole("button", { name: "Move", exact: true }).click();
 
-  await expect(page.getByRole("status")).toContainText("Vikram S. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Vikram S. the new window on WhatsApp;");
   expect(moved).toEqual([]);
   expect(assigned).toEqual([
     {
@@ -384,7 +384,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled();
 
   release();
-  await expect(page.getByRole("status")).toContainText("Rohit M. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Rohit M. the new window on WhatsApp;");
   expect(sent).toHaveLength(1);
 });
 

@@ -1492,8 +1492,6 @@ export const noShows = {
     credit: "a free service visit",
     /** The board's four rows. */
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
-    /** PLACEHOLDER: no receipt came back for the reminder or the arrival notice. */
-    notDelivered: "Not delivered",
     /** The board's note, "Your note · required", and its placeholder. */
     reason: {
       label: "Your note · required",

@@ -97,6 +97,8 @@ interface OpsDispute {
   credit_spent: boolean;
   distance_m: number | null;
   radius_m: number;
+  message_state: string;
+  message_delivered_at: string | null;
   due: string;
 }
 
@@ -251,6 +253,30 @@ describe("GET /api/no-shows/disputes", () => {
       credit_spent: false,
       distance_m: 240,
       radius_m: 200,
+      message_state: "none",
+      message_delivered_at: null,
+    });
+  });
+
+  // FLD-35: a reminder that was skipped read "Not delivered" on the evidence ops rule a refund on.
+  it("says the reminder never went where it was skipped, and when it reached him where it did", async () => {
+    await raised();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, last_error)
+         VALUES ('m-1', '2026-09-18T12:30:00.000Z', ?1, 'visit_reminder', 'appointment', ?2, 'skipped', 'test record')`,
+      ).bind(PERSON, VISIT),
+      env.DB.prepare("UPDATE no_show_cases SET message_id = 'm-1'"),
+    ]);
+    const { app } = opsApp();
+    expect((await disputes(app))[0]).toMatchObject({ message_state: "not_sent", message_delivered_at: null });
+
+    await env.DB.prepare(
+      "UPDATE outbound_messages SET state = 'sent', last_error = NULL, delivered_at = '2026-09-18T12:31:00.000Z'",
+    ).run();
+    expect((await disputes(app))[0]).toMatchObject({
+      message_state: "delivered",
+      message_delivered_at: "2026-09-18T12:31:00.000Z",
     });
   });
 

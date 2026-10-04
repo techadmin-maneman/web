@@ -8085,6 +8085,11 @@ export interface components {
             distance_m: number | null;
             /** @description The check-in radius in force when he checked in. */
             radius_m: number;
+            /**
+             * @description What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.
+             * @enum {string}
+             */
+            message_state: "delivered" | "sent" | "not_sent" | "no_consent" | "none";
             message_delivered_at: string | null;
             closed_at: string | null;
         };

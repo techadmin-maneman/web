@@ -146,7 +146,11 @@ export function evidenceMessage(db: D1Database, appointmentId: string): Promise<
   return db.prepare(EVIDENCE_MESSAGE).bind(appointmentId).first<EvidenceMessage>();
 }
 
-function caseMessage(row: CaseRow): Omit<EvidenceMessage, "id"> | null {
+/** The columns a case's WhatsApp is read by: `n.message_id`, and the state, error and receipt of its message. */
+export type MessageColumns = Pick<CaseRow, "message_id" | "message_status" | "message_error" | "message_delivered_at">;
+
+/** The WhatsApp a case names, as its row joins it; null where it named none. */
+export function caseMessage(row: MessageColumns): Omit<EvidenceMessage, "id"> | null {
   if (row.message_id === null) return null;
   return { state: row.message_status ?? "", last_error: row.message_error, delivered_at: row.message_delivered_at };
 }

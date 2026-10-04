@@ -11104,6 +11104,17 @@ Request body:
       "type": "integer",
       "description": "The check-in radius in force when he checked in."
     },
+    "message_state": {
+      "type": "string",
+      "enum": [
+        "delivered",
+        "sent",
+        "not_sent",
+        "no_consent",
+        "none"
+      ],
+      "description": "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered."
+    },
     "message_delivered_at": {
       "anyOf": [
         {
@@ -11142,6 +11153,7 @@ Request body:
     "received_at",
     "distance_m",
     "radius_m",
+    "message_state",
     "message_delivered_at",
     "closed_at"
   ],
