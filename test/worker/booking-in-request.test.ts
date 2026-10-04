@@ -1,12 +1,10 @@
-// Booking, moving and cancelling where our own database holds the record of field work (FSM_PROVIDER "none"): each is
-// written in the request that makes it, and nothing reaches FSM, whose every call here fails. NOW is Monday
-// 21 September 2026, 12 noon in India. Every name and number here is made up.
+// Booking, moving and cancelling: each is written in the request that makes it. NOW is Monday 21 September 2026, 12 noon
+// in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { bookUnbookedHolds, confirmBooking } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
-import { resolveAskedWindows } from "../../src/domain/asked-windows.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { settleOwedRefunds } from "../../src/domain/cancel-refunds.ts";
 import { cancelVisit, changeableVisit, changeTerms, termsInForce } from "../../src/domain/visit-changes.ts";
@@ -15,7 +13,6 @@ import { saltedHash } from "../../src/lib/hash.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubPayments, PaymentUnanswered, type PaymentsProvider } from "../../src/providers/payments.ts";
-import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
   appFor,
@@ -23,12 +20,10 @@ import {
   failingAfterTheFirstBatch,
   fakeDependencies,
   fakeQueue,
-  fsmSwitchedOff,
   LOCAL_CONFIG,
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
-  PROVIDERS_FOR,
   request,
   savedAddress,
   type TestDependencies,
@@ -38,7 +33,7 @@ const PERSON = "11111111-1111-4111-8111-111111111111";
 const NEWCOMER = "55555555-5555-4555-8555-555555555555";
 const VISIT = "22222222-2222-4222-8222-222222222222";
 const PAYMENT = "33333333-3333-4333-8333-333333333333";
-const SECRET = "a-razorpay-webhook-secret-without-fsm";
+const SECRET = "a-razorpay-webhook-secret-for-bookings";
 
 /** Thursday 24 September, afternoon: free to change until Wednesday noon. */
 const THURSDAY_NOON = "2026-09-24T06:30:00.000Z";
@@ -49,23 +44,18 @@ const SECOND = 1000;
 const at = (seconds: number) => new Date(NOW.getTime() + seconds * SECOND);
 
 const cookies = new Map<string, string>();
-let fsmQueue: ReturnType<typeof fakeQueue>;
 let messageQueue: ReturnType<typeof fakeQueue>;
 
-/** Dependencies with FSM switched off, as FSM_PROVIDER "none" makes them. */
-const withoutFsm = (overrides: Parameters<typeof fakeDependencies>[0] = {}): TestDependencies =>
-  fakeDependencies({ fsm: fsmSwitchedOff(), ...overrides });
-
-const bindings = () => ({ FSM_QUEUE: fsmQueue, MESSAGE_QUEUE: messageQueue, CRM_QUEUE: fakeQueue() });
+const bindings = () => ({ MESSAGE_QUEUE: messageQueue, CRM_QUEUE: fakeQueue() });
 
 function call(
   personId: string,
   path: string,
   init: { method?: string; body?: object } = {},
-  deps: TestDependencies = withoutFsm(),
+  deps: TestDependencies = fakeDependencies(),
   database: D1Database = env.DB,
 ) {
-  const app = appFor("local", deps, {}, "client", PROVIDERS_FOR.ours);
+  const app = appFor("local", deps, {}, "client");
   return request(
     app,
     path,
@@ -83,9 +73,9 @@ function call(
 }
 
 /** Razorpay's signed webhook for a payment. */
-async function webhook(event: string, eventId: string, payment: object, deps: TestDependencies = withoutFsm()) {
+async function webhook(event: string, eventId: string, payment: object, deps: TestDependencies = fakeDependencies()) {
   const settings = { ...LOCAL_SETTINGS, razorpay: { keyId: "rzp_test_ours", keySecret: "s", webhookSecret: SECRET } };
-  const app = appFor("local", deps, settings, "public", PROVIDERS_FOR.ours);
+  const app = appFor("local", deps, settings, "public");
   const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment } } });
   const answer = await request(
     app,
@@ -139,8 +129,8 @@ async function fittedClient() {
     .run();
 }
 
-/** A paid service visit with Imran, booked without FSM: its FSM ID is its own, and it has no work order. */
-async function bookedWithoutFsm(start: string) {
+/** A paid service visit with Imran. */
+async function booked(start: string) {
   const end = new Date(new Date(start).getTime() + 90 * 60_000).toISOString();
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
@@ -175,8 +165,8 @@ const holdRow = (id: string) =>
 
 const visitOf = (id: string | null | undefined) =>
   env.DB.prepare(
-    `SELECT fsm_id = id AS own_fsm_id, fsm_work_order_id, fsm_status, fsm_modified_at, status, type, tier,
-       technician_id, window_start, window_end, service_city, service_pincode, asked_checked_at
+    `SELECT status, type, tier, technician_id, window_start, window_end, service_city, service_pincode,
+       asked_checked_at
      FROM appointments WHERE id = ?1`,
   )
     .bind(id ?? "")
@@ -201,7 +191,6 @@ beforeEach(async () => {
   await markDatabase();
   captureLogs();
   cookies.clear();
-  fsmQueue = fakeQueue();
   messageQueue = fakeQueue();
   await env.DB.prepare(
     "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
@@ -223,10 +212,6 @@ describe("a paid booking", () => {
     const hold = await holdRow(ordered.holdId);
     expect(hold?.state).toBe("booked");
     expect(await visitOf(hold?.appointment_id)).toEqual({
-      own_fsm_id: 1,
-      fsm_work_order_id: null,
-      fsm_status: null,
-      fsm_modified_at: null,
       status: "scheduled",
       type: "service",
       tier: "standard",
@@ -243,7 +228,6 @@ describe("a paid booking", () => {
     expect(paid).toEqual({ appointment_id: hold?.appointment_id });
     expect((await messagesOf(PERSON)).results).toEqual([{ kind: "payment_receipt", subject_id: hold?.appointment_id }]);
     expect(messageQueue.sent).toHaveLength(1);
-    expect(fsmQueue.sent).toEqual([]);
 
     const listed = await (await call(PERSON, "/api/visits")).json<{ upcoming: { id: string }[] }>();
     expect(listed.upcoming.map((visit) => visit.id)).toContain(hold?.appointment_id);
@@ -260,7 +244,6 @@ describe("a paid booking", () => {
 
     expect((await visitsOf(PERSON, "service")).results).toHaveLength(1);
     expect((await messagesOf(PERSON)).results).toHaveLength(1);
-    expect(fsmQueue.sent).toEqual([]);
   });
 
   it("refunds a payment Razorpay made after the hold and its grace ran out, and books nothing", async () => {
@@ -268,7 +251,7 @@ describe("a paid booking", () => {
     const ordered = await heldAndOrdered();
     const payments = createStubPayments();
 
-    await webhook("payment.captured", "evt_late", payment("pay_late", ordered, at(725)), withoutFsm({ payments }));
+    await webhook("payment.captured", "evt_late", payment("pay_late", ordered, at(725)), fakeDependencies({ payments }));
 
     expect(await holdRow(ordered.holdId)).toEqual({ state: "released", appointment_id: null });
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 200000 }]);
@@ -291,11 +274,10 @@ describe("a free booking", () => {
 
     const booked = await holdRow(hold.id);
     expect(booked?.state).toBe("booked");
-    expect(await visitOf(booked?.appointment_id)).toMatchObject({ own_fsm_id: 1, type: "consultation" });
+    expect(await visitOf(booked?.appointment_id)).toMatchObject({ type: "consultation" });
     expect((await messagesOf(NEWCOMER)).results).toEqual([
       { kind: "consultation_confirmation", subject_id: booked?.appointment_id },
     ]);
-    expect(fsmQueue.sent).toEqual([]);
   });
 
   it("spends one credit on a visit a credit pays for, and books it at once", async () => {
@@ -312,7 +294,7 @@ describe("a free booking", () => {
   });
 
   it("books a consultation from the site's form in its own request, where the client said the visit is", async () => {
-    const site = appFor("local", withoutFsm(), {}, "public", PROVIDERS_FOR.ours);
+    const site = appFor("local", fakeDependencies(), {}, "public");
     const answer = await request(
       site,
       "/api/consultation",
@@ -345,14 +327,13 @@ describe("a free booking", () => {
     expect(await answer.json()).toMatchObject({ state: "booked" });
 
     const visit = await env.DB.prepare(
-      "SELECT fsm_id = id AS own_fsm_id, status, service_city, service_pincode FROM appointments WHERE type = 'consultation'",
+      "SELECT status, service_city, service_pincode FROM appointments WHERE type = 'consultation'",
     ).first();
-    expect(visit).toEqual({ own_fsm_id: 1, status: "scheduled", service_city: "Gurgaon", service_pincode: "122018" });
-    expect(fsmQueue.sent).toEqual([]);
+    expect(visit).toEqual({ status: "scheduled", service_city: "Gurgaon", service_pincode: "122018" });
   });
 });
 
-describe("a visit booked without FSM, moved by the client", () => {
+describe("a visit moved by the client", () => {
   async function moveHold(date: string, window: string) {
     const answer = await call(PERSON, "/api/holds", {
       method: "POST",
@@ -364,7 +345,7 @@ describe("a visit booked without FSM, moved by the client", () => {
 
   it("moves it in place for free, in the request that confirms the move", async () => {
     await fittedClient();
-    await bookedWithoutFsm(THURSDAY_NOON);
+    await booked(THURSDAY_NOON);
     const holdId = await moveHold("2026-09-25", "evening");
 
     const started = await call(PERSON, `/api/appointments/${VISIT}/reschedule`, {
@@ -383,12 +364,11 @@ describe("a visit booked without FSM, moved by the client", () => {
       { appointment_id: VISIT, kind: "moved", notice: "free", refund_amount: 0, kept_amount: 0, payment_id: null },
     ]);
     expect((await messagesOf(PERSON)).results).toEqual([{ kind: "reschedule_confirmation", subject_id: VISIT }]);
-    expect(fsmQueue.sent).toEqual([]);
   });
 
   it("books a new visit for a late move once paid, and cancels and charges the old one", async () => {
     await fittedClient();
-    await bookedWithoutFsm(TUESDAY_MORNING);
+    await booked(TUESDAY_MORNING);
     const holdId = await moveHold("2026-09-26", "afternoon");
     const started = await call(PERSON, `/api/appointments/${VISIT}/reschedule`, {
       method: "POST",
@@ -403,7 +383,6 @@ describe("a visit booked without FSM, moved by the client", () => {
     const [old, replacement] = (await visitsOf(PERSON, "service")).results;
     expect(old).toEqual({ id: VISIT, status: "cancelled" });
     expect(replacement?.status).toBe("scheduled");
-    expect(await visitOf(VISIT)).toMatchObject({ fsm_status: null });
     expect((await changes()).results).toEqual([
       {
         appointment_id: VISIT,
@@ -417,12 +396,12 @@ describe("a visit booked without FSM, moved by the client", () => {
   });
 });
 
-describe("a visit booked without FSM, cancelled by the client", () => {
+describe("a visit cancelled by the client", () => {
   it("is cancelled and refunded in the request, its change, status and message written together", async () => {
     await fittedClient();
-    await bookedWithoutFsm(THURSDAY_NOON);
+    await booked(THURSDAY_NOON);
     const payments = createStubPayments();
-    const deps = withoutFsm({ payments });
+    const deps = fakeDependencies({ payments });
 
     const done = await call(
       PERSON,
@@ -466,7 +445,7 @@ describe("a visit booked without FSM, cancelled by the client", () => {
 
   it("writes nothing and refunds nothing for a visit the technician checked in to after the terms were read", async () => {
     await fittedClient();
-    await bookedWithoutFsm(THURSDAY_NOON);
+    await booked(THURSDAY_NOON);
     const visit = await changeableVisit(env.DB, PERSON, VISIT, NOW);
     if (visit === null) throw new Error("the visit should be changeable");
     const terms = await changeTerms(env.DB, visit, NOW, termsInForce(await readOpsInputs(env.DB, NOW), "service"));
@@ -478,13 +457,9 @@ describe("a visit booked without FSM, cancelled by the client", () => {
       .bind(crypto.randomUUID(), VISIT, NOW.toISOString())
       .run();
     const payments = createStubPayments();
-    const deps = withoutFsm({ payments });
+    const deps = fakeDependencies({ payments });
 
-    const outcome = await cancelVisit(env.DB, deps, terms, NOW, {
-      labelAsTest: true,
-      log: createLogger(),
-      record: "ours",
-    });
+    const outcome = await cancelVisit(env.DB, deps, terms, NOW, { log: createLogger() });
 
     expect(outcome).toEqual({ kind: "not_changeable" });
     expect((await visitOf(VISIT))?.status).toBe("scheduled");
@@ -494,7 +469,7 @@ describe("a visit booked without FSM, cancelled by the client", () => {
   });
 });
 
-describe("a visit cancelled without FSM, when something fails after it is cancelled", () => {
+describe("a visit cancelled, when something fails after it is cancelled", () => {
   const cancelFree = (deps: TestDependencies, database: D1Database = env.DB) =>
     call(
       PERSON,
@@ -517,12 +492,12 @@ describe("a visit cancelled without FSM, when something fails after it is cancel
 
   beforeEach(async () => {
     await fittedClient();
-    await bookedWithoutFsm(THURSDAY_NOON);
+    await booked(THURSDAY_NOON);
   });
 
   it("stays cancelled with its refund pending when D1 is lost once it is cancelled, and the job refunds once", async () => {
     const payments = createStubPayments();
-    const deps = withoutFsm({ payments });
+    const deps = fakeDependencies({ payments });
 
     const done = await cancelFree(deps, failingAfterTheFirstBatch(env.DB));
 
@@ -543,7 +518,7 @@ describe("a visit cancelled without FSM, when something fails after it is cancel
 
   it("leaves the job a refund Razorpay did not answer when ops could not be told", async () => {
     const silent = () => Promise.reject(new PaymentUnanswered("refund", new Error("The operation timed out.")));
-    const failing = withoutFsm({
+    const failing = fakeDependencies({
       payments: { ...createStubPayments(), refund: silent },
       alertOnce: () => Promise.reject(new Error("D1_ERROR: Network connection lost.")),
     });
@@ -553,7 +528,7 @@ describe("a visit cancelled without FSM, when something fails after it is cancel
     expect((await visitOf(VISIT))?.status).toBe("cancelled");
 
     const payments = createStubPayments();
-    const deps = withoutFsm({ payments });
+    const deps = fakeDependencies({ payments });
     expect(await refundPass(deps, 11)).toBe(1);
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 200000 }]);
     expect(deps.alerts).toEqual([]);
@@ -563,7 +538,7 @@ describe("a visit cancelled without FSM, when something fails after it is cancel
     messageQueue = queueThatRefuses();
     const payments = createStubPayments();
 
-    const done = await cancelFree(withoutFsm({ payments }));
+    const done = await cancelFree(fakeDependencies({ payments }));
 
     expect(done.status).toBe(200);
     expect(await done.json()).toMatchObject({ cancelled: true, refund_pending: false });
@@ -578,7 +553,7 @@ describe("a visit cancelled without FSM, when something fails after it is cancel
     await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
     messageQueue = queueThatRefuses();
 
-    const done = await cancelFree(withoutFsm(), failingAfterTheFirstBatch(env.DB));
+    const done = await cancelFree(fakeDependencies(), failingAfterTheFirstBatch(env.DB));
 
     expect(done.status).toBe(200);
     expect(await done.json()).toMatchObject({ cancelled: true, credit: "restored", refund_pending: false });
@@ -598,20 +573,19 @@ describe("the cron's cancel_refunds job", () => {
       ).bind(crypto.randomUUID(), VISIT, PERSON, THURSDAY_NOON, PAYMENT, NOW.toISOString()),
     ]);
 
-  const config = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, ...PROVIDERS_FOR.ours } };
   const job = CRON_JOBS.filter((each) => each.name === "cancel_refunds");
   const run = (deps: TestDependencies) =>
-    runCronJobs(job, { env: { ...env, MESSAGE_QUEUE: messageQueue }, deps, config, log: createLogger() });
+    runCronJobs(job, { env: { ...env, MESSAGE_QUEUE: messageQueue }, deps, config: LOCAL_CONFIG, log: createLogger() });
 
   beforeEach(async () => {
     await fittedClient();
-    await bookedWithoutFsm(THURSDAY_NOON);
+    await booked(THURSDAY_NOON);
   });
 
   it("refunds once a cancel whose Worker stopped before its refund", async () => {
     await stoppedAfterCancelling();
     const payments = createStubPayments();
-    const deps = withoutFsm({ payments, now: () => at(11 * 60) });
+    const deps = fakeDependencies({ payments, now: () => at(11 * 60) });
 
     expect(await run(deps)).toEqual([{ job: "cancel_refunds", ok: true }]);
     expect(await run(deps)).toEqual([{ job: "cancel_refunds", ok: true }]);
@@ -630,7 +604,7 @@ describe("the cron's cancel_refunds job", () => {
         return Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR: the payment has been fully refunded"));
       },
     };
-    const deps = withoutFsm({ payments: refusing, now: () => at(11 * 60) });
+    const deps = fakeDependencies({ payments: refusing, now: () => at(11 * 60) });
 
     await run(deps);
     await run(deps);
@@ -650,7 +624,7 @@ describe("the cron's cancel_refunds job", () => {
       ...createStubPayments(),
       refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR: the payment has been fully refunded")),
     };
-    const deps = withoutFsm({ payments: refusing, now: () => at(11 * 60) });
+    const deps = fakeDependencies({ payments: refusing, now: () => at(11 * 60) });
 
     await run(deps);
 
@@ -661,7 +635,7 @@ describe("the cron's cancel_refunds job", () => {
   it("leaves alone a claim whose visit was never cancelled, and one the Worker before it refunded", async () => {
     await stoppedAfterCancelling("scheduled");
     const payments = createStubPayments();
-    const deps = withoutFsm({ payments, now: () => at(11 * 60) });
+    const deps = fakeDependencies({ payments, now: () => at(11 * 60) });
     await run(deps);
     expect(payments.made.refunds).toEqual([]);
 
@@ -676,7 +650,7 @@ describe("the cron's cancel_refunds job", () => {
   });
 });
 
-describe("a booking our own database holds, after the request that confirmed it failed", () => {
+describe("a booking, after the request that confirmed it failed", () => {
   /** A service hold paid for, whose webhook recorded the payment but never booked it. */
   async function paidButUnbooked(paymentId: string, madeAt = at(30)) {
     const ordered = await heldAndOrdered();
@@ -697,20 +671,19 @@ describe("a booking our own database holds, after the request that confirmed it 
   const pass = (deps: TestDependencies, seconds: number, budget = createCallBudget(40)) =>
     bookUnbookedHolds(
       env.DB,
-      { ...deps, notify: () => Promise.resolve(), labelAsTest: true, budget, log: createLogger() },
+      { ...deps, notify: () => Promise.resolve(), budget, log: createLogger() },
       at(seconds),
     );
 
-  it("is booked by the half-hour pass, without FSM", async () => {
+  it("is booked by the half-hour pass", async () => {
     await fittedClient();
     const { holdId } = await paidButUnbooked("pay_net");
-    const deps = withoutFsm();
+    const deps = fakeDependencies();
 
     expect(await pass(deps, 29 * 60)).toBe(0);
     expect(await pass(deps, 32 * 60)).toBe(1);
 
     expect((await holdRow(holdId))?.state).toBe("booked");
-    expect(fsmQueue.sent).toEqual([]);
     expect(deps.alerts).toEqual([]);
   });
 
@@ -726,7 +699,7 @@ describe("a booking our own database holds, after the request that confirmed it 
         return Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR"));
       },
     };
-    const deps = withoutFsm({ payments: refusing });
+    const deps = fakeDependencies({ payments: refusing });
 
     expect(await pass(deps, 50 * 60)).toBe(0);
     expect(asked).toBe(1);
@@ -739,71 +712,32 @@ describe("a booking our own database holds, after the request that confirmed it 
     expect(deps.alerts).toEqual([expect.stringMatching(new RegExp(`${holdId}.*/clients/${PERSON}`))]);
   });
 
-  it("is booked by the cron's own job, which runs with FSM switched off", async () => {
+  it("is booked by the cron's own job", async () => {
     await fittedClient();
     const { holdId } = await paidButUnbooked("pay_cron");
     const job = CRON_JOBS.filter((each) => each.name === "unbooked_holds");
-    const config = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, ...PROVIDERS_FOR.ours } };
 
     const outcomes = await runCronJobs(job, {
-      env: { ...env, FSM_QUEUE: fsmQueue, MESSAGE_QUEUE: messageQueue },
-      deps: withoutFsm({ now: () => at(32 * 60) }),
-      config,
+      env: { ...env, MESSAGE_QUEUE: messageQueue },
+      deps: fakeDependencies({ now: () => at(32 * 60) }),
+      config: LOCAL_CONFIG,
       log: createLogger(),
     });
 
     expect(outcomes).toEqual([{ job: "unbooked_holds", ok: true }]);
     expect((await holdRow(holdId))?.state).toBe("booked");
     expect(messageQueue.sent).toHaveLength(1);
-    expect(fsmQueue.sent).toEqual([]);
   });
 
-  it("is booked in our own database when FSM's queue still carries it", async () => {
-    await fittedClient();
-    const { holdId } = await paidButUnbooked("pay_queued");
-    const message = {
-      id: "m1",
-      body: { hold_id: holdId, request_id: "r1" },
-      attempts: 1,
-      ack: vi.fn(),
-      retry: vi.fn(),
-    };
-    const batch = { queue: "mm-fsm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
-
-    await handleFsmSyncBatch(batch as unknown as MessageBatch, env, withoutFsm({ now: () => at(40) }), createLogger(), {
-      labelAsTest: true,
-      cataloguePush: false,
-      record: "ours",
-    });
-
-    expect(message.ack).toHaveBeenCalled();
-    const booked = await holdRow(holdId);
-    expect(await visitOf(booked?.appointment_id)).toMatchObject({ own_fsm_id: 1, fsm_work_order_id: null });
-  });
 });
 
-describe("the asked-window pass", () => {
-  it("has nothing to look up for a visit our own booking made, which is booked into the window the client picked", async () => {
-    await fittedClient();
-    const ordered = await heldAndOrdered();
-    await webhook("payment.captured", "evt_asked", payment("pay_asked", ordered));
-
-    expect(await resolveAskedWindows(env.DB, at(60))).toEqual({ resolved: 0 });
-    const hold = await holdRow(ordered.holdId);
-    expect(await visitOf(hold?.appointment_id)).toMatchObject({ asked_checked_at: NOW.toISOString() });
-  });
-});
-
-describe("confirmBooking, where our own database holds the record", () => {
+describe("confirmBooking", () => {
   it("answers already_booked for a hold it booked before, and writes nothing more", async () => {
     await fittedClient();
     await grantCredits(env.DB, { personId: PERSON, visits: 2, source: "ops", sourceId: "o2", now: NOW }).run();
     const ordered = await heldAndOrdered();
 
-    const again = await confirmBooking(env.DB, fsmSwitchedOff(), createStubPayments(), ordered.holdId, at(5), {
-      labelAsTest: true,
-      record: "ours",
-    });
+    const again = await confirmBooking(env.DB, createStubPayments(), ordered.holdId, at(5));
 
     expect(again).toBe("already_booked");
     expect((await visitsOf(PERSON, "service")).results).toHaveLength(1);
