@@ -621,7 +621,13 @@ describe("GET /api/tasks", () => {
 
   it("says nothing is waiting when no queue holds anything", async () => {
     // The look itself is logged under Access's stand-in, who has now signed in.
-    expect(await tasks()).toEqual({ overdue: 0, truncated: false, low_stock_places: 0, staff: ["ops@localhost"], groups: [] });
+    expect(await tasks()).toEqual({
+      overdue: 0,
+      truncated: false,
+      low_stock_places: 0,
+      staff: ["ops@localhost"],
+      groups: [],
+    });
   });
 
   it("leaves out an erased person's tasks, whose record is gone", async () => {
