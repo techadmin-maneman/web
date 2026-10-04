@@ -196,7 +196,7 @@ describe("the day's list", () => {
     await insertJob(LAST_VISIT, { start: "2026-09-21T09:30:00.000Z" });
     await insertJob(OLDER_VISIT, { start: "2026-09-21T11:30:00.000Z" });
     await landed(TODAY_JOB, "start", "2026-09-21T07:35:00.000Z");
-    await landed(TODAY_JOB, "outcome", "2026-09-21T08:40:00.000Z", { outcome: "partial" });
+    await landed(TODAY_JOB, "outcome", "2026-09-21T08:40:00.000Z", { outcome: "partial", reason: "client_stopped_it" });
     await landed(LAST_VISIT, "start", "2026-09-21T09:35:00.000Z");
     // A close-out that came back superseded, because ops had moved the job: it never happened.
     await landed(LAST_VISIT, "outcome", "2026-09-21T10:40:00.000Z", { outcome: "done" }, { superseded: true });

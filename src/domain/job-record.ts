@@ -4,8 +4,9 @@
 import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { JobEventKind } from "../policy/in-job-steps.ts";
+import { storedOutcomeOf } from "./job-event-bodies.ts";
 import { failedPieceStatement, fittedPieceStatement, pieceStepOf } from "./pieces.ts";
-import { closeVisit, moveVisit, type VisitOutcome } from "./visit-status.ts";
+import { closeVisit, moveVisit } from "./visit-status.ts";
 
 export interface LandingStep {
   readonly visit: { readonly id: string; readonly personId: string | null };
@@ -41,18 +42,14 @@ export async function jobRecordOf(db: D1Database, step: LandingStep): Promise<D1
 
 /** The close: the visit moved to its outcome's status, and its visits row from the job's own times. */
 async function closingStatements(db: D1Database, step: LandingStep): Promise<D1PreparedStatement[]> {
-  const outcome = outcomeOf(step.body);
+  const stored = storedOutcomeOf(step.body);
+  // Anything but a done or a no-show closes the job as partial.
+  const outcome = stored?.outcome ?? "partial";
   const at = step.now.toISOString();
   const startedAt = outcome === "no_show" ? null : await startedAtOf(db, step.visit.id);
-  const reason = outcome === "partial" && typeof step.body.reason === "string" ? step.body.reason : null;
+  const reason = stored?.outcome === "partial" ? stored.reason : null;
   const times = { startedAt, endedAt: step.occurredAt.toISOString() };
   return [moveVisit(db, step.visit.id, outcome, at), closeVisit(db, step.visit.id, outcome, times, reason, at)];
-}
-
-function outcomeOf(body: Record<string, unknown>): VisitOutcome {
-  if (body.outcome === "done") return "done";
-  if (body.outcome === "no_show") return "no_show";
-  return "partial";
 }
 
 /** When the phone said the job started; null for one that never did. */

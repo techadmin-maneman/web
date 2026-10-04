@@ -3,7 +3,8 @@
 // consequence before the client confirms, from src/policy/moving-a-visit.ts.
 // Behind SELF_SERVE_BOOKING, as booking is.
 //
-//   POST /api/appointments/:id/reschedule   {}: what moving costs now; { hold_id }: start the move a hold makes
+//   GET  /api/appointments/:id/reschedule   what moving costs now
+//   POST /api/appointments/:id/reschedule   { hold_id }: start the move a hold makes
 //   POST /api/appointments/:id/cancel       { confirm: false }: what cancelling gives back; { confirm: true, notice }: cancel
 //
 // A move picks its new time as a booking does, through GET /api/availability
@@ -81,10 +82,22 @@ const CancelTermsSchema = z
 
 const params = z.object({ id: z.uuid().openapi({ description: "The visit's ID." }) });
 
+const moveTermsRoute = selfServeRoute({
+  method: "get",
+  path: "/api/appointments/{id}/reschedule",
+  summary: "What moving a visit costs now",
+  request: { params },
+  responses: {
+    200: { description: "The terms", content: { "application/json": { schema: MoveTermsSchema } } },
+    401: errorResponse("session_required"),
+    409: errorResponse("not_changeable"),
+  },
+});
+
 const rescheduleRoute = selfServeRoute({
   method: "post",
   path: "/api/appointments/{id}/reschedule",
-  summary: "What moving a visit costs, or start the move a hold makes",
+  summary: "Start the move a hold makes",
   request: {
     params,
     body: {
@@ -92,10 +105,7 @@ const rescheduleRoute = selfServeRoute({
         "application/json": {
           schema: z
             .object({
-              hold_id: z
-                .uuid()
-                .optional()
-                .openapi({ description: "A hold made with `moving` for this visit; left out, the terms only." }),
+              hold_id: z.uuid().openapi({ description: "A hold made with `moving` for this visit." }),
             })
             .strict(),
         },
@@ -103,7 +113,6 @@ const rescheduleRoute = selfServeRoute({
     },
   },
   responses: {
-    200: { description: "The terms", content: { "application/json": { schema: MoveTermsSchema } } },
     201: { description: "The move is started", content: { "application/json": { schema: BookingSchema } } },
     401: errorResponse("session_required"),
     404: errorResponse("not_found: no such hold for moving this visit"),
@@ -150,15 +159,16 @@ const cancelRoute = selfServeRoute({
 });
 
 export function registerClientChanges(app: App): void {
+  app.openapi(moveTermsRoute, async (c) => {
+    const move = await moveTermsFor(c, clientOf(c).subjectId, c.req.valid("param").id, null);
+    if (move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
+    return c.json({ ...termsOf(move.terms), cost: move.terms.move.cost, price: move.terms.move.price }, 200);
+  });
+
   app.openapi(rescheduleRoute, async (c) => {
     const session = clientOf(c);
     const visitId = c.req.valid("param").id;
     const holdId = c.req.valid("json").hold_id;
-    if (holdId === undefined) {
-      const move = await moveTermsFor(c, session.subjectId, visitId, null);
-      if (move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
-      return c.json({ ...termsOf(move.terms), cost: move.terms.move.cost, price: move.terms.move.price }, 200);
-    }
     const hold = await c.env.DB.prepare(
       "SELECT 1 FROM slot_holds WHERE id = ?1 AND person_id = ?2 AND moves_appointment_id = ?3",
     )

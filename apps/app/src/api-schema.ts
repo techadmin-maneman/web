@@ -2241,9 +2241,50 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** What moving a visit costs now */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The terms */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MoveTerms"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_changeable */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
-        /** What moving a visit costs, or start the move a hold makes */
+        /** Start the move a hold makes */
         post: {
             parameters: {
                 query?: never;
@@ -2259,22 +2300,13 @@ export interface paths {
                     "application/json": {
                         /**
                          * Format: uuid
-                         * @description A hold made with `moving` for this visit; left out, the terms only.
+                         * @description A hold made with `moving` for this visit.
                          */
-                        hold_id?: string;
+                        hold_id: string;
                     };
                 };
             };
             responses: {
-                /** @description The terms */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["MoveTerms"];
-                    };
-                };
                 /** @description The move is started */
                 201: {
                     headers: {

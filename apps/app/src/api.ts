@@ -84,7 +84,10 @@ export async function forgetHome(): Promise<void> {
   if ("caches" in window) await caches.delete(HOME_CACHE);
 }
 
-/** The Home the phone kept, if any: board B3's error can then say the visit is still booked. */
+/**
+ * The Home the phone kept, if any: board B3's error can then say the visit is still booked. It is this release's own:
+ * the service worker drops the kept Home when a new release takes over (apps/app/sw/sw.ts).
+ */
 export async function keptHome(): Promise<Me | null> {
   if (!("caches" in window)) return null;
   const kept = await caches.match(HOME_PATH, { cacheName: HOME_CACHE });
@@ -175,13 +178,9 @@ export const api = {
     client.post("/api/bookings", {
       body: { hold_id: holdId, ...(consents.length === 0 ? {} : { consents: [...consents] }) },
     }),
-  // One path, two answers: sent no hold it gives the move's terms (200), sent one the booking (201).
-  moveTerms: (visitId: string) =>
-    client.post("/api/appointments/{id}/reschedule", { path: { id: visitId }, body: {} }) as Promise<Answer<MoveTerms>>,
+  moveTerms: (visitId: string) => client.get("/api/appointments/{id}/reschedule", { path: { id: visitId } }),
   startMove: (visitId: string, holdId: string) =>
-    client.post("/api/appointments/{id}/reschedule", { path: { id: visitId }, body: { hold_id: holdId } }) as Promise<
-      Answer<Booking>
-    >,
+    client.post("/api/appointments/{id}/reschedule", { path: { id: visitId }, body: { hold_id: holdId } }),
   cancelTerms: (visitId: string) =>
     client.post("/api/appointments/{id}/cancel", { path: { id: visitId }, body: { confirm: false } }),
   cancel: (visitId: string, notice: CancelTerms["notice"]) =>

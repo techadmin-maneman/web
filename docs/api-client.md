@@ -1396,9 +1396,37 @@ Take the code off the hold again, while nothing is paid for it
 }
 ```
 
+### GET /api/appointments/{id}/reschedule
+
+What moving a visit costs now
+
+**200**: The terms
+
+```json
+{
+  "$ref": "#/components/schemas/MoveTerms"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_changeable
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/appointments/{id}/reschedule
 
-What moving a visit costs, or start the move a hold makes
+Start the move a hold makes
 
 Request body:
 
@@ -1409,18 +1437,13 @@ Request body:
     "hold_id": {
       "type": "string",
       "format": "uuid",
-      "description": "A hold made with `moving` for this visit; left out, the terms only."
+      "description": "A hold made with `moving` for this visit."
     }
   },
+  "required": [
+    "hold_id"
+  ],
   "additionalProperties": false
-}
-```
-
-**200**: The terms
-
-```json
-{
-  "$ref": "#/components/schemas/MoveTerms"
 }
 ```
 

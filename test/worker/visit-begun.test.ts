@@ -40,7 +40,7 @@ const clientGet = (path: string) => request(client, path, { headers: { Cookie: c
 /** What the client is answered on asking to cancel, to see the move's terms, and for the days to move it to. */
 async function changeAnswers(): Promise<number[]> {
   const cancel = await clientPost(`/api/appointments/${JOB}/cancel`, { confirm: false });
-  const move = await clientPost(`/api/appointments/${JOB}/reschedule`, {});
+  const move = await clientGet(`/api/appointments/${JOB}/reschedule`);
   const days = await clientGet(`/api/availability?type=service&moving=${JOB}`);
   return [cancel.status, move.status, days.status];
 }

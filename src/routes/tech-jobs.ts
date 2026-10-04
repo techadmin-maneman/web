@@ -45,7 +45,6 @@ import { techRoute } from "../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import { CONSUMABLE_BOUNDS } from "../config/consumables.ts";
 import { isPieceCode } from "../config/pieces.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
@@ -74,6 +73,7 @@ import {
   type MovedTo,
   type Superseding,
 } from "../domain/job-events.ts";
+import { ConsumablesRequestSchema, OutcomeRequestSchema } from "../domain/job-event-bodies.ts";
 import { jobRecordOf, type LandingStep } from "../domain/job-record.ts";
 import { pieceLabelTaken, pieceStepOf, type PieceField } from "../domain/pieces.ts";
 import { checklistOf, declinedChecklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
@@ -447,31 +447,6 @@ const ChecklistRequestSchema = z
   .strict()
   .openapi("ChecklistRequest");
 
-const QUANTITY = z.number().int().min(1).max(CONSUMABLE_BOUNDS.maxExpected);
-
-const ConsumablesRequestSchema = z
-  .object({
-    items: z
-      .array(
-        z.union([
-          z.object({ code: z.string().min(1).max(64), quantity: QUANTITY }).strict(),
-          z
-            .object({ name: z.string().min(1).max(80), quantity: QUANTITY })
-            .strict()
-            .openapi({
-              description: "A consumable by the name the technician gave it, as a phone queued it before codes.",
-            }),
-        ]),
-      )
-      .max(30),
-  })
-  .strict()
-  .openapi("ConsumablesRequest", {
-    description:
-      "What was used, each by the code the job's card gave it. None used is an empty list. A code the " +
-      "catalogue does not hold is refused, fields items.",
-  });
-
 const PieceFittedSchema = z
   .object({
     piece_code: z.string().min(3).max(40),
@@ -505,20 +480,6 @@ const PieceDeclinedSchema = z
   });
 
 const PieceRequestSchema = z.union([PieceFittedSchema, PieceDeclinedSchema]).openapi("PieceRequest");
-
-const OutcomeRequestSchema = z
-  .discriminatedUnion("outcome", [
-    z.object({ outcome: z.literal("done") }).strict(),
-    z
-      .object({
-        outcome: z.literal("partial"),
-        reason: z.string().min(1).max(64).openapi({
-          description: "One of the card's partial_reasons, by its id; one ops have since taken off is still taken.",
-        }),
-      })
-      .strict(),
-  ])
-  .openapi("OutcomeRequest");
 
 const NoShowSchema = z
   .object({
