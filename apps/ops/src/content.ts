@@ -192,7 +192,7 @@ export const dispatch = {
     // PLACEHOLDER: a job still on a technician who was switched off, which no board draws.
     was: (name: string) => `Was ${name}'s · switched off`,
     /** Beneath the tray: where the asked window comes from, and why some rows have none. */
-    same: "Asked is what the client picked on their booking. A visit booked without one says so.",
+    same: "“Asked” is the window the client picked when booking; “not recorded” means they picked none.",
     // PLACEHOLDER: the board draws four waiting and no empty tray.
     empty: "Nothing is waiting for a technician.",
   },
@@ -569,7 +569,7 @@ export const clients = {
     /** The form a member of staff saves an address a client gives them with, which the app's own save follows. */
     given: {
       open: "Record an address they give you",
-      change: "Change it to one they give you",
+      change: "Use an address they give you",
       title: "An address the client gave you",
       note:
         "Saved as the client's address, as their own save in the app is, and marked as given to you. They see it in " +
@@ -949,7 +949,7 @@ export const clients = {
       } as Readonly<Record<string, string>>,
     },
     news: {
-      attached: "Attached. The CRM is sent it too.",
+      attached: "Attached, and sent to the CRM.",
       already_invited: "They came with this invite already, so nothing was attached.",
     },
   },
@@ -1566,9 +1566,8 @@ export const noShows = {
      * it to, which the owner ruled on 27 September 2026 is the payment and the credit (BIZ-28; ADR 0088).
      */
     note: (waiver: { readonly payment: "refunded" | "kept"; readonly credit: "returned" | "spent" }) =>
-      "Charging costs the client what their booking says a no-show costs, and gives back the rest. Waiving records " +
-      "the decision, " +
-      `${waiver.payment === "refunded" ? "refunds what the visit was paid with" : "keeps what the visit was paid with"} ` +
+      "Charging keeps what the booking says a no-show costs and refunds the rest; waiving " +
+      `${waiver.payment === "refunded" ? "refunds the payment" : "keeps the payment"} ` +
       `and ${waiver.credit === "returned" ? "returns its credit" : "leaves its credit spent"}. ` +
       "Either way the client is told on WhatsApp, never your note.",
     /** PLACEHOLDER: the board draws no empty queue. */
@@ -1724,7 +1723,7 @@ export const tasks = {
     failed: "That was not recorded. Try again.",
   },
   /** PLACEHOLDER: more were waiting than one look reads. */
-  truncated: "More are waiting than one look reads, so a count here may be short.",
+  truncated: "More are waiting than this page shows, so its counts may be low.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
     /**
@@ -1816,17 +1815,17 @@ export const tasks = {
     nobody: "nobody yet",
     take: "Take it",
     handBack: "Hand it back",
-    give: "Give it to…",
-    giveTo: "Give it to",
+    give: "Assign…",
+    giveTo: "Assign to",
     /** The choice in the list that hands someone else's task back. */
     giveNobody: "Nobody",
     you: (email: string) => `${email} (you)`,
-    save: "Give it",
+    save: "Assign",
     saving: "Saving…",
     cancel: "Cancel",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "This task has left the list meanwhile: its thing was done. Reload the page to see the list now.",
+      not_found: "Someone has dealt with this task already. Reload to see the list as it stands.",
       invalid_request: "Nobody has used the console lately with that e-mail, so the task cannot be theirs.",
       unknown: "That did not save. Try again.",
     } as Readonly<Record<string, string>>,
@@ -2361,7 +2360,7 @@ export const settings = {
     percentOff: (percent: number, cap: string | null) =>
       cap === null ? `${String(percent)}%` : `${String(percent)}%, at most ${cap}`,
     covering: (kinds: string) => `On ${kinds}`,
-    until: (day: string | null) => (day === null ? "No end" : `Until ${day}, the last day`),
+    until: (day: string | null) => (day === null ? "No end date" : `Ends ${day}`),
     usesLine: (uses: number | null, once: boolean) =>
       `${uses === null ? "Any number of uses" : `${String(uses)} ${uses === 1 ? "use" : "uses"} in all`}${once ? ", once per client" : ""}`,
     oneTyped: (code: string) => `The code ${code}`,
@@ -2448,17 +2447,17 @@ export const settings = {
       // PLACEHOLDER: the phone's two bounds (docs/decisions/0088-every-policy-in-the-console.md).
       phone_clock: {
         before_start: "Earliest check-in, before the booked start",
-        held_offline: "Longest a phone may hold what was done offline",
+        held_offline: "Longest a phone may stay offline",
       },
       // PLACEHOLDER: board C4's countdown and the grace after it (docs/decisions/0068-a-paid-hold-is-kept.md).
       payment_hold: {
         countdown: "The countdown the client sees",
-        grace: "A payment still in time, after it",
+        grace: "Grace after the countdown",
       },
       // PLACEHOLDER: board D3's two figures (docs/open-points.md, item 59).
       technician_work: {
-        period: "Jobs and average service, counted over",
-        over_by: "Shown as running over, from",
+        period: "Figures counted over",
+        over_by: "Running over from",
       },
       // PLACEHOLDER: the days the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
       booking_days: {

@@ -162,7 +162,7 @@ test("lists the tray's jobs with their client, the window asked beside the one o
   const last = tray.getByRole("listitem").last();
   await expect(last).toContainText("Asked · not recorded");
   await expect(last).toContainText("Offered · Sun, afternoon");
-  await expect(tray.getByText("Asked is what the client picked on their booking")).toBeVisible();
+  await expect(tray.getByText("“Asked” is the window the client picked when booking")).toBeVisible();
 });
 
 // OIA-16: a tray click picked the job up at once, so it could not be read before it was assigned.

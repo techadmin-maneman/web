@@ -385,7 +385,7 @@ test.describe("the rules", () => {
     const clock = page.getByRole("group", { name: "How far a phone is trusted about time" });
     await expect(clock.getByLabel("Earliest check-in, before the booked start")).toHaveValue("60");
     await expect(clock).toContainText("0 to 240 minutes, a whole number");
-    await expect(clock.getByLabel("Longest a phone may hold what was done offline")).toHaveValue("24");
+    await expect(clock.getByLabel("Longest a phone may stay offline")).toHaveValue("24");
     await expect(clock).toContainText("1 to 72 hours, a whole number");
   });
 
@@ -957,7 +957,7 @@ test.describe("the discount codes", () => {
     await open(page, "/discount-codes");
     const wedding = page.getByRole("listitem").filter({ hasText: "WEDDNG25" });
     await expect(wedding).toContainText("Takes off 25%, at most Rs. 5,000 before GST");
-    await expect(wedding).toContainText("Until Fri 31 Dec, the last day");
+    await expect(wedding).toContainText("Ends Fri 31 Dec");
     await expect(wedding).toContainText("3 of 50 uses");
     await expect(wedding).toContainText("Rs. 12,000 given");
     await expect(wedding.getByRole("button", { name: "Switch off WEDDNG25" })).toBeVisible();
