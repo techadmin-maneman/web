@@ -20,7 +20,7 @@ import {
   type Phase,
 } from "../api.ts";
 import { add, all, get, put, remove } from "./db.ts";
-import { forgetStartAtCheckIn, keepArrival, keepStartAtCheckIn, keptStartAtCheckIn } from "./jobs.ts";
+import { forgetStartAtCheckIn, keepArrival, keepJob, keepStartAtCheckIn, keptStartAtCheckIn } from "./jobs.ts";
 import { account, nextToSend, type JobAccount, type Queued } from "./replay.ts";
 import { uuidv7 } from "./uuidv7.ts";
 
@@ -218,6 +218,13 @@ async function markStopped(
   await put("outbox", { ...current, state, note, fields, moved, request_id: requestId });
 }
 
+/** A job ops moved to another time is read again, so the phone holds the start it moved to and can say so. */
+async function readAgainIfMoved(jobId: string, fields: readonly string[]): Promise<void> {
+  if (!fields.includes("time")) return;
+  const answer = await api.job(jobId);
+  if (answer.ok) await keepJob(answer.body).catch(() => undefined);
+}
+
 /**
  * A write the API refused: its job stops there for the technician to put right, and the refusal is reported, since
  * nothing else would tell anyone but him.
@@ -343,6 +350,7 @@ async function run(): Promise<Replayed> {
       }
       if (trouble !== null) {
         await markStopped(event, "superseded", trouble.note, trouble.fields, trouble.moved);
+        await readAgainIfMoved(event.job_id, trouble.fields);
         superseded += 1;
         changed();
         continue;
@@ -369,6 +377,7 @@ async function run(): Promise<Replayed> {
     // it, or the job is no longer this technician's at all.
     if (answer.code === SUPERSEDED || answer.code === OUT_OF_ORDER || answer.status === 404) {
       await markStopped(event, "superseded", answer.code, answer.fields, answer.moved);
+      await readAgainIfMoved(event.job_id, answer.fields);
       superseded += 1;
       changed();
       continue;

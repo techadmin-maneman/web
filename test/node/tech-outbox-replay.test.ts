@@ -7,7 +7,7 @@ import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { onSessionEnded } from "../../apps/tech/src/api.ts";
 import { wipe } from "../../apps/tech/src/store/db.ts";
-import { keptArrival } from "../../apps/tech/src/store/jobs.ts";
+import { keptArrival, keptJob } from "../../apps/tech/src/store/jobs.ts";
 import {
   correct,
   events,
@@ -120,6 +120,34 @@ describe("sending what the phone holds", () => {
 
     await replay();
     expect(await events()).toMatchObject([{ job_id: "a", state: "superseded", fields: ["technician"], moved }]);
+  });
+
+  // BK-43: the card read again is what says where the job went once it has locked again.
+  it("reads a job moved to another time again, so the phone holds its new start", async () => {
+    await queue("start", "a", null, "2030-09-20T10:30:00.000Z");
+    const card = { id: "a", starts_at: "2030-09-21T03:30:00.000Z", client: null, partial_reasons: [] };
+    const sent = api((method) =>
+      method === "GET"
+        ? { status: 200, json: card }
+        : { status: 409, json: { error: { code: "superseded", request_id: "t", fields: ["time"] } } },
+    );
+
+    await replay();
+    expect(sent.map((call) => `${call.method} ${call.url}`)).toEqual([
+      "POST /api/tech/jobs/a/start",
+      "GET /api/tech/jobs/a",
+    ]);
+    expect(await keptJob("a")).toMatchObject({ starts_at: card.starts_at });
+  });
+
+  it("does not read again a job given to someone else", async () => {
+    await queue("start", "a", null);
+    const sent = api(() => ({
+      status: 409,
+      json: { error: { code: "superseded", request_id: "t", fields: ["technician"] } },
+    }));
+    await replay();
+    expect(sent.map((call) => call.method)).toEqual(["POST"]);
   });
 
   it("drops a no-show sent before the wait ran, and the countdown goes on", async () => {

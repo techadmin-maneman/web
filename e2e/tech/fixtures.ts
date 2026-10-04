@@ -110,7 +110,7 @@ const secondJob = (date: string): Job => ({
   unlocks_at: unlocksAt(date),
 });
 
-/** This afternoon's first fit, its card still locked as the list shows it. */
+/** This afternoon's first fit, its card still locked as the list shows it, until 6 pm tomorrow. */
 const lockedJob = (date: string): Job => ({
   id: LOCKED_JOB_ID,
   day: "later",
@@ -126,7 +126,7 @@ const lockedJob = (date: string): Job => ({
   badge: "prepaid",
   slots: 2,
   unlocked: false,
-  unlocks_at: unlocksAt(date),
+  unlocks_at: at(dayAfter(date), "12:30"),
 });
 
 /** Tomorrow's one job, unlocked since 6 pm today: its card is open, and its door is not. */
@@ -396,8 +396,8 @@ export interface Fake {
   moved: boolean;
   /**
    * Set to move the job to another time: a write that holds any other answers
-   * `409 superseded`, field time. The card goes on answering the old time, as
-   * the copy the phone holds does until it asks again.
+   * `409 superseded`, field time, and the card answers the new time, as the
+   * API does once the phone asks again.
    */
   movedTo: string | null;
   /** Set to make the no-show refuse with `425 too_early_to_close`, as it does before the wait runs. */
@@ -672,7 +672,9 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }
     if (path === `/api/tech/jobs/${JOB_ID}`) {
-      return fake.moved ? refuse(route, 404, "not_found") : reply(route, 200, jobCard(today));
+      if (fake.moved) return refuse(route, 404, "not_found");
+      const answered = jobCard(today);
+      return reply(route, 200, fake.movedTo === null ? answered : { ...answered, starts_at: fake.movedTo });
     }
     if (path === `/api/tech/jobs/${LOCKED_JOB_ID}`) return reply(route, 200, lockedCard(today));
     if (path === `/api/tech/jobs/${TOMORROW_JOB_ID}` && fake.tomorrow) {
