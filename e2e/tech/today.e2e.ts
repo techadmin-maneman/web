@@ -166,7 +166,8 @@ test("a job further out shows time, type and sector only, and cannot be started"
   await page.goto("/");
   await page.getByRole("listitem").nth(2).click();
 
-  await expect(page.getByText("The address and the client's card open the day before.")).toBeVisible();
+  // FLD-56: when it opens, from the card's unlocks_at, not "the day before".
+  await expect(page.getByText("Opens at 6 pm tomorrow.")).toBeVisible();
   await expect(page.getByText("Sector 43")).toBeVisible();
   await expect(page.getByRole("button", { name: "I have arrived" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Start job" })).toHaveCount(0);

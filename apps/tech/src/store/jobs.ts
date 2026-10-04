@@ -161,13 +161,48 @@ export async function keptDays(): Promise<string[]> {
   return (await all<Kept>("jobs")).filter((kept) => kept.kind === "day").map((kept) => kept.date);
 }
 
-/** Each job whose card the phone holds, by its client's name: what the waiting screen and the close-out read. */
+/** Each job whose card the phone holds, by its client's name: what the close-out reads. */
 export async function keptNames(): Promise<Map<string, string>> {
   const names = new Map<string, string>();
   for (const kept of await all<Kept>("jobs")) {
     if (kept.kind === "job" && kept.job.client !== null) names.set(kept.job.id, kept.job.client.name);
   }
   return names;
+}
+
+/** What the phone holds of a job whether or not its card is open: when, what and where, and the client once open. */
+export interface HeldJob {
+  readonly starts_at: string;
+  readonly type: JobSummary["type"];
+  readonly one_visit: boolean;
+  readonly sector: string | null;
+  readonly client: string | null;
+}
+
+type Listed = Pick<JobSummary, "starts_at" | "type" | "one_visit" | "sector">;
+
+const heldOf = (job: Listed, client: string | null): HeldJob => ({
+  starts_at: job.starts_at,
+  type: job.type,
+  one_visit: job.one_visit,
+  sector: job.sector,
+  client,
+});
+
+/**
+ * Each job the phone holds, from its card, else from the day's list it is on. A card read again after ops moved the
+ * job carries its new start (apps/tech/src/store/outbox.ts).
+ */
+export async function keptJobs(): Promise<Map<string, HeldJob>> {
+  const kept = await all<Kept>("jobs");
+  const jobs = new Map<string, HeldJob>();
+  for (const record of kept) {
+    if (record.kind === "day") for (const job of record.jobs) jobs.set(job.id, heldOf(job, null));
+  }
+  for (const record of kept) {
+    if (record.kind === "job") jobs.set(record.job.id, heldOf(record.job, record.job.client?.name ?? null));
+  }
+  return jobs;
 }
 
 /** The days and the clients' cards, gone; each job's arrival and close-out stay with the work not yet sent. */
