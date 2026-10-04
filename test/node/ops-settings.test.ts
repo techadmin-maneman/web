@@ -49,9 +49,8 @@ const NUMBERS = REGISTER.filter((setting): setting is NumberSetting => !isChoice
 const CHOICES = REGISTER.filter(isChoice);
 
 describe("the register", () => {
-  it.each(REGISTER)("$name says what it is for and where its default lives", (setting) => {
+  it.each(REGISTER)("$name says what it is for", (setting) => {
     expect(setting.note).not.toBe("");
-    expect(setting.source).toMatch(/^src\/(config|policy)\/[a-z-]+\.ts$/);
   });
 
   it.each(NUMBERS)("$name says its unit and its bounds", (setting) => {
@@ -127,7 +126,6 @@ describe("the register", () => {
     expect(days.keys).toEqual(Object.keys(NEXT_VISIT_DAYS));
     expect(days.bounds).toEqual(NEXT_VISIT_DAY_BOUNDS);
     expect(COMMITTED.nextVisitDays).toEqual(NEXT_VISIT_DAYS);
-    expect(days.source).toBe("src/policy/next-visit.ts");
   });
 });
 

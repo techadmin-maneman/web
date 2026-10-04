@@ -70,11 +70,14 @@ const unlocksAt = (date: string) => at(dayBefore(date), "12:30");
 /** The slots each type takes (src/config/scheduling.ts). */
 const SLOTS: Readonly<Record<VisitType, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
 
+/** A job nothing of which has reached us, as the day's list says it. */
+const NOT_BEGUN: Job["progress"] = { started_at: null, outcome: null };
+
 /**
  * Rohit's visit this morning, the first of the day, of the type a test asks for; or, as one visit, his consultation
  * and first fit together, paid for once he is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
  */
-const firstJob = (date: string, type: VisitType, oneVisit = false): Job => ({
+const firstJob = (date: string, type: VisitType, oneVisit = false, progress = NOT_BEGUN): Job => ({
   id: JOB_ID,
   day: "today",
   date,
@@ -91,6 +94,7 @@ const firstJob = (date: string, type: VisitType, oneVisit = false): Job => ({
   unlocked: true,
   unlocks_at: unlocksAt(date),
   client_name: "Rohit M.",
+  progress,
 });
 
 const secondJob = (date: string): Job => ({
@@ -110,6 +114,7 @@ const secondJob = (date: string): Job => ({
   unlocked: true,
   unlocks_at: unlocksAt(date),
   client_name: "Vikram S.",
+  progress: NOT_BEGUN,
 });
 
 /** This afternoon's first fit, its card still locked as the list shows it. */
@@ -130,6 +135,7 @@ const lockedJob = (date: string): Job => ({
   unlocked: false,
   unlocks_at: unlocksAt(date),
   client_name: null,
+  progress: NOT_BEGUN,
 });
 
 /** Tomorrow's one job, unlocked since 6 pm today: its card is open, and its door is not. */
@@ -152,11 +158,13 @@ const tomorrowsJob = (today: string): Job => {
     unlocked: true,
     unlocks_at: unlocksAt(date),
     client_name: "Rohit M.",
+    progress: NOT_BEGUN,
   };
 };
 
-export function jobsToday(date: string, type: VisitType = "service"): Job[] {
-  return [firstJob(date, type), secondJob(date), lockedJob(date)];
+/** The day's list; `progress` is where Rohit's job stands, as the list carries it. */
+export function jobsToday(date: string, type: VisitType = "service", progress = NOT_BEGUN): Job[] {
+  return [firstJob(date, type, false, progress), secondJob(date), lockedJob(date)];
 }
 
 export function jobsTomorrow(today: string): Job[] {
@@ -254,17 +262,21 @@ export const ROHITS_PROFILE: HairProfile = {
   history: { remedies: ["minoxidil"], transplant_year: null, skin_and_allergies: "Dry at the crown" },
 };
 
-/** The API's steps (src/policy/in-job-steps.ts): a consultation and a one visit take the profile. */
+/**
+ * The API's steps (src/policy/in-job-steps.ts): a consultation and a one visit take the profile, and a consultation
+ * takes no after photographs.
+ */
 function stepsFor(type: VisitType, oneVisit = false): Step[] {
   const takesPiece = oneVisit || type === "replacement" || type === "first_fit";
   const takesProfile = oneVisit || type === "consultation";
+  const takesAfterPhotos = oneVisit || type !== "consultation";
   return [
     "before_photos",
     "checklist",
     "consumables",
     ...(takesPiece ? (["piece"] as const) : []),
     ...(takesProfile ? (["profile"] as const) : []),
-    "after_photos",
+    ...(takesAfterPhotos ? (["after_photos"] as const) : []),
     "outcome",
   ];
 }
@@ -357,7 +369,7 @@ export function lockedCard(date: string): Card {
 
 /** Tomorrow's card: unlocked, so the address is there, and on a day that is not today. */
 function tomorrowCard(today: string): Card {
-  return { ...card(today, NOTHING_DONE), ...tomorrowsJob(today) };
+  return { ...card(today, NOTHING_DONE), ...tomorrowsJob(today), progress: NOTHING_DONE };
 }
 
 export interface Write {
@@ -447,7 +459,7 @@ export interface Fake {
 const accepted = (fake: Fake, eventId: string | null): TechReply<"/api/tech/jobs/{id}/start", "post", 202> => ({
   event_id: eventId ?? "",
   replayed: false,
-  fsm_write_state: "pending",
+  fsm_write_state: "written",
   progress: fake.progress,
 });
 
@@ -654,7 +666,10 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       const date = url.searchParams.get("date") ?? "";
       // Outside the contract on purpose: what a broken release might send, which the app must survive.
       if (fake.malformed) return route.fulfill({ json: { date, jobs: null } });
-      if (date === today) return reply(route, 200, { date, jobs: empty ? [] : jobsToday(date, fake.type) });
+      if (date === today) {
+        const progress = { started_at: fake.progress.started_at, outcome: fake.progress.outcome };
+        return reply(route, 200, { date, jobs: empty ? [] : jobsToday(date, fake.type, progress) });
+      }
       if (date === dayAfter(today) && fake.tomorrow) return reply(route, 200, { date, jobs: jobsTomorrow(today) });
       return reply(route, 200, { date, jobs: [] });
     }

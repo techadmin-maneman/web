@@ -26,7 +26,7 @@
 
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
-import { messageClass, stopLinkPurpose } from "../config/message-templates.ts";
+import { messageClass, RESULT_TEMPLATE, stopLinkPurpose } from "../config/message-templates.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
@@ -36,6 +36,7 @@ import { takeOne, type Limit } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
+import { composeCreditsExpiring } from "../domain/credit-reminders.ts";
 import { composeDeletionRejected } from "../domain/deletion.ts";
 import { composeBookingRefunded } from "../domain/held-bookings.ts";
 import { composeNextServiceReminder } from "../domain/next-visit.ts";
@@ -174,7 +175,7 @@ export async function resultMessageCap(
 
 /** The try-on result: the person's result image, within the daily cap on result messages to one number. */
 async function resultContent(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
-  const { messaging, tryon } = config.settings;
+  const { tryon } = config.settings;
   const job = await db
     .prepare("SELECT result_key, state FROM tryon_jobs WHERE id = ?1")
     .bind(row.subject_id)
@@ -186,7 +187,7 @@ async function resultContent(db: D1Database, config: StaticConfig, row: MessageR
   }
   const resultKey = job.result_key;
   return {
-    template: messaging.resultTemplate,
+    template: RESULT_TEMPLATE,
     params: [row.name],
     // The provider fetches the image when it sends.
     mediaUrl: async () => {
@@ -219,6 +220,7 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
   if (row.kind === "friend_fitted") return composeFriendFitted(db, row.subject_id, row.person_id);
   if (row.kind === "friend_credited") return composeFriendCredited(db, row.subject_id, row.person_id);
   if (row.kind === "referral_rejected") return composeReferralRejected(db, row.subject_id, row.person_id);
+  if (row.kind === "credits_expiring") return composeCreditsExpiring(db, row.subject_id, row.person_id, now);
   if (row.kind === "launch_alert") return composeLaunchAlert(db, row.subject_id, row.person_id, config.environment);
   if (row.kind === "waitlist_confirmation") return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
   if (isSiteNoticeKind(row.kind)) return composeSiteNotice(db, row.kind, row.person_id);

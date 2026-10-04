@@ -59,6 +59,7 @@
                   "not_bookable",
                   "hold_expired",
                   "address_required",
+                  "not_served",
                   "already_booked",
                   "not_changeable",
                   "terms_changed",
@@ -459,16 +460,26 @@
               "place": {
                 "type": "string",
                 "description": "Where it is: the saved address (locality, city and pincode), else the booking's city."
+              },
+              "requested": {
+                "type": "boolean",
+                "description": "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp."
+              },
+              "one_visit": {
+                "type": "boolean",
+                "description": "The consultation and the first fit in one visit."
               }
             },
             "required": [
               "date",
               "window",
               "window_label",
-              "place"
+              "place",
+              "requested",
+              "one_visit"
             ],
             "additionalProperties": false,
-            "description": "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit."
+            "description": "A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is on record. Null once one is, and once its day has passed."
           },
           "next_visit": {
             "anyOf": [
@@ -966,11 +977,16 @@
               }
             ],
             "description": "When the soonest expire."
+          },
+          "expiring_visits": {
+            "type": "integer",
+            "description": "How many of them expire then."
           }
         },
         "required": [
           "visits",
-          "earliest_expiry"
+          "earliest_expiry",
+          "expiring_visits"
         ],
         "additionalProperties": false
       },
@@ -4029,6 +4045,10 @@
           "cancelled": {
             "type": "boolean",
             "description": "false: the terms only; true: the visit is cancelled."
+          },
+          "refund_pending": {
+            "type": "boolean",
+            "description": "true: the visit is cancelled, and its refund is still to be asked of Razorpay, which happens within minutes."
           }
         },
         "required": [
@@ -4042,7 +4062,8 @@
           "refund",
           "kept",
           "destination",
-          "cancelled"
+          "cancelled",
+          "refund_pending"
         ],
         "additionalProperties": false
       },
@@ -4666,6 +4687,26 @@
           },
           "401": {
             "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "visit_booked: a visit still to come is in another city, which the address may not leave",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "not_served: the pincode is not one we come to",
             "content": {
               "application/json": {
                 "schema": {
@@ -5764,7 +5805,7 @@
             }
           },
           "422": {
-            "description": "not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system",
+            "description": "not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not come to",
             "content": {
               "application/json": {
                 "schema": {
@@ -5859,7 +5900,7 @@
             }
           },
           "422": {
-            "description": "not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system",
+            "description": "not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not come to",
             "content": {
               "application/json": {
                 "schema": {
@@ -6298,6 +6339,16 @@
               }
             }
           },
+          "202": {
+            "description": "The visit is cancelled, and its refund is on its way",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelTerms"
+                }
+              }
+            }
+          },
           "401": {
             "description": "session_required",
             "content": {
@@ -6319,7 +6370,7 @@
             }
           },
           "503": {
-            "description": "unavailable: FSM did not answer; nothing changed",
+            "description": "unavailable: the visit could not be cancelled just now; nothing changed",
             "content": {
               "application/json": {
                 "schema": {

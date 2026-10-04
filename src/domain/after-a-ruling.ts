@@ -5,8 +5,8 @@
 
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
-import { askRefund, refundReceipt, type RefundOutcome } from "./refunds.ts";
-import { refundLeftToOps, visitPayment, type VisitPayment } from "./visit-changes.ts";
+import { askRefund, refundLeftToOps, refundReceipt, type RefundOutcome } from "./refunds.ts";
+import { visitPayment, type VisitPayment } from "./visit-changes.ts";
 import { creditOfVisit } from "./visit-messages.ts";
 
 /** Money going back to the client once a ruling is written. */

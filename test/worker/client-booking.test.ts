@@ -402,6 +402,58 @@ describe("POST /api/holds", () => {
     expect((await hold(rohit, move)).status).toBe(201);
   });
 
+  // BK-08: no route in the app read the service area, so a client whose address was out of it held, paid and booked.
+  describe("for an address in a pincode we do not come to", () => {
+    const addressAt = (personId: string, pincode: string) =>
+      env.DB.prepare(
+        `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+         VALUES (?1, ?2, ?3, 'House 9', 'Bandra West', 'Mumbai', ?4)`,
+      )
+        .bind(crypto.randomUUID(), personId, NOW.toISOString(), pincode)
+        .run();
+    const days = (who: { cookie: string }, query = "type=service") =>
+      request(app, `/api/availability?${query}`, { headers: { Cookie: who.cookie } });
+    const codeOf = async (answer: Response) => (await answer.json<{ error: { code: string } }>()).error.code;
+
+    it.each([
+      ["ops switched off", "400050", true],
+      ["we do not hold", "411001", false],
+    ])("offers no days and holds nothing in a pincode %s", async (_, pincode, held) => {
+      if (held) {
+        await env.DB.prepare(
+          "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES (?1, 'Bandra', 'Mumbai', 0)",
+        )
+          .bind(pincode)
+          .run();
+      }
+      const rohit = await client(false, { withoutAddress: true });
+      await addressAt(rohit.id, pincode);
+
+      const offered = await days(rohit);
+      expect(offered.status).toBe(422);
+      expect(await codeOf(offered)).toBe("not_served");
+      const refused = await hold(rohit, TUESDAY_AFTERNOON);
+      expect(refused.status).toBe(422);
+      expect(await codeOf(refused)).toBe("not_served");
+      expect(await env.DB.prepare("SELECT COUNT(*) AS holds FROM slot_holds").first()).toEqual({ holds: 0 });
+    });
+
+    it("moves no visit once ops stop serving the address's pincode", async () => {
+      const rohit = await client();
+      const booked = await visit(rohit.id, "service", "scheduled", "2026-09-24T06:30:00.000Z", IMRAN);
+      await env.DB.prepare("UPDATE appointments SET fsm_work_order_id = 'fsm-order-1' WHERE id = ?1")
+        .bind(booked)
+        .run();
+      await env.DB.prepare("UPDATE serviceable_pincodes SET served = 0 WHERE pincode = '122018'").run();
+
+      const offered = await days(rohit, `type=service&moving=${booked}`);
+      expect(await codeOf(offered)).toBe("not_served");
+      const moved = await hold(rohit, { ...TUESDAY_AFTERNOON, date: "2026-09-25", moving: booked });
+      expect(moved.status).toBe(422);
+      expect(await codeOf(moved)).toBe("not_served");
+    });
+  });
+
   it("shows a hold as lapsed once its ten minutes are up, and lets the client release it", async () => {
     const rohit = await client();
     const { id } = await (await hold(rohit, TUESDAY_AFTERNOON)).json<{ id: string }>();

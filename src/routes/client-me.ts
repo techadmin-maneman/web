@@ -30,14 +30,20 @@ import { nextVisitFacts } from "../domain/next-visit.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { offeredAmong, servicesOnDay } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
-import { hasFsmVisit, latestProposal, windowAskedFor, type ProposedBooking } from "../domain/proposed-visits.ts";
+import {
+  askedFor,
+  latestProposal,
+  standingProposal,
+  type Asked,
+  type ProposedBooking,
+} from "../domain/proposed-visits.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { PriceSchema } from "./client-booking.ts";
-import { CreditsSchema } from "./client-refer.ts";
+import { creditsBody, CreditsSchema } from "./client-refer.ts";
 import { VisitSummarySchema } from "./client-visits.ts";
 import { ReferralRewardSchema } from "./referral-reward.ts";
 
@@ -64,12 +70,19 @@ export const MeSchema = z
         place: z.string().openapi({
           description: "Where it is: the saved address (locality, city and pincode), else the booking's city.",
         }),
+        requested: z.boolean().openapi({
+          description:
+            "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm " +
+            "the time on WhatsApp.",
+        }),
+        one_visit: z.boolean().openapi({ description: "The consultation and the first fit in one visit." }),
       })
       .strict()
       .nullable()
       .openapi({
         description:
-          "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit.",
+          "A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is " +
+          "on record. Null once one is, and once its day has passed.",
       }),
     next_visit: z
       .union([VisitSummarySchema, z.null()])
@@ -234,6 +247,19 @@ export const MeSchema = z
 /** The words the Phase 1 booked page had for a window. It had none for the afternoon. */
 const PHASE1_WORDS: Partial<Record<BookingWindow, WindowLabel>> = { morning: "before noon", evening: "after four" };
 
+type Consultation = NonNullable<z.infer<typeof MeSchema>["consultation"]>;
+
+function consultationOf(proposal: ProposedBooking, asked: Asked, place: string): Consultation {
+  return {
+    date: proposal.proposed_visit_date,
+    window: asked.window,
+    window_label: PHASE1_WORDS[asked.window] ?? null,
+    place,
+    requested: asked.requested,
+    one_visit: asked.oneVisit,
+  };
+}
+
 export const meRoute = createRoute({
   method: "get",
   path: "/api/me",
@@ -244,31 +270,27 @@ export const meRoute = createRoute({
   },
 });
 
-type Consultation = NonNullable<z.infer<typeof MeSchema>["consultation"]>;
-
-/** The latest booking a form left, and that booking while FSM has no visit for the person yet. */
+/** The latest booking a form left, and that booking while it stands as the client's consultation. */
 interface FormBooking {
   readonly booking: ProposedBooking | null;
-  /** The booking's consultation stands for the visit only until FSM has any visit for the person. */
   readonly proposal: ProposedBooking | null;
-  /** Home's consultation card: the proposal's day, the window it asked for, and where. */
+  /** Home's consultation card: the proposal's day, what it asked for, and where. */
   readonly card: Consultation | null;
 }
 
-async function formBookingOf(c: Context<AppEnv>, personId: string): Promise<FormBooking> {
+async function formBookingOf(c: Context<AppEnv>, personId: string, today: string): Promise<FormBooking> {
   const db = c.env.DB;
-  const [booking, inFsm] = await Promise.all([latestProposal(db, personId), hasFsmVisit(db, personId)]);
-  const proposal = inFsm ? null : booking;
+  const booking = await latestProposal(db, personId);
+  const proposal = await standingProposal(db, personId, booking, today);
   if (proposal === null) return { booking, proposal, card: null };
 
-  const [window, address] = await Promise.all([windowAskedFor(db, personId, proposal), currentAddress(db, personId)]);
-  if (window === null) {
+  const [asked, address] = await Promise.all([askedFor(db, personId, proposal), currentAddress(db, personId)]);
+  if (asked === null) {
     c.var.log.warn("consultation_window_unknown", { person_id: personId });
     return { booking, proposal, card: null };
   }
   const place = address === null ? (proposal.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
-  const card = { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place };
-  return { booking, proposal, card };
+  return { booking, proposal, card: consultationOf(proposal, asked, place) };
 }
 
 /** What Home's offer and prompt turn on: the figures ops set, then the client's facts, read together. */
@@ -288,7 +310,8 @@ export function registerClientMe(app: App): void {
     const personId = clientOf(c).subjectId;
     const db = c.env.DB;
     const now = c.var.deps.now();
-    const tomorrow = addDays(indiaDate(now), 1);
+    const today = indiaDate(now);
+    const tomorrow = addDays(today, 1);
 
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const [person, upcoming, underWay, credits, fitted, form, types, services, home] = await Promise.all([
@@ -297,7 +320,7 @@ export function registerClientMe(app: App): void {
       bookingUnderWay(db, personId),
       spendableCredits(db, personId, now),
       isFitted(db, personId),
-      formBookingOf(c, personId),
+      formBookingOf(c, personId, today),
       bookableTypes(db, personId),
       servicesOnDay(db, tomorrow),
       homeFactsOf(c, personId, now),
@@ -306,7 +329,7 @@ export function registerClientMe(app: App): void {
 
     const { name } = person;
     const state = clientStateOf(fitted, upcoming !== null || form.booking !== null);
-    // A booking's consultation, not yet in FSM, is booked as much as a visit FSM has.
+    // A form's consultation counts as booked while it stands, asked for or held.
     const booked = home.next.booked || upcoming !== null || form.proposal !== null;
     const offer = booked ? null : home.next.offer;
     const offered = offeredAmong(services, tomorrow, types).map((service) => ({
@@ -327,7 +350,7 @@ export function registerClientMe(app: App): void {
         consultation: form.card,
         next_visit: upcoming,
         being_booked: underWay,
-        credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
+        credits: credits.visits > 0 ? creditsBody(credits) : null,
         prompt,
         invoice,
         booking: { self_serve: c.var.config.settings.selfServeBooking, types, services: offered, next: offer },

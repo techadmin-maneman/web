@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { CheckIn, Job } from "../../apps/tech/src/api.ts";
-import { closed, done, nextStep, stageOf, theWait } from "../../apps/tech/src/lib/progress.ts";
+import { closed, done, nextStep, rowState, stageOf, theWait } from "../../apps/tech/src/lib/progress.ts";
 import type { Queued } from "../../apps/tech/src/store/replay.ts";
 
 const TODAY = "2030-09-19";
@@ -114,6 +114,43 @@ describe("the stage a card is at", () => {
   it("is at the door otherwise", () => {
     expect(stageOf(job(), [], TODAY)).toBe("door");
     expect(stageOf(job({}, { checked_in_at: "t" }), [], TODAY)).toBe("door");
+  });
+});
+
+// FLD-36, UX-04: Today's list said "In progress" for a job its card had closed, and nothing for one begun offline.
+describe("where a row of the day's list stands", () => {
+  it("is closed once the close-out landed, though the visit's status has not caught up", () => {
+    const closedOnAnotherPhone = job({ status: "in_progress" }, { started_at: "t", outcome: "done" });
+    expect(rowState(closedOnAnotherPhone, [], undefined)).toBe("closed");
+    expect(stageOf(closedOnAnotherPhone, [], TODAY)).toBe("closed");
+  });
+
+  it("is in progress once the start landed, before the visit's status says so", () => {
+    expect(rowState(job({}, { started_at: "t" }), [], undefined)).toBe("in_progress");
+  });
+
+  it("goes by what a write's answer said since the list was read", () => {
+    expect(rowState(job(), [], { started_at: "t", outcome: null })).toBe("in_progress");
+    expect(rowState(job({}, { started_at: "t" }), [], { started_at: "t", outcome: "partial" })).toBe("closed");
+  });
+
+  it("counts the phone's writes still on their way, and not those the API stopped, as the card does", () => {
+    const begun = job({}, { started_at: "t" });
+    const refused = [queued("outcome", { body: { outcome: "done" }, state: "refused" })];
+
+    expect(rowState(job(), [queued("start")], undefined)).toBe("in_progress");
+    expect(rowState(job(), [queued("no_show")], undefined)).toBe("closed");
+    expect(rowState(begun, [queued("outcome", { body: { outcome: "done" } })], undefined)).toBe("closed");
+    expect(rowState(begun, refused, undefined)).toBe("in_progress");
+    expect(stageOf(begun, refused, TODAY)).toBe("started");
+    expect(rowState(job(), [queued("start", { state: "superseded" })], undefined)).toBeNull();
+  });
+
+  it("falls back on the visit's status, and is nothing for a job not begun", () => {
+    expect(rowState(job({ status: "completed" }), [], undefined)).toBe("closed");
+    expect(rowState(job({ status: "terminated" }), [], undefined)).toBe("closed");
+    expect(rowState(job({ status: "in_progress" }), [], undefined)).toBe("in_progress");
+    expect(rowState(job(), [], undefined)).toBeNull();
   });
 });
 

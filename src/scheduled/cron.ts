@@ -23,6 +23,7 @@ import { eraseBooksCustomers } from "../domain/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books-invoices.ts";
 import { checkBooksItems } from "../domain/books-items.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
+import { settleOwedRefunds } from "../domain/cancel-refunds.ts";
 import { finishRun, startRun, type RunStart } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
 import { checkCatalogue } from "../domain/fsm-catalogue.ts";
@@ -30,6 +31,7 @@ import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
 import { anyHeldBooking, retryHeldBookings } from "../domain/held-bookings.ts";
+import { queueCreditReminders } from "../domain/credit-reminders.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { sendUnsentLinks } from "../domain/payment-links.ts";
 import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
@@ -48,6 +50,7 @@ import {
   checkAilabCredits,
   deletePhotos,
   expireTryOns,
+  giveUpOnFsmSteps,
   housekeep,
   letKeptLooksGo,
   letUnfinishedMovesGo,
@@ -193,6 +196,11 @@ async function bookUnbookedHoldsJob({ env, deps, config, log, budget }: CronCont
   if (booked > 0) log.warn("unbooked_holds_booked", { count: booked });
 }
 
+async function cancelRefundsJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  const settled = await settleOwedRefunds(env.DB, { ...deps, budget, log }, deps.now());
+  if (settled > 0) log.warn("cancel_refunds_settled", { count: settled });
+}
+
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
   const finished = await deleteLeftFiles(env, deps.now(), log);
   if (finished > 0) log.info("erased_files_deleted", { people: finished });
@@ -263,6 +271,12 @@ async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext):
   if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }
 
+async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
+  const reminders = await queueCreditReminders(env.DB, deps.now(), (await inputs()).reminderHour);
+  await queueMessages(env.MESSAGE_QUEUE, reminders, "credit-reminders");
+  if (reminders.length > 0) log.info("credit_reminders_queued", { count: reminders.length });
+}
+
 async function paymentLinksJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const sent = await sendUnsentLinks(env.DB, { ...deps, log }, deps.now(), budget);
   if (sent > 0) log.info("payment_links_sent", { count: sent });
@@ -317,6 +331,15 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
   if (written > 0) log.info("books_synced", done);
 }
 
+/** A technician's steps still waiting for FSM: sent there again on its path, given up on once it is switched off. */
+async function jobEventsJob(context: CronContext): Promise<void> {
+  if (fieldRecord(context.config.providers) === "ours") {
+    await giveUpOnFsmSteps(context);
+    return;
+  }
+  await requeueJobEvents(context);
+}
+
 async function ailabCreditsJob(context: CronContext): Promise<void> {
   await checkAilabCredits(context, context.config.settings.tryon.creditFloor);
 }
@@ -335,7 +358,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   // A one visit's payment link its close could not have Razorpay make (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
   { name: "payment_links", needs: "nothing", every: 5, at: 1, run: paymentLinksJob },
   { name: "requeue_tryons", needs: "nothing", every: 5, at: 2, run: requeueTryons },
-  { name: "requeue_job_events", needs: "nothing", every: 5, at: 2, run: requeueJobEvents },
+  { name: "requeue_job_events", needs: "nothing", every: 5, at: 2, run: jobEventsJob },
   // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md), and
   // one FSM refused five times running, tried every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
   { name: "unbooked_holds", needs: "nothing", every: 5, at: 3, run: unbookedHoldsJob },
@@ -352,11 +375,15 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "expire_tryons", needs: "nothing", every: 15, at: 4, run: expireTryOns },
   { name: "books_sync", needs: "books", every: 15, at: 6, run: booksJob },
   { name: "kept_looks", needs: "nothing", every: 15, at: 7, run: letKeptLooksGo },
+  // Free service visits running out: a month, then a week, before their last day.
+  { name: "credit_reminders", needs: "messaging", every: 15, at: 7, run: creditRemindersJob },
   { name: "visit_reminders", needs: "messaging", every: 15, at: 8, run: remindersJob },
   // What the client asked for, beside what the board offers them (ADR 0063).
   { name: "asked_windows", needs: "nothing", every: 15, at: 9, run: askedWindowsJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
   { name: "next_service_reminders", needs: "messaging", every: 15, at: 11, run: nextServiceRemindersJob },
+  // A cancel, the client's or ops', whose refund its request could not settle, asked for again under its receipt.
+  { name: "cancel_refunds", needs: "nothing", every: 15, at: 12, run: cancelRefundsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", every: 15, at: 12, run: erasedFilesJob },
   { name: "requeue_crm_erasures", needs: "nothing", every: 15, at: 13, run: requeueCrmErasures },

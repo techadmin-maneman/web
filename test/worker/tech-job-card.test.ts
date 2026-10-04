@@ -159,7 +159,48 @@ describe("the day's list", () => {
     ]);
     expect(later.jobs).toEqual([expect.objectContaining({ id: LATER_JOB, unlocked: false, client_name: null })]);
   });
+
+  // FLD-36, UX-04: a second phone read "In progress" for a job its card had closed, while FSM held the close-out back.
+  it("says when each job began and how it closed, from the steps that landed, whatever its status says yet", async () => {
+    await insertJob(LAST_VISIT, { start: "2026-09-21T09:30:00.000Z" });
+    await insertJob(OLDER_VISIT, { start: "2026-09-21T11:30:00.000Z" });
+    await landed(TODAY_JOB, "start", "2026-09-21T07:35:00.000Z");
+    await landed(TODAY_JOB, "outcome", "2026-09-21T08:40:00.000Z", { outcome: "partial" });
+    await landed(LAST_VISIT, "start", "2026-09-21T09:35:00.000Z");
+    // A close-out that came back superseded, because ops had moved the job: it never happened.
+    await landed(LAST_VISIT, "outcome", "2026-09-21T10:40:00.000Z", { outcome: "done" }, { superseded: true });
+
+    const { jobs } = await (
+      await get("/api/tech/jobs?date=2026-09-21")
+    ).json<{ jobs: { status: string; progress: unknown }[] }>();
+
+    expect(jobs.map((job) => [job.status, job.progress])).toEqual([
+      ["scheduled", { started_at: "2026-09-21T07:35:00.000Z", outcome: "partial" }],
+      ["scheduled", { started_at: "2026-09-21T09:35:00.000Z", outcome: null }],
+      ["scheduled", { started_at: null, outcome: null }],
+    ]);
+    expect(await card(TODAY_JOB)).toMatchObject({
+      progress: { started_at: "2026-09-21T07:35:00.000Z", outcome: "partial" },
+    });
+  });
 });
+
+/** A step that reached us from Imran's phone; a superseded one was refused, since ops had changed the job. */
+async function landed(
+  jobId: string,
+  kind: "start" | "outcome",
+  at: string,
+  body: Record<string, unknown> = {},
+  options: { superseded?: boolean } = {},
+): Promise<void> {
+  await env.DB.prepare(
+    `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+       superseded, updated_at)
+     VALUES (?1, ?2, ?1, ?3, ?4, ?5, ?6, ?6, ?7, ?6)`,
+  )
+    .bind(crypto.randomUUID(), jobId, IMRAN, kind, JSON.stringify(body), at, options.superseded === true ? 1 : 0)
+    .run();
+}
 
 describe("the card", () => {
   it("carries the no-show wait its type runs, so the phone can count it with no signal", async () => {

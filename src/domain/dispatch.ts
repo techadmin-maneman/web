@@ -20,7 +20,8 @@
 //
 // Where our own database holds the record of a visit (src/config/field-record.ts),
 // its move is one batch, and nothing goes to FSM. A visit the technician has
-// begun is not moved on either path.
+// begun is not moved on either path, unless he has only checked in and ops,
+// warned, choose to clear his check-in: he checks in again at the new time.
 
 import { recordOfVisit, type FieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS, SLOTS_PER_DAY, type BookingWindow } from "../config/scheduling.ts";
@@ -60,7 +61,7 @@ import {
   type Day,
 } from "./scheduling.ts";
 import { latestConsentSql } from "./messages.ts";
-import { visitBegun } from "./visit-begun.ts";
+import { begunPastArrival, visitBegun } from "./visit-begun.ts";
 import { visitMessage } from "./visit-messages.ts";
 import { unitAt, type SlotTimes } from "../policy/slot-times.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
@@ -443,6 +444,11 @@ export interface MoveInput {
   readonly actor: string;
   /** The job as the board the move was made from showed it: its technician, none in the tray, and its start. */
   readonly expected: { readonly technicianId: string | null; readonly startsAt: string };
+  /**
+   * Set when ops, warned that the technician has checked in, move the visit anyway: his check-in is cleared, and this
+   * entry records who chose it. Absent for an ordinary move.
+   */
+  readonly clearCheckIn?: AuditEntry | null;
 }
 
 /**
@@ -526,6 +532,8 @@ interface LiveJob {
   service_minutes: number | null;
   /** 1 once the technician has begun it (src/domain/visit-begun.ts). */
   begun: number;
+  /** 1 once he has begun it by more than his check-in. */
+  begun_past_arrival: number;
 }
 
 /** A job still to finish; null for one done, cancelled, gone from FSM, or with no type or time. */
@@ -533,7 +541,8 @@ function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null>
   return db
     .prepare(
       `SELECT a.id, a.fsm_id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.start_before_move,
-         a.technician_id, s.minutes AS service_minutes, ${visitBegun("a")} AS begun
+         a.technician_id, s.minutes AS service_minutes, ${visitBegun("a")} AS begun,
+         ${begunPastArrival("a")} AS begun_past_arrival
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
        WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.type IS NOT NULL
          AND a.window_start IS NOT NULL`,
@@ -547,6 +556,14 @@ function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null>
  * phone would carry on with a visit now on another day or another technician's.
  */
 const isUnderWay = (job: LiveJob): boolean => job.status === "in_progress" || job.begun === 1;
+
+/** A job begun by the technician's check-in and nothing more: ops may still move it by clearing the check-in. */
+const isOnlyCheckedIn = (job: LiveJob): boolean =>
+  job.status !== "in_progress" && job.begun === 1 && job.begun_past_arrival === 0;
+
+/** Whether the job may move as it is: not begun, or only checked in and ops chose to clear the check-in. */
+const mayMove = (job: LiveJob, clearingCheckIn: boolean): boolean =>
+  !isUnderWay(job) || (clearingCheckIn && isOnlyCheckedIn(job));
 
 /** Where a move puts the job. A day and window that are the job's own keep its start: only the technician changes. */
 function targetOf(
@@ -581,6 +598,8 @@ interface PlannedMove {
   /** The India date of the technician's day the move claims, and its half-slots there. */
   readonly date: string;
   readonly claims: readonly string[];
+  /** The audit entry for clearing the technician's check-in; null when he had not checked in. */
+  readonly clearCheckIn: AuditEntry | null;
 }
 
 /**
@@ -592,7 +611,8 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   if (job === null) return { kind: "not_found" };
   const changed = changedSince(job, input.expected);
   if (changed.length > 0) return { kind: "superseded", changed };
-  if (isUnderWay(job)) return { kind: "in_progress" };
+  const clearCheckIn = input.clearCheckIn ?? null;
+  if (!mayMove(job, clearCheckIn !== null)) return { kind: "in_progress" };
 
   const wasStart = new Date(job.window_start);
   const technicianId = input.technicianId ?? job.technician_id;
@@ -624,6 +644,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
     keepsTime: target.keepsTime,
     date,
     claims: claimsOf(landing.start, unitsFor(minutes), window),
+    clearCheckIn: isUnderWay(job) ? clearCheckIn : null,
   };
   if (recordOfVisit(deps.record ?? "fsm", { id: job.id, fsmId: job.fsm_id }) === "ours") {
     return moveInOurRecord(db, deps, move, now);
@@ -678,6 +699,7 @@ async function moveInFsm(db: D1Database, deps: MoveDeps, move: PlannedMove, now:
     movedVisit(db, move, at),
     // The mirror now holds the new time, so the claim on it goes in the same batch.
     releasingClaims(db, move.id),
+    ...checkInCleared(db, move, now),
     // The message row is written before the move points at it.
     ...(told.message === null ? [] : [told.message.statement]),
     db
@@ -707,6 +729,7 @@ async function moveInOurRecord(db: D1Database, deps: MoveDeps, move: PlannedMove
       ...move.claims.map((claim) => claimOf(db, move, claim)),
       movedVisit(db, move, at),
       releasingClaims(db, move.id),
+      ...checkInCleared(db, move, now),
     ]);
   } catch (error) {
     if (failedUniqueOn(error, "slot_claims")) return { kind: "refused", reason: "clash" };
@@ -718,11 +741,13 @@ async function moveInOurRecord(db: D1Database, deps: MoveDeps, move: PlannedMove
 }
 
 /**
- * The move, recorded as written. It names its visit only while the visit is as the move read it, not yet begun;
- * otherwise its visit is empty, which the table refuses, and the batch it is in writes nothing.
+ * The move, recorded as written. It names its visit only while the visit is as the move read it, not yet begun, or
+ * begun by no more than the check-in it clears; otherwise its visit is empty, which the table refuses, and the batch
+ * it is in writes nothing.
  */
 function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null, at: string): D1PreparedStatement {
   const { job } = move;
+  const begun = move.clearCheckIn === null ? visitBegun("a") : begunPastArrival("a");
   return db
     .prepare(
       `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
@@ -730,7 +755,7 @@ function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null
        VALUES (?1,
          (SELECT a.id FROM appointments a
           WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.deleted_at IS NULL
-            AND a.status IN ('scheduled', 'dispatched') AND NOT ${visitBegun("a")}),
+            AND a.status IN ('scheduled', 'dispatched') AND NOT ${begun}),
          ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10)`,
     )
     .bind(
@@ -753,8 +778,23 @@ async function changedUnder(db: D1Database, move: PlannedMove): Promise<MoveOutc
   if (job === null) return { kind: "not_found" };
   const changed = changedSince(job, { technicianId: move.job.technician_id, startsAt: move.job.window_start });
   if (changed.length > 0) return { kind: "superseded", changed };
-  if (isUnderWay(job)) return { kind: "in_progress" };
+  if (!mayMove(job, move.clearCheckIn !== null)) return { kind: "in_progress" };
   return { kind: "superseded", changed: ["moving"] };
+}
+
+/**
+ * Clears the technician's check-in once the move is written: every step his phone landed on the visit is set aside,
+ * the check-in all there is, so he checks in again where the visit now is. The audit log names who chose it.
+ */
+function checkInCleared(db: D1Database, move: PlannedMove, now: Date): D1PreparedStatement[] {
+  if (move.clearCheckIn === null) return [];
+  const entry: AuditEntry = { ...move.clearCheckIn, detail: { move_id: move.id } };
+  return [
+    db
+      .prepare("UPDATE job_events SET superseded = 1, updated_at = ?2 WHERE appointment_id = ?1 AND superseded = 0")
+      .bind(move.job.id, now.toISOString()),
+    auditStatement(db, entry, now),
+  ];
 }
 
 /** The visit where the move puts it. */
@@ -910,7 +950,8 @@ export interface Room {
  * Where a job in hand can go in the week from `from`: each technician's day
  * with a window the job would land in, by the same check a move runs, so the
  * board offers no window the move would be refused. Not where it already is.
- * Null for a job no longer live, or one the technician has begun.
+ * Null for a job no longer live, or one the technician has begun by more than
+ * his check-in, which no move takes.
  */
 export async function roomFor(
   db: D1Database,
@@ -918,7 +959,7 @@ export async function roomFor(
   now: Date,
 ): Promise<Room[] | null> {
   const job = await liveJob(db, input.appointmentId);
-  if (job === null || isUnderWay(job)) return null;
+  if (job === null || !mayMove(job, true)) return null;
   const dates = weekFrom(input.from);
   const [technicians, held, schedule] = await Promise.all([
     activeTechnicians(db),

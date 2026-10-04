@@ -3,9 +3,10 @@
 //
 // The terms come from src/policy/moving-a-visit.ts and are shown before the
 // client, or ops, confirm. A cancel is done here: FSM first where FSM holds the visit,
-// then the mirror, then the refund. A move is a hold like any booking: its price
-// is what the move costs now, and confirmBooking moves the visit once that is
-// paid (or at once, when free).
+// then the mirror, then the refund. A refund the request could not settle is
+// asked for again by the cron's cancel_refunds job. A move is a hold like any
+// booking: its price is what the move costs now, and confirmBooking moves the
+// visit once that is paid (or at once, when free).
 //
 // A late fee is the one the visit was booked under, kept on its hold, so a
 // price changed since does not change what moving it costs
@@ -42,13 +43,11 @@ import {
 import { NO_SHOW_CHARGES } from "../policy/no-show.ts";
 import { ONE_VISIT_TERMS } from "../policy/one-visit.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
-import type { PaymentsProvider } from "../providers/payments.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
-import type { AlertOnce } from "./alerts.ts";
+import { refundAtOnce, type Canceller, type OwedRefund, type RefundDeps } from "./cancel-refunds.ts";
 import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { lateFeeOn, priceOf, type Price } from "./price-book.ts";
-import { askRefund, refundReceipt } from "./refunds.ts";
 import { bookedMinutes } from "./scheduling.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { visitBegun } from "./visit-begun.ts";
@@ -389,7 +388,14 @@ export interface OpsCancel {
 }
 
 export type Cancelled =
-  { readonly kind: "cancelled"; readonly refund: number; readonly kept: number } | { readonly kind: "not_changeable" };
+  | {
+      readonly kind: "cancelled";
+      readonly refund: number;
+      readonly kept: number;
+      /** The refund could not be settled in the request, so the cron's cancel_refunds job asks for it. */
+      readonly refundPending: boolean;
+    }
+  | { readonly kind: "not_changeable" };
 
 /** The cancel's notice as the note FSM keeps says it: "more than 24 hours ahead", or "inside 24 hours". */
 function noticeWords(terms: ChangeTerms): string {
@@ -400,19 +406,32 @@ function noticeWords(terms: ChangeTerms): string {
     : `more than ${hours} ahead`;
 }
 
-interface CancelDeps {
+interface CancelDeps extends RefundDeps {
   readonly fsm: FsmProvider;
-  readonly payments: PaymentsProvider;
-  readonly alertOnce: AlertOnce;
   /** Queues the cancel's confirmation to the client. */
   readonly notify?: (messageId: string) => Promise<unknown>;
+}
+
+/** The refund the cancel owes the client; null when it gives nothing back. */
+function refundOwed(terms: ChangeTerms, change: CancelOf): OwedRefund | null {
+  const { visit, payment, cancel } = terms;
+  if (payment === null || cancel.refund === 0) return null;
+  return {
+    changeId: change.changeId,
+    cancelledBy: cancelledBy(change),
+    appointmentId: visit.id,
+    personId: visit.personId,
+    razorpayPaymentId: payment.razorpayPaymentId,
+    amount: cancel.refund,
+  };
 }
 
 /**
  * Cancels the visit on the terms given, then refunds what the terms give back. Where FSM holds the record, FSM cancels
  * its work order, and so its appointment, before the mirror is changed; otherwise the visit is cancelled in our own
- * database alone. The change is claimed first, so it happens once, and never once the visit has begun. A refund
- * Razorpay refuses is left to ops, who are alerted; the visit stays cancelled.
+ * database alone. The change is claimed first, so it happens once, and never once the visit has begun. Once the visit
+ * is cancelled it stays cancelled, whatever fails after: a refund Razorpay refuses is left to ops, who are alerted,
+ * and one the request could not settle is left to the cron's cancel_refunds job.
  */
 export async function cancelVisit(
   db: D1Database,
@@ -428,9 +447,19 @@ export async function cancelVisit(
       ? await cancelInOurDatabase(db, terms, change, now)
       : await cancelInFsm(db, deps.fsm, terms, { ...change, workOrderId }, now, options.labelAsTest);
   if (messageId === null) return { kind: "not_changeable" };
-  await refundCancel(db, deps, terms, change, options.log);
-  await deps.notify?.(messageId);
-  return { kind: "cancelled", refund: terms.cancel.refund, kept: terms.cancel.kept };
+  const owed = refundOwed(terms, change);
+  const settled = owed === null || (await refundAtOnce(db, deps, owed, now, options.log));
+  await tellClient(deps, messageId, options.log);
+  return { kind: "cancelled", refund: terms.cancel.refund, kept: terms.cancel.kept, refundPending: !settled };
+}
+
+/** Queues the client's message. One the queue refuses is in the outbox, and the sweeper sends it minutes later. */
+async function tellClient(deps: CancelDeps, messageId: string, log: Logger): Promise<void> {
+  try {
+    await deps.notify?.(messageId);
+  } catch (error) {
+    log.warn("cancel_message_not_queued", { message_id: messageId, error });
+  }
 }
 
 interface CancelOptions {
@@ -448,7 +477,7 @@ interface CancelOf {
 }
 
 /** Who the cancel is by, as a refund's note and ops' alert name them. */
-const cancelledBy = (change: CancelOf): string => (change.ops === null ? "the client" : "ops");
+const cancelledBy = (change: CancelOf): Canceller => (change.ops === null ? "the client" : "ops");
 
 /** The client's message: the answer to their own cancel, or the news of one ops made. */
 const messageKindOf = (change: CancelOf) => (change.ops === null ? "cancel_confirmation" : "visit_cancelled");
@@ -459,14 +488,18 @@ function auditedCancel(db: D1Database, change: CancelOf, now: Date): D1PreparedS
   return [auditStatementIfWritten(db, change.ops.audit, now, { table: "visit_changes", id: change.changeId })];
 }
 
-/** The cancel claimed as the visit's one change that ends it, only while it is still to come and has not begun. */
+/**
+ * The cancel claimed as the visit's one change that ends it, only while it is still to come and has not begun. Its
+ * refund is settled at once when it gives nothing back.
+ */
 function claimCancel(db: D1Database, terms: ChangeTerms, change: CancelOf, now: Date): D1PreparedStatement {
   const { visit, notice, payment, cancel } = terms;
+  const settledAt = refundOwed(terms, change) === null ? now.toISOString() : null;
   return db
     .prepare(
       `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, kept_amount,
-         payment_id, created_at, cancelled_by, cancel_reason, ops_terms)
-       SELECT ?1, ?2, ?3, 'cancelled', ?4, ?5, ?6, ?7, ?8, ?9, ?11, ?12, ?13 FROM appointments a
+         payment_id, created_at, refund_settled_at, cancelled_by, cancel_reason, ops_terms)
+       SELECT ?1, ?2, ?3, 'cancelled', ?4, ?5, ?6, ?7, ?8, ?9, ?11, ?12, ?13, ?14 FROM appointments a
        WHERE a.id = ?2 AND a.deleted_at IS NULL AND a.status IN (SELECT value FROM json_each(?10))
          AND NOT ${visitBegun("a")}
        ON CONFLICT DO NOTHING`,
@@ -482,6 +515,7 @@ function claimCancel(db: D1Database, terms: ChangeTerms, change: CancelOf, now: 
       payment?.id ?? null,
       now.toISOString(),
       JSON.stringify(STEPS.cancel.from),
+      settledAt,
       change.ops?.staff ?? null,
       change.ops?.reason ?? null,
       change.ops?.terms ?? null,
@@ -588,56 +622,4 @@ async function cancelInFsm(
     ...auditedCancel(db, change, now),
   ]);
   return message.id;
-}
-
-/** Refunds what the cancel gives back, once; a refund Razorpay does not make is left to ops, who are told. */
-async function refundCancel(
-  db: D1Database,
-  deps: CancelDeps,
-  terms: ChangeTerms,
-  change: CancelOf,
-  log: Logger,
-): Promise<void> {
-  const { visit, payment, cancel } = terms;
-  if (payment === null || cancel.refund === 0) return;
-  const asked = await askRefund(deps.payments, payment.razorpayPaymentId, {
-    amount: cancel.refund,
-    notes: { appointment_id: visit.id, reason: `cancelled by ${cancelledBy(change)}` },
-    receipt: refundReceipt({ kind: "cancel", appointmentId: visit.id }),
-  });
-  if (asked.kind === "refunded") {
-    if (asked.refundId === null) return;
-    await db
-      .prepare("UPDATE visit_changes SET razorpay_refund_id = ?1 WHERE id = ?2")
-      .bind(asked.refundId, change.changeId)
-      .run();
-    return;
-  }
-  log.error("cancel_refund_failed", { appointment_id: visit.id, outcome: asked.kind, error: asked.error });
-  const what = `Rs. ${String(cancel.refund / 100)} for visit ${visit.id}, cancelled by ${cancelledBy(change)}`;
-  // Keyed on the visit, so ops are told once and a second refund by hand is not asked for.
-  await deps.alertOnce({
-    key: `cancel_refund_failed:${visit.id}`,
-    message: refundLeftToOps(asked.kind, what, payment.razorpayPaymentId, cancel.refund),
-    link: `/clients/${visit.personId}`,
-  });
-}
-
-/**
- * What ops are told to do with a refund Razorpay did not make, or would not say it made
- * (docs/decisions/0100-a-refund-is-made-once.md). `what` is the amount and the visit, as "Rs. 500 for visit …".
- */
-export function refundLeftToOps(
-  outcome: "refused" | "unanswered",
-  what: string,
-  paymentId: string,
-  amount: number,
-): string {
-  if (outcome === "refused") {
-    return `The refund of ${what}, failed (Razorpay payment ${paymentId}). Refund it by hand in Razorpay, once.`;
-  }
-  return (
-    `Razorpay did not answer the refund of ${what} (payment ${paymentId}), so it may have been made. Look at the ` +
-    `payment in Razorpay, and refund it by hand only if no refund of Rs. ${String(amount / 100)} is there.`
-  );
 }

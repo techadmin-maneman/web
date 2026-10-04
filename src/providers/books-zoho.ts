@@ -21,8 +21,8 @@
 // Books refuses gst_treatment, place_of_contact and place_of_supply while GST is off in the org (400 code 8,
 // "Invalid Element"), so they are sent only with a state code.
 //
-// Read from Books' documentation and not yet tried on the org: finding a payment or a refund by our reference, and
-// writing a discount onto a draft (docs/open-points.md, item 181).
+// Read from Books' documentation and not yet tried on the org: writing a discount onto a draft (docs/open-points.md,
+// item 181). scripts/zoho-contract-probe.ts tries every read on the org.
 
 import { z } from "zod";
 import type { ZohoBooksSettings } from "../config/settings.ts";

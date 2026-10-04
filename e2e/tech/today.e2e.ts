@@ -39,6 +39,24 @@ test("lists the day's jobs in order, with no amount anywhere (board A1)", async 
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
+test("a job closed out on another phone reads as closed on Today, as its card says", async ({ page }) => {
+  const fake = await fakeTech(page);
+  // The visit's status still says scheduled, and this phone holds none of the job's work.
+  fake.progress = {
+    ...NOTHING_DONE,
+    checked_in_at: new Date(Date.now() - 90 * 60_000).toISOString(),
+    started_at: new Date(Date.now() - 80 * 60_000).toISOString(),
+    steps_done: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
+    outcome: "partial",
+  };
+  await page.goto("/");
+
+  const row = page.getByRole("listitem").first();
+  await expect(row).toContainText("Closed out");
+  await row.click();
+  await expect(page.getByText("Closed out · partial")).toBeVisible();
+});
+
 test("says nothing is booked when the day is empty (board A2)", async ({ page }) => {
   await fakeTech(page, true);
   await page.goto("/");

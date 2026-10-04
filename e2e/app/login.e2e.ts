@@ -34,6 +34,8 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await expect(page.getByText("Morning, 9 am to 12 pm")).toBeVisible();
   await expect(page.getByText("Gurgaon", { exact: true })).toBeVisible();
   await expect(page.getByText("Free", { exact: true })).toBeVisible();
+  // Phase 1's form booked nothing: ops confirm the time.
+  await expect(page.getByText("Requested · we confirm the time on WhatsApp")).toBeVisible();
   await expect(page.getByRole("link", { name: "Your profile" })).toHaveText("RM");
   await expect(page.getByRole("link", { name: "Reschedule" })).toHaveAttribute(
     "href",
@@ -112,7 +114,7 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await expect(page.getByText("Consultation · 9 am to 12 pm")).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Visits" })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: "Photos" }).click();
-  await expect(page.getByText("Your photographs start at your first fit.")).toBeVisible();
+  await expect(page.getByText("Your photographs start at your first visit.")).toBeVisible();
   await tabs.getByRole("link", { name: "Payments" }).click();
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
   await tabs.getByRole("link", { name: "Refer" }).click();

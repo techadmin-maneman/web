@@ -71,6 +71,13 @@ export interface JobSummary {
   readonly unlocks_at: string;
   /** The client's name once the job unlocks, as the card gives it, so the day's list can say whom each job is for. */
   readonly client_name: string | null;
+  /** When the job began and how it closed, from the events that landed, so the list says what the card says. */
+  readonly progress: JobState;
+}
+
+export interface JobState {
+  readonly started_at: string | null;
+  readonly outcome: string | null;
 }
 
 export interface JobClient {
@@ -95,7 +102,7 @@ export interface JobAddress {
   readonly lng: number | null;
 }
 
-export interface JobProgress {
+export interface JobProgress extends JobState {
   readonly checked_in_at: string | null;
   /**
    * When the job may close as a no-show, from the check-in the server holds, so
@@ -104,10 +111,8 @@ export interface JobProgress {
   readonly wait_ends_at: string | null;
   /** How far from the door that check-in was; null when nothing was measured. */
   readonly distance_m: number | null;
-  readonly started_at: string | null;
   /** The steps sent so far, in the order they reached us: the job's events, and the profile once it is recorded. */
   readonly steps_done: CardStep[];
-  readonly outcome: string | null;
 }
 
 /** One of the client's pieces, as board A3's piece card and the piece step's list show it. */
@@ -246,18 +251,63 @@ export async function jobsOn(
   now: Date,
   unlockHour: number,
 ): Promise<JobSummary[]> {
-  const [jobs, schedule] = await Promise.all([
+  const from = indiaInstant(date, "00:00").toISOString();
+  const to = indiaInstant(addDays(date, 1), "00:00").toISOString();
+  const [jobs, schedule, landed] = await Promise.all([
     db
       .prepare(`${SELECT_JOB} AND a.window_start >= ?2 AND a.window_start < ?3 ORDER BY a.window_start`)
-      .bind(
-        technicianId,
-        indiaInstant(date, "00:00").toISOString(),
-        indiaInstant(addDays(date, 1), "00:00").toISOString(),
-      )
+      .bind(technicianId, from, to)
       .all<JobRow>(),
     loadSlotSchedule(db),
+    startsAndOutcomesOn(db, technicianId, from, to),
   ]);
-  return jobs.results.filter(worthShowing).map((row) => summaryOf(row, now, unlockHour, schedule));
+  return jobs.results
+    .filter(worthShowing)
+    .map((row) => summaryOf(row, now, unlockHour, schedule, stateOf(landed.get(row.id) ?? [])));
+}
+
+/** A job event as the job's state is read from it. */
+interface LandedEvent {
+  appointment_id: string;
+  kind: JobEventKind;
+  body: string;
+  occurred_at: string;
+}
+
+/** Each of the technician's jobs between two instants: the starts and outcomes that landed, in the order they did. */
+async function startsAndOutcomesOn(
+  db: D1Database,
+  technicianId: string,
+  from: string,
+  to: string,
+): Promise<Map<string, LandedEvent[]>> {
+  const { results } = await db
+    .prepare(
+      `SELECT e.appointment_id, e.kind, e.body, e.occurred_at FROM job_events e
+       JOIN appointments a ON a.id = e.appointment_id
+       WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start >= ?2 AND a.window_start < ?3
+         AND e.superseded = 0 AND e.kind IN ('start', 'outcome')
+       ORDER BY e.received_at, e.rowid`,
+    )
+    .bind(technicianId, from, to)
+    .all<LandedEvent>();
+  const byJob = new Map<string, LandedEvent[]>();
+  for (const event of results) {
+    const events = byJob.get(event.appointment_id) ?? [];
+    events.push(event);
+    byJob.set(event.appointment_id, events);
+  }
+  return byJob;
+}
+
+/** When the job began and how it closed: its first start that landed, and its last outcome. */
+function stateOf(events: readonly Pick<LandedEvent, "kind" | "body" | "occurred_at">[]): JobState {
+  const start = events.find((event) => event.kind === "start");
+  const outcome = events.findLast((event) => event.kind === "outcome");
+  return {
+    started_at: start?.occurred_at ?? null,
+    outcome: outcome === undefined ? null : outcomeOf(outcome.body),
+  };
 }
 
 /**
@@ -273,16 +323,17 @@ export async function jobDetail(
     loadSlotSchedule(db),
   ]);
   if (row === null) return null;
-  const summary = summaryOf(row, options.now, options.unlockHour, schedule);
   const type = row.type ?? "service";
   const oneVisit = row.one_visit !== null;
+  const starts = new Date(row.window_start);
   const [progress, products, paymentLink, discountCode, unlockedParts] = await Promise.all([
     progressOf(db, { id: row.id, type }, options.waits),
-    takesProfile(type, oneVisit) ? productsOn(db, summary.date) : [],
+    takesProfile(type, oneVisit) ? productsOn(db, indiaDate(starts)) : [],
     oneVisit ? paymentLinkOf(db, row.id) : null,
     oneVisit ? jobCodeOf(db, row.id) : null,
-    summary.unlocked ? unlockedPartsOf(db, row) : null,
+    unlocked(starts, options.now, options.unlockHour) ? unlockedPartsOf(db, row) : null,
   ]);
+  const summary = summaryOf(row, options.now, options.unlockHour, schedule, progress);
   const locked = {
     ...summary,
     address: null,
@@ -405,8 +456,7 @@ export async function lastVisitPhoto(
   options: { technicianId: string; jobId: string; now: Date; unlockHour: number },
 ): Promise<{ key: string; contentType: string } | null> {
   const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
-  if (row === null || !summaryOf(row, options.now, options.unlockHour, await loadSlotSchedule(db)).unlocked)
-    return null;
+  if (row === null || !unlocked(new Date(row.window_start), options.now, options.unlockHour)) return null;
   const visit = await lastVisit(db, row);
   if (visit === null) return null;
   const photo = await db
@@ -492,7 +542,7 @@ function worthShowing(row: JobRow): boolean {
   return (LIVE as readonly string[]).includes(row.status) || row.status === "completed" || row.status === "terminated";
 }
 
-function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSchedule): JobSummary {
+function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSchedule, progress: JobState): JobSummary {
   const starts = new Date(row.window_start);
   const open = unlocked(starts, now, unlockHour);
   return {
@@ -514,6 +564,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSch
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
     client_name: open ? row.client_name : null,
+    progress: { started_at: progress.started_at, outcome: progress.outcome },
   };
 }
 
@@ -549,17 +600,16 @@ export async function progressOf(
   ]);
   const { results } = events;
   const checkIn = results.find((event) => event.kind === "check_in");
-  const start = results.find((event) => event.kind === "start");
-  const outcome = results.findLast((event) => event.kind === "outcome");
   // An arrival counts only while the check-in that measured it stands.
   const arrival = checkIn === undefined ? null : latest;
+  const { started_at, outcome } = stateOf(results);
   return {
     checked_in_at: checkIn?.occurred_at ?? null,
     wait_ends_at: arrival === null ? null : noShowWaitEnds(arrival, job.type, waits).toISOString(),
     distance_m: arrival?.distanceM ?? null,
-    started_at: start?.occurred_at ?? null,
+    started_at,
     steps_done: stepsDone(results, profileAt),
-    outcome: outcome === undefined ? null : outcomeOf(outcome.body),
+    outcome,
   };
 }
 

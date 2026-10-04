@@ -49,7 +49,7 @@ export const SENSITIVE_PATHS = [
   "src/domain/deletion",
   "src/domain/data-export",
   "src/policy/account-deletion",
-  "src/routes/erasure",
+  "src/routes/ops-erasure",
   "src/routes/client-data",
   // Health data
   "src/domain/hair-profiles",

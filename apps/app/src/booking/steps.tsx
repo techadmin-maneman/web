@@ -6,14 +6,33 @@
 // sheet's title id, so the sheet is named whatever it shows.
 
 import { ICONS } from "@maneman/brand/icons";
-import { Button } from "@maneman/ui/Button";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import type { Availability, BookingConsent, BookingWindow, Hold, MoveTerms, OfferedService, Price } from "../api.ts";
-import { booking, change, messages, profile, states, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
+import type {
+  Address,
+  Availability,
+  BookingConsent,
+  BookingWindow,
+  Hold,
+  MoveTerms,
+  OfferedService,
+  Price,
+} from "../api.ts";
+import {
+  booking,
+  BOOKING_URL,
+  change,
+  messages,
+  profile,
+  states,
+  VISIT_TYPES,
+  WINDOW_HOURS,
+  WINDOW_NAMES,
+} from "../content.ts";
 import { CLOCK } from "../icons.ts";
 import { priceFigures } from "../lib/money.ts";
 import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
@@ -118,6 +137,31 @@ export function AddressStep({ refused, before, onSaved }: { refused: boolean; be
         {refused ? copy.refused : copy.why}
       </p>
       <AddressForm address={null} saveLabel={copy.save} onSaved={onSaved} />
+    </>
+  );
+}
+
+/**
+ * No board draws it: the address saved is in a pincode we do not come to, so no day is offered. The client changes it
+ * in Profile's own form, or joins the waitlist on the site.
+ */
+export function NotServedStep({ address, onSaved }: { address: Address; onSaved: () => void }) {
+  const copy = booking.notServed;
+  return (
+    <>
+      <Heading title={profile.where} />
+      <p className={styles.why} role="alert">
+        {copy.line(address.pincode)} {copy.body}
+      </p>
+      <AddressForm address={address} saveLabel={booking.address.save} onSaved={onSaved} />
+      <ButtonLink
+        variant="outline"
+        size="control"
+        className={styles.secondary}
+        href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}
+      >
+        {copy.waitlist}
+      </ButtonLink>
     </>
   );
 }

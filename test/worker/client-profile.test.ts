@@ -48,8 +48,18 @@ beforeEach(async () => {
   )
     .bind(NOW.toISOString(), OLD)
     .run();
+  await servedPincode("122018", "Gurgaon");
   cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p1", deviceLabel: null, now: NOW })}`;
 });
+
+/** A pincode we hold, served unless `served` is false. */
+async function servedPincode(pincode: string, city: string, served = true) {
+  await env.DB.prepare(
+    "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES (?1, ?2, ?2, ?3, ?4)",
+  )
+    .bind(pincode, city, served ? 1 : 0, served ? "2026-09-01T18:30:00.000Z" : null)
+    .run();
+}
 
 /** The queues a change of number or address goes out on, to FSM's contact and the CRM lead, and messages go on. */
 let queues: {
@@ -174,6 +184,69 @@ describe("PATCH /api/profile/address", () => {
   it("refuses a pincode that is not six digits", async () => {
     expect((await send(client, "PATCH", "/api/profile/address", { ...address, pincode: "12201" })).status).toBe(400);
     expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
+  });
+
+  // BK-08: a client changed only the pincode to Mumbai's, and the address was saved and sent on to FSM.
+  it("refuses a pincode we do not serve, or do not hold, and saves and sends on nothing", async () => {
+    await servedPincode("122019", "Gurgaon", false);
+    for (const pincode of ["122019", "411001"]) {
+      const answer = await send(client, "PATCH", "/api/profile/address", { ...address, pincode });
+      expect(answer.status, pincode).toBe(422);
+      expect(await answer.json()).toMatchObject({ error: { code: "not_served" } });
+    }
+    expect((await profile()).address).toBeNull();
+    expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
+  });
+
+  describe("while a visit is still to come", () => {
+    const inDelhi = { ...address, city: "Delhi", pincode: "110017" };
+    const pincodeSaved = async () => ((await profile()).address as { pincode: string }).pincode;
+
+    beforeEach(async () => {
+      await servedPincode("110017", "Delhi");
+      await servedPincode("122011", "Gurgaon");
+      expect((await send(client, "PATCH", "/api/profile/address", address)).status).toBe(200);
+    });
+
+    it("keeps the address in the visit's city, and lets it move within that city", async () => {
+      await env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+           service_city, service_pincode, fsm_modified_at, synced_at)
+         VALUES ('a1', 'fsm-a1', 'p1', 'service', 'scheduled', 'Scheduled', '2026-09-24T06:30:00.000Z',
+           '2026-09-24T08:30:00.000Z', 'Gurgaon', '122018', ?1, ?1)`,
+      )
+        .bind(NOW.toISOString())
+        .run();
+
+      const elsewhere = await send(client, "PATCH", "/api/profile/address", inDelhi);
+      expect(elsewhere.status).toBe(409);
+      expect(await elsewhere.json()).toMatchObject({ error: { code: "visit_booked" } });
+      expect(await pincodeSaved()).toBe("122018");
+
+      expect((await send(client, "PATCH", "/api/profile/address", { ...address, pincode: "122011" })).status).toBe(200);
+      expect(await pincodeSaved()).toBe("122011");
+
+      // Once the visit is cancelled, the address may go wherever we come.
+      await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = 'a1'").run();
+      expect((await send(client, "PATCH", "/api/profile/address", inDelhi)).status).toBe(200);
+      expect(await pincodeSaved()).toBe("110017");
+    });
+
+    it("counts a visit paid for and still being booked, as the client's booking", async () => {
+      await env.DB.batch([
+        env.DB.prepare(
+          "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'fsm-t1', 'Imran Qureshi', 'IQ', 1, ?1)",
+        ).bind(NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+             amount_ex_gst, gst_percent, state, pincode, expires_at, created_at, updated_at, confirmed_at)
+           VALUES ('hold-1', 'p1', 'service', '2026-09-24', 'afternoon', 't1', 2, 200000, 200000, 0, 'held', '122018',
+             ?1, ?1, ?1, ?1)`,
+        ).bind(NOW.toISOString()),
+      ]);
+      expect((await send(client, "PATCH", "/api/profile/address", inDelhi)).status).toBe(409);
+      expect(await pincodeSaved()).toBe("122018");
+    });
   });
 
   // REQ-S5-03: FSM's screens and Books showed "To be confirmed with the client" whatever the client saved.

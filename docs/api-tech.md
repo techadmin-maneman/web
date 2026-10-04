@@ -988,6 +988,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "not_served",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -1564,6 +1565,9 @@ Request body:
         }
       ],
       "description": "The client's name, from the day before the visit as the card's client is; null until then."
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobState"
     }
   },
   "required": [
@@ -1582,9 +1586,47 @@ Request body:
     "slots",
     "unlocked",
     "unlocks_at",
-    "client_name"
+    "client_name",
+    "progress"
   ],
   "additionalProperties": false
+}
+```
+
+### TechnicianJobState
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "started_at",
+    "outcome"
+  ],
+  "additionalProperties": false,
+  "description": "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet."
 }
 ```
 
@@ -1725,6 +1767,9 @@ Request body:
         }
       ],
       "description": "The client's name, from the day before the visit as the card's client is; null until then."
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobProgress"
     },
     "address": {
       "anyOf": [
@@ -1890,9 +1935,6 @@ Request body:
         }
       ],
       "description": "Null until the day before the visit."
-    },
-    "progress": {
-      "$ref": "#/components/schemas/TechnicianJobProgress"
     },
     "no_show_wait_min": {
       "type": "integer",
@@ -2115,10 +2157,10 @@ Request body:
     "unlocked",
     "unlocks_at",
     "client_name",
+    "progress",
     "address",
     "access_notes",
     "client",
-    "progress",
     "no_show_wait_min",
     "pieces",
     "last_visit",
