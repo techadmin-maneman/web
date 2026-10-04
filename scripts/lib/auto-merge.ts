@@ -1,7 +1,8 @@
 // Whether a pull request merges itself once a CI run passes. A workflow asks this after every run of ci. A pull
 // request merges when its branch is in this repository, the run that passed ran the full suite on its current head,
-// and it is ready for review. One that touches money or personal data also waits for the reviewed label, which a push
-// takes off (.github/workflows/review-label.yml), and any pull request can be held by hand with the hold label.
+// and it is ready for review. One that touches money or personal data, or updates dependencies, also waits for the
+// reviewed label, which a push takes off (.github/workflows/review-label.yml), and any pull request can be held by hand
+// with the hold label.
 //
 // It imports nothing from node_modules: its job installs nothing.
 
@@ -12,6 +13,12 @@ export const HOLD_LABEL = "hold-for-review";
 
 /** The label that says the pull request's current head has been reviewed. */
 export const REVIEWED_LABEL = "reviewed";
+
+/**
+ * The label Renovate gives a dependency update (renovate.json). Each waits for review: a poisoned release would
+ * otherwise merge and deploy itself.
+ */
+export const DEPENDENCIES_LABEL = "dependencies";
 
 /** Where money or personal data is decided. Each entry is the start of a path: a file, a family of files, or a folder. */
 export const SENSITIVE_PATHS = [
@@ -97,6 +104,10 @@ export function mergeVerdict(pull: PullRequest, run: Run): Verdict {
   if (pull.state !== "open") return { merge: false, reason: "the pull request is not open" };
   if (pull.draft) return { merge: false, reason: "the pull request is a draft" };
   if (pull.labels.includes(HOLD_LABEL)) return { merge: false, reason: `it carries ${HOLD_LABEL}` };
+
+  if (pull.labels.includes(DEPENDENCIES_LABEL) && !pull.labels.includes(REVIEWED_LABEL)) {
+    return { merge: false, reason: `it updates dependencies and waits for the ${REVIEWED_LABEL} label` };
+  }
 
   const sensitive = sensitiveFiles(pull.files);
   if (sensitive.length > 0 && !pull.labels.includes(REVIEWED_LABEL)) {
