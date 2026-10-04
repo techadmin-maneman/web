@@ -228,10 +228,17 @@ export const NOTICES: readonly Notice[] = [
     text: ["WhatsApp about your visits"],
   },
   {
-    // The booking sheet's reminder box.
+    // The booking sheet's reminder box, until 4 October 2026: it named the reminder alone, though the yes covers every
+    // message about a visit (the 2 Oct audit, CP-08).
     version: "whatsapp-visits-booking-v1",
     purpose: "whatsapp_visits",
     text: ["Remind me on WhatsApp the day before"],
+  },
+  {
+    // The booking sheet's box from then: what the yes covers.
+    version: "whatsapp-visits-booking-v2",
+    purpose: "whatsapp_visits",
+    text: ["Send me visit updates on WhatsApp"],
   },
   {
     // As the waitlist asks it (design/phase2/Referral and Waitlist).
@@ -291,7 +298,7 @@ export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
 };
 
 /** The booking sheet's reminder box, a yes to WhatsApp about visits in words of its own. */
-export const REMINDER_NOTICE = "whatsapp-visits-booking-v1";
+export const REMINDER_NOTICE = "whatsapp-visits-booking-v2";
 
 /** The notice a switch in the app is recorded under: the words of the screen it was made on. */
 export function switchNotice(purpose: ConsentPurpose, source: ConsentSource | null): string {

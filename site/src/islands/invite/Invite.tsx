@@ -153,7 +153,13 @@ export default function Invite(props: Props) {
       setState("booked");
     }
     if (found === "listed") {
-      setListed({ area: SAMPLE.unserved.area, credits: true, invite: "valid" });
+      setListed({
+        area: SAMPLE.unserved.area,
+        credits: true,
+        invite: "valid",
+        pincode: SAMPLE.unserved.pincode,
+        alerted: true,
+      });
       setState("listed");
     }
   }, [props.allowStateSwitch]);

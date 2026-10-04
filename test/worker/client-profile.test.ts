@@ -537,7 +537,7 @@ describe("PATCH /api/consents/:purpose", () => {
     await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: false, source: "app_profile" });
     const rows = await env.DB.prepare("SELECT notice_version, granted FROM consents ORDER BY rowid").all();
     expect(rows.results).toEqual([
-      { notice_version: "whatsapp-visits-booking-v1", granted: 1 },
+      { notice_version: "whatsapp-visits-booking-v2", granted: 1 },
       { notice_version: "whatsapp-visits-v1", granted: 0 },
     ]);
   });
