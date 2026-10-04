@@ -25,7 +25,7 @@
 import { firstNameOf } from "../lib/names.ts";
 import { isNoShow, stepBefore, type JobEventKind } from "../policy/in-job-steps.ts";
 import { namesTheOtherTechnician } from "../policy/job-visibility.ts";
-import { onTheVisitsDay } from "../policy/phone-clock.ts";
+import { earliestCheckIn, onTheVisitsDay, tooEarlyToArrive, type PhoneClock } from "../policy/phone-clock.ts";
 import type { WorkableJob } from "./tech-jobs.ts";
 
 export type FsmWriteState = "pending" | "written" | "rejected";
@@ -64,6 +64,8 @@ export type Landing =
   | { readonly kind: "out_of_order"; readonly needs: JobEventKind }
   /** A check-in or a start on a day that is not the job's own. */
   | { readonly kind: "not_today" }
+  /** A check-in or a start before the earliest check-in, which it names. */
+  | { readonly kind: "too_early"; readonly earliest: Date }
   /** A no-show on a job already started: the client was home. */
   | { readonly kind: "already_started" };
 
@@ -80,6 +82,8 @@ export interface EventInput {
   /** The job's start as the phone holds it, when the phone says; a different one means ops moved it. */
   readonly expectedStart: Date | null;
   readonly now: Date;
+  /** How long before the booked start a technician may check in, as ops set it. */
+  readonly phoneClock: PhoneClock;
 }
 
 /** A write that may land, with where its work is recorded. */
@@ -110,7 +114,7 @@ export async function landJobEvent(db: D1Database, input: LandingInput): Promise
 /**
  * What a write is answered with before anything of it is measured or lands: a replay, as it was answered the first
  * time; the refusal of a job that changed under the phone, which records that the phone tried; or of a check-in or a
- * start on a day that is not the job's own. Null when the write may go on to land.
+ * start on a day that is not the job's own, or before the earliest check-in. Null when the write may go on to land.
  */
 export async function answerBeforeLanding(db: D1Database, input: EventInput): Promise<Landing | null> {
   const held = await eventByClientId(db, input.job.id, input.eventId);
@@ -124,6 +128,9 @@ export async function answerBeforeLanding(db: D1Database, input: EventInput): Pr
 
   const startsTheDay = input.kind === "check_in" || input.kind === "start";
   if (startsTheDay && !onTheVisitsDay(input.occurredAt, input.job.windowStart)) return { kind: "not_today" };
+  if (startsTheDay && tooEarlyToArrive(input.now, input.job.windowStart, input.phoneClock)) {
+    return { kind: "too_early", earliest: earliestCheckIn(input.job.windowStart, input.phoneClock) };
+  }
   return null;
 }
 

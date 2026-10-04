@@ -121,7 +121,7 @@ export async function openDisputes(db: D1Database, limit: number): Promise<OpenD
   const { results } = await db
     .prepare(
       `SELECT d.id, d.case_id, n.appointment_id, pe.id AS person_id, pe.name AS person_name, d.reason,
-         d.created_at AS raised_at, ${CHARGE_TAKEN}, a.window_start, n.wait_started_at AS checked_in_at,
+         d.created_at AS raised_at, ${CHARGE_TAKEN}, a.window_start, c.at AS checked_in_at,
          c.created_at AS received_at, c.distance_m, c.radius_m,
          COALESCE(n.message_delivered_at, o.delivered_at) AS message_delivered_at, n.closed_at
        FROM no_show_disputes d

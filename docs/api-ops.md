@@ -4311,6 +4311,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
             "already_closed",
             "no_service_area",
             "service_exists",
@@ -4368,6 +4369,11 @@ Request body:
           ],
           "additionalProperties": false,
           "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+        },
+        "earliest_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [
@@ -7363,6 +7369,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
             "already_closed",
             "no_service_area",
             "service_exists",
@@ -7420,6 +7427,11 @@ Request body:
           ],
           "additionalProperties": false,
           "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+        },
+        "earliest_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [
@@ -9589,7 +9601,7 @@ Request body:
     "checked_in_at": {
       "type": "string",
       "format": "date-time",
-      "description": "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here."
+      "description": "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here, or from the booked start for an arrival before it."
     },
     "phone_checked_in_at": {
       "anyOf": [
@@ -9684,6 +9696,10 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "closed_early": {
+      "type": "boolean",
+      "description": "The wait ran from a check-in before the booked start, so the case closed before the client's own wait had run: waive it, or give the reason to charge."
+    },
     "closed_at": {
       "anyOf": [
         {
@@ -9742,6 +9758,7 @@ Request body:
     "message_state",
     "message_delivered_at",
     "wait_ends_at",
+    "closed_early",
     "closed_at",
     "opened_at",
     "due",

@@ -190,7 +190,9 @@ const ProgressSchema = z
   .object({
     checked_in_at: z.union([z.iso.datetime(), z.null()]),
     wait_ends_at: z.union([z.iso.datetime(), z.null()]).openapi({
-      description: "When the job may close as a no-show, from the check-in we hold; null before one landed.",
+      description:
+        "When the job may close as a no-show, from the check-in we hold, or from the booked start for one before it; " +
+        "null before one landed.",
     }),
     distance_m: z.union([z.number().int(), z.null()]).openapi({
       description: "How far from the address that check-in was; null when nothing could be measured.",
@@ -260,6 +262,10 @@ const JobDetailSchema = JobSummarySchema.extend({
   no_show_wait_min: z.number().int().openapi({
     description:
       "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it.",
+  }),
+  checkin_from: z.iso.datetime().openapi({
+    description:
+      "The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow.",
   }),
   pieces: z
     .union([z.array(PieceSchema), z.null()])
@@ -513,9 +519,10 @@ const STEP_REFUSALS = {
   409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
 };
 
-/** A check-in's or a start's conflict, which may also be on the wrong day. */
+/** A check-in's or a start's conflict, which may also be on the wrong day or too early in it. */
 const DAY_CONFLICT = errorResponse(
-  "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+  "superseded: FSM moved the job; out_of_order: send the step before this one first; " +
+    "not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
 );
 
 const jobsRoute = createRoute({
@@ -755,6 +762,7 @@ export function registerTechJobs(app: App): void {
       now: c.var.deps.now(),
       unlockHour: inputs.addressUnlockHour,
       waits: inputs.noShowWaitMin,
+      phoneClock: inputs.phoneClock,
     });
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const type: VisitType = job.type ?? "service";
@@ -840,7 +848,7 @@ export function registerTechJobs(app: App): void {
     const landed = await landedOf(c, checkIn, landing);
     if (!landed.ok) return c.json(refusalOf(c, landed), 409);
     if (job.personId !== null) await tellOfArrival(c, { personId: job.personId, appointmentId: job.id, arrivedAt: at });
-    const waitEndsAt = noShowWaitEnds({ at, receivedAt: now }, job.type, inputs.noShowWaitMin);
+    const waitEndsAt = noShowWaitEnds({ at, receivedAt: now }, job.windowStart, job.type, inputs.noShowWaitMin);
     return c.json({ passed: true, ...answer, wait_ends_at: waitEndsAt.toISOString(), accepted: landed.accepted }, 200);
   });
 
@@ -1043,12 +1051,7 @@ export function registerTechJobs(app: App): void {
       return c.json(refusalOf(c, refusedOf(c, write, answered)), 409);
     }
 
-    const readiness = noShowReadiness(
-      await latestArrival(c.env.DB, job),
-      job.type,
-      now,
-      (await opsInputs(c)).noShowWaitMin,
-    );
+    const readiness = noShowReadiness(await latestArrival(c.env.DB, job), job, now, (await opsInputs(c)).noShowWaitMin);
     if (readiness.kind === "no_check_in") return c.json(errorBody("out_of_order", requestId), 409);
     if (readiness.kind === "too_early") return c.json(errorBody("too_early_to_close", requestId), 425);
 
@@ -1059,6 +1062,7 @@ export function registerTechJobs(app: App): void {
     const caseId = await openNoShowCase(c.env.DB, {
       appointmentId: job.id,
       checkIn: readiness.checkIn,
+      waitStartsAt: readiness.waitStartsAt,
       waitEndsAt: readiness.waitEndsAt,
       now,
     });
@@ -1209,10 +1213,12 @@ type Landed =
   | { readonly ok: true; readonly accepted: z.infer<typeof AcceptedSchema> }
   | {
       readonly ok: false;
-      readonly code: "superseded" | "out_of_order" | "not_today" | "already_started";
+      readonly code: "superseded" | "out_of_order" | "not_today" | "already_started" | "too_early_to_arrive";
       readonly fields?: string[];
       /** On a job given to another technician: whom, by first name, and when (docs/open-points.md, item 92). */
       readonly moved?: MovedTo;
+      /** On a check-in or a start too early: the earliest moment the job takes one. */
+      readonly earliest?: Date;
     };
 
 /** The 409 of a job that changed under the phone: what changed, and whom it went to where that is to be said. */
@@ -1222,11 +1228,15 @@ function superseded(superseding: Superseding): Extract<Landed, { ok: false }> {
   return { ok: false, code: "superseded", fields, moved: superseding.moved };
 }
 
-/** A refused write's 409: its code and fields, and, for a job given to another technician, whom and when. */
+/**
+ * A refused write's 409: its code and fields; for a job given to another technician, whom and when; and for a
+ * check-in or a start too early, when the job takes one.
+ */
 function refusalOf(c: Ctx, refused: Extract<Landed, { ok: false }>): ErrorResponse {
   const body = errorBody(refused.code, c.var.requestId, refused.fields);
-  if (refused.moved === undefined) return body;
-  return { error: { ...body.error, moved: refused.moved } };
+  if (refused.moved !== undefined) return { error: { ...body.error, moved: refused.moved } };
+  if (refused.earliest !== undefined) return { error: { ...body.error, earliest_at: refused.earliest.toISOString() } };
+  return body;
 }
 
 /**
@@ -1297,6 +1307,7 @@ async function writeOf(
     occurredAt: phoneTime ?? boundedPhoneTime(timeOfUuidV7(eventId), bounds, phoneClock),
     expectedStart: heldStart === undefined ? null : new Date(heldStart),
     now,
+    phoneClock,
   };
 }
 
@@ -1320,6 +1331,7 @@ function refusedOf(c: Ctx, write: EventInput, refusal: Refusal): Extract<Landed,
     return superseded(refusal);
   }
   if (refusal.kind === "out_of_order") return { ok: false, code: "out_of_order", fields: [refusal.needs] };
+  if (refusal.kind === "too_early") return { ok: false, code: "too_early_to_arrive", earliest: refusal.earliest };
   return { ok: false, code: refusal.kind };
 }
 
@@ -1370,7 +1382,7 @@ async function checkInReplayed(c: Ctx, job: WorkableJob, event: JobEvent): Promi
     distance_m: arrival.distanceM,
     radius_m: arrival.radiusM,
     checked_in_at: arrival.at.toISOString(),
-    wait_ends_at: noShowWaitEnds(arrival, job.type, noShowWaitMin).toISOString(),
+    wait_ends_at: noShowWaitEnds(arrival, job.windowStart, job.type, noShowWaitMin).toISOString(),
     accepted,
   };
 }
