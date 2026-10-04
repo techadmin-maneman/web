@@ -422,14 +422,22 @@ describe("one credit pays for one visit, without FSM", () => {
   const halfHourPass = (deps: TestDependencies) =>
     bookUnbookedHolds(
       env.DB,
-      { ...deps, notify: () => Promise.resolve(), labelAsTest: true, budget: createCallBudget(40), log: createLogger() },
+      {
+        ...deps,
+        notify: () => Promise.resolve(),
+        labelAsTest: true,
+        budget: createCallBudget(40),
+        log: createLogger(),
+      },
       at(32 * 60),
     );
 
   it("asks payment on another device's visit while the credit waits on a booking not yet written", async () => {
     const first = await hold("2026-09-24");
-    const second = await hold("2026-09-25");
     await confirmedButUnwritten(first);
+    const second = await hold("2026-09-25");
+    // The second device read the balance just before the first booking was confirmed.
+    await env.DB.prepare("UPDATE slot_holds SET use_credit = 1 WHERE id = ?1").bind(second).run();
 
     expect(await book(second)).toMatchObject({ checkout: { amount: 200000 } });
     const secondHold = await env.DB.prepare("SELECT use_credit, confirmed_at FROM slot_holds WHERE id = ?1")
