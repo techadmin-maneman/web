@@ -1673,6 +1673,59 @@ export const tasks = {
 } as const;
 
 /**
+ * PLACEHOLDER: no board draws it. Tasks' "Needs a hand": the alerts ops were told of in the alert space, each until
+ * somebody puts right what it was about. A few words name each kind; its message says what happened and what to do.
+ */
+export const needsAHand = {
+  title: "Needs a hand",
+  kinds: {
+    message_failed: "A WhatsApp message did not go",
+    messages_unsent: "WhatsApp messages not sent within a day",
+    crm_lead: "A lead did not reach the CRM",
+    crm_erasure: "An erasure did not finish in the CRM",
+    crm_contact_update: "A CRM lead was not updated",
+    contact_sync: "A contact change did not go through",
+    deletion_waiting: "A deletion request is nearly due",
+    books_erasure: "An erasure did not finish in Books",
+    cancel_refund_failed: "A refund failed",
+    no_show_refund_failed: "A refund failed",
+    no_show_credit_not_back: "A visit credit did not come back",
+    payment_link: "A payment link was refused",
+    payment_link_failed: "A payment link did not go",
+    invoice_draft: "An invoice is still a draft",
+    invoice_unpriced: "A visit has no price to invoice",
+    invoice_refused: "Books refused an invoice",
+    invoice_failed: "An invoice did not reach Books",
+    books_unapplied: "A payment has nothing to set against",
+    razorpay_refund_unheard: "A refund came before its payment",
+    low_stock: "Stock is low",
+    technician_code_refused: "A technician was refused a login code",
+    whatsapp_bridge: "WhatsApp is disconnected",
+    login_codes_failing: "Login codes are failing",
+    cron_job: "A scheduled job keeps failing",
+  } as Readonly<Record<string, string>>,
+  /** Books refusing or failing on a customer, a payment, its application or a refund. */
+  books: "Books needs a look",
+  /** Any other kind. */
+  other: "Something needs a look",
+  /** "3 times since 21 Sep", or "Since 21 Sep" for one. */
+  seen: (times: number, since: string) => (times === 1 ? `Since ${since}` : `${String(times)} times since ${since}`),
+  open: "Open",
+  sendAgain: "Send again",
+  sending: "Sending…",
+  done: "Mark done",
+  closing: "Closing…",
+  /** Under a failed message: the bridge may not have answered in time, and the client may have it already. */
+  messageHint: "If it says delivery unconfirmed, check with the client first: it may have arrived.",
+  shown: (shown: number, count: number) => `The ${String(shown)} longest open of ${String(count)}.`,
+  errors: {
+    not_permitted: NOT_PERMITTED,
+    not_found: "This was closed meanwhile. Reload the page to see the list now.",
+    unknown: "That did not go through. Try again.",
+  } as Readonly<Record<string, string>>,
+} as const;
+
+/**
  * Board D3's roster. The board draws five columns; four are answered, and the
  * fifth, Skill, is recorded nowhere (docs/open-points.md, item 59). The phones
  * the board does not draw sit beneath each name.

@@ -94,6 +94,16 @@
   border-top: var(--hairline) solid var(--paper-line);
 }
 
+/* An alert on "Needs a hand" (NeedsAHand.tsx): what went wrong, then how often and since when. */
+.alert {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: var(--sp-12);
+  padding: var(--sp-12) var(--sp-20);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
 .what {
   display: flex;
   flex-direction: column;
