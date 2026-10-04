@@ -8,7 +8,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-20);
-  max-width: var(--measure-column);
+  max-width: var(--ops-list);
 }
 
 .panel {
