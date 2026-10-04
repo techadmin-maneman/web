@@ -8,7 +8,7 @@ import {
   createZohoLeadFinder,
   noteFor,
   recordFor,
-} from "../../src/providers/zoho-crm.ts";
+} from "../../src/providers/crm/zoho.ts";
 import { crmLead } from "./crm-rules.test.ts";
 import { NOW, captureLogs, fakeFetch, json, type RecordedCall } from "./helpers.ts";
 

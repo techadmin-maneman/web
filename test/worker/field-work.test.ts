@@ -9,7 +9,7 @@ import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { eraseBooksCustomers } from "../../src/domain/books-erasure.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubBooks, type StubBooks } from "../../src/providers/books.ts";
+import { createStubBooks, type StubBooks } from "../../src/providers/books/stub.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
   appFor,

@@ -24,8 +24,8 @@ const TIMEOUT_MS = 5_000;
 const REGION = "in";
 
 import { z } from "zod";
-import type { GeocodeProvider, LookupFailure } from "./geocode.ts";
-import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "./vendor-fetch.ts";
+import type { GeocodeProvider, LookupFailure } from "./index.ts";
+import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "../vendor-fetch.ts";
 
 /** A string Google may leave out, read as empty. */
 const Text = z.string().catch("");

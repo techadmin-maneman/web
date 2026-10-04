@@ -7,7 +7,7 @@
 import type { Dependencies } from "../dependencies.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { Logger } from "../log.ts";
-import type { BridgeFault } from "../providers/messaging.ts";
+import type { BridgeFault } from "../providers/messaging/index.ts";
 
 /** One closed reading can be the bridge reconnecting on its own; two in a row, ten minutes of it, are not. */
 const CLOSED_READINGS_BEFORE_ALERT = 2;

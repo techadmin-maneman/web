@@ -9,9 +9,9 @@
 
 import { beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import { createLogger } from "../../src/log.ts";
-import { createGeocodeProvider } from "../../src/providers/geocode.ts";
-import { createStubGeocodeFetch, STUB_API_KEY } from "../../src/providers/google-places-stub.ts";
-import { createGooglePlaces } from "../../src/providers/google-places.ts";
+import { createGeocodeProvider } from "../../src/providers/geocode/index.ts";
+import { createStubGeocodeFetch, STUB_API_KEY } from "../../src/providers/geocode/stub.ts";
+import { createGooglePlaces } from "../../src/providers/geocode/google-places.ts";
 
 const SESSION = "11111111-2222-3333-4444-555555555555";
 

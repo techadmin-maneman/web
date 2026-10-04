@@ -7,14 +7,14 @@ import type { StaticConfig } from "./guard.ts";
 import { createAccessVerifier, type AccessVerifier } from "./providers/cloudflare-access.ts";
 import { createLogger, type Logger } from "./log.ts";
 import { createAlert, createLeadNotice, type Alert, type LeadNotice } from "./providers/alerts.ts";
-import { createBooksProvider, type BooksProvider } from "./providers/books.ts";
+import { createBooksProvider, type BooksProvider } from "./providers/books/index.ts";
 import { createCodeSender, type CodeSender } from "./providers/codes.ts";
-import { createCrmProvider, type CrmProvider } from "./providers/crm.ts";
-import { createImageProvider, type ImageProvider } from "./providers/image.ts";
-import { createMessagingProvider, type MessagingProvider } from "./providers/messaging.ts";
-import { createPaymentsProvider, type PaymentsProvider } from "./providers/payments.ts";
+import { createCrmProvider, type CrmProvider } from "./providers/crm/index.ts";
+import { createImageProvider, type ImageProvider } from "./providers/image/index.ts";
+import { createMessagingProvider, type MessagingProvider } from "./providers/messaging/index.ts";
+import { createPaymentsProvider, type PaymentsProvider } from "./providers/payments/index.ts";
 import { BACKGROUND_TIMEOUT_MS, WAITED_TIMEOUT_MS } from "./providers/zoho-http.ts";
-import { createGeocodeProvider, type GeocodeProvider } from "./providers/geocode.ts";
+import { createGeocodeProvider, type GeocodeProvider } from "./providers/geocode/index.ts";
 
 export interface Dependencies {
   readonly fetch: typeof fetch;

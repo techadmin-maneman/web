@@ -6,7 +6,7 @@
 import type { CallBudget } from "../lib/call-budget.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 import type { Logger } from "../log.ts";
-import type { PaymentsProvider } from "../providers/payments.ts";
+import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { paymentsTab, type AlertOnce } from "./alerts.ts";
 import { ASKS, askRefund, refundLeftToOps, refundReceipt } from "./refunds.ts";
 

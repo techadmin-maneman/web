@@ -5,7 +5,7 @@
 import type { Endpoint } from "../config/presets.ts";
 import type { FailureCode, HairColor, JobState, UnknownColorRoute } from "../config/tryon.ts";
 import type { LossExtent } from "../config/booking.ts";
-import type { ProviderColor } from "../providers/image.ts";
+import type { ProviderColor } from "../providers/image/index.ts";
 
 export interface JobRow {
   id: string;

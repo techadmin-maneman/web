@@ -3,7 +3,7 @@
 // erased person: their customer still holds the ID, and a write would refill it.
 
 import { placeOfSupply, stateOf, type GstRegistration } from "../config/gst.ts";
-import type { BooksProvider, NewBooksCustomer } from "../providers/books.ts";
+import type { BooksProvider, NewBooksCustomer } from "../providers/books/index.ts";
 import { currentAddress, streetOf, type SavedAddress } from "./profile.ts";
 
 interface PersonRow {

@@ -3,7 +3,7 @@
 // with only a result-delivery consent (a try-on) is never given a status that
 // ops chase. See docs/decisions/0012-zoho-sync.md.
 
-import type { CrmLead, LeadStatus } from "./crm.ts";
+import type { CrmLead, LeadStatus } from "./index.ts";
 
 export const DELIVERY_ONLY: LeadStatus = "Try-on — delivery only";
 

@@ -37,7 +37,7 @@ The audit of 24 September 2026 found the vendors trusted where they should have 
 
 **Refusals are the vendor's word, not Zoho's.** `ProviderError` carries the status, the vendor's code and whether it refused the record; `isRefusal` is what a pass asks. A 401 or a 429 is our access or our pace and never the record's refusal, nor is a token Zoho would not give, so a pass tries that record again rather than leaving it for a person. The stub FSM refuses as FSM does (`refuseNext`).
 
-**Answers are read with zod** in the Zoho adapters (the CRM's records, the token) and in AILabTools', in place of casts and `typeof`. **Amended 27 September 2026 (ARCH-28):** so are Razorpay's refusals and its webhook's payment and refund entities (their schemas in `src/providers/razorpay.ts`; an entity not of that shape is answered 500, as it failed before, so Razorpay sends it again), Google's suggestions, geocodes and reasons, and the Evolution bridge's replies and receipts.
+**Answers are read with zod** in the Zoho adapters (the CRM's records, the token) and in AILabTools', in place of casts and `typeof`. **Amended 27 September 2026 (ARCH-28):** so are Razorpay's refusals and its webhook's payment and refund entities (their schemas in `src/providers/payments/razorpay.ts`; an entity not of that shape is answered 500, as it failed before, so Razorpay sends it again), Google's suggestions, geocodes and reasons, and the Evolution bridge's replies and receipts.
 
 **A person waiting gets an answer sooner.** Zoho's calls inside a request give up after 8 s; the queues and the cron keep 20 s. A dispatch move FSM half took (the technician, not the time) is read again from FSM into the mirror, and ops are told `fsm_partly` rather than that nothing moved.
 

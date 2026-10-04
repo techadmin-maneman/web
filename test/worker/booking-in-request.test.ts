@@ -20,7 +20,8 @@ import {
 import { readOpsInputs } from "../../src/domain/ops-settings.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubPayments, type PaymentsProvider } from "../../src/providers/payments.ts";
+import { type PaymentsProvider } from "../../src/providers/payments/index.ts";
+import { createStubPayments } from "../../src/providers/payments/stub.ts";
 import { PaymentUnanswered } from "../../src/providers/provider-error.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CrmLead, LeadSource } from "../../src/providers/crm.ts";
+import type { CrmLead, LeadSource } from "../../src/providers/crm/index.ts";
 import {
   DELIVERY_ONLY,
   assertStatusAllowed,
@@ -7,7 +7,7 @@ import {
   shouldRunWorkflows,
   statusForNewRecord,
   statusForUpdate,
-} from "../../src/providers/crm-rules.ts";
+} from "../../src/providers/crm/rules.ts";
 
 export function crmLead(overrides: Partial<CrmLead> = {}): CrmLead {
   return {

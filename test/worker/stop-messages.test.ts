@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { signToken } from "../../src/lib/signed-token.ts";
 import { createLogger } from "../../src/log.ts";
 import { stopLink } from "../../src/domain/stop-messages.ts";
-import type { MessagingProvider, OutboundMessage } from "../../src/providers/messaging.ts";
+import type { MessagingProvider, OutboundMessage } from "../../src/providers/messaging/index.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
 import {
   LOCAL_CONFIG,

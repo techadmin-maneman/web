@@ -4,8 +4,8 @@ import type { Settings } from "../../src/config/settings.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { verifyToken } from "../../src/lib/signed-token.ts";
 import { createLogger } from "../../src/log.ts";
-import { createEvolutionMessaging, SEND_TIMEOUT_MS } from "../../src/providers/evolution.ts";
-import type { MessagingProvider, OutboundMessage, SendResult } from "../../src/providers/messaging.ts";
+import { createEvolutionMessaging, SEND_TIMEOUT_MS } from "../../src/providers/messaging/evolution.ts";
+import type { MessagingProvider, OutboundMessage, SendResult } from "../../src/providers/messaging/index.ts";
 import { MAX_SEND_ATTEMPTS } from "../../src/config/pipeline.ts";
 import { handleMessagingBatch, sendMessage } from "../../src/queues/messaging.ts";
 import {

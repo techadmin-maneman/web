@@ -10,8 +10,8 @@
 // Anything else renders successfully.
 
 import { API_BASE_URL, CREDITS_PATH, ENDPOINT_PATHS, POLL_PATH } from "./ailabtools.ts";
-import { MINUTE_MS } from "../lib/durations.ts";
-import { isOneOf } from "../lib/one-of.ts";
+import { MINUTE_MS } from "../../lib/durations.ts";
+import { isOneOf } from "../../lib/one-of.ts";
 
 export const STUB_API_KEY = "stub-ailab-key";
 export const STUB_RESULT_HOST = "https://ailab-outputs.oss-accelerate.aliyuncs.com";

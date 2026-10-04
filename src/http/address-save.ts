@@ -10,7 +10,7 @@ import type { AppEnv } from "./context.ts";
 import { withinCeiling } from "../domain/ceilings.ts";
 import { saveAddress, type Address, type AddressPin, type GivenToOps } from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
-import type { LookupFailure } from "../providers/geocode.ts";
+import type { LookupFailure } from "../providers/geocode/index.ts";
 import { queueContactSync } from "./contact-sync.ts";
 
 /**

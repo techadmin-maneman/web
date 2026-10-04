@@ -6,7 +6,8 @@ import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts"
 import { checkBooksItems, type BooksItemsOptions } from "../../src/domain/books-items.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import { BOOKS_ITEM_PAGES, createStubBooks, type BooksItem, type StubBooks } from "../../src/providers/books.ts";
+import { BOOKS_ITEM_PAGES, type BooksItem } from "../../src/providers/books/index.ts";
+import { createStubBooks, type StubBooks } from "../../src/providers/books/stub.ts";
 import { captureLogs } from "./helpers.ts";
 
 /** Two minutes past the hour (UTC) on Wednesday 23 September, when staging's book has no GST. */

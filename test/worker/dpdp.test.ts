@@ -11,7 +11,7 @@ import { logPhotoView } from "../../src/domain/photo-views.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubBooks } from "../../src/providers/books.ts";
+import { createStubBooks } from "../../src/providers/books/stub.ts";
 import {
   appFor,
   captureLogs,

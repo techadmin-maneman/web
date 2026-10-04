@@ -4,7 +4,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import type { Connection } from "../../src/providers/messaging.ts";
+import type { Connection } from "../../src/providers/messaging/index.ts";
 import { checkWhatsAppBridge } from "../../src/scheduled/whatsapp-bridge.ts";
 import { captureLogs, fakeDependencies } from "./helpers.ts";
 

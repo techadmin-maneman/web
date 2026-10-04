@@ -41,7 +41,7 @@ import {
   type RazorpayPayment,
   type RazorpayPaymentLink,
   type RazorpayRefund,
-} from "../providers/razorpay.ts";
+} from "../providers/payments/razorpay.ts";
 
 const EventSchema = z.object({
   event: z.string(),

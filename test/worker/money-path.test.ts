@@ -11,9 +11,9 @@ import { bookUnbookedHolds, confirmBooking } from "../../src/domain/bookings.ts"
 import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubPayments } from "../../src/providers/payments.ts";
+import { createStubPayments } from "../../src/providers/payments/stub.ts";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
-import type { PaymentsProvider } from "../../src/providers/payments.ts";
+import type { PaymentsProvider } from "../../src/providers/payments/index.ts";
 import {
   appFor,
   captureLogs,

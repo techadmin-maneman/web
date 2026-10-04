@@ -13,7 +13,7 @@ import { secretsMatch } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
 import type { PlacesReached } from "../../src/policy/access.ts";
 import { STUB_IDENTITY } from "../../src/providers/cloudflare-access.ts";
-import { createStubPayments, type StubPayments } from "../../src/providers/payments.ts";
+import { createStubPayments, type StubPayments } from "../../src/providers/payments/stub.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
   LOCAL_CONFIG,

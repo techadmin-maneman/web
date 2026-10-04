@@ -1,4 +1,4 @@
-// Proves the Books provider (src/providers/books.ts) against the owner's org: a customer, an invoice and an item,
+// Proves the Books provider (src/providers/books/index.ts) against the owner's org: a customer, an invoice and an item,
 // each read back, then the customer erased both ways and the invoice deleted. Every record is named "Staging test".
 //
 //   node --env-file=.env.books-scripts scripts/books-proof.ts
@@ -13,7 +13,7 @@ import { parseArgs } from "node:util";
 import { NO_GST } from "../src/config/gst.ts";
 import type { ZohoBooksSettings } from "../src/config/settings.ts";
 import { indiaDate } from "../src/lib/india-time.ts";
-import { createBooksProvider, type NewBooksCustomer } from "../src/providers/books.ts";
+import { createBooksProvider, type NewBooksCustomer } from "../src/providers/books/index.ts";
 import { createZohoRequester, ZohoError } from "../src/providers/zoho-http.ts";
 import { callLogger, tokenTable } from "./lib/zoho-script-deps.ts";
 import { refreshTokenForScript } from "./lib/zoho-script-token.ts";

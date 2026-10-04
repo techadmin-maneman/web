@@ -19,7 +19,7 @@ import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
 import { discounted } from "../policy/discount-codes.ts";
 import { invoiceHold, type InvoiceHold, type SoldVisit } from "../policy/prepayment.ts";
-import type { BooksInvoice, BooksProvider, NewBooksInvoice } from "../providers/books.ts";
+import type { BooksInvoice, BooksProvider, NewBooksInvoice } from "../providers/books/index.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { customerFor } from "./books-customers.ts";

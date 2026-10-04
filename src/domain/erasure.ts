@@ -29,7 +29,7 @@ import type { VisitType } from "../config/visit-types.ts";
 import { failureReason, type Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
 import { CUSTOMER_CARE_KINDS, deletionWaitingKey } from "../policy/alerts.ts";
-import type { PaymentsProvider } from "../providers/payments.ts";
+import type { PaymentsProvider } from "../providers/payments/index.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { recordConsent } from "./consents.ts";

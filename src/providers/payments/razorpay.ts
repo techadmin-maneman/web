@@ -2,7 +2,7 @@
 // webhook carries. Orders, refunds and payment links are made here; what happened to a payment arrives by the signed
 // webhook (docs/decisions/0044-payments-mirror.md), and the cron reads an order's payments or a link from here only
 // when the webhook may have missed one (src/domain/razorpay-catch-up.ts). Amounts are in paise. Only
-// src/providers/payments.ts chooses this client.
+// src/providers/payments/index.ts chooses this client.
 //
 //   POST https://api.razorpay.com/v1/orders                   { id }
 //   GET  https://api.razorpay.com/v1/orders/{id}/payments     { items: [payment] }
@@ -19,13 +19,13 @@
 // keys (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 
 import { z } from "zod";
-import type { RazorpaySettings } from "../config/settings.ts";
-import { saltedHash, secretsMatch } from "../lib/hash.ts";
-import type { Logger } from "../log.ts";
-import type { PaymentsProvider } from "./payments.ts";
-import { PaymentUnanswered, ProviderError } from "./provider-error.ts";
-import { parseAnswer, vendorAnswerOf } from "./vendor-answer.ts";
-import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
+import type { RazorpaySettings } from "../../config/settings.ts";
+import { saltedHash, secretsMatch } from "../../lib/hash.ts";
+import type { Logger } from "../../log.ts";
+import type { PaymentsProvider } from "./index.ts";
+import { PaymentUnanswered, ProviderError } from "../provider-error.ts";
+import { parseAnswer, vendorAnswerOf } from "../vendor-answer.ts";
+import { vendorFetch, VendorUnreachable } from "../vendor-fetch.ts";
 
 /** Whether a webhook body is Razorpay's: X-Razorpay-Signature is the HMAC-SHA256 of the raw body under the secret. */
 export async function signedByRazorpay(secret: string, body: string, signature: string): Promise<boolean> {

@@ -19,7 +19,7 @@ Razorpay's refunds take a `receipt`, which "serves as an idempotency key": a sec
 
 **Every refund carries a receipt of its own** (`refundReceipt`, `src/domain/refunds.ts`). There is one per hold (`h-<hold>`), one per cancellation (`c-<visit>`), and one per no-show ruling on a visit (`nw-`, `nc-` or `nd-<visit>`, for waived, charged and refunded on dispute). Each is within Razorpay's 40 characters. So a refund can be asked for again without being made twice.
 
-**Razorpay's silence is not its refusal.** The client (`src/providers/razorpay.ts`) throws `PaymentUnanswered` where it cannot say whether a refund was made:
+**Razorpay's silence is not its refusal.** The client (`src/providers/payments/razorpay.ts`) throws `PaymentUnanswered` where it cannot say whether a refund was made:
 
 - a timeout or a network failure;
 - a failure of Razorpay's own (5xx);

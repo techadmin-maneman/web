@@ -40,9 +40,8 @@ export const SENSITIVE_PATHS = [
   "src/policy/no-show",
   "src/policy/referral-reward",
   "src/config/gst",
-  "src/providers/razorpay",
-  "src/providers/payments",
-  "src/providers/books",
+  "src/providers/payments/",
+  "src/providers/books/",
   "src/routes/razorpay-hook",
   "src/routes/ops-credits",
   // Consent

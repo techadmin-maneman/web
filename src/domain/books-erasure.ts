@@ -9,7 +9,7 @@
 
 import type { CallBudget } from "../lib/call-budget.ts";
 import { failureReason, type Logger } from "../log.ts";
-import type { BooksProvider } from "../providers/books.ts";
+import type { BooksProvider } from "../providers/books/index.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { MAX_SYNC_ATTEMPTS } from "../config/pipeline.ts";
 

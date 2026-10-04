@@ -31,7 +31,7 @@ import type { GstRegistration } from "../config/gst.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { failureReason, type Logger } from "../log.ts";
-import type { BooksProvider } from "../providers/books.ts";
+import type { BooksProvider } from "../providers/books/index.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { customerFor, updateCustomerOf } from "./books-customers.ts";

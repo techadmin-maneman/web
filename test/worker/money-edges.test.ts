@@ -9,7 +9,7 @@ import { confirmBooking, giveBack } from "../../src/domain/bookings.ts";
 import { clawBack } from "../../src/domain/credits.ts";
 import { enterOnHold, removeFromHold } from "../../src/domain/discount-code-holds.ts";
 import { clientHold } from "../../src/domain/holds.ts";
-import { createStubPayments } from "../../src/providers/payments.ts";
+import { createStubPayments } from "../../src/providers/payments/stub.ts";
 import { captureLogs, markDatabase, NOW } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";

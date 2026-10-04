@@ -59,7 +59,7 @@ import {
   type VisitMessageKind,
 } from "../domain/visit-messages.ts";
 import { messageFailedKey } from "../policy/alerts.ts";
-import type { SendResult } from "../providers/messaging.ts";
+import type { SendResult } from "../providers/messaging/index.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 import { isOneOf } from "../lib/one-of.ts";

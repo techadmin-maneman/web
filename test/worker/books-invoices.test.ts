@@ -14,7 +14,8 @@ import {
 import { syncBooks } from "../../src/domain/books-sync.ts";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubBooks, type BooksInvoice, type BooksProvider, type StubBooks } from "../../src/providers/books.ts";
+import { type BooksInvoice, type BooksProvider } from "../../src/providers/books/index.ts";
+import { createStubBooks, type StubBooks } from "../../src/providers/books/stub.ts";
 import { ZohoError } from "../../src/providers/zoho-http.ts";
 import { captureLogs, NOW } from "./helpers.ts";
 

@@ -6,8 +6,8 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubPayments, type StubPayments } from "../../src/providers/payments.ts";
-import type { RazorpayPayment } from "../../src/providers/razorpay.ts";
+import { createStubPayments, type StubPayments } from "../../src/providers/payments/stub.ts";
+import type { RazorpayPayment } from "../../src/providers/payments/razorpay.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
   appFor,

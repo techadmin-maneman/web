@@ -1,4 +1,4 @@
-import { createStubPayments } from "../../src/providers/payments.ts";
+import { createStubPayments } from "../../src/providers/payments/stub.ts";
 import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
 import { createApp } from "../../src/app.ts";
@@ -20,12 +20,13 @@ import { CODE_TTL_MS } from "../../src/policy/one-time-code.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createAccessVerifier } from "../../src/providers/cloudflare-access.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubCrm, type CrmProvider } from "../../src/providers/crm.ts";
-import { createImageProvider } from "../../src/providers/image.ts";
+import { type CrmProvider } from "../../src/providers/crm/index.ts";
+import { createStubCrm } from "../../src/providers/crm/stub.ts";
+import { createImageProvider } from "../../src/providers/image/index.ts";
 import type { CodeChannel } from "../../src/providers/codes.ts";
-import { createStubBooks } from "../../src/providers/books.ts";
-import { createGeocodeProvider } from "../../src/providers/geocode.ts";
-import { createStubMessaging } from "../../src/providers/messaging.ts";
+import { createStubBooks } from "../../src/providers/books/stub.ts";
+import { createGeocodeProvider } from "../../src/providers/geocode/index.ts";
+import { createStubMessaging } from "../../src/providers/messaging/stub.ts";
 
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
 

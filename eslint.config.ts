@@ -42,13 +42,13 @@ const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: n
   "src/domain/no-shows.ts": { lines: 406 },
   "src/routes/ops-dispatch.ts": { lines: 406 },
   "src/routes/referral-landing.ts": { fn: 116 },
-  "src/providers/ailabtools.ts": { fn: 114 },
+  "src/providers/image/ailabtools.ts": { fn: 114 },
   "src/providers/zoho-http.ts": { fn: 108 },
   "src/routes/ops-profile.ts": { fn: 100 },
   "src/routes/tech-auth.ts": { fn: 92 },
   "src/queues/crm-sync.ts": { fn: 88 },
   "src/routes/tryon-upload.ts": { fn: 86 },
-  "src/providers/razorpay.ts": { fn: 81 },
+  "src/providers/payments/razorpay.ts": { fn: 81 },
 };
 
 export default defineConfig(

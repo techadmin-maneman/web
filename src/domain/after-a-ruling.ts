@@ -3,7 +3,7 @@
 // the refund, the client's message, and whether a credit given back came back. A committed ruling cannot be made
 // again, so nothing here may fail without ops being told what is owed.
 
-import type { PaymentsProvider } from "../providers/payments.ts";
+import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { paymentsTab, type AlertOnce } from "./alerts.ts";
 import { askRefund, refundLeftToOps, refundReceipt, type RefundOutcome } from "./refunds.ts";
 import { visitPayment, type VisitPayment } from "./visit-changes.ts";

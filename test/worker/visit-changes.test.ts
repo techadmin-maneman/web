@@ -9,7 +9,8 @@ import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/d
 import { listCodes, makeCodes } from "../../src/domain/discount-codes.ts";
 import { moveJob } from "../../src/domain/dispatch.ts";
 import { openSession } from "../../src/domain/sessions.ts";
-import { createStubPayments, type PaymentsProvider } from "../../src/providers/payments.ts";
+import { type PaymentsProvider } from "../../src/providers/payments/index.ts";
+import { createStubPayments } from "../../src/providers/payments/stub.ts";
 import { PaymentUnanswered } from "../../src/providers/provider-error.ts";
 import type { MoveReason } from "../../src/policy/dispatch.ts";
 import {
