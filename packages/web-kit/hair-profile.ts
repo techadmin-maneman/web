@@ -1,36 +1,56 @@
-// The hair profile's form (./Profile.tsx), kept apart from the screen so its rules can be read and tested on their
-// own (test/node/dom/tech-profile-form.test.ts): the ranges the API takes a figure in, a figure as typed read as one, the
-// remedies a client can say together, and the body the step sends
-// (docs/decisions/0106-a-clients-hair-profile.md).
+// The client's hair profile as a form (docs/decisions/0106-a-clients-hair-profile.md), the same for the technician's
+// profile step and the console's correction: each figure as typed, read against the range the API takes it in; each
+// choice one of its list; the remedies a client can say together; and the body sent. The lists and ranges are the
+// API's own (src/policy/hair-profile.ts); the words for them are each app's.
 
-import type { FitSpec, History, ProfileRequest } from "../api.ts";
+import {
+  ATTACHMENTS,
+  COLOURS,
+  DENSITIES,
+  FIRST_TRANSPLANT_YEAR,
+  GREY_PERCENT,
+  HAIRLINES,
+  MEASUREMENTS,
+  NORWOOD_STAGES,
+  REMEDIES,
+  WAVES,
+  type Attachment,
+  type Colour,
+  type Density,
+  type Hairline,
+  type Measurement,
+  type NorwoodStage,
+  type Remedy,
+  type Wave,
+} from "../../src/policy/hair-profile.ts";
 
-/** Each measurement's range, as src/policy/hair-profile.ts has it: the API refuses a figure outside it. */
-export const MEASUREMENTS = {
-  head_circumference_cm: { min: 40, max: 70 },
-  front_to_nape_cm: { min: 20, max: 50 },
-  ear_to_ear_cm: { min: 20, max: 50 },
-  temple_to_temple_cm: { min: 20, max: 50 },
-  base_width_in: { min: 2, max: 12 },
-  base_length_in: { min: 2, max: 14 },
-} as const;
-export type Measurement = keyof typeof MEASUREMENTS;
+export { COLOURS, DENSITIES, FIRST_TRANSPLANT_YEAR, GREY_PERCENT, MEASUREMENTS, REMEDIES };
+export type { Measurement, Remedy };
 
-export const GREY_PERCENT = { min: 0, max: 100 } as const;
+/** The fit spec as the API takes it: null wherever nothing was recorded. */
+export type FitSpec = Choices & Record<Measurement | "grey_percent", number | null>;
 
-/** The suppliers' colour codes in their own order, #1B after #1, which an object's keys would put after #8. */
-export const COLOURS = ["1", "1B", "2", "3", "4", "5", "6", "7", "8"] as const satisfies readonly NonNullable<
-  FitSpec["colour"]
->[];
+/** The fit spec's choices, each one of its list; the product is any service's tier. */
+export type Choices = {
+  readonly norwood_stage: NorwoodStage | null;
+  readonly colour: Colour | null;
+  readonly density_percent: Density | null;
+  readonly wave: Wave | null;
+  readonly hairline: Hairline | null;
+  readonly product: string | null;
+  readonly attachment: Attachment | null;
+};
 
-/** The densities suppliers make, in per cent, in the API's order. */
-export const DENSITIES = [80, 100, 120, 140] as const satisfies readonly NonNullable<FitSpec["density_percent"]>[];
+export type History = {
+  readonly remedies: Remedy[];
+  readonly transplant_year: number | null;
+  readonly skin_and_allergies: string | null;
+};
 
-/** The earliest year a transplant is taken to have been done in, as the API has it. */
-export const FIRST_TRANSPLANT_YEAR = 1970;
+/** What the profile step and a correction send: the fit spec, the history or none, and the version the form began from. */
+export type ProfileBody = { readonly fit: FitSpec; readonly history: History | null; readonly based_on: string | null };
 
 type Range = { readonly min: number; readonly max: number };
-export type Remedy = History["remedies"][number];
 
 /** What a typed figure is: nothing typed, a figure the API takes, or one it would refuse. */
 export type Typed = number | null | "invalid";
@@ -56,11 +76,7 @@ export const wholeOf = (text: string, range: Range): Typed => inRange(text, WHOL
 /** The figures as the form holds them, as typed. */
 export type Figures = Record<Measurement | "grey_percent", string>;
 
-/** The fit spec's choices, each one tap. */
-export type Choices = Pick<
-  FitSpec,
-  "norwood_stage" | "colour" | "density_percent" | "wave" | "hairline" | "product" | "attachment"
->;
+export type FigureName = keyof Figures;
 
 export interface FitForm {
   readonly choices: Choices;
@@ -94,7 +110,7 @@ export function fitFormOf(fit: FitSpec | null): FitForm {
 }
 
 /** Each figure as the API would take it. */
-export function typedFigures(figures: Figures): Record<keyof Figures, Typed> {
+export function typedFigures(figures: Figures): Record<FigureName, Typed> {
   return {
     head_circumference_cm: figureOf(figures.head_circumference_cm, MEASUREMENTS.head_circumference_cm),
     front_to_nape_cm: figureOf(figures.front_to_nape_cm, MEASUREMENTS.front_to_nape_cm),
@@ -104,6 +120,22 @@ export function typedFigures(figures: Figures): Record<keyof Figures, Typed> {
     base_length_in: figureOf(figures.base_length_in, MEASUREMENTS.base_length_in),
     grey_percent: wholeOf(figures.grey_percent, GREY_PERCENT),
   };
+}
+
+const FIGURE_NAMES: readonly FigureName[] = [
+  "head_circumference_cm",
+  "front_to_nape_cm",
+  "ear_to_ear_cm",
+  "temple_to_temple_cm",
+  "base_width_in",
+  "base_length_in",
+  "grey_percent",
+];
+
+/** The figures typed that the API would refuse. */
+export function refusedFigures(figures: Figures): FigureName[] {
+  const typed = typedFigures(figures);
+  return FIGURE_NAMES.filter((name) => typed[name] === "invalid");
 }
 
 const sent = (typed: Typed): number | null => (typed === "invalid" ? null : typed);
@@ -124,6 +156,29 @@ export function fitOf(form: FitForm): FitSpec | null {
   };
 }
 
+const picked = <T extends string | number>(list: readonly T[], text: string): T | null =>
+  list.find((value) => String(value) === text) ?? null;
+
+/** The choices with one changed as a list's control gives it, as text: the list's own value, or none for anything else. */
+export function choicesWith(choices: Choices, field: keyof Choices, text: string): Choices {
+  switch (field) {
+    case "norwood_stage":
+      return { ...choices, norwood_stage: picked(NORWOOD_STAGES, text) };
+    case "colour":
+      return { ...choices, colour: picked(COLOURS, text) };
+    case "density_percent":
+      return { ...choices, density_percent: picked(DENSITIES, text) };
+    case "wave":
+      return { ...choices, wave: picked(WAVES, text) };
+    case "hairline":
+      return { ...choices, hairline: picked(HAIRLINES, text) };
+    case "attachment":
+      return { ...choices, attachment: picked(ATTACHMENTS, text) };
+    case "product":
+      return { ...choices, product: text === "" ? null : text };
+  }
+}
+
 /**
  * "None" is said alone: choosing it clears the rest, and choosing any other clears it. Choosing one already chosen
  * takes it off.
@@ -140,7 +195,14 @@ export interface HistoryForm {
   readonly skin: string;
 }
 
-export function historyFormOf(history: History | null): HistoryForm {
+/** A history as the API answers it. */
+type HistoryRead = {
+  readonly remedies: readonly Remedy[];
+  readonly transplant_year: number | null;
+  readonly skin_and_allergies: string | null;
+};
+
+export function historyFormOf(history: HistoryRead | null): HistoryForm {
   return {
     remedies: history?.remedies ?? [],
     year: typedOf(history?.transplant_year ?? null),
@@ -166,7 +228,7 @@ export function historyOf(form: HistoryForm, thisYear: number): History | null {
  * The whole body: the fit spec, the history, as none where nothing of it was said, and the version the form started
  * from, so ops hear of one taken from a copy older than the latest.
  */
-export function bodyOf(fit: FitSpec, history: History, basedOn: string | null): ProfileRequest {
+export function bodyOf(fit: FitSpec, history: History, basedOn: string | null): ProfileBody {
   const said = history.remedies.length > 0 || history.transplant_year !== null || history.skin_and_allergies !== null;
   return { fit, history: said ? history : null, based_on: basedOn };
 }

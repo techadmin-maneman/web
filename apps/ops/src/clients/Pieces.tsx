@@ -1,7 +1,7 @@
 // Board B1: every piece the client has been fitted with, in the board's own six
 // columns. A piece is recorded by the technician's phone, so nothing here is
 // edited (src/routes/ops-field.ts). Above them, the client's
-// hair profile, which the board does not draw (./HairProfile.tsx).
+// hair profile, which the board does not draw (./HairProfile.tsx), loaded when the tab first opens.
 //
 // The board sets the live piece's replacement date in brass and leaves the rest
 // quiet. A piece that has failed has been replaced, so the brass falls on the
@@ -10,12 +10,16 @@
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
-import { useCallback } from "react";
+import { lazy, Suspense, useCallback } from "react";
 import { api, type Piece } from "../api.ts";
 import { clients } from "../content.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
-import { HairProfile } from "./HairProfile.tsx";
+import { loadOrReload } from "../lib/load-or-reload.ts";
+
+const HairProfile = lazy(() =>
+  loadOrReload(() => import("./HairProfile.tsx")).then((module) => ({ default: module.HairProfile })),
+);
 
 const copy = clients.pieces;
 
@@ -44,7 +48,9 @@ function PieceRow({ piece }: { piece: Piece }) {
 export function Pieces({ clientId }: { clientId: string }) {
   return (
     <>
-      <HairProfile clientId={clientId} />
+      <Suspense fallback={<Loading />}>
+        <HairProfile clientId={clientId} />
+      </Suspense>
       <PieceTable clientId={clientId} />
     </>
   );
