@@ -8,13 +8,14 @@
 // and to enter a discount code on a visit or take it off (VisitCode.tsx;
 // docs/decisions/0108-discount-codes.md), to book the client a visit (BookVisit.tsx), and to cancel a visit to come
 // (CancelVisit.tsx) or close by hand one whose technician's phone was lost (CloseVisit.tsx). Each visit to come links
-// to its place on the dispatch board.
+// to its place on the dispatch board. Beneath the visits, any booking that refunded its payment by itself, and why.
 
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
-import type { ClientRecord, ClientVisit } from "../api.ts";
+import type { AutoRefund, ClientRecord, ClientVisit } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -262,6 +263,33 @@ function VisitTable({
   );
 }
 
+/** Bookings that refunded their payment by themselves, and why, so ops can answer a client who asks. */
+function AutoRefunds({ refunds }: { refunds: readonly AutoRefund[] }) {
+  if (refunds.length === 0) return null;
+  const words = copy.autoRefunds;
+  return (
+    <section className={styles.visitList} aria-labelledby="auto-refunds">
+      <h3 className={styles.sectionTitle} id="auto-refunds">
+        {words.title}
+      </h3>
+      <ul className={styles.heldList}>
+        {refunds.map((refund) => (
+          <li key={refund.hold_id} className={styles.heldItem}>
+            <p className={styles.heldWhat}>
+              {words.what(
+                copy.types[refund.type],
+                fullDate(refund.date),
+                refund.amount === null ? null : rupees(refund.amount),
+              )}
+            </p>
+            <p className={styles.heldLine}>{words.why(longDate(refund.refunded_at), words.reasons[refund.reason])}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** Book a visit, and the panel it opens; a visit booked, or a link sent, has the page read the record again. */
 function BookOne({ clientId, record, onBooked }: { clientId: string; record: ClientRecord; onBooked: () => void }) {
   const [open, setOpen] = useState(false);
@@ -325,6 +353,7 @@ export function Visits({
         onBoard
       />
       <VisitTable title={copy.past} visits={record.visits.past} empty={copy.noPast} />
+      <AutoRefunds refunds={record.auto_refunds} />
     </div>
   );
 }

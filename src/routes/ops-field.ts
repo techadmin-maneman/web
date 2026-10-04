@@ -31,6 +31,7 @@ import { afterRuling } from "../domain/after-a-ruling.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { queueMessage } from "../http/queue-message.ts";
 import { permitsOn, reachOf, routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { reachesCity } from "../policy/access.ts";
 import { WAIVING_A_NO_SHOW } from "../policy/console-routes.ts";
@@ -43,7 +44,6 @@ import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { NO_SHOW_DECISIONS } from "../policy/no-show.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 import { dueAt } from "../policy/tasks.ts";
 import { PieceSchema } from "./tech-pieces.ts";
 
@@ -398,8 +398,7 @@ export function registerOpsField(app: App): void {
       disputeWindowDays: inputs.disputeWindowDays,
     });
     if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    const notify = (messageId: string) =>
-      c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
+    const notify = (messageId: string) => queueMessage(c, messageId);
     await afterRuling(c.env.DB, { ...c.var.deps, notify }, ruled);
     return c.json({ decided: true }, 200);
   });

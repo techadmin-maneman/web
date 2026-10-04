@@ -140,6 +140,9 @@ const gigabytes = (bytes: number) => (bytes / 1e9).toFixed(2);
 
 const OF_THE_SHARE: Readonly<Record<Mark, string>> = { 50: "half of", 80: "80% of", 100: "all of" };
 
+/** Settings › Rules, at The console, where the storage and database figures are. */
+const STORAGE_LINK = "/settings#console";
+
 /**
  * Tells ops of the highest mark the figure has passed since they were last told, once. Each mark is told once for
  * good: should the figure fall back and pass it again, it is not told again (the runbook says how to reset it).
@@ -159,7 +162,7 @@ export async function tellOfStorage(db: D1Database, alertOnce: AlertOnce): Promi
       `Phase 2's photographs and referral cards hold ${gigabytes(meter.bytes)} GB in R2, ${OF_THE_SHARE[mark]} their ` +
       `${String(PHASE_2_SHARE_BYTES / 1e9)} GB share (ADR 0039). Uploads go on past it, on R2's paid storage, as the ` +
       "owner ruled (open point 151).",
-    link: "/settings",
+    link: STORAGE_LINK,
   });
 }
 
@@ -190,7 +193,7 @@ export async function tellOfDatabaseSize(db: D1Database, alertOnce: AlertOnce, h
       `The database holds ${megabytes(heldBytes)} MB, ${String(mark)}% of the ` +
       `${megabytes(DATABASE_LIMIT_BYTES)} MB Cloudflare's free plan allows it. Past that every write fails, and ` +
       'bookings, payments and the console stop with them (docs/runbook.md, "D1 growing").',
-    link: "/settings",
+    link: STORAGE_LINK,
   });
 }
 
@@ -207,7 +210,7 @@ export async function roomFor(db: D1Database, alertOnce: AlertOnce, incomingByte
       `Phase 2's photographs and referral cards hold ${gigabytes(bytes)} GB in R2, past the runaway ceiling of ` +
       `${String(RUNAWAY_CEILING_BYTES / 1e9)} GB, so the technician app's photographs are refused and wait on the ` +
       'phones. Find what is writing them (docs/runbook.md, "R2 storage growing").',
-    link: "/settings",
+    link: STORAGE_LINK,
   });
   return false;
 }

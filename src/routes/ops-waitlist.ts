@@ -8,11 +8,14 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
+import { reachBinding, withinReach } from "../domain/places.ts";
 import { launchPincode, launchPreview, waitlistByPincode } from "../domain/waitlist.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { queuePacedMessages } from "../http/queue-message.ts";
+import { routeReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
+import { reachesCity, type PlacesReached } from "../policy/access.ts";
 
 /** The pincodes the waitlist lists at once, the longest waits: far more than a launch is chosen from. */
 export const WAITLIST_AREAS = 200;
@@ -22,7 +25,7 @@ export const REFERRERS_PAGE = 50;
 const waitlistRoute = createRoute({
   method: "get",
   path: "/api/waitlist",
-  summary: "Who is waiting, by pincode, the longest wait first",
+  summary: "Who is waiting in the caller's cities, by pincode, the longest wait first",
   responses: {
     200: {
       description: "Areas with someone waiting",
@@ -90,6 +93,7 @@ const launchRoute = createRoute({
           .strict(),
       ),
     },
+    403: errorResponse("access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE"),
     404: errorResponse("not_found: we have no such pincode"),
   },
 });
@@ -97,7 +101,7 @@ const launchRoute = createRoute({
 const referrersRoute = createRoute({
   method: "get",
   path: "/api/referrers",
-  summary: `The referrers' figures, the busiest first, ${String(REFERRERS_PAGE)} at a time`,
+  summary: `The figures of the referrers in the caller's cities, the busiest first, ${String(REFERRERS_PAGE)} at a time`,
   request: {
     query: z.object({
       offset: z.coerce.number().int().min(0).default(0).openapi({ description: "How many to skip: 0, then 50 on." }),
@@ -132,7 +136,7 @@ const referrersRoute = createRoute({
 
 export function registerOpsWaitlist(app: App): void {
   app.openapi(waitlistRoute, async (c) => {
-    const areas = await waitlistByPincode(c.env.DB, WAITLIST_AREAS + 1);
+    const areas = await waitlistByPincode(c.env.DB, WAITLIST_AREAS + 1, await routeReach(c));
     return c.json(
       {
         more: areas.length > WAITLIST_AREAS,
@@ -157,8 +161,15 @@ export function registerOpsWaitlist(app: App): void {
     const { confirm, launch_on: launchOn } = c.req.valid("json");
     const db = c.env.DB;
     const now = c.var.deps.now();
-    const known = await db.prepare("SELECT 1 FROM serviceable_pincodes WHERE pincode = ?1").bind(pin).first();
+    const known = await db
+      .prepare("SELECT city FROM serviceable_pincodes WHERE pincode = ?1")
+      .bind(pin)
+      .first<{ city: string }>();
     if (known === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    // Whether we serve a pincode is no secret, as the site says so to anyone, so one elsewhere is refused, not hidden.
+    if (!reachesCity(await routeReach(c), known.city)) {
+      return c.json(errorBody("not_permitted", c.var.requestId), 403);
+    }
 
     if (!confirm) {
       const preview = await launchPreview(db, pin);
@@ -177,22 +188,36 @@ export function registerOpsWaitlist(app: App): void {
       },
       now,
     });
-    if (alerts.length > 0) {
-      await c.env.MESSAGE_QUEUE.sendBatch(
-        alerts.map((alert) => ({
-          body: { message_id: alert.id, request_id: c.var.requestId } satisfies MessagingMessage,
-          delaySeconds: alert.delaySeconds,
-        })),
-      );
-    }
+    await queuePacedMessages(c, alerts);
     const waiting = await launchPreview(db, pin);
     return c.json({ pincode: pin, waiting: waiting.waiting, alerts: alerts.length, launched: true }, 200);
   });
 
   app.openapi(referrersRoute, async (c) => {
     const { offset } = c.req.valid("query");
-    // Each figure is counted once for every code together, then joined on, rather than a query a row.
-    const { results } = await c.env.DB.prepare(
+    const referrers = await referrersFrom(c.env.DB, offset, await routeReach(c));
+    return c.json({ referrers: referrers.slice(0, REFERRERS_PAGE), more: referrers.length > REFERRERS_PAGE }, 200);
+  });
+}
+
+interface ReferrerFigures {
+  readonly code: string;
+  readonly name: string;
+  readonly opens: number;
+  readonly consultations: number;
+  readonly fits: number;
+  readonly granted: number;
+  readonly redeemed: number;
+}
+
+/**
+ * The referrers within reach from `offset`, the busiest first: a page and one more, to tell whether another follows.
+ * Each figure is counted once for every code together, then joined on, rather than a query a row. A referrer is in
+ * their own city, wherever their friends are.
+ */
+async function referrersFrom(db: D1Database, offset: number, reached: PlacesReached): Promise<ReferrerFigures[]> {
+  const { results } = await db
+    .prepare(
       `WITH funnel AS (
          SELECT a.code, SUM(a.via = 'consultation') AS consultations,
            COUNT(a.first_fit_appointment_id) AS fits, SUM(a.grant_state IN ('granted', 'approved')) AS granted
@@ -206,19 +231,11 @@ export function registerOpsWaitlist(app: App): void {
          COALESCE(f.granted, 0) AS granted, COALESCE(s.redeemed, 0) AS redeemed
        FROM referral_codes r JOIN people p ON p.id = r.person_id
        LEFT JOIN funnel f ON f.code = r.code LEFT JOIN spent s ON s.code = r.code
+       WHERE ${withinReach("client", "p", "?3")}
        ORDER BY fits DESC, r.opens DESC, p.name, r.code
        LIMIT ?1 OFFSET ?2`,
     )
-      .bind(REFERRERS_PAGE + 1, offset)
-      .all<{
-        code: string;
-        name: string;
-        opens: number;
-        consultations: number;
-        fits: number;
-        granted: number;
-        redeemed: number;
-      }>();
-    return c.json({ referrers: results.slice(0, REFERRERS_PAGE), more: results.length > REFERRERS_PAGE }, 200);
-  });
+    .bind(REFERRERS_PAGE + 1, offset, reachBinding(reached))
+    .all<ReferrerFigures>();
+  return results;
 }
