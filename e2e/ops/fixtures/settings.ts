@@ -158,6 +158,24 @@ export const SETTINGS = {
       set_by: null,
       set_at: null,
     },
+    {
+      name: "technician_work",
+      kind: "number",
+      title: "The technicians' figures",
+      note: "How far back the Technicians screen counts, and when an average counts as running over.",
+      unit: "days",
+      min: 1,
+      max: 365,
+      keys: ["period", "over_by"],
+      bounds: {
+        period: { min: 7, max: 365, unit: "days" },
+        over_by: { min: 1, max: 120, unit: "minutes" },
+      },
+      value: { period: 90, over_by: 15 },
+      default: { period: 90, over_by: 15 },
+      set_by: null,
+      set_at: null,
+    },
   ],
 } satisfies OpsReply<"/api/settings">;
 

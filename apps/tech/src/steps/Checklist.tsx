@@ -9,10 +9,12 @@
 import { GLYPHS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { useState } from "react";
-import type { VisitType } from "../api.ts";
+import type { Job, VisitType } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { BOX_TICK_STROKE } from "../icons.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import type { Queued } from "../store/outbox.ts";
+import { checklistSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
@@ -21,17 +23,21 @@ import styles from "./steps.module.css";
 const titleOf = (type: VisitType | null): string =>
   type === null ? copy.titles.checklist : copy.checklistTitles[type];
 
-export function Checklist({ id }: { id: string }) {
-  const { loaded, retry, refused, finish, back } = useStep(id, "checklist");
-  const [done, setDone] = useState<readonly string[]>([]);
-
-  if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
-  }
-
-  const job = loaded.value;
+/** The list once the job is in hand: a refused list starts as it was ticked. */
+function Ticking({
+  job,
+  refused,
+  onFinish,
+  onBack,
+}: {
+  job: Job;
+  refused: Queued | null;
+  onFinish: (body: unknown) => void;
+  onBack: () => void;
+}) {
   const items = job.checklist;
+  const listed = items.map((item) => item.id);
+  const [done, setDone] = useState<readonly string[]>(() => checklistSent(refused, listed));
   const title = job.one_visit ? oneVisit.checklist : titleOf(job.type);
   const all = items.length > 0 && done.length === items.length;
 
@@ -44,8 +50,10 @@ export function Checklist({ id }: { id: string }) {
       ready={all}
       unfinished={copy.checklist.unfinished}
       notice={refused === null ? null : copy.corrected.other}
-      onBack={back}
-      onAction={() => void finish({ done: [...done] })}
+      onBack={onBack}
+      onAction={() => {
+        onFinish({ done: [...done] });
+      }}
     >
       <ul className={styles.list}>
         {items.map((item) => {
@@ -73,4 +81,14 @@ export function Checklist({ id }: { id: string }) {
       </ul>
     </StepFrame>
   );
+}
+
+export function Checklist({ id }: { id: string }) {
+  const { loaded, retry, refused, finish, back } = useStep(id, "checklist");
+
+  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
+  return <Ticking job={loaded.value} refused={refused} onFinish={(body) => void finish(body)} onBack={back} />;
 }

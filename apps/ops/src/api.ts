@@ -31,6 +31,8 @@ export type ClientInvoice = ClientRecord["invoices"][number];
 /** A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). */
 export type HeldBooking = ClientRecord["held_bookings"][number];
 export type HeldBookingRefunded = Body<paths["/api/held-bookings/{id}/refund"]["post"]>;
+/** A booking that refunded its payment by itself: paid after its hold lapsed, or a move whose visit had begun. */
+export type AutoRefund = ClientRecord["auto_refunds"][number];
 /** A visit ops book for a client: the windows free for it, what is sent, and what came of it. */
 export type VisitAvailability = Body<paths["/api/visits/availability"]["get"]>;
 export type AvailabilityQuery = NonNullable<paths["/api/visits/availability"]["get"]["parameters"]["query"]>;

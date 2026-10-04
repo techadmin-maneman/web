@@ -44,6 +44,7 @@ function LaunchPanel({
   launching,
   today,
   launchOn,
+  mayRename,
   onLaunchOn,
   onCancel,
   onSend,
@@ -52,6 +53,8 @@ function LaunchPanel({
   /** India's date, the earliest a launch can be. */
   today: string;
   launchOn: string;
+  /** Whether their access reaches Service area, where the area is named. */
+  mayRename: boolean;
   onLaunchOn: (date: string) => void;
   onCancel: () => void;
   onSend: () => void;
@@ -86,7 +89,7 @@ function LaunchPanel({
       </dl>
       <p className={styles.message}>{copy.message(areaName(area), bookingUrl)}</p>
       <p className={styles.named}>
-        {copy.named} <OpsLink to={sectionOf("service-area").path}>{copy.rename}</OpsLink>
+        {copy.named} {mayRename && <OpsLink to={sectionOf("service-area").path}>{copy.rename}</OpsLink>}
       </p>
       {!area.served && step !== "done" && (
         <div className={styles.field}>
@@ -229,7 +232,10 @@ export function WaitlistScreen() {
   const thisYear = new Date().getFullYear();
   const today = indiaDate(new Date().toISOString());
   const [launchOn, setLaunchOn] = useState(today);
-  const mayLaunch = useAccess().mayCall("POST /api/pincodes/{pin}/launch");
+  const access = useAccess();
+  const mayLaunch = access.mayCall("POST /api/pincodes/{pin}/launch");
+  // A launch is kept to the caller's cities, while the service area is set nationally.
+  const mayRename = access.mayCall("POST /api/service-area");
 
   const choose = useCallback(
     async (area: Area) => {
@@ -281,6 +287,7 @@ export function WaitlistScreen() {
             launching={launching}
             today={today}
             launchOn={launchOn}
+            mayRename={mayRename}
             onLaunchOn={setLaunchOn}
             onCancel={() => {
               setLaunching(null);

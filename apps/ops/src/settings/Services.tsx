@@ -16,9 +16,11 @@ import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState, type ReactNode } from "react";
 import { api, type Kind, type LateFee, type OpsService, type Price, type ServiceBook } from "../api.ts";
+import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { rulePath } from "./rule-groups.ts";
 import {
   AddForm,
   DescribeForm,
@@ -367,6 +369,7 @@ function ServiceBlock(props: {
 
 /** A late fee, one figure for its kind, beside the kind's services. */
 function LateFeeBlock({ fee, opened }: { fee: LateFee; opened: Opened }) {
+  const mayOpenRules = useAccess().mayCall("GET /api/settings");
   const target = lateFeePriced(fee);
   const where = whereOf(fee.item, "standard");
   const nameId = `late-fee-${fee.item}`;
@@ -375,7 +378,17 @@ function LateFeeBlock({ fee, opened }: { fee: LateFee; opened: Opened }) {
       <h4 className={styles.serviceName} id={nameId}>
         {target.name}
       </h4>
-      <p className={styles.facts}>{copy.lateFeeNote}</p>
+      <p className={styles.facts}>
+        {copy.lateFeeNote}
+        {mayOpenRules && (
+          <>
+            {" "}
+            <OpsLink className={styles.link} to={rulePath("late_change_charge")}>
+              {copy.lateFeeRule}
+            </OpsLink>
+          </>
+        )}
+      </p>
       <PriceLines
         target={target}
         today={opened.book.today}
