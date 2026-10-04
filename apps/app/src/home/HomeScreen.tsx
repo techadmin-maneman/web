@@ -244,13 +244,13 @@ function CreditTile({ credits }: { credits: NonNullable<Me["credits"]> }) {
   return (
     <div className={styles.credits}>
       <p className={styles.creditsLabel}>{home.credits.count(credits.visits)}</p>
-      {expiry !== null && <p className={styles.creditsExpiry}>{useByLine(credits, expiry)}</p>}
+      {expiry !== null && <p className={styles.creditsExpiry}>{expiryLine(credits, expiry)}</p>}
     </div>
   );
 }
 
 /** "Use by 2 Oct", "Use by tonight" on the day, or "1 to use by 2 Oct" where only some of them end first. */
-function useByLine(credits: NonNullable<Me["credits"]>, expiry: string): string {
+function expiryLine(credits: NonNullable<Me["credits"]>, expiry: string): string {
   const today = indiaDate(new Date(apiNow()).toISOString());
   const lastDay = indiaDate(expiry);
   const when = lastDay === today ? home.credits.tonight : listDate(lastDay, Number(today.slice(0, 4)));

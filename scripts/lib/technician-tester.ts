@@ -3,8 +3,10 @@
 // goes before the rows it refers to, since D1 keeps foreign keys (test/worker/technician-tester.test.ts).
 
 /** A value as SQL: quoted, with its quotes doubled; NULL for null. */
-export const quote = (value: string | number | null): string =>
-  value === null ? "NULL" : typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
+export const quote = (value: string | number | null): string => {
+  if (value === null) return "NULL";
+  return typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
+};
 
 /** The statements that clear these test technicians and their clients, in the order they must run. */
 export function clearTester(technicianIds: readonly string[], personIds: readonly string[]): string[] {

@@ -153,8 +153,8 @@ export const referral = {
     check: "Check",
     checking: "Checking",
     empty: "Enter your pincode.",
-    invalid: "That is not a six-digit Indian pincode.",
-    failed: "We could not check that just now. Try again.",
+    invalid: "That isn’t a six-digit Indian pincode.",
+    failed: "We couldn’t check that right now. Try again.",
     // Not drawn: a pincode typed wrong could only be put right by reloading the page. The owner approves the words (open point 45).
     change: "Change",
     changeLabel: "Change the pincode",
@@ -190,7 +190,7 @@ export const referral = {
       // The first fit's three hours do not fit in the evening's half-slots, so the one visit starts earlier.
       note: "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.",
       // Not drawn: no hair system is offered in the console yet, so only the consultation can be booked.
-      notYet: "Consultation and fit in one visit is not available to book yet.",
+      notYet: "Consultation and fit in one visit isn’t open to book yet.",
     },
     /**
      * Not drawn: a discount code for the consultation and fit in one visit, on /book only, as the owner ruled on
@@ -228,10 +228,10 @@ export const referral = {
       accessNotes: "Access notes (optional)",
     },
     errors: {
-      flat: "Please give the flat or house number.",
-      line1: "Please give the building or society.",
-      locality: "Please give the sector or area.",
-      city: "Please give the city.",
+      flat: "Enter the flat or house number.",
+      line1: "Enter the building or society.",
+      locality: "Enter the sector or area.",
+      city: "Enter the city.",
     },
     more: "Add floor, tower or landmark",
     pincode: "Pincode",
@@ -270,7 +270,7 @@ export const referral = {
   form: {
     name: "Name",
     namePlaceholder: "Your name",
-    nameError: "Please tell us your name.",
+    nameError: "Enter your name.",
     mobile: "Mobile",
     mobilePlaceholder: "Your number",
     mobileError: "Enter a valid 10-digit mobile number.",
@@ -293,7 +293,7 @@ export const referral = {
     // words.
     code: {
       applied: (code: string, off: string) => `Code ${code}: ${off}, taken when you pay.`,
-      notApplied: (code: string) => `We could not apply code ${code}. Your booking stands without it.`,
+      notApplied: (code: string) => `We couldn’t apply code ${code}. Your booking stands without it.`,
       amountOff: (amount: string) => `${amount} off`,
       percentOff: (percent: number, cap: string | null) =>
         cap === null ? `${String(percent)}% off` : `${String(percent)}% off, up to ${cap}`,
@@ -333,15 +333,15 @@ export const referral = {
     back: "Back to the site",
   },
   errors: {
-    rateLimited: "That is a few too many tries. Please try again tomorrow.",
-    turnstile: "We could not confirm you are a person. Please try again.",
+    rateLimited: "That’s too many tries for today. Try again tomorrow.",
+    turnstile: "We couldn’t confirm you’re a person. Try again.",
     taken: "That time isn’t available. Pick another.",
-    notBookable: "That day is no longer open. Please pick another.",
-    other: "Something went wrong at our end. Please try again.",
+    notBookable: "That day’s no longer open. Pick another.",
+    other: "Something went wrong on our side. Try again.",
     // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words.
-    codeNotApplicable: "That discount code does not apply. Check it, or leave it out to book without it.",
+    codeNotApplicable: "That discount code doesn’t apply. Check it, or leave it out to book without it.",
     // Not drawn: the one visit was asked for while no hair system is offered in the console.
-    noProduct: "Consultation and fit in one visit is not available to book yet. Book the consultation instead.",
+    noProduct: "Consultation and fit in one visit isn’t open to book yet. Book the consultation instead.",
     // Not drawn: the WhatsApp code was entered more than 30 minutes before the booking was sent.
     notProved: "Your WhatsApp code has expired. Book again for a new one.",
   },

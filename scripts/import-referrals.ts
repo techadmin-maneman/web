@@ -29,8 +29,16 @@ const now = new Date();
 const at = now.toISOString();
 const expiresAt = new Date(now.getTime() + CREDIT_TTL_DAYS * 86_400_000).toISOString();
 
-const quote = (value: string | number | null) =>
-  value === null ? "NULL" : typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
+const quote = (value: string | number | null): string => {
+  if (value === null) return "NULL";
+  return typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
+};
+
+/** Where the grant stands: given, waiting on the friend's first fit, or due once they are fitted. */
+function grantState(granted: boolean, firstFitOn: string): string {
+  if (granted) return "granted";
+  return firstFitOn === "" ? "pending" : "approved";
+}
 
 /** The same pair always gets the same IDs, so running the import again writes nothing twice. */
 function idFor(seed: string): string {
@@ -85,7 +93,7 @@ for (const line of lines) {
     `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, grant_state, created_at,
        updated_at)
      VALUES (${quote(attribution)}, ${theirCode}, ${referred}, ${quote(at_(row, "referred_on") || at)}, 'consultation',
-       ${quote(granted ? "granted" : firstFitOn === "" ? "pending" : "approved")}, ${quote(at)}, ${quote(at)})
+       ${quote(grantState(granted, firstFitOn))}, ${quote(at)}, ${quote(at)})
      ON CONFLICT (referred_person_id) DO NOTHING;`,
   );
   // The credits the log says were given, less those already used, as one grant and one correction each.
