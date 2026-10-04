@@ -738,16 +738,15 @@ function ConfirmedNote({ hold, technician }: { hold: Hold; technician: string })
   }
   return (
     <>
-      <Button
-        variant="outline"
-        size="control"
+      <button
         className={styles.note}
+        type="button"
         onClick={() => {
           setOpen(true);
         }}
       >
         {booking.confirmed.note(technician)}
-      </Button>
+      </button>
       {open && (
         <NoteSheet
           visitId={hold.visit_id}
