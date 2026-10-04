@@ -1,94 +1,140 @@
-// The client app's visits and photographs, read from the FSM mirror. The
-// mirror is filled the way staging fills it: syncAppointment and
-// exportVisitPhotos over a stub FSM. Every name and number here is made up.
+// The client app's visits and photographs, read from D1. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { VisitType } from "../../src/config/visit-types.ts";
 import type { App } from "../../src/http/context.ts";
-import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { findEligiblePerson } from "../../src/domain/login.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import type { Angle, Phase } from "../../src/domain/visit-photos.ts";
 import { RULES } from "../../src/policy/home-prompt.ts";
-import { exportVisitPhotos } from "../../src/domain/visit-photos.ts";
-import { createStubFsm, type FsmAppointment, type StubFsmWorld } from "../../src/providers/fsm.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 import { syntheticJpeg } from "./tryon-fixtures.ts";
 
 const MOBILE = "+919810000001";
+const OTHER_MOBILE = "+919810000002";
+const NAMES: Record<string, string> = { [MOBILE]: "Rohit Malhotra", [OTHER_MOBILE]: "Someone Else" };
 
-const fsmAppointment = (id: string, overrides: Partial<FsmAppointment> = {}): FsmAppointment => ({
-  id,
-  name: id.toUpperCase(),
-  status: "Scheduled",
-  workOrderId: null,
-  contactId: "contact-1",
-  scheduledStart: "2026-09-24T10:00:00+05:30",
-  scheduledEnd: "2026-09-24T11:30:00+05:30",
-  actualStart: null,
-  actualEnd: null,
-  technicianIds: ["sr-1"],
-  serviceIds: ["item-service"],
-  serviceCity: "Gurgaon",
-  servicePincode: "122018",
-  modifiedAt: "2026-09-20T10:00:00+05:30",
+interface Visit {
+  readonly name: string;
+  readonly status: "scheduled" | "in_progress" | "completed" | "cancelled" | "terminated";
+  readonly type: VisitType;
+  readonly mobile: string;
+  /** In India's time, as ops book it. */
+  readonly start: string;
+  readonly end: string;
+  readonly startedAt: string | null;
+  readonly endedAt: string | null;
+}
+
+const booked = (name: string, overrides: Partial<Visit> = {}): Visit => ({
+  name,
+  status: "scheduled",
+  type: "service",
+  mobile: MOBILE,
+  start: "2026-09-24T10:00:00+05:30",
+  end: "2026-09-24T11:30:00+05:30",
+  startedAt: null,
+  endedAt: null,
   ...overrides,
 });
 
-function world(appointments: FsmAppointment[]): StubFsmWorld {
-  return {
-    appointments,
-    contacts: [
-      { id: "contact-1", name: "Rohit Malhotra", mobile: MOBILE, email: null },
-      { id: "contact-2", name: "Someone Else", mobile: "+919810000002", email: null },
-    ],
-    technicians: [{ id: "sr-1", userId: "user-1", name: "Imran Khan", active: true, mobile: null, zone: null }],
-    items: [
-      { id: "item-service", name: "Service visit", type: "Service", price: null },
-      { id: "item-consult", name: "Consultation", type: "Service", price: null },
-      { id: "item-replacement", name: "Replacement", type: "Service", price: null },
-    ],
-    attachments: {
-      "ap-done": [
-        { id: "a1", fileId: "f1", name: "before-front.jpg", size: 10, createdAt: "2026-09-10T10:05:00+05:30" },
-        { id: "a2", fileId: "f2", name: "after-front.jpg", size: 10, createdAt: "2026-09-10T11:10:00+05:30" },
-      ],
-      "ap-earlier": [
-        { id: "a3", fileId: "f3", name: "after-front.jpg", size: 10, createdAt: "2026-08-01T11:10:00+05:30" },
-      ],
-    },
-    files: {
-      f1: { bytes: syntheticJpeg(1200, 1600), contentType: "image/jpeg" },
-      f2: { bytes: syntheticJpeg(1200, 1600), contentType: "image/jpeg" },
-      f3: { bytes: syntheticJpeg(800, 1000), contentType: "image/jpeg" },
-    },
-  };
-}
-
-const done = (id: string, date: string, overrides: Partial<FsmAppointment> = {}) =>
-  fsmAppointment(id, {
-    status: "Completed",
-    scheduledStart: `${date}T10:00:00+05:30`,
-    scheduledEnd: `${date}T11:30:00+05:30`,
-    actualStart: `${date}T10:05:00+05:30`,
-    actualEnd: `${date}T11:15:00+05:30`,
+const done = (name: string, date: string, overrides: Partial<Visit> = {}) =>
+  booked(name, {
+    status: "completed",
+    start: `${date}T10:00:00+05:30`,
+    end: `${date}T11:30:00+05:30`,
+    startedAt: `${date}T10:05:00+05:30`,
+    endedAt: `${date}T11:15:00+05:30`,
     ...overrides,
   });
 
-/** Mirrors these appointments, exports their photographs, and returns our IDs by FSM ID. */
-async function mirror(appointments: FsmAppointment[]): Promise<Record<string, string>> {
-  const fsm = createStubFsm(world(appointments));
-  const ids: Record<string, string> = {};
-  for (const appointment of appointments) {
-    const result = await syncAppointment(env.DB, fsm, appointment.id, NOW);
-    ids[appointment.id] = result.appointmentId ?? "";
-    if (result.status === "completed") {
-      await exportVisitPhotos(
-        env.DB,
-        env.CLIENT_PHOTOS,
-        fsm,
-        { id: ids[appointment.id] ?? "", fsmId: appointment.id },
-        NOW,
-      );
+/** The photographs taken on two of the done visits: phase, angle, width and height. */
+const PHOTOS: Record<string, readonly (readonly [Phase, Angle, number, number])[]> = {
+  "ap-done": [
+    ["before", "front", 1200, 1600],
+    ["after", "front", 1200, 1600],
+  ],
+  "ap-earlier": [["after", "front", 800, 1000]],
+};
+
+const utc = (instant: string | null) => (instant === null ? null : new Date(instant).toISOString());
+
+/** Our IDs for the visits written so far in this test, by name. */
+let ids: Record<string, string>;
+
+/** Writes each visit not written yet, with its client, technician and photographs, and returns our IDs by name. */
+async function seed(visits: Visit[]): Promise<Record<string, string>> {
+  const at = NOW.toISOString();
+  await env.DB.prepare(
+    `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)
+     VALUES ('t-imran', 't-imran', 'Imran Khan', 'IK', 1, ?1)`,
+  )
+    .bind(at)
+    .run();
+  for (const visit of visits) {
+    if (ids[visit.name] !== undefined) continue;
+    const id = crypto.randomUUID();
+    ids[visit.name] = id;
+    const closed = visit.status === "completed" || visit.status === "terminated";
+    const minutes =
+      visit.startedAt !== null && visit.endedAt !== null
+        ? (Date.parse(visit.endedAt) - Date.parse(visit.startedAt)) / 60_000
+        : null;
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO people (id, created_at, mobile_e164, name) SELECT ?1, ?2, ?3, ?4
+         WHERE NOT EXISTS (SELECT 1 FROM people WHERE mobile_e164 = ?3)`,
+      ).bind(crypto.randomUUID(), at, visit.mobile, NAMES[visit.mobile] ?? null),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, tier, window_start, window_end, technician_id, status,
+           service_city, service_pincode, synced_at, first_seen_at)
+         SELECT ?1, ?1, id, ?2, ?3, ?4, ?5, 't-imran', ?6, 'Gurgaon', '122018', ?7, ?7 FROM people
+         WHERE mobile_e164 = ?8`,
+      ).bind(
+        id,
+        visit.type,
+        visit.type === "consultation" ? null : "standard",
+        utc(visit.start),
+        utc(visit.end),
+        visit.status,
+        at,
+        visit.mobile,
+      ),
+      ...(closed
+        ? [
+            env.DB.prepare(
+              `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at)
+               VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
+            ).bind(
+              crypto.randomUUID(),
+              id,
+              utc(visit.startedAt),
+              utc(visit.endedAt),
+              minutes,
+              visit.status === "completed" ? "done" : "partial",
+              at,
+            ),
+          ]
+        : []),
+    ]);
+    for (const [phase, angle, width, height] of PHOTOS[visit.name] ?? []) {
+      const key = `visits/${id}/${phase}-${angle}.jpg`;
+      const bytes = syntheticJpeg(width, height);
+      await env.CLIENT_PHOTOS.put(key, bytes);
+      const set = crypto.randomUUID();
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES (?1, ?2, ?3, ?4)").bind(
+          set,
+          id,
+          phase,
+          at,
+        ),
+        env.DB.prepare(
+          `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, width, height, taken_at, created_at)
+           VALUES (?1, ?2, ?3, ?4, 'image/jpeg', ?5, ?6, ?7, ?8, ?9)`,
+        ).bind(crypto.randomUUID(), set, angle, key, bytes.byteLength, width, height, utc(visit.startedAt) ?? at, at),
+      ]);
     }
   }
   return ids;
@@ -109,12 +155,13 @@ const get = (path: string, withCookie = true) =>
 
 beforeEach(async () => {
   client = appFor("local", fakeDependencies(), {}, "client");
+  ids = {};
   await markDatabase();
 });
 
-describe("GET /api/me, from the mirror", () => {
-  it("is a lead with a consultation booked in FSM as the next visit", async () => {
-    await mirror([fsmAppointment("ap-consult", { serviceIds: ["item-consult"] })]);
+describe("GET /api/me", () => {
+  it("is a lead with a consultation booked as the next visit", async () => {
+    await seed([booked("ap-consult", { type: "consultation" })]);
     await signIn();
     const me = await (await get("/api/me")).json<Record<string, unknown>>();
     expect(me).toMatchObject({
@@ -137,13 +184,13 @@ describe("GET /api/me, from the mirror", () => {
   });
 
   it("is fitted once a visit after the consultation is done, with the next one ahead", async () => {
-    await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
+    await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
     await signIn();
     const me = await (await get("/api/me")).json<Record<string, unknown>>();
     expect(me).toMatchObject({ state: "fitted", next_visit: { type: "service", date: "2026-09-24" } });
   });
 
-  it("drops a Phase 1 booking's proposal once FSM has a visit for the person, and offers the first fit", async () => {
+  it("drops a Phase 1 booking's proposal once the person has had a visit, and offers the first fit", async () => {
     await env.DB.prepare(
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, ?2, 'Rohit Malhotra')",
     )
@@ -156,9 +203,7 @@ describe("GET /api/me, from the mirror", () => {
     )
       .bind(NOW.toISOString())
       .run();
-    await mirror(
-      [done("ap-done", "2026-09-10")].map((appointment) => ({ ...appointment, serviceIds: ["item-consult"] })),
-    );
+    await seed([done("ap-done", "2026-09-10", { type: "consultation" })]);
     await signIn();
     const me = await (await get("/api/me")).json<Record<string, unknown>>();
     expect(me).toMatchObject({
@@ -169,8 +214,8 @@ describe("GET /api/me, from the mirror", () => {
     });
   });
 
-  it("lets a client ops added only in FSM log in", async () => {
-    await mirror([fsmAppointment("ap-next")]);
+  it("lets a client who never filled the form log in once a visit is booked for them", async () => {
+    await seed([booked("ap-next")]);
     expect(await findEligiblePerson(env.DB, MOBILE)).not.toBeNull();
     expect(await findEligiblePerson(env.DB, "+919810000009")).toBeNull();
   });
@@ -178,12 +223,12 @@ describe("GET /api/me, from the mirror", () => {
 
 describe("GET /api/visits", () => {
   it("lists upcoming visits soonest first and past ones newest first, and only the client's own", async () => {
-    await mirror([
+    await seed([
       done("ap-earlier", "2026-08-01"),
       done("ap-done", "2026-09-10"),
-      fsmAppointment("ap-next"),
-      fsmAppointment("ap-someone-else", { contactId: "contact-2" }),
-      fsmAppointment("ap-cancelled", { status: "Cancelled" }),
+      booked("ap-next"),
+      booked("ap-someone-else", { mobile: OTHER_MOBILE }),
+      booked("ap-cancelled", { status: "cancelled" }),
     ]);
     await signIn();
     const visits = await (
@@ -199,9 +244,9 @@ describe("GET /api/visits", () => {
   });
 
   it("leaves out a visit a charged move replaced, since the new visit stands in its place", async () => {
-    const ids = await mirror([
-      fsmAppointment("ap-replaced", { status: "Cancelled" }),
-      fsmAppointment("ap-cancelled", { status: "Cancelled", scheduledStart: "2026-09-23T10:00:00+05:30" }),
+    const ids = await seed([
+      booked("ap-replaced", { status: "cancelled" }),
+      booked("ap-cancelled", { status: "cancelled", start: "2026-09-23T10:00:00+05:30" }),
     ]);
     const replaced = await env.DB.prepare("SELECT person_id, window_start FROM appointments WHERE id = ?1")
       .bind(ids["ap-replaced"])
@@ -222,55 +267,22 @@ describe("GET /api/visits", () => {
   });
 });
 
-describe("a visit booked without FSM", () => {
-  // Our own ID stands in its FSM ID, and it has no work order, FSM status or time FSM changed it.
-  async function bookedWithoutFsm(): Promise<void> {
-    const at = NOW.toISOString();
-    await env.DB.batch([
-      env.DB.prepare(
-        "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, ?2, 'Rohit Malhotra')",
-      ).bind(at, MOBILE),
-      env.DB.prepare(
-        `INSERT INTO technicians (id, fsm_id, name, initials, active, hand_written, updated_at)
-         VALUES ('t1', 't1', 'Imran Khan', 'IK', 1, 1, ?1)`,
-      ).bind(at),
-      env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
-           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
-         VALUES ('ap-ours', 'ap-ours', NULL, 'p1', 'service', '2026-09-24T04:30:00.000Z', '2026-09-24T06:00:00.000Z',
-           't1', 'scheduled', NULL, 'Gurgaon', '122018', NULL, ?1, ?1)`,
-      ).bind(at),
-    ]);
-  }
-
-  it("is the client's next visit, like one FSM holds", async () => {
-    await bookedWithoutFsm();
-    await signIn();
-    const visits = await (await get("/api/visits")).json<{ upcoming: Record<string, unknown>[] }>();
-    expect(visits.upcoming).toMatchObject([
-      { date: "2026-09-24", type: "service", status: "scheduled", technician: { name: "Imran Khan", initials: "IK" } },
-    ]);
-    const me = await (await get("/api/me")).json<Record<string, unknown>>();
-    expect(me).toMatchObject({ next_visit: { date: "2026-09-24", type: "service", stage: "booked" } });
-  });
-});
-
-// A visit stays the client's until FSM closes it. One that dropped out of both lists once its window
+// A visit stays the client's until it is closed. One that dropped out of both lists once its window
 // ended left Home saying nothing was booked, and offering the booking again (LIFE-03).
-describe("a visit FSM has not closed", () => {
+describe("a visit not yet closed", () => {
   // NOW is 12:00 on Monday 21 September in India.
-  const yesterday = fsmAppointment("ap-yesterday", {
-    scheduledStart: "2026-09-20T10:00:00+05:30",
-    scheduledEnd: "2026-09-20T11:30:00+05:30",
+  const yesterday = booked("ap-yesterday", {
+    start: "2026-09-20T10:00:00+05:30",
+    end: "2026-09-20T11:30:00+05:30",
   });
-  const now = fsmAppointment("ap-now", {
-    status: "In Progress",
-    scheduledStart: "2026-09-21T11:00:00+05:30",
-    scheduledEnd: "2026-09-21T12:30:00+05:30",
+  const now = booked("ap-now", {
+    status: "in_progress",
+    start: "2026-09-21T11:00:00+05:30",
+    end: "2026-09-21T12:30:00+05:30",
   });
 
   it("stays under upcoming once its window has passed, as being closed", async () => {
-    await mirror([yesterday, fsmAppointment("ap-next")]);
+    await seed([yesterday, booked("ap-next")]);
     await signIn();
     const visits = await (await get("/api/visits")).json<{ upcoming: { date: string; stage: string }[] }>();
     expect(visits.upcoming.map(({ date, stage }) => ({ date, stage }))).toEqual([
@@ -280,21 +292,21 @@ describe("a visit FSM has not closed", () => {
   });
 
   it("is in progress while the technician works in its window", async () => {
-    await mirror([now]);
+    await seed([now]);
     await signIn();
     const visits = await (await get("/api/visits")).json<{ upcoming: { stage: string }[] }>();
     expect(visits.upcoming.map((visit) => visit.stage)).toEqual(["in_progress"]);
   });
 
   it("keeps Home on the visit, rather than saying nothing is booked", async () => {
-    await mirror([yesterday]);
+    await seed([yesterday]);
     await signIn();
     const me = await (await get("/api/me")).json<Record<string, unknown>>();
     expect(me).toMatchObject({ state: "lead", next_visit: { date: "2026-09-20", stage: "closing" } });
   });
 
   it("gives way on Home to a visit still to come", async () => {
-    await mirror([yesterday, fsmAppointment("ap-next")]);
+    await seed([yesterday, booked("ap-next")]);
     await signIn();
     const me = await (await get("/api/me")).json<Record<string, unknown>>();
     expect(me).toMatchObject({ next_visit: { date: "2026-09-24", stage: "booked" } });
@@ -330,14 +342,14 @@ describe("GET /api/me's prompt and invoice line", () => {
   const prompt = async () => (await home()).prompt;
 
   it("asks for an address first, where a visit is booked and none is given", async () => {
-    await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
+    await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
     await signIn();
     await fitPiece("2026-10-05");
     expect(await prompt()).toEqual({ kind: "address" });
   });
 
   it("then offers the next service, due a month after the last visit, in its window, while nothing is booked", async () => {
-    await mirror([done("ap-done", "2026-09-10")]);
+    await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     await giveAddress();
     await fitPiece("2027-03-09");
@@ -353,7 +365,7 @@ describe("GET /api/me's prompt and invoice line", () => {
   });
 
   it("offers the replacement beside the next service only once the piece's month is within reach", async () => {
-    await mirror([done("ap-done", "2026-09-10")]);
+    await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     await giveAddress();
     // The service falls due on 10 October and the piece in November, inside the 45 days a visit may be booked ahead.
@@ -362,7 +374,7 @@ describe("GET /api/me's prompt and invoice line", () => {
   });
 
   it(RULES[2], async () => {
-    await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
+    await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
     await signIn();
     await giveAddress();
     // March is past the 45 days a visit may be booked ahead: nothing to say about it yet.
@@ -371,7 +383,7 @@ describe("GET /api/me's prompt and invoice line", () => {
   });
 
   it("offers to book the replacement once its month is within reach, and never while one is booked", async () => {
-    await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
+    await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
     await signIn();
     await giveAddress();
     await fitPiece("2026-10-05");
@@ -379,20 +391,20 @@ describe("GET /api/me's prompt and invoice line", () => {
     expect(await prompt()).toEqual({ kind: "replacement_due", month: "2026-10", tier: "standard" });
 
     // The replacement is booked: Home's card shows it, and the prompt no longer offers a second.
-    await mirror([
+    await seed([
       done("ap-done", "2026-09-10"),
-      fsmAppointment("ap-next"),
-      fsmAppointment("ap-replacement", {
-        serviceIds: ["item-replacement"],
-        scheduledStart: "2026-10-05T10:00:00+05:30",
-        scheduledEnd: "2026-10-05T12:15:00+05:30",
+      booked("ap-next"),
+      booked("ap-replacement", {
+        type: "replacement",
+        start: "2026-10-05T10:00:00+05:30",
+        end: "2026-10-05T12:15:00+05:30",
       }),
     ]);
     expect(await prompt()).toBeNull();
   });
 
   it(RULES[0], async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     await giveAddress();
     await issueInvoice(ids["ap-done"] ?? "", 10);
@@ -404,7 +416,7 @@ describe("GET /api/me's prompt and invoice line", () => {
   });
 
   it("holds the replacement back while an invoice is ready, then offers it", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
+    const ids = await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
     await signIn();
     await giveAddress();
     await fitPiece("2026-10-05");
@@ -436,7 +448,7 @@ describe("GET /api/me's prompt and invoice line", () => {
 
 describe("what was done on a visit (board C9)", () => {
   it("is the checklist the technician ticked, in the job sheet's order", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     const visitId = ids["ap-done"] ?? "";
     await env.DB.prepare(
@@ -459,7 +471,7 @@ describe("what was done on a visit (board C9)", () => {
   });
 
   it("is in the words ops gave the checklist in the console, an item since taken off still named", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     const visitId = ids["ap-done"] ?? "";
     await env.DB.prepare(
@@ -499,8 +511,8 @@ describe("what was done on a visit (board C9)", () => {
     ]);
   });
 
-  it("is null for a visit with no checklist recorded, closed in FSM's own screens", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+  it("is null for a visit closed with no checklist recorded", async () => {
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     const visit = await (await get(`/api/visits/${ids["ap-done"] ?? ""}`)).json<{ what_was_done: unknown }>();
     expect(visit.what_was_done).toBeNull();
@@ -509,10 +521,10 @@ describe("what was done on a visit (board C9)", () => {
 
 describe("a visit paid for ahead (board C1's Prepaid)", () => {
   it("is prepaid once a payment for it is captured, or a credit covers it, and not otherwise", async () => {
-    const ids = await mirror([
-      fsmAppointment("ap-paid"),
-      fsmAppointment("ap-credit", { scheduledStart: "2026-09-25T10:00:00+05:30" }),
-      fsmAppointment("ap-unpaid", { scheduledStart: "2026-09-26T10:00:00+05:30" }),
+    const ids = await seed([
+      booked("ap-paid"),
+      booked("ap-credit", { start: "2026-09-25T10:00:00+05:30" }),
+      booked("ap-unpaid", { start: "2026-09-26T10:00:00+05:30" }),
     ]);
     await signIn();
     const person = await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1")
@@ -549,7 +561,7 @@ describe("a visit paid for ahead (board C1's Prepaid)", () => {
 
 describe("GET /api/visits/:id and the photographs", () => {
   it("gives a done visit's duration, outcome and photographs, whose links open only for the client", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     const visit = await (
       await get(`/api/visits/${ids["ap-done"] ?? ""}`)
@@ -570,7 +582,7 @@ describe("GET /api/visits/:id and the photographs", () => {
   });
 
   it("does not show another client's visit or photograph", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     await env.DB.prepare("UPDATE photos SET thumbnail_key = r2_key").run();
     const [photo] = (
@@ -600,13 +612,13 @@ describe("GET /api/visits/:id and the photographs", () => {
    * must never have to guess the third from a price it happens to be showing.
    */
   it("says the invoice is still to come for a billed visit, and never coming for a free one", async () => {
-    const ids = await mirror([
+    const ids = await seed([
       done("ap-done", "2026-09-10"),
-      done("ap-consult", "2026-09-08", { serviceIds: ["item-consult"] }),
+      done("ap-consult", "2026-09-08", { type: "consultation" }),
     ]);
     await signIn();
-    const detail = async (fsmId: string) =>
-      (await get(`/api/visits/${ids[fsmId] ?? ""}`)).json<{ document_id: string | null; invoice_expected: boolean }>();
+    const detail = async (name: string) =>
+      (await get(`/api/visits/${ids[name] ?? ""}`)).json<{ document_id: string | null; invoice_expected: boolean }>();
 
     expect(await detail("ap-done")).toMatchObject({ document_id: null, invoice_expected: true });
     expect(await detail("ap-consult")).toMatchObject({ document_id: null, invoice_expected: false });
@@ -619,7 +631,7 @@ describe("GET /api/visits/:id and the photographs", () => {
   });
 
   it("offers no document while the invoice Books holds is still a draft", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-41' WHERE id = ?1")
       .bind(ids["ap-done"] ?? "")
@@ -630,10 +642,10 @@ describe("GET /api/visits/:id and the photographs", () => {
   // The visit screen said "The invoice is still generating" of a visit whose invoice was held back as a draft on
   // purpose: a credit paid for it, or its total was not what the visit was sold for (ADR 0070).
   it("says an invoice held back is being checked, and one for a credit visit waits on a ruling", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10"), done("ap-credit", "2026-09-12")]);
+    const ids = await seed([done("ap-done", "2026-09-10"), done("ap-credit", "2026-09-12")]);
     await signIn();
-    const held = async (fsmId: string) =>
-      (await (await get(`/api/visits/${ids[fsmId] ?? ""}`)).json<{ invoice_held: unknown }>()).invoice_held;
+    const held = async (name: string) =>
+      (await (await get(`/api/visits/${ids[name] ?? ""}`)).json<{ invoice_held: unknown }>()).invoice_held;
 
     expect(await held("ap-done")).toBeNull();
     await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-41' WHERE id = ?1")
@@ -664,11 +676,11 @@ describe("GET /api/visits/:id and the photographs", () => {
 
   // LIFE-07: a no-show read as an ordinary past visit, with no outcome, no charge and no word.
   it("says the client was not home, how long we waited, and what ops ruled", async () => {
-    const ids = await mirror([
-      fsmAppointment("ap-missed", {
-        status: "Terminated",
-        scheduledStart: "2026-09-19T10:00:00+05:30",
-        scheduledEnd: "2026-09-19T11:30:00+05:30",
+    const ids = await seed([
+      booked("ap-missed", {
+        status: "terminated",
+        start: "2026-09-19T10:00:00+05:30",
+        end: "2026-09-19T11:30:00+05:30",
       }),
     ]);
     await signIn();
@@ -712,27 +724,27 @@ describe("GET /api/visits/:id and the photographs", () => {
   const afterPhotos = async (visitId: string) =>
     (await (await get(`/api/visits/${visitId}`)).json<{ photos: { after: Links[] } }>()).photos.after;
 
-  it("links a photograph's small copy for the rows, and none for one copied from FSM", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+  it("links a photograph's small copy for the rows, and none for one without", async () => {
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
-    const [fromFsm] = await afterPhotos(ids["ap-done"] ?? "");
-    expect(fromFsm?.thumbnail_url).toBeNull();
+    const [withoutOne] = await afterPhotos(ids["ap-done"] ?? "");
+    expect(withoutOne?.thumbnail_url).toBeNull();
 
     const small = syntheticJpeg(300, 400, "small");
     await env.CLIENT_PHOTOS.put("visits/small-copy.jpg", small);
     await env.DB.prepare("UPDATE photos SET thumbnail_key = 'visits/small-copy.jpg'").run();
-    const [fromTheApp] = await afterPhotos(ids["ap-done"] ?? "");
-    const image = await get(fromTheApp?.thumbnail_url ?? "");
+    const [withOne] = await afterPhotos(ids["ap-done"] ?? "");
+    const image = await get(withOne?.thumbnail_url ?? "");
     expect(image.status).toBe(200);
     expect(image.headers.get("Content-Type")).toBe("image/jpeg");
     expect(new Uint8Array(await image.arrayBuffer())).toEqual(small);
-    expect((await get(fromTheApp?.thumbnail_url ?? "", false)).status).toBe(401);
+    expect((await get(withOne?.thumbnail_url ?? "", false)).status).toBe(401);
     // The link to the photograph itself is still the whole photograph, which the sheet opens.
-    expect((await (await get(fromTheApp?.url ?? "")).arrayBuffer()).byteLength).not.toBe(small.byteLength);
+    expect((await (await get(withOne?.url ?? "")).arrayBuffer()).byteLength).not.toBe(small.byteLength);
   });
 
   it("serves the photograph itself through a small copy's link when the copy is missing from the bucket", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     await env.DB.prepare("UPDATE photos SET thumbnail_key = 'visits/never-stored-small.jpg'").run();
     const [photo] = await afterPhotos(ids["ap-done"] ?? "");
@@ -743,7 +755,7 @@ describe("GET /api/visits/:id and the photographs", () => {
   });
 
   it("refuses a photograph link once its 15 minutes are up", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     const url =
       (await (await get(`/api/visits/${ids["ap-done"] ?? ""}`)).json<{ photos: { after: { url: string }[] } }>()).photos
@@ -755,10 +767,10 @@ describe("GET /api/visits/:id and the photographs", () => {
 
 describe("GET /api/photos and /api/photos/compare", () => {
   it("lists the visits that have photographs, newest first, and compares one angle across two", async () => {
-    const ids = await mirror([
+    const ids = await seed([
       done("ap-earlier", "2026-08-01"),
       done("ap-done", "2026-09-10"),
-      fsmAppointment("ap-next"),
+      booked("ap-next"),
     ]);
     await signIn();
     const timeline = await (await get("/api/photos")).json<{ visits: { date: string }[] }>();
@@ -779,7 +791,7 @@ describe("GET /api/photos and /api/photos/compare", () => {
   });
 
   it("will not compare a visit that is not the client's", async () => {
-    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     const response = await get(
       `/api/photos/compare?from=${crypto.randomUUID()}&to=${ids["ap-done"] ?? ""}&angle=front`,

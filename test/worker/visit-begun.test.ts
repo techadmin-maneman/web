@@ -1,7 +1,6 @@
-// A visit that has begun, by our own records rather than FSM's status (src/domain/visit-begun.ts): the client can no
-// longer cancel or move it, and the app reads it as under way or done. FSM's status lags behind the visit, or never
-// arrives when FSM refuses a write, so the mirror here stays at "scheduled" throughout. NOW is Monday 21 September
-// 2026, 12 noon in India; the visit is at 13:00. Every name and number is made up.
+// A visit that has begun, by the job's own events (src/domain/visit-begun.ts): the client can no longer cancel or
+// move it, and the app reads it as under way or done. NOW is Monday 21 September 2026, 12 noon in India; the visit is
+// at 13:00. Every name and number is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -51,8 +50,8 @@ async function nextVisitStage(): Promise<string | null> {
   return me.next_visit?.stage ?? null;
 }
 
-const mirrorStatus = async () =>
-  (await env.DB.prepare("SELECT status FROM appointments WHERE id = ?1").bind(JOB).first<{ status: string }>())?.status;
+const changes = async () =>
+  (await env.DB.prepare("SELECT COUNT(*) AS n FROM visit_changes").first<{ n: number }>())?.n;
 
 /** An event as the phone's outbox lands it, written straight to the table. */
 async function landed(kind: string, options: { body?: object; superseded?: boolean } = {}) {
@@ -70,7 +69,7 @@ async function landed(kind: string, options: { body?: object; superseded?: boole
       kind,
       JSON.stringify(options.body ?? {}),
       at,
-      options.superseded === true ? "rejected" : "pending",
+      options.superseded === true ? "rejected" : "written",
       options.superseded === true ? 1 : 0,
     )
     .run();
@@ -91,35 +90,34 @@ const oneVisitClosedAs = (state: string) =>
   env.DB.prepare("UPDATE appointments SET one_visit = ?2 WHERE id = ?1").bind(JOB, state).run();
 
 describe("a visit the technician has checked in to", () => {
-  it("can no longer be cancelled or moved, and reads as in progress, though FSM still has it scheduled", async () => {
+  it("can no longer be cancelled or moved, and reads as in progress", async () => {
     expect(await changeAnswers()).toEqual([200, 200, 200]);
     expect(await nextVisitStage()).toBe("booked");
 
     const checkIn = await job.post(`/api/tech/jobs/${JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
     expect(checkIn.status).toBe(200);
 
-    expect(await mirrorStatus()).toBe("scheduled");
     expect(await changeAnswers()).toEqual([409, 409, 409]);
     const cancel = await clientPost(`/api/appointments/${JOB}/cancel`, { confirm: true, notice: "late" });
     expect(await cancel.json()).toMatchObject({ error: { code: "not_changeable" } });
-    expect(job.fsm.made.cancelled).toEqual([]);
+    expect(await changes()).toBe(0);
     expect(await nextVisitStage()).toBe("in_progress");
   });
 
-  it("reads as done once the technician closes it as done, and gives way on Home to a visit still to come", async () => {
+  it("is past once the technician closes it as done, and Home moves on to a visit still to come", async () => {
     await job.workTo("outcome");
     await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
-    expect(await mirrorStatus()).toBe("scheduled");
-    expect(await nextVisitStage()).toBe("done");
-    const visits = await (await clientGet("/api/visits")).json<{ upcoming: { id: string; stage: string }[] }>();
-    expect(visits.upcoming).toMatchObject([{ id: JOB, stage: "done" }]);
+    expect(await nextVisitStage()).toBeNull();
+    const visits = await (
+      await clientGet("/api/visits")
+    ).json<{ upcoming: unknown[]; past: { id: string; status: string }[] }>();
+    expect(visits).toMatchObject({ upcoming: [], past: [{ id: JOB, status: "completed" }] });
     expect(await changeAnswers()).toEqual([409, 409, 409]);
 
     await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
-         window_end, technician_id, fsm_modified_at, synced_at)
-       VALUES ('later-visit', 'ap-later', 'wo-ap-later', ?1, 'service', 'scheduled', 'Scheduled',
-         '2026-10-21T07:30:00.000Z', '2026-10-21T09:00:00.000Z', ?2, ?3, ?3)`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+       VALUES ('later-visit', 'later-visit', ?1, 'service', 'scheduled', '2026-10-21T07:30:00.000Z',
+         '2026-10-21T09:00:00.000Z', ?2, ?3)`,
     )
       .bind(PERSON, IMRAN, NOW.toISOString())
       .run();

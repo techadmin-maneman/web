@@ -22,7 +22,6 @@ import {
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
-  PROVIDERS_FOR,
   request,
   type TestDependencies,
 } from "./helpers.ts";
@@ -61,14 +60,13 @@ async function servedPincode(pincode: string, city: string, served = true) {
     .run();
 }
 
-/** The queues a change of number or address goes out on, to FSM's contact and the CRM lead, and messages go on. */
+/** The queues a change of number or address goes out on, to the CRM lead, and messages go on. */
 let queues: {
   CRM_QUEUE: ReturnType<typeof fakeQueue>;
-  FSM_QUEUE: ReturnType<typeof fakeQueue>;
   MESSAGE_QUEUE: ReturnType<typeof fakeQueue>;
 };
 beforeEach(() => {
-  queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() };
+  queues = { CRM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() };
 });
 
 function send(app: App, method: string, path: string, body?: unknown) {
@@ -84,11 +82,8 @@ function send(app: App, method: string, path: string, body?: unknown) {
   );
 }
 
-/** What went out on each queue about the person's contact details. */
-const contactSyncs = () => ({
-  crm: queues.CRM_QUEUE.sent.filter((body) => "update_person_id" in (body as object)),
-  fsm: queues.FSM_QUEUE.sent.filter((body) => "update_contact_person_id" in (body as object)),
-});
+/** What went out to the CRM about the person's contact details. */
+const contactSyncs = () => queues.CRM_QUEUE.sent.filter((body) => "update_person_id" in (body as object));
 
 const profile = async () => (await send(client, "GET", "/api/profile")).json<Record<string, unknown>>();
 
@@ -169,7 +164,7 @@ describe("PATCH /api/profile/address", () => {
     ]);
   });
 
-  // The owner's ruling of 27 September 2026 (docs/open-points.md, item 45): FSM's work order must name the door.
+  // The owner's ruling of 27 September 2026 (docs/open-points.md, item 45): the job sheet must name the door.
   it("refuses an address without the flat or house number", async () => {
     const { flat: _left, ...withoutFlat } = address;
     for (const body of [withoutFlat, { ...address, flat: null }, { ...address, flat: "  " }]) {
@@ -178,15 +173,15 @@ describe("PATCH /api/profile/address", () => {
       expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["flat"] } });
     }
     expect((await profile()).address).toBeNull();
-    expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
+    expect(contactSyncs()).toEqual([]);
   });
 
   it("refuses a pincode that is not six digits", async () => {
     expect((await send(client, "PATCH", "/api/profile/address", { ...address, pincode: "12201" })).status).toBe(400);
-    expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
+    expect(contactSyncs()).toEqual([]);
   });
 
-  // BK-08: a client changed only the pincode to Mumbai's, and the address was saved and sent on to FSM.
+  // BK-08: a client changed only the pincode to Mumbai's, and the address was saved and sent on.
   it("refuses a pincode we do not serve, or do not hold, and saves and sends on nothing", async () => {
     await servedPincode("122019", "Gurgaon", false);
     for (const pincode of ["122019", "411001"]) {
@@ -195,7 +190,7 @@ describe("PATCH /api/profile/address", () => {
       expect(await answer.json()).toMatchObject({ error: { code: "not_served" } });
     }
     expect((await profile()).address).toBeNull();
-    expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
+    expect(contactSyncs()).toEqual([]);
   });
 
   describe("while a visit is still to come", () => {
@@ -210,10 +205,10 @@ describe("PATCH /api/profile/address", () => {
 
     it("keeps the address in the visit's city, and lets it move within that city", async () => {
       await env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
-           service_city, service_pincode, fsm_modified_at, synced_at)
-         VALUES ('a1', 'fsm-a1', 'p1', 'service', 'scheduled', 'Scheduled', '2026-09-24T06:30:00.000Z',
-           '2026-09-24T08:30:00.000Z', 'Gurgaon', '122018', ?1, ?1)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, service_city,
+           service_pincode, synced_at)
+         VALUES ('a1', 'a1', 'p1', 'service', 'scheduled', '2026-09-24T06:30:00.000Z', '2026-09-24T08:30:00.000Z',
+           'Gurgaon', '122018', ?1)`,
       )
         .bind(NOW.toISOString())
         .run();
@@ -235,7 +230,7 @@ describe("PATCH /api/profile/address", () => {
     it("counts a visit paid for and still being booked, as the client's booking", async () => {
       await env.DB.batch([
         env.DB.prepare(
-          "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'fsm-t1', 'Imran Qureshi', 'IQ', 1, ?1)",
+          "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
         ).bind(NOW.toISOString()),
         env.DB.prepare(
           `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
@@ -249,30 +244,12 @@ describe("PATCH /api/profile/address", () => {
     });
   });
 
-  // REQ-S5-03: FSM's screens and Books showed "To be confirmed with the client" whatever the client saved.
-  it("sends the new address on to FSM's contact and the CRM lead", async () => {
+  // REQ-S5-03: Books showed "To be confirmed with the client" whatever the client saved.
+  it("sends the new address on to the CRM lead, and marks the client's Books customer for the Books pass", async () => {
     await send(client, "PATCH", "/api/profile/address", address);
-    const request = { request_id: expect.any(String) as string };
-    expect(contactSyncs()).toEqual({
-      crm: [{ update_person_id: "p1", ...request }],
-      fsm: [{ update_contact_person_id: "p1", ...request }],
-    });
-  });
-
-  it("without FSM, sends nothing to FSM and marks the client's Books customer for the Books pass to write", async () => {
-    const booksChangedAt = () =>
-      env.DB.prepare("SELECT books_details_changed_at FROM people WHERE id = 'p1'").first("books_details_changed_at");
-    await send(client, "PATCH", "/api/profile/address", address);
-    expect(await booksChangedAt()).toBeNull();
-
-    client = appFor("local", deps, {}, "client", PROVIDERS_FOR.ours);
-    queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() };
-    await send(client, "PATCH", "/api/profile/address", { ...address, line1: "Silver Oaks" });
-    expect(contactSyncs()).toEqual({
-      crm: [{ update_person_id: "p1", request_id: expect.any(String) as string }],
-      fsm: [],
-    });
-    expect(await booksChangedAt()).toBe(NOW.toISOString());
+    expect(contactSyncs()).toEqual([{ update_person_id: "p1", request_id: expect.any(String) as string }]);
+    const changedAt = await env.DB.prepare("SELECT books_details_changed_at FROM people WHERE id = 'p1'").first();
+    expect(changedAt).toEqual({ books_details_changed_at: NOW.toISOString() });
   });
 
   it("tells ops when the address cannot be sent on, until a later change is", async () => {
@@ -677,11 +654,8 @@ describe("a number change", () => {
     });
     expect(await decided.json()).toEqual({ state: "confirmed" });
     expect(await mobile()).toBe(NEW);
-    // LIFE-12: the new number reaches FSM's contact and the CRM lead, and the old one is kept for the fraud rules.
-    expect(contactSyncs()).toEqual({
-      crm: [{ update_person_id: "p1", request_id: expect.any(String) as string }],
-      fsm: [{ update_contact_person_id: "p1", request_id: expect.any(String) as string }],
-    });
+    // LIFE-12: the new number reaches the CRM lead, and the old one is kept for the fraud rules.
+    expect(contactSyncs()).toEqual([{ update_person_id: "p1", request_id: expect.any(String) as string }]);
     const replaced = await env.DB.prepare("SELECT replaced_mobile_e164 FROM number_change_requests").first();
     expect(replaced).toEqual({ replaced_mobile_e164: OLD });
     expect(await auditActions()).toEqual(["number_change.request", "number_change.decide"]);
@@ -758,7 +732,7 @@ describe("a number change", () => {
       state: "rejected",
     });
     // A change rejected, like one withdrawn, never happened: nothing goes out and no number is kept.
-    expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
+    expect(contactSyncs()).toEqual([]);
     const replaced = await env.DB.prepare("SELECT replaced_mobile_e164 FROM number_change_requests").first();
     expect(replaced).toEqual({ replaced_mobile_e164: null });
   });

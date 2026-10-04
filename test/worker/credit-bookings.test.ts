@@ -9,13 +9,13 @@ import { confirmBooking } from "../../src/domain/bookings.ts";
 import { clawBack, creditBalance, expireCredits, grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
-import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import {
   appFor,
   captureLogs,
   fakeDependencies,
   fakeQueue,
+  leaseRefused,
   markDatabase,
   NOW,
   request,
@@ -23,10 +23,6 @@ import {
 } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
-const world = () => ({
-  ...EMPTY_FSM,
-  items: [{ id: "item-service", name: "Service visit", type: "Service" as const, price: null }],
-});
 
 let cookie: string;
 const app = () => appFor("local", fakeDependencies(), {}, "client");
@@ -46,26 +42,18 @@ async function credits(visits: number) {
   await grantCredits(env.DB, { personId: PERSON, visits, source: "ops", sourceId: "o1", now: NOW }).run();
 }
 
-/** A service visit held, and booked in FSM and the mirror. Returns the visit's ID. */
+/** A service visit held and booked on a credit. Returns the visit's ID. */
 async function bookService(
   date = "2026-09-24",
   window = "afternoon",
 ): Promise<{ visitId: string; hold: Record<string, unknown> }> {
   const hold = await (await post("/api/holds", { type: "service", date, window })).json<Record<string, unknown>>();
-  const started = await post("/api/bookings", { hold_id: hold.id }, { FSM_QUEUE: fakeQueue() });
+  const started = await post("/api/bookings", { hold_id: hold.id });
   expect(await started.json()).toEqual({ hold_id: hold.id, checkout: null });
-  expect(
-    await confirmBooking(env.DB, createStubFsm(world()), createStubPayments(), String(hold.id), NOW, {
-      labelAsTest: true,
-    }),
-  ).toBe("booked");
-  const visit = await env.DB.prepare("SELECT appointment_id FROM slot_holds WHERE id = ?1").bind(hold.id).first<{
-    appointment_id: string;
-  }>();
-  // The mirror gives a booked visit its work order; changing it needs one.
-  await env.DB.prepare("UPDATE appointments SET fsm_work_order_id = 'fsm-order-1' WHERE id = ?1")
-    .bind(visit?.appointment_id)
-    .run();
+  const visit = await env.DB.prepare("SELECT state, appointment_id FROM slot_holds WHERE id = ?1")
+    .bind(hold.id)
+    .first<{ state: string; appointment_id: string }>();
+  expect(visit?.state).toBe("booked");
   return { visitId: visit?.appointment_id ?? "", hold };
 }
 
@@ -73,23 +61,21 @@ beforeEach(async () => {
   await markDatabase();
   captureLogs();
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
   )
     .bind(NOW.toISOString())
     .run();
   await env.DB.prepare(
-    `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id)
-     VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra', 'contact-1')`,
+    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
   )
     .bind(PERSON, NOW.toISOString())
     .run();
   await savedAddress(PERSON);
   // Fitted, so service visits are what they book.
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
-       fsm_modified_at, synced_at)
-     VALUES ('fit', 'fsm-fit', ?1, 'first_fit', 'completed', 'Completed', '2026-08-01T03:30:00.000Z',
-       '2026-08-01T06:30:00.000Z', 't1', ?2, ?2)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+     VALUES ('fit', 'fit', ?1, 'first_fit', 'completed', '2026-08-01T03:30:00.000Z', '2026-08-01T06:30:00.000Z', 't1',
+       ?2)`,
   )
     .bind(PERSON, NOW.toISOString())
     .run();
@@ -132,25 +118,24 @@ describe("one credit pays for one visit", () => {
       credit: unknown;
       price: unknown;
     }>();
-  const book = async (holdId: string) =>
-    (await post("/api/bookings", { hold_id: holdId }, { FSM_QUEUE: fakeQueue() })).json<{
+  const book = async (holdId: string, bindings = {}) =>
+    (await post("/api/bookings", { hold_id: holdId }, bindings)).json<{
       hold_id: string;
       checkout: { amount: number } | null;
     }>();
+  /** Taken on the credit, with the visit left for the half-hour pass to write: the request lost D1 just then. */
+  const bookLater = (holdId: string) => book(holdId, { DB: leaseRefused(env.DB) });
   const get = async (path: string) =>
     (await request(app(), path, { headers: { Cookie: cookie, Origin: "https://maneman.test" } })).json();
   const confirm = (holdId: string, now = NOW, options = {}) =>
-    confirmBooking(env.DB, createStubFsm(world()), createStubPayments(), holdId, now, {
-      labelAsTest: true,
-      ...options,
-    });
+    confirmBooking(env.DB, createStubPayments(), holdId, now, options);
   const redeems = async () =>
     (await env.DB.prepare("SELECT source_id FROM credit_ledger WHERE kind = 'redeem'").all()).results;
 
-  it("asks for payment on a second visit booked in another tab while the first waits to be booked", async () => {
+  it("asks for payment on a second visit booked in another tab while the first waits to be written", async () => {
     await credits(1);
     const first = await hold("2026-09-24");
-    expect(await book(first.id)).toEqual({ hold_id: first.id, checkout: null });
+    expect(await bookLater(first.id)).toEqual({ hold_id: first.id, checkout: null });
 
     expect(await get("/api/me")).toMatchObject({ credits: null });
     expect(await get("/api/refer")).toMatchObject({ credits: { visits: 0, earliest_expiry: null } });
@@ -204,7 +189,7 @@ describe("one credit pays for one visit", () => {
       expiresAt,
     }).run();
     const held = await hold("2026-09-24");
-    expect(await book(held.id)).toEqual({ hold_id: held.id, checkout: null });
+    expect(await bookLater(held.id)).toEqual({ hold_id: held.id, checkout: null });
 
     // The credit has expired by the time the visit is written, and the pass that closes expired credits runs between.
     const later = new Date(NOW.getTime() + 2 * hour);
@@ -223,12 +208,15 @@ describe("one credit pays for one visit", () => {
   it("confirms a replayed booking call once, and redeems one credit for it", async () => {
     await credits(1);
     const first = await hold("2026-09-24");
-    expect(await book(first.id)).toEqual({ hold_id: first.id, checkout: null });
-    expect(await book(first.id)).toEqual({ hold_id: first.id, checkout: null });
+    expect(await bookLater(first.id)).toEqual({ hold_id: first.id, checkout: null });
+    expect(await bookLater(first.id)).toEqual({ hold_id: first.id, checkout: null });
     expect(await get(`/api/holds/${first.id}`)).toMatchObject({ credit: { remaining: 0 } });
 
     expect(await confirm(first.id)).toBe("booked");
     expect(await confirm(first.id)).toBe("already_booked");
+    expect(await redeems()).toHaveLength(1);
+    // Once the visit is written, a replay is told the hold is booked already, and spends nothing.
+    expect((await post("/api/bookings", { hold_id: first.id })).status).toBe(409);
     expect(await redeems()).toHaveLength(1);
   });
 
@@ -246,7 +234,6 @@ describe("one credit pays for one visit", () => {
     expect(paid).toHaveLength(2);
     for (const answer of paid) expect(answer).toMatchObject({ checkout: { amount: 200000 } });
 
-    expect(await confirm(String(holds[0]))).toBe("booked");
     const covered = await env.DB.prepare("SELECT use_credit FROM slot_holds ORDER BY date").all();
     expect(covered.results).toEqual([{ use_credit: 1 }, { use_credit: 0 }, { use_credit: 0 }]);
     expect(await redeems()).toHaveLength(1);
@@ -264,9 +251,9 @@ describe("one credit pays for one visit", () => {
       expiresAt: soon,
     }).run();
     const first = await hold("2026-09-24");
-    await book(first.id);
+    await bookLater(first.id);
     const second = await hold("2026-09-25");
-    expect(await book(second.id)).toEqual({ hold_id: second.id, checkout: null });
+    expect(await bookLater(second.id)).toEqual({ hold_id: second.id, checkout: null });
 
     expect(await Promise.all([confirm(first.id), confirm(second.id)])).toEqual(["booked", "booked"]);
     const drawn = await env.DB.prepare(
@@ -276,33 +263,11 @@ describe("one credit pays for one visit", () => {
     expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(0);
   });
 
-  it("redeems the credit as the visit is booked, under the visit FSM's webhook mirrored first", async () => {
-    await credits(1);
-    const first = await hold("2026-09-24");
-    await book(first.id);
-    await env.DB.prepare(
-      "UPDATE slot_holds SET fsm_work_order_id = 'fsm-order-9', fsm_appointment_id = 'fsm-visit-9' WHERE id = ?1",
-    )
-      .bind(first.id)
-      .run();
-    await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
-         fsm_modified_at, synced_at)
-       VALUES ('mirrored', 'fsm-visit-9', ?1, 'service', 'scheduled', 'Scheduled', '2026-09-24T06:30:00.000Z',
-         '2026-09-24T07:30:00.000Z', 't1', ?2, ?2)`,
-    )
-      .bind(PERSON, NOW.toISOString())
-      .run();
-
-    expect(await confirm(first.id)).toBe("booked");
-    expect(await redeems()).toEqual([{ source_id: "mirrored" }]);
-  });
-
   it("books a credit visit whose credit was clawed back since, and tells ops nothing paid for it", async () => {
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "referral", sourceId: "r1", now: NOW }).run();
     const first = await hold("2026-09-24");
-    await book(first.id);
-    // The friend's first fit was refunded under the guarantee before this visit was booked.
+    await bookLater(first.id);
+    // The friend's first fit was refunded under the guarantee before this visit was written.
     await clawBack(env.DB, "referral", "r1", NOW);
     const deps = fakeDependencies();
 

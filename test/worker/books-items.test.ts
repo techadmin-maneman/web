@@ -131,7 +131,7 @@ describe("each service's Books item", () => {
       { id: "item-replacement", name: "Service visit", rate: 1_500_000, active: true, sac: null },
     ];
     await env.DB.prepare("UPDATE services SET books_item_id = 'item-replacement' WHERE kind = 'replacement'").run();
-    const books = createStubBooks({ draftTotal: 0, items });
+    const books = createStubBooks({ items });
 
     await check(books, { push: true });
     expect(books.made.itemsMade).toEqual([{ name: "Service visit", rate: 200_000, sac: null }]);

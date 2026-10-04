@@ -15,17 +15,7 @@ import { createLogger } from "../../src/log.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import type { PaymentsProvider } from "../../src/providers/payments.ts";
-import {
-  appFor,
-  captureLogs,
-  fakeDependencies,
-  fakeQueue,
-  LOCAL_SETTINGS,
-  markDatabase,
-  NOW,
-  request,
-  savedAddress,
-} from "./helpers.ts";
+import { appFor, captureLogs, fakeDependencies, fakeQueue, leaseRefused, LOCAL_SETTINGS, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const OTHER = "55555555-5555-4555-8555-555555555555";
@@ -135,20 +125,6 @@ const scheduledServiceVisits = (personId: string) =>
   env.DB.prepare("SELECT id FROM appointments WHERE person_id = ?1 AND type = 'service' AND status = 'scheduled'")
     .bind(personId)
     .all();
-
-/** The database, refusing a booking the lease on its hold, as a request whose connection is lost just then. */
-function leaseRefused(db: D1Database): D1Database {
-  const lost = () => Promise.reject(new Error("D1_ERROR: Network connection lost."));
-  const prepare = (sql: string) => {
-    if (!sql.includes("SET booking_until = ?2")) return db.prepare(sql);
-    return { bind: () => ({ first: lost, run: lost, all: lost }) } as unknown as D1PreparedStatement;
-  };
-  const refusing: Pick<D1Database, "prepare" | "batch"> = {
-    prepare,
-    batch: <T = unknown>(statements: D1PreparedStatement[]) => db.batch<T>(statements),
-  };
-  return refusing as D1Database;
-}
 
 /** The cron's half-hour pass over paid holds: how many it booked. */
 function halfHourPass(now: Date, budget: CallBudget = createCallBudget(40), deps = fakeDependencies()) {

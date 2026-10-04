@@ -340,6 +340,20 @@ export function failingAfterTheFirstBatch(db: D1Database): D1Database {
   return failing as D1Database;
 }
 
+/** The database, refusing a booking the lease on its hold, as a request whose connection is lost just then. */
+export function leaseRefused(db: D1Database): D1Database {
+  const lost = () => Promise.reject(new Error("D1_ERROR: Network connection lost."));
+  const prepare = (sql: string) => {
+    if (!sql.includes("SET booking_until = ?2")) return db.prepare(sql);
+    return { bind: () => ({ first: lost, run: lost, all: lost }) } as unknown as D1PreparedStatement;
+  };
+  const refusing: Pick<D1Database, "prepare" | "batch"> = {
+    prepare,
+    batch: <T = unknown>(statements: D1PreparedStatement[]) => db.batch<T>(statements),
+  };
+  return refusing as D1Database;
+}
+
 /** A queue binding that keeps what is sent, instead of delivering it. */
 export function fakeQueue(): Queue & { sent: unknown[] } {
   const sent: unknown[] = [];
