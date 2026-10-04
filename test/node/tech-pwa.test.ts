@@ -1,4 +1,4 @@
-// The technician app's manifest and icons (apps/tech/sw-build.ts).
+// The technician app's manifest and icons (apps/tech/pwa.ts, packages/web-kit/pwa.ts).
 //
 // They exist for one reason: on an iPhone the home screen is where the offline
 // store is safe. A web app added to it is exempt from Safari's seven-day cap on
@@ -8,7 +8,10 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ICONS, manifest, precacheList, token, version } from "../../apps/tech/sw-build.ts";
+import { TECH_APP } from "../../apps/tech/pwa.ts";
+import { ICONS, manifest as manifestOf, precacheList, token, version } from "../../packages/web-kit/pwa.ts";
+
+const manifest = (ground: string) => manifestOf(TECH_APP, ground);
 
 describe("the technician app's manifest", () => {
   const ink = token("--ink-deep");
@@ -22,6 +25,9 @@ describe("the technician app's manifest", () => {
   it("opens the whole app standalone, which is what makes an iPhone keep its store", () => {
     expect(manifest(ink)).toMatchObject({
       name: "Mane Man technician",
+      // Its own name under the icon, apart from the client app's, and held upright (CP-50).
+      short_name: "MM Tech",
+      orientation: "portrait",
       id: "/",
       start_url: "/",
       scope: "/",

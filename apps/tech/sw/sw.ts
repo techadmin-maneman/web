@@ -13,7 +13,7 @@
 // up or coming down. The app deletes the day cache when the session ends or ops
 // revoke the phone (apps/tech/src/store/db.ts).
 //
-// The build writes in MM_PRECACHE and MM_VERSION (apps/tech/sw-build.ts).
+// The build writes in MM_PRECACHE and MM_VERSION (packages/web-kit/pwa.ts).
 
 import { answerFor } from "./requests.ts";
 

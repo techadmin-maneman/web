@@ -14,7 +14,7 @@
 
 import { writeFileSync } from "node:fs";
 import sharp from "sharp";
-import { token } from "../apps/app/pwa.ts";
+import { token } from "../packages/web-kit/pwa.ts";
 import {
   CARD_HEIGHT,
   CARD_WIDTH,

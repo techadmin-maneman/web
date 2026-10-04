@@ -2,7 +2,7 @@
 // the app's own files, so the app opens without a connection, and the last Home
 // answer (GET /api/me), so board B3's offline state can show the next visit.
 // Nothing else is kept: no other API answer, and no photograph or document
-// (./requests.ts). The build writes in MM_PRECACHE and MM_VERSION (apps/app/pwa.ts).
+// (./requests.ts). The build writes in MM_PRECACHE and MM_VERSION (packages/web-kit/pwa.ts).
 
 import { answerFor, HOME_PATH } from "./requests.ts";
 

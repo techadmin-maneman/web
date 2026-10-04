@@ -10,7 +10,8 @@
     "./fonts.css": "./fonts.css",
     "./icons": "./icons.ts",
     "./marks": "./marks.ts",
-    "./colours": "./colours.ts"
+    "./colours": "./colours.ts",
+    "./images": "./images.ts"
   },
   "dependencies": {
     "@fontsource/eb-garamond": "5.3.0",

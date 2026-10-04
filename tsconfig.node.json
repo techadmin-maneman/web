@@ -19,7 +19,7 @@
     "apps/app/pwa.ts",
     "apps/ops/headers.ts",
     "apps/tech/headers.ts",
-    "apps/tech/sw-build.ts",
+    "apps/tech/pwa.ts",
     "src/config/**/*.ts",
     "src/worker-configuration.d.ts",
     "vitest.config.ts",

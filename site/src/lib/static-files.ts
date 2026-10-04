@@ -8,6 +8,7 @@
 // Staging and local are never indexed; the smoke check looks for it.
 
 import { createHash } from "node:crypto";
+import { WHATSAPP_NUMBER, whatsappChat } from "@maneman/web-kit/whatsapp";
 import type { AnalyticsIds } from "./analytics-ids.ts";
 import type { SiteEnvironment } from "./environment.ts";
 import { SITE_ORIGIN } from "./site-origin.ts";
@@ -101,6 +102,16 @@ export function headersFile(environment: SiteEnvironment, csp: string): string {
   ];
   const text = rules.map(([path, lines]) => [path, ...lines.map((line) => `  ${line}`)].join("\n")).join("\n");
   return `${text}\n`;
+}
+
+/**
+ * /.well-known/security.txt (RFC 9116): where to report a weakness, until a year from the build, as the RFC asks of
+ * its expiry. Each deploy writes it afresh, so it lapses only on a site left a year unbuilt. The business's WhatsApp is
+ * the one contact the site publishes.
+ */
+export function securityTxt(builtAt: Date): string {
+  const expires = new Date(builtAt.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
+  return `Contact: ${whatsappChat(WHATSAPP_NUMBER)}\nExpires: ${expires}\nPreferred-Languages: en\n`;
 }
 
 export function robotsFile(environment: SiteEnvironment): string {

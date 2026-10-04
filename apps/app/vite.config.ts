@@ -5,7 +5,8 @@
 
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
-import { pwa } from "./pwa.ts";
+import { pwa } from "../../packages/web-kit/pwa.ts";
+import { CLIENT_APP } from "./pwa.ts";
 
 const environment = process.env.MM_ENV ?? "local";
 /** The commit built, which scripts/lib/spa-build.ts passes in and the smoke tests compare with the deploy's. */
@@ -26,7 +27,7 @@ const identify: Plugin = {
 
 export default defineConfig({
   root: import.meta.dirname,
-  plugins: [react(), identify, pwa()],
+  plugins: [react(), identify, pwa(CLIENT_APP)],
   // packages/ui imports React too, and from there would find the repository root's React 18; this bundles the app's.
   resolve: { dedupe: ["react", "react-dom"] },
   define: { "import.meta.env.MM_ENV": JSON.stringify(environment) },

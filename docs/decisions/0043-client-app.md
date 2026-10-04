@@ -78,7 +78,7 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
 
 ## The PWA and board B3 (P2-F1.4)
 
-- **The manifest and icons are drawn at build time** (`apps/app/pwa.ts`), from the brand kit: the favicon drawing on ink, as the kit's README asks for home-screen icons, at 192 and 512 px, a maskable 512 with the crown inside the circle a launcher may crop to, and the 180 px Apple touch icon. Install prompts are left to the browser.
+- **The manifest and icons are drawn at build time** (`apps/app/pwa.ts`; since 5 October 2026 the build both apps share, `packages/web-kit/pwa.ts`, with the app's identity in `apps/app/pwa.ts`), from the brand kit: the favicon drawing on ink, as the kit's README asks for home-screen icons, at 192 and 512 px, a maskable 512 with the crown inside the circle a launcher may crop to, and the 180 px Apple touch icon. Install prompts are left to the browser.
 - **The service worker is hand-written** (`apps/app/sw/sw.ts`), a second Vite entry served as `/sw.js`, so its scope is the whole app. The build writes in the list of files it keeps and a version, a hash of those files, so a new build installs afresh and drops the old files.
   - **Pages** come from the kept app first, without waiting on the network (since 25 September 2026; until then from the network first, which a signal that never answers held closed for minutes). A new build still arrives: the browser checks `sw.js` each time the app opens.
   - **The app's own files** come from what it kept at install. The fonts it never draws with, the extended Latin subsets and the rupee, are not kept.

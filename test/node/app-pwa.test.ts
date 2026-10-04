@@ -1,9 +1,12 @@
-// The client app's manifest and the service worker's file list (apps/app/pwa.ts),
+// The client app's manifest and the service worker's file list (apps/app/pwa.ts, packages/web-kit/pwa.ts),
 // and the names the app and its service worker must agree on.
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ICONS, manifest, precacheList, token, version } from "../../apps/app/pwa.ts";
+import { CLIENT_APP } from "../../apps/app/pwa.ts";
+import { ICONS, manifest as manifestOf, precacheList, token, version } from "../../packages/web-kit/pwa.ts";
+
+const manifest = (ground: string) => manifestOf(CLIENT_APP, ground);
 
 describe("the client app's manifest", () => {
   const ink = token("--ink");
@@ -13,9 +16,10 @@ describe("the client app's manifest", () => {
     expect(manifest(ink)).toMatchObject({ background_color: ink, theme_color: ink });
   });
 
-  it("opens the whole app, standalone, from its root", () => {
+  it("opens the whole app, standalone, from its root, and says what it is", () => {
     expect(manifest(ink)).toMatchObject({
       name: "Mane Man",
+      description: "Your visits, photographs and payments with Mane Man.",
       id: "/",
       start_url: "/",
       scope: "/",
@@ -29,9 +33,10 @@ describe("the client app's manifest", () => {
       { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
       { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ]);
-    expect(readFileSync("apps/app/index.html", "utf8")).toContain(
-      '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />',
-    );
+    const html = readFileSync("apps/app/index.html", "utf8");
+    expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />');
+    // PNG favicons on ink, as the site's are: the bare drawing vanished on a dark tab.
+    expect(html).toContain('<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />');
   });
 
   it("keeps a maskable icon's crown inside the circle a launcher may crop it to", () => {
