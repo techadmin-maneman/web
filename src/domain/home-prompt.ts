@@ -70,13 +70,25 @@ const PROMPT = `SELECT
     ORDER BY invoice_issued_at DESC LIMIT 1
   ) invoiced ON TRUE`;
 
-interface Row {
-  has_address: number;
-  due_on: string | null;
-  replacement_booked: number;
-  invoiced_id: string | null;
-  invoiced_type: VisitType | null;
-  invoiced_start: string | null;
+/** What the prompt turns on beyond the client's standing. */
+export interface PromptFacts {
+  readonly has_address: number;
+  readonly due_on: string | null;
+  readonly replacement_booked: number;
+  readonly invoiced_id: string | null;
+  readonly invoiced_type: VisitType | null;
+  readonly invoiced_start: string | null;
+}
+
+/** Read apart from the decision, so Home can send this read with its others. */
+export function promptFacts(
+  db: D1Database,
+  personId: string,
+  now: Date,
+  days: NextVisitDays,
+): Promise<PromptFacts | null> {
+  const since = new Date(now.getTime() - days.invoice_prompt * DAY_MS).toISOString();
+  return db.prepare(PROMPT).bind(personId, since).first<PromptFacts>();
 }
 
 /** What the client has now: whether anything is booked, and what the app offers them next. */
@@ -92,13 +104,13 @@ const nextServiceOf = (offer: NextOffer | null): NextService | null =>
   offer !== null && offer.type !== "first_fit" ? { ...offer, type: offer.type } : null;
 
 /** The month the piece in wear falls due, while no replacement is booked and that month may be booked now. */
-function replacementMonthInReach(row: Row, tomorrow: string, days: NextVisitDays): string | null {
+function replacementMonthInReach(row: PromptFacts, tomorrow: string, days: NextVisitDays): string | null {
   if (row.due_on === null || row.replacement_booked === 1) return null;
   const month = row.due_on.slice(0, 7);
   return `${month}-01` <= lastBookableDay(tomorrow, days) ? month : null;
 }
 
-function invoiceOf(row: Row): InvoiceReady | null {
+function invoiceOf(row: PromptFacts): InvoiceReady | null {
   if (row.invoiced_id === null || row.invoiced_start === null) return null;
   return {
     visit_id: row.invoiced_id,
@@ -136,12 +148,11 @@ function nextVisitPrompt(next: NextService, replacementMonth: string | null): Ho
 export async function homePrompts(
   db: D1Database,
   personId: string,
+  row: PromptFacts | null,
   standing: ClientStanding,
   now: Date,
   days: NextVisitDays,
 ): Promise<HomePrompts> {
-  const since = new Date(now.getTime() - days.invoice_prompt * DAY_MS).toISOString();
-  const row = await db.prepare(PROMPT).bind(personId, since).first<Row>();
   if (row === null) return { prompt: null, invoice: null };
   const tomorrow = addDays(indiaDate(now), 1);
   const next = nextServiceOf(standing.offer);

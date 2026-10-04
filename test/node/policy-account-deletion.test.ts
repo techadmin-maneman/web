@@ -21,14 +21,20 @@ describe("account deletion", () => {
     expect(DELETION_ALERT_AFTER_MS).toBeLessThan(DELETION_DECIDED_WITHIN_DAYS * DAY_MS);
   });
 
-  it("is not done while a visit of theirs is still to happen, or a payment is held with no visit behind it", () => {
-    expect(erasureRefusal({ visits: [], payments: [] })).toBeNull();
-    expect(erasureRefusal({ visits: ["visit"], payments: [] })).toBe("visit_booked");
-    expect(erasureRefusal({ visits: [], payments: ["payment"] })).toBe("payment_held");
+  const nothing = { visits: [], bookings: [], payments: [], links: [] };
+
+  it("is not done while a visit or booking of theirs is still to happen, a payment is held, or a link is unpaid", () => {
+    expect(erasureRefusal(nothing)).toBeNull();
+    expect(erasureRefusal({ ...nothing, visits: ["visit"] })).toBe("visit_booked");
+    expect(erasureRefusal({ ...nothing, bookings: ["booking"] })).toBe("visit_booked");
+    expect(erasureRefusal({ ...nothing, payments: ["payment"] })).toBe("payment_held");
+    expect(erasureRefusal({ ...nothing, links: ["link"] })).toBe("payment_owed");
   });
 
   it("names the booked visit first, since cancelling it settles its payment too", () => {
-    expect(erasureRefusal({ visits: ["visit"], payments: ["payment"] })).toBe("visit_booked");
+    expect(erasureRefusal({ ...nothing, visits: ["visit"], payments: ["payment"] })).toBe("visit_booked");
+    expect(erasureRefusal({ ...nothing, bookings: ["booking"], links: ["link"] })).toBe("visit_booked");
+    expect(erasureRefusal({ ...nothing, payments: ["payment"], links: ["link"] })).toBe("payment_held");
   });
 
   it("counts a visit as still to happen until FSM has closed it", () => {
