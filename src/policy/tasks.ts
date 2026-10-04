@@ -31,6 +31,8 @@
 // And so is a grievance (docs/decisions/0072-ops-clients-and-queues.md): the
 // client has been promised an answer within a time, as with an erasure, so it
 // is counted down on this board as the other requests about their data are.
+//
+// So is a client's dispute of a no-show's charge: a claim for money back waits on this board until ops rule on it.
 
 //
 // So is a job still booked on a day its technician is away (OPS-07): leave
@@ -93,6 +95,7 @@ export const TASK_GROUPS = [
   "partial_visit",
   "referral_review",
   "no_show_decision",
+  "no_show_dispute",
   "number_change",
   "erasure_request",
   "grievance",
@@ -126,6 +129,7 @@ export const TASK_SLA_HOURS: Slas = {
   partial_visit: 48,
   referral_review: 48,
   no_show_decision: 48,
+  no_show_dispute: 48,
   number_change: 48,
   // What the client was promised: the 7 days run from the request to ops' decision (ADR 0049).
   erasure_request: DELETION_DECIDED_WITHIN_DAYS * 24,

@@ -1,6 +1,6 @@
 # 0067. A failure that needs a person reaches one, once, with the IDs to act on
 
-- Status: accepted. Amends ADR 0011 on what a refused Turnstile secret answers, and ADR 0044 on a Books refusal.
+- Status: accepted. Amends ADR 0011 on what a refused Turnstile secret answers, and ADR 0044 on a Books refusal. Amended 4 October 2026: "Alerts on Tasks", on the owner's ruling that alerts get a home in the console.
 - Date: 2026-09-25
 
 ## Context
@@ -22,7 +22,7 @@ The audit of 24 September 2026 found that much of what goes wrong reached nobody
 - Its message carries IDs, never a name, number or address, and a link into the ops console, such as `/clients/<personId>`, which finds the client without their mobile number. The chat post still scrubs numbers and e-mail addresses as a last defence.
 - The webhook stays optional, as `ALERT_WEBHOOK_URL` always was: without it the alert is logged and kept. If D1 cannot keep it, the chat is told anyway.
 
-Alerts that already fire once per record, and name it, still post directly: a lead or erasure the CRM gave up on, a message that failed, a try-on that failed, and a booking FSM would not take. A replay that fails again should be told again, which a kept alert would only count.
+Alerts that already fire once per record, and name it, still post directly: a try-on that failed, and a booking FSM would not take. A lead or erasure the CRM gave up on, a message that failed and a deletion request five days old are kept too, since 4 October ("Alerts on Tasks").
 
 **The cron counts its failures and shares one budget of outside calls** (`src/scheduled/cron.ts`, `src/lib/call-budget.ts`).
 
@@ -62,9 +62,21 @@ Alerts that already fire once per record, and name it, still post directly: a le
 - FSM answering an appointment ID it cannot parse with `404 INVALID_URL_PATTERN` reads as the appointment gone, as a 204 already did.
 - A booking from the site is stamped once it is on the fsm-sync queue (`leads.fsm_queued_at`). The sweeper sends one left unstamped after two minutes, once; one over a day old is left to ops, so switching FSM on sends no backlog.
 
+## Alerts on Tasks (4 October 2026)
+
+The 2 October audit found that failures needing a person still lived only in the chat (PLAT-40, OIA-06, PS-20). The owner ruled that rejected work and open alerts belong on Tasks, with "Send again".
+
+- **"Needs a hand"** heads Tasks: every open alert ops have been told of (`alerts.told_at`: the first sighting, or the `after`-th for one that waits), the longest open first, with its message and its link (`GET /api/alerts`).
+- **Each department sees its own kinds** (`src/policy/alerts.ts`): a failed message, a CRM give-up or a deletion request is Customer Care's; refunds, invoices and Books are Finance's; stock, technicians and bookings are Operations'. Anything else, about the system itself, is Admin's.
+- **Mark done** (`POST /api/alerts/{id}/resolve`, Act, audited) closes one ops have put right by hand, which the runbook's SQL did before. For a CRM erasure it also records the person as erased there, so it asks Manage, as every erasure does.
+- **Send again** (`POST /api/alerts/{id}/send-again`, Act, audited) puts a failed message, a lead the CRM gave up on, or a CRM erasure back on its queue with its tries counted afresh, and closes the alert. If it fails again, that is a new alert, told again.
+- **Kept now, not only posted:** a lead the CRM gave up on (`crm_lead`), an erasure there (`crm_erasure`) and a failed message (`message_failed`), each closed when it goes through; and a deletion request five days old (`deletion_waiting`), one alert per request, closed when it is decided. The request is marked alerted only once its alert is kept, and the message says "within 7 days" and the day it is due.
+
+What the audit asked of FSM here (a Tasks group for a technician's close FSM refused, "Try again" through FSM, and the phone's and the dispatch board's words for it) is not built: FSM is being removed, and without it a technician's steps land in our own database.
+
 ## Consequences
 
-- A failure that needs a person is in the `alerts` table, open until it is put right: `SELECT key, message, count, first_seen_at FROM alerts WHERE resolved_at IS NULL`. The console does not list them yet.
+- A failure that needs a person is in the `alerts` table, open until it is put right, and on Tasks once ops have been told of it.
 - A resolved alert stays in the table, and so does one nothing closes (the table's "never" rows), so "open" means not yet known to be put right. The table grows by the alerts raised, which is small; nothing deletes them yet.
 - Checking whether to close an alert costs one indexed D1 statement where the good outcome happens: a login code sent, an appointment synced, a job step written, a Books record gone through. Each reads the open alert by key through a partial index and usually writes nothing.
 - A refused Books refund is still asked again every hour, as a refusal can be put right in Books. Ops now know of it, once, and again at the tenth and hundredth hour.

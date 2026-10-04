@@ -241,6 +241,14 @@ describe("a grant of Finance in one city", () => {
     expect(undecided.results).toEqual([{ id: IN_GURGAON.undecided }, { id: NOWHERE.undecided }]);
   });
 
+  it("lists only its city's rulings of the day, and shows what a charge would keep only in its city", async () => {
+    expect(await idsIn(await get(delhi, "/api/no-shows/decided"), "cases")).toEqual([IN_DELHI.charged]);
+
+    expect((await get(delhi, `/api/no-shows/${IN_GURGAON.undecided}/charge`)).status).toBe(404);
+    expect((await get(delhi, `/api/no-shows/${NOWHERE.undecided}/charge`)).status).toBe(404);
+    expect((await get(delhi, `/api/no-shows/${IN_DELHI.undecided}/charge`)).status).toBe(200);
+  });
+
   it("lists and rules on only its city's disputes", async () => {
     expect(await idsIn(await get(delhi, "/api/no-shows/disputes"), "disputes")).toEqual([IN_DELHI.dispute]);
 
