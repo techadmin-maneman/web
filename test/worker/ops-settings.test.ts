@@ -614,18 +614,19 @@ describe("the service area", () => {
     await pincode("122018", "Gurgaon", "Sector 65", 0, null);
   });
 
-  it("lists every pincode with its city and whether we go there", async () => {
+  it("lists every pincode with its city and whether we go there, and our cities", async () => {
     const body = await (
       await request(ops, "/api/service-area")
-    ).json<{ pincodes: { pincode: string; launch_on: string | null }[] }>();
+    ).json<{ pincodes: { pincode: string; launch_on: string | null }[]; cities: string[] }>();
     expect(body.pincodes).toHaveLength(3);
     expect(body.pincodes[0]).toMatchObject({ pincode: "110001", city: "Delhi", served: true, launch_on: "2026-09-01" });
+    expect(body.cities).toEqual(expect.arrayContaining(["Delhi", "Gurgaon", "Mumbai"]));
   });
 
   it("serves a pincode from a date, and counts only what changed", async () => {
     const answer = await post("/api/service-area", {
       changes: [
-        { pincode: "122018", served: true, launch_on: "2026-10-01" },
+        { pincode: "122018", served: true, launch_on: "2026-09-15" },
         // Unchanged: it is sent and it is not counted, so the log records no change that was not one.
         { pincode: "110001", served: true, launch_on: "2026-09-01" },
       ],
@@ -655,15 +656,57 @@ describe("the service area", () => {
   });
 
   it("records what a pincode was and what it is", async () => {
-    await post("/api/service-area", { changes: [{ pincode: "122018", served: true, launch_on: "2026-10-01" }] });
+    await post("/api/service-area", { changes: [{ pincode: "122018", served: true, launch_on: "2026-09-15" }] });
     const { results } = await auditFor("pincode.set");
     expect(results[0]).toMatchObject({ actor: "ops@localhost", subject_id: "122018" });
     expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({
       served_from: false,
       served_to: true,
       launch_from: "",
-      launch_to: "2026-10-01",
+      launch_to: "2026-09-15",
     });
+  });
+
+  // BK-38 of the audit, 2 October 2026: a pincode served from a later day was served at once, so /book took bookings
+  // there before its launch day.
+  it("refuses to serve a pincode from a day still to come, and changes nothing", async () => {
+    const answer = await post("/api/service-area", {
+      changes: [
+        { pincode: "122018", served: true, launch_on: "2026-10-01" },
+        { pincode: "110017", served: true, launch_on: "2026-09-21" },
+      ],
+    });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "launch_in_future", fields: ["122018"] } });
+    const body = await (await request(ops, "/api/service-area")).json<{ pincodes: { served: boolean }[] }>();
+    expect(body.pincodes.filter((each) => each.served)).toHaveLength(1);
+    expect((await auditFor("pincode.set")).results).toHaveLength(0);
+  });
+
+  it("lets a pincode not served yet hold a day still to come, and renames one served whatever its date", async () => {
+    const planned = await post("/api/service-area", {
+      changes: [{ pincode: "122018", served: false, launch_on: "2026-10-01" }],
+    });
+    expect(planned.status).toBe(200);
+    await env.DB.prepare(
+      "UPDATE serviceable_pincodes SET launched_at = '2026-10-04T18:30:00.000Z' WHERE pincode = '110001'",
+    ).run();
+    const renamed = await post("/api/service-area", {
+      changes: [{ pincode: "110001", served: true, launch_on: "2026-10-05", area: "Janpath" }],
+    });
+    expect(renamed.status).toBe(200);
+  });
+
+  // BK-38: the two ways to launch disagreed on the launch date; both now launch through one function, from the day
+  // given or today.
+  it("dates a pincode it begins serving from today, where no day is given", async () => {
+    await post("/api/service-area", { changes: [{ pincode: "122018", served: true, launch_on: null }] });
+    const body = await (
+      await request(ops, "/api/service-area")
+    ).json<{ pincodes: { pincode: string; launch_on: string | null }[] }>();
+    expect(body.pincodes.find((each) => each.pincode === "122018")?.launch_on).toBe("2026-09-21");
+    const { results } = await auditFor("pincode.launch");
+    expect(results.map((row) => row.subject_id)).toEqual(["122018"]);
   });
 
   it("refuses a change that would leave nowhere served, and changes nothing", async () => {
@@ -681,6 +724,69 @@ describe("the service area", () => {
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["560001"] } });
     expect((await auditFor("pincode.set")).results).toHaveLength(0);
+  });
+});
+
+// BK-36 and OIA-13 of the audit, 2 October 2026: no screen could add a pincode, so the waitlist could not open the
+// areas people asked for.
+describe("adding a pincode", () => {
+  beforeEach(async () => {
+    await pincode("110001", "Delhi", "Connaught Place", 1, "2026-08-31T18:30:00.000Z");
+  });
+
+  const add = (body: object) => post("/api/pincodes", body);
+
+  it("adds it unserved in one of our cities, named as ops typed, and records who added it", async () => {
+    const answer = await add({ pincode: "400050", area: "Bandra West ", city: "Mumbai" });
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toEqual({
+      pincode: "400050",
+      area: "Bandra West",
+      city: "Mumbai",
+      served: false,
+      launch_on: null,
+      waiting: 0,
+      to_alert: 0,
+    });
+    const row = await env.DB.prepare(
+      "SELECT area, city, served, launched_at, area_named_by FROM serviceable_pincodes WHERE pincode = '400050'",
+    ).first();
+    expect(row).toEqual({
+      area: "Bandra West",
+      city: "Mumbai",
+      served: 0,
+      launched_at: null,
+      area_named_by: "ops@localhost",
+    });
+    const { results } = await auditFor("pincode.add");
+    expect(results).toEqual([
+      { actor: "ops@localhost", actor_kind: "staff", subject_id: "400050", detail: JSON.stringify({ city: "Mumbai" }) },
+    ]);
+  });
+
+  it("refuses a pincode it holds already, and a city that is not ours, adding nothing", async () => {
+    const held = await add({ pincode: "110001", area: "Janpath", city: "Delhi" });
+    expect(held.status).toBe(409);
+    expect(await held.json()).toMatchObject({ error: { code: "pincode_held" } });
+
+    const nowhere = await add({ pincode: "600001", area: "Parrys", city: "Chennai" });
+    expect(nowhere.status).toBe(400);
+    expect(await nowhere.json()).toMatchObject({ error: { code: "invalid_request", fields: ["city"] } });
+
+    const named = await env.DB.prepare("SELECT area FROM serviceable_pincodes WHERE pincode = '110001'").first();
+    expect(named).toEqual({ area: "Connaught Place" });
+    expect((await auditFor("pincode.add")).results).toHaveLength(0);
+  });
+
+  it("refuses a pincode or a name the service area could not hold", async () => {
+    for (const body of [
+      { pincode: "012345", area: "Somewhere", city: "Delhi" },
+      { pincode: "110099", area: "=HYPERLINK(1)", city: "Delhi" },
+    ]) {
+      const answer = await add(body);
+      expect(answer.status, JSON.stringify(body)).toBe(400);
+    }
+    expect((await auditFor("pincode.add")).results).toHaveLength(0);
   });
 });
 
@@ -786,7 +892,7 @@ describe("serving a pincode people are waiting for", () => {
     const queue = fakeQueue();
     const answer = await post(
       "/api/service-area",
-      { changes: [{ pincode: "122018", served: true, launch_on: "2026-10-01" }] },
+      { changes: [{ pincode: "122018", served: true, launch_on: "2026-09-15" }] },
       { MESSAGE_QUEUE: queue },
     );
     expect(await answer.json()).toEqual({ changed: 1, served: 2, alerted: 1 });

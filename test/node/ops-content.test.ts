@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { profile } from "../../apps/app/src/content.ts";
-import { BOOKING_URL, deletions, dispatch, grievances, waitlist } from "../../apps/ops/src/content.ts";
+import { areas, BOOKING_URL, deletions, dispatch, grievances } from "../../apps/ops/src/content.ts";
 import { DELETION_ALERT_AFTER_MS } from "../../src/domain/deletion.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { HOSTNAME } from "../../src/config/environments.ts";
@@ -15,7 +15,7 @@ import { VISIT_TYPES } from "../../src/config/visit-types.ts";
 describe("the ops console's content", () => {
   it("previews the launch alert word for word, with the first name left as a placeholder", () => {
     const url = BOOKING_URL.staging ?? "";
-    expect(waitlist.launch.message("Bandra W", url)).toBe(
+    expect(areas.launch.message("Bandra W", url)).toBe(
       renderMessage("launch_alert_v1", ["{first name}", "Bandra W", url]),
     );
   });

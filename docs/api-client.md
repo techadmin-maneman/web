@@ -1759,6 +1759,8 @@ Request body:
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
