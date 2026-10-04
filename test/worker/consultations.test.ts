@@ -696,6 +696,36 @@ describe("an invite the browser remembered", () => {
     ]);
   });
 
+  // BK-30 of the audit, 2 October 2026: a refused send to FSM's queue answered 500 after the hold was written, and
+  // the invite and the lead were never recorded. The cron books the hold half an hour on.
+  it("attributes the invite and leaves the lead when FSM's queue refuses the hold", async () => {
+    const crm = fakeQueue();
+    const fsmDown = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) };
+    const answer = await request(
+      site(),
+      "/api/consultation",
+      post({
+        ...VISITOR,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        address: ADDRESS,
+        invite_code: "RM4K7P",
+        invite_told: true,
+      }),
+      { FSM_QUEUE: fsmDown, CRM_QUEUE: crm, MESSAGE_QUEUE: fakeQueue() },
+    );
+
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", credits: true, invite: "valid" });
+    expect((await attributions()).results).toEqual([expect.objectContaining({ code: "RM4K7P", via: "consultation" })]);
+    expect(crm.sent).toEqual([{ lead_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
+    // Held and confirmed: what the cron books once the half hour has passed.
+    const hold = await env.DB.prepare("SELECT state, confirmed_at IS NOT NULL AS confirmed FROM slot_holds").first();
+    expect(hold).toEqual({ state: "held", confirmed: 1 });
+  });
+
   // PS-24: the friend is told who hears of their fit before /book sends the invite, or the invite is not sent.
   it("books without the invite when the form did not say who is told of the fit", async () => {
     const answer = await book("RM4K7P", {});

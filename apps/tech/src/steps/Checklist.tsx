@@ -16,6 +16,8 @@ import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { BOX_TICK_STROKE } from "../icons.ts";
 import { declinedTheFit } from "../lib/progress.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import type { Queued } from "../store/outbox.ts";
+import { checklistSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
@@ -27,18 +29,23 @@ function titleOf(job: Job, declined: boolean): string {
   return job.type === null ? copy.titles.checklist : copy.checklistTitles[job.type];
 }
 
-export function Checklist({ id }: { id: string }) {
-  const { loaded, retry, refused, queued, finish, back } = useStep(id, "checklist");
-  const [done, setDone] = useState<readonly string[]>([]);
-
-  if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
-  }
-
-  const job = loaded.value;
-  const declined = declinedTheFit(job, queued);
+/** The list once the job is in hand: a refused list starts as it was ticked. */
+function Ticking({
+  job,
+  declined,
+  refused,
+  onFinish,
+  onBack,
+}: {
+  job: Job;
+  declined: boolean;
+  refused: Queued | null;
+  onFinish: (body: unknown) => void;
+  onBack: () => void;
+}) {
   const items = declined ? job.checklist_if_declined : job.checklist;
+  const listed = items.map((item) => item.id);
+  const [done, setDone] = useState<readonly string[]>(() => checklistSent(refused, listed));
   const all = items.length > 0 && done.length === items.length;
 
   return (
@@ -50,8 +57,10 @@ export function Checklist({ id }: { id: string }) {
       ready={all}
       unfinished={copy.checklist.unfinished}
       notice={refused === null ? null : copy.corrected.other}
-      onBack={back}
-      onAction={() => void finish({ done: [...done] })}
+      onBack={onBack}
+      onAction={() => {
+        onFinish({ done: [...done] });
+      }}
     >
       <ul className={styles.list}>
         {items.map((item) => {
@@ -78,5 +87,24 @@ export function Checklist({ id }: { id: string }) {
         })}
       </ul>
     </StepFrame>
+  );
+}
+
+export function Checklist({ id }: { id: string }) {
+  const { loaded, retry, refused, queued, finish, back } = useStep(id, "checklist");
+
+  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
+  const job = loaded.value;
+  return (
+    <Ticking
+      job={job}
+      declined={declinedTheFit(job, queued)}
+      refused={refused}
+      onFinish={(body) => void finish(body)}
+      onBack={back}
+    />
   );
 }

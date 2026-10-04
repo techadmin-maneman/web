@@ -5,8 +5,8 @@
 // held on the phone (./sets.ts). A job whose queue stopped says what stopped it
 // in the app's words — the API answers a code and the fields behind it, never a
 // sentence (apps/tech/src/content.ts). A step the API refused can be put right
-// where it stands; "Got it" lets go of the job's work only once the technician
-// has said so a second time, since what it deletes never reaches us.
+// where it stands, a refused photograph set retaken; deleting the job's work asks
+// a second time, since what it deletes never reaches us.
 
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -29,14 +29,13 @@ import { Progress } from "./Progress.tsx";
 import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "./sets.ts";
 import styles from "./waiting.module.css";
 
-/** The steps a refused write can be put right on: the ones with a screen of their own to put it right in. */
-const CORRECTABLE: ReadonlySet<EventKind> = new Set(["checklist", "consumables", "piece", "profile", "outcome"]);
+const PHOTO_STEPS: ReadonlySet<InJobStep> = new Set(["before_photos", "after_photos"]);
 
 const isInJobStep = (kind: EventKind): kind is InJobStep => kind in STEP_PATHS;
 
-/** A refused step the technician can open again and correct; null for any other stop. */
+/** A refused step the technician can open again and put right on its own screen; null for any other stop. */
 function correctable(stopped: JobAccount["stopped"]): InJobStep | null {
-  if (stopped?.state !== "refused" || !CORRECTABLE.has(stopped.kind)) return null;
+  if (stopped?.state !== "refused") return null;
   return isInJobStep(stopped.kind) ? stopped.kind : null;
 }
 
@@ -163,7 +162,7 @@ export function WaitingScreen() {
                               go(stepPath(id, toCorrect));
                             }}
                           >
-                            {copy.correct}
+                            {PHOTO_STEPS.has(toCorrect) ? copy.retake : copy.correct}
                           </Button>
                         )}
                         <Button
@@ -174,7 +173,7 @@ export function WaitingScreen() {
                             setForgetting(id);
                           }}
                         >
-                          {copy.read}
+                          {copy.forget.open}
                         </Button>
                       </div>
                     </div>

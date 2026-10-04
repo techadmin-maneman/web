@@ -1261,9 +1261,10 @@ WHERE t.name LIKE '%<name>%' ORDER BY d.last_seen_at DESC;
 The app sends the outbox one step at a time, oldest first, whenever it has signal and whenever it comes to the front. Its "Waiting to reach us" screen (`/waiting`) lists, for each job, the photo sets and steps still on the phone, since when, and what stopped the job's queue.
 
 - **No signal.** Nothing is wrong. Get to signal and open the app. The app warns when the phone has not promised to keep its store: an iPhone keeps it only with the app on its home screen (ADR 0053), so a technician on an iPhone should not leave work waiting for days.
-- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to 9 am tomorrow" or, before the phone has read the card again, "to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops close the visit by hand in the console (in FSM while FSM holds the record); then he taps "Got it", which asks first and deletes that job's queue from the phone.
-- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
-- **Photographs failed**: "Retry".
+- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to 9 am tomorrow" or, before the phone has read the card again, "to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops close the visit by hand in the console (in FSM while FSM holds the record); then he taps "Delete this job's work", which asks first and deletes that job's queue from the phone.
+- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step, filled in as he sent it. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
+- **A photograph refused** ("The photographs would not upload"): "Retake photos" opens the camera for that set with only the refused angles to take again; the photographs that reached us stay, and the rest of the job follows once the set lands.
+- **Photographs waiting**: "Retry".
 - **Never sign out or delete the app while work is waiting**: signing out wipes the phone. The app asks first, and offers "Send first".
 
 A step that reached us and not FSM is on the server side: "FSM is down". What reached us for a visit:

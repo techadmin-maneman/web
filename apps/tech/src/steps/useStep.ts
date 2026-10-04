@@ -5,8 +5,9 @@
 // (docs/decisions/0038-offline-writes.md).
 //
 // A step the API refused — a label it would not take — is opened again to be
-// put right. Finishing it then sends the corrected step in the place the
-// refused one had, and the steps queued behind it follow (../store/outbox.ts).
+// put right, starting from what it sent. Finishing it then sends the corrected
+// step in the place the refused one had, and the steps queued behind it follow
+// (../store/outbox.ts).
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import type { Job } from "../api.ts";
@@ -18,7 +19,10 @@ import { go, stepPath, type InJobStep } from "../route.ts";
 import { keepClosed } from "../store/jobs.ts";
 import { correct, queue, replay, type Queued } from "../store/outbox.ts";
 
+const LOADING: Loaded<Job> = { state: "loading" };
+
 export interface Standing {
+  /** Loading until the outbox has been read as well, so a step being put right starts from what it sent. */
   readonly loaded: Loaded<Job>;
   readonly retry: () => void;
   /** This step as it was sent and refused, when the technician is putting it right. */
@@ -32,8 +36,9 @@ export interface Standing {
 
 export function useStep(id: string, step: InJobStep): Standing {
   const waiting = useOutbox();
-  const [loaded, retry] = useJob(id, signatureOf(waiting));
+  const [card, retry] = useJob(id, signatureOf(waiting));
   const [, once] = useOneAtATime();
+  const loaded = waiting.read ? card : LOADING;
   const job = loaded.state === "loaded" ? loaded.value : null;
   const refused =
     waiting.events.find((event) => event.job_id === id && event.kind === step && event.state === "refused") ?? null;
