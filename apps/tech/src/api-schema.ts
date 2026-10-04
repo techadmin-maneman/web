@@ -544,7 +544,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -623,7 +623,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -701,7 +701,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom */
+                /** @description superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom; already_closed: the job has closed, so it takes no more photographs */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -758,6 +758,15 @@ export interface paths {
                 };
                 /** @description not_found: the link is wrong or expired */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description already_closed: the job has closed, so it takes no more photographs */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -840,7 +849,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since */
+                /** @description upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since; already_closed: the job has closed, so it takes no more photographs */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -942,7 +951,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1025,7 +1034,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1108,7 +1117,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1191,7 +1200,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1274,7 +1283,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1357,7 +1366,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1436,7 +1445,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home */
                 409: {
                     headers: {
                         [name: string]: unknown;
