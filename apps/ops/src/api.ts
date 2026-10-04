@@ -193,6 +193,8 @@ export interface Landing {
   readonly date: string;
   readonly window: BookingWindow;
   readonly reason: MoveReason;
+  /** Why the visit goes onto a day ops blacked out, as ops typed it; null for any other day. */
+  readonly blackoutReason: string | null;
 }
 
 /**
@@ -226,6 +228,7 @@ const moveBody = (appointmentId: string, to: Landing, shown: Shown) => ({
   reason: to.reason,
   expected_technician_id: shown.technicianId,
   expected_starts_at: shown.startsAt,
+  ...(to.blackoutReason === null ? {} : { blackout_reason: to.blackoutReason }),
 });
 
 export const api = {

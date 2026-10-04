@@ -339,8 +339,8 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
  * Ops' own words about the person, kept with a decision (docs/decisions/0072-ops-clients-and-queues.md): the review
  * of a grant they were either side of, why ops attached an invite they were either side of (ADR 0089), the ruling on
  * a visit of theirs they were not home for and on their dispute of its charge (ADR 0096), why ops closed a visit
- * of theirs left partly done without a follow-up (ADR 0092), and why ops cancelled a visit of theirs or closed one by
- * hand. The decisions themselves stay, as records.
+ * of theirs left partly done without a follow-up (ADR 0092), why ops cancelled a visit of theirs or closed one by
+ * hand, and why ops moved one onto a blacked-out day. The decisions themselves stay, as records.
  */
 function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] {
   return [
@@ -376,6 +376,12 @@ function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] 
       .prepare(
         `UPDATE task_closures SET reason = NULL
          WHERE task_group = 'partial_visit' AND subject_id IN (SELECT id FROM appointments WHERE person_id = ?1)`,
+      )
+      .bind(personId),
+    db
+      .prepare(
+        `UPDATE dispatch_moves SET blackout_reason = NULL
+         WHERE appointment_id IN (SELECT id FROM appointments WHERE person_id = ?1)`,
       )
       .bind(personId),
   ];

@@ -113,6 +113,13 @@ describe("where a job stands, and what a move changes", () => {
     expect(changesTime(onBoard(), { technician: ROW, date: "2025-09-20", window: "morning" })).toBe(true);
   });
 
+  // BK-17: a 09:00 visit whose start has passed moves to the window's next start, which the client is told of.
+  it("changes the time when the start the move lands on differs, though the day and window do not", () => {
+    const sameWindow = { technician: ROW, date: "2025-09-19", window: "morning" } as const;
+    expect(changesTime(onBoard(), sameWindow, "2025-09-19T05:00:00.000Z")).toBe(true);
+    expect(changesTime(onBoard(), sameWindow, "2025-09-19T03:30:00Z")).toBe(false);
+  });
+
   it("moves a visit the technician has not begun, and nothing done or under way", () => {
     expect(isMovable(block({ status: "scheduled" }))).toBe(true);
     expect(isMovable(block({ status: "dispatched" }))).toBe(true);

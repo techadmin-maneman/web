@@ -71,8 +71,15 @@ export function shownOf(job: Job): Shown {
   return { technicianId: job.job.was_technician?.id ?? null, startsAt: job.job.starts_at };
 }
 
-/** Whether a move to this target changes the day or window, which is what the client is told of. */
-export function changesTime(job: Job, to: Target): boolean {
+/** When the job starts now, on a technician's day or in the tray. */
+export const startOf = (job: Job): string => (job.kind === "block" ? job.block.starts_at : job.job.starts_at);
+
+/**
+ * Whether a move to this target changes the job's time, which is what the client is told of: its start, where the
+ * board knows where the move lands it, else its day or window.
+ */
+export function changesTime(job: Job, to: Target, landsAt: string | null = null): boolean {
+  if (landsAt !== null) return Date.parse(landsAt) !== Date.parse(startOf(job));
   const was = whenOf(job);
   return was.date !== to.date || was.window !== to.window;
 }

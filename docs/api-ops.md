@@ -1757,7 +1757,7 @@ Request body:
 }
 ```
 
-**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
+**409**: past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
 
 ```json
 {
@@ -1817,7 +1817,7 @@ Request body:
 }
 ```
 
-**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is
+**409**: past_day; window_passed; clash; on_leave; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is
 
 ```json
 {
@@ -4309,6 +4309,9 @@ Request body:
             "does_not_fit",
             "fsm_refused",
             "fsm_partly",
+            "past_day",
+            "window_passed",
+            "blackout",
             "in_progress",
             "too_early_to_close",
             "already_closed",
@@ -7361,6 +7364,9 @@ Request body:
             "does_not_fit",
             "fsm_refused",
             "fsm_partly",
+            "past_day",
+            "window_passed",
+            "blackout",
             "in_progress",
             "too_early_to_close",
             "already_closed",
@@ -9295,23 +9301,60 @@ Request body:
               ]
             },
             "minItems": 1
+          },
+          "starts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "window": {
+                  "type": "string",
+                  "enum": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ]
+                },
+                "starts_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "window",
+                "starts_at"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "description": "When the job would start in each of those windows, as the move would place it."
           }
         },
         "required": [
           "technician_id",
           "date",
-          "windows"
+          "windows",
+          "starts"
         ],
         "additionalProperties": false
       }
+    },
+    "blackouts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date"
+      },
+      "description": "The days of the week ops blacked out, other than the job's own. A move onto one needs a blackout_reason."
     }
   },
   "required": [
     "appointment_id",
-    "rooms"
+    "rooms",
+    "blackouts"
   ],
   "additionalProperties": false,
-  "description": "Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is."
+  "description": "Each technician's day with a window the job would land in, by the check a move runs: today, only at a start still ahead, and never on a day gone. A day not listed has none. Not where the job already is."
 }
 ```
 
@@ -9396,6 +9439,12 @@ Request body:
       "type": "string",
       "format": "date-time",
       "description": "The start the board showed the job with."
+    },
+    "blackout_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day."
     }
   },
   "required": [
@@ -9462,6 +9511,12 @@ Request body:
       "type": "string",
       "format": "date-time",
       "description": "The start the board showed the job with."
+    },
+    "blackout_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day."
     },
     "clear_check_in": {
       "type": "boolean",

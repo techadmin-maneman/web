@@ -71,10 +71,13 @@ export function fitsAt(day: Day, start: number, units: number): boolean {
   return true;
 }
 
-/** Where a visit of this many half-slots can start in this window, given the day; null if it cannot. */
-export function placement(day: Day, window: BookingWindow, units: number): number | null {
+/**
+ * Where a visit of this many half-slots can start in this window, given the day, at half-slot `earliest` or later;
+ * null if it cannot.
+ */
+export function placement(day: Day, window: BookingWindow, units: number, earliest = 0): number | null {
   if (day.onLeave || clashes(day, window)) return null;
-  return WINDOW_SLOT_MAP[window].find((start) => fitsAt(day, start, units)) ?? null;
+  return WINDOW_SLOT_MAP[window].find((start) => start >= earliest && fitsAt(day, start, units)) ?? null;
 }
 
 /** What a visit starting at a half-slot claims: each half-slot it covers, and its window. */

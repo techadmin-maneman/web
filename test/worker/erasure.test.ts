@@ -611,6 +611,13 @@ describe("erasure blanks what ops wrote about the client", () => {
          VALUES ('change-10', 'visit-10', ?1, 'cancelled', 'late', '2026-09-24T03:30:00.000Z', ?2, 'ops@localhost',
            'His mother is unwell', 'free')`,
       ).bind(FRIEND, at),
+      // A visit of his ops moved onto a day they had blacked out.
+      env.DB.prepare(
+        `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
+           reason, actor, fsm_write_state, created_at, updated_at, blackout_reason)
+         VALUES ('move-9', 'visit-9', 't1', 't1', '2026-09-18T03:30:00.000Z', '2026-09-19T03:30:00.000Z',
+           'client_asked', 'ops@localhost', 'written', ?1, ?1, 'His only day off before the wedding')`,
+      ).bind(at),
     ]);
   }
 
@@ -621,10 +628,11 @@ describe("erasure blanks what ops wrote about the client", () => {
          (SELECT decision_reason FROM no_show_cases) AS no_show,
          (SELECT reason FROM task_closures) AS closed,
          (SELECT close_reason FROM visits) AS closed_by_hand,
-         (SELECT cancel_reason FROM visit_changes) AS cancelled`,
+         (SELECT cancel_reason FROM visit_changes) AS cancelled,
+         (SELECT blackout_reason FROM dispatch_moves) AS moved_onto_blackout`,
     ).first();
 
-  it("blanks the reasons ops gave about the friend: the invite attached, the grant's review, the no-show ruling, a visit's task closed, a visit closed by hand and one cancelled", async () => {
+  it("blanks the reasons ops gave about the friend: the invite attached, the grant's review, the no-show ruling, a visit's task closed, a visit closed by hand, one cancelled and one moved onto a blacked-out day", async () => {
     await reasonsWritten();
 
     expect(await erasePerson(env, FRIEND, NOW, createLogger())).not.toBeNull();
@@ -636,6 +644,7 @@ describe("erasure blanks what ops wrote about the client", () => {
       closed: null,
       closed_by_hand: null,
       cancelled: null,
+      moved_onto_blackout: null,
     });
     // The decisions themselves stay, as records.
     const ruled = await env.DB.prepare(
@@ -683,6 +692,7 @@ describe("erasure blanks what ops wrote about the client", () => {
       closed: "Moving to Pune, wants no more visits",
       closed_by_hand: "He had to leave for the hospital",
       cancelled: "His mother is unwell",
+      moved_onto_blackout: "His only day off before the wedding",
     });
   });
 
@@ -699,6 +709,7 @@ describe("erasure blanks what ops wrote about the client", () => {
       closed: "Moving to Pune, wants no more visits",
       closed_by_hand: "He had to leave for the hospital",
       cancelled: "His mother is unwell",
+      moved_onto_blackout: "His only day off before the wedding",
     });
   });
 });

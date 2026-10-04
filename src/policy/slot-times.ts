@@ -57,6 +57,12 @@ export function unitAt(time: string, times: SlotTimes): number {
   return unit;
 }
 
+/** The first half-slot to start after a time of day in India; the day's count of half-slots once every one has. */
+export function firstUnitAfter(time: string, times: SlotTimes): number {
+  const ahead = times.unitStarts.findIndex((start) => start > time);
+  return ahead === -1 ? times.unitStarts.length : ahead;
+}
+
 const isTime = (value: string): boolean => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 
 /** What is wrong with a day's times, as codes the console names; none for times that may be set. */

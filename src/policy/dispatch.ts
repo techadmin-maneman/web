@@ -14,7 +14,7 @@
 // not keep: FSM has nowhere to read a leave period from, so ops record leave in
 // the console and the same clash check reads it (ADR 0062).
 
-import type { BookingWindow } from "../config/scheduling.ts";
+import { WINDOW_SLOT_MAP, type BookingWindow } from "../config/scheduling.ts";
 
 export const RULES = [
   "Rows are technicians; columns are seven days; each day has config SLOTS_PER_DAY (4) slots.",
@@ -78,28 +78,46 @@ export function begunFrom(landed: {
 }
 
 /**
- * Why a job cannot go to this window of this technician's day; null when it
- * can. The check runs on the server before any write to FSM, so a refusal
- * means nothing was written anywhere. (A move's reason is one of the list
- * above before it gets here: the API and the table accept no other.)
- *
- * Leave is answered first, so ops are told the technician is away rather than
- * merely busy, and the clash before the room, so a held window is named as
- * held. `does_not_fit`: nobody holds the window, but the visit's block has no
- * room in it, because a half-slot it needs is taken or it would run past the
- * day's last one (docs/decisions/0035-window-slot-map.md). Whether it fits is
- * src/domain/scheduling.ts's answer, given here.
+ * Whether a move's target is still ahead: `past_day` for a day gone, `window_passed` for today's window once every
+ * half-slot it offers has started, `ahead` otherwise.
  */
-export type MoveRefusal = "clash" | "on_leave" | "does_not_fit";
+export type TargetTime = "past_day" | "window_passed" | "ahead";
 
-export function moveRefusal(
-  day: TechnicianDay,
-  window: BookingWindow,
-  room: { readonly fits: boolean },
-): MoveRefusal | null {
+/** `firstUnitAhead`: the first of today's half-slots still to start. */
+export function targetTime(
+  target: { readonly date: string; readonly window: BookingWindow },
+  today: { readonly date: string; readonly firstUnitAhead: number },
+): TargetTime {
+  if (target.date < today.date) return "past_day";
+  if (target.date > today.date) return "ahead";
+  const startsAhead = WINDOW_SLOT_MAP[target.window].some((start) => start >= today.firstUnitAhead);
+  return startsAhead ? "ahead" : "window_passed";
+}
+
+/**
+ * Why a job cannot go to this window of this technician's day; null when it can. The check runs on the server before
+ * any write to FSM, so a refusal means nothing was written anywhere.
+ *
+ * A time already gone is answered first; then leave, so ops are told the technician is away rather than busy; then
+ * the clash, so a held window is named as held. `does_not_fit`: nobody holds the window, but the visit has no room in
+ * it at a start still ahead. A blacked-out day comes last, since ops may still move a visit onto one with a reason.
+ */
+export type MoveRefusal = Exclude<TargetTime, "ahead"> | "on_leave" | "clash" | "does_not_fit" | "blackout";
+
+export interface MoveCheck {
+  readonly time: TargetTime;
+  /** Whether the visit has room in the window, at a start still ahead (src/domain/scheduling.ts). */
+  readonly fits: boolean;
+  /** The day is one ops blacked out, and they gave no reason for moving the visit onto it. */
+  readonly blackoutWithoutReason: boolean;
+}
+
+export function moveRefusal(day: TechnicianDay, window: BookingWindow, check: MoveCheck): MoveRefusal | null {
+  if (check.time !== "ahead") return check.time;
   if (day.onLeave) return "on_leave";
   if (clashes(day, window)) return "clash";
-  return room.fits ? null : "does_not_fit";
+  if (!check.fits) return "does_not_fit";
+  return check.blackoutWithoutReason ? "blackout" : null;
 }
 
 /**
