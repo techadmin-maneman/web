@@ -1820,7 +1820,8 @@ export const tasks = {
      * link not sent yet is asked of Razorpay again by the cron; one Razorpay refused, or closed unpaid, is sent again
      * from the row or from Razorpay's dashboard (ADR 0105).
      */
-    payment_owed: (product: string, amount: string, link: LinkState) => `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
+    payment_owed: (product: string, amount: string, link: LinkState) =>
+      `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
     // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
     erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.

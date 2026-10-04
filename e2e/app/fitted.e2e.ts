@@ -475,7 +475,14 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
   const price = { amount: 3_000_000, from: false, code: null };
-  const waiting = { type: "first_fit", date: "2027-09-25", window: "morning", paid: false, one_visit: price, told: false };
+  const waiting = {
+    type: "first_fit",
+    date: "2027-09-25",
+    window: "morning",
+    paid: false,
+    one_visit: price,
+    told: false,
+  };
   await page.route("**/api/me", (route) =>
     route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
   );
