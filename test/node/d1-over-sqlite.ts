@@ -13,12 +13,17 @@ export function migratedDatabase(): DatabaseSync {
 }
 
 class Statement {
-  constructor(
-    private readonly db: DatabaseSync,
-    private readonly sql: string,
-    private readonly values: readonly SQLInputValue[],
-    private readonly seen: (sql: string) => void,
-  ) {}
+  private readonly db: DatabaseSync;
+  private readonly sql: string;
+  private readonly values: readonly SQLInputValue[];
+  private readonly seen: (sql: string) => void;
+
+  constructor(db: DatabaseSync, sql: string, values: readonly SQLInputValue[], seen: (sql: string) => void) {
+    this.db = db;
+    this.sql = sql;
+    this.values = values;
+    this.seen = seen;
+  }
 
   bind(...values: SQLInputValue[]): Statement {
     return new Statement(this.db, this.sql, values, this.seen);

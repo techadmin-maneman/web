@@ -97,9 +97,7 @@ describe("erasure reaches Phase 2's data", () => {
 
     await eraseByMobile(MOBILE, NOW);
 
-    const lead = await env.DB.prepare(
-      "SELECT source, loss_extent, gclid, landing_path FROM leads WHERE person_id = ?1",
-    )
+    const lead = await env.DB.prepare("SELECT source, loss_extent, gclid, landing_path FROM leads WHERE person_id = ?1")
       .bind(PERSON)
       .first();
     expect(lead).toEqual({ source: "form", loss_extent: null, gclid: null, landing_path: null });
@@ -275,7 +273,7 @@ describe("GET /api/me/export", () => {
     expect(audit).toEqual({ action: "data.export" });
   });
 
-  // What the export left out until 4 October 2026 (PS-21).
+  // PS-21 of the audit, 2 October 2026: what the export left out.
   it("gives the door, the client's note, how they reached us, their hair system, invite, sign-ins and requests", async () => {
     await phase2Data();
     await everythingElseHeld();
@@ -284,7 +282,9 @@ describe("GET /api/me/export", () => {
     });
     const data = await answer.json<Record<string, unknown>>();
     expect(data).toMatchObject({
-      addresses: [{ flat: "7B", floor: "3", tower: "C", landmark: "Opposite the park", given_to_staff: "ops@maneman.in" }],
+      addresses: [
+        { flat: "7B", floor: "3", tower: "C", landmark: "Opposite the park", given_to_staff: "ops@maneman.in" },
+      ],
       visits: [{ client_note: "Ring twice", technician: null }],
       leads: [{ source: "form", loss_extent: "crown", gclid: "click-1", landing_path: "/book" }],
       hair_systems: [{ piece_code: "MM-CLASSIC-01", base: "lace", fitted_at: "2026-09-01" }],
@@ -309,7 +309,9 @@ describe("GET /api/me/export", () => {
     expect(page).toContain("<dt>Name</dt><dd>Rohit Malhotra</dd>");
     expect(page).toContain("<dt>With us since</dt><dd>21 Sep 2026, 12 pm</dd>");
     expect(page).toContain("<dt>Your words</dt><dd>Please stop calling me.</dd>");
-    const audit = await env.DB.prepare("SELECT COUNT(*) AS exports FROM audit_log WHERE action = 'data.export'").first();
+    const audit = await env.DB.prepare(
+      "SELECT COUNT(*) AS exports FROM audit_log WHERE action = 'data.export'",
+    ).first();
     expect(audit).toEqual({ exports: 1 });
   });
 
@@ -319,7 +321,7 @@ describe("GET /api/me/export", () => {
   });
 });
 
-/** A row in each table the export left out until 4 October 2026, beside phase2Data's. */
+/** A row in each table PS-21 found missing from the export, beside phase2Data's. */
 async function everythingElseHeld(): Promise<void> {
   const at = NOW.toISOString();
   await env.DB.batch([

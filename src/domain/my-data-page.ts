@@ -43,7 +43,9 @@ ${sections.join("\n")}
 function partSection(part: Part, value: unknown): string {
   const rows = rowsOf(value);
   const body =
-    rows.length === 0 ? `<p class="quiet">${escaped(MY_DATA.none)}</p>` : rows.map((row) => rowList(part, row)).join("");
+    rows.length === 0
+      ? `<p class="quiet">${escaped(MY_DATA.none)}</p>`
+      : rows.map((row) => rowList(part, row)).join("");
   return `<section><h2>${escaped(part.title)}</h2>${body}</section>`;
 }
 
@@ -69,24 +71,37 @@ function readable(field: Field, value: unknown): string | null {
   if (value === null || value === undefined || value === "") return null;
   switch (field.as) {
     case "time":
-      return indiaTime(String(value));
+      return indiaTime(asText(value));
     case "day":
-      return dayOf(String(value));
+      return dayOf(asText(value));
     case "money":
-      return typeof value === "number" ? rupees(value) : String(value);
+      return typeof value === "number" ? rupees(value) : asText(value);
     case "yesNo":
       return value === 1 || value === true ? "Yes" : "No";
     case "words":
-      return Array.isArray(value) ? value.map((each) => wordsOf(String(each))).join(", ") : wordsOf(String(value));
+      return eachOf(value, wordsOf);
     case "purpose":
-      return purposeTitle(String(value));
+      return purposeTitle(asText(value));
     case "purposes":
-      return purposesOf(String(value));
+      return purposesOf(asText(value));
     case "notice":
-      return noticeText(String(value));
+      return noticeText(asText(value));
     case "text":
-      return Array.isArray(value) ? value.join(", ") : String(value);
+      return eachOf(value, (each) => each);
   }
+}
+
+/** A stored value as text. D1 gives strings and numbers; a hair profile's lists come as arrays. */
+function asText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return JSON.stringify(value);
+}
+
+/** A list's items, each written by `write`, joined; a single value written alone. */
+function eachOf(value: unknown, write: (text: string) => string): string {
+  if (!Array.isArray(value)) return write(asText(value));
+  return value.map((each) => write(asText(each))).join(", ");
 }
 
 /** "2026-09-21T06:30:00.000Z" → "21 Sep 2026, 12 pm". */
@@ -99,8 +114,11 @@ function dayOf(value: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? fullDate(value) : longDate(value);
 }
 
-/** A stored code as words: "first_fit" → "First fit". */
+/** A stored code as words: one the config names as it says, any other spaced out ("first_fit" → "First fit"). */
 function wordsOf(code: string): string {
+  const named: Readonly<Record<string, string>> = MY_DATA.codes;
+  const words = named[code];
+  if (words !== undefined) return words;
   const spaced = code.replaceAll("_", " ");
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }

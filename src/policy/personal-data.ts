@@ -20,7 +20,7 @@ export interface Erasure {
   readonly why: string;
 }
 
-const OUR_KEYS = "Our own keys to the record, which say nothing about you.";
+const OUR_KEYS = "Our own keys to the record, which say nothing about the client.";
 
 const HAIR_PROFILE_FIELDS = [
   "norwood_stage",
@@ -61,7 +61,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "books_erasure_attempts",
       "books_details_changed_at",
     ],
-    whyLeftOut: "Our keys to your record here and in the CRM and Books, and how an erasure of it is going.",
+    whyLeftOut: "Our keys to the client's record here and in the CRM and Books, and how an erasure of it is going.",
     erasure: {
       blanks: ["name", "email", "mobile_e164", "contactable"],
       why: "The name, e-mail and number go. The row stays, marked erased, for the records that point at it.",
@@ -135,7 +135,9 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
   consultation_requests: {
     leftOut: ["id", "person_id"],
     whyLeftOut: OUR_KEYS,
-    erasure: { why: "Kept, as the record of a booking asked for: a pincode, a day and a window, nothing that names them." },
+    erasure: {
+      why: "Kept, as the record of a booking asked for: a pincode, a day and a window, nothing that names them.",
+    },
   },
   credit_ledger: {
     leftOut: ["id", "person_id", "grant_id", "source_kind", "source_id"],
@@ -238,7 +240,8 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "technician_id",
       "mobile_hash",
     ],
-    whyLeftOut: "The one-time codes we sent, kept only as one-way hashes for a day; the sign-ins say when they were used.",
+    whyLeftOut:
+      "The one-time codes we sent, kept only as one-way hashes for a day; the sign-ins say when they were used.",
     erasure: {
       deletes: true,
       blanks: ["code_hash"],
@@ -258,7 +261,9 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "last_error",
     ],
     whyLeftOut: "Our and WhatsApp's keys, and how each message was sent.",
-    erasure: { why: "Kept, as the record of what was sent: its kind and dates, never its words. Any not yet sent is cancelled." },
+    erasure: {
+      why: "Kept, as the record of what was sent: its kind and dates, never its words. Any not yet sent is cancelled.",
+    },
   },
   payments: {
     leftOut: [
@@ -281,7 +286,16 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     erasure: { why: "Kept for eight years, as the law asks of payments and invoices." },
   },
   pieces: {
-    leftOut: ["id", "fsm_id", "person_id", "supplier_lot", "appointment_id", "synced_at", "deleted_at", "replacement_booked"],
+    leftOut: [
+      "id",
+      "fsm_id",
+      "person_id",
+      "supplier_lot",
+      "appointment_id",
+      "synced_at",
+      "deleted_at",
+      "replacement_booked",
+    ],
     whyLeftOut: "Our and FSM's keys, our supplier's batch, and whether a replacement is booked, which the visits show.",
     erasure: { why: "Kept, as the record of what was fitted." },
   },
@@ -420,8 +434,10 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "hold_id",
       "cancelled_by",
       "cancel_reason",
+      "refund_settled_at",
     ],
-    whyLeftOut: "Our and Razorpay's keys, and which member of staff cancelled and their own note on it.",
+    whyLeftOut:
+      "Our and Razorpay's keys, which member of staff cancelled and their own note on it, and when our refund job was done with it.",
     erasure: { blanks: ["cancel_reason"], why: "Ops' reason for a cancel goes; the change stays, with what it cost." },
   },
   waitlist_entries: {

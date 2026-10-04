@@ -42,6 +42,18 @@ export const MY_DATA = {
     whatsapp_visits: "WhatsApp about your visits",
     whatsapp_launches: "WhatsApp about launches",
   } satisfies Readonly<Record<string, string>>,
+  /** Stored codes that read badly spaced out; every other code reads as its words. */
+  codes: {
+    client: "You",
+    ops: "Our team",
+    system: "Automatically",
+    whatsapp_stop: "A STOP reply on WhatsApp",
+    message_link: "The link in a message",
+    app_share_sheet: "Sharing from the app",
+    referral_landing: "An invite's page",
+    site_waitlist: "The site's waitlist",
+    try_on: "Try-on",
+  } satisfies Readonly<Record<string, string>>,
   parts: {
     person: {
       title: "Your details",

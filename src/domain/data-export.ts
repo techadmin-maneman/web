@@ -1,5 +1,5 @@
-// Everything held about a client, for their data export: the right of access (docs/decisions/0049-dpdp.md). The
-// route audits the export before this reads anything, so an export the log could not record is never given.
+// Everything held about a client, for their data export: the right of access. The route audits the export before
+// this reads anything, so an export the log could not record is never given.
 //
 // Each part gives its columns as stored. What a part leaves out of its table, and why, is in
 // src/policy/personal-data.ts; the readable copy (src/domain/my-data-page.ts) labels each column and writes its time
@@ -60,7 +60,8 @@ export const EXPORT_QUERIES = {
   // What was sent and when, never its words.
   messages: `SELECT kind, state, created_at, sent_at, delivered_at, read_at FROM outbound_messages WHERE person_id = ?1
     ORDER BY created_at`,
-  grievances: "SELECT text, state, response, resolved_at, created_at FROM grievances WHERE person_id = ?1 ORDER BY created_at",
+  grievances:
+    "SELECT text, state, response, resolved_at, created_at FROM grievances WHERE person_id = ?1 ORDER BY created_at",
   number_changes: `SELECT new_mobile_e164, replaced_mobile_e164, state, old_verified_at, new_verified_at, decided_at, reason,
       created_at
     FROM number_change_requests WHERE person_id = ?1 ORDER BY created_at`,

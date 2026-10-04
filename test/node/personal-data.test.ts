@@ -132,7 +132,10 @@ describe("the readable copy's labels", () => {
     const db = migratedDatabase();
     const parts: Readonly<Record<string, { fields: Readonly<Record<string, unknown>> }>> = MY_DATA.parts;
     for (const [part, sql] of Object.entries(EXPORT_QUERIES)) {
-      const given = db.prepare(sql).columns().map((column) => column.name);
+      const given = db
+        .prepare(sql)
+        .columns()
+        .map((column) => column.name);
       expect(Object.keys(parts[part]?.fields ?? {}).sort(), part).toEqual(given.sort());
     }
   });
@@ -148,14 +151,21 @@ describe("the readable copy's labels", () => {
          'natural', 'classic', 'tape', '["minoxidil"]', 2019, 'None known')`,
     ).run(PERSON, NOW.toISOString());
     const d1 = asD1(db);
-    await logPhotoView(d1, { personId: PERSON, actor: { kind: "staff", id: "ops@maneman.in" }, requestId: "r", now: NOW });
+    await logPhotoView(d1, {
+      personId: PERSON,
+      actor: { kind: "staff", id: "ops@maneman.in" },
+      requestId: "r",
+      now: NOW,
+    });
 
     const held = (await everythingHeldAbout(d1, PERSON)) as {
       hair_profile: Record<string, unknown>[];
       photo_views: Record<string, unknown>[];
     };
 
-    expect(Object.keys(held.hair_profile[0] ?? {}).sort()).toEqual(Object.keys(MY_DATA.parts.hair_profile.fields).sort());
+    expect(Object.keys(held.hair_profile[0] ?? {}).sort()).toEqual(
+      Object.keys(MY_DATA.parts.hair_profile.fields).sort(),
+    );
     expect(Object.keys(held.photo_views[0] ?? {}).sort()).toEqual(Object.keys(MY_DATA.parts.photo_views.fields).sort());
   });
 });

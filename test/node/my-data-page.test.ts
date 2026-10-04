@@ -16,7 +16,13 @@ const read = (page: string) =>
 
 describe("the readable copy of a client's data", () => {
   const held = {
-    person: { name: "Rohit Malhotra", mobile: "+919810000001", email: null, contactable: 1, created_at: "2026-09-21T06:30:00.000Z" },
+    person: {
+      name: "Rohit Malhotra",
+      mobile: "+919810000001",
+      email: null,
+      contactable: 1,
+      created_at: "2026-09-21T06:30:00.000Z",
+    },
     consents: [
       {
         purpose: "whatsapp_visits",
@@ -30,6 +36,7 @@ describe("the readable copy of a client's data", () => {
     bookings_started: [{ amount: 3_540_000, consents_shown: '["photos_own_record","photos_referral_cards"]' }],
     consultation_requests: [{ requested_date: "2026-10-02", requested_window: "morning" }],
     grievances: [{ text: "<script>alert('hi')</script> & more", state: "open" }],
+    discount_codes: [{ code: "WELCOME", amount_off: 50_000, given_by: "ops", removed_by: "client" }],
   };
 
   it("heads the page with when it was downloaded, in India's time", () => {
@@ -53,7 +60,15 @@ describe("the readable copy of a client's data", () => {
     expect(page).toContain("For\n WhatsApp about your visits");
     expect(page).toContain("What you were shown\n Remind me on WhatsApp the day before");
     expect(page).toContain("Where\n App booking");
-    expect(page).toContain("Agreed by booking\n Photographs taken for your visit record, Photographs on referral cards");
+    expect(page).toContain(
+      "Agreed by booking\n Photographs taken for your visit record, Photographs on referral cards",
+    );
+  });
+
+  it("says who did something as the client would put it, never by our own codes", () => {
+    const page = read(myDataPage(held, EXPORTED));
+    expect(page).toContain("Entered by\n Our team");
+    expect(page).toContain("Taken off by\n You");
   });
 
   it("leaves an empty field out, and says when a part holds nothing", () => {
