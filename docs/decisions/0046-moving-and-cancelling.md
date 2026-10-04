@@ -35,7 +35,7 @@ The late fees are the price book's `late_fee_first_fit` and `late_fee_replacemen
 
 **The routes** (`src/routes/client-changes.ts`):
 
-- `POST /api/appointments/{id}/reschedule` with `{}` answers the terms:
+- `GET /api/appointments/{id}/reschedule` answers the terms (until 5 October 2026 a `POST` with `{}`, which made one call answer two shapes):
   - the notice;
   - `free_until`;
   - what the payment holds;

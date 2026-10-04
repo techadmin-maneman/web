@@ -262,7 +262,7 @@ describe("POST /api/appointments/:id/cancel", () => {
     await env.DB.prepare("UPDATE price_book SET amount_ex_gst = 500000 WHERE item = 'late_fee_first_fit'").run();
     const shown = await (await post(client(), `/api/appointments/${VISIT}/cancel`, { confirm: false })).json();
     expect(shown).toMatchObject({ notice: "late", refund: 2600000, kept: 400000 });
-    const move = await (await post(client(), `/api/appointments/${VISIT}/reschedule`, {})).json();
+    const move = await (await get(client(), `/api/appointments/${VISIT}/reschedule`)).json();
     expect(move).toMatchObject({ cost: "late_fee", price: { amount: 400000 } });
   });
 
@@ -334,10 +334,10 @@ describe("POST /api/appointments/:id/cancel", () => {
   });
 });
 
-describe("POST /api/appointments/:id/reschedule: the terms", () => {
+describe("GET /api/appointments/:id/reschedule: the terms", () => {
   it("is free more than 24 hours out", async () => {
     await booked("service", THURSDAY_NOON, 200000);
-    const terms = await (await post(client(), `/api/appointments/${VISIT}/reschedule`, {})).json();
+    const terms = await (await get(client(), `/api/appointments/${VISIT}/reschedule`)).json();
     expect(terms).toEqual({
       visit_id: VISIT,
       type: "service",
@@ -353,11 +353,11 @@ describe("POST /api/appointments/:id/reschedule: the terms", () => {
 
   it("costs a first fit its late fee inside 24 hours, and a service visit a new payment", async () => {
     await booked("first_fit", TUESDAY_MORNING, 3000000);
-    const fit = await (await post(client(), `/api/appointments/${VISIT}/reschedule`, {})).json();
+    const fit = await (await get(client(), `/api/appointments/${VISIT}/reschedule`)).json();
     expect(fit).toMatchObject({ notice: "late", cost: "late_fee", price: { amount: 400000 } });
 
     await env.DB.prepare("UPDATE appointments SET type = 'service' WHERE id = ?1").bind(VISIT).run();
-    const service = await (await post(client(), `/api/appointments/${VISIT}/reschedule`, {})).json();
+    const service = await (await get(client(), `/api/appointments/${VISIT}/reschedule`)).json();
     expect(service).toMatchObject({ notice: "late", cost: "charged", price: { amount: 200000 } });
   });
 });
@@ -423,7 +423,7 @@ describe("the terms a visit was booked under", () => {
     await booked("service", TUESDAY_MORNING, 200000);
     await bookedHold({ notice: 24, charge: "nothing" });
     expect(await cancelTerms()).toMatchObject({ notice: "late", refund: 200000, kept: 0 });
-    const move = await (await post(client(), `/api/appointments/${VISIT}/reschedule`, {})).json();
+    const move = await (await get(client(), `/api/appointments/${VISIT}/reschedule`)).json();
     expect(move).toMatchObject({ notice: "late", cost: "free" });
   });
 
@@ -740,7 +740,7 @@ describe("moving a visit", () => {
     });
     expect(wrong.status).toBe(409);
     await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(VISIT).run();
-    expect((await post(app, `/api/appointments/${VISIT}/reschedule`, {})).status).toBe(409);
+    expect((await get(app, `/api/appointments/${VISIT}/reschedule`)).status).toBe(409);
     expect((await get(app, `/api/availability?type=service&moving=${VISIT}`)).status).toBe(409);
   });
 });
@@ -802,7 +802,7 @@ describe("a visit ops moved", () => {
   it("moves it free too, where the client moves it themselves", async () => {
     await booked("first_fit", THURSDAY_NOON, 3000000);
     await opsMove("morning", "2026-09-22");
-    const move = await (await post(client(), `/api/appointments/${VISIT}/reschedule`, {})).json();
+    const move = await (await get(client(), `/api/appointments/${VISIT}/reschedule`)).json();
     expect(move).toMatchObject({ notice: "free", cost: "free" });
   });
 

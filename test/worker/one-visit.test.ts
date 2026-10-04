@@ -610,7 +610,8 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     const cancel = await ask("cancel", { confirm: false });
     expect(cancel.status).toBe(409);
     expect(await cancel.json()).toMatchObject({ error: { code: "not_changeable" } });
-    expect((await ask("reschedule", {})).status).toBe(409);
+    const terms = await request(client, `/api/appointments/${JOB}/reschedule`, { headers: { Cookie: cookie } });
+    expect(terms.status).toBe(409);
     const visits = await (await request(client, "/api/visits", { headers: { Cookie: cookie } })).json();
     expect(visits).toMatchObject({ upcoming: [], past: [{ id: JOB, status: "completed" }] });
   });
