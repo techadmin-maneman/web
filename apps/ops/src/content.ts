@@ -193,7 +193,8 @@ export const dispatch = {
     badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
       Record<string, string>
     >,
-    rows: { type: "Type", area: "Area", state: "State", referred: "Referred by" },
+    // PLACEHOLDER: the board draws no Service row; it names a first fit's hair system, say.
+    rows: { type: "Type", service: "Service", area: "Area", state: "State", referred: "Referred by" },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** "Sector 65 · 122018": the area the visit's pincode is in, and the pincode. */
@@ -724,6 +725,8 @@ export const clients = {
       service: "Service visit",
       replacement: "Replacement",
     },
+    /** "First fit · Mane Man Essential": the kind, and the service it was sold as where that says more. */
+    what: (kind: string, service: string | null) => (service === null ? kind : `${kind} · ${service}`),
     /** A visit to come, by where it stands, and one done, by how FSM closed it. */
     stages: {
       booked: "Booked",
