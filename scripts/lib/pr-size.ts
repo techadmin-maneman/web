@@ -1,39 +1,37 @@
-// How big a pull request is, counted as a reviewer reads it: lines changed in files a person wrote. The files
-// `npm run gen` writes, the lockfile and the fidelity pictures are left out, and .gitattributes marks the same ones
-// as generated, so GitHub folds them away too (test/node/pr-size.test.ts holds the two together).
+// How many lines a pull request changes by hand, against the most a reviewer reads well in one sitting. Files a
+// command writes are left out, and so are binary files, which `git diff --numstat` counts as "-".
+//
+// It imports nothing from node_modules: its job installs nothing.
 
-/** What a person did not write: each is a path, or a folder ending in "/", or a file name under any folder. */
-export const GENERATED = [
-  "package-lock.json",
-  "src/worker-configuration.d.ts",
-  "docs/openapi.json",
-  "docs/openapi-client.json",
-  "docs/openapi-ops.json",
-  "docs/openapi-tech.json",
-  "docs/api.md",
-  "docs/api-client.md",
-  "docs/api-ops.md",
-  "docs/api-tech.md",
-  "docs/schema.md",
-  "docs/decisions/README.md",
-  "docs/fidelity/",
-  "site/src/lib/api-schema.ts",
-  "apps/app/src/api-schema.ts",
-  "apps/ops/src/api-schema.ts",
-  "apps/tech/src/api-schema.ts",
-] as const;
+export const LINE_BUDGET = 800;
 
-/** Past this, a pull request is hard to review in one sitting: CI says so, and asks for it split. */
-export const REVIEWABLE_LINES = 800;
+/** Written by `npm run openapi`, `npm run schema`, `npm run types`, `npm run adr-index` and npm itself; .gitattributes marks the same. */
+const GENERATED_FILES = [
+  /^docs\/api(-(client|ops|tech))?\.md$/,
+  /^docs\/openapi(-(client|ops|tech))?\.json$/,
+  /^docs\/schema\.md$/,
+  /^docs\/decisions\/README\.md$/,
+  /(^|\/)api-schema\.ts$/,
+  /^src\/worker-configuration\.d\.ts$/,
+  /(^|\/)package-lock\.json$/,
+];
 
-export const isGenerated = (path: string): boolean =>
-  GENERATED.some((entry) => (entry.endsWith("/") ? path.startsWith(entry) : path === entry));
+export function isGenerated(path: string): boolean {
+  return GENERATED_FILES.some((pattern) => pattern.test(path));
+}
 
-/** The lines added and removed in files a person wrote, from `git diff --numstat` (a binary file counts as none). */
-export function writtenLines(numstat: string): number {
-  return numstat
-    .split("\n")
-    .map((line) => line.split("\t"))
-    .filter(([added, , path]) => added !== undefined && path !== undefined && !isGenerated(path))
-    .reduce((total, [added = "-", removed = "-"]) => total + (Number(added) || 0) + (Number(removed) || 0), 0);
+/** The lines added and deleted in files written by hand, from `git diff --numstat` ("added<TAB>deleted<TAB>path"). */
+export function handWrittenLines(numstat: string): number {
+  let total = 0;
+  for (const line of numstat.split("\n")) {
+    const [added, deleted, path] = line.split("\t");
+    if (path === undefined || isGenerated(path)) continue;
+    total += countOf(added) + countOf(deleted);
+  }
+  return total;
+}
+
+function countOf(field: string | undefined): number {
+  const count = Number(field);
+  return Number.isInteger(count) ? count : 0;
 }

@@ -1,36 +1,59 @@
-// A pull request's size as a reviewer reads it, and the generated files GitHub folds away (scripts/lib/pr-size.ts).
+// CI warns when a pull request changes more lines by hand than one review reads well (scripts/lib/pr-size.ts).
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { GENERATED, isGenerated, writtenLines } from "../../scripts/lib/pr-size.ts";
+import { handWrittenLines, isGenerated } from "../../scripts/lib/pr-size.ts";
 
-describe("writtenLines", () => {
-  it("counts lines added and removed in files people wrote, and none in generated files or pictures", () => {
-    const numstat = [
-      "12\t3\tsrc/routes/client-refer.ts",
-      "400\t380\tdocs/openapi-client.json",
-      "90\t10\tapps/app/src/api-schema.ts",
-      "-\t-\tdocs/fidelity/390/home-01-hero.jpg",
-      "-\t-\tsite/public/images/invite-house.jpg",
-      "5\t0\ttest/worker/referrals.test.ts",
-    ].join("\n");
-    expect(writtenLines(numstat)).toBe(20);
+describe("the lines a pull request changes by hand", () => {
+  it("adds the lines added and deleted in each file", () => {
+    expect(handWrittenLines("10\t2\tsrc/domain/refunds.ts\n5\t0\ttest/worker/refunds.test.ts\n")).toBe(17);
   });
 
-  it("knows a folder's files, and a path only where it is written out", () => {
-    expect(isGenerated("docs/fidelity/ops/a1-dispatch.jpg")).toBe(true);
-    expect(isGenerated("docs/fidelity-method.md")).toBe(false);
-    expect(isGenerated("docs/api.md")).toBe(true);
-    expect(isGenerated("docs/api-guide.md")).toBe(false);
+  it("leaves out what npm run openapi, schema and types write, and the lockfile", () => {
+    const numstat = [
+      "3000\t20\tdocs/openapi-client.json",
+      "900\t10\tdocs/api-client.md",
+      "400\t0\tdocs/api.md",
+      "300\t0\tdocs/schema.md",
+      "800\t40\tapps/app/src/api-schema.ts",
+      "50\t0\tsite/src/lib/api-schema.ts",
+      "20\t0\tsrc/worker-configuration.d.ts",
+      "500\t300\tpackage-lock.json",
+      "33\t0\tsrc/routes/client-booking.ts",
+    ].join("\n");
+    expect(handWrittenLines(numstat)).toBe(33);
+  });
+
+  it("counts a binary file, which git shows as -, as nothing", () => {
+    expect(handWrittenLines("-\t-\tdocs/fidelity/home.jpg\n1\t1\tREADME.md")).toBe(2);
+  });
+
+  it("does not mistake a hand-written file for a generated one", () => {
+    expect(isGenerated("src/openapi.ts")).toBe(false);
+    expect(isGenerated("docs/api-notes.md")).toBe(false);
+    expect(isGenerated("docs/runbook.md")).toBe(false);
+    expect(isGenerated("scripts/generate-openapi.ts")).toBe(false);
+  });
+});
+
+describe("the review budget step in CI", () => {
+  it("runs on every pull request and only warns", () => {
+    const ci = readFileSync(".github/workflows/ci.yml", "utf8");
+    expect(ci).toContain(`run: git diff --numstat "$BASE...HEAD" | node scripts/pr-size.ts`);
+    const script = readFileSync("scripts/pr-size.ts", "utf8");
+    expect(script).toContain("::warning::");
+    expect(script).not.toContain("process.exit");
   });
 });
 
 describe(".gitattributes", () => {
-  it("marks exactly the generated files as generated, so GitHub folds them in a diff", () => {
+  // GitHub folds what it marks; the budget leaves out what isGenerated names: the two lists are one.
+  it("marks as generated the files the budget leaves out, and the fidelity pictures", () => {
     const marked = readFileSync(".gitattributes", "utf8")
       .split("\n")
       .filter((line) => line.includes("linguist-generated"))
       .map((line) => line.split(/\s+/)[0] ?? "");
-    expect(marked).toEqual(GENERATED.map((entry) => (entry.endsWith("/") ? `${entry}**` : entry)));
+    expect(marked).toContain("docs/fidelity/**");
+    expect(marked.filter((path) => !path.endsWith("/**") && !isGenerated(path))).toEqual([]);
   });
 });
