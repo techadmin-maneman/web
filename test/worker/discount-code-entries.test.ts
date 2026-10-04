@@ -660,7 +660,11 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me", {
       headers: { Cookie: `mm_app=${session}` },
     });
-    return answer.json<{ consultation: { one_visit: unknown } | null; being_booked: { one_visit: unknown } | null }>();
+    return answer.json<{
+      consultation: { one_visit: unknown } | null;
+      being_booked: { one_visit: unknown } | null;
+      next_visit: { one_visit: unknown } | null;
+    }>();
   }
 
   // BK-15 and CP-01: Home said "We are booking your visit", with no price, while the site had said it was booked, and
