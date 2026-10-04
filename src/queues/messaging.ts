@@ -17,7 +17,8 @@
 // number outside the staging allowlist (a kind that answers the person who
 // just acted reaches any number there, ADR 0097) or a test record one of our
 // own scripts made off the allowlist regardless of kind, the daily cap
-// reached, or a reminder or arrival notice whose moment has passed.
+// reached, a reminder or arrival notice whose moment has passed, or a move a
+// later move's message tells.
 //
 // A transient failure is retried three times; then the message fails and an
 // alert names it, which ops may send again from Tasks. So does a message that
@@ -50,7 +51,7 @@ import { composeMessagesStopped, stopLink } from "../domain/stop-messages.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
 import {
   composeVisitMessage,
-  tooLateToSend,
+  noLongerWorthSending,
   VISIT_MESSAGE_KINDS,
   type VisitMessageKind,
 } from "../domain/visit-messages.ts";
@@ -228,8 +229,8 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
   if (isVisitKind(row.kind)) {
     const composed = await composeVisitMessage(db, row.kind, row.subject_id, row.person_id);
     if ("skip" in composed) return composed;
-    const late = await tooLateToSend(db, row.kind, row.subject_id, new Date(row.created_at), now);
-    if (late !== null) return { skip: late };
+    const stale = await noLongerWorthSending(db, row.kind, row.subject_id, new Date(row.created_at), now);
+    if (stale !== null) return { skip: stale };
     return composed;
   }
   if (row.kind === "next_service_reminder") {

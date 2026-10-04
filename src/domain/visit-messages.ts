@@ -185,32 +185,77 @@ export async function arrivalNotice(
   return written.meta.changes === 1 && !late ? id : null;
 }
 
+/** The kinds that tell a visit's new window: the client's own move, and one ops made on the dispatch board. */
+const MOVE_KINDS: readonly VisitMessageKind[] = ["reschedule_confirmation", "visit_moved"];
+
 /**
- * Why a reminder or an arrival notice is no longer worth sending, as after waiting out a bridge that was down; null
- * while it still is. The reminder says the visit is tomorrow, and the arrival notice that the technician is at the door.
+ * Why a message about a booked visit is no longer worth sending, as after waiting out a bridge that was down; null
+ * while it still is. An arrival notice says the technician is at the door, a reminder that the visit is tomorrow, and
+ * a move the visit's new window, which a later move's message tells as well.
  */
-export async function tooLateToSend(
+export async function noLongerWorthSending(
   db: D1Database,
   kind: VisitMessageKind,
   appointmentId: string,
   writtenAt: Date,
   now: Date,
 ): Promise<string | null> {
-  if (kind === "arrival_notice") {
-    const minutesWaited = (now.getTime() - writtenAt.getTime()) / MINUTE_MS;
-    if (minutesWaited > ARRIVAL_NOTICE_WITHIN_MINUTES) return "too late to tell the client the technician had arrived";
-    return null;
-  }
-  if (kind !== "visit_reminder") return null;
+  if (kind === "arrival_notice") return arrivalTooLate(writtenAt, now);
+  if (kind === "visit_reminder") return reminderOutdated(db, appointmentId, writtenAt, now);
+  if (MOVE_KINDS.includes(kind)) return laterMoveTold(db, appointmentId, writtenAt);
+  return null;
+}
+
+function arrivalTooLate(writtenAt: Date, now: Date): string | null {
+  const minutesWaited = (now.getTime() - writtenAt.getTime()) / MINUTE_MS;
+  if (minutesWaited > ARRIVAL_NOTICE_WITHIN_MINUTES) return "too late to tell the client the technician had arrived";
+  return null;
+}
+
+/** Why a reminder is not sent once its visit has moved to another day: the new day has a reminder of its own. */
+export const REMINDER_DAY_MOVED = "the visit moved off the day this reminder was for";
+
+/**
+ * The day a reminder written at `writtenAt` is about. queueReminders writes one only for the next day's visits, so it
+ * is the day after the one it was written on.
+ */
+function reminderDay(writtenAt: Date): string {
+  return addDays(indiaDate(writtenAt), 1);
+}
+
+async function reminderOutdated(
+  db: D1Database,
+  appointmentId: string,
+  writtenAt: Date,
+  now: Date,
+): Promise<string | null> {
   const visit = await db
     .prepare("SELECT window_start FROM appointments WHERE id = ?1")
     .bind(appointmentId)
     .first<{ window_start: string | null }>();
   const windowStart = visit?.window_start ?? null;
   if (windowStart === null) return null;
-  const visitDay = indiaDate(new Date(windowStart));
-  if (visitDay <= indiaDate(now)) return "too late for a day-before reminder";
+  const dayItIsFor = reminderDay(writtenAt);
+  if (indiaDate(new Date(windowStart)) !== dayItIsFor) return REMINDER_DAY_MOVED;
+  const tomorrow = addDays(indiaDate(now), 1);
+  if (dayItIsFor !== tomorrow) return "too late for a day-before reminder";
   return null;
+}
+
+/**
+ * Why a move's message is not sent: a later move's message, queued or sent, tells the same window, since each says
+ * the visit as it stands when it goes.
+ */
+async function laterMoveTold(db: D1Database, appointmentId: string, writtenAt: Date): Promise<string | null> {
+  const later = await db
+    .prepare(
+      `SELECT 1 FROM outbound_messages
+       WHERE subject_kind = 'appointment' AND subject_id = ?1 AND kind IN ('reschedule_confirmation', 'visit_moved')
+         AND state IN ('queued', 'sent') AND created_at > ?2`,
+    )
+    .bind(appointmentId, writtenAt.toISOString())
+    .first();
+  return later === null ? null : "a later move's message tells the new window";
 }
 
 /** "12 to 4 pm", as the app writes a window, by the times in force on the visit's day. */
@@ -563,7 +608,8 @@ export async function creditOfVisit(db: D1Database, appointmentId: string): Prom
 
 /**
  * Queues the reminders for tomorrow's visits, from the reminder hour in India the day before, 6 pm unless ops set
- * another: each booked visit once. Returns the messages' IDs, for the queue.
+ * another: each booked visit once for the day it is on, so a visit reminded and then moved to another day is reminded
+ * again the evening before its new day. Returns the messages' IDs, for the queue.
  */
 export async function queueReminders(
   db: D1Database,
@@ -571,18 +617,25 @@ export async function queueReminders(
   hour: number = DAY_BEFORE_REMINDER_HOUR,
 ): Promise<string[]> {
   if (indiaTime(now) < remindersFrom(hour)) return [];
-  const tomorrow = addDays(indiaDate(now), 1);
+  const today = indiaDate(now);
+  const tomorrow = addDays(today, 1);
+  // A reminder written today is about tomorrow (reminderDay); one from an earlier day was about an earlier day.
+  const writtenToday = indiaInstant(today, "00:00");
   const { results } = await db
     .prepare(
       `SELECT a.id, a.person_id FROM appointments a
        WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
          AND a.deleted_at IS NULL AND a.person_id IS NOT NULL AND a.type IS NOT NULL
-         AND NOT EXISTS (SELECT 1 FROM outbound_messages m WHERE m.subject_id = a.id AND m.kind = 'visit_reminder')
-       ORDER BY a.window_start LIMIT ?3`,
+         AND NOT EXISTS (
+           SELECT 1 FROM outbound_messages m
+           WHERE m.subject_id = a.id AND m.kind = 'visit_reminder' AND m.created_at >= ?3
+         )
+       ORDER BY a.window_start LIMIT ?4`,
     )
     .bind(
       indiaInstant(tomorrow, "00:00").toISOString(),
       indiaInstant(addDays(tomorrow, 1), "00:00").toISOString(),
+      writtenToday.toISOString(),
       REMINDERS_PER_PASS,
     )
     .all<{ id: string; person_id: string }>();

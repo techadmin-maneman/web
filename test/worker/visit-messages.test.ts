@@ -8,7 +8,12 @@ import { renderMessage } from "../../src/config/message-templates.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
-import { composeVisitMessage, queueReminders, visitMessage } from "../../src/domain/visit-messages.ts";
+import {
+  composeVisitMessage,
+  queueReminders,
+  REMINDER_DAY_MOVED,
+  visitMessage,
+} from "../../src/domain/visit-messages.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
@@ -328,6 +333,88 @@ describe("sending a visit message", () => {
     expect(row).toEqual({ state: "skipped", last_error: "too late for a day-before reminder" });
   });
 
+  describe("a visit moved after its reminder was written", () => {
+    const mondayEvening = new Date("2026-09-21T12:30:00.000Z");
+    const tuesdayEvening = new Date("2026-09-22T12:30:00.000Z");
+
+    async function reminderWritten(at: Date) {
+      const message = visitMessage(env.DB, { personId: PERSON, appointmentId: VISIT, kind: "visit_reminder", now: at });
+      await message.statement.run();
+      return message.id;
+    }
+
+    async function sendAt(at: Date, messageId: string) {
+      const { provider, sent } = recordingProvider();
+      await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider, now: () => at }), log, messageId);
+      return sent;
+    }
+
+    const stateOf = (messageId: string) =>
+      env.DB.prepare("SELECT state, last_error FROM outbound_messages WHERE id = ?1").bind(messageId).first();
+
+    it("does not say 'tomorrow' of a visit moved to a later day", async () => {
+      await consent(true);
+      await visit("consultation", "2026-09-22T06:30:00.000Z");
+      const reminder = await reminderWritten(mondayEvening);
+      await env.DB.prepare("UPDATE appointments SET window_start = ?1").bind(THURSDAY_NOON).run();
+      expect(await sendAt(mondayEvening, reminder)).toEqual([]);
+      expect(await stateOf(reminder)).toEqual({ state: "skipped", last_error: REMINDER_DAY_MOVED });
+    });
+
+    it("leaves the new day to its own reminder, though the old one is still waiting the evening before it", async () => {
+      await consent(true);
+      await visit("consultation", "2026-09-22T06:30:00.000Z");
+      const stale = await reminderWritten(mondayEvening);
+      await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-23T06:30:00.000Z'").run();
+      const [fresh] = await queueReminders(env.DB, tuesdayEvening);
+      expect(await sendAt(tuesdayEvening, stale)).toEqual([]);
+      expect(await stateOf(stale)).toEqual({ state: "skipped", last_error: REMINDER_DAY_MOVED });
+      const sent = await sendAt(tuesdayEvening, fresh ?? "");
+      expect(sent.map((message) => renderMessage(message.template, message.params))).toEqual([
+        "Hello Rohit, a reminder that your consultation is tomorrow, Wed 23 Sep, 12 to 4 pm, with Imran.",
+      ]);
+    });
+
+    it("still reminds of a visit moved to another window on the same day", async () => {
+      await consent(true);
+      await visit("consultation", "2026-09-22T06:30:00.000Z");
+      const reminder = await reminderWritten(mondayEvening);
+      await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-22T03:30:00.000Z'").run();
+      const sent = await sendAt(mondayEvening, reminder);
+      expect(sent.map((message) => renderMessage(message.template, message.params))).toEqual([
+        "Hello Rohit, a reminder that your consultation is tomorrow, Tue 22 Sep, 9 am to 12 pm, with Imran.",
+      ]);
+    });
+  });
+
+  it("sends only the latest of several moves still waiting to go", async () => {
+    await consent(true);
+    await visit();
+    const moves = [0, 1, 2].map((minutes) =>
+      visitMessage(env.DB, {
+        personId: PERSON,
+        appointmentId: VISIT,
+        kind: minutes === 0 ? "reschedule_confirmation" : "visit_moved",
+        now: new Date(NOW.getTime() + minutes * 60_000),
+      }),
+    );
+    await env.DB.batch(moves.map((move) => move.statement));
+    const { provider, sent } = recordingProvider();
+    const deps = fakeDependencies({ messaging: provider });
+    for (const move of moves) await sendMessage(env.DB, config(), deps, log, move.id);
+    expect(sent.map((message) => renderMessage(message.template, message.params))).toEqual([
+      "Hello Rohit, your service visit is now on Thu 24 Sep, 12 to 4 pm, with Imran.",
+    ]);
+    const { results } = await env.DB.prepare(
+      "SELECT state, last_error FROM outbound_messages ORDER BY created_at",
+    ).all();
+    expect(results).toEqual([
+      { state: "skipped", last_error: "a later move's message tells the new window" },
+      { state: "skipped", last_error: "a later move's message tells the new window" },
+      { state: "sent", last_error: null },
+    ]);
+  });
+
   it("skips it, and says why, when the client has not consented", async () => {
     await visit();
     const message = visitMessage(env.DB, { personId: PERSON, appointmentId: VISIT, kind: "visit_reminder", now: NOW });
@@ -417,7 +504,7 @@ describe("sending a visit message", () => {
 
     it("sends both kinds everywhere once there is no allowlist, as in production", async () => {
       await consent(true);
-      await visit();
+      await visit("service", "2026-09-22T06:30:00.000Z");
       await paid();
       const receipt = visitMessage(env.DB, {
         personId: PERSON,
@@ -468,6 +555,22 @@ describe("the day-before reminders", () => {
     expect(queued).toHaveLength(1);
     expect((await messages()).results).toEqual([{ kind: "visit_reminder", subject_id: VISIT, state: "queued" }]);
     expect(await queueReminders(env.DB, new Date("2026-09-21T15:00:00Z"))).toEqual([]);
+  });
+
+  it("reminds again of a visit moved to a later day after its reminder", async () => {
+    await visit("service", "2026-09-22T06:30:00.000Z");
+    expect(await queueReminders(env.DB, new Date("2026-09-21T12:30:00Z"))).toHaveLength(1);
+    await env.DB.prepare("UPDATE appointments SET window_start = ?1").bind(THURSDAY_NOON).run();
+    expect(await queueReminders(env.DB, new Date("2026-09-22T12:30:00Z"))).toEqual([]);
+    expect(await queueReminders(env.DB, new Date("2026-09-23T12:30:00Z"))).toHaveLength(1);
+    expect(await queueReminders(env.DB, new Date("2026-09-23T15:00:00Z"))).toEqual([]);
+  });
+
+  it("does not remind twice of a visit moved within tomorrow", async () => {
+    await visit("service", "2026-09-22T06:30:00.000Z");
+    expect(await queueReminders(env.DB, new Date("2026-09-21T12:30:00Z"))).toHaveLength(1);
+    await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-22T03:30:00.000Z'").run();
+    expect(await queueReminders(env.DB, new Date("2026-09-21T13:00:00Z"))).toEqual([]);
   });
 
   it("leaves out a visit the day after tomorrow, and one no longer booked", async () => {
