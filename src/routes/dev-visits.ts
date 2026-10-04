@@ -54,7 +54,8 @@ export function registerDevVisits(app: App): void {
 
     const times = { startedAt: visit.window_start, endedAt: visit.window_end };
     const [moved] = await db.batch([moveVisit(db, id, outcome, at), closeVisit(db, id, outcome, times, null, at)]);
-    if (moved?.meta.changes !== 1) return c.json(errorBody("not_changeable", requestId), 409);
+    // The board version's trigger counts among the changes, so any change at all is the move.
+    if ((moved?.meta.changes ?? 0) === 0) return c.json(errorBody("not_changeable", requestId), 409);
 
     const status = CLOSED_AS[outcome];
     log.info("dev_visit_closed", { appointment_id: id, status });
