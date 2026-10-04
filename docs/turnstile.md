@@ -1,10 +1,18 @@
 # Turnstile
 
-The site's forms, the try-on and the client app's login render a Turnstile
-widget (`packages/web-kit/turnstile.ts`) and send its token as `turnstile_token`:
-the app's with `POST /api/auth/otp`, so strangers cannot spend the login codes
-clients and technicians need. Site keys are public; the secrets are on the
-Workers as `TURNSTILE_SECRET`.
+Every form a stranger can send renders a Turnstile widget (`packages/web-kit/turnstile.ts`) and sends its token
+as `turnstile_token`, which mm-api checks against the environment's secret, `TURNSTILE_SECRET`, before anything
+else is read or counted. Site keys are public.
+
+| Form                                              | Route                                                 | Widget                |
+| ------------------------------------------------- | ----------------------------------------------------- | --------------------- |
+| The site's booking form, `/book`                  | `POST /api/consultation`                              | the site's            |
+| The site's waitlist, for a pincode not served yet | `POST /api/waitlist`                                  | the site's            |
+| An invite's booking form, `/r/:code`              | `POST /api/r/{code}/consultation`                     | the site's            |
+| An invite's waitlist                              | `POST /api/r/{code}/waitlist`                         | the site's            |
+| The number check before a one visit or a try-on   | `POST /api/number-code`                               | the site's            |
+| The try-on's upload                               | `POST /api/tryon/upload-url`                          | the site's            |
+| The client app's login                            | `POST /api/auth/otp`, so strangers cannot spend codes | the app's (see below) |
 
 | Environment | Widget                 | Site key                                   | Hostnames                                          |
 | ----------- | ---------------------- | ------------------------------------------ | -------------------------------------------------- |
