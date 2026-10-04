@@ -5153,6 +5153,17 @@ Request body:
         }
       ]
     },
+    "service": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -5319,6 +5330,7 @@ Request body:
     "ends_at",
     "length_minutes",
     "type",
+    "service",
     "status",
     "stage",
     "prepaid",
@@ -5406,6 +5418,17 @@ Request body:
         }
       ]
     },
+    "service": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -5462,6 +5485,7 @@ Request body:
     "ends_at",
     "length_minutes",
     "type",
+    "service",
     "status",
     "stage",
     "prepaid",
@@ -9356,6 +9380,17 @@ Request body:
               }
             ]
           },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+          },
           "client": {
             "anyOf": [
               {
@@ -9488,6 +9523,7 @@ Request body:
         "required": [
           "appointment_id",
           "type",
+          "service",
           "client",
           "sector",
           "pincode",
@@ -9603,6 +9639,17 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "service": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
     },
     "client": {
       "anyOf": [
@@ -9735,6 +9782,7 @@ Request body:
   "required": [
     "appointment_id",
     "type",
+    "service",
     "client",
     "sector",
     "pincode",

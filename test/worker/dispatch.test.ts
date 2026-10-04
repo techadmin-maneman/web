@@ -831,6 +831,14 @@ describe("what the board carries of each visit", () => {
     expect(week.technicians[0]?.days[0]?.blocks[0]).toMatchObject({ appointment_id: A, badge: "prepaid", slots: 1 });
     // Seven half-slots: three slots and a half.
     expect(week.technicians[1]?.days[0]?.blocks[0]).toMatchObject({ appointment_id: B, slots: 3.5 });
+    // MON-10: the drawer names what the client bought.
+    expect(week.technicians[1]?.days[0]?.blocks[0]).toMatchObject({ service: "Premium first fit" });
+  });
+
+  it("names no service for a visit of its kind's standard one", async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+    const block = (await board("from=2026-09-22")).technicians[0]?.days[0]?.blocks[0];
+    expect(block).toMatchObject({ appointment_id: A, service: null });
   });
 
   it("names the move the client was not told of on the visit it moved", async () => {

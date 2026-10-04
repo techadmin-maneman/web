@@ -863,6 +863,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Erasing person _id_ in the CRM failed                                                    | `crm_erasure:<person>`                                                                                    | when it is blanked, or by hand       | "Erasure within the day", step 3                                        |
 | FSM would not anonymise contact _id_                                                     | `fsm_erasure:<person>`                                                                                    | by hand                              | "Erasure within the day"                                                |
 | Payment link _id_, of a client erased since, could not be cancelled                      | `erased_link:<link>`                                                                                      | by hand                              | cancel it in Razorpay's dashboard                                       |
+| Visit _id_ was paid by another link, and its own payment link could not be cancelled     | `paid_elsewhere_link:<link>`                                                                              | by hand                              | "A payment link"                                                        |
 | FSM sync gave up on appointment _id_                                                     | `fsm_sync:<fsm id>`                                                                                       | when it syncs                        | "FSM is down"                                                           |
 | FSM reconciliation repaired _n_ appointment(s) tonight                                   | none                                                                                                      | not kept                             | "FSM's webhook has stopped"                                             |
 | Lead _id_ did not reach FSM                                                              | none                                                                                                      | not kept                             | "FSM is down"                                                           |
@@ -1142,6 +1143,20 @@ The cause, from Workers Logs:
 Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068).
 
 For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
+
+### A payment link
+
+A consultation and fit in one visit is paid by the link its close makes (ADR 0105), and a paid visit ops book in the console by the link the booking makes. Razorpay texts the link to the client, with reminders. On staging it texts only a number on `MESSAGING_ALLOWLIST`: for any other number the link is made but not texted, the Worker logs `payment_link_not_texted`, and the link is on the client's Payments tab to send by hand.
+
+A one visit's link takes payment for 14 days from when Razorpay made it; a console booking's closes with its hold. A one visit's link that closed unpaid stays on Tasks as "link closed unpaid", and reads "Closed unpaid" on the client's Payments tab.
+
+The Worker cancels a link at Razorpay when the client is erased, and when the visit is paid by another link, such as one you made by hand. One Razorpay will not cancel raises an alert with the link's ID (`erased_link:<link>` or `paid_elsewhere_link:<link>`).
+
+By hand, in Razorpay's dashboard, under Payment Links:
+
+- **A new link** for a one visit whose link closed unpaid or was never made: create a payment link for the amount on the Tasks line, with the visit's ID as its reference. Its payment finds the visit.
+- **Cancel a link** that should no longer take payment, for a wrong price or a visit settled another way: find it by its reference (`MM-…`) and cancel it. For a one visit, then send the right one as above.
+- **Paid twice:** if the client paid two links for one visit, refund one of the payments.
 
 ### A refund that failed
 
