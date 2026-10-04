@@ -86,7 +86,7 @@ const firstJob = (date: string, type: VisitType, oneVisit = false, progress = NO
   window_label: "morning",
   type,
   one_visit: oneVisit,
-  product: null,
+  service: null,
   sector: "Sector 65",
   status: "scheduled",
   badge: oneVisit ? "at_visit" : "prepaid",
@@ -105,7 +105,7 @@ const secondJob = (date: string): Job => ({
   window_label: "morning",
   type: "service",
   one_visit: false,
-  product: null,
+  service: null,
   sector: "DLF Phase 4",
   status: "scheduled",
   badge: "credit",
@@ -125,7 +125,7 @@ const lockedJob = (date: string): Job => ({
   window_label: "afternoon",
   type: "first_fit",
   one_visit: false,
-  product: "Mane Man Natural",
+  service: { tier: "natural", name: "Mane Man Natural" },
   sector: "Sector 43",
   status: "scheduled",
   badge: "prepaid",
@@ -147,7 +147,7 @@ const tomorrowsJob = (today: string): Job => {
     window_label: "morning",
     type: "service",
     one_visit: false,
-    product: null,
+    service: null,
     sector: "Sector 50",
     status: "scheduled",
     badge: "free",
@@ -296,6 +296,8 @@ export interface CardOptions {
   readonly checklist?: Card["checklist"];
   /** A one visit's discount code already on it; none unless a test gives one. */
   readonly discountCode?: Card["discount_code"];
+  /** The service the visit was sold as; none unless a test gives one. */
+  readonly service?: Card["service"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -303,6 +305,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
   const oneVisit = options.oneVisit === true;
   return {
     ...firstJob(date, type, oneVisit),
+    service: options.service ?? null,
     address: {
       line1: "Tower C, 14th floor",
       line2: null,
@@ -428,6 +431,8 @@ export interface Fake {
   oneVisit: boolean;
   /** The discount code already on the one visit, or none. */
   discountCode: Card["discount_code"];
+  /** The service the first job was sold as, or none. */
+  service: Card["service"];
   /** The client's pieces on the card. */
   pieces: Piece[];
   /** The client's hair profile on the card, or none recorded. */
@@ -513,6 +518,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     type: "service",
     oneVisit: false,
     discountCode: null,
+    service: null,
     pieces: [],
     profile: null,
     checklist: CHECKLIST,
@@ -539,6 +545,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       profile: fake.profile,
       checklist: fake.checklist,
       discountCode: fake.discountCode,
+      service: fake.service,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {

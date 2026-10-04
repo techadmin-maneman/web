@@ -121,6 +121,14 @@ const EventIdSchema = z
   })
   .openapi({ description: "Every write's headers." });
 
+const ServiceSchema = z
+  .object({
+    tier: z.string().openapi({ description: "Its code, which the hair profile names a first fit's product by." }),
+    name: z.string().openapi({ description: "Its name in the console." }),
+  })
+  .strict()
+  .openapi("TechnicianService");
+
 const JobSummarySchema = z
   .object({
     id: z.uuid(),
@@ -135,10 +143,10 @@ const JobSummarySchema = z
         "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, " +
         "at the piece step.",
     }),
-    product: z.union([z.string(), z.null()]).openapi({
+    service: z.union([ServiceSchema, z.null()]).openapi({
       description:
-        "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, " +
-        "on a one visit until the client chooses, and on a first fit that names none.",
+        "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, " +
+        "say. Null for a kind's standard service, and on a one visit until the client chooses.",
     }),
     sector: z.union([z.string(), z.null()]).openapi({
       description:

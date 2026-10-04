@@ -102,7 +102,11 @@ describe("the services, before anybody changes one", () => {
       ["2026-09-22", false],
       ["2026-01-01", true],
     ]);
-    expect(body.services.every((service) => service.offered && service.retired_date === null)).toBe(true);
+    // Migration 0085: the generic first fit is retired from 2 October 2026; a first fit is sold only as a hair system.
+    const firstFit = body.services.find((service) => service.kind === "first_fit");
+    expect(firstFit?.retired_date).toBe("2026-10-02");
+    const others = body.services.filter((service) => service.kind !== "first_fit");
+    expect(others.every((service) => service.offered && service.retired_date === null)).toBe(true);
   });
 
   it("gives each kind the length a new service of it starts at, and the late fees beside their kinds", async () => {

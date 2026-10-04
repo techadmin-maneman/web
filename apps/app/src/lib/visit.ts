@@ -5,6 +5,13 @@ import { ONE_VISIT, OTHER_VISIT, VISIT_TYPES } from "../content.ts";
 
 export const visitName = (type: VisitSummary["type"]) => (type === null ? OTHER_VISIT : VISIT_TYPES[type]);
 
+/** The visit's kind, and its service where that says more: "First fit · Mane Man Essential". */
+export function visitTitle(visit: Pick<VisitSummary, "type" | "service">): string {
+  // A visit the phone kept from an earlier release names no service.
+  const service = visit.service ?? null;
+  return service === null ? visitName(visit.type) : `${visitName(visit.type)} · ${service}`;
+}
+
 /** A visit being booked, by its kind; a consultation and fit in one visit by that name. */
 export const bookingName = (booking: NonNullable<Me["being_booked"]>) =>
   booking.one_visit ? ONE_VISIT : VISIT_TYPES[booking.type];

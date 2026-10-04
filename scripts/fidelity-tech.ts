@@ -56,7 +56,7 @@ const job = (id: number, date: string, time: string, minutes: number, type: stri
   window_label: "morning",
   type,
   one_visit: false,
-  product: null,
+  service: null,
   sector,
   status: "scheduled",
   badge,

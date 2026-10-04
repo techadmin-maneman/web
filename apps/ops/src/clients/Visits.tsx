@@ -36,6 +36,11 @@ function stateOf(visit: ClientVisit): string {
   return copy.statuses[visit.status] ?? clients.unknown;
 }
 
+function whatOf(visit: ClientVisit): string {
+  const kind = visit.type === null ? clients.unknown : copy.types[visit.type];
+  return copy.what(kind, visit.service);
+}
+
 /** The address on one line, narrowest part first, as the client app writes it. */
 function written(address: SavedAddress): string {
   const parts = [address.flat, address.floor, address.tower, address.building, address.line1, address.line2];
@@ -217,7 +222,7 @@ function VisitTable({
               <tr key={visit.id}>
                 <td className={styles.cell}>{fullDate(visit.date)}</td>
                 <td className={styles.cell}>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
-                <td className={styles.cell}>{visit.type === null ? clients.unknown : copy.types[visit.type]}</td>
+                <td className={styles.cell}>{whatOf(visit)}</td>
                 <td className={styles.quietCell}>{visit.technician?.name ?? clients.unknown}</td>
                 <td className={styles.cell}>
                   {stateOf(visit)}

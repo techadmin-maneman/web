@@ -1493,16 +1493,16 @@ Request body:
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
     },
-    "product": {
+    "service": {
       "anyOf": [
         {
-          "type": "string"
+          "$ref": "#/components/schemas/TechnicianService"
         },
         {
           "type": "null"
         }
       ],
-      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+      "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
     },
     "sector": {
       "anyOf": [
@@ -1568,7 +1568,7 @@ Request body:
     "window_label",
     "type",
     "one_visit",
-    "product",
+    "service",
     "sector",
     "status",
     "badge",
@@ -1576,6 +1576,29 @@ Request body:
     "unlocked",
     "unlocks_at",
     "progress"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianService
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string",
+      "description": "Its code, which the hair profile names a first fit's product by."
+    },
+    "name": {
+      "type": "string",
+      "description": "Its name in the console."
+    }
+  },
+  "required": [
+    "tier",
+    "name"
   ],
   "additionalProperties": false
 }
@@ -1683,16 +1706,16 @@ Request body:
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
     },
-    "product": {
+    "service": {
       "anyOf": [
         {
-          "type": "string"
+          "$ref": "#/components/schemas/TechnicianService"
         },
         {
           "type": "null"
         }
       ],
-      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+      "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
     },
     "sector": {
       "anyOf": [
@@ -2126,7 +2149,7 @@ Request body:
     "window_label",
     "type",
     "one_visit",
-    "product",
+    "service",
     "sector",
     "status",
     "badge",

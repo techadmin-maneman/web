@@ -253,6 +253,34 @@ describe("a visit booked without FSM", () => {
     const me = await (await get("/api/me")).json<Record<string, unknown>>();
     expect(me).toMatchObject({ next_visit: { date: "2026-09-24", type: "service", stage: "booked" } });
   });
+
+  // MON-10: Home and Visits never said which hair system a first fit was for.
+  it("names the hair system a first fit was sold as, and nothing for a kind's standard service", async () => {
+    await bookedWithoutFsm();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('first_fit', 'essential', 'Mane Man Essential', 180, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare("UPDATE appointments SET type = 'first_fit', tier = 'essential' WHERE id = 'ap-ours'"),
+    ]);
+    await signIn();
+    const visits = await (await get("/api/visits")).json<{ upcoming: Record<string, unknown>[] }>();
+    expect(visits.upcoming).toMatchObject([{ type: "first_fit", service: "Mane Man Essential" }]);
+    const me = await (await get("/api/me")).json<Record<string, unknown>>();
+    expect(me).toMatchObject({ next_visit: { service: "Mane Man Essential" } });
+
+    // Booked as one visit, the client has not chosen their hair system yet.
+    await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = 'ap-ours'").run();
+    const oneVisit = await (await get("/api/visits")).json<{ upcoming: Record<string, unknown>[] }>();
+    expect(oneVisit.upcoming).toMatchObject([{ service: null }]);
+
+    await env.DB.prepare(
+      "UPDATE appointments SET type = 'service', tier = 'standard', one_visit = NULL WHERE id = 'ap-ours'",
+    ).run();
+    const standard = await (await get("/api/visits")).json<{ upcoming: Record<string, unknown>[] }>();
+    expect(standard.upcoming).toMatchObject([{ type: "service", service: null }]);
+  });
 });
 
 // A visit stays the client's until FSM closes it. One that dropped out of both lists once its window

@@ -6375,6 +6375,8 @@ export interface components {
             ends_at: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
@@ -6429,6 +6431,8 @@ export interface components {
             ends_at: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
@@ -7261,6 +7265,8 @@ export interface components {
                 /** Format: uuid */
                 appointment_id: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+                service: string | null;
                 /** @description First name and last initial. */
                 client: string | null;
                 /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
@@ -7309,6 +7315,8 @@ export interface components {
             /** Format: uuid */
             appointment_id: string;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @description First name and last initial. */
             client: string | null;
             /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */

@@ -41,6 +41,7 @@ import {
 import { paymentBadge, type PaymentBadge } from "../policy/job-visibility.ts";
 import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { FREE_CHANGE_NOTICE_HOURS } from "../policy/moving-a-visit.ts";
+import { namesMoreThanItsKind } from "../policy/services.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
@@ -89,6 +90,8 @@ export interface BoardClient {
 interface Visit {
   readonly appointment_id: string;
   readonly type: VisitType | null;
+  /** Its service's name in the console, where it names more than the kind: a first fit's hair system, say. */
+  readonly service: string | null;
   /** "Rohit M.", as the board writes a client on a block. */
   readonly client: string | null;
   /** The area the visit's pincode is in, where the service area names it; else the address's locality or the city. */
@@ -191,8 +194,9 @@ const landed = (kind: string): string =>
  * database. A job is the standard tier's where the mirror knows no other.
  */
 const BOARD_JOBS = `
-  SELECT a.id, a.type, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
+  SELECT a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
     a.service_pincode, a.asked_window, a.person_id, d.locality, sp.area, s.minutes AS service_minutes,
+    s.name AS service_name,
     p.name AS client_name, p.mobile_e164 AS client_mobile, p.erased_at AS client_erased_at,
     t.name AS technician_name, t.active AS technician_active,
     ${LATEST_VISITS_CONSENT} AS whatsapp_visits,
@@ -297,6 +301,9 @@ export async function dispatchBoard(
 interface BoardJobRow {
   id: string;
   type: VisitType | null;
+  /** Its service's tier; null where the mirror knows none, which is the standard tier's. */
+  tier: string | null;
+  service_name: string | null;
   status: AppointmentStatus;
   window_start: string;
   window_end: string | null;
@@ -331,6 +338,7 @@ function visitOf(job: BoardJobRow): Visit {
   return {
     appointment_id: job.id,
     type: job.type,
+    service: namesMoreThanItsKind(job.tier, job.one_visit) ? job.service_name : null,
     client: shortName(job.client_name),
     sector: job.area ?? job.locality ?? job.service_city,
     pincode: job.service_pincode,
