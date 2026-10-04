@@ -21,6 +21,7 @@ import { eraseBooksCustomers } from "../domain/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books-invoices.ts";
 import { checkBooksItems } from "../domain/books-items.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
+import { closeStaleLowStock } from "../domain/low-stock.ts";
 import { settleOwedRefunds } from "../domain/cancel-refunds.ts";
 import { finishRun, startRun, type RunStart } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
@@ -165,6 +166,11 @@ async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
   await tellOfDatabaseSize(env.DB, deps.alertOnce, await readDatabaseBytes(env.DB));
 }
 
+/** A low-stock alert whose consumable was retired since, or whose retirement came round, closes. */
+async function lowStockJob({ env, deps }: CronContext): Promise<void> {
+  await closeStaleLowStock(env.DB, deps);
+}
+
 /** Only where a token to read the account's analytics is set. */
 async function dailyAllowancesJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const token = config.settings.analyticsToken;
@@ -303,6 +309,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "storage_meter", needs: "nothing", every: 60, at: 39, run: storageMeterJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
+  { name: "low_stock", needs: "nothing", every: 60, at: 50, run: lowStockJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
   { name: "next_service_reminders", needs: "messaging", every: 60, at: 44, run: nextServiceRemindersJob },
   // Free service visits running out: a month, then a week, before their last day.

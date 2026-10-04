@@ -28,6 +28,7 @@ import {
   setExpectedUse,
   type Consumable,
 } from "../domain/consumables.ts";
+import { closeStaleLowStock } from "../domain/low-stock.ts";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -316,6 +317,7 @@ export function registerOpsConsumables(app: App): void {
     const saved = await retireConsumable(c.env.DB, c.req.valid("param").code, from, { ...written(c), today });
     if (saved === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     if (!saved.ok) return c.json(errorBody("invalid_request", c.var.requestId, saved.fields), 400);
+    await closeStaleLowStock(c.env.DB, c.var.deps);
     return c.json(await answer(c), 200);
   });
 

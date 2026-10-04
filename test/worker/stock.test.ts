@@ -540,6 +540,20 @@ describe("low stock", () => {
     ]);
   });
 
+  // A low-stock alert stayed open after its consumable was retired: no movement came to look again.
+  it("closes a place's alert once what it was low on is retired", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 10 });
+    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 2, from: null, to: IMRAN });
+    expect(job.deps.alerts).toEqual([expect.stringContaining("Stock is low in the central store")]);
+
+    const retired = await job.opsPost("/api/consumables/tape_strips/retire", { from: "2026-09-21" });
+    expect(retired.status).toBe(200);
+    const open = await env.DB.prepare(
+      "SELECT key FROM alerts WHERE key >= 'low_stock:' AND key < 'low_stock;' AND resolved_at IS NULL",
+    ).all();
+    expect(open.results).toEqual([]);
+  });
+
   it("never marks a consumable with no level, nor one retired", async () => {
     await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 1, from: null, to: IMRAN });
     expect(await held("solvent", IMRAN)).toEqual({ quantity: 1, low: false });
