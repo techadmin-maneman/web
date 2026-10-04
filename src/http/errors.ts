@@ -29,10 +29,11 @@ export const ERROR_CODES = [
   "number_not_proved",
   // A webhook whose token or signature does not match.
   "unauthorized",
-  // What an erasure waits for: a visit still booked, or a payment held with no visit behind it
-  // (docs/decisions/0066-erasure-all-or-nothing.md).
+  // What an erasure waits for: a visit or booking still to happen, a payment held with no visit behind it, or a payment
+  // link unpaid (docs/decisions/0066-erasure-all-or-nothing.md).
   "visit_booked",
   "payment_held",
+  "payment_owed",
   // Phase 2 surfaces: a write from another page's origin (docs/decisions/0026-hosts-and-surfaces.md).
   "forbidden_origin",
   // The ops surface: no valid Cloudflare Access token (docs/decisions/0031-access-and-audit.md).

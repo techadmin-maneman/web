@@ -1321,6 +1321,7 @@ Razorpay's webhook: payments and refunds
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",

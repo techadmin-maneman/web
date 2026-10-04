@@ -12,8 +12,19 @@ import { placement } from "../../src/domain/scheduling.ts";
 import { unitsFor } from "../../src/policy/visit-length.ts";
 import { DEFAULT_SLOT_TIMES, unitAt, windowAt } from "../../src/policy/slot-times.ts";
 import { openSession } from "../../src/domain/sessions.ts";
-import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
+import {
+  appFor,
+  d1TripsOf,
+  fakeDependencies,
+  LOCAL_SETTINGS,
+  markDatabase,
+  NOW,
+  request,
+  savedAddress,
+} from "./helpers.ts";
 
+/** The most round trips to D1 a hold may wait on in turn. It waited on 17 when each read waited for the one before. */
+const HOLD_TRIPS = 9;
 const IMRAN = "t1";
 const SANDEEP = "t2";
 
@@ -23,6 +34,23 @@ async function technician(id: string, name: string, initials: string) {
   )
     .bind(id, `fsm-${id}`, name, initials, NOW.toISOString())
     .run();
+}
+
+/**
+ * A hair system ops offer in the console, at the price and length the migrations gave the generic first fit, which
+ * is retired from 2 October 2026.
+ */
+async function essential(): Promise<void> {
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+       VALUES ('first_fit', 'essential', 'Mane Man Essential', 180, 1, 'ops@localhost', ?1)`,
+    ).bind(NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+       VALUES ('first_fit', 'essential', 3000000, 0, '2026-01-01')`,
+    ),
+  ]);
 }
 
 let people = 0;
@@ -136,9 +164,10 @@ describe("GET /api/availability", () => {
 
   it("leaves the evening off a first fit, which cannot start that late, and names the last day to ask for", async () => {
     const lead = await client(true);
+    await essential();
     const ask = async (from: string) =>
       (
-        await request(app, `/api/availability?type=first_fit&tier=standard&from=${from}`, {
+        await request(app, `/api/availability?type=first_fit&tier=essential&from=${from}`, {
           headers: { Cookie: lead.cookie },
         })
       ).json<{ last: string; days: { date: string; windows: { window: string }[] }[] }>();
@@ -209,6 +238,15 @@ describe("POST /api/holds", () => {
       pay_by: "2026-09-21T06:42:00.000Z",
       state: "held",
     });
+  });
+
+  // PLAT-15: each D1 read is a round trip to the database's region, so the hold's reads that need nothing from each
+  // other go together.
+  it("waits on few round trips to D1", async () => {
+    const rohit = await client();
+    const answer = await hold(rohit, TUESDAY_AFTERNOON);
+    expect(answer.status).toBe(201);
+    expect(d1TripsOf(answer)).toBeLessThanOrEqual(HOLD_TRIPS);
   });
 
   it("gives the next client another technician, and the one after that nobody", async () => {
@@ -331,20 +369,21 @@ describe("POST /api/holds", () => {
   // The horizon is ops' to set, 45 days from tomorrow to begin with (docs/decisions/0086-the-next-visit-is-offered.md).
   it("carries a first fit's late fee, and refuses a day past the 45 days from tomorrow", async () => {
     const lead = await client(true);
-    const answer = await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-24", window: "morning" });
+    await essential();
+    const answer = await hold(lead, { type: "first_fit", tier: "essential", date: "2026-09-24", window: "morning" });
     expect(await answer.json()).toMatchObject({
       price: { amount_ex_gst: 3000000, amount: 3000000 },
       late_fee: { amount_ex_gst: 400000, amount: 400000 },
       ends_at: "2026-09-24T06:30:00.000Z",
     });
     expect(
-      (await hold(lead, { type: "first_fit", tier: "standard", date: "2026-11-06", window: "morning" })).status,
+      (await hold(lead, { type: "first_fit", tier: "essential", date: "2026-11-06", window: "morning" })).status,
     ).toBe(422);
     expect(
-      (await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-21", window: "evening" })).status,
+      (await hold(lead, { type: "first_fit", tier: "essential", date: "2026-09-21", window: "evening" })).status,
     ).toBe(422);
     expect(
-      (await hold(lead, { type: "first_fit", tier: "standard", date: "2026-11-05", window: "morning" })).status,
+      (await hold(lead, { type: "first_fit", tier: "essential", date: "2026-11-05", window: "morning" })).status,
     ).toBe(201);
   });
 

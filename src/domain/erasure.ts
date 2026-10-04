@@ -12,19 +12,25 @@
 // CRM and FSM are told at once, by their queues; Books by the cron's own pass
 // (src/domain/books-erasure.ts).
 //
-// Nothing is erased while the person has a visit still to happen or a payment
-// held with no visit behind it (src/policy/account-deletion.ts): the caller
-// asks erasureBlockers first.
+// Nothing is erased while the person has a visit or booking still to happen, a
+// payment held with no visit behind it, or a payment link unpaid
+// (src/policy/account-deletion.ts): the caller asks erasureBlockers first. When
+// ops erase all the same, the batch lets go of every booking of theirs not yet a
+// visit, so none is booked for nobody, and their open payment links are then
+// cancelled at Razorpay.
 //
 // A render still running cannot store its result once its job is expired: the
 // render consumer deletes what it wrote when it finds the job has moved on.
 
 import type { NoticePurpose } from "../config/notices.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
-import type { Logger } from "../log.ts";
+import { failureReason, type Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
+import type { PaymentsProvider } from "../providers/payments.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { recordConsent } from "./consents.ts";
 import { blankProfiles } from "./hair-profiles.ts";
@@ -59,7 +65,16 @@ export interface ErasureBlockers {
     readonly status: (typeof LIVE_VISIT_STATUSES)[number];
     readonly window_start: string | null;
   }[];
+  /** Bookings paid for, or free, that are not yet visits. */
+  readonly bookings: readonly {
+    readonly id: string;
+    readonly type: VisitType;
+    readonly date: string;
+    readonly window: BookingWindow;
+  }[];
   readonly payments: readonly { readonly id: string; readonly reference: string | null; readonly amount: number }[];
+  /** Payment links still unpaid: a fitted visit's, or one ops sent for a booking, still open. */
+  readonly links: readonly { readonly id: string; readonly reference: string | null; readonly amount: number }[];
 }
 
 export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS" | "REFERRAL_CARDS">;
@@ -72,6 +87,9 @@ export interface EraseOptions {
   readonly alongside?: readonly D1PreparedStatement[];
   /** Whether FSM holds the record of field work, so the person's FSM contact is anonymised too. */
   readonly fsmConnected: boolean;
+  /** Cancels their payment links still open. */
+  readonly payments: PaymentsProvider;
+  readonly alertOnce: AlertOnce;
   readonly requestId: string;
   readonly now: Date;
   readonly log: Logger;
@@ -95,8 +113,19 @@ export async function stillToErase(db: D1Database, personId: string): Promise<bo
   return person !== null;
 }
 
-/** The visits still to happen, and the payments held with no visit behind them, that ops settle before erasing. */
-export async function erasureBlockers(db: D1Database, personId: string): Promise<ErasureBlockers> {
+/** A fitted visit's payment link not yet paid, of the person `?1`. */
+const UNPAID_VISIT_LINKS = `FROM payment_links l JOIN appointments a ON a.id = l.appointment_id
+  WHERE a.person_id = ?1 AND l.paid_at IS NULL`;
+
+/** A booking of the person `?1` that ops sent a payment link for, not yet paid, and still open at `?2`. */
+const OPEN_BOOKING_LINKS = `FROM slot_holds
+  WHERE person_id = ?1 AND state = 'held' AND pay_by_link = 1 AND confirmed_at IS NULL AND expires_at > ?2`;
+
+/**
+ * What ops settle before erasing: the visits still to happen, the bookings paid for or free that are not yet visits,
+ * the payments held with no visit behind them, and the payment links still unpaid.
+ */
+export async function erasureBlockers(db: D1Database, personId: string, now: Date): Promise<ErasureBlockers> {
   const { results: visits } = await db
     .prepare(
       `SELECT id, type, status, window_start FROM appointments
@@ -105,6 +134,15 @@ export async function erasureBlockers(db: D1Database, personId: string): Promise
     )
     .bind(personId, JSON.stringify(LIVE_VISIT_STATUSES))
     .all<ErasureBlockers["visits"][number]>();
+  // A booking that moves a visit is not counted: the visit it moves is, above.
+  const { results: bookings } = await db
+    .prepare(
+      `SELECT id, type, date, window_label AS window FROM slot_holds
+       WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
+       ORDER BY date, start_unit`,
+    )
+    .bind(personId)
+    .all<ErasureBlockers["bookings"][number]>();
   const { results: payments } = await db
     .prepare(
       `SELECT id, reference, amount FROM payments
@@ -113,7 +151,61 @@ export async function erasureBlockers(db: D1Database, personId: string): Promise
     )
     .bind(personId)
     .all<ErasureBlockers["payments"][number]>();
-  return { visits, payments };
+  const { results: links } = await db
+    .prepare(
+      `SELECT l.id, l.reference, l.amount ${UNPAID_VISIT_LINKS}
+       UNION ALL SELECT id, reference, amount ${OPEN_BOOKING_LINKS}`,
+    )
+    .bind(personId, now.toISOString())
+    .all<ErasureBlockers["links"][number]>();
+  return { visits, bookings, payments, links };
+}
+
+/** Razorpay's IDs for the person's payment links it would still take a payment on. */
+async function openLinkIds(db: D1Database, personId: string, now: Date): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT l.razorpay_link_id AS link_id ${UNPAID_VISIT_LINKS} AND l.razorpay_link_id IS NOT NULL
+       UNION ALL SELECT payment_link_id ${OPEN_BOOKING_LINKS} AND payment_link_id IS NOT NULL`,
+    )
+    .bind(personId, now.toISOString())
+    .all<{ link_id: string }>();
+  return results.map((row) => row.link_id);
+}
+
+/**
+ * Cancels each link at Razorpay, so it neither takes a payment nor reminds the erased client. One Razorpay will not
+ * cancel is left to ops, by its ID alone.
+ */
+async function cancelOpenLinks(linkIds: readonly string[], options: EraseOptions): Promise<void> {
+  for (const linkId of linkIds) {
+    try {
+      await options.payments.cancelPaymentLink(linkId);
+    } catch (error) {
+      const reason = failureReason(error);
+      options.log.warn("erased_link_not_cancelled", { link_id: linkId, reason });
+      await options.alertOnce({
+        key: `erased_link:${linkId}`,
+        message:
+          `Payment link ${linkId}, of a client erased since, could not be cancelled: ${reason}. ` +
+          "Cancel it in Razorpay's dashboard.",
+      });
+    }
+  }
+}
+
+/** Every booking of theirs not yet a visit is let go, its time freed, so that nothing books one for nobody. */
+function letGoOfBookings(db: D1Database, personId: string, at: string): D1PreparedStatement[] {
+  return [
+    db
+      .prepare(
+        "DELETE FROM slot_claims WHERE hold_id IN (SELECT id FROM slot_holds WHERE person_id = ?1 AND state = 'held')",
+      )
+      .bind(personId),
+    db
+      .prepare("UPDATE slot_holds SET state = 'released', updated_at = ?2 WHERE person_id = ?1 AND state = 'held'")
+      .bind(personId, at),
+  ];
 }
 
 /**
@@ -153,6 +245,7 @@ export async function erasePerson(
       )
       .bind(personId),
     ...alongside,
+    ...letGoOfBookings(db, personId, at),
     ...(await personalDataStatements(db, personId, at)),
     recordEvent(db, "person_erased", personId, { photos: counts.photos, results: counts.results }, now),
   ]);
@@ -177,8 +270,8 @@ export async function erasePerson(
 
 /**
  * The one way a person is erased. Who erased them, and any deletion request of theirs still open, go in the
- * erasure's batch; the CRM's and FSM's blanking is queued at once rather than left to the sweeper. Null when they are
- * already erased.
+ * erasure's batch; the CRM's and FSM's blanking is queued at once rather than left to the sweeper, and their payment
+ * links still open are cancelled. Null when they are already erased.
  */
 export async function eraseAndQueue(
   env: ErasureQueueEnv,
@@ -186,6 +279,8 @@ export async function eraseAndQueue(
   options: EraseOptions,
 ): Promise<ErasureSummary | null> {
   const { audit, now, log } = options;
+  // Read before the batch, which lets go of the bookings they belong to.
+  const linkIds = await openLinkIds(env.DB, personId, now);
   const summary = await erasePerson(env, personId, now, log, [
     ...(options.alongside ?? []),
     closeOpenRequests(env.DB, personId, audit.actor.id, now),
@@ -200,6 +295,7 @@ export async function eraseAndQueue(
     visit_photos_deleted: summary.visitPhotosDeleted,
   });
   await queueOutsideErasure(env, summary.personId, options);
+  await cancelOpenLinks(linkIds, options);
   return summary;
 }
 

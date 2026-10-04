@@ -167,6 +167,9 @@ const JobSummarySchema = z
       .openapi({ description: "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type." }),
     unlocked: z.boolean(),
     unlocks_at: z.iso.datetime(),
+    client_name: z.union([z.string(), z.null()]).openapi({
+      description: "The client's name, from the day before the visit as the card's client is; null until then.",
+    }),
     progress: z
       .object({
         started_at: z.union([z.iso.datetime(), z.null()]),
@@ -756,18 +759,20 @@ export function registerTechJobs(app: App): void {
   app.openapi(jobRoute, async (c) => {
     const { technicianId } = technicianOf(c);
     const inputs = await opsInputs(c);
-    const job = await jobDetail(c.env.DB, {
-      technicianId,
-      jobId: c.req.valid("param").id,
-      now: c.var.deps.now(),
-      unlockHour: inputs.addressUnlockHour,
-      waits: inputs.noShowWaitMin,
-      phoneClock: inputs.phoneClock,
-    });
+    // The job sheet and the consumables as ops set them, which the phone keeps with the job for the day.
+    const [job, sheet] = await Promise.all([
+      jobDetail(c.env.DB, {
+        technicianId,
+        jobId: c.req.valid("param").id,
+        now: c.var.deps.now(),
+        unlockHour: inputs.addressUnlockHour,
+        waits: inputs.noShowWaitMin,
+        phoneClock: inputs.phoneClock,
+      }),
+      jobSheet(c.env.DB),
+    ]);
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const type: VisitType = job.type ?? "service";
-    // The job sheet and the consumables as ops set them, which the phone keeps with the job for the day.
-    const sheet = await jobSheet(c.env.DB);
     return c.json(
       {
         ...job,

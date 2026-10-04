@@ -251,6 +251,25 @@
   color: var(--text-muted);
 }
 
+/* An open payment link's address beneath its state, with the button that copies it. */
+.linkLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-10);
+  margin-top: var(--sp-6);
+}
+
+.linkUrl {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.copyLink {
+  display: inline-flex;
+  padding: 0 var(--sp-14);
+}
+
 .figureCell {
   font-variant-numeric: tabular-nums;
   text-align: right;

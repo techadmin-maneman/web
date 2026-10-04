@@ -25,6 +25,7 @@ const REGION = "in";
 
 import { z } from "zod";
 import type { GeocodeProvider, LookupFailure } from "./geocode.ts";
+import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "./vendor-fetch.ts";
 
 /** A string Google may leave out, read as empty. */
 const Text = z.string().catch("");
@@ -76,6 +77,12 @@ function why(body: unknown): string {
   return status === "" ? `: ${message}` : `: ${status}, ${message}`;
 }
 
+/** Google's own code on a refusal, "PERMISSION_DENIED", for the log. */
+function codeOf(body: unknown): string | null {
+  const status = Refusal.safeParse(body).data?.error.status ?? "";
+  return status === "" ? null : status;
+}
+
 /** A refused key or a spent quota needs ops; anything else is worth trying again. */
 function classify(status: number): LookupFailure {
   if (status === 400 || status === 401 || status === 403 || status === 429) return "refused";
@@ -95,24 +102,22 @@ const GEOCODING_STATUS: Readonly<Record<string, LookupFailure>> = {
   OVER_QUERY_LIMIT: "refused",
 };
 
-export function createGooglePlaces(apiKey: string, deps: { fetch: typeof fetch }): GeocodeProvider {
+export function createGooglePlaces(apiKey: string, deps: VendorFetchDependencies): GeocodeProvider {
   // The Geocoding API takes the key in the query string, so it can reach a log
   // through an error message. Nothing leaves this module without this.
   const scrub = (detail: string): string => detail.split(apiKey).join("***REDACTED***").slice(0, 300);
 
-  async function get(url: string, init: RequestInit): Promise<{ status: number; body: unknown } | null> {
-    try {
-      const response = await deps.fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
-      const body: unknown = await response.json().catch(() => null);
-      return { status: response.status, body };
-    } catch {
-      return null;
-    }
+  /** One call's status and JSON body; null when Google did not answer. */
+  async function get(step: string, url: string, init: RequestInit): Promise<{ status: number; body: unknown } | null> {
+    const response = await vendorFetch(deps, { vendor: "google", step, timeoutMs: TIMEOUT_MS, codeOf }, url, init);
+    if (response instanceof VendorUnreachable) return null;
+    const body: unknown = await response.json().catch(() => null);
+    return { status: response.status, body };
   }
 
   return {
     async suggest(query, sessionToken) {
-      const answer = await get(AUTOCOMPLETE_URL, {
+      const answer = await get("autocomplete", AUTOCOMPLETE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey },
         // sessionToken is what makes this call free. Losing it bills per keystroke.
@@ -140,13 +145,14 @@ export function createGooglePlaces(apiKey: string, deps: { fetch: typeof fetch }
       // Details, not on a geocode: an abandoned session is billed per request,
       // so skipping this would silently turn the free SKU into the paid one.
       // Asking for `id` alone is the IDs-only SKU, which is free and unlimited.
-      await get(`${PLACES_URL}/${encodeURIComponent(placeId)}?sessionToken=${encodeURIComponent(sessionToken)}`, {
+      const place = `${PLACES_URL}/${encodeURIComponent(placeId)}?sessionToken=${encodeURIComponent(sessionToken)}`;
+      await get("close_session", place, {
         method: "GET",
         headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "id" },
       });
 
       const query = new URLSearchParams({ place_id: placeId, key: apiKey, region: REGION });
-      const answer = await get(`${GEOCODE_URL}?${query.toString()}`, { method: "GET" });
+      const answer = await get("geocode", `${GEOCODE_URL}?${query.toString()}`, { method: "GET" });
       if (answer === null) return { ok: false, reason: "unavailable", detail: "geocoding did not answer" };
       if (answer.status !== 200) {
         return {

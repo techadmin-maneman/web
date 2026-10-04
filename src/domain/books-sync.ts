@@ -36,7 +36,7 @@ import { failureReason, type Logger } from "../log.ts";
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { customerFor, updateCustomerOf } from "./books-customers.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 
@@ -415,7 +415,7 @@ async function tellLeftOver(pass: Pass, payment: PaymentToApply, owed: number): 
       `Payment ${payment.id} (Books ${payment.books_payment_id}) was ${rupees(payment.amount)}, and invoice ` +
       `${payment.fsm_invoice_id} owed ${rupees(owed)} of it, so ${rupees(left)} has nothing to be set against. ` +
       "It stays in Books as credit owed to the client until it is settled by hand.",
-    link: `/clients/${payment.person_id}`,
+    link: paymentsTab(payment.person_id),
   });
 }
 
@@ -491,7 +491,7 @@ async function tellUnapplied(
     message:
       `Payment ${payment.id} (Books ${payment.books_payment_id}) has nothing to be set against: ${why}. ` +
       "It stays in Books as credit owed to the client until it is settled by hand.",
-    link: `/clients/${payment.person_id}`,
+    link: paymentsTab(payment.person_id),
   });
 }
 
@@ -586,10 +586,16 @@ const ID_FIELDS: Readonly<Record<FailedRecord["kind"], string>> = {
   refund: "refund_id",
 };
 
+/** Where ops act on it: the client's page for their customer in Books, their Payments tab for their money. */
+function linkOf(record: FailedRecord): string {
+  const aboutTheCustomer = record.kind === "customer" || record.kind === "customer_update";
+  return aboutTheCustomer ? `/clients/${record.personId}` : paymentsTab(record.personId);
+}
+
 /** Logs the failure, and tells ops of a refusal at once and of any other failure on its third time. */
 async function tellFailure(pass: Pass, record: FailedRecord, error: unknown): Promise<void> {
   const idField = ID_FIELDS[record.kind];
-  const link = `/clients/${record.personId}`;
+  const link = linkOf(record);
   if (isRefusal(error)) {
     pass.log.warn(`books_${record.kind}_refused`, { [idField]: record.id, status: error.status, code: error.code });
     await pass.deps.alertOnce({
