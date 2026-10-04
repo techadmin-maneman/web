@@ -505,7 +505,15 @@ describe("the session", () => {
       name: "Arjun Mehta",
       first_name: "Arjun",
       initials: "AM",
-      consultation: { date: "2026-09-24", window: "evening", window_label: "after four", place: "Gurgaon" },
+      // Phase 1's form booked nothing: ops confirm the time on WhatsApp.
+      consultation: {
+        date: "2026-09-24",
+        window: "evening",
+        window_label: "after four",
+        place: "Gurgaon",
+        requested: true,
+        one_visit: false,
+      },
       next_visit: null,
       // Nothing paid for or booked in the app is waiting for FSM (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
       being_booked: null,
@@ -550,14 +558,22 @@ describe("the session", () => {
       return `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p-site", deviceLabel: null, now: NOW })}`;
     }
 
-    it("shows the window asked for while self-serve booking is off", async () => {
-      const cookie = await bookedOnTheSite();
+    /** The day and window asked for while self-serve booking is off, which ops confirm on WhatsApp. */
+    async function requested(oneVisit = false): Promise<void> {
       await env.DB.prepare(
-        `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
-         VALUES ('request-1', 'p-site', '122018', '2026-09-25', 'afternoon', ?1)`,
+        `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at, one_visit)
+         VALUES ('request-1', 'p-site', '122018', '2026-09-25', 'afternoon', ?1, ?2)`,
       )
-        .bind(NOW.toISOString())
+        .bind(NOW.toISOString(), oneVisit ? 1 : 0)
         .run();
+    }
+
+    const home = async (cookie: string) =>
+      (await request(app, "/api/me", { headers: { Cookie: cookie } })).json<Record<string, unknown>>();
+
+    it("shows a request made while self-serve booking is off as requested, in the window asked for", async () => {
+      const cookie = await bookedOnTheSite();
+      await requested();
 
       const res = await request(app, "/api/me", { headers: { Cookie: cookie } });
 
@@ -567,10 +583,30 @@ describe("the session", () => {
         window: "afternoon",
         window_label: null,
         place: "Gurgaon",
+        requested: true,
+        one_visit: false,
       });
     });
 
-    it("shows the window of the slot it held, before FSM has the visit", async () => {
+    it("says a request for the consultation and fit in one visit is one", async () => {
+      const cookie = await bookedOnTheSite();
+      await requested(true);
+
+      expect(await home(cookie)).toMatchObject({ consultation: { requested: true, one_visit: true } });
+    });
+
+    it("drops a request once its day has passed, so Home offers booking again", async () => {
+      const cookie = await bookedOnTheSite();
+      await requested();
+
+      clock = new Date("2026-09-25T18:00:00Z"); // 23:30 on the day asked for, in India
+      expect(await home(cookie)).toMatchObject({ consultation: { date: "2026-09-25", requested: true } });
+
+      clock = new Date("2026-09-25T18:30:00Z"); // midnight in India: the day has passed
+      expect(await home(cookie)).toMatchObject({ consultation: null, booking: { types: ["consultation"] } });
+    });
+
+    it("shows the slot it held as booked, in its window", async () => {
       const cookie = await bookedOnTheSite();
       await env.DB.batch([
         env.DB.prepare(
@@ -591,6 +627,8 @@ describe("the session", () => {
         window: "evening",
         window_label: "after four",
         place: "Gurgaon",
+        requested: false,
+        one_visit: false,
       });
     });
   });

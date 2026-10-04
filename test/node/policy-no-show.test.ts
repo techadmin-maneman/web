@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  BOOKED_START_RULE,
   canCloseAsNoShow,
   chargedCredit,
   chargedRefund,
@@ -15,13 +16,15 @@ import {
   SERVER_CLOCK_RULE,
   WAIVER_GIVES_BACK,
   waitEndsAt,
+  waitStartsAt,
   type Evidence,
 } from "../../src/policy/no-show.ts";
 import { VISIT_TYPES } from "../../src/config/visit-types.ts";
 import { LATE_CHANGE_CHARGES } from "../../src/policy/moving-a-visit.ts";
 
-/** A technician checks in at 10:00 on Monday 21 September, in India. */
+/** A technician checks in at 10:00 on Monday 21 September, in India, for a visit booked for 10:00. */
 const CHECKED_IN = new Date("2026-09-21T04:30:00Z");
+const VISIT_START = CHECKED_IN;
 const minutesLater = (minutes: number) => new Date(CHECKED_IN.getTime() + minutes * 60_000);
 /** A check-in the server received the moment the phone made it. */
 const ONLINE = { at: CHECKED_IN, receivedAt: CHECKED_IN };
@@ -33,16 +36,41 @@ describe("no-show", () => {
   });
 
   it(RULES[1], () => {
-    expect(canCloseAsNoShow(ONLINE, "service", minutesLater(14))).toBe(false);
-    expect(canCloseAsNoShow(ONLINE, "service", minutesLater(15))).toBe(true);
+    expect(canCloseAsNoShow(ONLINE, VISIT_START, "service", minutesLater(14))).toBe(false);
+    expect(canCloseAsNoShow(ONLINE, VISIT_START, "service", minutesLater(15))).toBe(true);
   });
 
   it(SERVER_CLOCK_RULE, () => {
     // The phone says 10:00 and the server heard at 10:20: a back-dated check-in, or a basement.
     const heardLate = { at: CHECKED_IN, receivedAt: minutesLater(20) };
-    expect(canCloseAsNoShow(heardLate, "service", minutesLater(34))).toBe(false);
-    expect(canCloseAsNoShow(heardLate, "service", minutesLater(35))).toBe(true);
-    expect(noShowWaitEnds(heardLate, "service")).toEqual(minutesLater(35));
+    expect(canCloseAsNoShow(heardLate, VISIT_START, "service", minutesLater(34))).toBe(false);
+    expect(canCloseAsNoShow(heardLate, VISIT_START, "service", minutesLater(35))).toBe(true);
+    expect(noShowWaitEnds(heardLate, VISIT_START, "service")).toEqual(minutesLater(35));
+  });
+
+  it(BOOKED_START_RULE, () => {
+    // Checked in at 09:10 for the 10:00 visit: the client's fifteen minutes run from 10:00.
+    const early = { at: minutesLater(-50), receivedAt: minutesLater(-50) };
+    expect(waitStartsAt(early.at, VISIT_START)).toEqual(VISIT_START);
+    expect(noShowWaitEnds(early, VISIT_START, "service")).toEqual(minutesLater(15));
+    expect(canCloseAsNoShow(early, VISIT_START, "service", minutesLater(-35))).toBe(false);
+    expect(canCloseAsNoShow(early, VISIT_START, "service", minutesLater(14))).toBe(false);
+    expect(canCloseAsNoShow(early, VISIT_START, "service", minutesLater(15))).toBe(true);
+
+    // Twenty minutes late: the wait runs from the check-in, as the prompt says.
+    const late = { at: minutesLater(20), receivedAt: minutesLater(20) };
+    expect(waitStartsAt(late.at, VISIT_START)).toEqual(minutesLater(20));
+    expect(noShowWaitEnds(late, VISIT_START, "service")).toEqual(minutesLater(35));
+  });
+
+  it("closes no visit as a no-show before its booked start, however early the check-in", () => {
+    // The audit's gate: a 4 pm visit checked in at 11:06 showed "The wait is over" at 11:11.
+    const fourPm = new Date("2026-09-21T10:30:00Z");
+    const elevenOhSix = new Date("2026-09-21T05:36:00Z");
+    const checkIn = { at: elevenOhSix, receivedAt: elevenOhSix };
+    const fiveMinutes = { ...NO_SHOW_WAIT_MIN, service: 5 };
+    expect(canCloseAsNoShow(checkIn, fourPm, "service", new Date("2026-09-21T05:41:00Z"), fiveMinutes)).toBe(false);
+    expect(noShowWaitEnds(checkIn, fourPm, "service", fiveMinutes)).toEqual(new Date("2026-09-21T10:35:00Z"));
   });
 
   it(RULES[4], () => {

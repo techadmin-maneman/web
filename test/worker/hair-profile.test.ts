@@ -169,6 +169,28 @@ describe("the technician's profile step", () => {
     expect((await versions()).results).toEqual([]);
   });
 
+  it("is refused once the job has closed, and keeps nothing of it", async () => {
+    const job = await working("consultation");
+    await job.workTo("outcome");
+    await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+    const answer = await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "already_closed" } });
+    expect((await versions()).results).toEqual([]);
+  });
+
+  it("is not found on a job that was never this technician's, and keeps nothing of it", async () => {
+    const job = await working("consultation");
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
+
+    const answer = await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+
+    expect(answer.status).toBe(404);
+    expect(await answer.json()).not.toHaveProperty("progress");
+    expect((await versions()).results).toEqual([]);
+  });
+
   it.each([
     [
       "a measurement past its range",
@@ -202,9 +224,9 @@ describe("the technician's profile step", () => {
     await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(JOB).run();
     expect((await card(job)).steps).toEqual([
       "before_photos",
+      "piece",
       "checklist",
       "consumables",
-      "piece",
       "profile",
       "after_photos",
       "outcome",

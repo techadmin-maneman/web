@@ -193,9 +193,9 @@ const WIPE_WAIT_MS = 3_000;
  * (docs/decisions/0029-sessions.md). Called on the device's next contact with
  * the backend, so nothing of a client's stays on a phone that is no longer ours.
  *
- * The service worker's day cache goes with it. It holds no client's name — the
- * day's list carries none — but it is a technician's day, and a phone that is
- * no longer ours keeps none of it (apps/tech/sw/sw.ts).
+ * The service worker's day cache goes with it: today's list, which names each
+ * unlocked job's client, and a phone that is no longer ours keeps none of it
+ * (apps/tech/sw/sw.ts).
  *
  * A delete held up by another connection is not abandoned when the wait runs
  * out: the browser carries it out the moment that connection closes.

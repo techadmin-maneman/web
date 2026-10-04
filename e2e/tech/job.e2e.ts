@@ -6,7 +6,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { atTheDoor, fakeTech, JOB_ID, pageScrolls, ROHITS_PIECE, TOMORROW_JOB_ID } from "./fixtures.ts";
+import { atTheDoor, fakeTech, JOB_ID, pageScrolls, ROHITS_PIECE, ROHITS_PROFILE, TOMORROW_JOB_ID } from "./fixtures.ts";
 
 const wcag = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -85,6 +85,33 @@ test("shows the piece on the client's head and the last visit's after photograph
   await expect(photo).toHaveAttribute("src", `/api/tech/jobs/${JOB_ID}/last-visit-photo`);
   await expect.poll(() => photo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1);
   await expect(page.getByText("Last visit, after. 22 Aug, Imran.")).toBeVisible();
+});
+
+test("says what a first fit was paid for, apart from the hair profile, and warns when they differ", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.type = "first_fit";
+  fake.service = { tier: "natural", name: "Mane Man Natural" };
+  fake.profile = ROHITS_PROFILE;
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  await expect(page.getByRole("region", { name: "Hair profile" })).toContainText("Mane Man Essential");
+  const piece = page.getByRole("region", { name: "The piece" });
+  await expect(piece).toContainText("Paid for");
+  await expect(piece).toContainText("Mane Man Natural");
+  await expect(piece).toContainText("The hair profile says Mane Man Essential. Check with ops before you fit.");
+});
+
+test("gives a consultation's card the hair profile and no piece", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "consultation";
+  fake.profile = ROHITS_PROFILE;
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  await expect(page.getByRole("region", { name: "Hair profile" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "The piece" })).toHaveCount(0);
+  await expect(page.getByText("No piece recorded for this client yet.")).toHaveCount(0);
 });
 
 test("checks in at the door, and records the time and the distance (board B5)", async ({ page }) => {
@@ -226,6 +253,8 @@ test("with no signal the wait still counts down from the tap, and says what clos
   context,
 }) => {
   const fake = await fakeTech(page);
+  // Booked for an hour ago, so the wait counts from the tap whatever the time of day the test runs.
+  fake.startsAt = new Date(Date.now() - 60 * 60_000).toISOString();
   await atTheDoor(page);
   await page.goto(`/jobs/${JOB_ID}`);
   await expect(page.getByRole("button", { name: "I have arrived" })).toBeVisible();

@@ -1635,6 +1635,20 @@ Everything held about the client, to download
 }
 ```
 
+### GET /api/me/export.html
+
+Everything held about the client, as a page to download and read
+
+**200**: An HTML file, maneman-my-data.html, labelled and in India's time
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/grievances
 
 Raise a grievance about how the client's data is handled. The same words, still open, are one
@@ -1710,6 +1724,7 @@ Request body:
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -1741,6 +1756,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
             "already_closed",
             "no_service_area",
             "service_exists",
@@ -1798,6 +1814,11 @@ Request body:
           ],
           "additionalProperties": false,
           "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+        },
+        "earliest_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [
@@ -2162,16 +2183,26 @@ Request body:
         "place": {
           "type": "string",
           "description": "Where it is: the saved address (locality, city and pincode), else the booking's city."
+        },
+        "requested": {
+          "type": "boolean",
+          "description": "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp."
+        },
+        "one_visit": {
+          "type": "boolean",
+          "description": "The consultation and the first fit in one visit."
         }
       },
       "required": [
         "date",
         "window",
         "window_label",
-        "place"
+        "place",
+        "requested",
+        "one_visit"
       ],
       "additionalProperties": false,
-      "description": "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit."
+      "description": "A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is on record. Null once one is, and once its day has passed."
     },
     "next_visit": {
       "anyOf": [
@@ -2217,6 +2248,10 @@ Request body:
             "one_visit": {
               "type": "boolean",
               "description": "A consultation and fit in one visit."
+            },
+            "told": {
+              "type": "boolean",
+              "description": "Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits."
             }
           },
           "required": [
@@ -2224,7 +2259,8 @@ Request body:
             "date",
             "window",
             "paid",
-            "one_visit"
+            "one_visit",
+            "told"
           ],
           "additionalProperties": false
         },
@@ -2600,6 +2636,17 @@ Request body:
         }
       ]
     },
+    "service": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -2656,6 +2703,7 @@ Request body:
     "ends_at",
     "length_minutes",
     "type",
+    "service",
     "status",
     "stage",
     "prepaid",
@@ -3566,6 +3614,17 @@ Request body:
         }
       ]
     },
+    "service": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -3708,6 +3767,7 @@ Request body:
     "ends_at",
     "length_minutes",
     "type",
+    "service",
     "status",
     "stage",
     "prepaid",
@@ -3881,6 +3941,18 @@ Request body:
     "disputable": {
       "type": "boolean",
       "description": "Whether the client may dispute the charge now: one that took something, not disputed yet."
+    },
+    "dispute_closed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
     }
   },
   "required": [
@@ -3888,7 +3960,8 @@ Request body:
     "waited_minutes",
     "charge",
     "dispute",
-    "disputable"
+    "disputable",
+    "dispute_closed_at"
   ],
   "additionalProperties": false
 }

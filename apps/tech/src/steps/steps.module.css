@@ -121,7 +121,7 @@
   justify-content: center;
   width: var(--tech-box);
   height: var(--tech-box);
-  border: var(--rule-strong) solid var(--ink-line);
+  border: var(--rule-strong) solid var(--ink-line-strong);
 }
 
 .boxDone {
@@ -289,7 +289,7 @@
 .box64 {
   min-height: var(--tech-stepper);
   padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
 }
 
 .input::placeholder,
@@ -302,6 +302,12 @@
   font-size: var(--fs-17);
   line-height: var(--lh-150);
   color: var(--error-on-ink);
+}
+
+.paidFor {
+  margin: 0;
+  font-size: var(--fs-17);
+  color: var(--paper);
 }
 
 .second {
@@ -323,7 +329,7 @@
   width: 100%;
   min-height: var(--tech-stepper);
   padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
   background: transparent;
   font: inherit;
   font-size: var(--fs-17);

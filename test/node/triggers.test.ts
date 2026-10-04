@@ -3,7 +3,7 @@
 // docs/decisions/0010-applying-triggers.md), against a fake account.
 
 import { describe, expect, it } from "vitest";
-import { EVERY_MINUTE } from "../../src/scheduled/cron.ts";
+import { EVERY_MINUTE } from "../../src/scheduled/schedule.ts";
 import { readJsonc } from "../../scripts/lib/jsonc.ts";
 import type { Finding } from "../../scripts/lib/findings.ts";
 import { checkTriggers, configuredTriggers } from "../../scripts/lib/triggers.ts";
@@ -54,9 +54,68 @@ function account(answers: Record<string, Answer>): typeof fetch {
 
 const QUEUES = "/queues?per_page=100";
 
-function queuesConsumedBy(script: string, queues: readonly string[]): Answer {
-  return ok(queues.map((queue) => ({ queue_name: queue, consumers: [{ type: "worker", script_name: script }] })));
+interface ConfiguredConsumer {
+  queue: string;
+  max_batch_size: number;
+  max_batch_timeout: number;
+  max_retries: number;
+  max_concurrency?: number;
+  retry_delay: number;
 }
+type StagingConfig = { env: { staging: { queues: { consumers: ConfiguredConsumer[] } } } };
+const STAGING_CONSUMERS = (API as unknown as StagingConfig).env.staging.queues.consumers;
+
+/** A consumer's settings as the Queues API lists them once it is attached as the config asks. */
+function settingsAsConfigured(queue: string) {
+  const consumer = STAGING_CONSUMERS.find((each) => each.queue === queue);
+  if (consumer === undefined) throw new Error(`${queue} is not in the staging config`);
+  return {
+    batch_size: consumer.max_batch_size,
+    max_wait_time_ms: consumer.max_batch_timeout * 1000,
+    max_retries: consumer.max_retries,
+    max_concurrency: consumer.max_concurrency,
+    retry_delay: consumer.retry_delay,
+  };
+}
+
+function queuesConsumedBy(script: string, queues: readonly string[]): Answer {
+  return ok(
+    queues.map((queue) => ({
+      queue_name: queue,
+      consumers: [{ type: "worker", script_name: script, settings: settingsAsConfigured(queue) }],
+    })),
+  );
+}
+
+function liveQueue(queue: string, settings: Record<string, number>) {
+  return { queue_name: queue, consumers: [{ type: "worker", script: "mm-api-staging", settings }] };
+}
+
+/** What staging's queues answered on 4 Oct 2026, before crm-sync's retries were raised and retry_delay was set. */
+const STAGING_ON_4_OCTOBER = ok([
+  liveQueue("mm-crm-sync-staging", {
+    batch_size: 10,
+    max_retries: 2,
+    max_wait_time_ms: 5000,
+    max_concurrency: 1,
+    retry_delay: 0,
+  }),
+  liveQueue("mm-fsm-sync-staging", {
+    batch_size: 10,
+    max_retries: 5,
+    max_wait_time_ms: 5000,
+    max_concurrency: 1,
+    retry_delay: 0,
+  }),
+  liveQueue("mm-messaging-staging", {
+    batch_size: 5,
+    max_retries: 5,
+    max_wait_time_ms: 5000,
+    max_concurrency: 1,
+    retry_delay: 0,
+  }),
+  liveQueue("mm-render-staging", { batch_size: 5, max_retries: 100, max_wait_time_ms: 1000, retry_delay: 0 }),
+]);
 
 async function check(answers: Record<string, Answer>): Promise<Finding[]> {
   return checkTriggers({
@@ -85,6 +144,7 @@ describe("the live account against the configs", () => {
     expect(outcomes(findings)).toEqual([
       "mm-api-staging cron schedules: matches",
       "mm-api-staging queue consumers: matches",
+      "mm-api-staging queue consumer settings: matches",
       "mm-app-staging cron schedules: matches",
       "mm-app-staging queue consumers: matches",
     ]);
@@ -100,6 +160,24 @@ describe("the live account against the configs", () => {
     expect(consumers?.outcome).toBe("differs");
     expect(consumers?.detail).toContain("configured but not attached: mm-fsm-sync-staging");
     expect(consumers?.detail).toContain("npm run apply-triggers -- --env staging");
+    const settings = findings.find((finding) => finding.subject === "mm-api-staging queue consumer settings");
+    expect(settings?.outcome).toBe("matches");
+  });
+
+  it("names each setting an attached consumer does not have yet, in the config's own terms", async () => {
+    const findings = await check({
+      [QUEUES]: STAGING_ON_4_OCTOBER,
+      "/workers/scripts/mm-api-staging/schedules": cron,
+      "/workers/scripts/mm-app-staging/schedules": ok({ schedules: [] }),
+    });
+    expect(findings.find((finding) => finding.subject === "mm-api-staging queue consumers")?.outcome).toBe("matches");
+    const settings = findings.find((finding) => finding.subject === "mm-api-staging queue consumer settings");
+    expect(settings?.outcome).toBe("differs");
+    expect(settings?.detail).toContain("mm-crm-sync-staging: max_retries 5, attached 2, retry_delay 30, attached 0");
+    expect(settings?.detail).toContain("mm-render-staging: retry_delay 30, attached 0");
+    expect(settings?.detail).not.toContain("max_batch_timeout");
+    expect(settings?.detail).not.toContain("max_concurrency");
+    expect(settings?.detail).toContain("npm run apply-triggers -- --env staging");
   });
 
   // The five-minute cron stays attached after the deploy that moved to every minute, until an operator applies it.
@@ -124,6 +202,8 @@ describe("the live account against the configs", () => {
     expect(consumers?.outcome).toBe("not read");
     expect(consumers?.detail).toContain("HTTP 403");
     expect(consumers?.detail).toContain("scripts/check-triggers.ts staging");
+    const settings = findings.find((finding) => finding.subject === "mm-api-staging queue consumer settings");
+    expect(settings?.outcome).toBe("not read");
   });
 
   it("passes over an app that is not deployed and attaches nothing", async () => {

@@ -69,7 +69,7 @@ export function DiscountCode({ jobId, onChecking }: { jobId: string; onChecking:
         {checking ? copy.applying : copy.apply}
       </Button>
       {problem !== null && (
-        <p className={styles.warn} role="alert">
+        <p className={styles.hint} role="alert">
           {problem}
         </p>
       )}

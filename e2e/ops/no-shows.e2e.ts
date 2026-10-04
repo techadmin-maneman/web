@@ -1,6 +1,7 @@
-// Board D1: the day's money over the charges it was kept on, then each charge a
-// client disputed, with Refund and Uphold, then the queue of cases with the
-// evidence ops rule on, and the ruling. The API is answered from
+// Board D1, the console's Payments: a day's money over the charges it was kept
+// on, today unless ops pick another day, then each charge a client disputed,
+// with Refund and Uphold, then the queue of cases with the evidence ops rule
+// on, and the ruling, then the cases ruled on today. The API is answered from
 // e2e/ops/fixtures.ts, since no route can open a case from outside: a
 // technician's phone closes a job as a no-show.
 
@@ -9,12 +10,15 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import {
   answer,
+  CHARGE_PREVIEW,
   DAY_MONEY,
+  DECIDED,
   DISPUTES,
   fails,
   json,
   NO_SHOW_UNMEASURED,
   NO_SHOWS,
+  TASKS_READ_ON,
   type Answer,
   type Call,
 } from "./fixtures.ts";
@@ -22,13 +26,17 @@ import {
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = "Visit of Sun 19 Sep";
 const SECOND = "Visit of Mon 20 Sep";
-const QUEUE = "Waiting for a decision";
-const MONEY = "Today";
+const QUEUE = "No-shows waiting for a decision";
+/** The fixture's day, which the clock is set to: Wednesday 22 September 2027. */
+const MONEY = "Today, Wed 22 Sep";
 const CASE = NO_SHOWS.cases[0]?.id ?? "";
 const DECIDE: Call = `POST /api/no-shows/${CASE}/decision`;
 const DISPUTE = DISPUTES.disputes[0]?.id ?? "";
 const RULE: Call = `POST /api/no-shows/disputes/${DISPUTE}/ruling`;
 const DISPUTED = "Vikram Sethi disputes the charge";
+const DISPUTES_QUEUE = "Disputed charges";
+const DECIDED_TODAY = "Decided today";
+const PREVIEW: Call = `GET /api/no-shows/${CASE}/charge`;
 
 async function open(
   page: Page,
@@ -40,9 +48,12 @@ async function open(
     "GET /api/payments": json(DAY_MONEY),
     "GET /api/no-shows": json(NO_SHOWS),
     "GET /api/no-shows/disputes": json(DISPUTES),
+    "GET /api/no-shows/decided": json(DECIDED),
+    [PREVIEW]: json(CHARGE_PREVIEW),
     [DECIDE]: decision,
     [RULE]: ruling,
   });
+  await page.clock.setFixedTime(TASKS_READ_ON);
   await page.goto(path);
   await expect(page.getByRole("heading", { name: QUEUE })).toBeVisible();
 }
@@ -58,9 +69,41 @@ const fact = (page: Page, visit: string, name: string) =>
     .filter({ hasText: new RegExp(`^${name}$`) })
     .locator("+ dd");
 
+// MON-16 and OIA-08 of the audit, 2 October 2026: the money sat under "No-shows", only ever today's.
+test("is the console's Payments, at the address No-shows had", async ({ page }) => {
+  await open(page);
+  await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Payments" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+});
+
+test("shows another day's money when asked, and names the day it is for", async ({ page }) => {
+  const monday = { ...DAY_MONEY, date: "2027-09-20", collected: 1_200_000, charges: [] };
+  const asked: string[] = [];
+  await open(page);
+  await answer(page, {
+    "GET /api/payments": (route) => {
+      const date = new URL(route.request().url()).searchParams.get("date");
+      if (date !== null) asked.push(date);
+      return json(date === "2027-09-20" ? monday : DAY_MONEY)(route);
+    },
+  });
+  await page.getByLabel("Day", { exact: true }).fill("2027-09-20");
+
+  const money = page.getByRole("region", { name: "Mon 20 Sep" });
+  await expect(money.getByRole("heading", { level: 2 })).toHaveText("Mon 20 Sep");
+  await expect(money.getByText("Collected", { exact: true })).toBeVisible();
+  await expect(money.getByText("Rs. 12,000")).toBeVisible();
+  await expect(money.getByText("Rs. 2,360 went back that day")).toBeVisible();
+  await expect(money.getByText("Nothing was charged that day.")).toBeVisible();
+  expect([...new Set(asked)]).toEqual(["2027-09-20"]);
+});
+
 test("heads the day with the board's three figures, as money", async ({ page }) => {
   await open(page);
-  const money = page.getByRole("region", { name: MONEY });
+  const money = page.getByRole("region", { name: MONEY, exact: true });
   await expect(money.getByText("Collected today")).toBeVisible();
   await expect(money.getByText("Rs. 84,000")).toBeVisible();
   await expect(money.getByText("Refunds processing")).toBeVisible();
@@ -72,7 +115,7 @@ test("heads the day with the board's three figures, as money", async ({ page }) 
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md): the figure adds both, and leaves nothing out.
 test("adds what a charged no-show kept to the charges figure", async ({ page }) => {
   await open(page);
-  const money = page.getByRole("region", { name: MONEY });
+  const money = page.getByRole("region", { name: MONEY, exact: true });
   await expect(money.getByText("Charges and no-shows")).toBeVisible();
   await expect(money.getByText("Rs. 4,720")).toBeVisible();
   await expect(money.getByText("not charged yet")).toBeHidden();
@@ -109,6 +152,15 @@ test("says a no-show's amount was not recorded where its charge kept none on rec
 /** Board D1's second card, found by its heading. */
 const disputeCard = (page: Page) => page.getByRole("region", { name: DISPUTED });
 
+// A disputed charge once floated between the panels, with no count and nothing that could link to it (OIA-07).
+test("lists the disputed charges in a queue with their count, and opens the one a task names", async ({ page }) => {
+  await open(page, undefined, `/no-shows#dispute-${DISPUTE}`);
+  const queue = page.getByRole("region", { name: DISPUTES_QUEUE });
+  await expect(queue.getByRole("listitem")).toHaveCount(1);
+  await expect(queue.getByText("1", { exact: true })).toBeVisible();
+  await expect(queue.getByRole("listitem").filter({ hasText: DISPUTED })).toBeFocused();
+});
+
 test("draws a disputed charge: the client's words, what the charge took, and the board's four rows", async ({
   page,
 }) => {
@@ -141,7 +193,9 @@ test("offers Refund and Uphold only once the note is written, and sends the ruli
   await card.getByRole("button", { name: "Refund" }).click();
   expect((await sent).postDataJSON()).toEqual({ ruling: "refunded", reason: "The bell was broken that week" });
   await expect(page.getByText(DISPUTED)).toBeHidden();
-  await expect(page.getByText("No charge is disputed.")).toBeVisible();
+  await expect(page.getByRole("region", { name: DISPUTES_QUEUE }).getByText("No charge is disputed.")).toBeVisible();
+  // The dispute is gone, so the keyboard goes to the queue's heading.
+  await expect(page.getByRole("heading", { name: DISPUTES_QUEUE })).toBeFocused();
 });
 
 test("upholds a charge with its note", async ({ page }) => {
@@ -173,10 +227,11 @@ test("says so when nothing was charged on the day", async ({ page }) => {
     }),
     "GET /api/no-shows": json(NO_SHOWS),
   });
+  await page.clock.setFixedTime(TASKS_READ_ON);
   await page.goto("/no-shows");
   await expect(page.getByText("Nothing was charged today.")).toBeVisible();
   // A day on which nothing came in is a nought, which is true and not a guess.
-  await expect(page.getByRole("region", { name: MONEY }).getByText("Rs. 0").first()).toBeVisible();
+  await expect(page.getByRole("region", { name: MONEY, exact: true }).getByText("Rs. 0").first()).toBeVisible();
   await expect(page.getByText("not charged yet")).toBeHidden();
 });
 
@@ -280,14 +335,18 @@ test("offers neither ruling until a reason is written", async ({ page }) => {
   await expect(first.getByRole("button", { name: "Charge" })).toBeDisabled();
 });
 
-test("asks once more before it charges, and sends the reason with the charge", async ({ page }) => {
+// The charge was once asked about with no figure: "Charge X for the visit of Fri 2 Oct?" (MON-17).
+test("asks once more before it charges, with what it keeps, and sends the reason with the charge", async ({ page }) => {
   await open(page);
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Delivered the evening before; nobody came down");
   await first.getByRole("button", { name: "Charge", exact: true }).click();
 
-  const confirm = first.getByRole("group", { name: /^Charge Vikram Sethi for the visit of Sun 19 Sep\?/ });
+  const confirm = first.getByRole("group", { name: "Keep Rs. 2,360 of the Rs. 2,360 paid?" });
   await expect(confirm).toBeFocused();
+  await expect(confirm).toHaveAccessibleDescription(
+    "Charging Vikram Sethi for the visit of Sun 19 Sep cannot be undone here.",
+  );
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
   await confirm.getByRole("button", { name: "Charge the visit" }).click();
   expect((await sent).postDataJSON()).toEqual({
@@ -297,6 +356,65 @@ test("asks once more before it charges, and sends the reason with the charge", a
   await expect(page.getByText(FIRST)).toBeHidden();
   // The case is gone, so the keyboard goes to the queue's heading and not to the top of the page.
   await expect(page.getByRole("heading", { name: QUEUE })).toBeFocused();
+});
+
+test("says what a charge keeps and what it refunds, and what it keeps of a credit", async ({ page }) => {
+  await open(page);
+  const first = caseOf(page, FIRST);
+  await first.getByLabel("Your note · required").fill("Nobody came down");
+  const ask = async (preview: object) => {
+    await answer(page, { [PREVIEW]: json(preview) });
+    await first.getByRole("button", { name: "Charge", exact: true }).click();
+  };
+
+  await ask({ paid: 3_000_000, kept: 400_000, credit_kept: false });
+  await expect(first.getByText("Keep Rs. 4,000 of the Rs. 30,000 paid, and refund Rs. 26,000?")).toBeVisible();
+  await first.getByRole("button", { name: "Back" }).click();
+
+  await ask({ paid: 0, kept: 0, credit_kept: true });
+  await expect(first.getByText("Keep the free service visit it was booked with?")).toBeVisible();
+});
+
+test("sends no charge until it knows what the charge keeps", async ({ page }) => {
+  await open(page);
+  await answer(page, { [PREVIEW]: fails(503, "unavailable") });
+  const first = caseOf(page, FIRST);
+  await first.getByLabel("Your note · required").fill("Nobody came down");
+  await first.getByRole("button", { name: "Charge", exact: true }).click();
+  await expect(first.getByText("We could not work out what the charge keeps.")).toBeVisible();
+  await expect(first.getByRole("button", { name: "Charge the visit" })).toBeDisabled();
+});
+
+// After a charge the page once still said "Nothing was charged today", and the case was gone (MON-17).
+test("lists the cases ruled on today with their ruling, and reads them and the day's money again after a ruling", async ({
+  page,
+}) => {
+  await open(page);
+  await expect(page.getByRole("region", { name: MONEY, exact: true })).toBeVisible();
+  const decided = page.getByRole("region", { name: DECIDED_TODAY });
+  await expect(decided.getByRole("listitem").filter({ hasText: "Karan Bose" })).toContainText(
+    "Charged · kept Rs. 2,360 · 10:30 am",
+  );
+  await expect(decided.getByRole("listitem").filter({ hasText: "Arjun Mehra" })).toContainText("Waived · 9:05 am");
+
+  const first = caseOf(page, FIRST);
+  await first.getByLabel("Your note · required").fill("He was stuck in the lift; we have his call");
+  const readAgain = Promise.all([
+    page.waitForRequest((request) => request.url().includes("/api/no-shows/decided")),
+    page.waitForRequest((request) => request.url().includes("/api/payments")),
+  ]);
+  await first.getByRole("button", { name: "Waive" }).click();
+  await readAgain;
+});
+
+test("says so when nothing has been decided today", async ({ page }) => {
+  await answer(page, {
+    "GET /api/payments": json(DAY_MONEY),
+    "GET /api/no-shows": json(NO_SHOWS),
+    "GET /api/no-shows/decided": json({ cases: [] }),
+  });
+  await page.goto("/no-shows");
+  await expect(page.getByRole("region", { name: DECIDED_TODAY })).toContainText("Nothing has been decided today.");
 });
 
 test("sends nothing when the charge is taken back, and hands the keyboard to Charge", async ({ page }) => {
@@ -405,6 +523,7 @@ const financeAt = (level: "view" | "act", rulings: readonly string[]) =>
         "GET /api/whoami",
         "GET /api/payments",
         "GET /api/no-shows",
+        "GET /api/no-shows/decided",
         "GET /api/no-shows/disputes",
         ...rulings,
       ],
@@ -417,6 +536,7 @@ async function openAs(page: Page, whoami: Answer): Promise<void> {
     "GET /api/payments": json(DAY_MONEY),
     "GET /api/no-shows": json(NO_SHOWS),
     "GET /api/no-shows/disputes": json(DISPUTES),
+    "GET /api/no-shows/decided": json(DECIDED),
   });
   await page.goto("/no-shows");
   await expect(page.getByRole("heading", { name: QUEUE })).toBeVisible();

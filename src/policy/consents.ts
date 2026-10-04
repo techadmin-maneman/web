@@ -35,6 +35,25 @@ export function isMessagePurpose(value: unknown): value is MessagePurpose {
 }
 
 /**
+ * The messages that confirm a payment, or say money is on its way back. They are transactional, so they go whatever
+ * the person's consent to WhatsApp about their visits; every other message about a visit needs that consent.
+ */
+const TRANSACTIONAL_TEMPLATES: ReadonlySet<string> = new Set([
+  "visit_booked_v1",
+  "link_paid_v1",
+  "visit_cancelled_refund_v1",
+  "booking_refunded_v1",
+  "move_refunded_v1",
+  "no_show_charged_fee_v1",
+  "no_show_waived_refund_v1",
+  "no_show_dispute_refunded_v1",
+]);
+
+export function isTransactional(template: string): boolean {
+  return TRANSACTIONAL_TEMPLATES.has(template);
+}
+
+/**
  * Every place a consent is given, kept on its row. The owner's four, split where one screen or page is several:
  * the site's booking form, its waitlist and an invite's page; the site's try-on; the app's booking, profile and share
  * sheet; the technician, where nothing asks for one yet; and the withdrawals: an erasure's, the link a reminder or

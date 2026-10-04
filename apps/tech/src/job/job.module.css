@@ -165,6 +165,13 @@
   color: var(--ink-soft);
 }
 
+.pieceWarn {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-155);
+  color: var(--error-on-ink);
+}
+
 .rows {
   margin: var(--sp-10) 0 0;
   border-top: var(--hairline) solid var(--ink-rule);

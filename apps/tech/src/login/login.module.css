@@ -30,7 +30,7 @@
   display: flex;
   height: var(--tech-primary);
   margin-top: var(--sp-32);
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
 }
 
 .prefix {
@@ -101,7 +101,7 @@
   align-items: center;
   justify-content: center;
   height: var(--tech-primary);
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
   font-size: var(--fs-24);
   font-variant-numeric: tabular-nums;
   color: var(--paper);

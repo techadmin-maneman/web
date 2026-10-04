@@ -2,10 +2,14 @@
 // the API leaves it out of the other types' `steps`, so this screen is never
 // reached for them.
 //
-// A consultation and fit in one visit asks first for the client's choice, which
-// no board draws: the product they chose, by name and never by price, or that
-// they decided against the fit, when nothing is fitted and no label is asked for
-// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// A consultation and fit in one visit comes here straight after the before
+// photographs, and asks first for the client's choice, which no board draws: the
+// product they chose, by name and never by price, or that they decided against
+// the fit, when nothing is fitted and no label is asked for. The checklist that
+// follows lists the fit's items only for a client being fitted
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Any other visit
+// says first what the client paid for, and warns when the hair profile names
+// another product.
 //
 // The board draws "Scan the piece". The owner ruled on 24 September 2026 that
 // labels carry neither a barcode nor a QR code (docs/open-points.md, "Piece
@@ -26,9 +30,12 @@ import { useState } from "react";
 import { api, unreachable, type Job, type PieceLookup } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { STROKE } from "../icons.ts";
+import { paidFor, profileNamesAnother } from "../job/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import type { Queued } from "../store/outbox.ts";
 import { asLabel, isLabel } from "./label.ts";
+import { pieceSent, type PieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
@@ -55,6 +62,12 @@ const given = (text: string): boolean => text.trim() !== "";
 const toFit = (piece: ClientPiece): boolean => piece.fitted_at === null && piece.failed_at === null;
 /** A piece on the client's head now, which is the one a replacement takes off. */
 const onTheHead = (piece: ClientPiece): boolean => piece.fitted_at !== null && piece.failed_at === null;
+
+/** A one visit's choice as the refused step sent it: against the fit, a product, or none. */
+function choiceSent(sent: PieceSent | null): Choice {
+  if (sent === null) return null;
+  return sent.declined ? DECLINED : sent.product;
+}
 
 /** Why the step is open again: the label the API refused, or the step as a whole. */
 function noticeFor(refusedFields: readonly string[]): string {
@@ -102,6 +115,26 @@ function ChoiceList({
   );
 }
 
+/** What the client paid for, which is what he fits, and a warning when the hair profile names another product. */
+function PaidFor({ job }: { job: Job }) {
+  const paid = paidFor(job);
+  if (paid === null) return null;
+  const inProfile = profileNamesAnother(job);
+  return (
+    <section className={styles.field} aria-labelledby="paid-for-title">
+      <h2 className={styles.fieldTitle} id="paid-for-title">
+        {jobCopy.piece.rows.paidFor}
+      </h2>
+      <p className={styles.paidFor}>{paid}</p>
+      {inProfile !== null && (
+        <p className={styles.hint} role="alert">
+          {jobCopy.piece.mismatch(inProfile)}
+        </p>
+      )}
+    </section>
+  );
+}
+
 function PieceList({ pieces, onPick }: { pieces: readonly ClientPiece[]; onPick: (piece: ClientPiece) => void }) {
   return (
     <ul className={styles.picks}>
@@ -122,31 +155,36 @@ function PieceList({ pieces, onPick }: { pieces: readonly ClientPiece[]; onPick:
   );
 }
 
-export function Piece({ id }: { id: string }) {
-  const { loaded, retry, refused, finish, back } = useStep(id, "piece");
-  const [code, setCode] = useState("");
-  const [base, setBase] = useState("");
-  const [lot, setLot] = useState("");
+/** The step once the job is in hand: a refused piece starts as it was sent, so nothing is typed twice. */
+function Fitting({
+  job,
+  refused,
+  onFinish,
+  onBack,
+}: {
+  job: Job;
+  refused: Queued | null;
+  onFinish: (body: unknown) => void;
+  onBack: () => void;
+}) {
+  const sent = pieceSent(refused);
+  const [code, setCode] = useState(sent?.code ?? "");
+  const [base, setBase] = useState(sent?.base ?? "");
+  const [lot, setLot] = useState(sent?.lot ?? "");
   const [looked, setLooked] = useState<Looked>(NOT_LOOKED);
   const [looking, once] = useOneAtATime();
-  const [oldCode, setOldCode] = useState("");
-  const [oldReason, setOldReason] = useState("");
+  const [oldCode, setOldCode] = useState(sent?.oldCode ?? "");
+  const [oldReason, setOldReason] = useState(sent?.oldReason ?? "");
   const [picking, setPicking] = useState<"new" | "old" | null>(null);
-  const [choice, setChoice] = useState<Choice>(null);
+  const [choice, setChoice] = useState<Choice>(choiceSent(sent));
 
-  if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
-  }
-
-  const job = loaded.value;
   const pieces = job.pieces ?? [];
   const takesOneOff = job.type === "replacement";
   const declined = job.one_visit && choice === DECLINED;
 
   const look = () =>
     once(async () => {
-      const answer = await api.piece(code, id);
+      const answer = await api.piece(code, job.id);
       if (answer.ok) {
         setLooked({ state: "found", found: answer.body });
         if (!given(base)) setBase(answer.body.piece.base ?? "");
@@ -203,10 +241,16 @@ export function Piece({ id }: { id: string }) {
       ready={stillMissing === null}
       unfinished={stillMissing ?? undefined}
       notice={refused === null ? null : noticeFor(refused.fields)}
-      onBack={back}
-      onAction={() => void finish(body())}
+      onBack={onBack}
+      onAction={() => {
+        onFinish(body());
+      }}
     >
-      {job.one_visit && <ChoiceList products={job.products} choice={choice} onChoose={setChoice} />}
+      {job.one_visit ? (
+        <ChoiceList products={job.products} choice={choice} onChoose={setChoice} />
+      ) : (
+        <PaidFor job={job} />
+      )}
 
       {!declined && (
         <>
@@ -360,4 +404,14 @@ export function Piece({ id }: { id: string }) {
       )}
     </StepFrame>
   );
+}
+
+export function Piece({ id }: { id: string }) {
+  const { loaded, retry, refused, finish, back } = useStep(id, "piece");
+
+  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
+  return <Fitting job={loaded.value} refused={refused} onFinish={(body) => void finish(body)} onBack={back} />;
 }
