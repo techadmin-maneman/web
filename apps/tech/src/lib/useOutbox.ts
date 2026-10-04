@@ -8,9 +8,11 @@ export interface Waiting {
   readonly events: readonly Queued[];
   /** Photograph frames still on the phone, one per angle, grouped by job on the waiting screen. */
   readonly frames: readonly Frame[];
+  /** False until the outbox has been read, or would not be: until then, nothing in it is known. */
+  readonly read: boolean;
 }
 
-const NOTHING: Waiting = { events: [], frames: [] };
+const NOTHING: Waiting = { events: [], frames: [], read: false };
 
 /**
  * What the outbox holds, as one value that changes only when it does. A screen
@@ -30,10 +32,12 @@ export function useOutbox(): Waiting {
     const read = () => {
       void Promise.all([events(), frames()]).then(
         ([queued, kept]) => {
-          if (current) setWaiting({ events: queued, frames: kept });
+          if (current) setWaiting({ events: queued, frames: kept, read: true });
         },
         () => {
-          // A store that would not open this time keeps the last account; the next change reads again.
+          // A store that would not open this time keeps the last account, and no screen waits on it; the next change
+          // reads again.
+          if (current) setWaiting((last) => ({ ...last, read: true }));
         },
       );
     };

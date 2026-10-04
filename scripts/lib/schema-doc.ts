@@ -48,6 +48,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).",
   audit_log:
     "Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).",
+  board_version:
+    "One row: a number that triggers raise whenever a visit, a move, leave, a technician or the day's slot times change, so the open dispatch board reads itself again only then (ADR 0069).",
   checkins:
     'Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).',
   checklist_items:
@@ -67,9 +69,11 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   counters: "Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).",
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
-  cron_jobs: "Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).",
+  credit_expiry_cursor:
+    "One row: how far the pass that closes expired credits has got, so it reads only the grants that expired since.",
+  cron_jobs: "Each job of the cron, and how many runs in a row it has failed (ADR 0067).",
   cron_runs:
-    "One row: when the five-minute cron's latest run started and its last finished run ended, so a run cut short is told by the next.",
+    "One row: when the cron's latest run started and its last finished run ended, so a run cut short is told by the next.",
   deletion_requests: "A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).",
   discount_code_uses:
     "Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).",
@@ -161,13 +165,16 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
   technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",
   technicians:
-    "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours (ADR 0032, ADR 0052, ADR 0110).",
+    "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).",
   tryon_jobs: "One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).",
   tryon_sessions:
     "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
   visit_blackouts: "Days on which no visit is offered.",
-  visit_changes: "Each move or cancel a client made, with its notice and what it cost (ADR 0046).",
-  visits: "What an appointment became once FSM closed it: the outcome, its reason and its times (ADR 0032, ADR 0074).",
+  visit_changes:
+    "Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).",
+  visits:
+    "What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times " +
+    "(ADR 0032, ADR 0074).",
   waitlist_entries: "Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).",
   webhook_inbox: "FSM's webhook deliveries, each kept once (ADR 0032).",
   zones: "A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).",
@@ -360,8 +367,10 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     what: "Housekeeping",
     tables: [
       "alerts",
+      "board_version",
       "cron_jobs",
       "cron_runs",
+      "credit_expiry_cursor",
       "counters",
       "idempotency",
       "number_codes",

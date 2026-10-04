@@ -26,14 +26,22 @@ export type ClientsFound = Body<paths["/api/clients/find"]["post"]>;
 export type ClientRecord = Body<paths["/api/clients/{id}"]["get"]>;
 export type ClientVisit = ClientRecord["visits"]["past"][number];
 export type ClientPayment = ClientRecord["payments"][number];
+export type ClientPaymentLink = ClientRecord["payment_links"][number];
+export type ClientInvoice = ClientRecord["invoices"][number];
 /** A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). */
 export type HeldBooking = ClientRecord["held_bookings"][number];
 export type HeldBookingRefunded = Body<paths["/api/held-bookings/{id}/refund"]["post"]>;
+/** A booking that refunded its payment by itself: paid after its hold lapsed, or a move whose visit had begun. */
+export type AutoRefund = ClientRecord["auto_refunds"][number];
 /** A visit ops book for a client: the windows free for it, what is sent, and what came of it. */
 export type VisitAvailability = Body<paths["/api/visits/availability"]["get"]>;
 export type AvailabilityQuery = NonNullable<paths["/api/visits/availability"]["get"]["parameters"]["query"]>;
 export type VisitToBook = Sent<paths["/api/visits"]["post"]>;
 export type VisitBooked = Body<paths["/api/visits"]["post"]>;
+/** What cancelling a client's visit gives back, free to the client and on their own late terms. */
+export type CancelTerms = Body<paths["/api/visits/{id}/cancel"]["post"]>;
+export type CancelOutcome = CancelTerms["free"];
+export type HandClose = Sent<paths["/api/visits/{id}/close"]["post"]>;
 export type CreditBalance = Body<paths["/api/clients/{id}/credits"]["post"]>;
 export type CreditAdjustment = Sent<paths["/api/clients/{id}/credits"]["post"]>;
 export type ClientInvite = NonNullable<ClientRecord["invite"]>;
@@ -55,6 +63,9 @@ export type TaskGroup = Tasks["groups"][number];
 export type Task = TaskGroup["tasks"][number];
 /** The groups ops may close a task of without doing its thing (docs/decisions/0092-task-owners.md). */
 export type ClosableGroup = paths["/api/tasks/{group}/{id}/close"]["post"]["parameters"]["path"]["group"];
+/** The alerts on Tasks' "Needs a hand". */
+export type OpenAlerts = Body<paths["/api/alerts"]["get"]>;
+export type OpenAlert = OpenAlerts["alerts"][number];
 /** An address a client gives ops on the phone, as the page sends it. */
 export type AddressGiven = Sent<paths["/api/clients/{id}/address"]["post"]>;
 export type Suggestion = Body<paths["/api/clients/{id}/address/suggestions"]["post"]>["suggestions"][number];
@@ -119,6 +130,8 @@ export type StaffToken = StaffBook["service_tokens"][number];
 export type StaffTokenAdd = Sent<paths["/api/staff/service-tokens"]["post"]>;
 
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
+export type ChargePreview = Body<paths["/api/no-shows/{id}/charge"]["get"]>;
+export type DecidedNoShow = Body<paths["/api/no-shows/decided"]["get"]>["cases"][number];
 export type NoShowDispute = Body<paths["/api/no-shows/disputes"]["get"]>["disputes"][number];
 export type DisputeRuling = Sent<paths["/api/no-shows/disputes/{id}/ruling"]["post"]>["ruling"];
 export type DayMoney = Body<paths["/api/payments"]["get"]>;
@@ -133,8 +146,9 @@ export type TechnicianChange = Sent<paths["/api/technicians/{id}"]["patch"]>;
 export type ReturnedVisit = Body<paths["/api/technicians/{id}/deactivate"]["post"]>["visits"][number];
 export type Device = Technician["devices"][number];
 export type Leave = Technician["leave"][number];
-export type LeaveRecorded = Body<paths["/api/technicians/{id}/leave"]["post"]>;
-export type JobOnLeave = LeaveRecorded["jobs"][number];
+/** One technician's leave still to end, each period with the jobs still booked on its days. */
+export type StandingLeave = Body<paths["/api/technicians/{id}/leave"]["get"]>["leave"][number];
+export type JobOnLeave = StandingLeave["jobs"][number];
 export type TechniciansWork = Body<paths["/api/technicians/work"]["get"]>;
 export type TechnicianWork = TechniciansWork["technicians"][number];
 export type Board = Body<paths["/api/dispatch"]["get"]>;
@@ -229,6 +243,8 @@ export const api = {
   whoami: () => client.get("/api/whoami"),
   /** Seven days from `from`, or from today, in one city or every one. No name or number is in the query. */
   board: (asked: BoardQuery) => client.get("/api/dispatch", { query: setOnly({ from: asked.from, city: asked.city }) }),
+  /** A number that moves whenever something the board draws changes; one row, where the board is hundreds. */
+  boardVersion: () => client.get("/api/dispatch/version"),
   /** Where a job in hand would land in the week from `from`, by the check a move runs. Writes nothing. */
   room: (appointmentId: string, from: string) =>
     client.get("/api/dispatch/room", { query: { appointment_id: appointmentId, from } }),
@@ -239,8 +255,12 @@ export const api = {
   assign: (appointmentId: string, to: Landing, shown: Shown) =>
     client.post("/api/dispatch/assign", { body: moveBody(appointmentId, to, shown) }),
   /** A job already on the board, moved. The client is never charged for it; the answer says how he hears of it. */
-  move: (appointmentId: string, to: Landing, shown: Shown) =>
-    client.post("/api/dispatch/move", { body: moveBody(appointmentId, to, shown) }),
+  move: (appointmentId: string, to: Landing, shown: Shown, clearingCheckIn = false) =>
+    client.post("/api/dispatch/move", {
+      body: clearingCheckIn
+        ? { ...moveBody(appointmentId, to, shown), clear_check_in: true as const }
+        : moveBody(appointmentId, to, shown),
+    }),
   /** Ops called a client who had not heard of a move; its task leaves the Tasks board. */
   toldByPhone: (moveId: string) => client.post("/api/dispatch/moves/{id}/told", { path: { id: moveId } }),
   held: () => client.get("/api/referrals/held"),
@@ -275,6 +295,18 @@ export const api = {
   visitAvailability: (query: AvailabilityQuery) => client.get("/api/visits/availability", { query }),
   /** A visit booked for a client: at once when nothing is paid at booking, else a payment link goes to them. */
   bookVisit: (visit: VisitToBook) => client.post("/api/visits", { body: visit }),
+  /** What a cancel would give back, free to the client and on their own late terms. Changes nothing. */
+  cancelTerms: (visitId: string) =>
+    client.post("/api/visits/{id}/cancel", { path: { id: visitId }, body: { confirm: false } }),
+  /** The cancel, on the notice ops were shown: free to the client unless `onClientTerms`. */
+  cancelVisit: (visitId: string, notice: CancelTerms["notice"], onClientTerms: boolean, reason: string) =>
+    client.post("/api/visits/{id}/cancel", {
+      path: { id: visitId },
+      body: { confirm: true, notice, ...(onClientTerms ? { on_client_terms: true } : {}), reason },
+    }),
+  /** A visit whose technician's phone was lost before it sent the work, closed as ops say it went. */
+  closeVisit: (visitId: string, close: HandClose) =>
+    client.post("/api/visits/{id}/close", { path: { id: visitId }, body: close }),
   /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
   adjustCredits: (id: string, adjustment: CreditAdjustment) =>
     client.post("/api/clients/{id}/credits", { path: { id }, body: adjustment }),
@@ -312,10 +344,16 @@ export const api = {
   /** A visit left partly done, closed without a follow-up; the reason is kept with it, under the caller's name. */
   closeTask: (group: ClosableGroup, id: string, reason: string) =>
     client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
+  /** The open alerts ops have been told of, of the caller's own departments. */
+  alerts: () => client.get("/api/alerts"),
+  /** An alert marked done, under the caller's name. */
+  resolveAlert: (id: string) => client.post("/api/alerts/{id}/resolve", { path: { id } }),
+  /** The message, lead or CRM erasure an alert gave up on, sent again; the alert closes. */
+  sendAlertAgain: (id: string) => client.post("/api/alerts/{id}/send-again", { path: { id } }),
   /** The cases nobody has ruled on yet. The route also answers the decided ones; the board draws a queue. */
   noShows: () => client.get("/api/no-shows", { query: { decision: "undecided" } }),
-  /** Today's money, as board D1 heads it. The route takes a date; the board draws no way of asking for another. */
-  dayMoney: () => client.get("/api/payments"),
+  /** A day's money, as board D1 heads it: India's date, or today with null. */
+  dayMoney: (date: string | null) => client.get("/api/payments", { query: setOnly({ date }) }),
   /**
    * Charge the visit or waive it, with the reason either way. A charge costs
    * what the booking was sold to cost a no-show, and gives back the rest.
@@ -323,6 +361,10 @@ export const api = {
   decideNoShow: (id: string, decision: "charged" | "waived", reason: string) =>
     client.post("/api/no-shows/{id}/decision", { path: { id }, body: { decision, reason } }),
   /** The disputed charges still to rule on (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). */
+  /** What charging the case would keep of the visit's payment and refund, read before the charge is sent. */
+  chargePreview: (id: string) => client.get("/api/no-shows/{id}/charge", { path: { id } }),
+  /** The cases ruled on today, the latest first, each with its ruling. */
+  decidedNoShows: () => client.get("/api/no-shows/decided"),
   disputes: () => client.get("/api/no-shows/disputes"),
   ruleOnDispute: (id: string, ruling: DisputeRuling, reason: string) =>
     client.post("/api/no-shows/disputes/{id}/ruling", { path: { id }, body: { ruling, reason } }),
@@ -338,6 +380,15 @@ export const api = {
    */
   decideDeletion: (id: string, decision: "delete" | "reject", reason: string | null) =>
     client.post("/api/deletion-requests/{id}/decision", { path: { id }, body: { decision, reason } }),
+  /**
+   * Erases a client now, from their page; it cannot be undone. `settledByHand` erases despite a visit booked or a
+   * payment held, which ops then cancel and refund themselves, or a payment link unpaid, which is cancelled.
+   */
+  eraseClient: (id: string, settledByHand: boolean) =>
+    client.post("/api/clients/{id}/erasure", {
+      path: { id },
+      body: settledByHand ? { override_open_bookings: true } : {},
+    }),
   numberChanges: () => client.get("/api/number-changes"),
   /** Confirming moves the client to the new number; rejecting needs a reason. */
   decideNumberChange: (id: string, decision: "confirm" | "reject", reason: string | null) =>
@@ -357,6 +408,7 @@ export const api = {
   revokeDevice: (id: string, deviceId: string) =>
     client.post("/api/technicians/{id}/devices/{device}/revoke", { path: { id, device: deviceId } }),
   /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0062). */
+  standingLeave: (id: string) => client.get("/api/technicians/{id}/leave", { path: { id } }),
   recordLeave: (id: string, leave: { from: string; to: string; note: string | null }) =>
     client.post("/api/technicians/{id}/leave", {
       path: { id },

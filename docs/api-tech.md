@@ -37,6 +37,36 @@ Environment, version and database reachability
 }
 ```
 
+### POST /api/client-errors
+
+Report an error in the app's own page
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientErrorReport"
+}
+```
+
+**204**: Logged
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/tech/auth/otp
 
 Send a login code on WhatsApp. The answer is the same whether or not FSM lists the number
@@ -257,7 +287,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -265,7 +295,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -301,7 +331,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -309,7 +339,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -361,7 +391,7 @@ Request body:
 }
 ```
 
-**409**: superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom
+**409**: superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom; already_closed: the job has closed, so it takes no more photographs
 
 ```json
 {
@@ -390,6 +420,14 @@ The photograph itself: a JPEG or PNG, at most 2 MB
 ```
 
 **404**: not_found: the link is wrong or expired
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: already_closed: the job has closed, so it takes no more photographs
 
 ```json
 {
@@ -435,7 +473,7 @@ The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB 
 }
 ```
 
-**409**: upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since
+**409**: upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since; already_closed: the job has closed, so it takes no more photographs
 
 ```json
 {
@@ -495,7 +533,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -503,7 +541,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -547,7 +585,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -555,7 +593,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -599,7 +637,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -607,7 +645,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -651,7 +689,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -659,7 +697,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again
 
 ```json
 {
@@ -703,7 +741,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -711,7 +749,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -755,7 +793,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -763,7 +801,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -799,7 +837,7 @@ Close the job as a no-show, once the wait has run
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -807,7 +845,7 @@ Close the job as a no-show, once the wait has run
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home
 
 ```json
 {
@@ -947,6 +985,7 @@ Request body:
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -958,6 +997,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "not_served",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -977,6 +1017,8 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",
@@ -1033,6 +1075,11 @@ Request body:
           ],
           "additionalProperties": false,
           "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+        },
+        "earliest_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [
@@ -1106,6 +1153,76 @@ Request body:
     "version_tag",
     "d1",
     "cron_completed_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientErrorReport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error",
+        "unhandled_rejection",
+        "render",
+        "outbox_gave_up"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "The page's path, with no query or fragment."
+    },
+    "stack": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "The script the error was thrown in."
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "outbox_gave_up: the write's kind, as `checklist`."
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "outbox_gave_up: the code the API refused it with."
+    },
+    "status": {
+      "type": "integer",
+      "description": "outbox_gave_up: the refusal's HTTP status."
+    },
+    "request_id": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+    }
+  },
+  "required": [
+    "kind",
+    "message",
+    "path"
   ],
   "additionalProperties": false
 }
@@ -1391,16 +1508,16 @@ Request body:
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
     },
-    "product": {
+    "service": {
       "anyOf": [
         {
-          "type": "string"
+          "$ref": "#/components/schemas/TechnicianService"
         },
         {
           "type": "null"
         }
       ],
-      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+      "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
     },
     "sector": {
       "anyOf": [
@@ -1452,6 +1569,20 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobState"
     }
   },
   "required": [
@@ -1463,15 +1594,77 @@ Request body:
     "window_label",
     "type",
     "one_visit",
-    "product",
+    "service",
     "sector",
     "status",
     "badge",
     "slots",
     "unlocked",
-    "unlocks_at"
+    "unlocks_at",
+    "client_name",
+    "progress"
   ],
   "additionalProperties": false
+}
+```
+
+### TechnicianService
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string",
+      "description": "Its code, which the hair profile names a first fit's product by."
+    },
+    "name": {
+      "type": "string",
+      "description": "Its name in the console."
+    }
+  },
+  "required": [
+    "tier",
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianJobState
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "started_at",
+    "outcome"
+  ],
+  "additionalProperties": false,
+  "description": "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet."
 }
 ```
 
@@ -1540,16 +1733,16 @@ Request body:
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
     },
-    "product": {
+    "service": {
       "anyOf": [
         {
-          "type": "string"
+          "$ref": "#/components/schemas/TechnicianService"
         },
         {
           "type": "null"
         }
       ],
-      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+      "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
     },
     "sector": {
       "anyOf": [
@@ -1601,6 +1794,20 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobProgress"
     },
     "address": {
       "anyOf": [
@@ -1767,12 +1974,14 @@ Request body:
       ],
       "description": "Null until the day before the visit."
     },
-    "progress": {
-      "$ref": "#/components/schemas/TechnicianJobProgress"
-    },
     "no_show_wait_min": {
       "type": "integer",
       "description": "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it."
+    },
+    "checkin_from": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow."
     },
     "pieces": {
       "anyOf": [
@@ -1879,6 +2088,13 @@ Request body:
       },
       "description": "This kind of visit's checklist, as ops set it in the console, in its order."
     },
+    "checklist_if_declined": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/JobSheetItem"
+      },
+      "description": "On a one visit, the checklist it runs once the client decides against the fit: the consultation's alone. Empty on any other visit."
+    },
     "partial_reasons": {
       "type": "array",
       "items": {
@@ -1962,6 +2178,42 @@ Request body:
       ],
       "description": "On a one visit, the discount code already on it, so the outcome step asks for none; never what it takes off. Null on any other visit, and on a one visit with no code."
     },
+    "client_choice": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "declined": {
+              "type": "boolean",
+              "enum": [
+                true
+              ]
+            }
+          },
+          "required": [
+            "declined"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "product": {
+              "type": "string",
+              "description": "The product's tier, from the card's products."
+            }
+          },
+          "required": [
+            "product"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a one visit, what the client decided as its piece step recorded it: the product they chose, or that they decided against the fit. Null until the piece step lands, and on any other visit."
+    },
     "profile": {
       "anyOf": [
         {
@@ -1983,28 +2235,32 @@ Request body:
     "window_label",
     "type",
     "one_visit",
-    "product",
+    "service",
     "sector",
     "status",
     "badge",
     "slots",
     "unlocked",
     "unlocks_at",
+    "client_name",
+    "progress",
     "address",
     "access_notes",
     "client",
-    "progress",
     "no_show_wait_min",
+    "checkin_from",
     "pieces",
     "last_visit",
     "reminder",
     "steps",
     "checklist",
+    "checklist_if_declined",
     "partial_reasons",
     "consumables",
     "products",
     "payment_link",
     "discount_code",
+    "client_choice",
     "profile"
   ],
   "additionalProperties": false
@@ -2038,7 +2294,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "When the job may close as a no-show, from the check-in we hold; null before one landed."
+      "description": "When the job may close as a no-show, from the check-in we hold, or from the booked start for one before it; null before one landed."
     },
     "distance_m": {
       "anyOf": [

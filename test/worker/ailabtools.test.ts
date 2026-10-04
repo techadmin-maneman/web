@@ -4,6 +4,7 @@ import { MAX_RESULT_BYTES } from "../../src/config/tryon.ts";
 import { API_BASE_URL, ENDPOINT_PATHS, createAilabtoolsProvider } from "../../src/providers/ailabtools.ts";
 import { STUB_RENDER_MS, STUB_RESULT_PNG, STUB_STALL_MS } from "../../src/providers/ailabtools-stub.ts";
 import { createImageProvider } from "../../src/providers/image.ts";
+import { createLogger } from "../../src/log.ts";
 import { NOW, fakeFetch, json } from "./helpers.ts";
 import { syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
@@ -17,7 +18,10 @@ const preset = PRESETS[0];
 
 function provider(routes: Parameters<typeof fakeFetch>[0]) {
   const http = fakeFetch(routes);
-  return { image: createAilabtoolsProvider({ apiKey: KEY, fetch: http.fetch }), calls: http.calls };
+  return {
+    image: createAilabtoolsProvider({ apiKey: KEY, fetch: http.fetch, log: createLogger() }),
+    calls: http.calls,
+  };
 }
 
 /** The multipart fields of a recorded submit. */
@@ -118,9 +122,15 @@ describe("AILabTools: submit", () => {
       },
     });
     const result = await image.submit(syntheticJpeg(800, 800), preset, "black", "pro");
-    expect(result).toMatchObject({ ok: false, failure: { code: "render_failed", transient: true } });
+    expect(result).toMatchObject({
+      ok: false,
+      failure: {
+        code: "render_failed",
+        transient: true,
+        detail: "AILabTools 0 UNREACHABLE: submit could not be reached (TypeError)",
+      },
+    });
     expect(JSON.stringify(result)).not.toContain(KEY);
-    expect(JSON.stringify(result)).toContain("***REDACTED***");
   });
 });
 
@@ -261,7 +271,7 @@ describe("the stub AILabTools", () => {
 
   it("renders through the real adapter: submit, running, then done, and serves a PNG", async () => {
     let now = at(0);
-    const image = createImageProvider(null, { fetch, now: () => now() });
+    const image = createImageProvider(null, { fetch, now: () => now(), log: createLogger() });
     const submitted = await image.submit(syntheticJpeg(800, 800), preset, "black", "pro");
     if (!submitted.ok) throw new Error("stub refused the submit");
 
@@ -274,7 +284,7 @@ describe("the stub AILabTools", () => {
   });
 
   it("replays the documented failures: a refused face, Premium's 502 trap, and a stalled download", async () => {
-    const image = createImageProvider(null, { fetch, now: at(0) });
+    const image = createImageProvider(null, { fetch, now: at(0), log: createLogger() });
     const face = await image.submit(syntheticJpeg(800, 800, "mm-stub:refused-face"), preset, "black", "pro");
     expect(face.ok ? null : face.failure.code).toBe("photo_unreadable");
 
@@ -282,7 +292,7 @@ describe("the stub AILabTools", () => {
     expect(trap.ok ? null : trap.failure.code).toBe("photo_invalid_file");
 
     let now = at(0);
-    const stalling = createImageProvider(null, { fetch, now: () => now() });
+    const stalling = createImageProvider(null, { fetch, now: () => now(), log: createLogger() });
     const submitted = await stalling.submit(syntheticJpeg(800, 800, "mm-stub:stall"), preset, "black", "pro");
     if (!submitted.ok) throw new Error("stub refused the submit");
     now = at(STUB_RENDER_MS.pro);

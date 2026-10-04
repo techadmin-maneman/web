@@ -54,6 +54,7 @@ export const login = {
       invalid: "Enter the ten-digit mobile number you booked with.",
       rate_limited: "Too many codes for this number today. Try again tomorrow, or message us.",
       busy: "We cannot send codes just now. Please try again in a little while.",
+      turnstile_failed: "We could not confirm you are a person. Please try again.",
       offline: "You are offline. Connect, then try again.",
       unknown: "Something went wrong on our side. Please try again.",
     },
@@ -87,6 +88,8 @@ export const login = {
     expired: "This code no longer works.",
     fresh: "Send a new code",
     failed: "That did not go through. Please try again.",
+    // PLACEHOLDER: the design draws no resend that is refused.
+    limited: "We cannot send another code just now. Use the last one we sent, or message us.",
   },
   help: {
     back: "Back",
@@ -131,6 +134,8 @@ export const VISIT_TYPES = {
 } as const;
 // PLACEHOLDER: a visit whose FSM service item is none of the four.
 export const OTHER_VISIT = "Visit";
+// PLACEHOLDER: a consultation and fit in one visit, as the site and the technician's phone call it.
+export const ONE_VISIT = "Consultation and fit";
 
 /** A price's GST, beneath the amount charged once GST applies: "Rs. 30,000 + Rs. 5,400 GST". */
 export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
@@ -152,7 +157,25 @@ export const messages = {
   lateInvoice: (what: string, date: string) => `Please send me the invoice for my ${what.toLowerCase()} on ${date}.`,
   // PLACEHOLDER: a refund that has taken longer than Razorpay's working days.
   lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} has not arrived.`,
+  // PLACEHOLDER: a client moving to another city while a visit is booked.
+  moveCity: "I am moving to another city and have a visit booked.",
 } as const;
+
+/**
+ * PLACEHOLDER: the referral reward has this one name wherever the client reads it: "1 free service visit", "3 free
+ * service visits".
+ */
+const freeServiceVisits = (count: number): string =>
+  count === 1 ? "1 free service visit" : `${String(count)} free service visits`;
+
+/** Home's and Refer's tile: how many free service visits, and the day the soonest must be used by. */
+const freeVisitsTile = {
+  count: freeServiceVisits,
+  useBy: (when: string) => `Use by ${when}`,
+  /** Only some of them end first: "1 to use by 2 Oct". */
+  someUseBy: (visits: number, when: string) => `${String(visits)} to use by ${when}`,
+  tonight: "tonight",
+};
 
 /** The booking sheet's words for a paid visit still being written to FSM, which Home repeats while it waits. */
 const PAID_IN = "Your payment is in. We are booking your visit.";
@@ -165,13 +188,13 @@ export const home = {
   note: "Add a note",
   consultation: {
     label: "Your consultation",
+    labelOneVisit: "Your consultation and fit",
     free: "Free",
+    /** Asked for on the site, not yet booked. */
+    requested: "Requested · we confirm the time on WhatsApp",
   },
-  /** Board B1's credit tile: "2 visit credits", with when the soonest expire. */
-  credits: {
-    count: (visits: number) => (visits === 1 ? "1 visit credit" : `${String(visits)} visit credits`),
-    expire: (date: string) => `Expire ${date}`,
-  },
+  /** Board B1's credit tile: "3 free service visits", and "Use by 2 Oct", or "Use by tonight" on the last day. */
+  credits: freeVisitsTile,
   /**
    * Board B1's one prompt, and the invoice line beneath it (src/domain/home-prompt.ts). The replacement's line and
    * "See what that involves" are the board's own, and Visits' record words the line the same way. PLACEHOLDER:
@@ -261,6 +284,8 @@ export const visits = {
   none: "Nothing booked yet.",
   /** Board C1: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
+  /** A consultation asked for on the site, which ops have yet to confirm. */
+  requested: "Requested",
   // PLACEHOLDER: a visit that is not this client's, or no longer exists.
   notFound: "We could not find this visit.",
   // PLACEHOLDER: offline, the visits are not kept on the phone.
@@ -327,8 +352,10 @@ export const visits = {
       },
       /** What the charge took, as the booking was sold to cost a no-show. */
       kept: (amount: string) => `Charged: we kept ${amount} of what you paid.`,
-      creditSpent: "Charged: the visit credit it used is spent.",
+      creditSpent: "Charged: the free service visit it used is spent.",
       dispute: "Dispute this charge",
+      /** PLACEHOLDER: where the button stood, once the days to dispute have passed. */
+      disputeClosed: (day: string) => `The days to dispute this charge ended on ${day}.`,
       disputed: {
         open: "You disputed this charge. We are looking at it.",
         refunded: "We looked at your dispute and refunded the charge.",
@@ -373,6 +400,12 @@ export const booking = {
     why: "Your address first, so we know where to come. Then pick a date.",
     refused: "We need your address before we can hold a slot. Add it, then pick your window again.",
     save: "Save and continue",
+  },
+  /** PLACEHOLDER: no board draws it. The client's address is in a pincode we do not come to, so no day is offered. */
+  notServed: {
+    line: (pincode: string) => `We do not come to ${pincode} yet.`,
+    body: "Change the address below, or join the waitlist and we will message you the day we do.",
+    waitlist: "Join the waitlist",
   },
   date: {
     title: "Pick a date",
@@ -419,7 +452,7 @@ export const booking = {
       payment: (hours: number, amount: string) =>
         `This visit is less than ${String(hours)} hours away: if you move or cancel it, the ${amount} paid is not refunded.`,
       credit: (hours: number) =>
-        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the credit is not returned.`,
+        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the free service visit is not returned.`,
     },
     // PLACEHOLDER: a booking ops set to cost nothing when changed late (docs/decisions/0088-every-policy-in-the-console.md).
     freeAnyTime: "Free to move or cancel at any time.",
@@ -429,13 +462,13 @@ export const booking = {
     // PLACEHOLDER: a free consultation has no payment; the design draws the credit board's button.
     free: "Free",
     confirm: "Confirm visit",
-    // Board C5: a service-visit credit covers it.
+    // Board C5: a free service visit covers it. PLACEHOLDER: the reward's name, in place of the board's.
     credit: {
       zero: "Rs. 0",
-      used: "1 visit credit used",
+      used: "1 free service visit used",
       remaining: (left: number) => `${String(left)} remaining`,
       /** The notice the hold is sold under, which ops set: 24 hours to begin with. */
-      note: (hours: number) => `Cancel inside ${String(hours)} hours and the credit is gone.`,
+      note: (hours: number) => `Cancel inside ${String(hours)} hours and the free service visit is gone.`,
     },
     /**
      * PLACEHOLDER: the design never asks. Ticked, it records the client's yes to WhatsApp about their
@@ -518,7 +551,7 @@ export const booking = {
   slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
   refunded: "We could not book that visit, so your payment is being refunded in full.",
   failedToStart: "That did not go through. Please try again.",
-  creditGone: "Your visit credit is already on another booking, so this visit is charged at the price below.",
+  creditGone: "Your free service visit is already on another booking, so this visit is charged at the price below.",
   close: "Close",
 } as const;
 
@@ -577,9 +610,9 @@ export const change = {
     freeNothingPaid: "Free to move.",
     // What a move in place keeps, on its pay step.
     carriesOver: (amount: string) => `Your ${amount} carries over.`,
-    creditCarriesOver: "Your credit carries over.",
+    creditCarriesOver: "Your free service visit carries over.",
     cancelInstead: "Cancel the visit instead",
-    creditCharged: "Charged. The credit is not returned and the new visit is paid separately.",
+    creditCharged: "Charged. The free service visit is not returned and the new visit is paid separately.",
   },
   cancel: {
     title: (visit: string) => `Cancel ${visit}`,
@@ -592,13 +625,16 @@ export const change = {
     charged: (amount: string) => `Charged. The ${amount} is not refunded.`,
     nothingPaid: "Nothing was paid, so nothing is charged.",
     accept: "Cancel and accept charge",
-    creditBack: "Your credit comes back.",
-    // Board C8, inside 24 hours, for a credit booking.
+    creditBack: "Your free service visit comes back.",
+    // Board C8, inside 24 hours, for a booking a free service visit covers. PLACEHOLDER: the reward's name in it.
     creditUsed: (left: string | null, expiry: string) =>
-      left === null ? "Your credit is used." : `Your credit is used. ${left} left, expiring ${expiry}.`,
-    acceptCredit: "Cancel and use credit",
+      left === null
+        ? "Your free service visit is used."
+        : `Your free service visit is used. ${left} left, to use by ${expiry}.`,
+    acceptCredit: "Cancel and use it",
     done: "Cancelled",
     doneLine: (visit: string) => `${visit} is cancelled.`,
+    refundPending: (amount: string) => `Your refund of ${amount} is on its way.`,
     close: "Done",
   },
   // PLACEHOLDER: what came of a change that did not go through.
@@ -641,11 +677,12 @@ function promiseOf(reward: Reward | null): string {
 export const refer = {
   title: "Refer",
   promise: promiseOf,
-  credit: { label: "Your credit", expire: (date: string) => `Expire ${date}` },
+  /** Board F1's credit tile, as Home's. */
+  credit: freeVisitsTile,
   // PLACEHOLDER: the board draws no line for the credits of the invite a client came with while ops review them.
   inviteCredits: {
-    checking: "The service visits from the invite you came with are being checked. We will message you.",
-    refused: "We could not give the service visits from the invite you came with. Message us to know why.",
+    checking: "The free service visits from the invite you came with are being checked. We will message you.",
+    refused: "We could not give the free service visits from the invite you came with. Message us to know why.",
   },
   noOther: "No other discount applies.",
   share: "Share an invite",
@@ -723,6 +760,8 @@ export const refer = {
 
 export const photos = {
   title: "Photos",
+  /** Why the visits' photographs are kept, said above them. */
+  basis: "Taken for your visit record.",
   compare: "Compare",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   /** The compare's three angles, as board D2 names them. */
@@ -794,13 +833,14 @@ export const payments = {
     fact: (code: string, off: string | null) => (off === null ? code : `${code}: ${off} off`),
   },
   /**
-   * The service-visit credits among the payments (LIFE-14). Board E1 draws a visit a credit covered: "Service
-   * visit · 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". PLACEHOLDER: every other line.
+   * The free service visits among the payments (LIFE-14). Board E1 draws a visit one covered: "Service visit ·
+   * 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". PLACEHOLDER: all of it, in the reward's
+   * one name, which the row's name or meta says, so its status and count need not.
    */
   credits: {
-    title: "Visit credits",
+    title: "Free service visits",
     meta: {
-      used: "visit credit",
+      used: "free service visit",
       lost: "cancelled late",
       returned: "cancelled in time",
       expired: "past their date",
@@ -808,22 +848,29 @@ export const payments = {
       corrected: "corrected by us",
       added: "added",
     },
-    from: { referral: "a friend you invited was fitted", ops: "from us", import: "carried over" },
+    /** Where visits added came from; an invite's by which side of it the client was. */
+    from: {
+      referrer: "your friend was fitted",
+      friend: "from your invite",
+      referral: "from an invite",
+      ops: "from us",
+      import: "carried over",
+    },
     status: {
-      used: "Covered by credit",
-      lost: "Credit lost",
-      returned: "Credit returned",
-      expired: "Credits expired",
-      withdrawn: "Credits withdrawn",
-      corrected: "Credits corrected",
-      added: "Credits added",
+      used: "Covered",
+      lost: "Not returned",
+      returned: "Returned",
+      expired: "Expired",
+      withdrawn: "Withdrawn",
+      corrected: "Corrected",
+      added: "Added",
     },
     count: (event: string, visits: number) => {
-      const credits = `${String(visits)} ${visits === 1 ? "credit" : "credits"}`;
-      if (event === "used") return `${credits} used`;
-      if (event === "lost") return `${credits} lost`;
-      if (event === "returned") return `${credits} back`;
-      return credits;
+      const counted = visits === 1 ? "1 visit" : `${String(visits)} visits`;
+      if (event === "used") return `${counted} used`;
+      if (event === "lost") return `${counted} lost`;
+      if (event === "returned") return `${counted} back`;
+      return counted;
     },
   },
   /** A payment's status, and a refund's. */
@@ -890,7 +937,7 @@ export const payments = {
 export const empty = {
   photos: {
     title: "Photos",
-    lines: ["Your photographs start at your first fit.", "Five angles, before and after each visit."],
+    lines: ["Your photographs start at your first visit.", "Five angles at every visit, taken for your visit record."],
   },
   payments: {
     title: "Payments",
@@ -950,6 +997,11 @@ export const profile = {
     save: "Save",
     cancel: "Cancel",
     invalid: "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
+    // PLACEHOLDER: a pincode we do not come to, and a move to another city while a visit is booked.
+    notServed: (pincode: string) => `We do not come to ${pincode} yet.`,
+    waitlist: "Join the waitlist",
+    visitBooked: "You have a visit booked in this city. To move to another, message us first.",
+    message: "Message us",
   },
   agreed: "What you have agreed to",
   purposes: {
@@ -964,6 +1016,8 @@ export const profile = {
   notGiven: "Not given",
   // PLACEHOLDER: what switching off visit messages means, since ops then call instead.
   visitsOff: "No visit updates on WhatsApp. We will call you about any change.",
+  // PLACEHOLDER until counsel rules what this switch means: switched off, visits are photographed all the same.
+  ownRecordOff: "Each visit is still photographed for your visit record.",
   // PLACEHOLDER: a switch the API did not answer stays as it was.
   switchFailed: "That did not go through, so nothing has changed. Please try again.",
   /**
@@ -1020,8 +1074,15 @@ export const profile = {
     send: "Send",
     cancel: "Not now",
     // Beside support's "Replies within a working day": the 30 days is the most a concern can take, not the usual.
-    sent: "Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest.",
+    sent: "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
     failed: "That did not go through. Please try again.",
+    limited: "You have reached today's limit. Send it tomorrow, or message us on WhatsApp.",
+    // PLACEHOLDER: the client's latest concerns, each with our answer once given.
+    concerns: "Your concerns",
+    concern: (date: string, status: string) => `Your concern of ${date} · ${status}`,
+    waiting: "Awaiting our reply",
+    answered: (date: string) => `Answered ${date}`,
+    answer: (response: string) => `Our answer: ${response}`,
   },
   deletion: {
     label: "Delete your account",
@@ -1033,6 +1094,10 @@ export const profile = {
     no: "Keep my account",
     requested: (date: string) => `Deletion requested on ${date}. We will confirm on WhatsApp.`,
     failed: "That did not go through, so nothing has been requested. Please try again.",
+    // PLACEHOLDER: a request ops rejected, shown for 30 days with their reason, which is their own words.
+    rejected: (date: string) => `On ${date} we did not delete your account.`,
+    why: (reason: string) => `Our reason: ${reason}`,
+    disagree: "Message us if you disagree, or ask again.",
   },
   // PLACEHOLDER: the design has no logout; it ends the session on this device.
   logout: "Log out",

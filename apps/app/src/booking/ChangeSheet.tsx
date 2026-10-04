@@ -76,6 +76,12 @@ function cancelLine(terms: CancelTerms, credits: Me["credits"]): string {
   return change.cancel.nothingPaid;
 }
 
+/** What the cancel did: the terms' line, or, while its refund is still being sent, that it is on its way. */
+function cancelledLine(terms: CancelTerms, credits: Me["credits"]): string {
+  if (terms.refund_pending) return change.cancel.refundPending(rupees(terms.refund));
+  return cancelLine(terms, credits);
+}
+
 export function ChangeSheet(props: {
   visit: ChangingVisit;
   start: "move" | "cancel";
@@ -226,7 +232,7 @@ export function ChangeSheet(props: {
             <h2 className={styles.outcome} id="change-title">
               {change.cancel.doneLine(name)}
             </h2>
-            <p className={styles.outcomeLine}>{cancelLine(step.terms, me.credits)}</p>
+            <p className={styles.outcomeLine}>{cancelledLine(step.terms, me.credits)}</p>
             <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
               {change.cancel.close}
             </Button>

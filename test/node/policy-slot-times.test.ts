@@ -49,6 +49,23 @@ describe("a day's times", () => {
       "outside_the_day",
     ]);
   });
+
+  it(RULES[2], () => {
+    // Half-hour half-slots: a 90-minute visit at 09:30 and another at 10:30 would overlap from 10:30 to 11:00.
+    const halfHours: SlotTimes = {
+      unitStarts: ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30"],
+      dayEnd: "13:00",
+    };
+    expect(slotTimesProblems(halfHours)).toEqual(["half_slot_too_short"]);
+    // One short half-slot is enough, the last one before the day's end included.
+    expect(slotTimesProblems({ ...LATER, unitStarts: ["10:00", "10:44", ...LATER.unitStarts.slice(2)] })).toEqual([
+      "half_slot_too_short",
+    ]);
+    expect(slotTimesProblems({ ...LATER, dayEnd: "19:00" })).toEqual(["half_slot_too_short"]);
+    // Exactly 45 minutes is long enough.
+    expect(slotTimesProblems({ ...LATER, unitStarts: ["10:00", "10:45", ...LATER.unitStarts.slice(2)] })).toEqual([]);
+    expect(slotTimesProblems({ ...LATER, dayEnd: "19:15" })).toEqual([]);
+  });
 });
 
 describe("when a change of times may apply from", () => {

@@ -1,6 +1,7 @@
 // Visits (board C1): what is coming on ink, what has been done or cancelled
 // below, each opening its own page (C9 for one done). A booking's
-// consultation, not yet in FSM, shows as the one upcoming. A visit FSM has not
+// consultation, not yet in FSM, shows as the one upcoming, and a visit being
+// booked shows in its day's place, in Home's words. A visit FSM has not
 // closed stays under upcoming, saying where it stands, and "Book your next
 // visit" waits while it is. That opens WhatsApp to ops while self-serve
 // booking is off, and waits for the connection offline. "Prepaid" marks a
@@ -16,14 +17,15 @@ import { fullDate, listMonth, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
 import { BookNext } from "../booking/BookNext.tsx";
-import { VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
+import { home, ONE_VISIT, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { hasBegun, stageText } from "../home/VisitCard.tsx";
 import { CHEVRON } from "../icons.ts";
-import { technicianOf, visitName } from "../lib/visit.ts";
+import { bookingName, technicianOf, visitTitle } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
+import { upcomingEntries, type UpcomingEntry } from "./upcoming.ts";
 import styles from "./visits.module.css";
 
 const copy = visits.record;
@@ -44,7 +46,7 @@ function UpcomingCard({ date, parts, prepaid }: { date: string; parts: readonly 
 /** A visit FSM has, which opens its own page; the window, or where one that has begun stands. */
 function Upcoming({ visit }: { visit: VisitSummary }) {
   const when = stageText(visit) ?? WINDOW_HOURS[visit.window_label];
-  const parts = [visitName(visit.type), when, ...technicianOf(visit)];
+  const parts = [visitTitle(visit), when, ...technicianOf(visit)];
   return (
     <li>
       <AppLink className={styles.card} to={`/visits/${visit.id}`}>
@@ -52,6 +54,43 @@ function Upcoming({ visit }: { visit: VisitSummary }) {
       </AppLink>
     </li>
   );
+}
+
+/** A visit paid for, or booked free, that FSM does not have yet: no page to open, and never said to be booked. */
+function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) {
+  const words = home.beingBooked;
+  return (
+    <li className={styles.card}>
+      <UpcomingCard date={booking.date} parts={[bookingName(booking), WINDOW_HOURS[booking.window]]} prepaid={false} />
+      <span className={styles.cardNote}>{booking.paid ? words.paid : words.free}</span>
+    </li>
+  );
+}
+
+/** A consultation from the site: what it is, its window, and whether it is only asked for. */
+function proposedParts(consultation: NonNullable<Me["consultation"]>): string[] {
+  const what = consultation.one_visit ? ONE_VISIT : VISIT_TYPES.consultation;
+  const parts = [what, WINDOW_HOURS[consultation.window]];
+  if (consultation.requested) parts.push(visits.requested);
+  return parts;
+}
+
+function UpcomingItem({ entry }: { entry: UpcomingEntry }) {
+  switch (entry.kind) {
+    case "visit":
+      return <Upcoming visit={entry.visit} />;
+    case "being_booked":
+      return <BeingBooked booking={entry.booking} />;
+    case "consultation": {
+      // A consultation from the site has no page of its own to open.
+      const { consultation } = entry;
+      return (
+        <li className={styles.card}>
+          <UpcomingCard date={consultation.date} parts={proposedParts(consultation)} prepaid={false} />
+        </li>
+      );
+    }
+  }
 }
 
 /**
@@ -96,7 +135,7 @@ function Record({ history }: { history: Visits["history"] }) {
 /** A past visit's line: what it was and who did it, or that it was cancelled. */
 function pastLine(visit: VisitSummary): string {
   const after = visit.status === "cancelled" ? [visits.cancelled] : technicianOf(visit);
-  return [visitName(visit.type), ...after].join(" · ");
+  return [visitTitle(visit), ...after].join(" · ");
 }
 
 function Fact({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -111,27 +150,21 @@ function Fact({ label, value, note }: { label: string; value: string; note?: str
   );
 }
 
-function VisitList({ list, consultation }: { list: Visits; consultation: Me["consultation"] }) {
-  const { upcoming, past } = list;
+/** Each entry's key: a visit's ID, or the one consultation or booking of its kind. */
+const keyOf = (entry: UpcomingEntry): string => (entry.kind === "visit" ? entry.visit.id : entry.kind);
+
+function VisitList({ list, me }: { list: Visits; me: Me }) {
+  const { past } = list;
+  const upcoming = upcomingEntries(list.upcoming, me.consultation, me.being_booked);
   return (
     <>
       <h2 className={styles.label}>{visits.upcoming}</h2>
-      {upcoming.length === 0 && consultation === null ? (
+      {upcoming.length === 0 ? (
         <p className={styles.none}>{visits.none}</p>
       ) : (
         <ul className={styles.upcoming}>
-          {/* A booking's consultation, not yet in FSM, has no page of its own to open. */}
-          {upcoming.length === 0 && consultation !== null && (
-            <li className={styles.card}>
-              <UpcomingCard
-                date={consultation.date}
-                parts={[VISIT_TYPES.consultation, WINDOW_HOURS[consultation.window]]}
-                prepaid={false}
-              />
-            </li>
-          )}
-          {upcoming.map((visit) => (
-            <Upcoming key={visit.id} visit={visit} />
+          {upcoming.map((entry) => (
+            <UpcomingItem key={keyOf(entry)} entry={entry} />
           ))}
         </ul>
       )}
@@ -175,7 +208,7 @@ export function VisitsScreen() {
       {whenLoaded(loaded, {
         loading: <Loading />,
         failed: <PageFailed onRetry={retry} offlineLine={visits.offline} />,
-        loaded: (list) => <VisitList list={list} consultation={me.consultation} />,
+        loaded: (list) => <VisitList list={list} me={me} />,
       })}
     </Shell>
   );

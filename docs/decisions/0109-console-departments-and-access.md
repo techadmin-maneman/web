@@ -1,6 +1,6 @@
 # 0109. The console by departments, and who may do what in it
 
-- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, and for actions by level
+- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care, Operations, Finance and Growth by place
 - Date: 2026-10-02
 
 ## Context
@@ -15,7 +15,7 @@ Until now anyone Cloudflare Access let into the ops console could do everything 
 | ------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | Operations    | Dispatch, today's tasks, visits, technicians and their leave and phones, stock, held bookings re-tried               | Tasks, Dispatch, Technicians, Stock                    |
 | Customer Care | Clients (record, photos, consents, pieces, hair profile, a phoned-in address), grievances, number changes, deletions | Clients, Grievances, Number changes, Deletion requests |
-| Finance       | Payments, refunds, no-show charges and their disputes, credits, discount codes, prices                               | No-shows, Prices, Discount codes                       |
+| Finance       | Payments, refunds, no-show charges and their disputes, credits, discount codes, prices                               | Payments, Prices, Discount codes                       |
 | Growth        | Referrals and invites, the waitlist, the service area and launching it                                               | Referrals, Waitlist, Service area                      |
 | Admin         | Settings (rules, services, blackout days, day times, consumables, job sheet, storage), staff and access              | Settings, Staff                                        |
 
@@ -42,7 +42,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 - A person Access lets in who is not on the list, or is switched off, is refused everything (`403 not_permitted`) except `GET /api/whoami`, which tells the console to say so, and the health check.
 - A route `ROUTE_NEEDS` does not list is refused. HEAD asks what GET asks, as Hono answers it with the GET route.
-- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today only the Staff routes do. So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
+- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today the Staff routes, Customer Care's, Operations', Finance's and Growth's do (below, "Customer Care by place", "Operations by place", "Finance by place" and "Growth by place"). So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
 
 **The owner is the national super-admin:** every department at Manage, nationally.
 
@@ -50,15 +50,17 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 **How geography will narrow every list and record.** Each record's place is a city, found through a pincode (`serviceable_pincodes.city`), then that city's zone:
 
-- a client: the pincode of their current address, or before they have one, the pincode they booked or joined the waitlist with;
-- a visit, a hold, a payment, a refund, a no-show and its dispute: the pincode of the visit's address;
+- a client: the pincode of their current address; before they have one, their latest visit's, then the pincode they last booked at, asked for a consultation at, or joined the waitlist with. The first of these in one of our cities wins;
+- a visit, a no-show and its dispute: the pincode of the visit's address;
+- a hold: the pincode it was booked at, else the visit it moves;
+- a payment: its visit's, else the hold it paid for, else its client's; a refund: its payment's;
 - a grievance, a number change, a deletion request, a referral: the client's;
-- a waitlist entry and a launch: its own pincode;
-- a technician and a kit: the city set on the technician (a column to add), until then national only;
+- a waitlist entry, a consultation asked for, and a launch: its own pincode;
+- a technician and a kit: the city ops set on the technician on the Technicians screen (`technicians.city`); none, national only;
 - a task: its group's department, and its record's city;
 - a setting, a price, a code, a service, a consumable, the job sheet, a blackout day, the day times: national. View may read them from any place; changing them needs a national grant.
 
-A record whose city cannot be found is shown only to national grants. Each route that narrows its reads and writes this way changes its line in `ROUTE_NEEDS` to `ownPlaces`, with a test that a city grant sees its own city's records and not another's.
+A record whose city cannot be found is shown only to national grants. `src/domain/places.ts` finds each record's city, for one record (`cityOf`) or as a condition a list's query keeps to (`withinReach`); `placesReached` in `src/policy/access.ts` names the cities a caller's grants reach in a department at a level: everywhere with a national grant, and for everyone while the list is not enforced. Each route that narrows its reads and writes this way changes its line in `ROUTE_NEEDS` to `ownPlaces`, with a test that a city grant sees its own city's records and not another's.
 
 **Enforcement is a switch.** `staff_access_mode` holds it, off to begin with. Off, nothing is refused but the switch, the tokens and a token's change to the list (above), and each call the list would have refused is logged (`staff_access_would_refuse`, with the route and what it asked; the call's `ops.call` audit entry, under the same request ID, names the person; a GET of a path the person looked at within the ten minutes before has none of its own, and the first look's entry names them, ADR 0031). On, it is refused (`staff_access_refused`) after its audit entry is written. Every change to the list, the switch or the tokens is audited under the person who made it (`staff.set`, `staff.enforce`, `staff.token_add`, `staff.token_remove`).
 
@@ -89,6 +91,36 @@ Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_k
 - The console asks what the API asks. A button shows only where `may_call` names its route, and a choice inside a route that asks more (waiving a no-show, refunding a disputed charge) only where the caller's grants reach it by the same rules (`useAccess()` in `apps/ops/src/lib/access.ts`, which reuses `meetsNeed` and `can`). A View sees the data with no Act or Manage buttons; a settings panel shows its figures without a Save.
 - A refusal the API still makes, as when access changes while a page is open, reads "Your access doesn't include this. Ask an admin."
 - Tasks shows each department the groups it decides (`TASK_DEPARTMENTS` in `src/policy/console-routes.ts`): `GET /api/tasks` asks View in any department and returns only the caller's departments' groups, and taking or giving a task asks Act in the department of its group.
+
+## Customer Care by place (amended 4 October 2026)
+
+- Every Customer Care route keeps to the caller's cities and is `ownPlaces`: finding a client by number or by part of a name or number, the client's record, photographs, consents, pieces, hair profile and an address given on the phone, and the lists and decisions of grievances, number changes and deletion requests.
+- The cities are those the caller's grants reach at the route's own level (`routeReach` in `src/http/staff-access.ts`). Customer Care View nationally with Act in Delhi reads every client but corrects, answers and decides only in Delhi.
+- A list leaves out what is elsewhere. A client or a request elsewhere is answered `404 not_found`, as one that does not exist, so a city lead cannot tell that it does.
+
+## Operations by place (amended 4 October 2026)
+
+- Every Operations route keeps to the caller's cities and is `ownPlaces`, at the route's own level, as Customer Care's do: the dispatch board and its moves, Tasks, booking a visit, technicians, their leave and phones, and stock.
+- The dispatch board shows the visits in the caller's cities, and the technicians there or holding one of those visits; the cities it can be narrowed to are the caller's. A visit or a move elsewhere is `404 not_found`, and a job is given only to a technician in the caller's cities, or kept on the one the board showed it with.
+- Tasks shows each group's tasks where the caller's grants in the department that decides it reach the task's record (`tasksWithin` in `src/domain/tasks.ts`). Taking, giving or closing a task elsewhere is `404 not_found`.
+- A visit is booked only for a client in the caller's cities, and only the technicians there are offered. A visit elsewhere is not cancelled or closed by hand: it is answered as one that does not exist.
+- A technician is seen, changed, switched off or on, given leave or a phone revoked only in the caller's cities. A technician is given only a city the caller's Operations Manage reaches; no city, only with a national grant.
+- Stock shows the kits of the technicians in the caller's cities. The central store is in no city: it, and a delivery into it, need a national grant.
+- Held bookings wait on FSM, which is leaving: retrying, stopping and linking one still need a national grant.
+
+## Finance by place (amended 4 October 2026)
+
+- A day's money, no-shows and their disputes, a client's credits and a code on a visit keep to the caller's cities and are `ownPlaces`, at the route's own level, as Customer Care's are. The day's figures and charges count only what was paid, refunded or kept in those cities. A case, a dispute, a client or a visit elsewhere is `404 not_found`.
+- Waiving a no-show and refunding a disputed charge ask Finance Manage in the record's own city (`permitsOn` in `src/http/staff-access.ts`). Finance Act nationally with Manage in Delhi charges and upholds anywhere, but waives and refunds only in Delhi; elsewhere it is `403 not_permitted`.
+- Codes, prices and the price book are the same in every place: any place's Finance View reads them. Making or switching off a code and changing a price still need a national grant.
+- Refunding a held booking stays national: held bookings wait on FSM, which is leaving.
+
+## Growth by place (amended 4 October 2026)
+
+- Held referrals, referrers, attaching an invite, the waitlist and launching a pincode keep to the caller's cities and are `ownPlaces`, at the route's own level.
+- A held referral is where the friend is, and a referrer where they themselves are, wherever their friends are. One elsewhere is left out of its list; deciding a referral or attaching an invite to a client elsewhere is `404 not_found`.
+- The waitlist lists the pincodes in the caller's cities. A pincode is launched only with Growth Manage in its city; elsewhere it is refused, `403 not_permitted`, not hidden, since whether we serve a pincode is no secret.
+- Unlike prices, the service area holds every city's waitlist: it lists every pincode we know, with how many wait in each. Reading and changing it still need a national grant.
 
 ## Consequences
 

@@ -35,7 +35,7 @@ const alert = (message: string) => {
   return Promise.resolve();
 };
 
-const CLIENT_LINK = `http://ops.localhost:4323/clients/${PERSON}`;
+const CLIENT_LINK = `http://ops.localhost:4323/clients/${PERSON}/payments`;
 
 function invoicePass(
   fsm: FsmProvider,

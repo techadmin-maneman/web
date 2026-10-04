@@ -1,11 +1,11 @@
-// What the lead and try-on routes check about the visitor: their address, kept
-// only as a salted hash, and their Turnstile token.
+// What the site's forms, the try-on and the client app's login check about the
+// visitor: their address, kept only as a salted hash, and their Turnstile token.
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
 import { countOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
-import { indiaDate, indiaHour } from "../lib/india-time.ts";
+import { indiaHour } from "../lib/india-time.ts";
 import { TURNSTILE_TEST_TOKEN, verifyTurnstile, type TurnstileResult } from "../providers/turnstile.ts";
 
 export interface Visitor {
@@ -35,17 +35,21 @@ export async function checkTurnstile(c: Context<AppEnv>, token: string, visitor:
     token,
     ip: visitor.ip,
     fetch: c.var.deps.fetch,
+    log: c.var.log,
   });
   if (verdict.result === "unavailable") await countUnavailable(c, verdict.detail);
+  else await c.var.deps.resolveAlert(TURNSTILE_UNAVAILABLE);
   return verdict.result;
 }
 
 /** Visitors turned away in one hour before ops are told: one is a blip, five is an outage. */
 const UNAVAILABLE_PER_HOUR_TO_ALERT = 5;
 
+const TURNSTILE_UNAVAILABLE = "turnstile_unavailable";
+
 /**
- * Turnstile unavailable turns every lead and try-on away (ADR 0011), so it is
- * logged, counted by the hour, and told to ops once a day while it lasts
+ * Turnstile unavailable turns every lead, try-on and client login away (ADR 0011), so it is
+ * logged, counted by the hour, and told to ops; the alert closes once Turnstile answers again
  * (docs/decisions/0067-alerts-and-silent-failures.md).
  */
 async function countUnavailable(c: Context<AppEnv>, detail: string): Promise<void> {
@@ -55,9 +59,9 @@ async function countUnavailable(c: Context<AppEnv>, detail: string): Promise<voi
   const failed = await countOne(c.env.DB, { scope: "turnstile_unavailable", key: "all", window: indiaHour(now) });
   if (failed < UNAVAILABLE_PER_HOUR_TO_ALERT) return;
   await deps.alertOnce({
-    key: `turnstile_unavailable:${indiaDate(now)}`,
+    key: TURNSTILE_UNAVAILABLE,
     message:
-      `Turnstile could not check ${String(failed)} visitors in the last hour (${detail}), so their leads and ` +
-      "try-ons were turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
+      `Turnstile could not check ${String(failed)} visitors in the last hour (${detail}), so their bookings, ` +
+      "try-ons and app logins were turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
   });
 }

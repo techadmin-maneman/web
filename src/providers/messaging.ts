@@ -1,5 +1,6 @@
-// WhatsApp messaging, behind an interface. The messaging consumer is the only
-// caller; nothing else knows which BSP is behind it.
+// WhatsApp messaging, behind an interface. Its callers are the messaging
+// consumer, the login codes and the word that an account is deleted
+// (src/queues/messaging.ts); none of them knows which BSP is behind it.
 
 import type { Logger } from "../log.ts";
 import { createEvolutionMessaging, type EvolutionSettings } from "./evolution.ts";
@@ -28,6 +29,8 @@ export interface OutboundMessage {
   readonly params: readonly string[];
   /** A publicly reachable image to send with the text. */
   readonly mediaUrl?: string;
+  /** The link that stops messages of this kind, which the text ends with. */
+  readonly stopLink?: string;
 }
 
 /** Why the bridge cannot reach WhatsApp. Each has its own fix (src/scheduled/whatsapp-bridge.ts). */
@@ -53,8 +56,13 @@ export function createMessagingProvider(
 /** Local and test stand-in: sends nothing, logs no number, reports success. */
 export function createStubMessaging(log: Logger): MessagingProvider {
   return {
-    send: ({ template, params, mediaUrl }) => {
-      log.info("messaging_stub_send", { template, params: params.length, media: mediaUrl !== undefined });
+    send: ({ template, params, mediaUrl, stopLink }) => {
+      log.info("messaging_stub_send", {
+        template,
+        params: params.length,
+        media: mediaUrl !== undefined,
+        stop_link: stopLink !== undefined,
+      });
       return Promise.resolve({ ok: true, providerMessageId: `stub-${crypto.randomUUID()}` });
     },
     connection: () => Promise.resolve({ open: true }),

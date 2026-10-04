@@ -7,22 +7,24 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
+import { reachBinding, withinReach } from "../domain/places.ts";
 import { decideHeldReferral } from "../domain/referral-grants.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { queueMessage } from "../http/queue-message.ts";
+import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { HOLD_REASONS } from "../policy/fraud-holds.ts";
 import { dueAt } from "../policy/tasks.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 
 const PersonRef = z.object({ person_id: z.uuid(), name: z.string() }).strict();
 
 const heldRoute = createRoute({
   method: "get",
   path: "/api/referrals/held",
-  summary: "Referral grants held for review, oldest first",
+  summary: "Referral grants held for review whose friend is in the caller's cities, oldest first",
   responses: {
     200: {
       description: "Held grants",
@@ -75,12 +77,13 @@ const decisionRoute = createRoute({
   responses: {
     200: { description: "Decided", ...json(z.object({ state: z.enum(["approved", "rejected"]) }).strict()) },
     400: errorResponse("invalid_request: a decision needs a reason"),
-    404: errorResponse("not_found: no held grant by that ID"),
+    404: errorResponse("not_found: no held grant by that ID in the caller's cities"),
   },
 });
 
 export function registerOpsReferrals(app: App): void {
   app.openapi(heldRoute, async (c) => {
+    const reached = await routeReach(c);
     // A held grant's row was last written when the fraud rules held it, which the Tasks board waits from too.
     const { results } = await c.env.DB.prepare(
       `SELECT r.id, rc.person_id AS referrer_id, rp.name AS referrer_name, r.referred_person_id,
@@ -88,17 +91,19 @@ export function registerOpsReferrals(app: App): void {
        FROM referral_attributions r JOIN referral_codes rc ON rc.code = r.code
        JOIN people rp ON rp.id = rc.person_id JOIN people fp ON fp.id = r.referred_person_id
        JOIN appointments a ON a.id = r.first_fit_appointment_id
-       WHERE r.grant_state = 'held' ORDER BY r.updated_at`,
-    ).all<{
-      id: string;
-      referrer_id: string;
-      referrer_name: string;
-      referred_person_id: string;
-      referred_name: string;
-      window_start: string;
-      fraud_signals: string | null;
-      held_since: string;
-    }>();
+       WHERE r.grant_state = 'held' AND ${withinReach("referral", "r", "?1")} ORDER BY r.updated_at`,
+    )
+      .bind(reachBinding(reached))
+      .all<{
+        id: string;
+        referrer_id: string;
+        referrer_name: string;
+        referred_person_id: string;
+        referred_name: string;
+        window_start: string;
+        fraud_signals: string | null;
+        held_since: string;
+      }>();
     const sla = (await opsInputs(c)).taskSlaHours;
     const known = new Set<string>(HOLD_REASONS);
     return c.json(
@@ -126,6 +131,7 @@ export function registerOpsReferrals(app: App): void {
     if (needsReason("referral", decision) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
     }
+    if (!(await withinRouteReach(c, "referral", id))) return c.json(errorBody("not_found", requestId), 404);
     const staff = staffOf(c);
     const now = deps.now();
     const outcome = await decideHeldReferral(c.env.DB, {
@@ -145,9 +151,7 @@ export function registerOpsReferrals(app: App): void {
       now,
     });
     if (outcome === null) return c.json(errorBody("not_found", requestId), 404);
-    for (const messageId of outcome.messageIds) {
-      await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
-    }
+    for (const messageId of outcome.messageIds) await queueMessage(c, messageId);
     return c.json({ state: outcome.state }, 200);
   });
 }

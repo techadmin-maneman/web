@@ -49,6 +49,8 @@ const ME = {
     window: "morning",
     window_label: "before noon",
     place: "Sector 65, Gurgaon 122018",
+    requested: false,
+    one_visit: false,
   },
   next_visit: null,
   credits: null,
@@ -373,6 +375,13 @@ async function openApp(
   });
   await page.clock.install(now === undefined ? {} : { time: now });
   if (checkout !== undefined) await page.route("https://checkout.razorpay.com/v1/checkout.js", checkout);
+  // The login readies Turnstile on its first screen; here it gets one that passes at once.
+  await page.route("https://challenges.cloudflare.com/turnstile/**", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: 'window.turnstile = { render: (box, given) => { given.callback("token"); return "fake"; }, reset() {}, remove() {} };',
+    }),
+  );
   await page.route("**/api/**", (route) => {
     const answer = api[new URL(route.request().url()).pathname] ?? signedOut;
     return answer(route);
@@ -728,6 +737,7 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
     kept: 0,
     destination: "upi",
     cancelled: false,
+    refund_pending: false,
   };
   const api = (notice: "free" | "late"): Api => ({
     "/api/me": json(ME_BOOKING),

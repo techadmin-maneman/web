@@ -37,6 +37,36 @@ Environment, version and database reachability
 }
 ```
 
+### POST /api/client-errors
+
+Report an error in the app's own page
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientErrorReport"
+}
+```
+
+**204**: Logged
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/auth/otp
 
 Send a login code on WhatsApp. The answer is the same whether or not the number has a booking
@@ -65,6 +95,14 @@ Request body:
 }
 ```
 
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **429**: rate_limited: too many codes for this number today, or from this address this hour
 
 ```json
@@ -73,7 +111,7 @@ Request body:
 }
 ```
 
-**503**: busy: today's ceiling on codes is reached
+**503**: busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached
 
 ```json
 {
@@ -109,7 +147,7 @@ Request body:
 }
 ```
 
-**429**: too_early, or rate_limited
+**429**: too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour
 
 ```json
 {
@@ -161,7 +199,7 @@ Request body:
 }
 ```
 
-**429**: too_early, or rate_limited
+**429**: too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour
 
 ```json
 {
@@ -241,7 +279,7 @@ The Home card: who the client is and what is booked
 
 ### GET /api/profile
 
-The profile: name, number, address, consents, and any number change or deletion under way
+The profile: name, number, address, consents, any number change or deletion under way, and the latest concerns raised
 
 **200**: The profile
 
@@ -332,6 +370,22 @@ Request body:
 ```
 
 **401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: visit_booked: a visit still to come is in another city, which the address may not leave
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_served: the pincode is not one we come to
 
 ```json
 {
@@ -997,7 +1051,7 @@ The windows open for a service over 14 days
 }
 ```
 
-**422**: not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system
+**422**: not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not come to
 
 ```json
 {
@@ -1080,7 +1134,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system
+**422**: not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not come to
 
 ```json
 {
@@ -1184,7 +1238,7 @@ Request body:
 
 ### POST /api/holds/{id}/discount-code
 
-Take a discount code off the hold's price, before Checkout has its order
+Take a discount code off the hold's price, while nothing is paid for it
 
 Request body:
 
@@ -1218,7 +1272,7 @@ Request body:
 }
 ```
 
-**409**: already_discounted: the hold carries a code; hold_expired; price_settled: Checkout has its order, or it is paid for; ops_assisted
+**409**: already_discounted: the hold carries a code; hold_expired; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted
 
 ```json
 {
@@ -1244,7 +1298,7 @@ Request body:
 
 ### DELETE /api/holds/{id}/discount-code
 
-Take the code off the hold again, before Checkout has its order
+Take the code off the hold again, while nothing is paid for it
 
 **200**: The hold, at its price again
 
@@ -1270,7 +1324,7 @@ Take the code off the hold again, before Checkout has its order
 }
 ```
 
-**409**: hold_expired: the hold ran out; price_settled: Checkout has its order, or it is paid for; ops_assisted
+**409**: hold_expired: the hold ran out; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted
 
 ```json
 {
@@ -1375,6 +1429,14 @@ Request body:
 }
 ```
 
+**202**: The visit is cancelled, and its refund is on its way
+
+```json
+{
+  "$ref": "#/components/schemas/CancelTerms"
+}
+```
+
 **401**: session_required
 
 ```json
@@ -1391,7 +1453,7 @@ Request body:
 }
 ```
 
-**503**: unavailable: FSM did not answer; nothing changed
+**503**: unavailable: the visit could not be cancelled just now; nothing changed
 
 ```json
 {
@@ -1573,9 +1635,23 @@ Everything held about the client, to download
 }
 ```
 
+### GET /api/me/export.html
+
+Everything held about the client, as a page to download and read
+
+**200**: An HTML file, maneman-my-data.html, labelled and in India's time
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/grievances
 
-Raise a grievance about how the client's data is handled. The same words, still open, are one
+Raise a grievance about how the client's data is handled. The same words, still open, are one; 5 new ones a day
 
 Request body:
 
@@ -1605,6 +1681,14 @@ Request body:
 ```
 
 **401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: 5 new grievances a day
 
 ```json
 {
@@ -1648,6 +1732,7 @@ Request body:
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -1659,6 +1744,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "not_served",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -1678,6 +1764,8 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",
@@ -1734,6 +1822,11 @@ Request body:
           ],
           "additionalProperties": false,
           "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+        },
+        "earliest_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [
@@ -1812,6 +1905,76 @@ Request body:
 }
 ```
 
+### ClientErrorReport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error",
+        "unhandled_rejection",
+        "render",
+        "outbox_gave_up"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "The page's path, with no query or fragment."
+    },
+    "stack": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "The script the error was thrown in."
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "outbox_gave_up: the write's kind, as `checklist`."
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "outbox_gave_up: the code the API refused it with."
+    },
+    "status": {
+      "type": "integer",
+      "description": "outbox_gave_up: the refusal's HTTP status."
+    },
+    "request_id": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+    }
+  },
+  "required": [
+    "kind",
+    "message",
+    "path"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### LoginChallenge
 
 ```json
@@ -1866,10 +2029,16 @@ Request body:
       "type": "string",
       "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
     }
   },
   "required": [
-    "mobile"
+    "mobile",
+    "turnstile_token"
   ],
   "additionalProperties": false
 }
@@ -2022,16 +2191,26 @@ Request body:
         "place": {
           "type": "string",
           "description": "Where it is: the saved address (locality, city and pincode), else the booking's city."
+        },
+        "requested": {
+          "type": "boolean",
+          "description": "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp."
+        },
+        "one_visit": {
+          "type": "boolean",
+          "description": "The consultation and the first fit in one visit."
         }
       },
       "required": [
         "date",
         "window",
         "window_label",
-        "place"
+        "place",
+        "requested",
+        "one_visit"
       ],
       "additionalProperties": false,
-      "description": "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit."
+      "description": "A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is on record. Null once one is, and once its day has passed."
     },
     "next_visit": {
       "anyOf": [
@@ -2073,13 +2252,23 @@ Request body:
             "paid": {
               "type": "boolean",
               "description": "Paid for in money, rather than free or covered by a credit."
+            },
+            "one_visit": {
+              "type": "boolean",
+              "description": "A consultation and fit in one visit."
+            },
+            "told": {
+              "type": "boolean",
+              "description": "Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits."
             }
           },
           "required": [
             "type",
             "date",
             "window",
-            "paid"
+            "paid",
+            "one_visit",
+            "told"
           ],
           "additionalProperties": false
         },
@@ -2430,6 +2619,17 @@ Request body:
         }
       ]
     },
+    "service": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -2486,6 +2686,7 @@ Request body:
     "ends_at",
     "length_minutes",
     "type",
+    "service",
     "status",
     "stage",
     "prepaid",
@@ -2539,11 +2740,16 @@ Request body:
         }
       ],
       "description": "When the soonest expire."
+    },
+    "expiring_visits": {
+      "type": "integer",
+      "description": "How many of them expire then."
     }
   },
   "required": [
     "visits",
-    "earliest_expiry"
+    "earliest_expiry",
+    "expiring_visits"
   ],
   "additionalProperties": false
 }
@@ -2795,6 +3001,97 @@ Request body:
         "requested_at"
       ],
       "additionalProperties": false
+    },
+    "deletion_rejected": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "decided_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ops' reason, which they write knowing the client reads it."
+            }
+          },
+          "required": [
+            "decided_at",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's latest request to delete their account that ops rejected, for 30 days after, while no other request is waiting."
+    },
+    "grievances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "text": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "resolved"
+            ]
+          },
+          "raised_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "response": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ops' answer, which they write knowing the client reads it; null while open."
+          },
+          "answered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "state",
+          "raised_at",
+          "response",
+          "answered_at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The client's latest 5 concerns about their data, newest first: every one still open, and those answered within 30 days."
     }
   },
   "required": [
@@ -2805,7 +3102,9 @@ Request body:
     "consents",
     "number_change",
     "number_change_decided",
-    "deletion"
+    "deletion",
+    "deletion_rejected",
+    "grievances"
   ],
   "additionalProperties": false
 }
@@ -3357,6 +3656,17 @@ Request body:
         }
       ]
     },
+    "service": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -3499,6 +3809,7 @@ Request body:
     "ends_at",
     "length_minutes",
     "type",
+    "service",
     "status",
     "stage",
     "prepaid",
@@ -3672,6 +3983,18 @@ Request body:
     "disputable": {
       "type": "boolean",
       "description": "Whether the client may dispute the charge now: one that took something, not disputed yet."
+    },
+    "dispute_closed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
     }
   },
   "required": [
@@ -3679,7 +4002,8 @@ Request body:
     "waited_minutes",
     "charge",
     "dispute",
-    "disputable"
+    "disputable",
+    "dispute_closed_at"
   ],
   "additionalProperties": false
 }
@@ -4514,6 +4838,21 @@ Request body:
       ],
       "description": "Where credits added came from; null for any other entry."
     },
+    "referral_side": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "referrer",
+            "friend"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this client's own fit through an invite. Null for any other entry."
+    },
     "no_show": {
       "anyOf": [
         {
@@ -4532,6 +4871,7 @@ Request body:
     "visits",
     "visit",
     "source",
+    "referral_side",
     "no_show"
   ],
   "additionalProperties": false
@@ -5747,6 +6087,10 @@ Request body:
     "cancelled": {
       "type": "boolean",
       "description": "false: the terms only; true: the visit is cancelled."
+    },
+    "refund_pending": {
+      "type": "boolean",
+      "description": "true: the visit is cancelled, and its refund is still to be asked of Razorpay, which happens within minutes."
     }
   },
   "required": [
@@ -5760,7 +6104,8 @@ Request body:
     "refund",
     "kept",
     "destination",
-    "cancelled"
+    "cancelled",
+    "refund_pending"
   ],
   "additionalProperties": false
 }

@@ -9,17 +9,23 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, unreachable, type Job, type JobSummary } from "../api.ts";
-import { forgetOld, keepDay, keepJob, keptDay, keptJob, keptNames } from "../store/jobs.ts";
+import { forgetOld, keepDay, keepJob, keptDay, keptJob, keptJobs, keptNames, type HeldJob } from "../store/jobs.ts";
 import { unsentJobs } from "../store/outbox.ts";
 import { todayInIndia } from "./when.ts";
 
+interface Failed {
+  readonly state: "failed";
+  /** The API's ID for the call that failed, for the technician to quote; null when nothing answered. */
+  readonly requestId: string | null;
+}
+
 export type Loaded<T> =
   | { readonly state: "loading" }
-  | { readonly state: "failed" }
+  | Failed
   /** `fromPhone` is true when this is what the phone kept, not what the API just said. */
   | { readonly state: "loaded"; readonly value: T; readonly fromPhone: boolean };
 
-const FAILED = { state: "failed" } as const;
+const failed = (requestId: string | null): Failed => ({ state: "failed", requestId });
 
 /** Lets go of whatever the phone no longer needs, now that a fresh day says what that is. */
 async function forgetStale(): Promise<void> {
@@ -36,9 +42,9 @@ export async function loadDay(date: string): Promise<Loaded<readonly JobSummary[
     await forgetStale().catch(() => undefined);
     return { state: "loaded", value: answer.body.jobs, fromPhone: false };
   }
-  if (!unreachable(answer)) return FAILED;
+  if (!unreachable(answer)) return failed(answer.requestId);
   const kept = await keptDay(date).catch(() => null);
-  return kept === null ? FAILED : { state: "loaded", value: kept, fromPhone: true };
+  return kept === null ? failed(answer.requestId) : { state: "loaded", value: kept, fromPhone: true };
 }
 
 export async function loadJob(id: string): Promise<Loaded<Job>> {
@@ -47,9 +53,9 @@ export async function loadJob(id: string): Promise<Loaded<Job>> {
     await keepJob(answer.body).catch(() => undefined);
     return { state: "loaded", value: answer.body, fromPhone: false };
   }
-  if (!unreachable(answer)) return FAILED;
+  if (!unreachable(answer)) return failed(answer.requestId);
   const kept = await keptJob(id).catch(() => null);
-  return kept === null ? FAILED : { state: "loaded", value: kept, fromPhone: true };
+  return kept === null ? failed(answer.requestId) : { state: "loaded", value: kept, fromPhone: true };
 }
 
 function useKept<T>(load: () => Promise<Loaded<T>>, watch: unknown = null): readonly [Loaded<T>, () => void] {
@@ -63,7 +69,7 @@ function useKept<T>(load: () => Promise<Loaded<T>>, watch: unknown = null): read
         if (current) setLoaded(answer);
       },
       () => {
-        if (current) setLoaded(FAILED);
+        if (current) setLoaded(failed(null));
       },
     );
     return () => {
@@ -86,21 +92,19 @@ export function useDay(date: string): readonly [Loaded<readonly JobSummary[]>, (
 /**
  * Once the day's list has arrived, each card it names is fetched and kept, so
  * the phone opens them in a basement: "today's and tomorrow's jobs and client
- * cards are cached" (docs/prompts/phase2-frontend.md). A locked job has no card
- * to keep, and the first call that fails ends the round: there is no signal,
- * or no room.
+ * cards are cached" (docs/prompts/phase2-frontend.md). The cards are fetched
+ * side by side, not one after another. A locked job has no card to keep, and a
+ * card that cannot be fetched or kept is let go: there is no signal, or no room.
  */
 export async function keepCards(jobs: readonly JobSummary[]): Promise<void> {
-  for (const job of jobs) {
-    if (!job.unlocked) continue;
-    const answer = await api.job(job.id);
-    if (!answer.ok) return;
-    try {
-      await keepJob(answer.body);
-    } catch {
-      return;
-    }
-  }
+  const unlocked = jobs.filter((job) => job.unlocked);
+  await Promise.all(unlocked.map((job) => keepCard(job.id)));
+}
+
+async function keepCard(id: string): Promise<void> {
+  const answer = await api.job(id);
+  if (!answer.ok) return;
+  await keepJob(answer.body).catch(() => undefined);
 }
 
 /**
@@ -113,26 +117,36 @@ export function useJob(id: string, watch: unknown = null): readonly [Loaded<Job>
   return useKept(load, watch);
 }
 
-/**
- * The client names the phone holds, by job. The day's list carries none — the
- * API gives a client only with the card, and only from the day before — so the
- * rows, the waiting screen and the close-out all read what `keepCards` kept.
- */
-export function useNames(watch: unknown = null): ReadonlyMap<string, string> {
-  const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map());
+/** What a read of the phone's store answers, read again whenever `watch` changes. */
+function useStored<T>(read: () => Promise<T>, nothing: T, watch: unknown): T {
+  const [found, setFound] = useState<T>(nothing);
   useEffect(() => {
     let current = true;
-    void keptNames().then(
-      (found) => {
-        if (current) setNames(found);
+    void read().then(
+      (answer) => {
+        if (current) setFound(answer);
       },
       () => {
-        // A store that will not open has no names to give; the rows go without.
+        // A store that will not open has nothing to give; the screens go without.
       },
     );
     return () => {
       current = false;
     };
-  }, [watch]);
-  return names;
+  }, [read, watch]);
+  return found;
+}
+
+/**
+ * The client names the phone holds, by job, from the cards `keepCards` kept:
+ * what the close-out names each job by, and the rows of a day the phone kept
+ * before the day's list carried names.
+ */
+export function useNames(watch: unknown = null): ReadonlyMap<string, string> {
+  return useStored<ReadonlyMap<string, string>>(keptNames, new Map(), watch);
+}
+
+/** Each job the phone holds, locked or not, for the screens that must name a job whose card has gone. */
+export function useHeldJobs(watch: unknown = null): ReadonlyMap<string, HeldJob> {
+  return useStored<ReadonlyMap<string, HeldJob>>(keptJobs, new Map(), watch);
 }

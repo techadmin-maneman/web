@@ -1,18 +1,18 @@
-// Runs every five minutes. D1 is the replay source: anything that should have
-// moved on and has not is put back on its queue from here.
+// The sweeper's steps. D1 is the replay source: anything that should have moved on and has not is put back on its
+// queue from here. Each step is a cron job of its own, so one that fails skips none of the others; the cron's table
+// says how often each runs (src/scheduled/cron.ts).
 //
 //   leads       pending over 2 minutes, or failed under 10 attempts   -> crm-sync
-//   bookings    a booked lead never put on its queue, after 2 minutes  -> fsm-sync
 //   erasures    a person erased whose CRM record is not yet blanked     -> crm-sync
 //               or whose FSM contact is not yet anonymised              -> fsm-sync
 //   job steps   a technician's step not written to FSM for 15 minutes -> fsm-sync
-//               and after an hour, an alert naming it
+//               and after an hour, an alert naming it; once FSM is switched off, given up on, one alert a visit
 //   messages    queued but unsent for over 5 minutes, while WhatsApp is up -> messaging
 //               and failed after a day (src/scheduled/unsent-messages.ts)
 //   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
 //   moves       a dispatch move still open after five minutes: its claimed time let go, the move closed
-//   hourly      the AILabTools balance, against AILAB_CREDIT_FLOOR
+//   credits     the AILabTools balance, against AILAB_CREDIT_FLOOR
 //   expiry      abandoned uploads after an hour, results once RESULT_RETENTION_DAYS is up (14 in production,
 //               3 on staging), photos once their jobs are done; a client's try-on is kept on its look's day, and
 //               any other photo's small copy goes with the photo or the look (docs/decisions/0084)
@@ -20,10 +20,12 @@
 //   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
 //               try-on sessions once expired, and app sessions 30 days after they ended
 
+import type { FieldRecord } from "../config/field-record.ts";
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { unfinishedMovesLetGo } from "../domain/dispatch.ts";
+import { rejectAllPending } from "../domain/job-events.ts";
 import { keepOrLetGo, letCopiesGoWith, letFittedLooksGo, type ExpiringTryOn } from "../domain/kept-try-ons.ts";
 import { failJob } from "../domain/tryon.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
@@ -41,6 +43,7 @@ const PENDING_GRACE_MS = 2 * MINUTE_MS;
 const JOB_EVENT_GRACE_MS = 15 * MINUTE_MS;
 /** A step still not in FSM after this has outlived several sends, and ops are told. */
 const JOB_EVENT_ALERT_AFTER_MS = 60 * MINUTE_MS;
+const NEVER_WRITTEN = "FSM was switched off before it was written";
 /** A submit that started this long ago and never recorded a task died part-way. */
 const SUBMIT_ABANDONED_MS = 10 * MINUTE_MS;
 /** Downloads are retried every sweep at first, then hourly until the URL expires. */
@@ -52,7 +55,7 @@ const BATCH_LIMIT = 100;
 /**
  * Most looks past their day expired a run. Keeping a client's on its day costs about eight calls to D1 and R2
  * (src/domain/kept-try-ons.ts), and a run may make 1,000 such calls in all (src/lib/call-budget.ts): 40 of them take
- * about 320, and the next run, five minutes on, takes the rest.
+ * about 320, and the next run takes the rest.
  */
 const EXPIRY_BATCH = 40;
 const IDEMPOTENCY_TTL_MS = DAY_MS;
@@ -78,11 +81,18 @@ export interface SweepSummary {
   /** Clients' try-ons kept on their looks' day, and kept looks let go once the first fit was photographed. */
   readonly tryOnsKept: number;
   readonly keptLooksDeleted: number;
-  /** The AILabTools balance, on the hourly run; undefined on the others. */
-  readonly credits?: number | null;
 }
 
-/** One sweep's run: where it writes, what it calls, and the moment it counts from. */
+/** What each step is given: the cron run's own, or a test's. */
+export interface SweepContext {
+  readonly env: SweepEnv;
+  readonly deps: Dependencies;
+  readonly log: Logger;
+  /** The cron run's outside calls. */
+  readonly budget: CallBudget;
+}
+
+/** One step's run: where it writes, what it calls, and the moment it counts from. */
 interface SweepRun {
   readonly env: SweepEnv;
   readonly db: D1Database;
@@ -93,48 +103,46 @@ interface SweepRun {
   readonly before: (ms: number) => string;
 }
 
+function sweepRun({ env, deps, log }: SweepContext): SweepRun {
+  const now = deps.now();
+  return { env, db: env.DB, deps, log, now, before: (ms: number) => new Date(now.getTime() - ms).toISOString() };
+}
+
+/** A step says what it did only when it did something, so a quiet minute writes no line. */
+function logCount(log: Logger, event: string, count: number): void {
+  if (count > 0) log.info(event, { count });
+}
+
+/**
+ * Every step but the balance check, in the order a sweep once ran them in one pass. The cron runs each as a job of its
+ * own; tests run them together through this.
+ */
 export async function sweep(
   env: SweepEnv,
   deps: Dependencies,
   log: Logger,
   options: {
-    readonly creditFloor: number;
-    /** Whether FSM is connected, so bookings are sent there and an erased person's contact is anonymised. */
+    /** Whether FSM is connected, so an erased person's contact is anonymised there. */
     readonly fsmConnected?: boolean;
-    /** The cron run's outside calls; the hourly balance check takes one. */
+    /** Who holds the record of field work, FSM unless said: a step still waiting for FSM is sent there only on its path. */
+    readonly record?: FieldRecord;
     readonly budget: CallBudget;
   },
 ): Promise<SweepSummary> {
-  const now = deps.now();
-  const run: SweepRun = {
-    env,
-    db: env.DB,
-    deps,
-    log,
-    now,
-    before: (ms: number) => new Date(now.getTime() - ms).toISOString(),
-  };
-
-  const leads = await requeueLeads(run);
-  const erasures = await requeueCrmErasures(run);
-  if (options.fsmConnected === true) await requeueFsmErasures(run);
-  const jobEvents = await requeueJobEvents(run);
-  const messages = await requeueUnsentMessages({
-    db: env.DB,
-    queue: env.MESSAGE_QUEUE,
-    deps,
-    log,
-    now,
-    budget: options.budget,
-  });
-  const { renders, abandoned, downloads, lost } = await requeueTryons(run);
-  const { expired: jobsExpired, kept: tryOnsKept } = await expireJobs(env, now);
-  const photosDeleted = await deletePhotos(env, now);
-  const keptLooksDeleted = await letFittedLooksGo(env, now);
-  await housekeep(run);
-  const credits = await checkCredits(run, options);
-
-  const summary: SweepSummary = {
+  const context: SweepContext = { env, deps, log, budget: options.budget };
+  const leads = await requeueLeads(context);
+  const erasures = await requeueCrmErasures(context);
+  if (options.fsmConnected === true) await requeueFsmErasures(context);
+  if (options.record === "ours") await giveUpOnFsmSteps(context);
+  else await requeueJobEvents(context);
+  const messages = await requeueMessages(context);
+  const { renders, downloads } = await requeueTryons(context);
+  const { expired: jobsExpired, kept: tryOnsKept } = await expireTryOns(context);
+  const photosDeleted = await deletePhotos(context);
+  const keptLooksDeleted = await letKeptLooksGo(context);
+  await letUnfinishedMovesGo(context);
+  await housekeep(context);
+  return {
     leadsRequeued: leads.length,
     erasuresRequeued: erasures.length,
     messagesRequeued: messages.length,
@@ -144,29 +152,12 @@ export async function sweep(
     photosDeleted,
     tryOnsKept,
     keptLooksDeleted,
-    ...(credits === undefined ? {} : { credits }),
   };
-  log.info("sweep", {
-    leads_requeued: summary.leadsRequeued,
-    erasures_requeued: summary.erasuresRequeued,
-    job_events_requeued: jobEvents.length,
-    messages_requeued: summary.messagesRequeued,
-    renders_requeued: summary.rendersRequeued,
-    downloads_requeued: summary.downloadsRequeued,
-    submits_abandoned: abandoned.length,
-    results_lost: lost.length,
-    jobs_expired: jobsExpired,
-    photos_deleted: photosDeleted,
-    try_ons_kept: tryOnsKept,
-    kept_looks_deleted: keptLooksDeleted,
-    credits: credits ?? null,
-  });
-  return summary;
 }
 
 /** Leads that have not reached the CRM, sent to crm-sync again. */
-async function requeueLeads(run: SweepRun): Promise<string[]> {
-  const { db, env, before } = run;
+export async function requeueLeads(context: SweepContext): Promise<string[]> {
+  const { db, env, before, log } = sweepRun(context);
   const leads = await ids(
     db
       .prepare(
@@ -180,12 +171,13 @@ async function requeueLeads(run: SweepRun): Promise<string[]> {
     env.CRM_QUEUE,
     leads.map((id) => ({ lead_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
   );
+  logCount(log, "leads_requeued", leads.length);
   return leads;
 }
 
 /** Erased people whose CRM record is still to be blanked, sent to crm-sync again. */
-async function requeueCrmErasures(run: SweepRun): Promise<string[]> {
-  const { db, env, before } = run;
+export async function requeueCrmErasures(context: SweepContext): Promise<string[]> {
+  const { db, env, before, log } = sweepRun(context);
   const erasures = await ids(
     db
       .prepare(
@@ -199,12 +191,13 @@ async function requeueCrmErasures(run: SweepRun): Promise<string[]> {
     env.CRM_QUEUE,
     erasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
   );
+  logCount(log, "crm_erasures_requeued", erasures.length);
   return erasures;
 }
 
 /** Erased people whose FSM contact is still to be anonymised, sent to fsm-sync: only where FSM is connected. */
-async function requeueFsmErasures(run: SweepRun): Promise<void> {
-  const { db, env, before } = run;
+export async function requeueFsmErasures(context: SweepContext): Promise<void> {
+  const { db, env, before, log } = sweepRun(context);
   // docs/decisions/0049-dpdp.md
   const fsmErasures = await ids(
     db
@@ -219,11 +212,41 @@ async function requeueFsmErasures(run: SweepRun): Promise<void> {
     env.FSM_QUEUE,
     fsmErasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
   );
+  logCount(log, "fsm_erasures_requeued", fsmErasures.length);
+}
+
+/**
+ * Steps that landed before FSM was switched off and never reached it: each visit's are marked never written, and ops
+ * are told once a visit to check it, since its status in our database may not show the work.
+ */
+export async function giveUpOnFsmSteps(context: SweepContext): Promise<void> {
+  const { db, deps, now, log } = sweepRun(context);
+  const { results: visits } = await db
+    .prepare(
+      `SELECT DISTINCT e.appointment_id, a.person_id FROM job_events e
+       LEFT JOIN appointments a ON a.id = e.appointment_id
+       WHERE e.fsm_write_state = 'pending' AND e.superseded = 0
+       LIMIT ?1`,
+    )
+    .bind(BATCH_LIMIT)
+    .all<{ appointment_id: string; person_id: string | null }>();
+  for (const visit of visits) {
+    const steps = await rejectAllPending(db, visit.appointment_id, now, NEVER_WRITTEN);
+    for (const id of steps) await deps.resolveAlert(`job_event_pending:${id}`);
+    log.warn("job_events_never_written", { appointment_id: visit.appointment_id, steps: steps.length });
+    await deps.alertOnce({
+      key: `job_event_unwritten:${visit.appointment_id}`,
+      message:
+        `A technician's steps on visit ${visit.appointment_id} were never written to FSM, which is now switched off. ` +
+        "Check the visit, and close it from the console if the work was done.",
+      link: visit.person_id === null ? "/dispatch" : `/clients/${visit.person_id}`,
+    });
+  }
 }
 
 /** A technician's steps not written to FSM, sent to fsm-sync again, and ops told of one stuck an hour. */
-async function requeueJobEvents(run: SweepRun): Promise<string[]> {
-  const { db, env, now, before, deps } = run;
+export async function requeueJobEvents(context: SweepContext): Promise<string[]> {
+  const { db, env, now, before, deps, log } = sweepRun(context);
   // A technician's steps whose queue message was lost, or never sent. Only a job's earliest step
   // waiting for FSM: the consumer sends each next one on once the one before it is written. Each is
   // stamped as it is sent, so it is not sent again while its retries may still be running.
@@ -248,16 +271,33 @@ async function requeueJobEvents(run: SweepRun): Promise<string[]> {
     jobEvents.map((id) => ({ job_event_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
   );
   await alertStuckJobEvents(db, deps, before(JOB_EVENT_ALERT_AFTER_MS));
+  logCount(log, "job_events_requeued", jobEvents.length);
   return jobEvents;
 }
 
+/** Messages queued and never sent, sent to messaging again while the bridge is open (src/scheduled/unsent-messages.ts). */
+export async function requeueMessages(context: SweepContext): Promise<string[]> {
+  const { env, deps, log, now } = sweepRun(context);
+  const messages = await requeueUnsentMessages({
+    db: env.DB,
+    queue: env.MESSAGE_QUEUE,
+    deps,
+    log,
+    now,
+    budget: context.budget,
+  });
+  logCount(log, "messages_requeued", messages.length);
+  return messages;
+}
+
 /** Try-on renders and downloads whose queue message was lost, sent to render again; ones past saving failed. */
-async function requeueTryons(
-  run: SweepRun,
+export async function requeueTryons(
+  context: SweepContext,
 ): Promise<{ renders: string[]; abandoned: string[]; downloads: string[]; lost: string[] }> {
-  const { db, env, now, before, deps } = run;
-  // Renders whose queue message was lost: never started, or silent past the give-up time.
-  const renders = await ids(
+  const { db, env, now, before, deps, log } = sweepRun(context);
+  // The four lookups go in one round trip: each trip to D1 costs the cron run CPU time.
+  const [renders = [], abandoned = [], downloads = [], lost = []] = await idsOfEach(db, [
+    // Renders whose queue message was lost: never started, or silent past the give-up time.
     db
       .prepare(
         `SELECT id FROM tryon_jobs
@@ -266,20 +306,13 @@ async function requeueTryons(
        ORDER BY created_at LIMIT ?3`,
       )
       .bind(before(PENDING_GRACE_MS), before(RENDER_GIVE_UP_MS + PENDING_GRACE_MS), BATCH_LIMIT),
-  );
-
-  // A submit that started and never finished cannot be resumed: we do not know whether AILabTools took it.
-  const abandoned = await ids(
+    // A submit that started and never finished cannot be resumed: we do not know whether AILabTools took it.
     db
       .prepare(
         "SELECT id FROM tryon_jobs WHERE state = 'queued' AND submit_started_at < ?1 AND provider_task_id IS NULL LIMIT ?2",
       )
       .bind(before(SUBMIT_ABANDONED_MS), BATCH_LIMIT),
-  );
-  for (const id of abandoned) await failJob(db, id, "render_failed", "submit did not finish", now);
-
-  // Paid results not yet downloaded: retried until their URL expires, then lost.
-  const downloads = await ids(
+    // Paid results not yet downloaded: retried until their URL expires, then lost.
     db
       .prepare(
         `SELECT id FROM tryon_jobs
@@ -296,12 +329,11 @@ async function requeueTryons(
         before(DOWNLOAD_RETRY_LATE_MS),
         BATCH_LIMIT,
       ),
-  );
-  const lost = await ids(
     db
       .prepare("SELECT id FROM tryon_jobs WHERE state = 'downloading' AND provider_result_expires_at <= ?1 LIMIT ?2")
       .bind(now.toISOString(), BATCH_LIMIT),
-  );
+  ]);
+  for (const id of abandoned) await failJob(db, id, "render_failed", "submit did not finish", now);
   for (const id of lost) {
     if (await failJob(db, id, "render_failed", "result URL expired before download", now)) {
       await deps.alert(`Try-on job ${id}: its result was billed but never downloaded, and its URL has expired.`);
@@ -311,12 +343,22 @@ async function requeueTryons(
     env.RENDER_QUEUE,
     [...renders, ...downloads].map((id) => ({ job_id: id, request_id: "sweeper" }) satisfies RenderMessage),
   );
+  logCount(log, "renders_requeued", renders.length);
+  logCount(log, "downloads_requeued", downloads.length);
+  logCount(log, "submits_abandoned", abandoned.length);
+  logCount(log, "results_lost", lost.length);
   return { renders, abandoned, downloads, lost };
 }
 
-/** Deletes what has outlived its use: idempotency keys, counters, sessions, spent codes and stale claims. */
-async function housekeep(run: SweepRun): Promise<void> {
-  const { db, now, before } = run;
+/** A client's hold can take a technician's time again once a move that never finished lets it go. */
+export async function letUnfinishedMovesGo(context: SweepContext): Promise<void> {
+  const { db, now } = sweepRun(context);
+  await db.batch(unfinishedMovesLetGo(db, now));
+}
+
+/** Deletes what has outlived its use: idempotency keys, counters, sessions and spent codes. */
+export async function housekeep(context: SweepContext): Promise<void> {
+  const { db, now, before } = sweepRun(context);
   const sessionsEnded = before(SESSION_RETENTION_MS);
   await db.batch([
     db.prepare("DELETE FROM idempotency WHERE created_at < ?1").bind(before(IDEMPOTENCY_TTL_MS)),
@@ -336,32 +378,33 @@ async function housekeep(run: SweepRun): Promise<void> {
       .bind(sessionsEnded),
     db.prepare("DELETE FROM sessions WHERE expires_at < ?1").bind(sessionsEnded),
     db.prepare("DELETE FROM sessions WHERE revoked_at < ?1").bind(sessionsEnded),
-    // A client's hold can take a technician's time again once a move that never finished lets it go.
-    ...unfinishedMovesLetGo(db, now),
   ]);
 }
 
-/** Once an hour, the AILabTools balance against its floor; undefined on the other runs. */
-async function checkCredits(
-  run: SweepRun,
-  options: { readonly creditFloor: number; readonly budget: CallBudget },
+/**
+ * The AILabTools balance against its floor: an exhausted balance would otherwise fail every try-on quietly. Undefined
+ * when the run has no outside call left for it; null when it could not be read.
+ */
+export async function checkAilabCredits(
+  context: SweepContext,
+  creditFloor: number,
 ): Promise<number | null | undefined> {
-  const { now, deps, log } = run;
-  // Once an hour: an exhausted balance would otherwise fail every try-on quietly.
-  let credits: number | null | undefined;
-  if (now.getUTCMinutes() < 5 && options.budget.spend(1)) {
-    credits = await deps.image.credits();
-    if (credits === null) log.warn("credits_unreadable");
-    else if (credits < options.creditFloor) {
-      // Told once, not every hour, until a top-up lifts the balance over the floor.
-      await deps.alertOnce({
-        key: "ailab_credits_low",
-        message: `AILabTools credits are down to ${String(credits)}, below the floor of ${String(options.creditFloor)}.`,
-      });
-    } else {
-      await deps.resolveAlert("ailab_credits_low");
-    }
+  const { deps, log, budget } = context;
+  if (!budget.spend(1)) return undefined;
+  const credits = await deps.image.credits();
+  if (credits === null) {
+    log.warn("credits_unreadable");
+    return null;
   }
+  if (credits >= creditFloor) {
+    await deps.resolveAlert("ailab_credits_low");
+    return credits;
+  }
+  // Told once, not every hour, until a top-up lifts the balance over the floor.
+  await deps.alertOnce({
+    key: "ailab_credits_low",
+    message: `AILabTools credits are down to ${String(credits)}, below the floor of ${String(creditFloor)}.`,
+  });
   return credits;
 }
 
@@ -399,8 +442,8 @@ async function alertStuckJobEvents(db: D1Database, deps: Dependencies, landedBef
  * Uploads nobody finished within an hour, and looks past their day, become `expired`. On its look's day a client's
  * try-on is kept (src/domain/kept-try-ons.ts); any other look goes, and its small copy with it.
  */
-async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; kept: number }> {
-  const db = env.DB;
+export async function expireTryOns(context: SweepContext): Promise<{ expired: number; kept: number }> {
+  const { env, db, now, log } = sweepRun(context);
   const { results: pastExpiry } = await db
     .prepare(
       `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key,
@@ -435,10 +478,10 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
       )
       .bind(abandonedBefore),
   ]);
-  return {
-    expired: (expiredResults?.results.length ?? 0) + (abandonedUploads?.results.length ?? 0),
-    kept,
-  };
+  const expired = (expiredResults?.results.length ?? 0) + (abandonedUploads?.results.length ?? 0);
+  logCount(log, "tryons_expired", expired);
+  logCount(log, "tryons_kept", kept);
+  return { expired, kept };
 }
 
 /**
@@ -447,8 +490,8 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
  * small copy goes with it, unless the try-on is kept, or is claimed and has its
  * look: then the copy is held as long as the look (docs/decisions/0084).
  */
-async function deletePhotos(env: SweepEnv, now: Date): Promise<number> {
-  const db = env.DB;
+export async function deletePhotos(context: SweepContext): Promise<number> {
+  const { env, db, now, log } = sweepRun(context);
   const { results } = await db
     .prepare(
       `SELECT upload_key FROM tryon_jobs
@@ -468,12 +511,27 @@ async function deletePhotos(env: SweepEnv, now: Date): Promise<number> {
     .bind(now.toISOString(), JSON.stringify(keys))
     .run();
   await letCopiesGoWith(env, keys);
+  logCount(log, "photos_deleted", keys.length);
   return keys.length;
+}
+
+/** A client's kept look, once their first fit is photographed (src/domain/kept-try-ons.ts). */
+export async function letKeptLooksGo(context: SweepContext): Promise<number> {
+  const { env, now, log } = sweepRun(context);
+  const deleted = await letFittedLooksGo(env, now);
+  logCount(log, "kept_looks_deleted", deleted);
+  return deleted;
 }
 
 async function ids(statement: D1PreparedStatement): Promise<string[]> {
   const { results } = await statement.all<{ id: string }>();
   return results.map((row) => row.id);
+}
+
+/** The IDs each lookup found, the lookups run in one batch. */
+async function idsOfEach(db: D1Database, statements: D1PreparedStatement[]): Promise<string[][]> {
+  const answers = await db.batch<{ id: string }>(statements);
+  return answers.map((answer) => answer.results.map((row) => row.id));
 }
 
 async function sendAll(queue: Queue, bodies: readonly unknown[]): Promise<void> {

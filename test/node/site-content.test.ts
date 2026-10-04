@@ -299,6 +299,13 @@ describe("the legal pages", () => {
     expect(site.whatsapp.label).toBe(`WhatsApp · ${site.whatsapp.display}`);
   });
 
+  // PS-29: withdrawing was possible only in the app, which a waitlister or a try-on visitor cannot sign in to.
+  it("say how to withdraw an agreement without the app", () => {
+    const privacy = textOf(site.legalPages.privacy);
+    expect(privacy).toContain("withdraw in the app or by messaging us at {whatsapp}");
+    expect(privacy).toContain("To stop our WhatsApp messages, reply STOP to any of them.");
+  });
+
   // CP-51: the notice of 22 September 2026 erased "the same day", let any visit move free by message, took payment
   // on the day of the fit, and offered a call.
   it("say what Phase 2 does: erasure decided within seven days, visits paid at booking, changes in the app", () => {

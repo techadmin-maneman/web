@@ -11,6 +11,7 @@ import {
   createAccessVerifier,
   type AccessVerifier,
 } from "../../src/providers/cloudflare-access.ts";
+import { createLogger } from "../../src/log.ts";
 import { appFor, captureLogs, fakeDependencies, fakeFetch, json, markDatabase, NOW, request } from "./helpers.ts";
 
 const TEAM = "summer-math-0275.cloudflareaccess.com";
@@ -78,7 +79,10 @@ beforeAll(async () => {
 /** A verifier whose clock is `now` and whose Access team publishes `keys`. */
 function verifierWith(keys: readonly SigningKey[], now: () => Date = () => NOW) {
   const outbound = fakeFetch({ [CERTS]: () => json({ keys: keys.map((key) => key.jwk) }) });
-  return { verifier: createAccessVerifier(SETTINGS, { fetch: outbound.fetch, now }), calls: outbound.calls };
+  return {
+    verifier: createAccessVerifier(SETTINGS, { fetch: outbound.fetch, now, log: createLogger() }),
+    calls: outbound.calls,
+  };
 }
 
 const withToken = (token: string) =>
@@ -192,7 +196,7 @@ describe("Access's signing keys", () => {
     const outbound = fakeFetch({});
     const verifier = createAccessVerifier(
       { teamDomain: TEAM, opsAudience: null },
-      { fetch: outbound.fetch, now: () => NOW },
+      { fetch: outbound.fetch, now: () => NOW, log: createLogger() },
     );
     await expect(verifier.verify(withToken(await tokenFor(published, staffClaims())))).rejects.toThrow(
       "ACCESS_OPS_AUD is not set",
@@ -202,7 +206,7 @@ describe("Access's signing keys", () => {
 
   it("that cannot be fetched refuse the request as unavailable, not as unauthorised", async () => {
     const outbound = fakeFetch({ [CERTS]: () => json({ error: "down" }, 502) });
-    const verifier = createAccessVerifier(SETTINGS, { fetch: outbound.fetch, now: () => NOW });
+    const verifier = createAccessVerifier(SETTINGS, { fetch: outbound.fetch, now: () => NOW, log: createLogger() });
     const result = await verifier.verify(withToken(await tokenFor(published, staffClaims())));
     expect(result).toMatchObject({ ok: false, reason: "keys_unavailable" });
   });
@@ -214,7 +218,7 @@ describe("Access's signing keys", () => {
       signals.push(init?.signal);
       return Promise.reject(new DOMException("The operation timed out.", "TimeoutError"));
     };
-    const verifier = createAccessVerifier(SETTINGS, { fetch: timedOut, now: () => NOW });
+    const verifier = createAccessVerifier(SETTINGS, { fetch: timedOut, now: () => NOW, log: createLogger() });
 
     const result = await verifier.verify(withToken(await tokenFor(published, staffClaims())));
 
@@ -283,7 +287,9 @@ describe("the ops surface", () => {
     const outbound = fakeFetch({ [CERTS]: () => json({}, 500) });
     const app = appFor(
       "local",
-      fakeDependencies({ access: createAccessVerifier(SETTINGS, { fetch: outbound.fetch, now: () => NOW }) }),
+      fakeDependencies({
+        access: createAccessVerifier(SETTINGS, { fetch: outbound.fetch, now: () => NOW, log: createLogger() }),
+      }),
       {},
       "ops",
     );

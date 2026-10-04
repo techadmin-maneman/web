@@ -12,8 +12,19 @@ import { placement } from "../../src/domain/scheduling.ts";
 import { unitsFor } from "../../src/policy/visit-length.ts";
 import { DEFAULT_SLOT_TIMES, unitAt, windowAt } from "../../src/policy/slot-times.ts";
 import { openSession } from "../../src/domain/sessions.ts";
-import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
+import {
+  appFor,
+  d1TripsOf,
+  fakeDependencies,
+  LOCAL_SETTINGS,
+  markDatabase,
+  NOW,
+  request,
+  savedAddress,
+} from "./helpers.ts";
 
+/** The most round trips to D1 a hold may wait on in turn. It waited on 17 when each read waited for the one before. */
+const HOLD_TRIPS = 9;
 const IMRAN = "t1";
 const SANDEEP = "t2";
 
@@ -23,6 +34,23 @@ async function technician(id: string, name: string, initials: string) {
   )
     .bind(id, `fsm-${id}`, name, initials, NOW.toISOString())
     .run();
+}
+
+/**
+ * A hair system ops offer in the console, at the price and length the migrations gave the generic first fit, which
+ * is retired from 2 October 2026.
+ */
+async function essential(): Promise<void> {
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+       VALUES ('first_fit', 'essential', 'Mane Man Essential', 180, 1, 'ops@localhost', ?1)`,
+    ).bind(NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+       VALUES ('first_fit', 'essential', 3000000, 0, '2026-01-01')`,
+    ),
+  ]);
 }
 
 let people = 0;
@@ -170,9 +198,10 @@ describe("GET /api/availability", () => {
 
   it("leaves the evening off a first fit, which cannot start that late, and names the last day to ask for", async () => {
     const lead = await client(true);
+    await essential();
     const ask = async (from: string) =>
       (
-        await request(app, `/api/availability?type=first_fit&tier=standard&from=${from}`, {
+        await request(app, `/api/availability?type=first_fit&tier=essential&from=${from}`, {
           headers: { Cookie: lead.cookie },
         })
       ).json<{ last: string; days: { date: string; windows: { window: string }[] }[] }>();
@@ -243,6 +272,15 @@ describe("POST /api/holds", () => {
       pay_by: "2026-09-21T06:42:00.000Z",
       state: "held",
     });
+  });
+
+  // PLAT-15: each D1 read is a round trip to the database's region, so the hold's reads that need nothing from each
+  // other go together.
+  it("waits on few round trips to D1", async () => {
+    const rohit = await client();
+    const answer = await hold(rohit, TUESDAY_AFTERNOON);
+    expect(answer.status).toBe(201);
+    expect(d1TripsOf(answer)).toBeLessThanOrEqual(HOLD_TRIPS);
   });
 
   it("gives the next client another technician, and the one after that nobody", async () => {
@@ -365,20 +403,21 @@ describe("POST /api/holds", () => {
   // The horizon is ops' to set, 45 days from tomorrow to begin with (docs/decisions/0086-the-next-visit-is-offered.md).
   it("carries a first fit's late fee, and refuses a day past the 45 days from tomorrow", async () => {
     const lead = await client(true);
-    const answer = await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-24", window: "morning" });
+    await essential();
+    const answer = await hold(lead, { type: "first_fit", tier: "essential", date: "2026-09-24", window: "morning" });
     expect(await answer.json()).toMatchObject({
       price: { amount_ex_gst: 3000000, amount: 3000000 },
       late_fee: { amount_ex_gst: 400000, amount: 400000 },
       ends_at: "2026-09-24T06:30:00.000Z",
     });
     expect(
-      (await hold(lead, { type: "first_fit", tier: "standard", date: "2026-11-06", window: "morning" })).status,
+      (await hold(lead, { type: "first_fit", tier: "essential", date: "2026-11-06", window: "morning" })).status,
     ).toBe(422);
     expect(
-      (await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-21", window: "evening" })).status,
+      (await hold(lead, { type: "first_fit", tier: "essential", date: "2026-09-21", window: "evening" })).status,
     ).toBe(422);
     expect(
-      (await hold(lead, { type: "first_fit", tier: "standard", date: "2026-11-05", window: "morning" })).status,
+      (await hold(lead, { type: "first_fit", tier: "essential", date: "2026-11-05", window: "morning" })).status,
     ).toBe(201);
   });
 
@@ -414,6 +453,58 @@ describe("POST /api/holds", () => {
 
     await savedAddress(rohit.id);
     expect((await hold(rohit, move)).status).toBe(201);
+  });
+
+  // BK-08: no route in the app read the service area, so a client whose address was out of it held, paid and booked.
+  describe("for an address in a pincode we do not come to", () => {
+    const addressAt = (personId: string, pincode: string) =>
+      env.DB.prepare(
+        `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+         VALUES (?1, ?2, ?3, 'House 9', 'Bandra West', 'Mumbai', ?4)`,
+      )
+        .bind(crypto.randomUUID(), personId, NOW.toISOString(), pincode)
+        .run();
+    const days = (who: { cookie: string }, query = "type=service") =>
+      request(app, `/api/availability?${query}`, { headers: { Cookie: who.cookie } });
+    const codeOf = async (answer: Response) => (await answer.json<{ error: { code: string } }>()).error.code;
+
+    it.each([
+      ["ops switched off", "400050", true],
+      ["we do not hold", "411001", false],
+    ])("offers no days and holds nothing in a pincode %s", async (_, pincode, held) => {
+      if (held) {
+        await env.DB.prepare(
+          "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES (?1, 'Bandra', 'Mumbai', 0)",
+        )
+          .bind(pincode)
+          .run();
+      }
+      const rohit = await client(false, { withoutAddress: true });
+      await addressAt(rohit.id, pincode);
+
+      const offered = await days(rohit);
+      expect(offered.status).toBe(422);
+      expect(await codeOf(offered)).toBe("not_served");
+      const refused = await hold(rohit, TUESDAY_AFTERNOON);
+      expect(refused.status).toBe(422);
+      expect(await codeOf(refused)).toBe("not_served");
+      expect(await env.DB.prepare("SELECT COUNT(*) AS holds FROM slot_holds").first()).toEqual({ holds: 0 });
+    });
+
+    it("moves no visit once ops stop serving the address's pincode", async () => {
+      const rohit = await client();
+      const booked = await visit(rohit.id, "service", "scheduled", "2026-09-24T06:30:00.000Z", IMRAN);
+      await env.DB.prepare("UPDATE appointments SET fsm_work_order_id = 'fsm-order-1' WHERE id = ?1")
+        .bind(booked)
+        .run();
+      await env.DB.prepare("UPDATE serviceable_pincodes SET served = 0 WHERE pincode = '122018'").run();
+
+      const offered = await days(rohit, `type=service&moving=${booked}`);
+      expect(await codeOf(offered)).toBe("not_served");
+      const moved = await hold(rohit, { ...TUESDAY_AFTERNOON, date: "2026-09-25", moving: booked });
+      expect(moved.status).toBe(422);
+      expect(await codeOf(moved)).toBe("not_served");
+    });
   });
 
   it("shows a hold as lapsed once its ten minutes are up, and lets the client release it", async () => {

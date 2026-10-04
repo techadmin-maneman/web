@@ -54,7 +54,7 @@ Before the photographs pass that runway, the owner must decide between the paid 
   - the audit log is one row per ops call (ADR 0031);
   - the FSM mirror is rows of text;
   - neither holds images.
-- **Cron triggers (5 for the account):** `mm-api` uses one, every five minutes. Phase 2's jobs, such as reconciliation, credit expiry and hold expiry, run on that same trigger, and none is added.
+- **Cron triggers (5 for the account):** `mm-api` uses one, every five minutes. Phase 2's jobs, such as reconciliation, credit expiry and hold expiry, run on that same trigger, and none is added. (Since 4 October 2026 it fires every minute, still one trigger, each run a few of the jobs: ADR 0009, "the cron's CPU time".)
 
 **Amended 27 September 2026 ([ADR 0084](0084-a-clients-try-on-is-kept.md)).**
 

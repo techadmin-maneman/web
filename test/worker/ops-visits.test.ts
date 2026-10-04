@@ -36,6 +36,8 @@ const ROHIT = "11111111-1111-4111-8111-111111111111";
 const NATURAL = { tier: "natural", name: "Mane Man Natural", amount: 4_500_000 };
 const SERVICE_PRICE = 200_000;
 const WEDNESDAY = "2026-09-23";
+/** The first reference of NOW's year, which the first link ops send takes before any payment. */
+const FIRST_REFERENCE = "MM-2026-0001";
 
 /** FSM's catalogue, with the service visit's item, for the bookings FSM's path writes there. */
 const fsm = () =>
@@ -47,17 +49,26 @@ let queue: ReturnType<typeof fakeQueue>;
 /** The queues a booking writes to, kept rather than delivered. */
 const bindings = () => ({ FSM_QUEUE: queue, MESSAGE_QUEUE: fakeQueue() });
 
+/** What a test may change about the console: its payments, who holds the record of field work, staging's handsets. */
+interface Vendors {
+  readonly payments?: PaymentsProvider;
+  readonly record?: FieldRecord;
+  readonly allowlist?: string[];
+}
+
 /** The ops console, on FSM's path unless it is our own database that holds the record of field work. */
-const opsApp = (vendors: { payments?: PaymentsProvider; record?: FieldRecord } = {}) => {
+const opsApp = (vendors: Vendors = {}) => {
   const record = vendors.record ?? "fsm";
   const deps = fakeDependencies({
     payments: vendors.payments ?? payments,
     ...(record === "ours" ? { fsm: fsmSwitchedOff() } : {}),
   });
-  return appFor("local", deps, {}, "ops", PROVIDERS_FOR[record]);
+  const allowlist = vendors.allowlist ?? LOCAL_SETTINGS.messaging.allowlist;
+  const settings = { messaging: { ...LOCAL_SETTINGS.messaging, allowlist } };
+  return appFor("local", deps, settings, "ops", PROVIDERS_FOR[record]);
 };
 
-const book = (body: object, vendors: { payments?: PaymentsProvider; record?: FieldRecord } = {}) =>
+const book = (body: object, vendors: Vendors = {}) =>
   request(
     opsApp(vendors),
     "/api/visits",
@@ -129,6 +140,7 @@ interface HoldRow {
   pay_by_link: number;
   payment_link_id: string | null;
   payment_link_url: string | null;
+  reference: string | null;
   razorpay_order_id: string | null;
   expires_at: string;
   no_show_charge: string | null;
@@ -137,7 +149,7 @@ interface HoldRow {
 const holdOf = (id: string) =>
   env.DB.prepare(
     `SELECT state, type, tier, technician_id, amount, confirmed_at, use_credit, one_visit, pay_by_link, payment_link_id,
-       payment_link_url, razorpay_order_id, expires_at, no_show_charge
+       payment_link_url, reference, razorpay_order_id, expires_at, no_show_charge
      FROM slot_holds WHERE id = ?1`,
   )
     .bind(id)
@@ -314,14 +326,16 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
       service: { tier: NATURAL.tier, name: NATURAL.name },
       link: { open_until: "2026-09-22T06:30:00.000Z" },
     });
+    // MON-30: the client reads a reference on Razorpay's page that their receipt repeats, not the hold's ID.
     expect(payments.made.links).toEqual([
       {
         amount: NATURAL.amount,
-        reference: body.hold_id,
-        description: "Mane Man Natural, Fri 25 Sep, morning",
+        reference: FIRST_REFERENCE,
+        description: "Mane Man Natural · Fri 25 Sep, morning",
         customer: { name: "Rohit Malhotra", contact: "+919810000001" },
         notes: { hold_id: body.hold_id, person_id: ROHIT },
         closesAt: new Date("2026-09-22T06:30:00.000Z"),
+        notify: true,
       },
     ]);
     const hold = await holdOf(body.hold_id);
@@ -330,12 +344,23 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
       confirmed_at: null,
       pay_by_link: 1,
       payment_link_url: body.link.url,
+      reference: FIRST_REFERENCE,
       razorpay_order_id: null,
       expires_at: "2026-09-22T06:30:00.000Z",
     });
     expect(hold?.payment_link_id).toMatch(/^plink_stub_/);
     expect(queue.sent).toEqual([]);
     expect(payments.made.orders).toEqual([]);
+  });
+
+  // MON-45, PS-46: staging texted every link, whoever the number belonged to.
+  it("makes the link but has Razorpay text it only to a number on staging's allowlist", async () => {
+    await rohit("fitted");
+    const logs = captureLogs();
+    const visit = { client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" };
+    expect((await book(visit, { allowlist: ["+919810000777"] })).status).toBe(201);
+    expect(payments.made.links).toMatchObject([{ notify: false }]);
+    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "payment_link_not_texted" }));
   });
 
   it("takes a discount code off a paid service visit's link before GST", async () => {
@@ -375,13 +400,17 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     expect(await holdsCount()).toBe(0);
   });
 
-  it("keeps the link Razorpay made under the hold though its answer never came", async () => {
+  it("keeps the link Razorpay made under the hold's reference though its answer never came", async () => {
     await rohit("fitted");
+    const lookedFor: string[] = [];
     const lost: PaymentsProvider = {
       ...createStubPayments(),
       createPaymentLink: () =>
         Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "reference_id already exists")),
-      findPaymentLink: () => Promise.resolve({ id: "plink_made", shortUrl: "https://rzp.io/i/made" }),
+      findPaymentLink: (reference) => {
+        lookedFor.push(reference);
+        return Promise.resolve({ id: "plink_made", shortUrl: "https://rzp.io/i/made" });
+      },
     };
     const answer = await book(
       { client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" },
@@ -390,6 +419,7 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     expect(answer.status).toBe(201);
     const body = await answer.json<{ hold_id: string; link: object }>();
     expect(body.link).toMatchObject({ url: "https://rzp.io/i/made" });
+    expect(lookedFor).toEqual([FIRST_REFERENCE]);
     expect(await holdOf(body.hold_id)).toMatchObject({ payment_link_id: "plink_made" });
   });
 
@@ -522,7 +552,15 @@ describe("a payment link for a visit ops booked, paid", () => {
     );
   }
 
-  function linkPaid(link: { id: string; reference_id: string }, paidAt: Date, amount = SERVICE_PRICE) {
+  /** A link ops sent: the hold it waits on, Razorpay's ID for it, and its reference. */
+  interface SentLink {
+    readonly holdId: string;
+    readonly linkId: string;
+    readonly reference: string;
+  }
+
+  function linkPaid(sent: SentLink, paidAt: Date, amount = SERVICE_PRICE) {
+    const link = { id: sent.linkId, reference_id: sent.reference };
     return {
       entity: "event",
       event: "payment_link.paid",
@@ -539,7 +577,7 @@ describe("a payment link for a visit ops booked, paid", () => {
             order_id: "order_link_1",
             method: "upi",
             contact: "+919810000001",
-            notes: { hold_id: link.reference_id, person_id: ROHIT },
+            notes: { hold_id: sent.holdId, person_id: ROHIT },
             created_at: Math.floor(paidAt.getTime() / 1000),
           },
         },
@@ -547,26 +585,31 @@ describe("a payment link for a visit ops booked, paid", () => {
     };
   }
 
-  async function sentLink(record: FieldRecord = "fsm"): Promise<{ holdId: string; linkId: string }> {
+  async function sentLink(record: FieldRecord = "fsm"): Promise<SentLink> {
     await rohit("fitted");
     const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" }, { record });
     const { hold_id: holdId } = await answer.json<{ hold_id: string }>();
-    return { holdId, linkId: (await holdOf(holdId))?.payment_link_id ?? "" };
+    const hold = await holdOf(holdId);
+    return { holdId, linkId: hold?.payment_link_id ?? "", reference: hold?.reference ?? "" };
   }
 
   it("records the payment on the hold, confirms it from Razorpay's time, and sends it to be booked", async () => {
-    const { holdId, linkId } = await sentLink();
+    const sent = await sentLink();
+    const { holdId } = sent;
     const paidAt = new Date(NOW.getTime() + 60 * 60_000);
-    expect((await deliver(linkPaid({ id: linkId, reference_id: holdId }, paidAt), "evt-1")).status).toBe(200);
+    expect((await deliver(linkPaid(sent, paidAt), "evt-1")).status).toBe(200);
 
     const payment = await env.DB.prepare(
-      "SELECT person_id, razorpay_order_id, amount_ex_gst, status FROM payments WHERE razorpay_payment_id = 'pay_link_1'",
+      `SELECT person_id, razorpay_order_id, amount_ex_gst, status, reference
+       FROM payments WHERE razorpay_payment_id = 'pay_link_1'`,
     ).first();
     expect(payment).toEqual({
       person_id: ROHIT,
       razorpay_order_id: "order_link_1",
       amount_ex_gst: SERVICE_PRICE,
       status: "captured",
+      // What the client read on Razorpay's page is what their receipt says.
+      reference: FIRST_REFERENCE,
     });
     expect(await holdOf(holdId)).toMatchObject({
       razorpay_order_id: "order_link_1",
@@ -580,10 +623,11 @@ describe("a payment link for a visit ops booked, paid", () => {
   });
 
   it("refunds a link paid after its hold had lapsed and let the slot go", async () => {
-    const { holdId, linkId } = await sentLink();
+    const sent = await sentLink();
+    const { holdId } = sent;
     const lapsed = new Date("2026-09-22T08:00:00.000Z");
     await env.DB.prepare("UPDATE slot_holds SET state = 'released' WHERE id = ?1").bind(holdId).run();
-    await deliver(linkPaid({ id: linkId, reference_id: holdId }, lapsed), "evt-2");
+    await deliver(linkPaid(sent, lapsed), "evt-2");
 
     const given = await confirmBooking(env.DB, fsm(), payments, holdId, lapsed, { labelAsTest: false });
     expect(given).toBe("refunded");
@@ -608,16 +652,18 @@ describe("a payment link for a visit ops booked, paid", () => {
     const { hold_id: holdId, price } = await answer.json<{ hold_id: string; price: { amount: number } }>();
     expect(await groups()).toContain("replacement_order");
 
-    const linkId = (await holdOf(holdId))?.payment_link_id ?? "";
+    const hold = await holdOf(holdId);
+    const sent = { holdId, linkId: hold?.payment_link_id ?? "", reference: hold?.reference ?? "" };
     const paidAt = new Date(NOW.getTime() + 60 * 60_000);
-    await deliver(linkPaid({ id: linkId, reference_id: holdId }, paidAt, price.amount), "evt-4", "ours");
+    await deliver(linkPaid(sent, paidAt, price.amount), "evt-4", "ours");
     expect(await groups()).not.toContain("replacement_order");
   });
 
   it("books the visit in the webhook's own request where our own database holds the record", async () => {
-    const { holdId, linkId } = await sentLink("ours");
+    const sent = await sentLink("ours");
+    const { holdId } = sent;
     const paidAt = new Date(NOW.getTime() + 60 * 60_000);
-    await deliver(linkPaid({ id: linkId, reference_id: holdId }, paidAt), "evt-3", "ours");
+    await deliver(linkPaid(sent, paidAt), "evt-3", "ours");
 
     const booked = await env.DB.prepare(
       `SELECT a.status, a.type, p.razorpay_payment_id FROM slot_holds h JOIN appointments a ON a.id = h.appointment_id
@@ -631,9 +677,10 @@ describe("a payment link for a visit ops booked, paid", () => {
 
   // Razorpay sends payment.captured for a link's payment too, often before payment_link.paid.
   it("books once and refunds nothing when the payment's capture arrives before the link's paid event", async () => {
-    const { holdId, linkId } = await sentLink("ours");
+    const sent = await sentLink("ours");
+    const { holdId } = sent;
     const paidAt = new Date(NOW.getTime() + 60 * 60_000);
-    const paid = linkPaid({ id: linkId, reference_id: holdId }, paidAt);
+    const paid = linkPaid(sent, paidAt);
     const captured = { entity: "event", event: "payment.captured", payload: { payment: paid.payload.payment } };
 
     expect((await deliver(captured, "evt-5", "ours")).status).toBe(200);
@@ -654,6 +701,19 @@ describe("a payment link for a visit ops booked, paid", () => {
       .first<{ n: number }>();
     expect(service?.n).toBe(1);
     expect(payments.made.refunds).toEqual([]);
+    const payment = await env.DB.prepare(
+      "SELECT reference FROM payments WHERE razorpay_payment_id = 'pay_link_1'",
+    ).first<{ reference: string }>();
+    expect(payment?.reference).toBe(FIRST_REFERENCE);
+  });
+
+  it("finds the hold by the link's reference where Razorpay's answer with the link never came", async () => {
+    const sent = await sentLink();
+    await env.DB.prepare("UPDATE slot_holds SET payment_link_id = NULL WHERE id = ?1").bind(sent.holdId).run();
+    const paidAt = new Date(NOW.getTime() + 60 * 60_000);
+    await deliver(linkPaid({ ...sent, linkId: "plink_unseen" }, paidAt), "evt-7");
+
+    expect(await holdOf(sent.holdId)).toMatchObject({ confirmed_at: paidAt.toISOString() });
   });
 });
 

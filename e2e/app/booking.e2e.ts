@@ -203,7 +203,14 @@ function profileOf({ reminders = false, undecided = [], address = true }: Standi
     return { purpose, granted: given, since: given ? at : null };
   });
   const answer = { name: "Rohit Malhotra", mobile: "+91 98xxx x4417", consents };
-  const rest = { address_given_to_ops: null, number_change: null, number_change_decided: null, deletion: null };
+  const rest = {
+    address_given_to_ops: null,
+    number_change: null,
+    number_change_decided: null,
+    deletion: null,
+    deletion_rejected: null,
+    grievances: [],
+  };
   return { ...answer, address: address ? ADDRESS : null, ...rest };
 }
 
@@ -340,12 +347,12 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   await bookedWithoutPaying(page, hold);
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Confirm", exact: true });
-  await expect(pay.getByText("1 visit credit used")).toBeVisible();
+  await expect(pay.getByText("1 free service visit used")).toBeVisible();
   await pay.getByRole("button", { name: "Confirm visit" }).click();
 
   const confirmed = page.getByRole("dialog").getByRole("status");
   await expect(confirmed.getByText("Confirmed")).toBeVisible();
-  await expect(confirmed.getByText("1 visit credit used")).toBeVisible();
+  await expect(confirmed.getByText("1 free service visit used")).toBeVisible();
   await expect(confirmed.getByText("2 remaining")).toBeVisible();
   await expect(confirmed.getByText("Paid", { exact: true })).toHaveCount(0);
   await expect(confirmed.getByText("Rs. 2,000")).toHaveCount(0);
@@ -378,9 +385,11 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
   // Now there is a price to pay, the step is named for paying it.
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(
-    pay.getByText("Your visit credit is already on another booking, so this visit is charged at the price below."),
+    pay.getByText(
+      "Your free service visit is already on another booking, so this visit is charged at the price below.",
+    ),
   ).toBeVisible();
-  await expect(pay.getByText("1 visit credit used")).toHaveCount(0);
+  await expect(pay.getByText("1 free service visit used")).toHaveCount(0);
   await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
 });
 
@@ -505,6 +514,23 @@ test("goes back to the address, saying why, when the API holds no slot for want 
     "We need your address before we can hold a slot. Add it, then pick your window again.",
   );
   await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
+});
+
+// BK-08: an address in a pincode we do not come to was held, paid for and booked.
+test("offers no day at an address we do not come to, but the address to change and the waitlist", async ({ page }) => {
+  await profileAs(page, {});
+  await page.route(/\/api\/availability\?/, (route) =>
+    route.fulfill({ status: 422, json: { error: { code: "not_served", request_id: "e2e" } } }),
+  );
+  await openSheet(page);
+  const where = page.getByRole("dialog", { name: "Where we come" });
+  await expect(where.getByRole("alert")).toHaveText(
+    "We do not come to 122018 yet. Change the address below, or join the waitlist and we will message you the day we do.",
+    { timeout: 30_000 },
+  );
+  await expect(where.getByLabel("Pincode")).toHaveValue("122018");
+  await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
+  await expect(where.getByRole("link", { name: "Join the waitlist" })).toHaveAttribute("href", /\/book$/);
 });
 
 // The owner's rulings of 27 September 2026 (booking agrees to the photograph purposes never decided on) and of
@@ -708,14 +734,18 @@ test("says a first fit sold inside its notice costs its late fee to change from 
   await expect(pay.getByText(/Free to move/)).toHaveCount(0);
 });
 
-test("says a credit is not returned for a visit it covers that is sold inside its notice", async ({ page }) => {
+test("says a free service visit is not returned for a visit it covers that is sold inside its notice", async ({
+  page,
+}) => {
   await holdAs(page, { credit: { remaining: 2 }, free_until: PASSED() });
   await toPayment(page);
   const confirm = page.getByRole("dialog", { name: "Confirm", exact: true });
   await expect(
-    confirm.getByText("This visit is less than 24 hours away: if you move or cancel it, the credit is not returned."),
+    confirm.getByText(
+      "This visit is less than 24 hours away: if you move or cancel it, the free service visit is not returned.",
+    ),
   ).toBeVisible();
-  await expect(confirm.getByText(/the credit is gone/)).toHaveCount(0);
+  await expect(confirm.getByText(/the free service visit is gone/)).toHaveCount(0);
 });
 
 // The windows inside the notice are still sold, and marked on the date and window steps.
@@ -773,8 +803,8 @@ test("says a credit is gone after a late cancel only where the booking is sold s
   await holdAs(page, { credit: { remaining: 2 }, late_change_charge: "nothing" });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Confirm", exact: true });
-  await expect(pay.getByText("1 visit credit used")).toBeVisible();
-  await expect(pay.getByText(/the credit is gone/)).toHaveCount(0);
+  await expect(pay.getByText("1 free service visit used")).toBeVisible();
+  await expect(pay.getByText(/the free service visit is gone/)).toHaveCount(0);
   await expect(pay.getByText("Free to move or cancel at any time.")).toBeVisible();
 });
 
@@ -784,7 +814,7 @@ test("says a credit is gone after a cancel inside the notice the booking is sold
   await expect(
     page
       .getByRole("dialog", { name: "Confirm", exact: true })
-      .getByText("Cancel inside 48 hours and the credit is gone."),
+      .getByText("Cancel inside 48 hours and the free service visit is gone."),
   ).toBeVisible();
 });
 

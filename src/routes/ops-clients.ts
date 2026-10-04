@@ -2,8 +2,9 @@
 // docs/decisions/0031-access-and-audit.md):
 //   POST /api/clients/search               find a client by their whole mobile number
 //   POST /api/clients/find                 find clients by part of a name or of a number
-//   GET  /api/clients/:id                  who they are, their address, their visits, their payments, their history,
-//                                          the invite they came with, and any booking FSM refused, held for ops
+//   GET  /api/clients/:id                  who they are, their address, their visits, their payments, payment links
+//                                          and invoices, their history, the invite they came with, any booking FSM
+//                                          refused, held for ops, and any booking that refunded its payment by itself
 //   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
 //   POST /api/clients/:id/photos/view      open them: one audit entry, and who opened them before
 //   GET  /api/clients/:id/photos/:photoId  one photograph, served within a logged opening
@@ -12,6 +13,7 @@
 //
 // A client is always found by their ID. What ops search with goes in a request
 // body, never in a path, so that a number stays out of URLs, referrers and logs.
+// Each route keeps to the caller's cities: a client elsewhere is not found.
 //
 // The records are the ones the client reads of themselves, through the same
 // domain functions, so the two surfaces cannot drift apart. An erased person is
@@ -20,8 +22,9 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
+import type { Context } from "hono";
 import { staffOf } from "../http/audit.ts";
-import type { App } from "../http/context.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { earlierViews, logPhotoView, PHOTO_VIEW_MINUTES, viewInForce } from "../domain/photo-views.ts";
@@ -33,9 +36,12 @@ import {
   ownPhotoKey,
   visitOutcomes,
 } from "../domain/client-visits.ts";
+import { AUTO_REFUND_REASONS, autoRefundsOf, type AutoRefund } from "../domain/auto-refunds.ts";
+import { INVOICE_STATES, LINK_STATES, paymentLinksOf, visitInvoicesOf } from "../domain/client-billing.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { clientVisitCodes } from "../domain/discount-code-uses.ts";
 import { heldBookingsOf, type HeldBooking } from "../domain/held-bookings.ts";
+import { reachBinding, withinReach } from "../domain/places.ts";
 import { clientInviteOf } from "../domain/referrals.ts";
 import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
 import { consentRecordsOf, currentAddress, type ConsentState, type SavedAddress } from "../domain/profile.ts";
@@ -44,6 +50,7 @@ import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
+import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { CONSENT_PURPOSES, CONSENT_SOURCES } from "../policy/consents.ts";
@@ -55,7 +62,9 @@ import { ClientInviteSchema } from "./ops-client-referral.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
 
 const clientId = z.object({ id: z.uuid() });
-const unknownClient = errorResponse("not_found: no such client, or the client has been erased");
+const unknownClient = errorResponse(
+  "not_found: no such client, or the client has been erased or is outside the caller's cities",
+);
 
 const nullable = z.union([z.string(), z.null()]);
 
@@ -138,6 +147,11 @@ const ClientVisitSchema = VisitSummarySchema.extend({
   price_open: z.boolean().openapi({
     description: "Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off.",
   }),
+  requested_code: z.union([z.string(), z.null()]).openapi({
+    description:
+      "For a consultation and fit in one visit, the code the client typed on /book for it, honoured as it stood " +
+      "then when entered on the visit; null for none.",
+  }),
 }).openapi("ClientVisit");
 
 /**
@@ -177,6 +191,19 @@ const HeldBookingSchema = z
     refusal: z.union([z.string(), z.null()]).openapi({ description: "FSM's latest refusal, as the log gives it." }),
     retries_end: z.iso.datetime().openapi({ description: "When the hourly tries end, or ended, as ops set them." }),
     retrying: z.boolean().openapi({ description: "Still tried every hour: inside its tries, and its visit to come." }),
+    discount_code: z
+      .union([
+        z
+          .object({
+            code: z.string(),
+            amount_off: z
+              .union([z.number().int(), z.null()])
+              .openapi({ description: "In paise before GST; null until the visit's price is known." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({ description: "The discount code the client booked with (docs/decisions/0108-discount-codes.md)." }),
   })
   .strict()
   .openapi("HeldBooking");
@@ -194,7 +221,78 @@ const heldBookingOf = (booking: HeldBooking) => ({
   refusal: booking.refusal,
   retries_end: booking.retriesEnd,
   retrying: booking.retrying,
+  discount_code:
+    booking.discountCode === null
+      ? null
+      : { code: booking.discountCode.code, amount_off: booking.discountCode.amountOff },
 });
+
+/** A booking that refunded its payment by itself, as the client's Visits tab says it, and the client was told. */
+const AutoRefundSchema = z
+  .object({
+    hold_id: z.uuid(),
+    type: z.enum(VISIT_TYPES),
+    service: z.string().openapi({ description: "Its service's name as it is now." }),
+    date: z.iso.date().openapi({ description: "India's day the visit was to be on." }),
+    amount: z.union([z.number().int(), z.null()]).openapi({
+      description:
+        "In paise, GST included: what Razorpay took, all of which went back; null where it is not on record.",
+    }),
+    reason: z.enum(AUTO_REFUND_REASONS).openapi({
+      description: "lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun.",
+    }),
+    refunded_at: z.iso.datetime(),
+  })
+  .strict()
+  .openapi("AutoRefund");
+
+const autoRefundOf = (refund: AutoRefund) => ({
+  hold_id: refund.holdId,
+  type: refund.type,
+  service: refund.serviceName,
+  date: refund.date,
+  amount: refund.amount,
+  reason: refund.reason,
+  refunded_at: refund.refundedAt,
+});
+
+const ClientPaymentLinkSchema = z
+  .object({
+    id: z.uuid(),
+    product: z.string().openapi({ description: "The service it pays for, by its name now." }),
+    visit_date: z
+      .union([z.iso.date(), z.null()])
+      .openapi({ description: "India's date of the visit it pays for; null where the visit has no start." }),
+    amount: z.number().int().openapi({ description: "In paise, GST included." }),
+    reference: z.union([z.string(), z.null()]).openapi({
+      description: "As the client reads it on Razorpay's page; null on a link made before links had one.",
+    }),
+    short_url: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "The address Razorpay texted the client; null until Razorpay has made the link." }),
+    sent_at: z.union([z.iso.datetime(), z.null()]),
+    state: z.enum(LINK_STATES).openapi({
+      description:
+        "making: Razorpay has not made it yet, and it is asked again; open: sent and not paid; paid; refused: " +
+        "Razorpay would not make it, so ops send one by hand; lapsed: closed unpaid.",
+    }),
+    paid_at: z.union([z.iso.datetime(), z.null()]),
+  })
+  .strict()
+  .openapi("ClientPaymentLink");
+
+const ClientInvoiceSchema = z
+  .object({
+    visit_id: z.uuid(),
+    date: z.iso.date(),
+    type: z.enum(VISIT_TYPES),
+    state: z.enum(INVOICE_STATES).openapi({
+      description: "to_raise: Books holds none yet; draft: Books holds it unsent; issued: sent to the client.",
+    }),
+    issued_at: z.union([z.iso.datetime(), z.null()]),
+  })
+  .strict()
+  .openapi("ClientInvoice");
 
 const ClientRecordSchema = z
   .object({
@@ -212,6 +310,10 @@ const ClientRecordSchema = z
       .strict()
       .openapi({ description: "Upcoming soonest first; past newest first." }),
     payments: z.array(EntrySchema).openapi({ description: "Payments and refunds as one list, newest first." }),
+    payment_links: z.array(ClientPaymentLinkSchema).openapi({ description: "Every payment link, newest first." }),
+    invoices: z
+      .array(ClientInvoiceSchema)
+      .openapi({ description: "Each finished visit sold for a price, with its invoice; the latest visit first." }),
     history: OpsHistorySchema,
     invite: z
       .union([ClientInviteSchema, z.null()])
@@ -219,6 +321,9 @@ const ClientRecordSchema = z
     held_bookings: z
       .array(HeldBookingSchema)
       .openapi({ description: "Bookings FSM refused, waiting for a try or for ops; the soonest visit first." }),
+    auto_refunds: z
+      .array(AutoRefundSchema)
+      .openapi({ description: "Bookings that refunded their payment by themselves; the latest refund first." }),
   })
   .strict()
   .openapi("ClientRecord");
@@ -345,7 +450,7 @@ const findRoute = createRoute({
   },
   responses: {
     200: {
-      description: "The clients it matches, by name",
+      description: "The clients it matches in the caller's cities, by name",
       ...json(
         z
           .object({
@@ -364,7 +469,7 @@ const recordRoute = createRoute({
   method: "get",
   path: "/api/clients/{id}",
   summary:
-    "The client's record: who they are, their address, their visits, their payments, their history and their invite",
+    "The client's record: who they are, their address, their visits, their money, their history and their invite",
   request: { params: clientId },
   responses: { 200: { description: "The record", ...json(ClientRecordSchema) }, 404: unknownClient },
 });
@@ -450,12 +555,15 @@ interface PersonRow {
   created_at: string;
 }
 
-/** The client by ID, or null when there is no such person or they have been erased. */
-function clientById(db: D1Database, id: string): Promise<PersonRow | null> {
-  return db
-    .prepare("SELECT id, name, mobile_e164, created_at FROM people WHERE id = ?1 AND erased_at IS NULL")
+/** The client by ID; null when there is no such person, they were erased, or they are outside the caller's cities. */
+export async function clientInReach(c: Context<AppEnv>, id: string): Promise<PersonRow | null> {
+  const person = await c.env.DB.prepare(
+    "SELECT id, name, mobile_e164, created_at FROM people WHERE id = ?1 AND erased_at IS NULL",
+  )
     .bind(id)
     .first<PersonRow>();
+  if (person === null || !(await withinRouteReach(c, "client", id))) return null;
+  return person;
 }
 
 interface PhotoListRow {
@@ -481,7 +589,9 @@ export function registerOpsClients(app: App): void {
     )
       .bind(mobile)
       .first<PersonRow>();
-    if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (person === null || !(await withinRouteReach(c, "client", person.id))) {
+      return c.json(errorBody("not_found", c.var.requestId), 404);
+    }
     return c.json({ id: person.id, name: person.name, mobile: person.mobile_e164 }, 200);
   });
 
@@ -489,11 +599,14 @@ export function registerOpsClients(app: App): void {
     const search = searchOf(c.req.valid("json").text);
     if (search === null) return c.json(errorBody("invalid_request", c.var.requestId, ["text"]), 400);
     const column = search.by === "number" ? "mobile_e164" : "name";
+    const reached = await routeReach(c);
     const { results } = await c.env.DB.prepare(
-      `SELECT id, name, mobile_e164 FROM people
-       WHERE erased_at IS NULL AND ${column} LIKE ?1 ESCAPE '\\' ORDER BY name, id LIMIT ?2`,
+      `SELECT client.id, client.name, client.mobile_e164 FROM people client
+       WHERE client.erased_at IS NULL AND client.${column} LIKE ?1 ESCAPE '\\'
+         AND ${withinReach("client", "client", "?3")}
+       ORDER BY client.name, client.id LIMIT ?2`,
     )
-      .bind(containing(search.text), CLIENTS_FOUND + 1)
+      .bind(containing(search.text), CLIENTS_FOUND + 1, reachBinding(reached))
       .all<{ id: string; name: string; mobile_e164: string }>();
     return c.json(
       {
@@ -509,23 +622,27 @@ export function registerOpsClients(app: App): void {
   app.openapi(recordRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    const person = await clientById(db, id);
+    const person = await clientInReach(c, id);
     if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const now = c.var.deps.now();
     const retry = (await opsInputs(c)).fsmRetry;
-    const [address, credits, visits, fitted, payments, history, proposal, invite, held] = await Promise.all([
-      currentAddress(db, id),
-      creditBalance(db, id, now),
-      listVisits(db, id, now),
-      isFitted(db, id),
-      paymentEntries(db, id, now),
-      clientHistory(db, id),
-      // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.
-      latestProposal(db, id),
-      clientInviteOf(db, id),
-      heldBookingsOf(db, id, now, retry),
-    ]);
+    const [address, credits, visits, fitted, payments, links, invoices, history, proposal, invite, held, refunded] =
+      await Promise.all([
+        currentAddress(db, id),
+        creditBalance(db, id, now),
+        listVisits(db, id, now),
+        isFitted(db, id),
+        paymentEntries(db, id, now),
+        paymentLinksOf(db, id, now),
+        visitInvoicesOf(db, id),
+        clientHistory(db, id),
+        // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.
+        latestProposal(db, id),
+        clientInviteOf(db, id),
+        heldBookingsOf(db, id, now, retry),
+        autoRefundsOf(db, id),
+      ]);
     const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
     const [outcomes, closings, codes] = await Promise.all([
       visitOutcomes(db, visitIds),
@@ -539,6 +656,7 @@ export function registerOpsClients(app: App): void {
         closed_without_follow_up: closings.get(visit.id) ?? null,
         discount_code: codes.get(visit.id)?.code ?? null,
         price_open: codes.get(visit.id)?.open ?? false,
+        requested_code: codes.get(visit.id)?.requested ?? null,
       }));
 
     return c.json(
@@ -552,9 +670,12 @@ export function registerOpsClients(app: App): void {
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
         visits: { upcoming: withOutcome(visits.upcoming), past: withOutcome(visits.past) },
         payments,
+        payment_links: links,
+        invoices,
         history,
         invite,
         held_bookings: held.map(heldBookingOf),
+        auto_refunds: refunded.map(autoRefundOf),
       },
       200,
     );
@@ -563,7 +684,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(photosRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientById(db, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const { results } = await db
       .prepare(
@@ -609,7 +730,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(viewRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientById(db, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const now = c.var.deps.now();
     try {
       await logPhotoView(db, { personId: id, actor: staffOf(c), requestId: c.var.requestId, now });
@@ -623,7 +744,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(photoRoute, async (c) => {
     const { id, photo_id: photoId } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientById(db, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     // The same lookup the client's own photographs go through: a photograph of
     // anyone else is not found, whatever ID is asked for.
     const photo = await ownPhotoKey(db, id, photoId);
@@ -652,7 +773,7 @@ export function registerOpsClients(app: App): void {
   app.openapi(consentsRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    if ((await clientById(db, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const [consents, deletion] = await Promise.all([
       consentRecordsOf(db, id),

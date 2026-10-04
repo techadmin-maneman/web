@@ -48,6 +48,7 @@ function Timeline({ timeline, onOpen }: { timeline: PhotoTimeline; onOpen: (phot
         {tryOns.map((tryOn) => (
           <TryOnGroup key={tryOn.id} tryOn={tryOn} onOpen={onOpen} />
         ))}
+        {visits.length > 0 && <p className={styles.basis}>{photos.basis}</p>}
         {visits.map((visit) => (
           <section key={visit.visit_id} aria-labelledby={`visit-${visit.visit_id}`}>
             <div className={styles.group}>

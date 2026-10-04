@@ -53,11 +53,13 @@ interface Props {
   readonly job: Job;
   readonly to: Target;
   readonly sending: boolean;
+  /** Ops chose, after the drawer's warning, to clear the technician's check-in. */
+  readonly clearingCheckIn: boolean;
   readonly onSend: (reason: MoveReason) => void;
   readonly onCancel: () => void;
 }
 
-export function MovePicker({ job, to, sending, onSend, onCancel }: Props) {
+export function MovePicker({ job, to, sending, clearingCheckIn, onSend, onCancel }: Props) {
   const [reason, setReason] = useState<MoveReason | null>(null);
   const copy = dispatch.move;
 
@@ -101,6 +103,7 @@ export function MovePicker({ job, to, sending, onSend, onCancel }: Props) {
       </fieldset>
       <p className={styles.consequence}>{notice.line}</p>
       {inside !== null && <p className={styles.consequence}>{copy.soon(inside)}</p>}
+      {clearingCheckIn && <p className={styles.consequence}>{copy.checkInCleared}</p>}
       <div className={styles.actions}>
         <Button
           variant="primary"

@@ -6,17 +6,24 @@
 // and to act on a booking FSM refused, which heads the tab while it waits
 // (HeldBookings.tsx; docs/decisions/0095-a-booking-fsm-refuses-is-held.md),
 // and to enter a discount code on a visit or take it off (VisitCode.tsx;
-// docs/decisions/0108-discount-codes.md), and to book the client a visit (BookVisit.tsx).
+// docs/decisions/0108-discount-codes.md), to book the client a visit (BookVisit.tsx), and to cancel a visit to come
+// (CancelVisit.tsx) or close by hand one whose technician's phone was lost (CloseVisit.tsx). Each visit to come links
+// to its place on the dispatch board. Beneath the visits, any booking that refunded its payment by itself, and why.
 
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
-import type { ClientRecord, ClientVisit } from "../api.ts";
+import type { AutoRefund, ClientRecord, ClientVisit } from "../api.ts";
+import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { dispatchPath } from "../route.ts";
 import styles from "./clients.module.css";
 import { BookVisit } from "./BookVisit.tsx";
+import { CancelVisit } from "./CancelVisit.tsx";
+import { CloseVisit } from "./CloseVisit.tsx";
 import { GivenAddressForm } from "./GivenAddress.tsx";
 import { HeldBookings } from "./HeldBookings.tsx";
 import { VisitCode } from "./VisitCode.tsx";
@@ -31,6 +38,11 @@ function stateOf(visit: ClientVisit): string {
   if (visit.stage !== null) return `${copy.stages[visit.stage]}${paid}`;
   if (visit.outcome !== null) return copy.outcomes[visit.outcome];
   return copy.statuses[visit.status] ?? clients.unknown;
+}
+
+function whatOf(visit: ClientVisit): string {
+  const kind = visit.type === null ? clients.unknown : copy.types[visit.type];
+  return copy.what(kind, visit.service);
 }
 
 /** The address on one line, narrowest part first, as the client app writes it. */
@@ -130,7 +142,87 @@ function ClosedWithoutFollowUp({ visit }: { visit: ClientVisit }) {
   );
 }
 
-function VisitTable({ title, visits, empty }: { title: string; visits: readonly ClientVisit[]; empty: string }) {
+/** What ops may change of a visit to come: cancel it while it is ahead, or close it by hand once its time has come. */
+function changesOf(
+  visit: { readonly starts_at: string; readonly stage: ClientVisit["stage"] },
+  now: number,
+): "cancel" | "close" | null {
+  if (visit.stage === null || visit.stage === "done") return null;
+  if (Date.parse(visit.starts_at) > now) return visit.stage === "booked" ? "cancel" : null;
+  return "close";
+}
+
+/** A visit's own action in its row, and the panel it opens; a visit changed has the page read the record again. */
+function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: string; onChanged: () => void }) {
+  const [open, setOpen] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
+  const access = useAccess();
+  const change = changesOf(visit, Date.now());
+  if (change === null) return null;
+  const call = change === "cancel" ? "POST /api/visits/{id}/cancel" : "POST /api/visits/{id}/close";
+  if (!access.mayCall(call)) return null;
+
+  const when = fullDate(visit.date);
+  const closed = (changed: boolean) => {
+    setOpen(false);
+    if (changed) onChanged();
+    else requestAnimationFrame(() => opener.current?.focus());
+  };
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="small"
+        ref={opener}
+        className={styles.secondary}
+        aria-label={change === "cancel" ? copy.cancel.openLabel(when) : copy.handClose.openLabel(when)}
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        {change === "cancel" ? copy.cancel.open : copy.handClose.open}
+      </Button>
+      {open && change === "cancel" && <CancelVisit visitId={visit.id} name={name} onClose={closed} />}
+      {open && change === "close" && <CloseVisit visitId={visit.id} name={name} date={visit.date} onClose={closed} />}
+    </>
+  );
+}
+
+/** A visit to come on the dispatch board: its week, with its drawer open. */
+function ShowOnBoard({ visit }: { visit: ClientVisit }) {
+  const mayOpen = useAccess().mayCall("GET /api/dispatch");
+  if (!mayOpen) return null;
+  return (
+    <OpsLink
+      className={styles.boardLink}
+      to={dispatchPath({ from: visit.date, visit: visit.id })}
+      label={copy.onBoardLabel(fullDate(visit.date))}
+    >
+      {copy.onBoard}
+    </OpsLink>
+  );
+}
+
+/** The client whose visits a table lists, where its rows may be changed: only the visits to come. */
+interface Changing {
+  readonly name: string;
+  readonly onChanged: () => void;
+}
+
+function VisitTable({
+  title,
+  visits,
+  empty,
+  changing = null,
+  onBoard = false,
+}: {
+  title: string;
+  visits: readonly ClientVisit[];
+  empty: string;
+  changing?: Changing | null;
+  /** Whether each visit links to its place on the dispatch board: the visits to come do. */
+  onBoard?: boolean;
+}) {
   return (
     <section className={styles.visitList} aria-label={title}>
       <h3 className={styles.sectionTitle}>{title}</h3>
@@ -150,13 +242,19 @@ function VisitTable({ title, visits, empty }: { title: string; visits: readonly 
           <tbody>
             {visits.map((visit) => (
               <tr key={visit.id}>
-                <td className={styles.cell}>{fullDate(visit.date)}</td>
+                <td className={styles.cell}>
+                  {fullDate(visit.date)}
+                  {onBoard && <ShowOnBoard visit={visit} />}
+                </td>
                 <td className={styles.cell}>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
-                <td className={styles.cell}>{visit.type === null ? clients.unknown : copy.types[visit.type]}</td>
+                <td className={styles.cell}>{whatOf(visit)}</td>
                 <td className={styles.quietCell}>{visit.technician?.name ?? clients.unknown}</td>
                 <td className={styles.cell}>
                   {stateOf(visit)}
                   <ClosedWithoutFollowUp visit={visit} />
+                  {changing !== null && (
+                    <ChangeVisit visit={visit} name={changing.name} onChanged={changing.onChanged} />
+                  )}
                 </td>
                 <td className={styles.cell}>
                   <VisitCode visit={visit} />
@@ -166,6 +264,33 @@ function VisitTable({ title, visits, empty }: { title: string; visits: readonly 
           </tbody>
         </Table>
       )}
+    </section>
+  );
+}
+
+/** Bookings that refunded their payment by themselves, and why, so ops can answer a client who asks. */
+function AutoRefunds({ refunds }: { refunds: readonly AutoRefund[] }) {
+  if (refunds.length === 0) return null;
+  const words = copy.autoRefunds;
+  return (
+    <section className={styles.visitList} aria-labelledby="auto-refunds">
+      <h3 className={styles.sectionTitle} id="auto-refunds">
+        {words.title}
+      </h3>
+      <ul className={styles.heldList}>
+        {refunds.map((refund) => (
+          <li key={refund.hold_id} className={styles.heldItem}>
+            <p className={styles.heldWhat}>
+              {words.what(
+                copy.types[refund.type],
+                fullDate(refund.date),
+                refund.amount === null ? null : rupees(refund.amount),
+              )}
+            </p>
+            <p className={styles.heldLine}>{words.why(longDate(refund.refunded_at), words.reasons[refund.reason])}</p>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -210,22 +335,30 @@ export function Visits({
   record,
   address,
   onAddress,
-  onBooked,
+  onChanged,
 }: {
   clientId: string;
   record: ClientRecord;
   /** The address visits go to, the one saved on this page since it opened if there is one. */
   address: ClientRecord["address"];
   onAddress: (address: SavedAddress) => void;
-  onBooked: () => void;
+  /** A visit booked, cancelled or closed: the page reads the record again. */
+  onChanged: () => void;
 }) {
   return (
     <div className={styles.visits}>
-      <BookOne clientId={clientId} record={record} onBooked={onBooked} />
+      <BookOne clientId={clientId} record={record} onBooked={onChanged} />
       <HeldBookings bookings={record.held_bookings} upcoming={record.visits.upcoming} />
       <Address clientId={clientId} address={address} onAddress={onAddress} />
-      <VisitTable title={copy.upcoming} visits={record.visits.upcoming} empty={copy.noUpcoming} />
+      <VisitTable
+        title={copy.upcoming}
+        visits={record.visits.upcoming}
+        empty={copy.noUpcoming}
+        changing={{ name: record.name, onChanged }}
+        onBoard
+      />
       <VisitTable title={copy.past} visits={record.visits.past} empty={copy.noPast} />
+      <AutoRefunds refunds={record.auto_refunds} />
     </div>
   );
 }

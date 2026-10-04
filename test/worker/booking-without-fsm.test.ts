@@ -5,20 +5,22 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { bookUnbookedHolds, confirmBooking } from "../../src/domain/bookings.ts";
-import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
+import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { resolveAskedWindows } from "../../src/domain/asked-windows.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { settleOwedRefunds } from "../../src/domain/cancel-refunds.ts";
 import { cancelVisit, changeableVisit, changeTerms, termsInForce } from "../../src/domain/visit-changes.ts";
 import { readOpsInputs } from "../../src/domain/ops-settings.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubPayments, type PaymentsProvider } from "../../src/providers/payments.ts";
+import { createStubPayments, PaymentUnanswered, type PaymentsProvider } from "../../src/providers/payments.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
   appFor,
   captureLogs,
+  failingAfterTheFirstBatch,
   fakeDependencies,
   fakeQueue,
   fsmSwitchedOff,
@@ -61,6 +63,7 @@ function call(
   path: string,
   init: { method?: string; body?: object } = {},
   deps: TestDependencies = withoutFsm(),
+  database: D1Database = env.DB,
 ) {
   const app = appFor("local", deps, {}, "client", PROVIDERS_FOR.ours);
   return request(
@@ -75,7 +78,7 @@ function call(
       },
       ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
     },
-    bindings(),
+    { ...bindings(), DB: database },
   );
 }
 
@@ -349,6 +352,119 @@ describe("a free booking", () => {
   });
 });
 
+describe("one credit pays for one visit, without FSM", () => {
+  const hold = async (date: string) => {
+    const held = await call(PERSON, "/api/holds", {
+      method: "POST",
+      body: { type: "service", date, window: "afternoon" },
+    });
+    expect(held.status).toBe(201);
+    return (await held.json<{ id: string }>()).id;
+  };
+  const book = async (holdId: string) => {
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: holdId } });
+    // A call that finds its hold booked already answers 409, with no checkout.
+    return started.json<{ checkout?: { amount: number } | null }>();
+  };
+  const redeems = async () =>
+    (await env.DB.prepare("SELECT source_id FROM credit_ledger WHERE kind = 'redeem'").all()).results;
+
+  /** The one service visit booked, its credit redeemed, and nothing left to spend. */
+  async function oneVisitOnTheCredit() {
+    const visits = (await visitsOf(PERSON, "service")).results;
+    expect(visits).toHaveLength(1);
+    expect(await redeems()).toEqual([{ source_id: visits[0]?.id }]);
+    expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(0);
+  }
+
+  beforeEach(async () => {
+    await fittedClient();
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+  });
+
+  it("books one of two visits booked in two tabs at the same moment on it, and asks payment for the other", async () => {
+    const first = await hold("2026-09-24");
+    const second = await hold("2026-09-25");
+    // Each tab held its visit on the credit before either was booked.
+    await env.DB.prepare("UPDATE slot_holds SET state = 'held', use_credit = 1").run();
+
+    const answers = await Promise.all([book(first), book(second)]);
+
+    const onCredit = answers.filter((answer) => answer.checkout === null);
+    const paid = answers.filter((answer) => answer.checkout?.amount === 200000);
+    expect([onCredit.length, paid.length]).toEqual([1, 1]);
+    await oneVisitOnTheCredit();
+  });
+
+  it("books a booking call sent twice at once as one visit, on one credit", async () => {
+    const first = await hold("2026-09-24");
+
+    const answers = await Promise.all([book(first), book(first)]);
+
+    for (const answer of answers) expect(answer.checkout ?? null).toBeNull();
+    await oneVisitOnTheCredit();
+  });
+
+  it("books only the first of three visits booked back to back on it, and asks payment for the others", async () => {
+    const answers = [];
+    for (const date of ["2026-09-24", "2026-09-25", "2026-09-28"]) answers.push(await book(await hold(date)));
+
+    expect(answers.map((answer) => answer.checkout?.amount ?? 0)).toEqual([0, 200000, 200000]);
+    await oneVisitOnTheCredit();
+  });
+
+  /** The booking confirmed on the credit, and its request stopped before the visit was written. */
+  const confirmedButUnwritten = (holdId: string) =>
+    env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2, queued_at = ?2 WHERE id = ?1")
+      .bind(holdId, NOW.toISOString())
+      .run();
+
+  const halfHourPass = (deps: TestDependencies) =>
+    bookUnbookedHolds(
+      env.DB,
+      {
+        ...deps,
+        notify: () => Promise.resolve(),
+        labelAsTest: true,
+        budget: createCallBudget(40),
+        log: createLogger(),
+      },
+      at(32 * 60),
+    );
+
+  it("asks payment on another device's visit while the credit waits on a booking not yet written", async () => {
+    const first = await hold("2026-09-24");
+    await confirmedButUnwritten(first);
+    const second = await hold("2026-09-25");
+    // The second device read the balance just before the first booking was confirmed.
+    await env.DB.prepare("UPDATE slot_holds SET use_credit = 1 WHERE id = ?1").bind(second).run();
+
+    expect(await book(second)).toMatchObject({ checkout: { amount: 200000 } });
+    const secondHold = await env.DB.prepare("SELECT use_credit, confirmed_at FROM slot_holds WHERE id = ?1")
+      .bind(second)
+      .first();
+    expect(secondHold).toEqual({ use_credit: 0, confirmed_at: null });
+
+    expect(await halfHourPass(withoutFsm())).toBe(1);
+    await oneVisitOnTheCredit();
+  });
+
+  it("books a credit visit whose credit was taken back before it was written, and tells ops nothing paid for it", async () => {
+    const first = await hold("2026-09-24");
+    await confirmedButUnwritten(first);
+    await clawBack(env.DB, "ops", "o1", NOW);
+    const deps = withoutFsm();
+
+    expect(await halfHourPass(deps)).toBe(1);
+
+    expect((await visitsOf(PERSON, "service")).results).toHaveLength(1);
+    expect(await redeems()).toEqual([]);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("had none left by then, so nothing has paid for it. Decide whether to charge"),
+    ]);
+  });
+});
+
 describe("a visit booked without FSM, moved by the client", () => {
   async function moveHold(date: string, window: string) {
     const answer = await call(PERSON, "/api/holds", {
@@ -431,7 +547,8 @@ describe("a visit booked without FSM, cancelled by the client", () => {
       deps,
     );
 
-    expect(await done.json()).toMatchObject({ cancelled: true, refund: 200000, kept: 0 });
+    expect(done.status).toBe(200);
+    expect(await done.json()).toMatchObject({ cancelled: true, refund: 200000, kept: 0, refund_pending: false });
     expect((await visitOf(VISIT))?.status).toBe("cancelled");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 200000 }]);
     expect((await changes()).results).toEqual([
@@ -486,6 +603,188 @@ describe("a visit booked without FSM, cancelled by the client", () => {
     expect((await visitOf(VISIT))?.status).toBe("scheduled");
     expect((await changes()).results).toEqual([]);
     expect((await messagesOf(PERSON)).results).toEqual([]);
+    expect(payments.made.refunds).toEqual([]);
+  });
+});
+
+describe("a visit cancelled without FSM, when something fails after it is cancelled", () => {
+  const cancelFree = (deps: TestDependencies, database: D1Database = env.DB) =>
+    call(
+      PERSON,
+      `/api/appointments/${VISIT}/cancel`,
+      { method: "POST", body: { confirm: true, notice: "free" } },
+      deps,
+      database,
+    );
+
+  const settled = () =>
+    env.DB.prepare("SELECT refund_settled_at FROM visit_changes WHERE appointment_id = ?1")
+      .bind(VISIT)
+      .first<{ refund_settled_at: string | null }>();
+
+  /** The cron's cancel_refunds pass, `minutes` after NOW. */
+  const refundPass = (deps: TestDependencies, minutes: number) =>
+    settleOwedRefunds(env.DB, { ...deps, budget: createCallBudget(40), log: createLogger() }, at(minutes * 60));
+
+  const queueThatRefuses = () => ({ ...fakeQueue(), send: () => Promise.reject(new Error("Queue send failed")) });
+
+  beforeEach(async () => {
+    await fittedClient();
+    await bookedWithoutFsm(THURSDAY_NOON);
+  });
+
+  it("stays cancelled with its refund pending when D1 is lost once it is cancelled, and the job refunds once", async () => {
+    const payments = createStubPayments();
+    const deps = withoutFsm({ payments });
+
+    const done = await cancelFree(deps, failingAfterTheFirstBatch(env.DB));
+
+    expect(done.status).toBe(202);
+    expect(await done.json()).toMatchObject({ cancelled: true, refund_pending: true, refund: 200000 });
+    expect((await visitOf(VISIT))?.status).toBe("cancelled");
+    expect((await messagesOf(PERSON)).results).toEqual([{ kind: "cancel_confirmation", subject_id: VISIT }]);
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 200000 }]);
+    expect(await settled()).toEqual({ refund_settled_at: null });
+
+    expect(await refundPass(deps, 5)).toBe(0);
+    expect(await refundPass(deps, 11)).toBe(1);
+    expect(payments.made.refunds).toHaveLength(1);
+    expect(deps.alerts).toEqual([]);
+    expect(await settled()).toEqual({ refund_settled_at: at(11 * 60).toISOString() });
+    expect(await refundPass(deps, 16)).toBe(0);
+  });
+
+  it("leaves the job a refund Razorpay did not answer when ops could not be told", async () => {
+    const silent = () => Promise.reject(new PaymentUnanswered("refund", new Error("The operation timed out.")));
+    const failing = withoutFsm({
+      payments: { ...createStubPayments(), refund: silent },
+      alertOnce: () => Promise.reject(new Error("D1_ERROR: Network connection lost.")),
+    });
+
+    const done = await cancelFree(failing);
+    expect(done.status).toBe(202);
+    expect((await visitOf(VISIT))?.status).toBe("cancelled");
+
+    const payments = createStubPayments();
+    const deps = withoutFsm({ payments });
+    expect(await refundPass(deps, 11)).toBe(1);
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 200000 }]);
+    expect(deps.alerts).toEqual([]);
+  });
+
+  it("answers cancelled and refunded when the queue refuses the message, which waits for the sweeper", async () => {
+    messageQueue = queueThatRefuses();
+    const payments = createStubPayments();
+
+    const done = await cancelFree(withoutFsm({ payments }));
+
+    expect(done.status).toBe(200);
+    expect(await done.json()).toMatchObject({ cancelled: true, refund_pending: false });
+    expect(payments.made.refunds).toHaveLength(1);
+    expect((await messagesOf(PERSON)).results).toEqual([{ kind: "cancel_confirmation", subject_id: VISIT }]);
+    expect(await settled()).toEqual({ refund_settled_at: NOW.toISOString() });
+  });
+
+  it("gives a credit back with the cancel itself, whatever fails after", async () => {
+    await env.DB.prepare("DELETE FROM payments").run();
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "referral", sourceId: "attr-1", now: NOW }).run();
+    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
+    messageQueue = queueThatRefuses();
+
+    const done = await cancelFree(withoutFsm(), failingAfterTheFirstBatch(env.DB));
+
+    expect(done.status).toBe(200);
+    expect(await done.json()).toMatchObject({ cancelled: true, credit: "restored", refund_pending: false });
+    expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(1);
+  });
+});
+
+describe("the cron's cancel_refunds job", () => {
+  /** A cancel whose Worker stopped once the visit was cancelled, before its refund was settled. */
+  const stoppedAfterCancelling = (visitStatus = "cancelled") =>
+    env.DB.batch([
+      env.DB.prepare("UPDATE appointments SET status = ?2 WHERE id = ?1").bind(VISIT, visitStatus),
+      env.DB.prepare(
+        `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, kept_amount,
+           payment_id, created_at)
+         VALUES (?1, ?2, ?3, 'cancelled', 'free', ?4, 200000, 0, ?5, ?6)`,
+      ).bind(crypto.randomUUID(), VISIT, PERSON, THURSDAY_NOON, PAYMENT, NOW.toISOString()),
+    ]);
+
+  const config = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, ...PROVIDERS_FOR.ours } };
+  const job = CRON_JOBS.filter((each) => each.name === "cancel_refunds");
+  const run = (deps: TestDependencies) =>
+    runCronJobs(job, { env: { ...env, MESSAGE_QUEUE: messageQueue }, deps, config, log: createLogger() });
+
+  beforeEach(async () => {
+    await fittedClient();
+    await bookedWithoutFsm(THURSDAY_NOON);
+  });
+
+  it("refunds once a cancel whose Worker stopped before its refund", async () => {
+    await stoppedAfterCancelling();
+    const payments = createStubPayments();
+    const deps = withoutFsm({ payments, now: () => at(11 * 60) });
+
+    expect(await run(deps)).toEqual([{ job: "cancel_refunds", ok: true }]);
+    expect(await run(deps)).toEqual([{ job: "cancel_refunds", ok: true }]);
+
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 200000 }]);
+    expect(deps.alerts).toEqual([]);
+  });
+
+  it("tells ops to look in Razorpay before refunding by hand, since the refund it refuses may have been made", async () => {
+    await stoppedAfterCancelling();
+    let asked = 0;
+    const refusing: PaymentsProvider = {
+      ...createStubPayments(),
+      refund: () => {
+        asked += 1;
+        return Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR: the payment has been fully refunded"));
+      },
+    };
+    const deps = withoutFsm({ payments: refusing, now: () => at(11 * 60) });
+
+    await run(deps);
+    await run(deps);
+
+    expect(asked).toBe(2);
+    expect(deps.alerts).toEqual([
+      `Razorpay did not answer the refund of Rs. 2000 for visit ${VISIT}, cancelled by the client (payment ` +
+        "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
+        `refund of Rs. 2000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
+    ]);
+  });
+
+  it("names ops in the alert for a cancel ops made in the console", async () => {
+    await stoppedAfterCancelling();
+    await env.DB.prepare("UPDATE visit_changes SET cancelled_by = 'ops@localhost', ops_terms = 'free'").run();
+    const refusing: PaymentsProvider = {
+      ...createStubPayments(),
+      refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR: the payment has been fully refunded")),
+    };
+    const deps = withoutFsm({ payments: refusing, now: () => at(11 * 60) });
+
+    await run(deps);
+
+    expect(deps.alerts).toHaveLength(1);
+    expect(deps.alerts[0]).toContain(`Rs. 2000 for visit ${VISIT}, cancelled by ops (payment pay_visit)`);
+  });
+
+  it("leaves alone a claim whose visit was never cancelled, and one the Worker before it refunded", async () => {
+    await stoppedAfterCancelling("scheduled");
+    const payments = createStubPayments();
+    const deps = withoutFsm({ payments, now: () => at(11 * 60) });
+    await run(deps);
+    expect(payments.made.refunds).toEqual([]);
+
+    await env.DB.batch([
+      env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(VISIT),
+      env.DB.prepare("UPDATE visit_changes SET razorpay_refund_id = 'rfnd_before' WHERE appointment_id = ?1").bind(
+        VISIT,
+      ),
+    ]);
+    await run(deps);
     expect(payments.made.refunds).toEqual([]);
   });
 });

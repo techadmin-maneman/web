@@ -5,9 +5,11 @@
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import type { EnvironmentName } from "../config/environments.ts";
 import { indiaInstant } from "../lib/india-time.ts";
+import type { PlacesReached } from "../policy/access.ts";
 import { namedArea } from "./area-names.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { consentGiven, latestConsentSql } from "./messages.ts";
+import { reachBinding, withinReach } from "./places.ts";
 import { firstNameOf } from "../lib/names.ts";
 
 export interface WaitlistArea {
@@ -25,8 +27,15 @@ export interface WaitlistArea {
   readonly alerts: number;
 }
 
-/** The pincodes with someone waiting, the longest wait first, `limit` of them at most. */
-export async function waitlistByPincode(db: D1Database, limit: number): Promise<WaitlistArea[]> {
+/**
+ * The pincodes with someone waiting within reach, the longest wait first, `limit` of them at most. A pincode we do not
+ * know is in no city, so only a national grant sees it.
+ */
+export async function waitlistByPincode(
+  db: D1Database,
+  limit: number,
+  reached: PlacesReached,
+): Promise<WaitlistArea[]> {
   const { results } = await db
     .prepare(
       `SELECT w.pincode, ${namedArea("p")} AS area, p.city, p.served, p.launched_at, COUNT(*) AS waiting,
@@ -34,9 +43,10 @@ export async function waitlistByPincode(db: D1Database, limit: number): Promise<
          SUM(CASE WHEN w.referral_code IS NOT NULL THEN 1 ELSE 0 END) AS referred,
          SUM(w.launch_alert) AS alerts
        FROM waitlist_entries w LEFT JOIN serviceable_pincodes p ON p.pincode = w.pincode
+       WHERE ${withinReach("waitlist_entry", "w", "?2")}
        GROUP BY w.pincode ORDER BY oldest, w.pincode LIMIT ?1`,
     )
-    .bind(limit)
+    .bind(limit, reachBinding(reached))
     .all<{
       pincode: string;
       area: string | null;
@@ -165,13 +175,18 @@ export async function launchPincode(
   return { alerts };
 }
 
-/** What a launch alert says: the area we now come to, its city until ops have named it, and where to book. */
+/**
+ * What a launch alert says: the area we now come to, its city until ops have named it, and where to book. Paced
+ * alerts leave minutes after the launch, so the consent is read again here: one withdrawn meanwhile stops it.
+ */
 export async function composeLaunchAlert(
   db: D1Database,
   pincode: string,
   personId: string,
   environment: EnvironmentName,
 ): Promise<{ template: string; params: string[] } | { skip: string }> {
+  const stillAgreed = await consentGiven(db, personId, "whatsapp_launches");
+  if (!stillAgreed) return { skip: "no consent to WhatsApp about launches" };
   const row = await db
     .prepare(
       `SELECT p.name, ${namedArea("s")} AS area, s.city, s.served FROM people p

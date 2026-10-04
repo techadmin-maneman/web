@@ -20,7 +20,8 @@
 //
 // Where our own database holds the record of a visit (src/config/field-record.ts),
 // its move is one batch, and nothing goes to FSM. A visit the technician has
-// begun is not moved on either path.
+// begun is not moved on either path, unless he has only checked in and ops,
+// warned, choose to clear his check-in: he checks in again at the new time.
 
 import { recordOfVisit, type FieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS, SLOTS_PER_DAY, type BookingWindow } from "../config/scheduling.ts";
@@ -37,13 +38,16 @@ import {
   type MoveReason,
   type MoveRefusal,
 } from "../policy/dispatch.ts";
+import { reachesCity, type PlacesReached } from "../policy/access.ts";
 import { paymentBadge, type PaymentBadge } from "../policy/job-visibility.ts";
 import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { FREE_CHANGE_NOTICE_HOURS } from "../policy/moving-a-visit.ts";
+import { namesMoreThanItsKind } from "../policy/services.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { listCities } from "./cities.ts";
+import { reachBinding, withinReach } from "./places.ts";
 import { syncAppointment } from "./fsm-mirror.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
 import { leaveBetween } from "./leave.ts";
@@ -60,7 +64,7 @@ import {
   type Day,
 } from "./scheduling.ts";
 import { latestConsentSql } from "./messages.ts";
-import { visitBegun } from "./visit-begun.ts";
+import { begunPastArrival, visitBegun } from "./visit-begun.ts";
 import { visitMessage } from "./visit-messages.ts";
 import { unitAt, type SlotTimes } from "../policy/slot-times.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
@@ -88,6 +92,8 @@ export interface BoardClient {
 interface Visit {
   readonly appointment_id: string;
   readonly type: VisitType | null;
+  /** Its service's name in the console, where it names more than the kind: a first fit's hair system, say. */
+  readonly service: string | null;
   /** "Rohit M.", as the board writes a client on a block. */
   readonly client: string | null;
   /** The area the visit's pincode is in, where the service area names it; else the address's locality or the city. */
@@ -134,6 +140,8 @@ export interface UnassignedJob extends Visit {
 }
 
 export interface Board {
+  /** The board's version when this was read: it goes up whenever something the board draws changes. */
+  readonly version: number;
   readonly from: string;
   readonly dates: string[];
   /** The city the jobs are narrowed to; null for every city. */
@@ -190,8 +198,9 @@ const landed = (kind: string): string =>
  * database. A job is the standard tier's where the mirror knows no other.
  */
 const BOARD_JOBS = `
-  SELECT a.id, a.type, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
+  SELECT a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
     a.service_pincode, a.asked_window, a.person_id, d.locality, sp.area, s.minutes AS service_minutes,
+    s.name AS service_name,
     p.name AS client_name, p.mobile_e164 AS client_mobile, p.erased_at AS client_erased_at,
     t.name AS technician_name, t.active AS technician_active,
     ${LATEST_VISITS_CONSENT} AS whatsapp_visits,
@@ -214,30 +223,54 @@ const BOARD_JOBS = `
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
   LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
   WHERE a.deleted_at IS NULL AND a.status IN ${ON_THE_BOARD} AND a.window_start >= ?1 AND a.window_start < ?2
-    AND (?3 IS NULL OR a.service_city = ?3)
+    AND (?3 IS NULL OR a.service_city = ?3) AND ${withinReach("visit", "a", "?5")}
   ORDER BY a.window_start`;
 
 /** The board's seven days from `from`. */
 const weekFrom = (from: string): string[] => Array.from({ length: BOARD_DAYS }, (_, index) => addDays(from, index));
 
+/** The technicians on the board, each with whether staff access by place reaches him (1) or not (0). */
+const BOARD_TECHNICIANS = `SELECT id, name, initials, zone, ${withinReach("technician", "t", "?1")} AS reached
+  FROM technicians t WHERE active = 1 ORDER BY name`;
+
+const EVERYWHERE: PlacesReached = { kind: "everywhere" };
+
+/**
+ * A number that triggers raise whenever a visit, move, leave, technician or the day's slot times change, so the open
+ * board reads itself again only when it has moved.
+ */
+export async function boardVersion(db: D1Database): Promise<number> {
+  const row = await db.prepare("SELECT version FROM board_version WHERE id = 1").first<{ version: number }>();
+  return row?.version ?? 0;
+}
+
 /**
  * The board for seven days from `from`, optionally narrowed to one city. `noticeHours` is the notice in force, which a
  * visit no hold sold is changed under (src/domain/visit-changes.ts).
+ *
+ * `reach` keeps it to the caller's cities: their visits, and the technicians there or holding one of those visits.
  */
 export async function dispatchBoard(
   db: D1Database,
-  options: { from: string; city: string | null; noticeHours?: number },
+  options: { from: string; city: string | null; noticeHours?: number; reach?: PlacesReached },
 ): Promise<Board> {
+  const reach = options.reach ?? EVERYWHERE;
   const dates = weekFrom(options.from);
   const last = dates[dates.length - 1] ?? options.from;
   const fromAt = indiaInstant(options.from, "00:00").toISOString();
   const toAt = indiaInstant(addDays(last, 1), "00:00").toISOString();
 
+  // Read before the board, so a change made while it is read moves the version past this one.
+  const version = await boardVersion(db);
   const [technicians, scheduled, untold, cities, schedule] = await Promise.all([
     db
-      .prepare("SELECT id, name, initials, zone FROM technicians WHERE active = 1 ORDER BY name")
-      .all<{ id: string; name: string; initials: string; zone: string | null }>(),
-    db.prepare(BOARD_JOBS).bind(fromAt, toAt, options.city, FREE_CHANGE_NOTICE_HOURS).all<BoardJobRow>(),
+      .prepare(BOARD_TECHNICIANS)
+      .bind(reachBinding(reach))
+      .all<{ id: string; name: string; initials: string; zone: string | null; reached: number }>(),
+    db
+      .prepare(BOARD_JOBS)
+      .bind(fromAt, toAt, options.city, FREE_CHANGE_NOTICE_HOURS, reachBinding(reach))
+      .all<BoardJobRow>(),
     db
       .prepare(
         `SELECT m.id, m.appointment_id, m.now_start FROM appointments a
@@ -255,7 +288,9 @@ export async function dispatchBoard(
     return move === undefined ? null : { move_id: move.id, starts_at: move.now_start };
   };
 
-  const rows = technicians.results.map((technician): BoardRow => {
+  const holding = new Set(scheduled.results.map((job) => job.technician_id));
+  const shown = technicians.results.filter((technician) => technician.reached === 1 || holding.has(technician.id));
+  const rows = shown.map((technician): BoardRow => {
     const days = dates.map((date) => ({
       date,
       blocks: scheduled.results
@@ -274,7 +309,8 @@ export async function dispatchBoard(
   const unassigned = scheduled.results
     .filter((job) => isNobodys(job) && job.status !== "completed")
     .map((job) => unassignedOf(job, schedule));
-  const leave = (await leaveBetween(db, options.from, last)).map((period) => ({
+  const onTheBoard = (period: { technician_id: string }) => shown.some((row) => row.id === period.technician_id);
+  const leave = (await leaveBetween(db, options.from, last)).filter(onTheBoard).map((period) => ({
     technician_id: period.technician_id,
     // Clipped to the week, so the board draws the days it has columns for and no others.
     from: period.from < options.from ? options.from : period.from,
@@ -282,10 +318,11 @@ export async function dispatchBoard(
     note: period.note,
   }));
   return {
+    version,
     from: options.from,
     dates,
     city: options.city,
-    cities: cities.map((city) => city.name),
+    cities: cities.map((city) => city.name).filter((city) => reachesCity(reach, city)),
     technicians: rows,
     unassigned,
     utilisation: utilisationOf(rows, dates, leave),
@@ -296,6 +333,9 @@ export async function dispatchBoard(
 interface BoardJobRow {
   id: string;
   type: VisitType | null;
+  /** Its service's tier; null where the mirror knows none, which is the standard tier's. */
+  tier: string | null;
+  service_name: string | null;
   status: AppointmentStatus;
   window_start: string;
   window_end: string | null;
@@ -330,6 +370,7 @@ function visitOf(job: BoardJobRow): Visit {
   return {
     appointment_id: job.id,
     type: job.type,
+    service: namesMoreThanItsKind(job.tier, job.one_visit) ? job.service_name : null,
     client: shortName(job.client_name),
     sector: job.area ?? job.locality ?? job.service_city,
     pincode: job.service_pincode,
@@ -413,8 +454,8 @@ const isAway = (leave: Board["leave"], technicianId: string, date: string): bool
  * jobs take, done or still to do, out of the slots of the technicians working
  * that day. A technician on leave has no slots that day, and a job still on him
  * counts for nothing until it is moved. The board's rows are already narrowed to
- * its city's jobs; the technicians are not, since none carries a city and any
- * may be sent anywhere (docs/decisions/0069-dispatch-under-concurrency.md).
+ * its city's jobs; the technicians only to the caller's cities, since any may be
+ * sent anywhere (docs/decisions/0069-dispatch-under-concurrency.md).
  */
 export function utilisationOf(
   rows: readonly BoardRow[],
@@ -443,6 +484,11 @@ export interface MoveInput {
   readonly actor: string;
   /** The job as the board the move was made from showed it: its technician, none in the tray, and its start. */
   readonly expected: { readonly technicianId: string | null; readonly startsAt: string };
+  /**
+   * Set when ops, warned that the technician has checked in, move the visit anyway: his check-in is cleared, and this
+   * entry records who chose it. Absent for an ordinary move.
+   */
+  readonly clearCheckIn?: AuditEntry | null;
 }
 
 /**
@@ -526,6 +572,8 @@ interface LiveJob {
   service_minutes: number | null;
   /** 1 once the technician has begun it (src/domain/visit-begun.ts). */
   begun: number;
+  /** 1 once he has begun it by more than his check-in. */
+  begun_past_arrival: number;
 }
 
 /** A job still to finish; null for one done, cancelled, gone from FSM, or with no type or time. */
@@ -533,7 +581,8 @@ function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null>
   return db
     .prepare(
       `SELECT a.id, a.fsm_id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.start_before_move,
-         a.technician_id, s.minutes AS service_minutes, ${visitBegun("a")} AS begun
+         a.technician_id, s.minutes AS service_minutes, ${visitBegun("a")} AS begun,
+         ${begunPastArrival("a")} AS begun_past_arrival
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
        WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.type IS NOT NULL
          AND a.window_start IS NOT NULL`,
@@ -547,6 +596,14 @@ function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null>
  * phone would carry on with a visit now on another day or another technician's.
  */
 const isUnderWay = (job: LiveJob): boolean => job.status === "in_progress" || job.begun === 1;
+
+/** A job begun by the technician's check-in and nothing more: ops may still move it by clearing the check-in. */
+const isOnlyCheckedIn = (job: LiveJob): boolean =>
+  job.status !== "in_progress" && job.begun === 1 && job.begun_past_arrival === 0;
+
+/** Whether the job may move as it is: not begun, or only checked in and ops chose to clear the check-in. */
+const mayMove = (job: LiveJob, clearingCheckIn: boolean): boolean =>
+  !isUnderWay(job) || (clearingCheckIn && isOnlyCheckedIn(job));
 
 /** Where a move puts the job. A day and window that are the job's own keep its start: only the technician changes. */
 function targetOf(
@@ -581,6 +638,8 @@ interface PlannedMove {
   /** The India date of the technician's day the move claims, and its half-slots there. */
   readonly date: string;
   readonly claims: readonly string[];
+  /** The audit entry for clearing the technician's check-in; null when he had not checked in. */
+  readonly clearCheckIn: AuditEntry | null;
 }
 
 /**
@@ -592,7 +651,8 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   if (job === null) return { kind: "not_found" };
   const changed = changedSince(job, input.expected);
   if (changed.length > 0) return { kind: "superseded", changed };
-  if (isUnderWay(job)) return { kind: "in_progress" };
+  const clearCheckIn = input.clearCheckIn ?? null;
+  if (!mayMove(job, clearCheckIn !== null)) return { kind: "in_progress" };
 
   const wasStart = new Date(job.window_start);
   const technicianId = input.technicianId ?? job.technician_id;
@@ -624,6 +684,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
     keepsTime: target.keepsTime,
     date,
     claims: claimsOf(landing.start, unitsFor(minutes), window),
+    clearCheckIn: isUnderWay(job) ? clearCheckIn : null,
   };
   if (recordOfVisit(deps.record ?? "fsm", { id: job.id, fsmId: job.fsm_id }) === "ours") {
     return moveInOurRecord(db, deps, move, now);
@@ -678,6 +739,7 @@ async function moveInFsm(db: D1Database, deps: MoveDeps, move: PlannedMove, now:
     movedVisit(db, move, at),
     // The mirror now holds the new time, so the claim on it goes in the same batch.
     releasingClaims(db, move.id),
+    ...checkInCleared(db, move, now),
     // The message row is written before the move points at it.
     ...(told.message === null ? [] : [told.message.statement]),
     db
@@ -707,6 +769,7 @@ async function moveInOurRecord(db: D1Database, deps: MoveDeps, move: PlannedMove
       ...move.claims.map((claim) => claimOf(db, move, claim)),
       movedVisit(db, move, at),
       releasingClaims(db, move.id),
+      ...checkInCleared(db, move, now),
     ]);
   } catch (error) {
     if (failedUniqueOn(error, "slot_claims")) return { kind: "refused", reason: "clash" };
@@ -718,11 +781,13 @@ async function moveInOurRecord(db: D1Database, deps: MoveDeps, move: PlannedMove
 }
 
 /**
- * The move, recorded as written. It names its visit only while the visit is as the move read it, not yet begun;
- * otherwise its visit is empty, which the table refuses, and the batch it is in writes nothing.
+ * The move, recorded as written. It names its visit only while the visit is as the move read it, not yet begun, or
+ * begun by no more than the check-in it clears; otherwise its visit is empty, which the table refuses, and the batch
+ * it is in writes nothing.
  */
 function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null, at: string): D1PreparedStatement {
   const { job } = move;
+  const begun = move.clearCheckIn === null ? visitBegun("a") : begunPastArrival("a");
   return db
     .prepare(
       `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
@@ -730,7 +795,7 @@ function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null
        VALUES (?1,
          (SELECT a.id FROM appointments a
           WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.deleted_at IS NULL
-            AND a.status IN ('scheduled', 'dispatched') AND NOT ${visitBegun("a")}),
+            AND a.status IN ('scheduled', 'dispatched') AND NOT ${begun}),
          ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10)`,
     )
     .bind(
@@ -753,8 +818,23 @@ async function changedUnder(db: D1Database, move: PlannedMove): Promise<MoveOutc
   if (job === null) return { kind: "not_found" };
   const changed = changedSince(job, { technicianId: move.job.technician_id, startsAt: move.job.window_start });
   if (changed.length > 0) return { kind: "superseded", changed };
-  if (isUnderWay(job)) return { kind: "in_progress" };
+  if (!mayMove(job, move.clearCheckIn !== null)) return { kind: "in_progress" };
   return { kind: "superseded", changed: ["moving"] };
+}
+
+/**
+ * Clears the technician's check-in once the move is written: every step his phone landed on the visit is set aside,
+ * the check-in all there is, so he checks in again where the visit now is. The audit log names who chose it.
+ */
+function checkInCleared(db: D1Database, move: PlannedMove, now: Date): D1PreparedStatement[] {
+  if (move.clearCheckIn === null) return [];
+  const entry: AuditEntry = { ...move.clearCheckIn, detail: { move_id: move.id } };
+  return [
+    db
+      .prepare("UPDATE job_events SET superseded = 1, updated_at = ?2 WHERE appointment_id = ?1 AND superseded = 0")
+      .bind(move.job.id, now.toISOString()),
+    auditStatement(db, entry, now),
+  ];
 }
 
 /** The visit where the move puts it. */
@@ -910,7 +990,8 @@ export interface Room {
  * Where a job in hand can go in the week from `from`: each technician's day
  * with a window the job would land in, by the same check a move runs, so the
  * board offers no window the move would be refused. Not where it already is.
- * Null for a job no longer live, or one the technician has begun.
+ * Null for a job no longer live, or one the technician has begun by more than
+ * his check-in, which no move takes.
  */
 export async function roomFor(
   db: D1Database,
@@ -918,7 +999,7 @@ export async function roomFor(
   now: Date,
 ): Promise<Room[] | null> {
   const job = await liveJob(db, input.appointmentId);
-  if (job === null || isUnderWay(job)) return null;
+  if (job === null || !mayMove(job, true)) return null;
   const dates = weekFrom(input.from);
   const [technicians, held, schedule] = await Promise.all([
     activeTechnicians(db),

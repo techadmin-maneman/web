@@ -11,7 +11,7 @@ import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { fullDate, shortDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
@@ -20,7 +20,7 @@ import { messages, visits } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
 import { VisitCard } from "../home/VisitCard.tsx";
 import { apiNow } from "../lib/clock.ts";
-import { duration, invoiceState, visitName } from "../lib/visit.ts";
+import { duration, invoiceState, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { PhotoRow, type OpenPhoto } from "../photos/PhotoRow.tsx";
 import { PhotoSheet } from "../photos/PhotoSheet.tsx";
@@ -96,7 +96,7 @@ function rulingOf(note: NoShowNote): string {
 
 /**
  * A visit the client was not home for (LIFE-07): that we came and waited, what was ruled, and where a dispute of
- * the charge stands, or the way to raise one.
+ * the charge stands, the way to raise one, or when the time to raise one ended.
  */
 function NoShow({ visitId, note, onDisputed }: { visitId: string; note: NoShowNote; onDisputed: () => void }) {
   const [disputing, setDisputing] = useState(false);
@@ -110,6 +110,9 @@ function NoShow({ visitId, note, onDisputed }: { visitId: string; note: NoShowNo
       {/* A refund undoes the charge, so after one only its outcome is said. */}
       {note.dispute !== "refunded" && <p className={styles.noShowLine}>{rulingOf(note)}</p>}
       {note.dispute !== null && <p className={styles.noShowLine}>{copy.disputed[note.dispute]}</p>}
+      {note.dispute_closed_at !== null && (
+        <p className={styles.noShowLine}>{copy.disputeClosed(shortDate(indiaDate(note.dispute_closed_at)))}</p>
+      )}
       {note.disputable && (
         <Button
           variant="outline"
@@ -156,7 +159,7 @@ function PastVisit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => 
         {visit.duration_minutes !== null && (
           <Fact name={copy.duration} value={duration(visit.duration_minutes)} numeric />
         )}
-        <Fact name={copy.type} value={visitName(visit.type)} />
+        <Fact name={copy.type} value={visitTitle(visit)} />
         {visit.what_was_done !== null && visit.what_was_done.length > 0 && (
           <div className={styles.done}>
             <dt>{copy.done}</dt>
