@@ -584,10 +584,14 @@ async function writeNewBooking(
   await afterBooked(db, fsm, booked, now, options);
 }
 
-/** For the batch that books a hold: the redeem of the credit that pays for it, if one does. */
+/**
+ * For the batch that books a hold: the redeem of the credit that pays for it, if one does, from the credits the client
+ * held when the booking was confirmed.
+ */
 function creditRedeem(db: D1Database, hold: HoldRow, now: Date): D1PreparedStatement[] {
   if (hold.use_credit !== 1) return [];
-  return [redeemCreditForBooking(db, { holdId: hold.id, personId: hold.person_id }, now)];
+  const madeAt = hold.confirmed_at ?? now.toISOString();
+  return [redeemCreditForBooking(db, { holdId: hold.id, personId: hold.person_id, madeAt }, now)];
 }
 
 /**

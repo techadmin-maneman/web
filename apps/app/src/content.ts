@@ -157,6 +157,8 @@ export const messages = {
   lateInvoice: (what: string, date: string) => `Please send me the invoice for my ${what.toLowerCase()} on ${date}.`,
   // PLACEHOLDER: a refund that has taken longer than Razorpay's working days.
   lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} has not arrived.`,
+  // PLACEHOLDER: a client moving to another city while a visit is booked.
+  moveCity: "I am moving to another city and have a visit booked.",
 } as const;
 
 /**
@@ -169,7 +171,10 @@ const freeServiceVisits = (count: number): string =>
 /** Home's and Refer's tile: how many free service visits, and the day the soonest must be used by. */
 const freeVisitsTile = {
   count: freeServiceVisits,
-  useBy: (date: string) => `Use by ${date}`,
+  useBy: (when: string) => `Use by ${when}`,
+  /** Only some of them end first: "1 to use by 2 Oct". */
+  someUseBy: (visits: number, when: string) => `${String(visits)} to use by ${when}`,
+  tonight: "tonight",
 };
 
 /** The booking sheet's words for a paid visit still being written to FSM, which Home repeats while it waits. */
@@ -185,7 +190,7 @@ export const home = {
     label: "Your consultation",
     free: "Free",
   },
-  /** Board B1's credit tile: "2 free service visits", and "Use by 3 Jan 2028". */
+  /** Board B1's credit tile: "3 free service visits", and "Use by 2 Oct", or "Use by tonight" on the last day. */
   credits: freeVisitsTile,
   /**
    * Board B1's one prompt, and the invoice line beneath it (src/domain/home-prompt.ts). The replacement's line and
@@ -388,6 +393,12 @@ export const booking = {
     why: "Your address first, so we know where to come. Then pick a date.",
     refused: "We need your address before we can hold a slot. Add it, then pick your window again.",
     save: "Save and continue",
+  },
+  /** PLACEHOLDER: no board draws it. The client's address is in a pincode we do not come to, so no day is offered. */
+  notServed: {
+    line: (pincode: string) => `We do not come to ${pincode} yet.`,
+    body: "Change the address below, or join the waitlist and we will message you the day we do.",
+    waitlist: "Join the waitlist",
   },
   date: {
     title: "Pick a date",
@@ -593,6 +604,7 @@ export const change = {
     acceptCredit: "Cancel and use it",
     done: "Cancelled",
     doneLine: (visit: string) => `${visit} is cancelled.`,
+    refundPending: (amount: string) => `Your refund of ${amount} is on its way.`,
     close: "Done",
   },
   // PLACEHOLDER: what came of a change that did not go through.
@@ -718,6 +730,8 @@ export const refer = {
 
 export const photos = {
   title: "Photos",
+  /** Why the visits' photographs are kept, said above them. */
+  basis: "Taken for your visit record.",
   compare: "Compare",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   /** The compare's three angles, as board D2 names them. */
@@ -893,7 +907,7 @@ export const payments = {
 export const empty = {
   photos: {
     title: "Photos",
-    lines: ["Your photographs start at your first fit.", "Five angles, before and after each visit."],
+    lines: ["Your photographs start at your first visit.", "Five angles at every visit, taken for your visit record."],
   },
   payments: {
     title: "Payments",
@@ -953,6 +967,11 @@ export const profile = {
     save: "Save",
     cancel: "Cancel",
     invalid: "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
+    // PLACEHOLDER: a pincode we do not come to, and a move to another city while a visit is booked.
+    notServed: (pincode: string) => `We do not come to ${pincode} yet.`,
+    waitlist: "Join the waitlist",
+    visitBooked: "You have a visit booked in this city. To move to another, message us first.",
+    message: "Message us",
   },
   agreed: "What you have agreed to",
   purposes: {
@@ -967,6 +986,8 @@ export const profile = {
   notGiven: "Not given",
   // PLACEHOLDER: what switching off visit messages means, since ops then call instead.
   visitsOff: "No visit updates on WhatsApp. We will call you about any change.",
+  // PLACEHOLDER until counsel rules what this switch means: switched off, visits are photographed all the same.
+  ownRecordOff: "Each visit is still photographed for your visit record.",
   // PLACEHOLDER: a switch the API did not answer stays as it was.
   switchFailed: "That did not go through, so nothing has changed. Please try again.",
   /**
