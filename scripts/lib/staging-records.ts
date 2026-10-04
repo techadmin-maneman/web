@@ -7,7 +7,7 @@
 // (src/policy/staging-test-records.ts), and their Books customer and CRM lead carry that name.
 // Every ID staging's database keeps is staging's too, whatever the record is named now: an erased client's, say.
 
-import { isStagingTestName } from "../../src/config/test-names.ts";
+import { isStagingTestName } from "../../src/lib/test-names.ts";
 
 /** Where a record is, and its module there, in the order a list is deleted in: what points at a record goes first. */
 export const DELETE_ORDER = [

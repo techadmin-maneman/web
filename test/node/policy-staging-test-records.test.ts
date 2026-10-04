@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import { firstNameOf } from "../../src/lib/names.ts";
-import { isStagingTestName, withoutTestMark } from "../../src/config/test-names.ts";
+import { isStagingTestName, withoutTestMark } from "../../src/lib/test-names.ts";
 import { RULES, testRecordAtCreation } from "../../src/policy/staging-test-records.ts";
 
 describe("a staging test record", () => {

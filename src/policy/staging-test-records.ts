@@ -10,7 +10,7 @@
 
 import type { EnvironmentName } from "../config/environments.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
-import { isStagingTestName } from "../config/test-names.ts";
+import { isStagingTestName } from "../lib/test-names.ts";
 
 export const RULES = [
   "A record one of our own scripts made is messaged only if its number is on the allowlist, whatever the message's class.",
