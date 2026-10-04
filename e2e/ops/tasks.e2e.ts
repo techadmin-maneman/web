@@ -570,6 +570,81 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
   expect(reasons).toEqual([{ reason: "Moving to Pune; wants no more visits." }]);
 });
 
+// OIA-03, BK-21: the call about a move was recorded only from a block ops had to find on the board, and both of the
+// board's tasks opened this week's bare board.
+test("records a call about a move from its row, and opens each of the board's tasks on its visit", async ({ page }) => {
+  const MOVE = "99000000-0000-4000-8000-000000000001";
+  const MOVED_VISIT = "77000000-0000-4000-8000-000000000101";
+  const ON_LEAVE = "77000000-0000-4000-8000-000000000102";
+  const board: OpsReply<"/api/tasks"> = {
+    overdue: 0,
+    truncated: false,
+    staff: [],
+    groups: [
+      {
+        group: "untold_move",
+        count: 1,
+        closable: false,
+        tasks: [
+          {
+            id: MOVE,
+            person: { id: "22000000-0000-4000-8000-000000000016", name: "Vikram Sethi", mobile: "+919810004418" },
+            visit: { id: MOVED_VISIT, starts_at: "2027-09-24T06:30:00.000Z" },
+            detail: "2027-09-24T06:30:00.000Z",
+            since: "2027-09-22T04:00:00.000Z",
+            due: "2027-09-22T08:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+      {
+        group: "leave_conflict",
+        count: 1,
+        closable: false,
+        tasks: [
+          {
+            id: ON_LEAVE,
+            person: { id: "22000000-0000-4000-8000-000000000017", name: "Kunal Mehta" },
+            visit: { id: ON_LEAVE, starts_at: "2027-09-30T03:30:00.000Z" },
+            detail: "2027-09-30T03:30:00.000Z Imran Qureshi",
+            since: "2027-09-21T06:00:00.000Z",
+            due: "2027-09-23T06:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+    ],
+  };
+  const told: string[] = [];
+  await open(page, board);
+  await answer(page, {
+    "POST /api/dispatch/moves/{id}/told": async (route) => {
+      told.push(new URL(route.request().url()).pathname);
+      await json({ told: true })(route);
+    },
+  });
+
+  const vikram = row(page, "Vikram Sethi");
+  await expect(vikram.getByRole("link", { name: "Call +91 98100 04418 · Vikram Sethi" })).toHaveAttribute(
+    "href",
+    "tel:+919810004418",
+  );
+  await expect(vikram.getByRole("link", { name: "Open it in Dispatch · Vikram Sethi" })).toHaveAttribute(
+    "href",
+    `/dispatch?from=2027-09-24&visit=${MOVED_VISIT}`,
+  );
+  await expect(
+    row(page, "Kunal Mehta").getByRole("link", { name: "Move it in Dispatch · Kunal Mehta" }),
+  ).toHaveAttribute("href", `/dispatch?from=2027-09-30&visit=${ON_LEAVE}`);
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  await vikram.getByRole("button", { name: "Told by phone · Vikram Sethi" }).click();
+  await expect(list(page).getByRole("listitem")).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 2, name: "Tasks" })).toBeFocused();
+  expect(told).toEqual([`/api/dispatch/moves/${MOVE}/told`]);
+});
+
 test("says so when no queue holds anything", async ({ page }) => {
   await open(page, { overdue: 0, truncated: false, staff: [], groups: [] });
   await expect(page.getByText("Nothing is waiting.")).toBeVisible();

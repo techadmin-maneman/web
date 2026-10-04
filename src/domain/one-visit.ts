@@ -21,6 +21,12 @@ export function decisionOf(body: Record<string, unknown>): Decision | null {
   return typeof body.product === "string" ? { product: body.product } : null;
 }
 
+/** The client's decision as the visit's latest piece step recorded it; null before one landed. */
+export async function decisionAtVisit(db: D1Database, appointmentId: string): Promise<Decision | null> {
+  const piece = (await eventsOf(db, appointmentId)).findLast((event) => event.kind === "piece");
+  return piece === undefined ? null : decisionOf(piece.body);
+}
+
 /** The job being closed: which visit, whose, and when. */
 export interface ClosingJob {
   readonly id: string;
@@ -39,8 +45,7 @@ export async function closeOneVisit(
   job: ClosingJob,
   now: Date,
 ): Promise<LinkSent | null> {
-  const piece = (await eventsOf(db, job.id)).findLast((event) => event.kind === "piece");
-  const decision = piece === undefined ? null : decisionOf(piece.body);
+  const decision = await decisionAtVisit(db, job.id);
   if (decision === null || job.personId === null) return null;
 
   if ("declined" in decision) {
