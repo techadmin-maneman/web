@@ -177,7 +177,7 @@ test("opens a block's drawer with the client, the badge, and both ways to reach 
     "href",
     "https://wa.me/919810000001",
   );
-  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute("href", `/clients/${ROHIT.id}`);
+  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute("href", `/clients/${ROHIT.id}/visits`);
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
@@ -483,7 +483,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   await expect.poll(() => new URL(page.url()).search).toBe(kept);
 
   await page.getByRole("dialog").getByRole("link", { name: "Open client" }).click();
-  await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}/visits$`));
   await page.goBack();
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();

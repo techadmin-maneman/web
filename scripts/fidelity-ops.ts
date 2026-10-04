@@ -315,6 +315,17 @@ type Api = Readonly<Record<string, (route: Route) => Promise<void>>>;
 const json = (body: unknown) => (route: Route) => route.fulfill({ json: body });
 const missing = (route: Route) => route.fulfill({ status: 404, json: { error: { code: "not_found" } } });
 
+/** The whole board, or one client's tasks when their page asks for them. */
+const answerTasks = (route: Route) => {
+  const person = new URL(route.request().url()).searchParams.get("person");
+  if (person === null) return json(TASKS)(route);
+  const groups = TASKS.groups
+    .map((group) => ({ ...group, tasks: group.tasks.filter((task) => task.person.id === person) }))
+    .filter((group) => group.tasks.length > 0)
+    .map((group) => ({ ...group, count: group.tasks.length }));
+  return json({ ...TASKS, groups })(route);
+};
+
 /** The design's photographs are ink blocks; the console's are answered with the same ink. */
 const inkBlock = await sharp({ create: { width: 600, height: 800, channels: 3, background: "#16233a" } })
   .jpeg()
@@ -351,7 +362,7 @@ const API: Api = {
   // Board D1's second card, Vikram's disputed charge (e2e/ops/fixtures.ts).
   "/api/no-shows/disputes": json(DISPUTES),
   // The tasks are read against IN_2027, the day their dates are written for (e2e/ops/fixtures.ts).
-  "/api/tasks": json(TASKS),
+  "/api/tasks": answerTasks,
   "/api/technicians": json(TECHNICIANS),
   "/api/technicians/work": json(TECHNICIAN_WORK),
   ...photoFiles,

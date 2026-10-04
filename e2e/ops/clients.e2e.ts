@@ -1,7 +1,7 @@
 // One client's page (boards B1 to B3): finding them by part of their name or
-// number, the ways to reach them, their visits, pieces and payments, their
-// photographs, which are opened as one logged view, and their consents, which
-// ops read and never change. The API is answered from e2e/ops/fixtures.ts,
+// number, the ways to reach them, what waits on Tasks for them, their visits,
+// pieces, payments and invite, their photographs, which are opened as one logged
+// view, and their consents, which ops read and never change. The API is answered from e2e/ops/fixtures.ts,
 // since no route seeds a client's pieces or photographs.
 
 import AxeBuilder from "@axe-core/playwright";
@@ -23,6 +23,7 @@ import {
   PHOTOS,
   PIECES,
   RECORD,
+  TASKS_READ_ON,
   type Answers,
   type Call,
   type OpsReply,
@@ -137,7 +138,7 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
   await expect(found.getByRole("listitem")).toHaveText([`${CLIENT.name}${MOBILE}`]);
   await found.getByRole("link", NAME).click();
   await expect(page.getByRole("heading", NAME)).toBeVisible();
-  expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}`);
+  expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/visits`);
 });
 
 test("says so when nobody matches, and when more match than are listed", async ({ page }) => {
@@ -178,8 +179,83 @@ test("heads the page with who invited the client, a way to their page, and the i
   await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
   await expect(invitedBy(page).getByRole("link", { name: "Vikram Sethi" })).toHaveAttribute(
     "href",
-    "/clients/22000000-0000-4000-8000-000000000009",
+    "/clients/22000000-0000-4000-8000-000000000009/visits",
   );
+});
+
+/** What waits on Tasks for Rohit: a replacement to order, three days overdue, and a number change, due tomorrow. */
+const OPEN_FOR_ROHIT = {
+  overdue: 1,
+  truncated: false,
+  staff: [],
+  groups: [
+    {
+      group: "replacement_order",
+      count: 1,
+      closable: false,
+      tasks: [
+        {
+          id: "91000000-0000-4000-8000-000000000002",
+          person: { id: CLIENT.id, name: CLIENT.name },
+          detail: "MM-STD-4417-C",
+          since: "2027-09-16T18:30:00.000Z",
+          due: "2027-09-18T18:30:00.000Z",
+          owner: null,
+        },
+      ],
+    },
+    {
+      group: "number_change",
+      count: 1,
+      closable: false,
+      tasks: [
+        {
+          id: "94000000-0000-4000-8000-000000000009",
+          person: { id: CLIENT.id, name: CLIENT.name },
+          detail: null,
+          since: "2027-09-21T06:00:00.000Z",
+          due: "2027-09-23T06:00:00.000Z",
+          owner: null,
+        },
+      ],
+    },
+  ],
+} satisfies OpsReply<"/api/tasks">;
+
+const openForClient = (page: Page) => page.getByRole("region", { name: "Open for this client" });
+
+// OIA-10 of the audit, 2 October 2026: a client's page showed nothing open for them while a task about them waited.
+test("lists what waits on Tasks for the client under the head, each with a way to where it is done", async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  const asked = page.waitForRequest((request) => {
+    const url = new URL(request.url());
+    return url.pathname === "/api/tasks" && url.searchParams.get("person") === CLIENT.id;
+  });
+  await openClient(page, `/clients/${CLIENT.id}`, { "GET /api/tasks": json(OPEN_FOR_ROHIT) });
+  await asked;
+
+  const rows = openForClient(page).getByRole("listitem");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toContainText("Replacement order3 days overdue");
+  await expect(rows.nth(1)).toContainText("Number change1 day left");
+  await expect(openForClient(page).getByRole("link", { name: "Go to Pieces · Replacement order" })).toHaveAttribute(
+    "href",
+    `/clients/${CLIENT.id}/pieces`,
+  );
+  await expect(
+    openForClient(page).getByRole("link", { name: "Decide it in Number changes · Number change" }),
+  ).toHaveAttribute("href", "/number-changes#change-94000000-0000-4000-8000-000000000009");
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test("says when nothing waits on Tasks for the client", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}`, {
+    "GET /api/tasks": json({ overdue: 0, truncated: false, staff: [], groups: [] }),
+  });
+  await expect(openForClient(page)).toContainText("Nothing open.");
 });
 
 // Board B1 draws WhatsApp beside the name; the page once gave no way to reach the client (OPS-05).
@@ -196,18 +272,24 @@ test("says in words that a client wearing no piece falls due on no date", async 
   await expect(meta(page)).toHaveText(["Booked", "2 · use by 3 Jan 2028", "No piece fitted", MOBILE]);
 });
 
-test("opens on the pieces, as the board draws the page, and lists them in the board's columns", async ({ page }) => {
+// OIA-10 of the audit, 2 October 2026: the page opened on an empty Pieces tab, a click away from the visit.
+test("opens on the visits, with the invite on a Referrals tab of its own", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText([
     "Visits",
     "Pieces",
     "Payments",
+    "Referrals",
     "Consents",
     "Photos",
     "History",
   ]);
-  await expect(page.getByRole("link", { name: "Pieces" })).toHaveAttribute("aria-current", "page");
+  await expect(clientTab(page, "Visits")).toHaveAttribute("aria-current", "page");
+  await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
+});
 
+test("lists the pieces in the board's columns", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/pieces`);
   const piece = page.getByRole("row").filter({ hasText: "MM-STD-4417-B" });
   await expect(piece).toContainText("Mono");
   await expect(piece).toContainText("14 Nov 2026");
@@ -660,7 +742,7 @@ test("says so when the API would take away more than the client holds", async ({
 
 // A friend who booked away from the invite's page earned their referrer nothing until ops could attach it (ADR 0089).
 test("says where the visits of the invite a client came with stand", async ({ page }) => {
-  await openClient(page, `/clients/${CLIENT.id}/payments`);
+  await openClient(page, `/clients/${CLIENT.id}/referrals`);
   const invite = page.getByRole("region", { name: "Invite" });
   await expect(invite).toContainText("What it earnsGiven");
   await expect(invite).toContainText("Since20 Oct 2026");
@@ -678,7 +760,7 @@ test("attaches an invite to a client who came with none, with why, and shows it 
     since: "2027-09-22T05:12:00.000Z",
     attached: { by: "ops@maneman.in", reason: "Told us Rohit sent him" },
   } satisfies OpsReply<"/api/clients/{id}/referral", "post", 201>;
-  await openClient(page, `/clients/${CLIENT.id}/payments`, {
+  await openClient(page, `/clients/${CLIENT.id}/referrals`, {
     [READ_RECORD]: json(NEW_RECORD),
     [ATTACH_INVITE]: json(attached, 201),
   });
@@ -710,7 +792,7 @@ test.describe("says why an invite was not attached", () => {
     ["own_invite", "That is this client's own invite."],
   ] as const) {
     test(code, async ({ page }) => {
-      await openClient(page, `/clients/${CLIENT.id}/payments`, {
+      await openClient(page, `/clients/${CLIENT.id}/referrals`, {
         [READ_RECORD]: json(NEW_RECORD),
         [ATTACH_INVITE]: fails(code === "unknown_invite" ? 422 : 409, code),
       });
@@ -725,7 +807,7 @@ test.describe("says why an invite was not attached", () => {
 
   test("already_invited, showing the invite they came with instead", async ({ page }) => {
     let read = 0;
-    await openClient(page, `/clients/${CLIENT.id}/payments`, {
+    await openClient(page, `/clients/${CLIENT.id}/referrals`, {
       // The page opens on the record without the invite; the one read after the refusal has it.
       [READ_RECORD]: (route) => {
         read += 1;
@@ -1030,8 +1112,11 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
 
   await clientTab(page, "Payments").click();
   await expect(page.getByRole("region", { name: "Free service visits" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Invite" })).toBeVisible();
   await clean("payments");
+
+  await clientTab(page, "Referrals").click();
+  await expect(page.getByRole("region", { name: "Invite" })).toBeVisible();
+  await clean("referrals");
 
   await page.getByRole("link", { name: "Photos" }).click();
   await expect(page.getByText("Locked")).toBeVisible();

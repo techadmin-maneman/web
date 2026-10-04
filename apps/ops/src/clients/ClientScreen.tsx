@@ -1,11 +1,10 @@
 // One client's page (Ops Console, board B1's frame, with B2 and B3): who they
-// are, the ways to reach them and who invited them, then their visits, pieces,
-// payments, consents, photographs or history. The board draws eight tabs; the
-// six built are the ones the ops routes answer, and what the head is narrowed
-// to is written down in docs/fidelity-method.md.
+// are, the ways to reach them and who invited them, what waits on Tasks for
+// them, then their visits, pieces, payments, referrals, consents, photographs or
+// history. It opens on Visits.
 //
-// The record is read once for the page. Visits, Payments and History are drawn
-// from it, so moving between them costs no request. The photographs' opening
+// The record is read once for the page. Visits, Payments, Referrals and History
+// are drawn from it, so moving between them costs no request. The photographs' opening
 // is held here too, so leaving their tab and coming back is the same view and
 // not a second entry in the log.
 
@@ -19,13 +18,14 @@ import { api, type ClientInvite, type ClientRecord } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
-import type { ClientTab } from "../route.ts";
+import { clientPath, type ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Consents } from "./Consents.tsx";
 import { Erased } from "./Erase.tsx";
 import { History, replacementDueOf } from "./History.tsx";
-import type { InviteNews } from "./Invite.tsx";
+import { Invite, type InviteNews } from "./Invite.tsx";
+import { OpenTasks } from "./OpenTasks.tsx";
 import { Payments } from "./Payments.tsx";
 import { Photos, usePhotos } from "./Photos.tsx";
 import { Pieces } from "./Pieces.tsx";
@@ -51,7 +51,7 @@ function InvitedBy({ invite }: { invite: ClientInvite }) {
   if (invite.referrer === null) return `${clients.invite.erased} ${code}`;
   return (
     <>
-      <OpsLink className={styles.metaLink} to={`/clients/${invite.referrer.id}`}>
+      <OpsLink className={styles.metaLink} to={clientPath(invite.referrer.id, "visits")}>
         {invite.referrer.name}
       </OpsLink>{" "}
       {code}
@@ -158,12 +158,21 @@ function Tab({
         invoices={record.invoices}
         credits={credits}
         onCredits={onCredits}
-        invite={attached?.invite ?? record.invite}
-        inviteNews={attached?.news ?? null}
-        onInvite={(invite, news) => {
-          onAttached({ invite, news });
-        }}
       />
+    );
+  }
+  if (tab === "referrals") {
+    return (
+      <div className={styles.visits}>
+        <Invite
+          clientId={clientId}
+          invite={attached?.invite ?? record.invite}
+          news={attached?.news ?? null}
+          onInvite={(invite, news) => {
+            onAttached({ invite, news });
+          }}
+        />
+      </div>
     );
   }
   if (tab === "consents") return <Consents clientId={clientId} name={record.name} onErased={onErased} />;
@@ -210,14 +219,10 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
               credits={adjusted?.credits ?? record.credits}
               invite={attached?.invite ?? record.invite}
             />
+            <OpenTasks clientId={clientId} />
             <Tabs className={styles.tabs} label={record.name}>
               {clients.tabs.map((each) => (
-                <OpsLink
-                  key={each.tab}
-                  className={TAB}
-                  to={`/clients/${clientId}/${each.tab}`}
-                  current={each.tab === tab}
-                >
+                <OpsLink key={each.tab} className={TAB} to={clientPath(clientId, each.tab)} current={each.tab === tab}>
                   {each.label}
                 </OpsLink>
               ))}

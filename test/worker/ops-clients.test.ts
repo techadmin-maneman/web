@@ -209,6 +209,29 @@ describe("GET /api/clients/{id}", () => {
     });
   });
 
+  // A live test, 4 October 2026: a client whose booking was refunded read "Booked" with nothing booked.
+  it("reads booked only while a visit is to come, not for a booking the site's form left that booked nothing", async () => {
+    await env.DB.prepare(
+      `INSERT INTO leads (id, person_id, created_at, source, city, proposed_visit_date, request_id)
+       VALUES ('l-1', ?1, ?2, 'form', 'Gurgaon', '2026-09-24', 'r')`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    const stateNow = async () =>
+      (await (await request(ops, `/api/clients/${PERSON}`)).json<{ state: string }>()).state;
+    expect(await stateNow()).toBe("nothing_booked");
+
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+         service_city, service_pincode, fsm_modified_at, synced_at)
+       VALUES (?1, 'fsm-2', ?2, 'consultation', 'scheduled', 'Scheduled', '2026-09-24T04:30:00.000Z',
+         '2026-09-24T05:30:00.000Z', 'Gurgaon', '122018', ?3, ?3)`,
+    )
+      .bind(VISIT, PERSON, NOW.toISOString())
+      .run();
+    expect(await stateNow()).toBe("lead");
+  });
+
   it("answers 404 for a client we do not have", async () => {
     const answer = await request(ops, `/api/clients/${UNKNOWN}`);
     expect(answer.status).toBe(404);

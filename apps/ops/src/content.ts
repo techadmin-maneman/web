@@ -477,8 +477,9 @@ export const clients = {
    */
   openTasks: {
     title: "Open for this client",
-    none: "Nothing open for this client.",
-    /** A task done on another tab of the client's page: "Go to Payments". */
+    none: "Nothing open.",
+    failed: "We could not load what is open for this client.",
+    /** A task done on a tab of the client's page: "Go to Payments". */
     toTab: (tab: string) => `Go to ${tab}`,
   },
   failed: "We could not load this client.",

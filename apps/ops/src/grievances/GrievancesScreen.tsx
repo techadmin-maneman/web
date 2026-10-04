@@ -20,6 +20,7 @@ import { grievances } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
+import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./grievances.module.css";
 
@@ -52,7 +53,7 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
   return (
     <>
       <div className={styles.head}>
-        <OpsLink className={styles.name} to={`/clients/${each.person_id}`}>
+        <OpsLink className={styles.name} to={clientPath(each.person_id, "consents")}>
           {each.name}
         </OpsLink>
         <Left due={each.due} now={now} />

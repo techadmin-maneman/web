@@ -9,32 +9,21 @@ import { DECIDED_IN } from "./decided.ts";
 
 type Group = TaskGroup["group"];
 
-/** The tab of the client's page each group is about. */
-const CLIENT_TAB: Readonly<Record<Group, ClientTab>> = {
-  untold_move: "visits",
-  held_booking: "visits",
-  leave_conflict: "visits",
-  address_to_confirm: "visits",
-  consultation_request: "visits",
-  first_fit_to_book: "visits",
+/** The groups about something other than the client's visits, and the tab of their page each is about. */
+const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   replacement_order: "pieces",
-  at_risk_client: "visits",
-  partial_visit: "visits",
-  referral_review: "visits",
-  no_show_decision: "visits",
-  no_show_dispute: "visits",
-  number_change: "visits",
-  erasure_request: "consents",
-  grievance: "consents",
   draft_invoice: "payments",
   payment_owed: "payments",
+  erasure_request: "consents",
+  grievance: "consents",
   erasure_unfinished: "consents",
 };
 
-export const clientTabOf = (group: Group): ClientTab => CLIENT_TAB[group];
+/** The tab of the client's page a task of the group is about: Visits, unless the group is about something else. */
+export const taskTabOf = (group: Group): ClientTab => CLIENT_TAB[group] ?? "visits";
 
 /** The client's page, on the tab the task is about. */
-export const taskClientPath = (group: Group, personId: string): string => clientPath(personId, CLIENT_TAB[group]);
+export const taskClientPath = (group: Group, personId: string): string => clientPath(personId, taskTabOf(group));
 
 /** The board opened on the week of the task's visit, with its drawer open; this week's board for a task with none. */
 function onTheBoard(task: Task): string {
