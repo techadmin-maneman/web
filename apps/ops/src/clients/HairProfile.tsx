@@ -8,15 +8,24 @@ import { Button } from "@maneman/ui/Button";
 import { Checkbox, Field, TextInput } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { longDate } from "@maneman/web-kit/dates";
-import { useCallback, useId, useState } from "react";
+import { longDate, yearInIndia } from "@maneman/web-kit/dates";
 import {
-  api,
-  type ClientHairProfile,
-  type HairCorrection,
-  type HairProfileVersion,
-  type HairProfileView,
-} from "../api.ts";
+  bodyOf,
+  choicesWith,
+  fitFormOf,
+  fitOf,
+  historyFormOf,
+  historyOf,
+  refusedFigures,
+  REMEDIES,
+  toggleRemedy,
+  yearOf,
+  type FigureName,
+  type FitForm,
+  type HistoryForm,
+} from "@maneman/web-kit/hair-profile";
+import { useCallback, useId, useState } from "react";
+import { api, type ClientHairProfile, type HairProfileVersion, type HairProfileView } from "../api.ts";
 import { clients, dispatch, NOT_PERMITTED } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -25,22 +34,10 @@ import { isOneOf } from "../../../../src/lib/one-of.ts";
 
 const copy = clients.profile;
 
-type Fit = HairCorrection["fit"];
-type History = NonNullable<HairCorrection["history"]>;
-type Remedy = History["remedies"][number];
 type Products = ClientHairProfile["products"];
 
 /** The figures, typed. */
-const FIGURES = [
-  "head_circumference_cm",
-  "front_to_nape_cm",
-  "ear_to_ear_cm",
-  "temple_to_temple_cm",
-  "base_width_in",
-  "base_length_in",
-  "grey_percent",
-] as const satisfies readonly (keyof Fit)[];
-type Figure = (typeof FIGURES)[number];
+type Figure = FigureName;
 
 /** The choices, each from its list. */
 const CODES = ["norwood_stage", "colour", "density_percent", "wave", "hairline", "product", "attachment"] as const;
@@ -150,66 +147,19 @@ function Versions({ versions }: { versions: readonly HairProfileVersion[] }) {
 }
 
 interface Draft {
-  readonly codes: Record<Code, string>;
-  readonly figures: Record<Figure, string>;
-  readonly remedies: readonly Remedy[];
-  readonly year: string;
-  readonly skin: string;
+  readonly fit: FitForm;
+  readonly history: HistoryForm;
 }
 
-const typed = (value: string | number | null | undefined): string =>
-  value === null || value === undefined ? "" : String(value);
+const draftOf = (latest: HairProfileView | null): Draft => ({
+  fit: fitFormOf(latest?.fit ?? null),
+  history: historyFormOf(latest?.history ?? null),
+});
 
-function draftOf(latest: HairProfileView | null): Draft {
-  const fit = latest?.fit ?? null;
-  const history = latest?.history ?? null;
-  return {
-    codes: Object.fromEntries(CODES.map((field) => [field, typed(fit?.[field])])) as Record<Code, string>,
-    figures: Object.fromEntries(FIGURES.map((field) => [field, typed(fit?.[field])])) as Record<Figure, string>,
-    remedies: history?.remedies ?? [],
-    year: typed(history?.transplant_year),
-    skin: history?.skin_and_allergies ?? "",
-  };
-}
-
-/** A figure as typed: nothing is null. One that is not a number at all is caught before it is sent (notNumbers). */
-const numberOf = (text: string): number | null => (text.trim() === "" ? null : Number(text.trim()));
-const codeOf = (text: string): string | null => (text === "" ? null : text);
-
-const isNotANumber = (text: string): boolean => text.trim() !== "" && !Number.isFinite(Number(text.trim()));
-
-/** The figures typed that are no number, which JSON would send as nothing; the API checks the ranges of the rest. */
-function notNumbers(draft: Draft): string[] {
-  const figures: string[] = FIGURES.filter((field) => isNotANumber(draft.figures[field]));
-  const yearAsked = draft.remedies.includes("transplant");
-  return yearAsked && isNotANumber(draft.year) ? [...figures, "transplant_year"] : figures;
-}
-
-/**
- * The correction as the API takes it, naming the latest version the form was read from; the API checks every list
- * and range, names any field it refuses, and refuses it whole once another version has become the latest.
- */
-function correctionOf(draft: Draft, basedOn: string | null): HairCorrection {
-  const { codes, figures } = draft;
-  const fit = {
-    norwood_stage: codeOf(codes.norwood_stage),
-    colour: codeOf(codes.colour),
-    density_percent: numberOf(codes.density_percent),
-    wave: codeOf(codes.wave),
-    hairline: codeOf(codes.hairline),
-    product: codeOf(codes.product),
-    attachment: codeOf(codes.attachment),
-    ...Object.fromEntries(FIGURES.map((field) => [field, numberOf(figures[field])])),
-  } as Fit;
-  const skin = draft.skin.trim();
-  const year = draft.remedies.includes("transplant") ? numberOf(draft.year) : null;
-  const said = draft.remedies.length > 0 || year !== null || skin !== "";
-  if (!said) return { fit, history: null, based_on: basedOn };
-  return {
-    fit,
-    history: { remedies: [...draft.remedies], transplant_year: year, skin_and_allergies: skin === "" ? null : skin },
-    based_on: basedOn,
-  };
+/** The figures typed that the API would refuse, and the transplant's year where it would refuse that. */
+function wronglyTyped(draft: Draft, thisYear: number): string[] {
+  const figures: string[] = refusedFigures(draft.fit.figures);
+  return yearOf(draft.history, thisYear) === "invalid" ? [...figures, "transplant_year"] : figures;
 }
 
 /** The fields the API refused, by the name the form gives them. */
@@ -238,13 +188,15 @@ function CorrectionForm({
 
   const save = () =>
     once(async () => {
-      const typedWrong = notNumbers(draft);
-      if (typedWrong.length > 0) {
-        setRefused(typedWrong);
+      const thisYear = yearInIndia(Date.now());
+      const fit = fitOf(draft.fit);
+      const history = historyOf(draft.history, thisYear);
+      if (fit === null || history === null) {
+        setRefused(wronglyTyped(draft, thisYear));
         setProblem(copy.refused);
         return;
       }
-      const answer = await api.correctHairProfile(clientId, correctionOf(draft, page.latest?.id ?? null));
+      const answer = await api.correctHairProfile(clientId, bodyOf(fit, history, page.latest?.id ?? null));
       if (answer.ok) {
         onSaved(answer.body);
         return;
@@ -265,11 +217,11 @@ function CorrectionForm({
         <select
           {...control}
           className={styles.select}
-          value={draft.codes[field]}
+          value={String(draft.fit.choices[field] ?? "")}
           disabled={busy}
           onChange={(event) => {
             const value = event.currentTarget.value;
-            setDraft((was) => ({ ...was, codes: { ...was.codes, [field]: value } }));
+            setDraft((was) => ({ ...was, fit: { ...was.fit, choices: choicesWith(was.fit.choices, field, value) } }));
           }}
         >
           <option value="">{copy.notRecorded}</option>
@@ -290,11 +242,11 @@ function CorrectionForm({
           {...control}
           className={styles.input}
           inputMode="decimal"
-          value={draft.figures[field]}
+          value={draft.fit.figures[field]}
           disabled={busy}
           onChange={(event) => {
             const value = event.target.value;
-            setDraft((was) => ({ ...was, figures: { ...was.figures, [field]: value } }));
+            setDraft((was) => ({ ...was, fit: { ...was.fit, figures: { ...was.fit.figures, [field]: value } } }));
           }}
         />
       )}
@@ -326,29 +278,30 @@ function CorrectionForm({
       </div>
       <fieldset className={styles.history}>
         <legend className={styles.subtitle}>{copy.history}</legend>
-        {Object.entries(copy.remedies).map(([remedy, label]) => (
+        {REMEDIES.map((remedy) => (
           <Checkbox
             key={remedy}
-            label={label}
-            checked={draft.remedies.includes(remedy as Remedy)}
+            label={copy.remedies[remedy]}
+            checked={draft.history.remedies.includes(remedy)}
             disabled={busy}
             onChange={() => {
-              setDraft((was) => ({ ...was, remedies: toggled(was.remedies, remedy as Remedy) }));
+              const remedies = toggleRemedy(draft.history.remedies, remedy);
+              setDraft((was) => ({ ...was, history: { ...was.history, remedies } }));
             }}
           />
         ))}
-        {draft.remedies.includes("transplant") && (
+        {draft.history.remedies.includes("transplant") && (
           <Field label={copy.rows.transplant_year} error={refused.includes("transplant_year") ? copy.invalid : null}>
             {(control) => (
               <TextInput
                 {...control}
                 className={styles.input}
                 inputMode="numeric"
-                value={draft.year}
+                value={draft.history.year}
                 disabled={busy}
                 onChange={(event) => {
                   const year = event.target.value;
-                  setDraft((was) => ({ ...was, year }));
+                  setDraft((was) => ({ ...was, history: { ...was.history, year } }));
                 }}
               />
             )}
@@ -363,11 +316,11 @@ function CorrectionForm({
               {...control}
               className={styles.input}
               maxLength={200}
-              value={draft.skin}
+              value={draft.history.skin}
               disabled={busy}
               onChange={(event) => {
                 const skin = event.target.value;
-                setDraft((was) => ({ ...was, skin }));
+                setDraft((was) => ({ ...was, history: { ...was.history, skin } }));
               }}
             />
           )}
@@ -388,13 +341,6 @@ function CorrectionForm({
       </div>
     </form>
   );
-}
-
-/** "None" is said alone: ticking it clears the rest, and ticking any other clears it. */
-function toggled(chosen: readonly Remedy[], remedy: Remedy): Remedy[] {
-  if (chosen.includes(remedy)) return chosen.filter((each) => each !== remedy);
-  if (remedy === "none") return ["none"];
-  return [...chosen.filter((each) => each !== "none"), remedy];
 }
 
 /** The hair systems offered today, and the profile's product where it is no longer one, so the form keeps it. */

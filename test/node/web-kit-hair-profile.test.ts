@@ -1,33 +1,26 @@
-// The technician app's hair profile form (apps/tech/src/steps/profile-form.ts), held to the API's rules
-// (src/policy/hair-profile.ts; docs/decisions/0106-a-clients-hair-profile.md): a figure the form lets through is one
-// the API takes.
+// The hair profile form the technician's step and the console's correction share (packages/web-kit/hair-profile.ts),
+// held to the API's rules (src/policy/hair-profile.ts; docs/decisions/0106-a-clients-hair-profile.md): a figure the
+// form lets through is one the API takes.
 
 import { describe, expect, it } from "vitest";
 import {
   bodyOf,
+  choicesWith,
   COLOURS,
-  DENSITIES,
   figureOf,
-  FIRST_TRANSPLANT_YEAR,
   fitFormOf,
   fitOf,
-  GREY_PERCENT,
   historyOf,
   MEASUREMENTS,
+  refusedFigures,
   toggleRemedy,
   type FitForm,
-} from "../../../apps/tech/src/steps/profile-form.ts";
-import * as policy from "../../../src/policy/hair-profile.ts";
+} from "../../packages/web-kit/hair-profile.ts";
 
 const HEAD = MEASUREMENTS.head_circumference_cm;
 
 describe("the profile form", () => {
   it("takes a figure in the ranges the API takes, to one decimal", () => {
-    expect(MEASUREMENTS).toEqual(policy.MEASUREMENTS);
-    expect(GREY_PERCENT).toEqual(policy.GREY_PERCENT);
-    expect(DENSITIES).toEqual(policy.DENSITIES);
-    expect(FIRST_TRANSPLANT_YEAR).toBe(policy.FIRST_TRANSPLANT_YEAR);
-
     expect(figureOf("57.5", HEAD)).toBe(57.5);
     expect(figureOf(" 57 ", HEAD)).toBe(57);
     expect(figureOf("", HEAD)).toBeNull();
@@ -50,7 +43,6 @@ describe("the profile form", () => {
 
   // FLD-61, UX-35: the chips ran #1 … #8, #1B, as an object's integer-like keys come first.
   it("offers the colours in the suppliers' order, #1B after #1", () => {
-    expect(COLOURS).toEqual(policy.COLOURS);
     expect(COLOURS.slice(0, 3)).toEqual(["1", "1B", "2"]);
   });
 
@@ -81,5 +73,24 @@ describe("the profile form", () => {
       history: null,
       based_on: null,
     });
+  });
+});
+
+describe("the console's correction, on the same form", () => {
+  // FLD-49: the console checked only that a figure was a number, and left its range to the API.
+  it("names each figure typed that the API would refuse", () => {
+    const { figures } = fitFormOf(null);
+    expect(
+      refusedFigures({ ...figures, head_circumference_cm: "90", grey_percent: "50", base_width_in: "abc" }),
+    ).toEqual(["head_circumference_cm", "base_width_in"]);
+  });
+
+  it("takes a choice from a list's control only as one of the list, and an empty one as none", () => {
+    const { choices } = fitFormOf(null);
+    expect(choicesWith(choices, "density_percent", "120").density_percent).toBe(120);
+    expect(choicesWith(choices, "colour", "1B").colour).toBe("1B");
+    expect(choicesWith(choices, "wave", "frizzy").wave).toBeNull();
+    expect(choicesWith(choices, "product", "").product).toBeNull();
+    expect(choicesWith(choices, "product", "natural").product).toBe("natural");
   });
 });

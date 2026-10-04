@@ -10,6 +10,7 @@
     "./headers": "./headers.ts",
     "./dates": "./dates.ts",
     "./guarantee": "./guarantee.ts",
+    "./hair-profile": "./hair-profile.ts",
     "./money": "./money.ts",
     "./mobile": "./mobile.ts",
     "./whatsapp": "./whatsapp.ts",
