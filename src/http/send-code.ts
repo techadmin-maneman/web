@@ -105,6 +105,14 @@ export function knownCode(login: LoginSettings, testRecord: boolean): string | n
   return login.fixedCode;
 }
 
+/** A number change's two codes: the known code proves only the number a test record already has, never the new one (PS-35). */
+export function numberChangeCodes(
+  login: LoginSettings,
+  testRecord: boolean,
+): { old: string | null; new: string | null } {
+  return { old: knownCode(login, testRecord), new: knownCode(login, false) };
+}
+
 /**
  * Whether this account's code would be held back by staging's allowlist: only ever true for one of our own
  * scripts' test records (ADR 0097). A real account's code is never held back by it.
