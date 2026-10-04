@@ -15,6 +15,7 @@ import { spendableCredits, type Balance } from "../domain/credits.ts";
 import { liveCard, MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";
 import { inviteOf, referralCodeOf } from "../domain/referrals.ts";
 import { clientOf } from "../http/client-session.ts";
+import { cappedBody } from "../http/capped-body.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
@@ -182,16 +183,10 @@ export function registerClientRefer(app: App): void {
     const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
-    if (Number(c.req.header("Content-Length") ?? "0") > MAX_CARD_BYTES) {
-      return c.json(errorBody("photo_invalid_file", c.var.requestId), 422);
-    }
+    const bytes = await cappedBody(c.req.raw, MAX_CARD_BYTES);
+    if (bytes === null) return c.json(errorBody("photo_invalid_file", c.var.requestId), 422);
     const code = await codeOf(db, session.subjectId, now);
-    const stored = await storeCard(db, c.env.REFERRAL_CARDS, {
-      personId: session.subjectId,
-      code,
-      bytes: new Uint8Array(await c.req.arrayBuffer()),
-      now,
-    });
+    const stored = await storeCard(db, c.env.REFERRAL_CARDS, { personId: session.subjectId, code, bytes, now });
     if ("problem" in stored) {
       return stored.problem === "no_consent"
         ? c.json(errorBody("consent_required", c.var.requestId), 409)

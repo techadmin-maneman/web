@@ -252,6 +252,22 @@ describe("PUT /api/tryon/upload/:job_id", () => {
     expect((await browser.put(link.upload_url, big)).status).toBe(422);
     expect(await env.UPLOADS.head(`uploads/${link.job_id}`)).toBeNull();
   });
+
+  // PS-53: a body sent without its length read as 0 bytes declared, and was read whole, however long.
+  it("refuses a body over 5 MB sent without its length", async () => {
+    const browser = visitor();
+    const link = await (await browser.uploadLink()).json<{ job_id: string; upload_url: string }>();
+    const big = new Uint8Array(MAX_UPLOAD_BYTES + 1);
+    big.set(syntheticJpeg(800, 800));
+    const body = new Blob([big]).stream();
+    const response = await browser.call(link.upload_url, {
+      method: "PUT",
+      headers: { "Content-Type": "image/jpeg" },
+      body,
+    });
+    expect(response.status).toBe(422);
+    expect(await env.UPLOADS.head(`uploads/${link.job_id}`)).toBeNull();
+  });
 });
 
 describe("POST /api/tryon/claim, before the look is made", () => {

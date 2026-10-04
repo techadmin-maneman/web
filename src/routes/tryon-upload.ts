@@ -17,6 +17,7 @@ import { MAX_COPY_BYTES, MAX_UPLOAD_BYTES, TRYON_UPLOAD_LINK_TTL_MS } from "../c
 import { withinCeiling } from "../domain/ceilings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob } from "../domain/tryon.ts";
+import { cappedBody } from "../http/capped-body.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { lookCookieJob } from "../http/look-cookie.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
@@ -175,9 +176,8 @@ export function registerTryonUpload(app: App): void {
       return c.json(errorBody("upload_already_received", requestId), 409);
     }
 
-    const declared = Number(c.req.header("Content-Length") ?? "0");
-    if (declared > MAX_UPLOAD_BYTES) return c.json(errorBody("photo_invalid_file", requestId), 422);
-    const bytes = new Uint8Array(await c.req.arrayBuffer());
+    const bytes = await cappedBody(c.req.raw, MAX_UPLOAD_BYTES);
+    if (bytes === null) return c.json(errorBody("photo_invalid_file", requestId), 422);
     const photo = checkPhoto(bytes);
     if (!photo.ok) {
       c.var.log.info("tryon_upload_refused", { job_id: jobId, problem: photo.problem });
@@ -225,9 +225,8 @@ function registerCopyUpload(app: App): void {
     }
     if (job.copy_key !== null) return c.json(errorBody("upload_already_received", requestId), 409);
 
-    const declared = Number(c.req.header("Content-Length") ?? "0");
-    if (declared > MAX_COPY_BYTES) return c.json(errorBody("photo_invalid_file", requestId), 422);
-    const bytes = new Uint8Array(await c.req.arrayBuffer());
+    const bytes = await cappedBody(c.req.raw, MAX_COPY_BYTES);
+    if (bytes === null) return c.json(errorBody("photo_invalid_file", requestId), 422);
     const copy = checkCopy(bytes);
     if (!copy.ok) {
       c.var.log.info("tryon_copy_refused", { job_id: jobId, problem: copy.problem });

@@ -28,6 +28,7 @@ import {
 } from "../domain/payments.ts";
 import { afterResponse } from "../http/after-response.ts";
 import { bookHold } from "../http/book-hold.ts";
+import { cappedBody } from "../http/capped-body.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { sha256Hex } from "../lib/hash.ts";
 import { cancelLinkPaidElsewhere, linkPaid } from "../domain/payment-links.ts";
@@ -171,15 +172,20 @@ async function refundTaken(
   return true;
 }
 
+/** The longest event body read. */
+const MAX_EVENT_BYTES = 1024 * 1024;
+
 export function registerRazorpayHook(app: App): void {
   app.openapi(razorpayHookRoute, async (c) => {
     const { requestId, log, config, deps } = c.var;
     const secret = config.settings.razorpay?.webhookSecret ?? null;
     if (secret === null) return c.json(errorBody("not_found", requestId), 404);
 
-    const body = await c.req.text();
+    // Razorpay's events are a few KB: a body past the cap is none of theirs, refused as unsigned without reading on.
+    const bytes = await cappedBody(c.req.raw, MAX_EVENT_BYTES);
+    const body = bytes === null ? null : new TextDecoder().decode(bytes);
     const signature = c.req.header("X-Razorpay-Signature") ?? "";
-    if (!(await signedByRazorpay(secret, body, signature))) {
+    if (body === null || !(await signedByRazorpay(secret, body, signature))) {
       log.warn("razorpay_hook_unauthorized");
       return c.json(errorBody("unauthorized", requestId), 401);
     }
