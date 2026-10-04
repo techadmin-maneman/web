@@ -1121,7 +1121,7 @@ export const notFound = {
 };
 
 /**
- * PLACEHOLDER COPY: the page the link at the foot of a reminder or the launch alert opens. "Done" names what
+ * The page the link at the foot of a reminder or the launch alert opens. "Done" names what
  * stopped. "{whatsapp}" is the business number, as a chat link.
  */
 export const stopMessages = {

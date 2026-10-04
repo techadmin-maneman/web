@@ -23,14 +23,19 @@ describe("the texts file", () => {
     );
     const found = placeholderTexts(files);
     expect(found.map((item) => item.id).sort()).toEqual(marks.map((mark) => mark.id).sort());
-    expect(found.length).toBeGreaterThan(200);
   });
 
   it("gives each line of copy the code below its mark, so the owner reads the words themselves", () => {
-    const found = placeholderTexts(copyFiles(process.cwd()));
-    const ended = found.find((item) => item.note.includes("the design draws no session that ended"));
-    expect(ended?.id).toMatch(/^apps\/app\/src\/content\.ts:\d+$/);
-    expect(ended?.source).toContain("You’ve been signed out");
+    const source = [
+      "export const login = {",
+      "  // PLACEHOLDER: the design draws no session that ended while the app was open.",
+      '  ended: "Your session has ended. Log in again.",',
+      "};",
+    ].join("\n");
+    const [ended] = placeholderTexts([{ path: "apps/app/src/content.ts", source }]);
+    expect(ended?.id).toBe("apps/app/src/content.ts:2");
+    expect(ended?.note).toContain("the design draws no session that ended");
+    expect(ended?.source).toContain("Your session has ended");
   });
 
   it("leaves the consent notices out of what may be edited", () => {

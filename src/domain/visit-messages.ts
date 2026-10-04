@@ -277,7 +277,7 @@ export function hoursOfWindow(date: string, window: BookingWindow, schedule: Slo
     : `${first.number} ${first.half} to ${last.number} ${last.half}`;
 }
 
-/** What a message calls a consultation and fit in one visit while it is still to happen (ADR 0105). PLACEHOLDER COPY. */
+/** What a message calls a consultation and fit in one visit while it is still to happen (ADR 0105). */
 const ONE_VISIT_NAME = "consultation and fit";
 
 /** Where a refund goes back to, by the payment's method, as a message names it. */

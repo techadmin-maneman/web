@@ -1,6 +1,6 @@
 // Every word the ops console shows, from design/phase2/Ops Console.dc.html. A
 // component holds no copy of its own. Lines the design does not draw are
-// marked PLACEHOLDER, pending the owner's wording.
+// ours, approved by the owner on 4 October 2026 (docs/open-points.md, item 42).
 
 import type { LinkState } from "./tasks/payment-link.ts";
 
@@ -11,10 +11,10 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
   production: "https://maneman.in/book",
 };
 
-/** PLACEHOLDER: the API refused a call the person's access does not reach. */
+/** The API refused a call the person's access does not reach. */
 export const NOT_PERMITTED = "Your access doesn't include this. Ask an admin.";
 
-/** PLACEHOLDER: shown wherever a number would be, for a client erased since, whose number is gone. */
+/** Shown wherever a number would be, for a client erased since, whose number is gone. */
 export const ERASED_MOBILE = "Erased client";
 
 /** The five departments, as the navigation heads its sections and the Staff page names a grant. */
@@ -30,12 +30,12 @@ export const shell = {
   /** Who did something, where it was a service token rather than a person. */
   serviceToken: "a service token",
   /**
-   * PLACEHOLDER: the sidebar's own title. Boards A1 and B1 letter it "Operations", which is now the name of one of the
+   * The sidebar's own title. Boards A1 and B1 letter it "Operations", which is now the name of one of the
    * departments beneath it.
    */
   title: "Console",
   departments: DEPARTMENT_NAMES,
-  /** PLACEHOLDER where no board draws it: each section's name in the navigation, which the design draws flat. */
+  /** Our words where no board draws it: each section's name in the navigation, which the design draws flat. */
   sections: {
     tasks: "Tasks",
     dispatch: "Dispatch",
@@ -53,17 +53,17 @@ export const shell = {
     settings: "Settings",
     staff: "Staff",
   },
-  /** PLACEHOLDER: a section's name in the navigation, read out with the count of tasks waiting in it. */
+  /** A section's name in the navigation, read out with the count of tasks waiting in it. */
   waiting: (section: string, count: number, overdue: boolean) =>
     overdue ? `${section}, ${String(count)} waiting, some overdue` : `${section}, ${String(count)} waiting`,
-  /** PLACEHOLDER: the first thing the keyboard reaches, which jumps past the navigation. */
+  /** The first thing the keyboard reaches, which jumps past the navigation. */
   skip: "Skip to content",
-  /** PLACEHOLDER: a page opened by its address that the person's access does not reach. */
+  /** A page opened by its address that the person's access does not reach. */
   closed: "Your access does not reach this page. An Admin can add it on the Staff page.",
   /** The browser tab's title: "Blackout days · Settings · Mane Man operations". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
   /**
-   * PLACEHOLDER: who is signed in, where board A1 draws "AK" in a box at the
+   * Who is signed in, where board A1 draws "AK" in a box at the
    * header's right, and a way out, which it does not draw. Signing out ends the
    * Cloudflare Access session, which is the only session the console has.
    */
@@ -71,20 +71,20 @@ export const shell = {
     signedInAs: (who: string) => `Signed in as ${who}`,
     signOut: "Sign out",
   },
-  /** PLACEHOLDER: the header's way to a client from any page, which the board does not draw. */
+  /** The header's way to a client from any page, which the board does not draw. */
   find: {
     label: "Find a client by name or number",
     placeholder: "Name or number",
     submit: "Find client",
   },
   /**
-   * PLACEHOLDER: Cloudflare Access ends a session after the time the team sets,
+   * Cloudflare Access ends a session after the time the team sets,
    * and from then on every call is sent to its login page instead of reaching
    * us. Reloading the page is what takes ops there.
    */
   lapsed: "Your sign-in to the console has run out, so nothing more can be read or saved. Reload to sign in again.",
   reload: "Reload",
-  /** PLACEHOLDER: a person Access lets in whom the enforced Staff list does not name. */
+  /** A person Access lets in whom the enforced Staff list does not name. */
   notListed: "You are not on the Staff list, so the console is closed to you. Ask the owner to add you.",
 } as const;
 
@@ -106,7 +106,7 @@ export const dispatch = {
   unnamed: "this visit",
   util: (percent: number) => `${String(percent)}%`,
   /**
-   * PLACEHOLDER: the board letters 92 and 88 per cent in brass and leaves 67 and
+   * The board letters 92 and 88 per cent in brass and leaves 67 and
    * below quiet, so the peak reads without a chart. It writes no line, and this
    * is where we have drawn it.
    */
@@ -127,7 +127,7 @@ export const dispatch = {
   } as Readonly<Record<string, string>>,
   windows: { morning: "morning", afternoon: "afternoon", evening: "evening" } as Readonly<Record<string, string>>,
   /**
-   * PLACEHOLDER: each window's hours, which the drawer writes as the board does
+   * Each window's hours, which the drawer writes as the board does
    * ("12 to 4 pm"). They are src/config/scheduling.ts's WINDOW_TIMES, still the
    * owner's to rule (docs/open-points.md, item 53); test/node/ops-content.test.ts
    * holds the two together.
@@ -152,7 +152,7 @@ export const dispatch = {
     everyCity: "Every city",
     /** A technician's name or zone, or a visit's client, area or pincode. */
     find: "Find a technician, client or area",
-    // PLACEHOLDER: the board draws no search, and so no search that finds nothing.
+    // The board draws no search, and so no search that finds nothing.
     nothingFound: (text: string) => `Nothing on this week's board matches “${text}”.`,
   },
   board: {
@@ -160,16 +160,16 @@ export const dispatch = {
     block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
     /** A block for a visit already done, which stays where it was worked and cannot be moved. */
     doneBlock: (job: string, date: string, window: string) => `${job}, ${date}, ${window}, done`,
-    /** PLACEHOLDER: how far the technician has got, from his phone. A visit he has begun stays where it is. */
+    /** How far the technician has got, from his phone. A visit he has begun stays where it is. */
     begun: { arrived: "Arrived", started: "Started", closed: "Closed" } as Readonly<Record<string, string>>,
     begunBlock: (job: string, date: string, window: string, begun: string) =>
       `${job}, ${date}, ${window}, ${begun.toLowerCase()}`,
-    /** PLACEHOLDER: the board draws no board without technicians. */
+    /** The board draws no board without technicians. */
     empty: "No technician is on this board.",
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
     away: "Away",
     awayLabel: (technician: string, date: string) => `${technician} is away on ${date}`,
-    /** PLACEHOLDER: leave recorded over jobs already booked moves none of them; ops do (OPS-07). */
+    /** Leave recorded over jobs already booked moves none of them; ops do (OPS-07). */
     stranded: (jobs: number) => `Away · ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} to move`,
     strandedLabel: (technician: string, date: string, jobs: number) =>
       `${technician} is away on ${date}, with ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} still to move`,
@@ -189,15 +189,15 @@ export const dispatch = {
     notAsked: "Asked · not recorded",
     /** The brief's "referral source": who invited the client, where someone did. */
     referred: (name: string) => `Referred by ${name}`,
-    // PLACEHOLDER: a job still on a technician who was switched off, which no board draws.
+    // A job still on a technician who was switched off, which no board draws.
     was: (name: string) => `Was ${name}'s · switched off`,
     /** Beneath the tray: where the asked window comes from, and why some rows have none. */
     same: "“Asked” is the window the client picked when booking; “not recorded” means they picked none.",
-    // PLACEHOLDER: the board draws four waiting and no empty tray.
+    // The board draws four waiting and no empty tray.
     empty: "Nothing is waiting for a technician.",
   },
   /** Board A3: the drawer a block opens. */
-  /** PLACEHOLDER, every word: letting a technician check in past the geofence, which no board draws. */
+  /** Our words, all of them: letting a technician check in past the geofence, which no board draws. */
   letIn: {
     title: (technician: string) => `Let ${technician} check in`,
     note: "He can check in wherever his phone puts him, for this visit only. The distance is still recorded, with your reason.",
@@ -223,25 +223,25 @@ export const dispatch = {
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
-    // PLACEHOLDER: at_visit, a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
+    // at_visit: a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
     badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
       Record<string, string>
     >,
-    // PLACEHOLDER: the board draws no Service row; it names a first fit's hair system, say.
+    // The board draws no Service row; it names a first fit's hair system, say.
     rows: {
       type: "Type",
       service: "Service",
       area: "Area",
       state: "State",
       referred: "Referred by",
-      // PLACEHOLDER: the board draws no note; the technician reads it on the client's card.
+      // The board draws no note; the technician reads it on the client's card.
       note: "Client's note",
     },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** "Sector 65 · 122018": the area the visit's pincode is in, and the pincode. */
     area: (area: string, pincode: string | null) => (pincode === null ? area : `${area} · ${pincode}`),
-    // PLACEHOLDER: the board draws a scheduled visit only, and names no state.
+    // The board draws a scheduled visit only, and names no state.
     states: {
       scheduled: "Scheduled",
       dispatched: "Sent to the technician",
@@ -251,22 +251,22 @@ export const dispatch = {
       terminated: "Not done",
       other: "Other",
     } as Readonly<Record<string, string>>,
-    /** PLACEHOLDER: the State row once the technician's phone says he has begun. */
+    /** The State row once the technician's phone says he has begun. */
     begun: {
       arrived: "Technician arrived",
       started: "Technician started",
       closed: "Closed by the technician",
     } as Readonly<Record<string, string>>,
-    /** PLACEHOLDER: a visit the technician has started or closed has no move. */
+    /** A visit the technician has started or closed has no move. */
     stays: "In progress, so it stays where it is.",
-    /** PLACEHOLDER: the warning before ops move a visit the technician has checked in at. */
+    /** The warning before ops move a visit the technician has checked in at. */
     checkedIn: (technician: string) =>
       `${technician} has checked in. Moving it clears the check-in, so they check in again at the new time.`,
     moveAnyway: "Move anyway",
     /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
-    /** PLACEHOLDER: a move the client has not heard of, and why, which ops tell him of by phone (ADR 0069). */
+    /** A move the client has not heard of, and why, which ops tell him of by phone (ADR 0069). */
     untold: {
       no_consent: (when: string, mobile: string) =>
         `Not told of the move to ${when}: they have not agreed to WhatsApp. Call ${mobile}, then record it here.`,
@@ -275,9 +275,9 @@ export const dispatch = {
     },
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
-    /** PLACEHOLDER: the same for a job in the tray, whose drawer the board does not draw. */
+    /** The same for a job in the tray, whose drawer the board does not draw. */
     assign: "Assign to a technician",
-    /** PLACEHOLDER: a visit ops cancel for the client, or close by hand once its technician's phone was lost. */
+    /** A visit ops cancel for the client, or close by hand once its technician's phone was lost. */
     cancel: "Cancel this visit",
     closeByHand: "Close by hand",
     close: "Close",
@@ -303,13 +303,13 @@ export const dispatch = {
     ],
     /** The board's line, for a client who agreed to WhatsApp about his visits. */
     note: (job: string) => `${job} is messaged on WhatsApp with the new window.`,
-    /** PLACEHOLDER: one who has not; the move goes to the Tasks board until ops say they called (ADR 0069). */
+    /** One who has not; the move goes to the Tasks board until ops say they called (ADR 0069). */
     call: (name: string, mobile: string) => `${name} has not agreed to WhatsApp — call ${mobile} with the new window.`,
     /** After the line, where the visit was paid for: prepaid, or with the client's credit. */
     carries: "Their payment carries over.",
-    /** PLACEHOLDER: a change of technician alone leaves the client's window as it was. */
+    /** A change of technician alone leaves the client's window as it was. */
     sameTime: (job: string) => `Only the technician changes. ${job} keeps the same window, so nobody is messaged.`,
-    /** PLACEHOLDER: a visit with no client on our records. */
+    /** A visit with no client on our records. */
     noClient: "This visit has no client on our records to tell.",
     /**
      * The board's extra line inside the notice the visit was sold under, which the board writes as 24 hours. The
@@ -317,13 +317,13 @@ export const dispatch = {
      */
     soon: (hours: number) =>
       `This visit is inside ${String(hours)} hours. The client is not charged, because we moved it.`,
-    /** PLACEHOLDER: a move of a visit the technician had checked in at, chosen after the drawer's warning. */
+    /** A move of a visit the technician had checked in at, chosen after the drawer's warning. */
     checkInCleared: "The technician's check-in is cleared. They check in again at the new time.",
-    /** PLACEHOLDER: a move onto a day ops blacked out goes only with a reason, kept with the move. */
+    /** A move onto a day ops blacked out goes only with a reason, kept with the move. */
     blackout: (date: string) => `${date} is blacked out, so nothing is booked that day. Say why this visit goes ahead.`,
     blackoutReason: "Why it goes ahead that day",
     send: "Move and notify",
-    /** PLACEHOLDER: the same button where nothing goes to the client, so it does not promise a message. */
+    /** The same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",
     sending: "Moving",
     cancel: "Cancel",
@@ -334,9 +334,9 @@ export const dispatch = {
     moving: (job: string, size: string) => `Moving ${job}, ${size}. Choose a technician and a window.`,
     /** "a first fit, 2 slots". */
     size: (type: string, slots: number) => `${type}, ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
-    /** PLACEHOLDER: while the board asks where the job would fit. */
+    /** While the board asks where the job would fit. */
     checking: "Finding where it fits.",
-    /** PLACEHOLDER: a day with no window the job would land in; the board offers nothing to drop on. */
+    /** A day with no window the job would land in; the board offers nothing to drop on. */
     noRoom: "No room",
     /** Each window of each technician's day with room, while a job is in hand. */
     choose: (job: string, technician: string, date: string, window: string) =>
@@ -346,7 +346,7 @@ export const dispatch = {
     listPrompt: "A technician, day and window",
     listOption: (technician: string, date: string, window: string) => `${technician} · ${date} · ${window}`,
     listGo: "Choose",
-    // PLACEHOLDER: a week with nowhere the job fits.
+    // A week with nowhere the job fits.
     nowhere: "Nowhere on this week's board has room for it.",
     stop: "Stop moving it",
     /** What happened, from the move's own answer: a message is claimed only where one was queued. */
@@ -359,13 +359,13 @@ export const dispatch = {
         `${job} is now with ${technician}. The window is the same, so nobody was messaged.`,
       noClient: (job: string) => `${job} moved. The visit has no client on our records to tell.`,
     },
-    /** PLACEHOLDER: the button that closes the call's task, beside the line that asks for the call. */
+    /** The button that closes the call's task, beside the line that asks for the call. */
     told: "Told by phone",
     toldDone: (name: string) => `Recorded that ${name} was told by phone.`,
-    /** PLACEHOLDER: a visit ops cancelled, or closed by hand, from its drawer. */
+    /** A visit ops cancelled, or closed by hand, from its drawer. */
     cancelled: (job: string) => `${job}'s visit is cancelled.`,
     closedByHand: (job: string) => `${job}'s visit is closed.`,
-    // PLACEHOLDER: the board draws no way past the geofence.
+    // The board draws no way past the geofence.
     letIn: (technician: string, job: string) => `${technician} can check in to ${job}'s visit now.`,
     /**
      * A refusal names the technician and the window it asked for: the clash check
@@ -376,33 +376,33 @@ export const dispatch = {
       `${technician} already holds a job on ${date}, ${window}. Nothing was moved.`,
     /** Leave is named as leave, so ops know the day is off rather than merely full (ADR 0062). */
     onLeave: (technician: string, date: string) => `${technician} is away on ${date}. Nothing was moved.`,
-    /** PLACEHOLDER: a move lands only at a start still ahead. */
+    /** A move lands only at a start still ahead. */
     pastDay: (date: string) => `${date} has passed. Choose a day ahead. Nothing was moved.`,
     windowPassed: (date: string, window: string) =>
       `Too late for ${date}, ${window}. Choose a later window. Nothing was moved.`,
-    /** PLACEHOLDER: the day was blacked out after the board offered it; picking it again asks for the reason. */
+    /** The day was blacked out after the board offered it; picking it again asks for the reason. */
     blackout: (date: string) => `${date} is blacked out. Choose it again to give a reason. Nothing was moved.`,
-    /** PLACEHOLDER: the window is free, but the visit's block has no room in it (ADR 0069). */
+    /** The window is free, but the visit's block has no room in it (ADR 0069). */
     doesNotFit: (type: string, technician: string, date: string, window: string) =>
       `${type} has no room in ${technician}'s ${window} on ${date}: its time is taken, or it would run past the day's end. Nothing was moved.`,
-    /** PLACEHOLDER: another ops user moved the job while this one was choosing (ADR 0069). */
+    /** Another ops user moved the job while this one was choosing (ADR 0069). */
     superseded: (job: string, where: string) =>
       `Someone else moved ${job} while you were choosing. It is now ${where}. Nothing was moved.`,
     supersededWhere: (technician: string, date: string, window: string) => `with ${technician}, ${date}, ${window}`,
-    /** PLACEHOLDER: the job has left this week, or the city asked for, since. */
+    /** The job has left this week, or the city asked for, since. */
     supersededGone: "off this board",
-    /** PLACEHOLDER: another ops user's move of the same job is still being written. */
+    /** Another ops user's move of the same job is still being written. */
     beingMoved: (job: string) => `Someone else is moving ${job} right now. Nothing was moved.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "That move is not one we can make. Nothing was moved.",
       not_found: "This visit is no longer live. The board now shows it as it stands.",
-      /** PLACEHOLDER: the technician began the visit after the board was read. */
+      /** The technician began the visit after the board was read. */
       in_progress: "The technician has begun this visit, so it stays where it is. Nothing was moved.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was moved.",
     },
-    /** PLACEHOLDER: the call's record did not go through. */
+    /** The call's record did not go through. */
     toldFailed: "That was not recorded. Try again.",
     /** A link asked for a visit this board does not hold. */
     notOnBoard: "That visit is no longer on this board. It may have moved to another week, or been cancelled.",
@@ -422,15 +422,15 @@ export const referrals = {
       shared_address: "Same address",
       shared_upi: "Same UPI handle",
       monthly_cap: "Monthly cap exceeded",
-      // PLACEHOLDER: the board draws the other three rules, not this one.
+      // The board draws the other three rules, not this one.
       same_mobile: "Same mobile number",
-      // PLACEHOLDER: an invite ops attached after the friend's first fit (the owner's ruling of 30 September 2026).
+      // An invite ops attached after the friend's first fit (the owner's ruling of 30 September 2026).
       attached_after_fit: "Attached after the first fit",
     },
     approve: "Approve",
     reject: "Reject",
     /**
-     * PLACEHOLDER: board C1 requires a reason for both decisions
+     * Board C1 requires a reason for both decisions
      * (docs/prompts/phase2-frontend.md) and draws no field for either.
      */
     reason: {
@@ -440,7 +440,7 @@ export const referrals = {
       confirm: { approve: "Approve the grant", reject: "Reject the grant" },
       cancel: "Keep it held",
     },
-    /** PLACEHOLDER: the board draws no empty queue. */
+    /** The board draws no empty queue. */
     empty: "Nothing is held for review.",
     deciding: "Deciding",
     errors: {
@@ -455,9 +455,9 @@ export const referrals = {
     /** The board's columns, less "Sent", which nothing counts (docs/fidelity-method.md). */
     columns: ["Referrer", "Opens", "Consults", "Fits", "Granted", "Redeemed"],
     note: "Opens and consultations stay here. The client's tracker shows fits only.",
-    // PLACEHOLDER: the board draws no empty table.
+    // The board draws no empty table.
     empty: "Nobody has a referral code yet.",
-    /** PLACEHOLDER: the table is read fifty referrers at a time, the busiest first. */
+    /** The table is read fifty referrers at a time, the busiest first. */
     more: "Show more referrers",
     loading: "Loading",
   },
@@ -468,7 +468,7 @@ export const clients = {
   /** A cell with nothing in it, written as the design's tables write a gap. */
   unknown: "—",
   /**
-   * PLACEHOLDER: the board opens on a client page and draws no way of reaching
+   * The board opens on a client page and draws no way of reaching
    * one. What ops type is sent in the request body, never in a path or a query
    * string, so a number stays out of URLs, referrers and logs.
    */
@@ -481,10 +481,10 @@ export const clients = {
     found: "Clients",
     none: (text: string) => `Nobody matches “${text}”. An erased client has no page.`,
     more: "More clients match than are listed. Add to the name or the number.",
-    /** PLACEHOLDER: beside each match, so two of one name can be told apart. */
+    /** Beside each match, so two of one name can be told apart. */
     nextVisit: (when: string) => `Next visit ${when}`,
     noVisit: "No visit booked",
-    /** PLACEHOLDER: the clients opened this session, offered before anything is searched for. */
+    /** The clients opened this session, offered before anything is searched for. */
     recent: "Opened this session",
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -505,7 +505,7 @@ export const clients = {
     credits: "Free service visits",
     replacement: "Replacement due",
     mobile: "Mobile",
-    // PLACEHOLDER: who invited the client, and the invite's code beside their name: "Vikram Sethi (VSAB23)".
+    // Who invited the client, and the invite's code beside their name: "Vikram Sethi (VSAB23)".
     invitedBy: "Invited by",
     inviteCode: (code: string) => `(${code})`,
   },
@@ -514,13 +514,13 @@ export const clients = {
   whatsappLabel: (name: string) => `WhatsApp ${name}`,
   /** The number as a way to call, since a client who never agreed to WhatsApp is called. */
   callLabel: (name: string, mobile: string) => `Call ${name} on ${mobile}`,
-  // PLACEHOLDER: the board writes "Active"; the API's three states are these.
+  // The board writes "Active"; the API's three states are these.
   states: { fitted: "Fitted", lead: "Booked", nothing_booked: "Nothing booked" },
   /** The head's free service visits, as the client's Home writes them: "2 · use by 3 Jan 2028". */
   creditLine: (visits: number, expiry: string | null) =>
     expiry === null ? String(visits) : `${String(visits)} · use by ${expiry}`,
   /**
-   * PLACEHOLDER: the board draws no client without a piece. A client wearing
+   * The board draws no client without a piece. A client wearing
    * none falls due on no date at all, so the head says so rather than drawing
    * the gap a missing figure would draw.
    */
@@ -536,7 +536,7 @@ export const clients = {
     { tab: "history", label: "Overview" },
   ],
   /**
-   * PLACEHOLDER, all of it: what waits on Tasks for the client, under the page's head, each with how long it has left
+   * Our words, all of them: what waits on Tasks for the client, under the page's head, each with how long it has left
    * and where it is done. No board draws it.
    */
   openTasks: {
@@ -548,18 +548,18 @@ export const clients = {
   },
   failed: "We could not load this client.",
   /*
-   * PLACEHOLDER, all of it: the board draws a Visits tab and nothing in it. It
+   * Our words, all of them: the board draws a Visits tab and nothing in it. It
    * is the record's own address and visits, which the page already holds, and
    * the form to record an address the client gives ops on the phone, which
    * searches for their building and saves it (docs/decisions/0092-task-owners.md).
    */
   visits: {
-    /** PLACEHOLDER: the client's note to the technician, under the visit it is on. */
+    /** The client's note to the technician, under the visit it is on. */
     clientNote: (text: string) => `Their note: “${text}”`,
     address: "Visits go to",
     noAddress: "No address saved yet. The client adds it in their app, or gives it to you on the phone.",
     access: "Access",
-    // PLACEHOLDER: the address a client gave ops on the phone, which no board draws (docs/decisions/0092-task-owners.md).
+    // The address a client gave ops on the phone, which no board draws (docs/decisions/0092-task-owners.md).
     landmark: "Landmark",
     givenToOps: "Given on the phone",
     /** "To priya@maneman.in, 28 Sep 2026". */
@@ -607,7 +607,7 @@ export const clients = {
     /** The link's whole name, since every row's says the same. */
     onBoardLabel: (visit: string) => `Show on board: the visit of ${visit}`,
     /**
-     * PLACEHOLDER: a discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md).
+     * A discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md).
      * Entered or taken off only while the visit is not paid for or invoiced.
      */
     code: {
@@ -642,7 +642,7 @@ export const clients = {
     },
     noUpcoming: "Nothing booked.",
     noPast: "No visit done yet.",
-    /** PLACEHOLDER: a booking that refunded its payment by itself, which no board draws. The client is told. */
+    /** A booking that refunded its payment by itself, which no board draws. The client is told. */
     autoRefunds: {
       title: "Refunded bookings",
       /** "Service visit, 24 Sep 2027 · Rs. 2,000". */
@@ -656,7 +656,7 @@ export const clients = {
       },
     },
     /**
-     * PLACEHOLDER, all of it: booking a visit for the client from the console, which no board draws. Every kind; a
+     * Our words, all of them: booking a visit for the client from the console, which no board draws. Every kind; a
      * paid visit goes out as a payment link, and is booked once the client pays.
      */
     book: {
@@ -719,7 +719,7 @@ export const clients = {
       } as Readonly<Record<string, string>>,
     },
     /**
-     * PLACEHOLDER, all of it: ops cancelling a client's visit, which no board draws. Free to the client unless ops
+     * Our words, all of them: ops cancelling a client's visit, which no board draws. Free to the client unless ops
      * apply the client's own late terms, with a reason (the owner's ruling of 2 October 2026).
      */
     cancel: {
@@ -770,7 +770,7 @@ export const clients = {
       } as Readonly<Record<string, string>>,
     },
     /**
-     * PLACEHOLDER, all of it: ops closing a visit by hand, for work whose technician's phone was lost before it sent
+     * Our words, all of them: ops closing a visit by hand, for work whose technician's phone was lost before it sent
      * it. No board draws it.
      */
     handClose: {
@@ -818,14 +818,14 @@ export const clients = {
       done: "Done",
       closing: "Closing",
     },
-    // PLACEHOLDER: "Not home" is ours; the board draws Done and Partial.
+    // "Not home" is ours; the board draws Done and Partial.
     outcomes: { done: "Done", partial: "Partial", no_show: "Not home" },
     statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
     /** Paid ahead, or covered by a credit: board C1 of the client app's own badge. */
     prepaid: "Prepaid",
   },
   /*
-   * PLACEHOLDER, all of it: the board draws a Payments tab and nothing in it.
+   * Our words, all of them: the board draws a Payments tab and nothing in it.
    * It is the record's own payments and refunds, and the credits a client can
    * be given or have taken away by hand (docs/decisions/0068-a-paid-hold-is-kept.md).
    */
@@ -848,11 +848,11 @@ export const clients = {
       Record<string, string>
     >,
     reference: (reference: string) => `Ref ${reference}`,
-    // PLACEHOLDER: a discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
+    // A discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
     /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
     code: (applied: string) => `Code ${applied}`,
   },
-  /* PLACEHOLDER, all of it: the payment links Razorpay texted the client, and an open one's address to send again. */
+  /* Our words, all of them: the payment links Razorpay texted the client, and an open one's address to send again. */
   links: {
     title: "Payment links",
     columns: ["Sent", "For", "Amount", "State"],
@@ -872,7 +872,7 @@ export const clients = {
     copy: "Copy link",
     copied: "Copied",
   },
-  /* PLACEHOLDER, all of it: where each finished visit's invoice stands in Books. */
+  /* Our words, all of them: where each finished visit's invoice stands in Books. */
   invoices: {
     title: "Invoices",
     columns: ["Visit", "Invoice"],
@@ -909,7 +909,7 @@ export const clients = {
     } as Readonly<Record<string, string>>,
   },
   /*
-   * PLACEHOLDER, all of it: board B1 draws a Referrals tab and nothing in it. Who sent the invite heads the page; the
+   * Our words, all of them: board B1 draws a Referrals tab and nothing in it. Who sent the invite heads the page; the
    * tab says what it earns, or gives a way to attach one for a friend who booked away from its page.
    */
   invite: {
@@ -929,7 +929,7 @@ export const clients = {
     attachedBy: "Attached by",
     why: "Why",
     none: "They came with no invite. If a friend sent them and they booked another way, attach the friend's invite here.",
-    /** PLACEHOLDER: the same, to a person whose access does not let them attach one. */
+    /** The same, to a person whose access does not let them attach one. */
     noInvite: "They came with no invite.",
     form: {
       code: "Invite code",
@@ -962,12 +962,12 @@ export const clients = {
     columns: ["Piece", "Base", "Fitted", "Supplier lot", "Replace due", "Failed · reason"],
     /** A piece that has failed, as the board writes it: "24 Jun · base split at crown". */
     failed: (date: string, reason: string | null) => (reason === null ? date : `${date} · ${reason}`),
-    // PLACEHOLDER: the board draws no client without a piece, and every client has none until they are fitted.
+    // The board draws no client without a piece, and every client has none until they are fitted.
     empty: "No piece has been fitted for this client.",
   },
   /*
-   * PLACEHOLDER, all of it: no board draws the client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
-   * The lists' words wait for the owner (docs/open-points.md, item 42); the codes are the API's.
+   * Our words, all of them: no board draws the client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
+   * The codes are the API's.
    */
   profile: {
     title: "Hair profile",
@@ -1041,29 +1041,29 @@ export const clients = {
     /** The state the board draws once they are open, with the time the API logged the opening, by its own clock. */
     opened: (time: string) => `Open · logged ${time}`,
     /**
-     * PLACEHOLDER: the board writes who opened them last ("AK · 19 Sep"); this
+     * The board writes who opened them last ("AK · 19 Sep"); this
      * is the log it promises the city head, each opening before this one.
      */
     before: "Opened before",
     beforeRow: (by: string, date: string, time: string) => `${by} · ${date}, ${time}`,
     neverBefore: "Nobody has opened them before.",
-    /** PLACEHOLDER: the earlier visits' photographs, fetched only when asked for. */
+    /** The earlier visits' photographs, fetched only when asked for. */
     earlier: (visits: number) => `Show ${String(visits)} earlier ${visits === 1 ? "visit" : "visits"}`,
     angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
-    // PLACEHOLDER: the board draws one visit's five angles; a visit has a set before and a set after.
+    // The board draws one visit's five angles; a visit has a set before and a set after.
     phases: { before: "Before", after: "After" },
     /** The board's caption beneath a visit's photographs: "22 Aug 2027 · service visit · Imran". */
     caption: (date: string, type: string, technician: string) => `${date} · ${type} · ${technician}`,
-    // PLACEHOLDER: the four visit types, as the board's caption writes one.
+    // The four visit types, as the board's caption writes one.
     types: {
       consultation: "consultation",
       first_fit: "first fit",
       service: "service visit",
       replacement: "replacement",
     },
-    // PLACEHOLDER: a photograph's description for a screen reader; the board draws no captions.
+    // A photograph's description for a screen reader; the board draws no captions.
     alt: (angle: string, phase: string, date: string) => `${angle}, ${phase.toLowerCase()} the visit of ${date}`,
-    // PLACEHOLDER: the board draws no client without photographs, and no photograph that would not load.
+    // The board draws no client without photographs, and no photograph that would not load.
     empty: "No photographs of this client yet, so nothing was logged.",
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -1085,7 +1085,7 @@ export const clients = {
     },
     states: { given: "Given", not_given: "Not given", withdrawn: "Withdrawn" },
     /**
-     * PLACEHOLDER: where each consent was given (docs/decisions/0094-where-a-consent-was-given.md). The board writes
+     * Where each consent was given (docs/decisions/0094-where-a-consent-was-given.md). The board writes
      * "App" and "Site"; these name the place, short enough for its column.
      */
     sources: {
@@ -1102,14 +1102,14 @@ export const clients = {
       whatsapp_stop: "STOP reply",
     },
     /**
-     * PLACEHOLDER: a consent with no place kept: given before this release on a notice several places showed, written
+     * A consent with no place kept: given before this release on a notice several places showed, written
      * by the Worker it replaced before it was deployed, or switched from a copy of the app loaded before it.
      */
     notRecorded: "Not recorded",
     /** The board's note. It writes "from his own app"; this says "their" (docs/fidelity-method.md). */
     note: "Ops cannot grant a consent. Only the client can, from their own app.",
     /**
-     * PLACEHOLDER: the board draws no deletion request, and the route answers
+     * The board draws no deletion request, and the route answers
      * with the client's latest one, which belongs beside their consents.
      */
     deletion: {
@@ -1118,7 +1118,7 @@ export const clients = {
     },
   },
   /**
-   * PLACEHOLDER, all of it: no board draws erasing a client from their page. It is for a request made outside the
+   * Our words, all of them: no board draws erasing a client from their page. It is for a request made outside the
    * app, on WhatsApp or the phone; one made in the app is decided in Deletion requests, which tells the client.
    */
   erasure: {
@@ -1155,7 +1155,7 @@ export const clients = {
         "minutes. Tell them it is done, in the chat they asked in.",
       back: "Find another client",
     },
-    /** PLACEHOLDER: the page of a client erased since, which keeps only their visits and money. */
+    /** The page of a client erased since, which keeps only their visits and money. */
     record: {
       title: "Erased client",
       /** Whose visit the panels that cancel or close one name. */
@@ -1206,21 +1206,21 @@ export const clients = {
  */
 export const areas = {
   title: "Areas",
-  /** PLACEHOLDER: no board draws Areas. Waiting is board C3's waitlist; Served was Settings · Service area. */
+  /** No board draws Areas. Waiting is board C3's waitlist; Served was Settings · Service area. */
   tabs: { waiting: "Waiting", served: "Served" },
-  /** PLACEHOLDER: Served for a person whose Growth access is not national. */
+  /** Served for a person whose Growth access is not national. */
   servedClosed: "Served lists every pincode in every city, so it needs Growth access nationally.",
   /** The board's launch panel (C3), for a pincode chosen on Waiting and for a save on Served alike. */
   launch: {
     label: (pincode: string) => `Mark ${pincode} live`,
-    /** PLACEHOLDER: the panel's head for a pincode already live. */
+    /** The panel's head for a pincode already live. */
     tellLabel: (pincode: string) => `Tell those waiting in ${pincode}`,
-    /** PLACEHOLDER: the panel's head for a save on Served that marks several pincodes live. */
+    /** The panel's head for a save on Served that marks several pincodes live. */
     manyLabel: (count: number) => `Mark ${String(count)} pincodes live`,
     title: (alerts: number) =>
       alerts === 0 ? "This messages nobody" : `This messages ${String(alerts)} ${alerts === 1 ? "person" : "people"}`,
     rows: { waiting: "On the list", alerts: "Asked to be told", referred: "Came by referral" },
-    /** PLACEHOLDER: one line a pincode, for a save on Served. */
+    /** One line a pincode, for a save on Served. */
     line: (pincode: string, area: string, people: number) =>
       `${pincode}, ${area}: ${String(people)} waiting ${people === 1 ? "asks" : "ask"} to be told.`,
     /**
@@ -1235,7 +1235,7 @@ export const areas = {
     eachArea: "{area}",
     /** The board's "Send to 84"; with nobody to message, the press only marks the pincode live, and says so. */
     send: (alerts: number) => (alerts === 0 ? "Mark it live" : `Send to ${String(alerts)}`),
-    /** PLACEHOLDER: a save on Served sends every change in the table with the messages. */
+    /** A save on Served sends every change in the table with the messages. */
     saveAndSend: (alerts: number) => `Save and send to ${String(alerts)}`,
     sending: "Sending",
     cancel: "Not now",
@@ -1245,7 +1245,7 @@ export const areas = {
       const who = quiet === 1 ? "The 1 who did not opt in is" : `The ${String(quiet)} who did not opt in are`;
       return `${who} not messaged. The count shows both so the gap is visible.`;
     },
-    /** PLACEHOLDER: for a pincode already live, those not messaged include whoever was told before. */
+    /** For a pincode already live, those not messaged include whoever was told before. */
     toldNote: "Nobody who has been told is told again.",
     done: (alerts: number) =>
       alerts === 0 ? "Marked live. Nobody was messaged." : `Launched. ${String(alerts)} on their way.`,
@@ -1257,7 +1257,7 @@ export const areas = {
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
   },
-  /** PLACEHOLDER, every line: adding a pincode the service area does not hold, on Waiting and on Served. */
+  /** Our words, all of them: adding a pincode the service area does not hold, on Waiting and on Served. */
   add: {
     /** The panel's head on Waiting. */
     label: (pincode: string) => `Add ${pincode}`,
@@ -1358,28 +1358,28 @@ export const waitlist = {
   columns: ["Pincode", "Area", "Count", "Oldest", "Came by referral", "Asked to be told"],
   /** An area or a date the pincode table has nothing for, written as the design's tables write a gap. */
   unknown: "—",
-  /** PLACEHOLDER: a pincode the service area does not hold, which is added before it is marked live. */
+  /** A pincode the service area does not hold, which is added before it is marked live. */
   notHeld: "Not in the service area",
-  /** A pincode we already come to. PLACEHOLDER: the board draws only those waiting. */
+  /** A pincode we already come to. Our words: the board draws only those waiting. */
   live: "Live",
   choose: (pincode: string, area: string) => `Mark ${pincode} live, ${area}`,
   /**
-   * PLACEHOLDER: a pincode served without its waitlist being told, as the
+   * A pincode served without its waitlist being told, as the
    * Settings screen served them until it launched them too (FEO-02). Choosing
    * it asks who is still to be told.
    */
   tell: (pincode: string, area: string) => `Tell those waiting in ${pincode}, ${area}`,
-  /** PLACEHOLDER: choosing a pincode the service area does not hold. */
+  /** Choosing a pincode the service area does not hold. */
   add: (pincode: string) => `Add ${pincode}, then mark it live`,
-  // PLACEHOLDER: the board draws no empty waitlist.
+  // The board draws no empty waitlist.
   empty: "Nobody is waiting outside the areas we serve.",
-  // PLACEHOLDER: the table lists the two hundred pincodes that have waited longest.
+  // The table lists the two hundred pincodes that have waited longest.
   more: "More pincodes have people waiting than are listed. These are the ones who have waited longest.",
-  /** PLACEHOLDER: the board's launch sends today; the API takes the day a technician started coming. */
+  /** The board's launch sends today; the API takes the day a technician started coming. */
   date: "Launch date",
   dateHint:
     "Today, or the day a technician started coming if earlier. A held referral invite lapses twelve months from it.",
-  /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
+  /** Where the area's name in the message comes from, and where it is changed (OPS-13). */
   named: "The message names the area as Served names it, or its city until then.",
   rename: "Change the name",
 } as const;
@@ -1398,9 +1398,9 @@ export const noShows = {
    * themselves (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
    */
   money: {
-    /** PLACEHOLDER: the card's heading, which names its day: "Today, Wed 22 Sep", or "Mon 20 Sep". */
+    /** The card's heading, which names its day: "Today, Wed 22 Sep", or "Mon 20 Sep". */
     title: (day: string, today: boolean) => (today ? `Today, ${day}` : day),
-    /** PLACEHOLDER: the field that shows another day's money. */
+    /** The field that shows another day's money. */
     pick: "Day",
     /** The board's own three, in its order and its words; "today" only on today's card. */
     figures: {
@@ -1425,34 +1425,34 @@ export const noShows = {
        * (docs/fidelity-method.md).
        */
       attended: (technician: string, was: string) => `${technician} attended · visit was ${was}`,
-      /** PLACEHOLDER: a no-show whose case has lost the technician who attended. */
+      /** A no-show whose case has lost the technician who attended. */
       unattended: (was: string) => `Nobody was home · visit was ${was}`,
-      /** PLACEHOLDER: a charge on a visit that carries no start time. */
+      /** A charge on a visit that carries no start time. */
       undated: "time unknown",
-      /** PLACEHOLDER: a charge on a visit with no client of ours. */
+      /** A charge on a visit with no client of ours. */
       unknown: "Client unknown",
       /**
-       * PLACEHOLDER: words where the amount stands on a no-show charged before a
+       * Words where the amount stands on a no-show charged before a
        * charge recorded what it kept, so the line cannot be read as a nought
        * (ADR 0036, PR #89).
        */
       noAmount: "Amount not recorded",
-      /** PLACEHOLDER: the board draws two charges and no empty day. */
+      /** The board draws two charges and no empty day. */
       empty: (today: boolean) => (today ? "Nothing was charged today." : "Nothing was charged that day."),
     },
   },
   queue: {
     /**
-     * PLACEHOLDER: the board heads the list "No-shows and late cancellations".
+     * The board heads the list "No-shows and late cancellations".
      * Nothing lists a late cancellation, and what is here is a queue, as board
      * C1's "Held for review" is.
      */
     title: "No-shows waiting for a decision",
     /** The visit the case belongs to: "Visit of Sat 19 Sep". */
     visit: (date: string) => `Visit of ${date}`,
-    /** PLACEHOLDER: a case whose appointment carries no date. */
+    /** A case whose appointment carries no date. */
     undated: "Visit, date unknown",
-    /** PLACEHOLDER: the client of an erased record, who has no name left to show. */
+    /** The client of an erased record, who has no name left to show. */
     erased: "Client erased",
     attended: (technician: string) => `${technician} attended`,
     /**
@@ -1464,7 +1464,7 @@ export const noShows = {
     facts: {
       booked: "Booked",
       checkIn: "Check-in",
-      // PLACEHOLDER: shown only when the phone gave a time the bounds would not take.
+      // Shown only when the phone gave a time the bounds would not take.
       claimed: "The phone said",
       received: "Reached us",
       distance: "Distance",
@@ -1473,7 +1473,7 @@ export const noShows = {
     },
     /** "Sat 19 Sep, 9 am to 12 pm". */
     booked: (date: string, from: string, to: string) => `${date}, ${from} to ${to}`,
-    /** PLACEHOLDER: "2:08 pm · 5 h 8 m after the booked start", or before it, or at it. */
+    /** "2:08 pm · 5 h 8 m after the booked start", or before it, or at it. */
     checkIn: (time: string, offset: string) => `${time} · ${offset}`,
     after: (span: string) => `${span} after the booked start`,
     before: (span: string) => `${span} before the booked start`,
@@ -1485,7 +1485,7 @@ export const noShows = {
     },
     /**
      * The board writes "240 m · over 200 m fence", against the radius in force
-     * when he checked in; a distance inside it is ours (PLACEHOLDER).
+     * when he checked in; a distance inside it is ours.
      */
     distance: (metres: number, radius: number) =>
       metres > radius
@@ -1497,7 +1497,7 @@ export const noShows = {
      * charge a client on these facts and nothing was measured here at all.
      */
     unmeasured: "Not measured · the address has no location",
-    /** PLACEHOLDER: ops let him check in past the fence for this visit, from the dispatch board, with their reason. */
+    /** Ops let him check in past the fence for this visit, from the dispatch board, with their reason. */
     letIn: (reason: string | null) => (reason === null ? "ops let him check in" : `ops let him check in: ${reason}`),
     /**
      * What became of the reminder, dated, since it goes the evening before. A
@@ -1505,7 +1505,7 @@ export const noShows = {
      */
     message: {
       delivered: (when: string) => `Delivered ${when}`,
-      // PLACEHOLDER: the board's receipt always arrived; the other four are ours.
+      // The board's receipt always arrived; the other four are ours.
       sent: "Sent, and never delivered",
       no_consent: "No reminder sent · the client has not agreed to WhatsApp about visits",
       not_sent: "Not sent",
@@ -1522,7 +1522,7 @@ export const noShows = {
     waitedBoth: (minutes: number, withUs: number, closed: string) =>
       `${String(minutes)} min by the phone, ${String(withUs)} since it reached us · closed ${closed}`,
     notClosed: "Not closed",
-    // PLACEHOLDER: the board draws no case closed before the booked start's wait had run.
+    // The board draws no case closed before the booked start's wait had run.
     closedEarly:
       "Closed too early: the wait ran from a check-in before the booked start. Waive it, or say in your note why you charge.",
     /**
@@ -1536,13 +1536,13 @@ export const noShows = {
       hint: "Kept with the ruling, under your name.",
     },
     /**
-     * PLACEHOLDER: the board's buttons are Refund and Uphold, which rule on a
+     * The board's buttons are Refund and Uphold, which rule on a
      * dispute, on its own card above the queue. A case is charged or waived.
      */
     charge: "Charge",
     waive: "Waive",
     /**
-     * PLACEHOLDER: a charge is asked about once more, with what it keeps of what was paid and what it refunds, since it
+     * A charge is asked about once more, with what it keeps of what was paid and what it refunds, since it
      * cannot be taken back here.
      */
     confirm: {
@@ -1557,13 +1557,13 @@ export const noShows = {
       working: "Working out what the charge keeps.",
       failed: "We could not work out what the charge keeps. Go back, then try again.",
     },
-    // PLACEHOLDER: a visit that carries no date, as a charge asked about names it.
+    // A visit that carries no date, as a charge asked about names it.
     noDay: "a day not recorded",
     confirmCharge: "Charge the visit",
     back: "Back",
     deciding: "Deciding",
     /**
-     * PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. A charge costs what the booking
+     * The board draws no note beneath the queue, and no amount anywhere. A charge costs what the booking
      * was sold to cost a no-show, set in Settings apart from a late cancel (ADR 0096); a waiver gives back what ops set
      * it to, which the owner ruled on 27 September 2026 is the payment and the credit (BIZ-28; ADR 0088).
      */
@@ -1572,7 +1572,7 @@ export const noShows = {
       `${waiver.payment === "refunded" ? "refunds the payment" : "keeps the payment"} ` +
       `and ${waiver.credit === "returned" ? "returns its credit" : "leaves its credit spent"}. ` +
       "Either way the client is told on WhatsApp, never your note.",
-    /** PLACEHOLDER: the board draws no empty queue. */
+    /** The board draws no empty queue. */
     empty: "No no-show is waiting for a decision.",
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -1581,7 +1581,7 @@ export const noShows = {
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
   },
-  /** PLACEHOLDER: the board draws no list of the day's rulings. Each case ruled on today, the latest first. */
+  /** The board draws no list of the day's rulings. Each case ruled on today, the latest first. */
   decided: {
     title: "Decided today",
     charged: (kept: string) => `Charged · kept ${kept}`,
@@ -1602,14 +1602,14 @@ export const noShows = {
     /** The board's own label. */
     label: "Disputed charge",
     /**
-     * PLACEHOLDER: the board heads the card "Vikram Sethi says he was home", its
+     * The board heads the card "Vikram Sethi says he was home", its
      * summary of the client's words. Their words stand beneath, as they wrote them.
      */
     title: "disputes the charge",
     erased: "A client since erased disputes the charge",
-    /** PLACEHOLDER: the client's words, erased with them. */
+    /** The client's words, erased with them. */
     wordsErased: "Their words were erased with them.",
-    /** PLACEHOLDER: what the charge took, and when the visit was. */
+    /** What the charge took, and when the visit was. */
     took: (what: string, day: string) => `The charge kept ${what}, for the visit of ${day}.`,
     credit: "a free service visit",
     /** The board's four rows. */
@@ -1623,9 +1623,9 @@ export const noShows = {
     refund: "Refund",
     uphold: "Uphold",
     ruling: "Ruling",
-    /** PLACEHOLDER: the board draws one card, with no panel around it. A panel needs a name to be read by. */
+    /** The board draws one card, with no panel around it. A panel needs a name to be read by. */
     queueTitle: "Disputed charges",
-    /** PLACEHOLDER: the board always draws one. */
+    /** The board always draws one. */
     none: "No charge is disputed.",
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -1654,49 +1654,49 @@ export const tasks = {
   title: "Tasks",
   /** The head's count, in oxblood, as the board writes "4 overdue". */
   overdue: (count: number) => `${String(count)} overdue`,
-  /** PLACEHOLDER: the head's count as a screen reader names it, with what it does. */
+  /** The head's count as a screen reader names it, with what it does. */
   overdueJump: (count: number) => `${String(count)} overdue, go to the first`,
   /** Each department's section, named as the navigation names it. */
   departments: DEPARTMENT_NAMES,
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
-    // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
+    // A group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
     untold_move: "Call about a move",
-    // PLACEHOLDER: two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
+    // Two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     leave_conflict: "Job on a day off",
     address_to_confirm: "Address to confirm",
     consultation_request: "Consultation request",
-    // PLACEHOLDER: a group the board does not draw (docs/decisions/0086-the-next-visit-is-offered.md).
+    // A group the board does not draw (docs/decisions/0086-the-next-visit-is-offered.md).
     first_fit_to_book: "First fit to book",
     replacement_order: "Replacement order",
     at_risk_client: "At-risk client",
-    // PLACEHOLDER: a group the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
+    // A group the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     partial_visit: "Visit left partly done",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
-    // PLACEHOLDER: a group the board does not draw; board D1 letters the card "Disputed charge".
+    // A group the board does not draw; board D1 letters the card "Disputed charge".
     no_show_dispute: "Disputed charge",
     number_change: "Number change",
     erasure_request: "Deletion request",
-    // PLACEHOLDER: a group the board does not draw (docs/decisions/0072-ops-clients-and-queues.md).
+    // A group the board does not draw (docs/decisions/0072-ops-clients-and-queues.md).
     grievance: "Concern",
-    // PLACEHOLDER: two groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
+    // Two groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
     draft_invoice: "Draft invoice",
-    // PLACEHOLDER: a group the board does not draw (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+    // A group the board does not draw (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
     payment_owed: "Payment owed",
-    // PLACEHOLDER: a group the board does not draw: money owed back that no refund has reached.
+    // A group the board does not draw: money owed back that no refund has reached.
     payment_to_refund: "Payment to refund",
   } as Readonly<Record<string, string>>,
   /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */
   visit: (date: string) => `Visit of ${date}`,
-  /** PLACEHOLDER: a disputed charge whose client has since been erased. */
+  /** A disputed charge whose client has since been erased. */
   disputeErased: "A client since erased",
-  /** PLACEHOLDER: a queue whose row has lost the client it was about. */
+  /** A queue whose row has lost the client it was about. */
   unknown: "Client unknown",
   /** The client's page, which the board draws no way to. */
   open: (name: string) => `Open ${name}`,
   /**
-   * PLACEHOLDER: the section each task is decided in, and a way to its row
+   * The section each task is decided in, and a way to its row
    * there. The board draws no way of acting on a task; the section itself
    * decides nothing.
    */
@@ -1710,12 +1710,12 @@ export const tasks = {
     erasure_request: "Decide it in Deletion requests",
     grievance: "Answer it in Concerns",
   } as Readonly<Record<string, string>>,
-  /** PLACEHOLDER: a group longer than the board lists: its count is all of them. */
+  /** A group longer than the board lists: its count is all of them. */
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
-  /** PLACEHOLDER: a group shows its five longest waits until ops ask for the rest. */
+  /** A group shows its five longest waits until ops ask for the rest. */
   more: (count: number) => `Show ${String(count)} more`,
   fewer: "Show fewer",
-  /** PLACEHOLDER: what a consultation asked for, a first fit to book and a replacement due are done with. */
+  /** What a consultation asked for, a first fit to book and a replacement due are done with. */
   book: "Book a visit",
   /** A move the client has not heard of, settled from its row. */
   call: {
@@ -1724,12 +1724,12 @@ export const tasks = {
     recording: "Recording…",
     failed: "That was not recorded. Try again.",
   },
-  /** PLACEHOLDER: more were waiting than one look reads. */
+  /** More were waiting than one look reads. */
   truncated: "More are waiting than this page shows, so its counts may be low.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
     /**
-     * PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; has not agreed to WhatsApp": ops call, then say so on the row. A
+     * "Moved to Wed 23 Sep, 9 am; has not agreed to WhatsApp": ops call, then say so on the row. A
      * reason the API does not name says only that the client was not told.
      */
     untold_move: {
@@ -1737,32 +1737,32 @@ export const tasks = {
       not_sent: (when: string) => `Moved to ${when}; the WhatsApp did not go`,
       unknown: (when: string) => `Moved to ${when}; not told yet`,
     },
-    /** PLACEHOLDER: "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
+    /** "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
     leave_conflict: (when: string, technician: string) => `${when}, and ${technician} is away`,
     /**
-     * PLACEHOLDER: "Visit Tue 22 Sep, 10 am; no address yet". The client saves one in the app, whose Home asks for it,
+     * "Visit Tue 22 Sep, 10 am; no address yet". The client saves one in the app, whose Home asks for it,
      * or gives it to ops on the phone, who record it on their page; the task goes when either does (ADR 0092).
      */
     address_to_confirm: (when: string) => `Visit ${when}; no address yet`,
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /**
-     * PLACEHOLDER: "+ consultation and fit in one visit", after the day and window asked for: book it from the row,
+     * "+ consultation and fit in one visit", after the day and window asked for: book it from the row,
      * paid for once the client is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
      */
     withOneVisit: "+ consultation and fit in one visit",
     /**
-     * PLACEHOLDER: ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which the
+     * ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which the
      * booking from the row starts with (docs/decisions/0108-discount-codes.md).
      */
     withCode: (code: string) => `, code ${code}`,
     /**
-     * PLACEHOLDER: "+ first fit, afternoon", after the consultation asked for: the site's form asked for the fit
+     * "+ first fit, afternoon", after the consultation asked for: the site's form asked for the fit
      * too, which the client books and pays for in the app once the consultation is done (ADR 0086).
      */
     withFirstFit: (when: string | null) => (when === null ? "+ first fit" : `+ first fit, ${when.toLowerCase()}`),
     /**
-     * PLACEHOLDER: "Consultation Thu 10 Sep, morning · not fitted". The window is the consultation's, which the fit
+     * "Consultation Thu 10 Sep, morning · not fitted". The window is the consultation's, which the fit
      * is booked in from the row; none where a fit cannot start in it. The task goes when the client books.
      */
     first_fit_to_book: (consulted: string, when: string | null) =>
@@ -1778,38 +1778,38 @@ export const tasks = {
     /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
     replacement_order: (piece: string, due: string) => `${piece} · due ${due}`,
     /**
-     * PLACEHOLDER: "The piece was not ready · 20 Sep": book the visit that finishes it. The reason is in the
+     * "The piece was not ready · 20 Sep": book the visit that finishes it. The reason is in the
      * words the job sheet gives it, which ops set in Settings (docs/decisions/0087-consumables-and-stock.md).
      */
     partial_visit: (reason: string, date: string) => `${reason} · ${date}`,
-    /** PLACEHOLDER: a visit closed partial with no reason from the technician. */
+    /** A visit closed partial with no reason from the technician. */
     noReason: "No reason recorded",
     no_show_decision: (technician: string) => `${technician} attended`,
-    /** PLACEHOLDER: "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
+    /** "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
     no_show_dispute: (took: string) => `Disputes the charge that kept ${took}`,
     disputedCredit: "a free service visit",
     number_change: "Both numbers proven by code",
     erasure_request: "Asked for in the client's own app",
-    // PLACEHOLDER: a concern about their data, which the app promises an answer to within 30 days.
+    // A concern about their data, which the app promises an answer to within 30 days.
     grievance: "Raised in the client's own app",
-    // PLACEHOLDER: the client cannot open the invoice until somebody sends it in Books.
+    // The client cannot open the invoice until somebody sends it in Books.
     draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
     /**
-     * PLACEHOLDER: "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
+     * "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
      * link not sent yet is asked of Razorpay again by the cron; one Razorpay refused, or closed unpaid, is sent again
      * from the row or from Razorpay's dashboard (ADR 0105).
      */
     payment_owed: (product: string, amount: string, link: LinkState) =>
       `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
-    /** PLACEHOLDER: "Rs. 2,000 owed back on pay_Q1x; Razorpay refused the refund": refunded from Razorpay's dashboard. */
+    /** "Rs. 2,000 owed back on pay_Q1x; Razorpay refused the refund": refunded from Razorpay's dashboard. */
     payment_to_refund: (amount: string, payment: string, why: string) =>
       `${amount} owed back on ${payment}; ${why === "refund_failed" ? "Razorpay failed the refund" : "Razorpay would not refund it"}`,
-    // PLACEHOLDER: a held grant whose fraud signals were not recorded.
+    // A held grant whose fraud signals were not recorded.
     unknown: "Held for review",
   },
   /**
    * Whose each task is (docs/decisions/0092-task-owners.md). The board writes each owner in ops by their first name,
-   * "Priya", in its own column; PLACEHOLDER: it draws no way to take a task, give it to someone or hand it back.
+   * "Priya", in its own column; our words: it draws no way to take a task, give it to someone or hand it back.
    */
   owner: {
     /** For a screen reader, before the column's name: "Owner: Priya". */
@@ -1833,7 +1833,7 @@ export const tasks = {
     } as Readonly<Record<string, string>>,
   },
   /**
-   * PLACEHOLDER: a visit left partly done closed without a follow-up, with why, as the owner ruled
+   * A visit left partly done closed without a follow-up, with why, as the owner ruled
    * (docs/decisions/0092-task-owners.md). No board draws it.
    */
   close: {
@@ -1851,7 +1851,7 @@ export const tasks = {
     } as Readonly<Record<string, string>>,
   },
   /**
-   * PLACEHOLDER: a one visit's payment link, copied to send by hand, or texted to the client again by Razorpay. No
+   * A one visit's payment link, copied to send by hand, or texted to the client again by Razorpay. No
    * board draws it.
    */
   link: {
@@ -1873,16 +1873,16 @@ export const tasks = {
       unknown: "That did not send. Try again.",
     } as Readonly<Record<string, string>>,
   },
-  /** PLACEHOLDER: the board draws no note, and the list has to say where the work is done. */
+  /** The board draws no note, and the list has to say where the work is done. */
   note:
     "A task leaves this list when the thing itself is decided, where it is decided. A visit left partly done may " +
     "also be closed here, with why.",
-  /** PLACEHOLDER: the board draws twelve tasks and no empty list. */
+  /** The board draws twelve tasks and no empty list. */
   empty: "Nothing is waiting.",
 } as const;
 
 /**
- * PLACEHOLDER: no board draws it. Tasks' "Needs a hand": the alerts ops were told of in the alert space, each until
+ * No board draws it. Tasks' "Needs a hand": the alerts ops were told of in the alert space, each until
  * somebody puts right what it was about. A few words name each kind; its message says what happened and what to do.
  */
 export const needsAHand = {
@@ -1951,7 +1951,7 @@ export const technicians = {
   from: (date: string) => `From ${date}`,
   /** A zone a technician has none of, written as the design's tables write a gap. */
   unknown: "—",
-  // PLACEHOLDER: the board draws no console without technicians.
+  // The board draws no console without technicians.
   empty: "No technician is active.",
   /** The two columns counted from the jobs themselves (src/domain/technician-work.ts). */
   work: {
@@ -1968,7 +1968,7 @@ export const technicians = {
       `Jobs finished from ${from} to ${to}. Average service is against the length each visit was planned for, over the jobs the phone timed from Start to the outcome.`,
     /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
   },
-  /** PLACEHOLDER, all of it: the board draws the roster and no page for one technician. */
+  /** Our words, all of them: the board draws the roster and no page for one technician. */
   page: {
     back: "All technicians",
     tabsLabel: (name: string) => `${name}: his week, leave, phones and kit`,
@@ -1986,10 +1986,10 @@ export const technicians = {
     stock: "Record a movement in Stock",
   },
   phones: {
-    /** PLACEHOLDER: a phone whose browser gave no label at login. */
+    /** A phone whose browser gave no label at login. */
     unlabelled: "Phone",
     /**
-     * PLACEHOLDER: "Chrome on Android · 3f9a": the browser, and the end of the
+     * "Chrome on Android · 3f9a": the browser, and the end of the
      * app's own ID for the phone, so two phones alike can be told apart.
      */
     label: (label: string, id: string) => `${label} · ${id}`,
@@ -2005,10 +2005,10 @@ export const technicians = {
     cancel: "Keep it",
     revoking: "Revoking",
     revoked: (date: string) => `Revoked ${date}`,
-    /** PLACEHOLDER: the board draws no revoke, so nothing writes what one does. */
+    /** The board draws no revoke, so nothing writes what one does. */
     warning:
       "The session ends, the phone drops its cached jobs when it is next online, and he cannot sign in again until you let him.",
-    // PLACEHOLDER: the board draws no revoke, so nothing writes what follows one.
+    // The board draws no revoke, so nothing writes what follows one.
     stopped: (date: string) => `Sign-in stopped since ${date}, when a phone was revoked.`,
     allow: "Let him sign in again",
     allowing: "Letting him in",
@@ -2021,7 +2021,7 @@ export const technicians = {
     } as Readonly<Record<string, string>>,
   },
   /**
-   * PLACEHOLDER: the design draws no leave anywhere. Leave is recorded here
+   * The design draws no leave anywhere. Leave is recorded here
    * (ADR 0062), and every line below is ours.
    */
   leave: {
@@ -2048,7 +2048,7 @@ export const technicians = {
     },
     recorded: "Leave recorded.",
     effect: "Nobody can be booked or assigned on these days until the leave is taken back.",
-    // PLACEHOLDER: leave recorded over jobs already booked moves none of them.
+    // Leave recorded over jobs already booked moves none of them.
     stranded: {
       title: (count: number) =>
         `${String(count)} ${count === 1 ? "job is" : "jobs are"} still booked on these days. Leave moves none.`,
@@ -2066,7 +2066,7 @@ export const technicians = {
       unknown: "That did not go through. Please try again.",
     },
   },
-  // PLACEHOLDER: the board draws no way to add, change or switch off a technician, so every line below is ours.
+  // The board draws no way to add, change or switch off a technician, so every line below is ours.
   fields: {
     name: "Name",
     mobile: "Mobile",
@@ -2222,13 +2222,13 @@ export const deletions = {
     deleting: "Deleting",
     reason: {
       label: "Why you are rejecting it",
-      // PLACEHOLDER: the client is sent this reason on WhatsApp, and their app shows it for thirty days.
+      // The client is sent this reason on WhatsApp, and their app shows it for thirty days.
       hint: "Kept with the decision, under your name. The client reads it on WhatsApp and in the app.",
       confirm: "Reject this request",
       cancel: "Leave it waiting",
     },
     rejecting: "Rejecting",
-    /** PLACEHOLDER: above the queue once a decision is made. */
+    /** Above the queue once a decision is made. */
     done: {
       delete: "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within the hour.",
       reject: "Request rejected. The client is told why on WhatsApp.",
@@ -2250,7 +2250,7 @@ export const deletions = {
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. The client has not been erased.",
     } as Readonly<Record<string, string>>,
-    /** PLACEHOLDER: beneath a refusal, the client's tab that settles it. */
+    /** Beneath a refusal, the client's tab that settles it. */
     settleOn: { visits: "Open their visits", payments: "Open their payments" },
   },
 } as const;
@@ -2269,7 +2269,7 @@ export const numberChanges = {
     reject: "Reject",
     reason: {
       label: "Why you are rejecting it",
-      // PLACEHOLDER: the client's profile shows this reason for thirty days (OPS-09).
+      // The client's profile shows this reason for thirty days (OPS-09).
       hint: "Kept with the decision, under your name. The client reads it in the app.",
       confirm: "Reject the change",
       cancel: "Leave it waiting",
@@ -2301,14 +2301,14 @@ export const settings = {
   title: "Settings",
   sub: "A change takes effect within a minute. No release is needed.",
   /**
-   * PLACEHOLDER: no board draws the storage meter's line, which Rules shows under The console. Gigabytes as
+   * No board draws the storage meter's line, which Rules shows under The console. Gigabytes as
    * Cloudflare bills them, a thousand million bytes.
    */
   storage: (held: number, share: number) =>
     `Photos and referral cards: ${(held / 1e9).toFixed(2)} GB of ${String(share / 1e9)} GB`,
-  /** PLACEHOLDER: no board draws this line either. Megabytes as Cloudflare counts them, a million bytes. */
+  /** No board draws this line either. Megabytes as Cloudflare counts them, a million bytes. */
   database: (held: number, limit: number) => `Database: ${(held / 1e6).toFixed(0)} MB of ${String(limit / 1e6)} MB`,
-  // PLACEHOLDER: no board draws the tabs' names.
+  // No board draws the tabs' names.
   tabs: {
     rules: "Policies",
     blackouts: "Closed days",
@@ -2316,7 +2316,7 @@ export const settings = {
     "job-sheet": "Job sheet",
   },
   /**
-   * PLACEHOLDER, every line of it: no board draws discount codes (docs/decisions/0108-discount-codes.md).
+   * Our words, all of them: no board draws discount codes (docs/decisions/0108-discount-codes.md).
    * What a code takes off is shown before it is made, as a price is set
    * (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
    */
@@ -2404,7 +2404,7 @@ export const settings = {
   },
   rules: {
     title: "Policies",
-    // PLACEHOLDER: no board draws the rules' sections, nor the links between them.
+    // No board draws the rules' sections, nor the links between them.
     groups: {
       moves: "Moves, cancels and no-shows",
       booking: "Booking and payment",
@@ -2446,25 +2446,25 @@ export const settings = {
       no_show_wait_min: dispatch.typeNames,
       late_change_charge: dispatch.typeNames,
       no_show_charge: dispatch.typeNames,
-      // PLACEHOLDER: what a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
+      // What a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
       no_show_waiver: { payment: "The visit's payment", credit: "The free service visit it used" },
       task_sla_hours: tasks.groups,
-      // PLACEHOLDER: the phone's two bounds (docs/decisions/0088-every-policy-in-the-console.md).
+      // The phone's two bounds (docs/decisions/0088-every-policy-in-the-console.md).
       phone_clock: {
         before_start: "Earliest check-in, before the booked start",
         held_offline: "Longest a phone may stay offline",
       },
-      // PLACEHOLDER: board C4's countdown and the grace after it (docs/decisions/0068-a-paid-hold-is-kept.md).
+      // Board C4's countdown and the grace after it (docs/decisions/0068-a-paid-hold-is-kept.md).
       payment_hold: {
         countdown: "The countdown the client sees",
         grace: "Grace after the countdown",
       },
-      // PLACEHOLDER: board D3's two figures (docs/open-points.md, item 59).
+      // Board D3's two figures (docs/open-points.md, item 59).
       technician_work: {
         period: "Figures counted over",
         over_by: "Running over from",
       },
-      // PLACEHOLDER: the days the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
+      // The days the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
       booking_days: {
         first_fit_lead: "From a consultation to the first fit",
         service_cadence: "Between service visits",
@@ -2475,7 +2475,7 @@ export const settings = {
         invoice_prompt: "A new invoice on Home",
         replacement_order_lead: "Replacement order, before the hair system is due",
       },
-      // PLACEHOLDER: what a referral earns, each side apart (docs/decisions/0107-referral-rewards-in-the-console.md).
+      // What a referral earns, each side apart (docs/decisions/0107-referral-rewards-in-the-console.md).
       referral_reward: {
         referrer_visits: "The client who sent the invite",
         friend_visits: "The friend they invited",
@@ -2483,7 +2483,7 @@ export const settings = {
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /**
-     * PLACEHOLDER: each choice a rule of choices offers, in the console's words, by the rule's name
+     * Each choice a rule of choices offers, in the console's words, by the rule's name
      * (docs/decisions/0088-every-policy-in-the-console.md).
      */
     choiceNames: {
@@ -2492,7 +2492,7 @@ export const settings = {
       no_show_waiver: { refunded: "Refunded", kept: "Kept", returned: "Returned", spent: "Spent" },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /**
-     * PLACEHOLDER: the check before a rule is sent, as a price's (docs/decisions/0071-what-ops-see-before-a-setting-
+     * The check before a rule is sent, as a price's (docs/decisions/0071-what-ops-see-before-a-setting-
      * changes.md): each figure that moves, the old beside the new.
      */
     confirm: {
@@ -2523,7 +2523,7 @@ export const settings = {
     } as Readonly<Record<string, string>>,
   },
   /**
-   * PLACEHOLDER, every line of it: no board draws the days no visit is offered, which the runbook's SQL set before
+   * Our words, all of them: no board draws the days no visit is offered, which the runbook's SQL set before
    * (docs/decisions/0088-every-policy-in-the-console.md).
    */
   blackouts: {
@@ -2566,7 +2566,7 @@ export const settings = {
     } as Readonly<Record<string, string>>,
   },
   /**
-   * PLACEHOLDER, every line of it: no board draws the services (docs/decisions/0085-services-ops-can-edit.md). A kind
+   * Our words, all of them: no board draws the services (docs/decisions/0085-services-ops-can-edit.md). A kind
    * of visit is code; the services within it are ops', each named, timed, priced, ordered and retired from a day
    * here, and each is invoiced in Books on an item of its own. What a price or a change was is shown beside what it will
    * be before anything is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
@@ -2731,30 +2731,27 @@ export const settings = {
     } as Readonly<Record<string, string>>,
   },
   /**
-   * PLACEHOLDER: every word of the consumables and of each service's expected
+   * Every word of the consumables and of each service's expected
    * use. No board draws them; the owner ruled on 27 September 2026 that both
    * are set here (docs/decisions/0087-consumables-and-stock.md).
    */
   consumables: {
     title: "Consumables",
-    // PLACEHOLDER
     note: "What a technician may record using on a job, and what one costs us. The cost is ours alone: no client's invoice carries it.",
-    // PLACEHOLDER
     columns: ["Consumable", "Cost of one", "Low at", "State"],
     none: "No consumables yet. Add the first below.",
-    /** PLACEHOLDER: "Kit 5 · store 50", the levels a place is low at. */
+    /** "Kit 5 · store 50", the levels a place is low at. */
     levels: (kit: number | null, central: number | null) => {
       if (kit === null && central === null) return "No level";
       const parts = [kit === null ? null : `Kit ${String(kit)}`, central === null ? null : `store ${String(central)}`];
       return parts.filter((part) => part !== null).join(" · ");
     },
-    // PLACEHOLDER
     states: {
       offered: "Offered",
       retiring: (from: string) => `Offered until ${from}`,
       retired: (from: string) => `Retired from ${from}`,
     },
-    // PLACEHOLDER: the buttons in each row, named for the screen reader by the consumable.
+    // The buttons in each row, named for the screen reader by the consumable.
     change: "Change",
     changeLabel: (name: string) => `Change ${name}`,
     retire: "Retire",
@@ -2762,7 +2759,6 @@ export const settings = {
     restore: "Restore",
     restoreLabel: (name: string) => `Restore ${name}`,
     form: {
-      // PLACEHOLDER
       addTitle: "Add a consumable",
       changeTitle: (name: string) => `Change ${name}`,
       name: "Name",
@@ -2780,7 +2776,7 @@ export const settings = {
       cancel: "Not now",
       added: "The consumable is added. The technician app offers it from now.",
       saved: "The change is saved.",
-      /** PLACEHOLDER: the check before anything is sent, the old beside the new. */
+      /** The check before anything is sent, the old beside the new. */
       confirm: {
         title: "Check the change",
         adding: (name: string, unit: string, cost: string) => `${name}, counted in ${unit}, at ${cost} each.`,
@@ -2793,7 +2789,6 @@ export const settings = {
       },
     },
     retiring: {
-      // PLACEHOLDER
       title: (name: string) => `Retire ${name}`,
       from: "No longer offered from",
       fromHint: "Today or a day after it. What was recorded stays, and so does its stock.",
@@ -2805,7 +2800,6 @@ export const settings = {
       done: "Done.",
     },
     usage: {
-      // PLACEHOLDER
       title: "What each service uses",
       note: "The technician's steppers start at these on a job of the service. He can change them, and add any other consumable.",
       service: "Service",
@@ -2826,7 +2820,7 @@ export const settings = {
       },
       saved: "Saved. The technician app reads it with the next job it opens.",
     },
-    /** PLACEHOLDER: a refusal, said of the box it names (src/routes/ops-consumables.ts). */
+    /** A refusal, said of the box it names (src/routes/ops-consumables.ts). */
     errors: {
       not_permitted: NOT_PERMITTED,
       name: "Another consumable has that name, or it does not start with a letter or a digit. Nothing was changed.",
@@ -2843,13 +2837,12 @@ export const settings = {
     } as Readonly<Record<string, string>>,
   },
   /**
-   * PLACEHOLDER: every word of the job sheet the technician app reads: each
+   * Every word of the job sheet the technician app reads: each
    * kind of visit's checklist and the partial reasons (docs/open-points.md,
    * item 28). No board draws it.
    */
   jobSheet: {
     title: "Job sheet",
-    // PLACEHOLDER
     note: "What the technician ticks on each kind of visit, and the reasons he may pick when a job is left partly done. His phone reads them with each job it opens; a job already on it keeps the list it was given.",
     kind: "Kind of visit",
     checklist: (type: string) => `${type} checklist`,
@@ -2899,7 +2892,7 @@ export const settings = {
     } as Readonly<Record<string, string>>,
   },
   /**
-   * PLACEHOLDER, every line of it: no board draws the Staff page. A change is shown before it is saved.
+   * Our words, all of them: no board draws the Staff page. A change is shown before it is saved.
    */
   staff: {
     title: "Staff",
@@ -3014,20 +3007,19 @@ export const settings = {
 } as const;
 
 /**
- * PLACEHOLDER: every word of Stock, which no board draws. The owner ruled on
+ * Every word of Stock, which no board draws. The owner ruled on
  * 27 September 2026 that stock is kept in our own ledger, per technician's
  * kit and a central store (docs/decisions/0087-consumables-and-stock.md).
  */
 export const stock = {
   title: "Stock",
-  // PLACEHOLDER
   sub: "What each kit and the central store hold. A job's use comes out of its technician's kit as he records it.",
   onHand: "On hand",
   central: "Central store",
-  /** PLACEHOLDER: a technician who has left, whose kit still holds stock. */
+  /** A technician who has left, whose kit still holds stock. */
   left: (name: string) => `${name} (left)`,
   consumable: "Consumable",
-  /** PLACEHOLDER: "12 strip", and a mark for a place at or below its level. */
+  /** "12 strip", and a mark for a place at or below its level. */
   held: (quantity: number, unit: string) => `${String(quantity)} ${unit}`,
   low: "Low",
   /** Each followed by a link to Settings, Consumables. */
@@ -3037,7 +3029,6 @@ export const stock = {
   retired: "retired",
   counted: (when: string) => `Counted ${when}`,
   record: {
-    // PLACEHOLDER
     title: "Record a movement",
     what: "What happened",
     kinds: {
@@ -3059,7 +3050,7 @@ export const stock = {
     check: "Check it",
   },
   confirm: {
-    // PLACEHOLDER: what the movement does to each place, the old beside the new.
+    // What the movement does to each place, the old beside the new.
     title: "Check the movement",
     line: (place: string, was: string, now: string) => `${place}: ${was} → ${now}`,
     below: (place: string) =>
@@ -3070,7 +3061,6 @@ export const stock = {
   },
   recorded: "Recorded.",
   movements: {
-    // PLACEHOLDER
     title: "Latest movements",
     columns: ["When", "Consumable", "Where", "Change", "Why", "Who"],
     reasons: {
@@ -3083,7 +3073,7 @@ export const stock = {
     none: "Nothing has moved yet.",
     change: (quantity: number) => (quantity > 0 ? `+${String(quantity)}` : String(quantity)),
   },
-  /** PLACEHOLDER: a refusal, said of the box it names (src/routes/ops-stock.ts). */
+  /** A refusal, said of the box it names (src/routes/ops-stock.ts). */
   errors: {
     not_permitted: NOT_PERMITTED,
     consumable_code: "That consumable is not in the list any more. Reload the page.",
