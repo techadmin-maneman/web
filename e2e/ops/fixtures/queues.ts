@@ -163,6 +163,7 @@ export const DISPUTES = {
       received_at: "2027-09-18T06:01:00.000Z",
       distance_m: 240,
       radius_m: 200,
+      message_state: "delivered",
       message_delivered_at: "2027-09-18T06:02:00.000Z",
       closed_at: "2027-09-18T06:17:00.000Z",
     },

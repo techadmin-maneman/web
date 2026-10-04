@@ -82,7 +82,9 @@ const TaskSchema = z
     detail: z.union([z.string(), z.null()]).openapi({
       description:
         "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM " +
-        "contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, " +
+        'contact; for a move the client has not heard of, the start it moved to and why ("no_consent" or ' +
+        '"not_sent", as the dispatch board\'s untold says); for a consultation asked for, its day and window and, ' +
+        "where a first fit was asked for with it, " +
         '"first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit\'s start and ' +
         "the day the next service fell due; for a first fit to book, the consultation's start and the window wanted.",
     }),

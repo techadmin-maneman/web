@@ -43,7 +43,7 @@ import { latestArrival } from "./check-ins.ts";
 import { codeOnVisit, type VisitCode } from "./discount-code-uses.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles.ts";
-import { EVIDENCE_MESSAGE } from "./no-shows.ts";
+import { evidenceMessage, messageStateOf } from "./no-shows.ts";
 import { decisionAtVisit } from "./one-visit.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { bookedMinutes } from "./scheduling.ts";
@@ -156,7 +156,7 @@ export interface JobDetail extends JobSummary {
   /** The client's pieces, newest fit first; null while the job is locked. */
   readonly pieces: CardPiece[] | null;
   readonly last_visit: LastVisit | null;
-  /** The day-before WhatsApp, or the arrival one, and when it reached the client's phone. */
+  /** The day-before WhatsApp, or the arrival one, that went to the client, and when it reached his phone. */
   readonly reminder: { readonly delivered_at: string | null } | null;
   /**
    * On a one visit and a consultation, the products by name: the first fit's services offered that day, which the
@@ -489,10 +489,16 @@ export async function lastVisitPhoto(
   return photo === null ? null : { key: photo.r2_key, contentType: photo.content_type };
 }
 
-/** The WhatsApp ops read the receipt of on a no-show, as they read it (src/domain/no-shows.ts). */
+/**
+ * The WhatsApp ops read the receipt of on a no-show (src/domain/no-shows.ts), where it went to the client; null where
+ * none did, since one queued, skipped or failed never reached his phone.
+ */
 async function reminderOf(db: D1Database, appointmentId: string): Promise<{ delivered_at: string | null } | null> {
-  const message = await db.prepare(EVIDENCE_MESSAGE).bind(appointmentId).first<{ delivered_at: string | null }>();
-  return message === null ? null : { delivered_at: message.delivered_at };
+  const message = await evidenceMessage(db, appointmentId);
+  if (message === null) return null;
+  const state = messageStateOf(message);
+  if (state !== "delivered" && state !== "sent") return null;
+  return { delivered_at: message.delivered_at };
 }
 
 function addressOf(row: JobRow): JobAddress | null {
