@@ -25,6 +25,11 @@ export function fileExtension(type: ImageType): "png" | "jpg" {
   return type === "image/png" ? "png" : "jpg";
 }
 
+/** The type of an image stored under a key fileExtension named: "results/j1.jpg" → "image/jpeg". */
+export function typeOfKey(key: string): ImageType {
+  return key.endsWith(".png") ? "image/png" : "image/jpeg";
+}
+
 type Size = { width: number | null; height: number | null };
 const UNKNOWN_SIZE: Size = { width: null, height: null };
 

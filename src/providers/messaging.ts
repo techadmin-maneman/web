@@ -3,6 +3,7 @@
 // (src/queues/messaging.ts); none of them knows which BSP is behind it.
 
 import { renderWithStopLink, type TemplateName } from "../config/message-templates.ts";
+import type { ImageType } from "../lib/image-bytes.ts";
 import type { Logger } from "../log.ts";
 import { createEvolutionMessaging, type EvolutionSettings } from "./evolution.ts";
 
@@ -28,8 +29,8 @@ export interface OutboundMessage {
   readonly template: TemplateName;
   /** The template's {{1}}, {{2}}, …, in order. */
   readonly params: readonly string[];
-  /** A publicly reachable image to send with the text. */
-  readonly mediaUrl?: string;
+  /** An image to send with the text: a publicly reachable link to it, and its type. */
+  readonly media?: { readonly url: string; readonly type: ImageType };
   /** The link that stops messages of this kind, which the text ends with. */
   readonly stopLink?: string;
 }
@@ -60,14 +61,14 @@ export function createMessagingProvider(
  */
 export function createStubMessaging(log: Logger): MessagingProvider {
   return {
-    send: ({ template, params, mediaUrl, stopLink }) => {
+    send: ({ template, params, media, stopLink }) => {
       if (renderWithStopLink(template, params, stopLink) === null) {
         return Promise.resolve({ ok: false, transient: false, detail: `template ${template} is missing a param` });
       }
       log.info("messaging_stub_send", {
         template,
         params: params.length,
-        media: mediaUrl !== undefined,
+        media: media !== undefined,
         stop_link: stopLink !== undefined,
       });
       return Promise.resolve({ ok: true, providerMessageId: `stub-${crypto.randomUUID()}` });
