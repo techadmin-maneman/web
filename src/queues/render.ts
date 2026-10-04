@@ -27,6 +27,7 @@ import { failJob, loadJob, type JobRow } from "../domain/tryon.ts";
 import { fileExtension } from "../lib/image-bytes.ts";
 import type { Logger } from "../log.ts";
 import type { RenderFailure } from "../providers/image.ts";
+import { enqueue } from "./enqueue.ts";
 import type { MessagingMessage } from "./messaging.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 
@@ -311,11 +312,8 @@ async function download(
   log.info("render_ready", { endpoint: job.endpoint, latency_ms: latencyMs, bytes: result.bytes.byteLength, attempts });
 
   for (const row of (queued?.results ?? []) as { id: string }[]) {
-    try {
-      await env.MESSAGE_QUEUE.send({ message_id: row.id, request_id: job.request_id } satisfies MessagingMessage);
-    } catch (error) {
-      log.warn("message_enqueue_failed", { message_id: row.id, error }); // the sweeper sends it on
-    }
+    const body = { message_id: row.id, request_id: job.request_id } satisfies MessagingMessage;
+    await enqueue(env.MESSAGE_QUEUE, body, { log, ifLost: "sweeper" });
   }
   return DONE;
 }

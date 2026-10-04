@@ -4,6 +4,7 @@
 // break the run, so failures are logged, not thrown.
 
 import type { Logger } from "../log.ts";
+import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
 
 const TIMEOUT_MS = 5_000;
 
@@ -20,14 +21,11 @@ export async function pingHeartbeat(options: HeartbeatOptions, failedJobs: reado
   if (url === null) return;
 
   const target = failedJobs.length === 0 ? url : `${url}/fail`;
-  try {
-    const response = await fetch(target, {
-      method: "POST",
-      body: failedJobs.join(", "),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    if (!response.ok) log.error("heartbeat_not_delivered", { status: response.status });
-  } catch (error) {
-    log.error("heartbeat_not_delivered", { error });
+  const call = { vendor: "healthchecks", step: "heartbeat", timeoutMs: TIMEOUT_MS } as const;
+  const response = await vendorFetch({ fetch, log }, call, target, { method: "POST", body: failedJobs.join(", ") });
+  if (response instanceof VendorUnreachable) {
+    log.error("heartbeat_not_delivered", { error: response });
+    return;
   }
+  if (!response.ok) log.error("heartbeat_not_delivered", { status: response.status });
 }

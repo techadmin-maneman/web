@@ -1120,9 +1120,14 @@ export const clients = {
     owed: {
       visit_booked: "They still have a visit booked, so nothing was erased. Cancel it and refund what they paid first.",
       payment_held: "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it first.",
+      payment_owed: "A payment link of theirs is still unpaid, so nothing was erased.",
     },
     /** To erase today all the same, when what is owed cannot be settled first. */
-    settle: "I will cancel and refund it by hand today.",
+    settle: {
+      visit_booked: "I will cancel and refund it by hand today.",
+      payment_held: "I will cancel and refund it by hand today.",
+      payment_owed: "Their link is cancelled, and what they owe goes unpaid.",
+    },
     anyway: "Erase anyway",
     done: {
       title: "Erased",
@@ -1959,6 +1964,7 @@ export const deletions = {
         "paid, then delete.",
       payment_held:
         "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it, then delete.",
+      payment_owed: "A payment link of theirs is still unpaid, so nothing was erased. Delete once it is paid.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. The client has not been erased.",
     } as Readonly<Record<string, string>>,

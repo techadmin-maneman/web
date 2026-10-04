@@ -76,8 +76,10 @@ const VISIT_BOOKED = {
       window_start: "2027-09-27T04:30:00.000Z",
     },
   ],
+  bookings: [],
   payments: [],
-};
+  links: [],
+} satisfies OpsReply<"/api/clients/{id}/erasure", "post", 409>;
 
 /** The client's routes, with every photograph a block of ink; `over` replaces any of them. */
 async function clientRoutes(page: Page, over: Answers = {}): Promise<void> {

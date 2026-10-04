@@ -80,4 +80,15 @@ describe("POST /api/slot-times", () => {
     expect(short.status).toBe(400);
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_times").first("n")).toBe(0);
   });
+
+  it("refuses a half-slot shorter than the 45 minutes a half-slot is counted as", async () => {
+    const answer = await set({
+      applies_from: "2026-11-06",
+      unit_starts: ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30"],
+      day_end: "13:00",
+    });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["half_slot_too_short"] } });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_times").first("n")).toBe(0);
+  });
 });

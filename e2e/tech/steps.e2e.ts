@@ -12,6 +12,7 @@ import {
   JOB_ID,
   ONE_VISIT_CHECKLIST,
   pageScrolls,
+  queuedOnPhone,
   ROHITS_PIECE,
   ROHITS_PROFILE,
   type HairProfile,
@@ -400,52 +401,67 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
 
-  // A label an older build let through, refused by the API, with the after set and the outcome queued behind it.
-  await page.evaluate(async (job) => {
-    const db = await new Promise<IDBDatabase>((resolve) => {
-      const request = indexedDB.open("mm-tech");
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-    });
-    const event = (id: string, kind: string, route: string, body: unknown, state: string) => ({
-      id,
-      job_id: job,
-      kind,
-      path: `/tech/jobs/${job}/${route}`,
-      body,
-      queued_at: Date.now(),
-      state,
-      note: state === "refused" ? "invalid_request" : null,
-      fields: state === "refused" ? ["piece_code"] : [],
-    });
-    await new Promise<void>((resolve) => {
-      const transaction = db.transaction("outbox", "readwrite");
-      const outbox = transaction.objectStore("outbox");
-      outbox.add(
-        event("01000000-0000-7000-8000-00000000000a", "piece", "piece", { piece_code: "MM-STD-7193 C" }, "refused"),
-      );
-      outbox.add(event("01000000-0000-7000-8000-00000000000b", "outcome", "outcome", { outcome: "done" }, "waiting"));
-      transaction.oncomplete = () => {
-        resolve();
-      };
-    });
-    db.close();
-  }, JOB_ID);
+  // A label an older build let through, refused by the API, with the outcome queued behind it.
+  await queuedOnPhone(page, [
+    {
+      id: "01000000-0000-7000-8000-00000000000a",
+      kind: "piece",
+      route: "piece",
+      body: { piece_code: "MM-STD-7193 C", supplier_lot: "LOT-5120" },
+      refused: { note: "invalid_request", fields: ["piece_code"] },
+    },
+    { id: "01000000-0000-7000-8000-00000000000b", kind: "outcome", route: "outcome", body: { outcome: "done" } },
+  ]);
 
   await page.goto("/waiting");
   await expect(page.getByText("The piece's label was not accepted.")).toBeVisible();
   await page.getByRole("button", { name: "Correct it" }).click();
 
+  // FLD-63: the step opens as it was sent, so only the label is typed again.
   await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
   await expect(page.getByText("We could not record the label you gave. Correct it and tap Next.")).toBeVisible();
-  await page.getByRole("textbox", { name: "The new piece's label" }).fill("MM-STD-7193-C");
+  const label = page.getByRole("textbox", { name: "The new piece's label" });
+  await expect(label).toHaveValue("MM-STD-7193 C");
+  await expect(page.getByRole("textbox", { name: "Supplier lot" })).toHaveValue("LOT-5120");
+  await label.fill("MM-STD-7193-C");
   await page.getByRole("button", { name: "Next" }).click();
 
   // The corrected piece goes first, and the outcome that waited behind it follows.
   await expect.poll(() => fake.writes.map((write) => write.path.split("/").at(-1))).toEqual(["piece", "outcome"]);
+  expect(writesTo(fake, "piece").at(-1)?.body).toMatchObject({ piece_code: "MM-STD-7193-C", supplier_lot: "LOT-5120" });
   await page.goto("/waiting");
   await expect(page.getByText("Everything has reached us.")).toBeVisible();
+});
+
+// FLD-63: a refused outcome opened with nothing chosen, and the technician chose it all again at the door.
+test("a refused outcome opens as it was chosen", async ({ page }) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await queuedOnPhone(page, [
+    {
+      id: "01000000-0000-7000-8000-00000000000c",
+      kind: "outcome",
+      route: "outcome",
+      body: { outcome: "partial", reason: "client_stopped_it" },
+      refused: { note: "invalid_request", fields: ["reason"] },
+    },
+  ]);
+
+  await page.goto("/waiting");
+  await expect(page.getByText("That reason was not accepted.")).toBeVisible();
+  await page.getByRole("button", { name: "Correct it" }).click();
+
+  await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Partial · pick a reason" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Client stopped it partway" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "PLACEHOLDER More time needed" }).click();
+  await page.getByRole("button", { name: "Next" }).click();
+
+  await expect
+    .poll(() => writesTo(fake, "outcome").at(-1)?.body)
+    .toEqual({ outcome: "partial", reason: "more_time_needed" });
 });
 
 // A consultation and fit in one visit, which no board draws: the client chooses the product with the technician at

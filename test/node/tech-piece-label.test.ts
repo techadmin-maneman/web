@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { asLabel, isLabel, PIECE_LABEL } from "../../apps/tech/src/steps/label.ts";
 import type { Frame, Queued } from "../../apps/tech/src/store/outbox.ts";
-import { photoSets, sentOf } from "../../apps/tech/src/waiting/sets.ts";
+import { anglesRefused, anglesTaken, photoSets, sentOf } from "../../apps/tech/src/waiting/sets.ts";
 import { PIECE_CODE_PATTERN } from "../../src/config/pieces.ts";
 
 describe("a piece's label", () => {
@@ -70,5 +70,44 @@ describe("a photograph set on its way", () => {
       ["before", false],
       ["after", false],
     ]);
+  });
+
+  // FLD-15: a set read "0 of 5 sent" while photographs were already on the server.
+  it("counts a photograph whose thumbnail is still to go as sent: the photograph has reached us", () => {
+    const up: Frame = { ...frame("a", "before", "top", 0), take: "t" };
+    const [set] = photoSets([up, frame("a", "before", "left", 1)], [setWrite("a", "before_photos")]);
+    expect(set).toMatchObject({ held: 2, up: 1 });
+    expect(set === undefined ? -1 : sentOf(set)).toBe(4);
+  });
+});
+
+// FLD-15, UX-03: a refused set is taken again with only its refused angles, and what reached us counted.
+describe("the angles of a set already taken", () => {
+  it("are the frames on the phone, in the order taken, while the set is being taken", () => {
+    const taken = anglesTaken([frame("a", "before", "left", 2), frame("a", "before", "front", 1)], [], "a", "before");
+    expect(taken).toEqual([
+      { angle: "front", frameId: "a:before:front" },
+      { angle: "left", frameId: "a:before:left" },
+    ]);
+  });
+
+  it("count each angle no longer on the phone once the set is finished, and leave out a refused frame", () => {
+    const refused: Frame = { ...frame("a", "before", "top", 0), refused: true };
+    const held = [refused, frame("a", "before", "hair", 1)];
+    const finished: Queued = { ...setWrite("a", "before_photos"), state: "refused", note: "photo_rejected" };
+
+    expect(anglesTaken(held, [finished], "a", "before")).toEqual([
+      { angle: "front", frameId: null },
+      { angle: "left", frameId: null },
+      { angle: "right", frameId: null },
+      { angle: "hair", frameId: "a:before:hair" },
+    ]);
+    expect(anglesRefused(held, "a", "before")).toEqual(["top"]);
+  });
+
+  it("take nothing from another job's or another phase's frames", () => {
+    const others = [frame("b", "before", "front", 0), frame("a", "after", "front", 1)];
+    expect(anglesTaken(others, [setWrite("b", "before_photos")], "a", "before")).toEqual([]);
+    expect(anglesRefused([{ ...frame("b", "before", "top", 0), refused: true }], "a", "before")).toEqual([]);
   });
 });

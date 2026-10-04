@@ -363,7 +363,7 @@ export const api = {
     client.post("/api/deletion-requests/{id}/decision", { path: { id }, body: { decision, reason } }),
   /**
    * Erases a client now, from their page; it cannot be undone. `settledByHand` erases despite a visit booked or a
-   * payment held, which ops then cancel and refund themselves.
+   * payment held, which ops then cancel and refund themselves, or a payment link unpaid, which is cancelled.
    */
   eraseClient: (id: string, settledByHand: boolean) =>
     client.post("/api/clients/{id}/erasure", {
