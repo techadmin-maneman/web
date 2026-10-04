@@ -4,6 +4,8 @@
 //                                 terms; { confirm: true, notice, reason, on_client_terms? }: cancel it
 //   POST /api/visits/:id/close    close it as done or partly done, with its times and why, for work whose technician's
 //                                 phone was lost
+//   POST /api/visits/:id/let-in   let its technician check in wherever the geofence puts him, with why, where the
+//                                 address's pin is far from the door
 //
 // A cancel is free to the client unless ops apply the client's own late terms (src/policy/moving-a-visit.ts). Each is
 // audited in the batch that makes it (ADR 0031), with codes and amounts; ops' reason is kept with the change. Both keep
@@ -13,6 +15,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import type { AuditEntry } from "../domain/audit.ts";
+import { waiveCheckIn } from "../domain/check-ins.ts";
 import { closeByHand } from "../domain/hand-close.ts";
 import {
   cancelVisit,
@@ -138,6 +141,35 @@ const closeRoute = createRoute({
   },
 });
 
+const letInRoute = createRoute({
+  method: "post",
+  path: "/api/visits/{id}/let-in",
+  summary: "Let the visit's technician check in wherever his phone puts him, with why: a pin far from the door",
+  request: {
+    params: visitParams,
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({
+            reason: z.string().trim().max(REASON_MAX_CHARS).openapi({
+              description: "Why, as ops write it: kept with the visit, and shown with the no-show's evidence.",
+            }),
+          })
+          .strict()
+          .openapi("LetIn"),
+      ),
+    },
+  },
+  responses: {
+    200: { description: "His next check-in lands", ...json(z.object({ let_in: z.literal(true) }).strict()) },
+    400: errorResponse("invalid_request: no reason"),
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such visit in the caller's cities"),
+    409: errorResponse("not_changeable: he has checked in already, or the visit is closed or cancelled"),
+  },
+});
+
 /** What a cancel gives back, as the console shows it before ops confirm. */
 const cancelOutcomeOf = (terms: ChangeTerms) => ({
   refund: terms.cancel.refund,
@@ -160,7 +192,7 @@ const cancelTermsOf = (terms: ChangeTerms) => ({
 /** The audit entry for a change ops make to one visit; the detail holds codes and amounts, never their reason. */
 function visitAudit(
   c: Context<AppEnv>,
-  action: "visit.cancel" | "visit.close",
+  action: "visit.cancel" | "visit.close" | "visit.checkin_waive",
   visitId: string,
   detail: AuditEntry["detail"],
 ) {
@@ -177,6 +209,23 @@ function visitAudit(
 export function registerOpsVisitChanges(app: App): void {
   app.openapi(cancelRoute, (c) => cancelForClient(c, c.req.valid("param").id, c.req.valid("json")));
   app.openapi(closeRoute, (c) => closeForTechnician(c, c.req.valid("param").id, c.req.valid("json")));
+  app.openapi(letInRoute, async (c) => {
+    const { requestId, deps, log } = c.var;
+    const visitId = c.req.valid("param").id;
+    const { reason } = c.req.valid("json");
+    if (reason === "") return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
+    if (!(await withinRouteReach(c, "visit", visitId))) return c.json(errorBody("not_found", requestId), 404);
+    const waived = await waiveCheckIn(c.env.DB, {
+      appointmentId: visitId,
+      by: staffOf(c).id,
+      reason,
+      audit: visitAudit(c, "visit.checkin_waive", visitId, undefined),
+      now: deps.now(),
+    });
+    if (!waived) return c.json(errorBody("not_changeable", requestId), 409);
+    log.info("visit_checkin_waived", { appointment_id: visitId });
+    return c.json({ let_in: true as const }, 200);
+  });
 }
 
 type CancelAsked = z.infer<typeof OpsCancelSchema>;

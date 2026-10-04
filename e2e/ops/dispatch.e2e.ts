@@ -190,6 +190,32 @@ test("opens a block's drawer with the client, the badge, and both ways to reach 
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeFocused();
 });
 
+// FLD-24: a building pin far from the door blocked the job, and ops had no way to let the technician in.
+test("lets the technician check in to a visit today past the geofence, with a reason", async ({ page }) => {
+  const startsAt = ROHIT_JOB?.starts_at ?? "";
+  await page.clock.setFixedTime(new Date(Date.parse(startsAt) - 30 * 60_000));
+  const sent = sentTo(page, `/api/visits/${ROHIT_JOB?.appointment_id ?? ""}/let-in`);
+  await open(page, { [`POST /api/visits/${ROHIT_JOB?.appointment_id ?? ""}/let-in`]: json({ let_in: true }) });
+  await press(page, ROHIT_BLOCK);
+  await page.getByRole("dialog", { name: "Rohit Malhotra" }).getByRole("button", { name: "Let him check in" }).click();
+
+  const panel = page.getByRole("dialog", { name: "Let Imran Qureshi check in" });
+  const confirm = panel.getByRole("button", { name: "Let him check in" });
+  await expect(confirm).toBeDisabled();
+  await panel.getByRole("textbox", { name: "Why" }).fill("The pin is at the society gate");
+  await confirm.click();
+  await expect(panel.getByRole("status")).toContainText("Imran Qureshi can check in now");
+  expect(sent).toEqual([{ reason: "The pin is at the society gate" }]);
+});
+
+test("offers no way past the geofence for a visit on another day", async ({ page }) => {
+  await open(page);
+  await press(page, ROHIT_BLOCK);
+  await expect(
+    page.getByRole("dialog", { name: "Rohit Malhotra" }).getByRole("button", { name: "Let him check in" }),
+  ).toHaveCount(0);
+});
+
 // FEO-13: the drawer and the picker are modal; nothing behind them takes the keyboard. Past the
 // panel's last control the browser's own come next (the page's body holds focus), then the panel's first.
 test("keeps the keyboard off the board behind an open panel", async ({ page }) => {

@@ -122,7 +122,9 @@ const NOT_FITTED_SINCE_CONSULTED = "(s.visit_start IS NULL OR s.visit_start < s.
  * disputed charge still wait without them, since each still needs a ruling.
  *
  * The first statement is the one that needs today's date, as `?1`: a move is
- * still to be told of while its visit is today or later. The second needs
+ * still to be told of while its visit is today or later. A hair system is to
+ * be ordered once it falls due within the lead time ops set, `?3` and `?4`
+ * as SQLite's date modifiers, and waits from the day it came within it. The second needs
  * nothing but READ_CAP. The third holds the visits whose booking or closing left
  * ops something to do, and needs the moment ops look, as `?1`, and what the next
  * visit's days make of it (`?3` to `?7`, below). The fourth holds the one visits'
@@ -164,10 +166,11 @@ const OUTSTANDING = [
         WHERE fit.person_id = r.person_id AND fit.type = 'first_fit' AND fit.deleted_at IS NULL
           AND fit.status NOT IN ('cancelled', 'terminated')))
   UNION ALL
-  SELECT 'replacement_order', p.id, p.person_id, pe.name, p.piece_code, p.replacement_due_at, NULL, ''
+  SELECT 'replacement_order', p.id, p.person_id, pe.name, p.piece_code || ' ' || p.replacement_due_at,
+         date(p.replacement_due_at, ?3), p.replacement_due_at, ''
     FROM pieces p JOIN people pe ON pe.id = p.person_id
    WHERE p.replacement_booked = 0 AND p.deleted_at IS NULL AND p.failed_at IS NULL AND pe.erased_at IS NULL
-     AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at <= ?1
+     AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at <= date(?1, ?4)
   UNION ALL
   SELECT 'referral_review', r.id, c.person_id, pe.name, r.fraud_signals, r.updated_at, NULL, ''
     FROM referral_attributions r JOIN referral_codes c ON c.code = r.code JOIN people pe ON pe.id = c.person_id
@@ -402,7 +405,15 @@ export async function outstandingTasks(
   const toBookBefore = indiaInstant(addDays(firstFitToBookIfConsultedBy(today, days), 1), "00:00").toISOString();
   const [answers, schedule] = await Promise.all([
     db.batch<Row>([
-      db.prepare(OUTSTANDING[0]).bind(today, READ_CAP),
+      // A hair system is listed as soon as it falls due within the lead time ops set, to be ordered in time.
+      db
+        .prepare(OUTSTANDING[0])
+        .bind(
+          today,
+          READ_CAP,
+          `-${String(days.replacement_order_lead)} days`,
+          `+${String(days.replacement_order_lead)} days`,
+        ),
       // Its one number is READ_CAP, which every statement takes as ?2.
       db.prepare(OUTSTANDING[1]).bind(null, READ_CAP),
       db

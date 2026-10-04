@@ -526,6 +526,70 @@ Request body:
 }
 ```
 
+### POST /api/visits/{id}/let-in
+
+Let the visit's technician check in wherever his phone puts him, with why: a pin far from the door
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/LetIn"
+}
+```
+
+**200**: His next check-in lands
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "let_in": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "let_in"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: no reason
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such visit in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_changeable: he has checked in already, or the visit is closed or cancelled
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/referral
 
 Attach an invite to a client who booked away from its page, with the reason
@@ -7649,6 +7713,25 @@ Request body:
 }
 ```
 
+### LetIn
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "Why, as ops write it: kept with the visit, and shown with the no-show's evidence."
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### AlreadyInvited
 
 ```json
@@ -10214,6 +10297,37 @@ Request body:
       ],
       "description": "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured."
     },
+    "let_in": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "by",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Ops let him check in past the geofence for this visit: who, and why. Null when his check-in passed on its own."
+    },
     "radius_m": {
       "type": "integer",
       "description": "The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since."
@@ -10303,6 +10417,7 @@ Request body:
     "window_end",
     "minutes_late",
     "distance_m",
+    "let_in",
     "radius_m",
     "message_state",
     "message_delivered_at",
@@ -11342,7 +11457,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's (\"any\" where a fit cannot start in it); for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product; for a payment to refund, why (\"let_go\", a hold let go whose refund Razorpay would not make, or \"refund_failed\"), what is owed back in paise, and the Razorpay payment."
+      "description": "The one fact the group turns on: a piece's label and the day it falls due, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's (\"any\" where a fit cannot start in it); for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product; for a payment to refund, why (\"let_go\", a hold let go whose refund Razorpay would not make, or \"refund_failed\"), what is owed back in paise, and the Razorpay payment."
     },
     "since": {
       "type": "string",

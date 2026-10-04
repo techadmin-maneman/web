@@ -405,6 +405,8 @@ export const api = {
   /** What each of them has finished, over the period the route rules; the roster above carries no figure. */
   technicianWork: () => client.get("/api/technicians/work"),
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
+  /** Let the technician check in to the visit wherever his phone puts him, with why. */
+  letIn: (id: string, reason: string) => client.post("/api/visits/{id}/let-in", { path: { id }, body: { reason } }),
   revokeDevice: (id: string, deviceId: string) =>
     client.post("/api/technicians/{id}/devices/{device}/revoke", { path: { id, device: deviceId } }),
   /** After a revoke stopped him signing in. */

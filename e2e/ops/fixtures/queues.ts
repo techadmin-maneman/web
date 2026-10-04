@@ -25,6 +25,7 @@ const VIKRAMS_CASE = {
   window_end: "2027-09-19T07:30:00.000Z",
   minutes_late: 1,
   distance_m: 240,
+  let_in: null,
   radius_m: 200,
   message_state: "delivered",
   message_delivered_at: "2027-09-19T06:02:00.000Z",
@@ -54,6 +55,7 @@ export const NO_SHOWS = {
       window_end: "2027-09-20T06:30:00.000Z",
       minutes_late: 60,
       distance_m: 12,
+      let_in: null,
       radius_m: 200,
       message_state: "no_consent",
       message_delivered_at: null,
@@ -191,7 +193,7 @@ export const TASKS = {
         {
           id: "91000000-0000-4000-8000-000000000001",
           person: { id: "22000000-0000-4000-8000-000000000002", name: "Kunal Mehta" },
-          detail: "MM-STD-4417-K",
+          detail: "MM-STD-4417-K 2027-09-17",
           since: "2027-09-16T18:30:00.000Z",
           due: "2027-09-18T18:30:00.000Z",
           owner: "priya@maneman.in",
@@ -199,7 +201,7 @@ export const TASKS = {
         {
           id: "91000000-0000-4000-8000-000000000002",
           person: { id: CLIENT.id, name: CLIENT.name },
-          detail: "MM-STD-4417-C",
+          detail: "MM-STD-4417-C 2027-09-22",
           since: "2027-09-21T18:30:00.000Z",
           due: "2027-09-23T18:30:00.000Z",
           owner: "priya@maneman.in",

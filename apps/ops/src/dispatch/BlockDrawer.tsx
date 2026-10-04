@@ -36,6 +36,8 @@ interface Props {
   /** The change the visit takes now, if their access reaches it: cancelled ahead, or closed by hand after. */
   readonly change: VisitChange | null;
   readonly onChange: (change: VisitChange) => void;
+  /** Lets the technician check in past the geofence, when the visit is today's and he has not. */
+  readonly onLetIn: (() => void) | null;
   readonly onClose: () => void;
 }
 
@@ -54,7 +56,7 @@ function warningOf(job: BlockJob): string | null {
   return dispatch.drawer.stays;
 }
 
-export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChange, onClose }: Props) {
+export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChange, onLetIn, onClose }: Props) {
   const copy = dispatch.drawer;
   const { block } = job;
   const person = block.person;
@@ -158,6 +160,11 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
               }}
             >
               {change === "cancel" ? copy.cancel : copy.closeByHand}
+            </Button>
+          )}
+          {onLetIn !== null && (
+            <Button variant="outline" size="small" onClick={onLetIn}>
+              {copy.letIn}
             </Button>
           )}
           <Button variant="outline" size="small" onClick={onClose}>

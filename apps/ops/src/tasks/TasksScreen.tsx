@@ -110,7 +110,10 @@ function subOf(group: Group, task: Task, now: Date): string {
     return copy.at_risk_client(weeksBetween(last, now), shortDate(due));
   }
   if (group === "replacement_order") {
-    return copy.replacement_order(task.detail ?? tasks.unknown, fullDate(indiaDate(task.since)));
+    // The piece's label, and the day it falls due.
+    const [piece = "", due = ""] = task.detail?.split(" ") ?? [];
+    if (due === "") return tasks.unknown;
+    return copy.replacement_order(piece, fullDate(due));
   }
   if (group === "partial_visit") {
     // The technician's reason, in the job sheet's words, and the day he closed the visit.

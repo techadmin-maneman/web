@@ -342,7 +342,7 @@ export const notHome = {
     away: (km: string) => `You are ${km} from the address.`,
     // PLACEHOLDER: the board draws a distance; an address with no coordinates has none (ADR 0036).
     unmeasured: "We could not measure how far you are from the address.",
-    body: "Get to the door and tap again. No-show cannot be recorded from here.",
+    body: "Get to the door and tap again. At the door and still refused? Ask ops to let you check in. No-show cannot be recorded from here.",
     action: "Try again",
   },
   waiting: {
