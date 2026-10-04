@@ -99,7 +99,7 @@ export default defineConfig({
         },
       },
       {
-        // The apps' components, mounted on a page. Their React is the client app's: from packages/ui, React
+        // The apps' components and packages/ui's, on the React 19 they ship with: from packages/ui, React
         // would otherwise resolve to the repository root's React 18, as apps/app/vite.config.ts says.
         resolve: {
           alias: {
