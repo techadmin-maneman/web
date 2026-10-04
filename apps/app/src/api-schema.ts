@@ -468,7 +468,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The profile: name, number, address, consents, and any number change or deletion under way */
+        /** The profile: name, number, address, consents, any number change or deletion under way, and the latest concerns raised */
         get: {
             parameters: {
                 query?: never;
@@ -2619,7 +2619,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Raise a grievance about how the client's data is handled. The same words, still open, are one */
+        /** Raise a grievance about how the client's data is handled. The same words, still open, are one; 5 new ones a day */
         post: {
             parameters: {
                 query?: never;
@@ -2646,6 +2646,15 @@ export interface paths {
                 };
                 /** @description session_required */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: 5 new grievances a day */
+                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2988,6 +2997,19 @@ export interface components {
                 /** @description Ops' reason, which they write knowing the client reads it. */
                 reason: string | null;
             } | null;
+            /** @description The client's latest 5 concerns about their data, newest first: every one still open, and those answered within 30 days. */
+            grievances: {
+                /** Format: uuid */
+                id: string;
+                text: string;
+                /** @enum {string} */
+                state: "open" | "resolved";
+                /** Format: date-time */
+                raised_at: string;
+                /** @description Ops' answer, which they write knowing the client reads it; null while open. */
+                response: string | null;
+                answered_at: string | null;
+            }[];
         };
         Address: {
             line1: string;

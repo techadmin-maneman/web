@@ -1053,6 +1053,13 @@ export const profile = {
     // Beside support's "Replies within a working day": the 30 days is the most a concern can take, not the usual.
     sent: "Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest.",
     failed: "That did not go through. Please try again.",
+    limited: "That is the most we take in a day. Message us on WhatsApp, or send it tomorrow.",
+    // PLACEHOLDER: the client's latest concerns, each with our answer once given.
+    concerns: "Your concerns",
+    concern: (date: string, status: string) => `Your concern of ${date} · ${status}`,
+    waiting: "Awaiting our reply",
+    answered: (date: string) => `Answered ${date}`,
+    answer: (response: string) => `Our answer: ${response}`,
   },
   deletion: {
     label: "Delete your account",

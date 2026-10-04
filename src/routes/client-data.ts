@@ -3,7 +3,8 @@
 //                             opened their photographs and when (docs/open-points.md, item 68)
 //   GET  /api/me/export.html  the same, as a page they can read, which the app's "Download my data" gives
 //   POST /api/grievances      a grievance, for ops to answer: the right of redress. The same words,
-//                             still open, are one grievance however often they are sent (ADR 0058)
+//                             still open, are one grievance however often they are sent (ADR 0058),
+//                             and a client may raise GRIEVANCES_PER_DAY new ones a day
 // Correction is the profile itself (address, number change); erasure is the deletion request (ADR 0042).
 // Each is audited under the client.
 
@@ -12,9 +13,13 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { auditStatementIfWritten, recordAudit } from "../domain/audit.ts";
 import { everythingHeldAbout } from "../domain/data-export.ts";
+import { openGrievanceInWords } from "../domain/grievances.ts";
 import { myDataPage } from "../domain/my-data-page.ts";
+import { takeOne } from "../domain/rate-limit.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
-import { errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse } from "../http/errors.ts";
+import { indiaDate } from "../lib/india-time.ts";
+import { GRIEVANCES_PER_DAY } from "../policy/grievances.ts";
 
 const exportRoute = createRoute({
   method: "get",
@@ -63,7 +68,7 @@ async function auditedExport(c: Context<AppEnv>): Promise<{ held: Record<string,
 const grievanceRoute = createRoute({
   method: "post",
   path: "/api/grievances",
-  summary: "Raise a grievance about how the client's data is handled. The same words, still open, are one",
+  summary: `Raise a grievance about how the client's data is handled. The same words, still open, are one; ${String(GRIEVANCES_PER_DAY)} new ones a day`,
   request: {
     body: {
       required: true,
@@ -85,6 +90,7 @@ const grievanceRoute = createRoute({
       },
     },
     401: errorResponse("session_required"),
+    429: errorResponse(`rate_limited: ${String(GRIEVANCES_PER_DAY)} new grievances a day`),
   },
 });
 
@@ -118,11 +124,22 @@ export function registerClientData(app: App): void {
     const db = c.env.DB;
     const now = c.var.deps.now();
     const { text } = c.req.valid("json");
+    // One open grievance per client per wording: the same words, still unanswered, are the same
+    // concern however many times Send is tapped, so they cost nothing of the day's allowance.
+    const already = await openGrievanceInWords(db, session.subjectId, text);
+    if (already !== null) return c.json({ id: already, state: "open" as const }, 201);
+
+    const allowed = await takeOne(db, {
+      scope: "grievance:person",
+      key: session.subjectId,
+      window: indiaDate(now),
+      limit: GRIEVANCES_PER_DAY,
+    });
+    if (!allowed) return c.json(errorBody("rate_limited", c.var.requestId), 429);
+
     const id = crypto.randomUUID();
-    // One open grievance per client per wording. The same words, still unanswered, are the same
-    // concern however many times Send is tapped, and each row ops see carries its own answer-time
-    // clock. The write settles it rather than a read before it, so two requests in the same moment
-    // cannot both find nothing and both record one (ADR 0058).
+    // The write settles two taps in the same moment, not the read above: both could find nothing,
+    // and only one may record a grievance (ADR 0058).
     const [raised] = await db.batch([
       db
         .prepare(
@@ -146,17 +163,9 @@ export function registerClientData(app: App): void {
         { table: "grievances", id },
       ),
     ]);
-    if (raised?.results.length !== 1) {
-      // The tap that recorded nothing answers with the grievance the other raised, so both name
-      // one concern and ops are alerted about it once.
-      const already = await db
-        .prepare("SELECT id FROM grievances WHERE person_id = ?1 AND text = ?2 ORDER BY created_at DESC LIMIT 1")
-        .bind(session.subjectId, text)
-        .first<string>("id");
-      return c.json({ id: already ?? id, state: "open" as const }, 201);
-    }
-    // The alert names the grievance, never its words or the person.
-    await c.var.deps.alert(`A client raised grievance ${id}; answer it in the ops console.`);
-    return c.json({ id, state: "open" as const }, 201);
+    if (raised?.results.length === 1) return c.json({ id, state: "open" as const }, 201);
+    // The tap that recorded nothing answers with the grievance the other raised, so both name one concern.
+    const other = await openGrievanceInWords(db, session.subjectId, text);
+    return c.json({ id: other ?? id, state: "open" as const }, 201);
   });
 }
