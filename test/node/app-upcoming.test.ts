@@ -12,7 +12,13 @@ type BeingBooked = NonNullable<Me["being_booked"]>;
 const visit = (id: string, date: string): VisitSummary => ({ id, date }) as VisitSummary;
 
 const PRICE = { amount: 3_000_000, from: false, code: null };
-const BOOKING: BeingBooked = { type: "first_fit", date: "2026-10-08", window: "morning", paid: false, one_visit: PRICE };
+const BOOKING: BeingBooked = {
+  type: "first_fit",
+  date: "2026-10-08",
+  window: "morning",
+  paid: false,
+  one_visit: PRICE,
+};
 const CONSULTATION = {
   date: "2026-10-06",
   window: "morning",

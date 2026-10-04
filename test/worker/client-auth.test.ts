@@ -505,7 +505,13 @@ describe("the session", () => {
       name: "Arjun Mehta",
       first_name: "Arjun",
       initials: "AM",
-      consultation: { date: "2026-09-24", window: "evening", window_label: "after four", place: "Gurgaon", one_visit: null },
+      consultation: {
+        date: "2026-09-24",
+        window: "evening",
+        window_label: "after four",
+        place: "Gurgaon",
+        one_visit: null,
+      },
       next_visit: null,
       // Nothing paid for or booked in the app is waiting for FSM (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
       being_booked: null,
