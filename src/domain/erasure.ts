@@ -5,11 +5,11 @@
 //
 // In order: one D1 batch blanks the person and what they left, ends their
 // sessions, cancels their unsent messages and expires their jobs, with who
-// erased them, and their deletion requests, grievances and alerts still open
-// closed, in the same batch, so all of it happens or none of it does. Then
-// their files are deleted from R2, each before the row that names it. If that
-// fails part-way, the person is erased all the same and the cron's erased_files
-// job deletes what is left. The CRM and FSM are told at once, by their queues;
+// erased them, and their deletion requests, grievances and Customer Care
+// alerts still open closed, in the same batch, so all of it happens or none of
+// it does. Then their files are deleted from R2, each before the row that names
+// it. If that fails part-way, the person is erased all the same and the cron's
+// erased_files job deletes what is left. The CRM and FSM are told at once, by their queues;
 // Books by the cron's own pass (src/domain/books-erasure.ts).
 //
 // Nothing is erased while the person has a visit or booking still to happen, a
@@ -27,11 +27,11 @@ import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { failureReason, type Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
-import { deletionWaitingKey } from "../policy/alerts.ts";
+import { CUSTOMER_CARE_KINDS, deletionWaitingKey } from "../policy/alerts.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
-import { paymentsTab, type AlertOnce } from "./alerts.ts";
+import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { recordConsent } from "./consents.ts";
 import { blankProfiles } from "./hair-profiles.ts";
@@ -272,7 +272,7 @@ export async function erasePerson(
 
 /**
  * The one way a person is erased. Who erased them, and what of theirs is still open for ops (a deletion request, a
- * grievance, an alert), go in the erasure's batch; the CRM's and FSM's blanking is queued at once rather than left to
+ * grievance, a Customer Care alert), go in the erasure's batch; the CRM's and FSM's blanking is queued at once rather than left to
  * the sweeper, and their payment links still open are cancelled. Null when they are already erased.
  */
 export async function eraseAndQueue(
@@ -335,17 +335,20 @@ function closeOpenGrievances(db: D1Database, personId: string, closedBy: string,
 }
 
 /**
- * The person's open alerts, each linking to their page, are resolved: what they were about went with the erasure.
- * Those on their Payments tab stay open, since money may still be owed, and the page shows what is kept of it.
+ * The person's open Customer Care alerts that link to their page are resolved: their messages, contact and notes went
+ * with the erasure. Every other alert stays open, since a visit, a booking or money may still need settling, and their
+ * page shows what is kept of those.
  */
 function resolveAlertsAbout(db: D1Database, personId: string, now: Date): D1PreparedStatement {
   const page = `/clients/${personId}`;
+  // An alert's kind is its key up to the first colon.
   return db
     .prepare(
-      `UPDATE alerts SET resolved_at = ?4
-       WHERE resolved_at IS NULL AND (link = ?1 OR instr(link, ?2) = 1) AND link != ?3`,
+      `UPDATE alerts SET resolved_at = ?3
+       WHERE resolved_at IS NULL AND (link = ?1 OR instr(link, ?2) = 1)
+         AND substr(key, 1, instr(key || ':', ':') - 1) IN (SELECT value FROM json_each(?4))`,
     )
-    .bind(page, `${page}/`, paymentsTab(personId), now.toISOString());
+    .bind(page, `${page}/`, now.toISOString(), JSON.stringify(CUSTOMER_CARE_KINDS));
 }
 
 /** Both consumers do nothing for a person already done, so the sweeper finding them as well costs nothing. */

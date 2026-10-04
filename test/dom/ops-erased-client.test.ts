@@ -194,7 +194,7 @@ describe("a deletion decided in the queue", () => {
     });
 
     expect(page.querySelector('[role="status"]')?.textContent).toBe(
-      "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within minutes.",
+      "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within the hour.",
     );
     expect(page.textContent).toContain("No deletion request is waiting.");
     expect(page.textContent).not.toContain("Rohit Malhotra");

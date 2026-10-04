@@ -365,17 +365,20 @@ describe("what an erasure leaves open for ops", () => {
     ]);
   });
 
-  it("resolves the alerts that link to their page, but those about money on their Payments tab", async () => {
+  it("resolves the Customer Care alerts that link to their page, and keeps those about a visit, a booking or money", async () => {
     const personId = await book();
     const other = crypto.randomUUID();
     const alerts: [key: string, link: string | null][] = [
+      ["message_failed:m-1", `/clients/${personId}`],
+      [`crm_contact_update:${personId}`, `/clients/${personId}`],
+      // A client who paid and has no visit or refund: the erasure lets the booking go, and the money stays owed.
       ["booking_held:hold-1", `/clients/${personId}/visits`],
-      ["crm_contact_update", `/clients/${personId}`],
+      ["unbooked_hold:hold-2", `/clients/${personId}`],
       ["hair_profile_from_older:v1", `/clients/${personId}/pieces`],
       ["books_refund_refused:refund-1", `/clients/${personId}/payments`],
-      ["someone_else", `/clients/${other}`],
-      ["someone_else_like_them", `/clients/${personId}0`],
-      ["no_link", null],
+      ["message_failed:someone-else", `/clients/${other}`],
+      ["message_failed:someone-like-them", `/clients/${personId}0`],
+      ["message_failed:no-link", null],
     ];
     await env.DB.batch(
       alerts.map(([key, link]) =>
@@ -390,10 +393,13 @@ describe("what an erasure leaves open for ops", () => {
 
     const { results } = await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL ORDER BY key").all();
     expect(results.map((row) => row.key)).toEqual([
+      "booking_held:hold-1",
       "books_refund_refused:refund-1",
-      "no_link",
-      "someone_else",
-      "someone_else_like_them",
+      "hair_profile_from_older:v1",
+      "message_failed:no-link",
+      "message_failed:someone-else",
+      "message_failed:someone-like-them",
+      "unbooked_hold:hold-2",
     ]);
   });
 });

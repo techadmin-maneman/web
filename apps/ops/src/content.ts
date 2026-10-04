@@ -2086,7 +2086,7 @@ export const deletions = {
     rejecting: "Rejecting",
     /** PLACEHOLDER: above the queue once a decision is made. */
     done: {
-      delete: "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within minutes.",
+      delete: "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within the hour.",
       reject: "Request rejected. The client is told why on WhatsApp.",
     },
     empty: "No deletion request is waiting.",
