@@ -120,7 +120,7 @@ export interface FormRequest {
   readonly provedNumber: (codeId: string | null, mobileE164: string) => Promise<boolean>;
   /** Sends a person's first address on to their Books customer and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
-  /** Sends a hold the form booked free to be booked (src/http/book-hold.ts). */
+  /** Books the free hold the form made (src/http/book-hold.ts). */
   readonly bookHold: (holdId: string) => Promise<void>;
 }
 
@@ -515,7 +515,6 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     );
     if (hold === null) return { ok: false, status: 409, code: "taken" };
     holdId = hold.id;
-    await form.bookHold(hold.id);
   } else {
     const asked = { personId: person.id, pincode: visitPincode.pincode, date: request.date, window: request.window };
     const kept = { oneVisit, invite: request.invite, discountCode: code?.code ?? null, now };
@@ -537,6 +536,8 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     toldNotice: request.toldNotice,
     now,
   });
+  // Booked once the invite is on record, so the invite names the consultation it produced.
+  if (holdId !== null) await form.bookHold(holdId);
 
   const leadId = await recordLead(form, {
     personId: person.id,

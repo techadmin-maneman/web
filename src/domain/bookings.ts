@@ -332,8 +332,8 @@ async function bookNewVisit(db: D1Database, hold: HoldRow, now: Date, options: C
 
 /**
  * The row of a new visit, written only while its hold still waits to be booked, so a booking written twice makes one
- * visit. Its own ID is its FSM ID (docs/schema.md). It is booked into the window the client picked, and a consultation
- * keeps the window of the client's latest request as the one they asked for.
+ * visit. It is booked into the window the client picked, and a consultation keeps the window of the client's latest
+ * request as the one they asked for.
  */
 async function newVisit(db: D1Database, hold: HoldRow, visitId: string, now: Date): Promise<D1PreparedStatement> {
   const { start, end } = await heldVisitTimes(db, hold);

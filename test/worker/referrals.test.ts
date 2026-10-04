@@ -3,12 +3,9 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { confirmBooking } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { newReferralCode } from "../../src/domain/referrals.ts";
 import { openSession } from "../../src/domain/sessions.ts";
-import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
-import { createStubPayments } from "../../src/providers/payments.ts";
 import {
   appFor,
   captureLogs,
@@ -81,7 +78,7 @@ beforeEach(async () => {
   captureLogs();
   await person(REFERRER, "Rohit Malhotra", "+919810000001");
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
   )
     .bind(NOW.toISOString())
     .run();
@@ -239,12 +236,10 @@ describe("POST /api/r/:code/consultation", () => {
   it("books a free consultation for a new friend, who carries the invite's credits", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
-    const queue = fakeQueue();
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
       post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
-      { FSM_QUEUE: queue },
     );
     expect(answer.status).toBe(201);
     expect(await answer.json()).toEqual({
@@ -256,9 +251,8 @@ describe("POST /api/r/:code/consultation", () => {
       invite: "valid",
       one_visit: false,
     });
-    expect(queue.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     const friend = await env.DB.prepare(
-      `SELECT p.name, c.purpose, c.notice_version, c.source, r.code, r.via, r.grant_state, h.type, h.amount
+      `SELECT p.name, c.purpose, c.notice_version, c.source, r.code, r.via, r.grant_state, h.type, h.amount, h.state
        FROM people p JOIN consents c ON c.person_id = p.id JOIN referral_attributions r ON r.referred_person_id = p.id
        JOIN slot_holds h ON h.person_id = p.id WHERE p.mobile_e164 = '+919810000002'`,
     ).first();
@@ -272,6 +266,7 @@ describe("POST /api/r/:code/consultation", () => {
       grant_state: "pending",
       type: "consultation",
       amount: 0,
+      state: "booked",
     });
   });
 
@@ -290,14 +285,12 @@ describe("POST /api/r/:code/consultation", () => {
         consent: true,
         address: ADDRESS,
       }),
-      { FSM_QUEUE: fakeQueue() },
     );
     expect(await self.json()).toMatchObject({ credits: false });
     const unknown = await request(
       site(),
       "/api/r/ZZ9999/consultation",
       post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "afternoon", consent: true, address: ADDRESS }),
-      { FSM_QUEUE: fakeQueue() },
     );
     expect(await unknown.json()).toMatchObject({ state: "booked", credits: false, invite: "unknown" });
   });
@@ -325,7 +318,7 @@ describe("POST /api/r/:code/consultation", () => {
       site(),
       `/api/r/${code}/consultation`,
       post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
-      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
+      { CRM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
     expect(await answer.json()).toMatchObject({ state: "booked", credits: false, invite: "expired" });
@@ -333,35 +326,15 @@ describe("POST /api/r/:code/consultation", () => {
     expect(kept).toEqual({ grant_state: "expired" });
   });
 
-  it("reaches FSM, with the address the friend gave and the city of the pincode they booked at", async () => {
+  it("names on the invite the consultation it produced, for ops' record", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
       post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
-      { FSM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
-    const hold = await env.DB.prepare(
-      "SELECT h.id FROM slot_holds h JOIN people p ON p.id = h.person_id WHERE p.mobile_e164 = '+919810000002'",
-    ).first<{ id: string }>();
-    const fsm = createStubFsm({
-      ...EMPTY_FSM,
-      items: [{ id: "item-consult", name: "Consultation", type: "Service", price: null }],
-    });
-    expect(await confirmBooking(env.DB, fsm, createStubPayments(), hold?.id ?? "", NOW, { labelAsTest: true })).toBe(
-      "booked",
-    );
-    expect(fsm.made.contacts).toMatchObject([
-      {
-        city: "Gurgaon",
-        lastName: "Bhatia",
-        street: { street1: "Flat 402, Palm Grove Society", street2: "Sector 65" },
-      },
-    ]);
-    expect(fsm.made.visits).toHaveLength(1);
-    // The attribution names the consultation it produced, for ops' record.
     const attributed = await env.DB.prepare(
       `SELECT a.type FROM referral_attributions r JOIN appointments a ON a.id = r.consultation_appointment_id
        WHERE r.code = ?1`,
@@ -376,7 +349,7 @@ describe("POST /api/r/:code/consultation", () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
     const body = { ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true };
-    const bindings = { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() };
+    const bindings = { CRM_QUEUE: fakeQueue() };
 
     const without = await request(site(), `/api/r/${code}/consultation`, post(body), bindings);
     expect(without.status).toBe(400);
@@ -431,7 +404,7 @@ describe("POST /api/r/:code/consultation", () => {
       site(),
       `/api/r/${code}/consultation`,
       post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
-      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: crm },
+      { CRM_QUEUE: crm },
     );
 
     expect(answer.status).toBe(201);
@@ -453,13 +426,12 @@ describe("POST /api/r/:code/consultation", () => {
   it("records a request for ops while self-serve booking is off, holding no slot", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
-    const fsm = fakeQueue();
     const crm = fakeQueue();
     const answer = await request(
       site({ selfServeBooking: false }),
       `/api/r/${code}/consultation`,
       post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
-      { FSM_QUEUE: fsm, CRM_QUEUE: crm },
+      { CRM_QUEUE: crm },
     );
 
     expect(answer.status).toBe(201);
@@ -472,8 +444,7 @@ describe("POST /api/r/:code/consultation", () => {
       invite: "valid",
       one_visit: false,
     });
-    // Nothing is held and FSM is not told; the lead and the invite still stand.
-    expect(fsm.sent).toEqual([]);
+    // Nothing is held; the lead and the invite still stand.
     expect(crm.sent).toHaveLength(1);
     const held = await env.DB.prepare(
       "SELECT COUNT(*) AS held FROM slot_holds h JOIN people p ON p.id = h.person_id WHERE p.mobile_e164 = '+919810000002'",
@@ -509,7 +480,6 @@ describe("POST /api/r/:code/consultation", () => {
         one_visit: true,
         number_code_id: await provedNumberCode("+919810000002"),
       }),
-      { FSM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
     expect(await answer.json()).toMatchObject({ state: "booked", credits: true, one_visit: true });
@@ -601,10 +571,9 @@ describe("POST /api/r/:code/waitlist", () => {
     // The page answers as it would a new number, so it never says the number is known.
     it("carries no invite for someone who has had a consultation, and keeps the launch alert they switched off", async () => {
       await env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
-           fsm_modified_at, synced_at)
-         VALUES ('consulted', 'fsm-consulted', ?1, 'consultation', 'completed', 'Completed',
-           '2026-09-10T04:30:00.000Z', '2026-09-10T05:30:00.000Z', ?2, ?2)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+         VALUES ('consulted', 'consulted', ?1, 'consultation', 'completed', '2026-09-10T04:30:00.000Z',
+           '2026-09-10T05:30:00.000Z', ?2)`,
       )
         .bind(KNOWN, NOW.toISOString())
         .run();
@@ -644,10 +613,9 @@ describe("POST /api/r/:code/waitlist", () => {
     // Decision 7: joining a waitlist says nothing of whether a number is known.
     it("answers the referrer, a fitted client and someone who asked for a visit exactly as a new number", async () => {
       await env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
-           fsm_modified_at, synced_at)
-         VALUES ('fitted', 'fsm-fitted', ?1, 'first_fit', 'completed', 'Completed',
-           '2026-09-10T04:30:00.000Z', '2026-09-10T07:30:00.000Z', ?2, ?2)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+         VALUES ('fitted', 'fitted', ?1, 'first_fit', 'completed', '2026-09-10T04:30:00.000Z',
+           '2026-09-10T07:30:00.000Z', ?2)`,
       )
         .bind(KNOWN, NOW.toISOString())
         .run();
@@ -724,10 +692,9 @@ describe("POST /api/r/:code/*: the Idempotency-Key", () => {
       consent: true,
       address: ADDRESS,
     };
-    const bindings = { FSM_QUEUE: fakeQueue() };
 
-    const first = await request(site(), `/api/r/${code}/consultation`, keyed(body, "key-invite-0001"), bindings);
-    const again = await request(site(), `/api/r/${code}/consultation`, keyed(body, "key-invite-0001"), bindings);
+    const first = await request(site(), `/api/r/${code}/consultation`, keyed(body, "key-invite-0001"));
+    const again = await request(site(), `/api/r/${code}/consultation`, keyed(body, "key-invite-0001"));
 
     expect(first.status).toBe(201);
     expect(again.status).toBe(201);

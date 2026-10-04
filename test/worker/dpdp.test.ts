@@ -1,9 +1,9 @@
-// A client's rights over their data (docs/decisions/0049-dpdp.md): erasure reaching Phase 2's data, FSM and Books, the
+// A client's rights over their data (docs/decisions/0049-dpdp.md): erasure reaching Phase 2's data and Books, the
 // data export, grievances, and the deletion window's alert. NOW is Monday 21 September 2026, 12 noon in India.
 // Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { eraseBooksCustomers } from "../../src/domain/books-erasure.ts";
 import { alertAgedDeletions } from "../../src/domain/deletion.ts";
 import { logPhotoView } from "../../src/domain/photo-views.ts";
@@ -11,10 +11,6 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubBooks } from "../../src/providers/books.ts";
-import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
-import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
-import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
-import { sweep } from "../../src/scheduled/sweeper.ts";
 import {
   appFor,
   captureLogs,
@@ -36,7 +32,7 @@ beforeEach(async () => {
   await markDatabase();
   captureLogs();
   await env.DB.prepare(
-    "INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id) VALUES (?1, ?2, ?3, 'Rohit Malhotra', 'contact-1')",
+    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Rohit Malhotra')",
   )
     .bind(PERSON, NOW.toISOString(), MOBILE)
     .run();
@@ -46,8 +42,8 @@ beforeEach(async () => {
 /** A visit with a photograph in the client-photos bucket, an address, and a grievance. */
 async function phase2Data() {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at, synced_at)
-     VALUES (?1, 'fsm-1', ?2, 'service', 'completed', 'Completed', '2026-09-01T06:30:00.000Z', ?3, ?3)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
+     VALUES (?1, ?1, ?2, 'service', 'completed', '2026-09-01T06:30:00.000Z', ?3)`,
   )
     .bind(VISIT, PERSON, NOW.toISOString())
     .run();
@@ -91,75 +87,10 @@ describe("erasure reaches Phase 2's data", () => {
     expect(left).toEqual({ photos: 0, sets: 0, addresses: 0, grievance: "Erased", visits: 1 });
   });
 
-  it("anonymises the FSM contact afterwards, through the sweeper and the fsm-sync queue, once", async () => {
+  // The Books customer kept the client's name, mobile and addresses (PS-02).
+  it("erases the client's Books customer through the Books pass", async () => {
+    await env.DB.prepare("UPDATE people SET books_customer_id = 'books-1' WHERE id = ?1").bind(PERSON).run();
     await eraseByMobile(MOBILE, NOW);
-    const later = new Date(NOW.getTime() + 10 * 60_000);
-    const fsmQueue = fakeQueue();
-    const bindings = {
-      ...env,
-      CRM_QUEUE: fakeQueue(),
-      RENDER_QUEUE: fakeQueue(),
-      MESSAGE_QUEUE: fakeQueue(),
-      FSM_QUEUE: fsmQueue,
-    };
-    await sweep(bindings, fakeDependencies({ now: () => later }), createLogger(), {
-      fsmConnected: true,
-      budget: createCallBudget(Infinity),
-    });
-    expect(fsmQueue.sent).toEqual([{ erase_person_id: PERSON, request_id: "sweeper" }]);
-
-    const fsm = createStubFsm();
-    const message = { id: "m1", body: fsmQueue.sent[0], attempts: 1, ack: vi.fn(), retry: vi.fn() };
-    const batch = { queue: "mm-fsm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
-    await handleFsmSyncBatch(batch as unknown as MessageBatch, env, fakeDependencies({ fsm }), createLogger());
-    expect(fsm.made.erased).toEqual(["contact-1"]);
-    expect(message.ack).toHaveBeenCalled();
-
-    const again = fakeQueue();
-    await sweep({ ...bindings, FSM_QUEUE: again }, fakeDependencies({ now: () => later }), createLogger(), {
-      budget: createCallBudget(Infinity),
-      fsmConnected: true,
-    });
-    expect(again.sent).toEqual([]);
-  });
-
-  it("tells ops once when FSM will not anonymise the contact and the sweeper stops asking", async () => {
-    await eraseByMobile(MOBILE, NOW);
-    const fsm = createStubFsm();
-    const deps = fakeDependencies({
-      fsm: { ...fsm, eraseContact: () => Promise.reject(new Error("FSM answered 500")) },
-    });
-    const attempt = async (attempts: number) => {
-      await env.DB.prepare("UPDATE people SET fsm_erasure_attempts = ?1 WHERE id = ?2").bind(attempts, PERSON).run();
-      const message = { id: "m1", body: { erase_person_id: PERSON, request_id: "sweeper" }, attempts: 1, ack: vi.fn() };
-      const batch = { queue: "mm-fsm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
-      await handleFsmSyncBatch(batch as unknown as MessageBatch, env, deps, createLogger());
-    };
-
-    await attempt(MAX_SYNC_ATTEMPTS - 2);
-    expect(deps.alerts).toEqual([]);
-
-    await attempt(MAX_SYNC_ATTEMPTS - 1);
-    expect(deps.alerts).toEqual([
-      `FSM would not anonymise contact contact-1 of erased person ${PERSON} after ${String(MAX_SYNC_ATTEMPTS)} ` +
-        "attempts (FSM answered 500), and nothing will ask again. Anonymise it in FSM by hand, then record it " +
-        '(runbook, "Erasure within the day"). http://ops.localhost:4323/tasks',
-    ]);
-  });
-
-  // The Books customer FSM's own integration made for the client kept their name, mobile and addresses (PS-02).
-  it("keeps the Books customer FSM made for the contact, and the Books pass then erases it", async () => {
-    await eraseByMobile(MOBILE, NOW);
-    const fsm = createStubFsm({
-      ...EMPTY_FSM,
-      contacts: [
-        { id: "contact-1", name: "Rohit Malhotra", mobile: "+919810000001", email: null, booksCustomerId: "books-1" },
-      ],
-    });
-    const message = { id: "m1", body: { erase_person_id: PERSON, request_id: "sweeper" }, attempts: 1, ack: vi.fn() };
-    const batch = { queue: "mm-fsm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
-
-    await handleFsmSyncBatch(batch as unknown as MessageBatch, env, fakeDependencies({ fsm }), createLogger());
     const books = createStubBooks();
     const erased = await eraseBooksCustomers(
       env.DB,
@@ -167,21 +98,8 @@ describe("erasure reaches Phase 2's data", () => {
       NOW,
     );
 
-    expect(fsm.made.erased).toEqual(["contact-1"]);
     expect(erased).toBe(1);
     expect(books.made.erased).toEqual([{ customerId: "books-1", outcome: "deleted" }]);
-  });
-
-  it("leaves FSM alone where it is not connected", async () => {
-    await eraseByMobile(MOBILE, NOW);
-    const fsmQueue = fakeQueue();
-    await sweep(
-      { ...env, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fsmQueue },
-      fakeDependencies({ now: () => new Date(NOW.getTime() + 10 * 60_000) }),
-      createLogger(),
-      { budget: createCallBudget(Infinity) },
-    );
-    expect(fsmQueue.sent).toEqual([]);
   });
 });
 
@@ -359,33 +277,22 @@ describe("ops deciding a deletion request", () => {
   }
 
   // The sweeper would find them only minutes later.
-  it("queues the CRM and the FSM contact itself, rather than waiting for the sweeper", async () => {
+  it("queues the CRM itself, rather than waiting for the sweeper", async () => {
     const id = await requested();
     const crm = fakeQueue();
-    const fsm = fakeQueue();
-    const answer = await decide(id, { decision: "delete", reason: null }, { CRM_QUEUE: crm, FSM_QUEUE: fsm });
+    const answer = await decide(id, { decision: "delete", reason: null }, { CRM_QUEUE: crm });
 
     expect(await answer.json()).toEqual({ state: "done" });
     expect(crm.sent).toMatchObject([{ erase_person_id: PERSON }]);
-    expect(fsm.sent).toMatchObject([{ erase_person_id: PERSON }]);
   });
 
-  it("queues neither when the request is rejected, since nobody has been erased", async () => {
+  it("queues nothing when the request is rejected, since nobody has been erased", async () => {
     const id = await requested();
     const crm = fakeQueue();
-    const fsm = fakeQueue();
-    const answer = await decide(
-      id,
-      { decision: "reject", reason: "Not the number's owner" },
-      {
-        CRM_QUEUE: crm,
-        FSM_QUEUE: fsm,
-      },
-    );
+    const answer = await decide(id, { decision: "reject", reason: "Not the number's owner" }, { CRM_QUEUE: crm });
 
     expect(await answer.json()).toEqual({ state: "rejected" });
     expect(crm.sent).toEqual([]);
-    expect(fsm.sent).toEqual([]);
   });
 });
 
