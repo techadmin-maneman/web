@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { bookUnbookedHolds, confirmBooking } from "../../src/domain/bookings.ts";
-import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
+import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { resolveAskedWindows } from "../../src/domain/asked-windows.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { settleOwedRefunds } from "../../src/domain/cancel-refunds.ts";
@@ -411,6 +411,49 @@ describe("one credit pays for one visit, without FSM", () => {
 
     expect(answers.map((answer) => answer.checkout?.amount ?? 0)).toEqual([0, 200000, 200000]);
     await oneVisitOnTheCredit();
+  });
+
+  /** The booking confirmed on the credit, and its request stopped before the visit was written. */
+  const confirmedButUnwritten = (holdId: string) =>
+    env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2, queued_at = ?2 WHERE id = ?1")
+      .bind(holdId, NOW.toISOString())
+      .run();
+
+  const halfHourPass = (deps: TestDependencies) =>
+    bookUnbookedHolds(
+      env.DB,
+      { ...deps, notify: () => Promise.resolve(), labelAsTest: true, budget: createCallBudget(40), log: createLogger() },
+      at(32 * 60),
+    );
+
+  it("asks payment on another device's visit while the credit waits on a booking not yet written", async () => {
+    const first = await hold("2026-09-24");
+    const second = await hold("2026-09-25");
+    await confirmedButUnwritten(first);
+
+    expect(await book(second)).toMatchObject({ checkout: { amount: 200000 } });
+    const secondHold = await env.DB.prepare("SELECT use_credit, confirmed_at FROM slot_holds WHERE id = ?1")
+      .bind(second)
+      .first();
+    expect(secondHold).toEqual({ use_credit: 0, confirmed_at: null });
+
+    expect(await halfHourPass(withoutFsm())).toBe(1);
+    await oneVisitOnTheCredit();
+  });
+
+  it("books a credit visit whose credit was taken back before it was written, and tells ops nothing paid for it", async () => {
+    const first = await hold("2026-09-24");
+    await confirmedButUnwritten(first);
+    await clawBack(env.DB, "ops", "o1", NOW);
+    const deps = withoutFsm();
+
+    expect(await halfHourPass(deps)).toBe(1);
+
+    expect((await visitsOf(PERSON, "service")).results).toHaveLength(1);
+    expect(await redeems()).toEqual([]);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("had none left by then, so nothing has paid for it. Decide whether to charge"),
+    ]);
   });
 });
 
