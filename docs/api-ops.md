@@ -10973,7 +10973,8 @@ Request body:
               "erasure_request",
               "grievance",
               "draft_invoice",
-              "payment_owed"
+              "payment_owed",
+              "payment_to_refund"
             ]
           },
           "count": {

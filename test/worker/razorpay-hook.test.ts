@@ -1,6 +1,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
+import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { LOCAL_SETTINGS, NOW, appFor, captureLogs, fakeDependencies, markDatabase, request } from "./helpers.ts";
 
 const SECRET = "a-razorpay-webhook-secret-for-tests";
@@ -219,5 +221,51 @@ describe("Razorpay's webhook: a refund of a payment whose own events never reach
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 0 });
     expect((await seenEvents())?.n).toBe(0);
     expect(await alertsKept()).toEqual([]);
+  });
+});
+
+// MON-13, MON-47: a refund Razorpay failed was kept silently, and a late event moved it back to "created"; a second
+// payment on one order was neither refunded nor told.
+describe("Razorpay's webhook: a refund that fails, and an order paid twice", () => {
+  const alertsKept = async () => (await env.DB.prepare("SELECT key, link FROM alerts ORDER BY key").all()).results;
+  const refundStatus = (id: string) =>
+    env.DB.prepare("SELECT status FROM refunds WHERE razorpay_refund_id = ?1").bind(id).first<string>("status");
+  const toRefund = async () =>
+    (await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS)).tasks
+      .filter((task) => task.group === "payment_to_refund")
+      .map((task) => task.detail);
+
+  it("keeps a failed refund failed whatever comes after, tells ops once, and lists the payment until a refund is made", async () => {
+    const payer = await person("+919810000001");
+    await deliver(paymentEvent("payment.captured"), "evt_1");
+    await deliver(refundEvent("refund.created", 3540000), "evt_2");
+    await deliver(refundEvent("refund.failed", 3540000), "evt_3");
+    await deliver(refundEvent("refund.created", 3540000), "evt_4");
+
+    expect(await refundStatus("rfnd_1")).toBe("failed");
+    expect(await alertsKept()).toEqual([{ key: "refund_failed:rfnd_1", link: `/clients/${payer}/payments` }]);
+    expect(await toRefund()).toEqual(["refund_failed 3540000 pay_1"]);
+
+    await deliver(refundEvent("refund.processed", 3540000, "rfnd_2"), "evt_5");
+    expect(await payment()).toMatchObject({ status: "refunded", refunded_amount: 3540000 });
+    expect(await toRefund()).toEqual([]);
+  });
+
+  it("keeps a processed refund processed when a failure for it arrives late", async () => {
+    await deliver(paymentEvent("payment.captured"), "evt_1");
+    await deliver(refundEvent("refund.processed", 3540000), "evt_2");
+    await deliver(refundEvent("refund.failed", 3540000), "evt_3");
+
+    expect(await refundStatus("rfnd_1")).toBe("processed");
+    expect(await alertsKept()).toEqual([]);
+  });
+
+  it("tells ops once of a second payment captured on the same order", async () => {
+    const payer = await person("+919810000001");
+    await deliver(paymentEvent("payment.captured"), "evt_1");
+    await deliver(paymentEvent("payment.captured", { id: "pay_2" }), "evt_2");
+    await deliver(paymentEvent("order.paid", { id: "pay_2" }), "evt_3");
+
+    expect(await alertsKept()).toEqual([{ key: "second_capture:pay_2", link: `/clients/${payer}/payments` }]);
   });
 });

@@ -1146,7 +1146,7 @@ Indexes:
 
 The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 
-Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`.
+Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0096_payments_to_refund.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1183,6 +1183,7 @@ Indexes:
 - `payments_by_order`: on (`razorpay_order_id`)
 - `payments_by_person`: on (`person_id`, `created_at`)
 - `payments_refunded_visits`: on (`appointment_id`), where `status = 'refunded' AND kind = 'visit'`
+- `payments_unbooked`: on (`razorpay_order_id`), where `status = 'captured' AND appointment_id IS NULL`
 - A `UNIQUE` constraint: unique on (`reference`)
 - A `UNIQUE` constraint: unique on (`razorpay_payment_id`)
 - A `UNIQUE` constraint: unique on (`reference_year`, `reference_number`)
@@ -1394,7 +1395,7 @@ Indexes:
 
 The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
 
-Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0037_cron_indexes.sql`.
+Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0037_cron_indexes.sql`, `0096_payments_to_refund.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1414,6 +1415,7 @@ Indexes:
 
 - `refunds_books_unrecorded`: on (`created_at`), where `status = 'processed' AND books_refund_id IS NULL`
 - `refunds_by_payment`: on (`payment_id`)
+- `refunds_failed`: on (`payment_id`), where `status = 'failed'`
 - A `UNIQUE` constraint: unique on (`razorpay_refund_id`)
 
 ## serviceable_pincodes

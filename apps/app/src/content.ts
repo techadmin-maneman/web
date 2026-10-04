@@ -905,7 +905,7 @@ export const payments = {
     partially_refunded: "Partly refunded",
     created: "Refund processing",
     processed: "Refunded",
-    failed: "Refund failed",
+    failed: "Refund being redone",
   },
   /**
    * How long a refund takes, beside "Refund processing". The design says "3 to 5 working days"; Razorpay's

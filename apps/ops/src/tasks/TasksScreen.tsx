@@ -130,6 +130,12 @@ function subOf(group: Group, task: Task, now: Date): string {
     if (amount === "") return tasks.unknown;
     return copy.payment_owed(product.join(" "), rupees(Number(amount)), linkOwed(link));
   }
+  if (group === "payment_to_refund") {
+    // Why, what is owed back in paise, and the Razorpay payment to refund it from.
+    const [why = "", amount = "", payment = ""] = task.detail?.split(" ") ?? [];
+    if (payment === "") return tasks.unknown;
+    return copy.payment_to_refund(rupees(Number(amount)), payment, why);
+  }
   if (group === "grievance") return copy.grievance;
   return group === "number_change" ? copy.number_change : copy.erasure_request;
 }

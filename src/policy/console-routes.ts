@@ -189,6 +189,7 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   grievance: "customer_care",
   draft_invoice: "finance",
   payment_owed: "finance",
+  payment_to_refund: "finance",
 };
 
 /** What seeing a group of tasks, or taking a task of it, asks: the board keeps each task to the caller's cities. */
