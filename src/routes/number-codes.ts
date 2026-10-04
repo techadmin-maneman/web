@@ -12,7 +12,7 @@ import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
 import type { App, AppEnv } from "../http/context.ts";
 import { checkNumberCode, createNumberCode, mobileHashOf } from "../domain/number-codes.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { json } from "../http/openapi.ts";
+import { json, PersonNameSchema } from "../http/openapi.ts";
 import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 import { isTestNumber } from "../domain/test-records.ts";
@@ -22,7 +22,7 @@ import { newLoginCode } from "../policy/one-time-code.ts";
 const NumberCodeRequestSchema = z
   .object({
     mobile: z.string().max(20),
-    name: z.string().trim().min(1).max(80).openapi({ description: "The name typed beside the number." }),
+    name: PersonNameSchema,
     turnstile_token: z.string().min(1).max(2048),
   })
   .strict()

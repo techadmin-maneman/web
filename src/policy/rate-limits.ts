@@ -42,6 +42,9 @@ export const RATE_LIMITS = {
   // What one client may ask of us in a day.
   "grievance:person": { per: "day", limit: GRIEVANCES_PER_DAY },
   "number_change:person": { per: "day", limit: 3 },
+  // Their own try-on's photograph and look, counted apart from the site's result links so the site's traffic never
+  // turns them away (ADR 0014's R2 budget is held by the number of clients).
+  "tryon_image:person": { per: "day", limit: 200 },
   address_suggest: { per: "day", limit: SUGGESTIONS_PER_DAY },
   ops_address_suggest: { per: "day", limit: SUGGESTIONS_PER_DAY },
   // A discount code checked, right or wrong, so none can be found by guessing (docs/decisions/0108-discount-codes.md).

@@ -289,6 +289,22 @@ describe("the sweeper, on a client's try-on", () => {
     expect(await metered()).toBe(COPY.byteLength + LOOK.byteLength);
   });
 
+  // PS-59: kept with nothing to show, it would hold the place of a later try-on the client could see.
+  it("lets go of a client's try-on whose look is gone, so a later one can be kept", async () => {
+    await tryOnWithCopy("lost", { created_at: at(-3 * DAY) });
+    await env.RESULTS.delete("results/lost.png");
+    await tryOnWithCopy("later");
+    await booksAVisit();
+    await lookDue("lost");
+    await sweepNow();
+    await lookDue("later");
+    await sweepNow();
+
+    expect(await jobRow("lost")).toMatchObject({ kept_at: null, copy_key: null, kept_look_key: null });
+    expect(await env.CLIENT_PHOTOS.head(copyOf("lost"))).toBeNull();
+    expect(await jobRow("later")).toMatchObject({ kept_at: NOW.toISOString(), kept_look_key: "tryons/later/look.png" });
+  });
+
   it("counts a booking made on the site's form as well as a visit in the diary", async () => {
     await tryOnWithCopy("client");
     await env.DB.prepare(

@@ -2,7 +2,7 @@
   "name": "@maneman/web-kit",
   "private": true,
   "version": "0.0.0",
-  "description": "What the Phase 2 apps share beyond the brand: the API client, the report of their own errors, their security headers, India's dates, rupees, mobile numbers as typed, WhatsApp's links, small JPEGs made in the browser, the Turnstile widget, and the guarantee's words.",
+  "description": "What the Phase 2 apps share beyond the brand: the API client, the report of their own errors, their security headers, India's dates, rupees, mobile numbers as typed, WhatsApp's links, small JPEGs made in the browser, the Turnstile widget, the rule for a typed name, and the guarantee's words.",
   "type": "module",
   "exports": {
     "./api": "./api.ts",
@@ -14,6 +14,7 @@
     "./mobile": "./mobile.ts",
     "./whatsapp": "./whatsapp.ts",
     "./small-jpeg": "./small-jpeg.ts",
-    "./turnstile": "./turnstile.ts"
+    "./turnstile": "./turnstile.ts",
+    "./names": "./names.ts"
   }
 }

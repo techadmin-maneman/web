@@ -21,7 +21,8 @@ import { failJob, loadJob, type JobRow, type RenderChoice } from "../domain/tryo
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { setLookCookie } from "../http/look-cookie.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { tryOnRuns } from "../policy/tryon-delivery.ts";
+import { DAY_MS } from "../lib/durations.ts";
+import { LOOK_PER_NUMBER_DAYS, tryOnRuns } from "../policy/tryon-delivery.ts";
 import { enqueue } from "../queues/enqueue.ts";
 import type { RenderMessage } from "../queues/render.ts";
 
@@ -130,18 +131,24 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
   const now = c.var.deps.now();
   if (job.uploaded_at === null) return { error: "upload_missing", status: 409 };
 
+  // One look per number: another of its jobs asked for since its claim's window opened refuses this one, in the
+  // statement that queues it, so jobs claimed together cannot each start one.
+  const since = new Date(now.getTime() - LOOK_PER_NUMBER_DAYS * DAY_MS).toISOString();
   const queued = await db
     .prepare(
       `UPDATE tryon_jobs SET stage = ?2, preset = ?3, hair_color = ?4, endpoint = ?5, provider_color = ?6,
          color_route = ?7, state = 'queued'
        WHERE id = ?1 AND state = 'awaiting_upload' AND uploaded_at IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM tryon_jobs other WHERE other.person_id = tryon_jobs.person_id
+           AND other.id <> ?1 AND other.claimed_at >= ?8 AND other.state NOT IN ('awaiting_upload', 'failed'))
        RETURNING id`,
     )
-    .bind(job.id, ...choiceValues(choice))
+    .bind(job.id, ...choiceValues(choice), since)
     .first();
   if (queued === null) {
-    // A second request queued it first.
+    // A second request queued it first, or another of the number's jobs has its look.
     const current = await loadJob(db, job.id);
+    if (current?.state === "awaiting_upload") return { error: "look_limit_reached", status: 403 };
     return statusOf(current ?? job);
   }
 

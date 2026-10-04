@@ -19,6 +19,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { mobileDigits } from "@maneman/web-kit/mobile";
+import { isPersonName } from "@maneman/web-kit/names";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { looks, notices, stageOptions, tryOn, tryOnSendsCopy } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
@@ -257,13 +258,13 @@ export default function TryOn(props: Props) {
     else refused(render);
   }
 
-  const nameBad = (gateTouched && name.trim() === "") || gateRefused.includes("name");
+  const nameBad = (gateTouched && !isPersonName(name)) || gateRefused.includes("name");
   const mobileBad = (gateTouched && mobileDigits(mobile) === null) || gateRefused.includes("mobile");
   async function submitGate(event: Event) {
     event.preventDefault();
     if (sending || numberCode.checking) return;
     const digits = mobileDigits(mobile);
-    if (name.trim() === "" || digits === null) {
+    if (!isPersonName(name) || digits === null) {
       setGateTouched(true);
       setGateFailure(null);
       showInvalid();

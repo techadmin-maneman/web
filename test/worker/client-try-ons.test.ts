@@ -247,19 +247,22 @@ describe("GET /api/photos/try-on/{image}/{token}", () => {
     expect((await request(later, photoUrl, { headers: { Cookie: cookie } })).status).toBe(404);
   });
 
-  // Every read of the try-on's buckets is counted by a ceiling, which is what holds its R2 budget (ADR 0014).
-  it("counts each image against the day's result-read ceiling, and answers busy past it", async () => {
+  // PS-59: the site's result links share a day's ceiling; a client's own looks are counted per client instead.
+  it("opens a client's images past the site's result-read ceiling, up to the client's own day's count", async () => {
     const tryOn = await stored();
     client = appFor(
       "local",
       fakeDependencies(),
-      { tryon: { ...LOCAL_SETTINGS.tryon, resultReadDailyCeiling: 1 } },
+      { tryon: { ...LOCAL_SETTINGS.tryon, resultReadDailyCeiling: 0 } },
       "client",
     );
     expect((await get(tryOn.photo?.url ?? "")).status).toBe(200);
+    expect((await get(tryOn.look?.url ?? "")).status).toBe(200);
+
+    await env.DB.prepare("UPDATE counters SET count = 200 WHERE scope = 'tryon_image:person'").run();
     const refused = await get(tryOn.look?.url ?? "");
-    expect(refused.status).toBe(503);
-    expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toMatchObject({ error: { code: "rate_limited" } });
   });
 
   it("opens a photograph no longer once it is deleted, nor a look past its day", async () => {

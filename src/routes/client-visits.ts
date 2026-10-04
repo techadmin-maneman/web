@@ -16,10 +16,10 @@ import { clientRoute } from "../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import { withinCeiling } from "../domain/ceilings.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { clientTryOns, ownTryOnImage, TRY_ON_IMAGES, TRY_ON_TOKEN_PURPOSES } from "../domain/client-try-ons.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
+import { takeOne } from "../domain/rate-limit.ts";
 import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
 import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
@@ -379,7 +379,7 @@ const tryOnFileRoute = clientRoute({
     },
     401: errorResponse("session_required"),
     404: errorResponse("not_found: the link is wrong, expired, or not this client's, or the image is deleted"),
-    503: errorResponse("busy: today's result-read ceiling is reached"),
+    429: errorResponse("rate_limited: this client's try-on images for today"),
   },
 });
 
@@ -497,9 +497,8 @@ function registerTryOnImages(app: App): void {
     const held = jobId === null ? null : await ownTryOnImage(c.env.DB, session.subjectId, jobId, image, now);
     if (held === null) return c.json(errorBody("not_found", requestId), 404);
 
-    // Counted as the site's result links are, so every read of the try-on's buckets stays under a ceiling (ADR 0014).
-    if (!(await withinCeiling(c.env.DB, deps.alert, "result_read", { now, settings: c.var.config.settings }))) {
-      return c.json(errorBody("busy", requestId), 503);
+    if (!(await takeOne(c.env.DB, "tryon_image:person", session.subjectId, { now, settings: c.var.config.settings }))) {
+      return c.json(errorBody("rate_limited", requestId), 429);
     }
     const object = await c.env[held.bucket].get(held.key);
     if (object === null) return c.json(errorBody("not_found", requestId), 404);

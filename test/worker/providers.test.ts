@@ -12,7 +12,7 @@ beforeEach(() => {
 
 describe("verifyTurnstile", () => {
   const check = (fetchImpl: typeof fetch) =>
-    verifyTurnstile({ secret: "s", token: "t", ip: null, fetch: fetchImpl, log: createLogger() });
+    verifyTurnstile({ secret: "s", token: "t", ip: null, hosts: null, fetch: fetchImpl, log: createLogger() });
 
   it("passes only when Cloudflare says success", async () => {
     expect(await check(fakeFetch({ [TURNSTILE_URL]: () => json({ success: true }) }).fetch)).toEqual({
@@ -24,6 +24,23 @@ describe("verifyTurnstile", () => {
     expect(await check(fakeFetch({ [TURNSTILE_URL]: () => new Response("not json") }).fetch)).toEqual({
       result: "rejected",
     });
+  });
+
+  it("refuses a token solved on a page not ours, though Cloudflare passed it", async () => {
+    const answer = (hostname?: string) => fakeFetch({ [TURNSTILE_URL]: () => json({ success: true, hostname }) }).fetch;
+    const ours = (fetchImpl: typeof fetch) =>
+      verifyTurnstile({
+        secret: "s",
+        token: "t",
+        ip: null,
+        hosts: ["maneman.in"],
+        fetch: fetchImpl,
+        log: createLogger(),
+      });
+
+    expect(await ours(answer("maneman.in"))).toEqual({ result: "passed" });
+    expect(await ours(answer("maneman.in.example.com"))).toEqual({ result: "rejected" });
+    expect(await ours(answer())).toEqual({ result: "rejected" });
   });
 
   it("reports unavailable, and why, when Cloudflare cannot be reached or answers an error", async () => {

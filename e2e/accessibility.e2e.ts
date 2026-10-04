@@ -62,14 +62,14 @@ test("the forms' error states meet WCAG 2.2 AA", async ({ page }) => {
   await visit(page, "/try?state=gate");
   await page.getByLabel("Mobile").fill("98100");
   await page.getByRole("button", { name: "Send my look" }).click();
-  await expect(page.getByText("Tell us what to call you.")).toBeVisible();
+  await expect(page.getByText("Tell us what to call you, in letters.")).toBeVisible();
   expect(await violations(page)).toEqual([]);
 
   // The booking page is the referral landing without the invite: a pincode first,
   // then the form it decides on (docs/decisions/0051-booking-from-the-site.md).
   await visit(page, "/book?state=served");
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Enter your name.")).toBeVisible();
+  await expect(page.getByText("Enter your name, in letters.")).toBeVisible();
   await expect(page.getByText("Enter the building or society.")).toBeVisible();
   expect(await violations(page)).toEqual([]);
 

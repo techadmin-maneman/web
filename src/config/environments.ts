@@ -67,6 +67,19 @@ export const SURFACE_HOSTS: Readonly<Record<RemoteEnvironmentName, Readonly<Reco
 };
 
 /**
+ * The pages a Turnstile token may come from, as siteverify names them (docs/turnstile.md): a token solved on any other
+ * page is refused, though Cloudflare passed it. Locally the test keys answer for any page, so none is checked.
+ */
+export const TURNSTILE_HOSTS: Readonly<Record<RemoteEnvironmentName, readonly string[]>> = {
+  staging: [SURFACE_HOSTS.staging.public, SURFACE_HOSTS.staging.client],
+  production: [
+    SURFACE_HOSTS.production.public,
+    `www.${SURFACE_HOSTS.production.public}`,
+    SURFACE_HOSTS.production.client,
+  ],
+};
+
+/**
  * The surfaces switched on in each environment. A remote surface is switched
  * on once its DNS record and its Cloudflare Access application exist; then it
  * gets its route (the config check requires one per switched-on surface).

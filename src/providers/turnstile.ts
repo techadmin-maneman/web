@@ -23,8 +23,18 @@ export interface TurnstileCheck {
   readonly token: string;
   /** The visitor's IP, which Cloudflare cross-checks. */
   readonly ip: string | null;
+  /** The pages the token may have been solved on; null takes any. */
+  readonly hosts: readonly string[] | null;
   readonly fetch: typeof fetch;
   readonly log: Logger;
+}
+
+/** What siteverify answers, as far as it is read. */
+interface SiteverifyAnswer {
+  success?: unknown;
+  /** The page the widget was solved on. */
+  hostname?: unknown;
+  "error-codes"?: unknown;
 }
 
 /**
@@ -34,7 +44,7 @@ export interface TurnstileCheck {
 const NOBODY_COULD_PASS = new Set(["internal-error", "invalid-input-secret", "missing-input-secret"]);
 
 /**
- * "rejected": the token is invalid, expired or already used.
+ * "rejected": the token is invalid, expired or already used, or was solved on a page not ours.
  * "unavailable": the token could not be checked. The lead is refused either way;
  * an unverified form submission is not accepted.
  */
@@ -52,9 +62,15 @@ export async function verifyTurnstile(check: TurnstileCheck): Promise<TurnstileV
   }
   if (!response.ok) return { result: "unavailable", detail: `siteverify ${String(response.status)}` };
 
-  const outcome = (await response.json().catch(() => null)) as { success?: unknown; "error-codes"?: unknown } | null;
-  if (outcome?.success === true) return { result: "passed" };
+  const outcome = (await response.json().catch(() => null)) as SiteverifyAnswer | null;
+  if (outcome?.success === true) return { result: ourPage(check, outcome.hostname) ? "passed" : "rejected" };
   const codes = Array.isArray(outcome?.["error-codes"]) ? outcome["error-codes"] : [];
   const nobody = codes.find((code): code is string => typeof code === "string" && NOBODY_COULD_PASS.has(code));
   return nobody === undefined ? { result: "rejected" } : { result: "unavailable", detail: `siteverify said ${nobody}` };
+}
+
+function ourPage(check: TurnstileCheck, hostname: unknown): boolean {
+  if (check.hosts === null || (typeof hostname === "string" && check.hosts.includes(hostname))) return true;
+  check.log.warn("turnstile_wrong_host", { hostname: typeof hostname === "string" ? hostname.slice(0, 100) : null });
+  return false;
 }

@@ -21,6 +21,7 @@ import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../domain
 import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { provedNumber } from "../http/number-proof.ts";
+import { PersonNameSchema } from "../http/openapi.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { mobileHashOf } from "../domain/number-codes.ts";
 import { DAY_MS } from "../lib/durations.ts";
@@ -47,7 +48,7 @@ const AttributionSchema = z
 export const ClaimRequestSchema = z
   .object({
     job_id: z.uuid(),
-    name: z.string().trim().min(1).max(60),
+    name: PersonNameSchema,
     mobile: z.string().regex(INDIAN_MOBILE_PATTERN).openapi({ example: "98100 00000" }),
     number_code_id: NumberCodeIdSchema,
     stage: z.enum(TRYON_STAGES).openapi({

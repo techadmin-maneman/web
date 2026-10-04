@@ -26,12 +26,16 @@ export async function reserveJob(db: D1Database, jobId: string, now: Date): Prom
   return reserved !== null;
 }
 
-/** Whether this number had a look made, or being made, since `since`: a render asked for that did not fail. */
+/**
+ * Whether this number had a look made, or being made, since `since`: a render asked for that did not fail. A job
+ * claimed but never asked for does not count, and the render's start checks again (src/routes/tryon-generate.ts), so
+ * several jobs claimed at once still make one look.
+ */
 export async function hadLookSince(db: D1Database, mobileE164: string, since: Date): Promise<boolean> {
   const row = await db
     .prepare(
       `SELECT 1 AS found FROM tryon_jobs j JOIN people p ON p.id = j.person_id
-       WHERE p.mobile_e164 = ? AND j.claimed_at >= ? AND j.submit_started_at IS NOT NULL AND j.state <> 'failed'
+       WHERE p.mobile_e164 = ? AND j.claimed_at >= ? AND j.state NOT IN ('awaiting_upload', 'failed')
        LIMIT 1`,
     )
     .bind(mobileE164, since.toISOString())
