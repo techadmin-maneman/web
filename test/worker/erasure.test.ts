@@ -4,7 +4,6 @@ import { alertAgedDeletions, deletionsWaiting } from "../../src/domain/deletion.
 import { erasePerson } from "../../src/domain/erasure.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { putCounted, readMeter } from "../../src/domain/storage-meter.ts";
-import type { Providers } from "../../src/config/environments.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import { secretsMatch } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
@@ -76,20 +75,19 @@ interface Erasing {
   readonly queues?: Partial<Env>;
   readonly deps?: Dependencies;
   readonly surface?: "ops" | "public";
-  readonly providers?: Partial<Providers>;
 }
 
 /** Ops erasing the client from their page in the console. */
 function erase(personId: string, erasing: Erasing = {}) {
   return request(
-    appFor("local", erasing.deps ?? fakeDependencies(), {}, erasing.surface ?? "ops", erasing.providers),
+    appFor("local", erasing.deps ?? fakeDependencies(), {}, erasing.surface ?? "ops"),
     `/api/clients/${personId}/erasure`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
       body: JSON.stringify(erasing.body ?? {}),
     },
-    erasing.queues ?? { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() },
+    erasing.queues ?? { CRM_QUEUE: fakeQueue() },
   );
 }
 
@@ -102,9 +100,9 @@ beforeEach(async () => {
 });
 
 describe("POST /api/clients/:id/erasure", () => {
-  it("deletes the photos and results, blanks the person, cancels unsent messages and queues the CRM and FSM", async () => {
+  it("deletes the photos and results, blanks the person, cancels unsent messages and queues the CRM", async () => {
     const personId = await personWithHistory();
-    const queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
+    const queues = { CRM_QUEUE: fakeQueue() };
 
     const response = await erase(personId, { queues });
 
@@ -120,7 +118,6 @@ describe("POST /api/clients/:id/erasure", () => {
     });
     const queued = [{ erase_person_id: personId, request_id: expect.any(String) as string }];
     expect(queues.CRM_QUEUE.sent).toEqual(queued);
-    expect(queues.FSM_QUEUE.sent).toEqual(queued);
 
     expect(await env.UPLOADS.head("uploads/ready")).toBeNull();
     expect(await env.UPLOADS.head("uploads/running")).toBeNull();
@@ -249,23 +246,13 @@ describe("POST /api/clients/:id/erasure", () => {
     expect(await statusOf(personId, { body: { mobile: "98100 00001" } })).toBe(400);
   });
 
-  it("still erases when the queues are down, leaving the CRM and FSM to the sweeper", async () => {
+  it("still erases when the queue is down, leaving the CRM to the sweeper", async () => {
     const personId = await book();
     const down = { send: () => Promise.reject(new Error("queue unavailable")) } as unknown as Queue;
 
-    expect(await statusOf(personId, { queues: { CRM_QUEUE: down, FSM_QUEUE: down } })).toBe(200);
+    expect(await statusOf(personId, { queues: { CRM_QUEUE: down } })).toBe(200);
 
     expect(logs.lines().some((line) => line.event === "erasure_enqueue_failed")).toBe(true);
-  });
-
-  it("leaves FSM alone where it is not connected", async () => {
-    const personId = await book();
-    const queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
-
-    expect(await statusOf(personId, { queues, providers: { FSM_PROVIDER: "none" } })).toBe(200);
-
-    expect(queues.CRM_QUEUE.sent).toHaveLength(1);
-    expect(queues.FSM_QUEUE.sent).toEqual([]);
   });
 });
 
@@ -332,12 +319,11 @@ async function clientWithEverything(): Promise<string> {
   const at = NOW.toISOString();
   await env.DB.batch([
     env.DB.prepare(
-      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
     ).bind(at),
     env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, technician_id,
-         fsm_modified_at, synced_at)
-       VALUES (?1, 'fsm-1', ?2, 'service', 'completed', 'Completed', '2026-09-01T06:30:00.000Z', 't1', ?3, ?3)`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, technician_id, synced_at)
+       VALUES (?1, ?1, ?2, 'service', 'completed', '2026-09-01T06:30:00.000Z', 't1', ?3)`,
     ).bind(VISIT, personId, at),
     env.DB.prepare(
       `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode, lat, lng, access_notes, flat)
@@ -574,12 +560,11 @@ describe("erasure blanks what ops wrote about the client", () => {
            ?2, 'ops@localhost', 'Named Vikram on WhatsApp', ?2, ?2)`,
       ).bind(FRIEND, at),
       env.DB.prepare(
-        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
       ).bind(at),
       env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, technician_id,
-           fsm_modified_at, synced_at)
-         VALUES ('visit-9', 'fsm-9', ?1, 'service', 'terminated', 'Terminated', '2026-09-19T03:30:00.000Z', 't1', ?2, ?2)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, technician_id, synced_at)
+         VALUES ('visit-9', 'visit-9', ?1, 'service', 'terminated', '2026-09-19T03:30:00.000Z', 't1', ?2)`,
       ).bind(FRIEND, at),
       env.DB.prepare(
         `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, radius_m, passed, created_at)
@@ -723,9 +708,8 @@ describe("erasure blanks a check-in's coordinates", () => {
         "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('other', ?1, '+919810000077', 'Kabir Anand')",
       ).bind(at),
       env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, technician_id,
-           fsm_modified_at, synced_at)
-         VALUES ('visit-other', 'fsm-other', 'other', 'service', 'completed', 'Completed', ?1, 't1', ?1, ?1)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, technician_id, synced_at)
+         VALUES ('visit-other', 'visit-other', 'other', 'service', 'completed', ?1, 't1', ?1)`,
       ).bind(at),
       env.DB.prepare(
         `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, accuracy_m, radius_m, passed, created_at)
@@ -769,8 +753,8 @@ describe("erasure blanks what a pay step kept on a hold", () => {
 /** A visit still to happen, paid for, as a client's Monday service is. */
 async function bookedVisit(personId: string): Promise<void> {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at, synced_at)
-     VALUES ('visit-live', 'fsm-live', ?1, 'service', 'scheduled', 'Scheduled', '2026-09-28T03:30:00.000Z', ?2, ?2)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
+     VALUES ('visit-live', 'visit-live', ?1, 'service', 'scheduled', '2026-09-28T03:30:00.000Z', ?2)`,
   )
     .bind(personId, NOW.toISOString())
     .run();
@@ -852,7 +836,7 @@ describe("ops deciding a deletion", () => {
         headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
         body: JSON.stringify({ decision, reason }),
       },
-      { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() },
+      { CRM_QUEUE: fakeQueue() },
     );
   }
 

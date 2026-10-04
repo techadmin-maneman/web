@@ -1,9 +1,8 @@
-// Payments and refunds recorded in Books, on FSM's path and without FSM, where the pass makes each client's Books
-// customer itself. Every name and number here is made up.
+// Payments and refunds recorded in Books, where the pass makes each client's Books customer itself. Every name and
+// number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { FieldRecord } from "../../src/config/field-record.ts";
 import { NO_GST, type GstRegistration } from "../../src/config/gst.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import { markCustomerChanged } from "../../src/domain/books-customers.ts";
@@ -18,7 +17,6 @@ import {
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubBooks, type BooksInvoice, type BooksProvider, type StubBooks } from "../../src/providers/books.ts";
-import { createStubFsm, EMPTY_FSM, type FsmContact } from "../../src/providers/fsm.ts";
 import { ZohoError } from "../../src/providers/zoho-http.ts";
 import { captureLogs, NOW } from "./helpers.ts";
 
@@ -32,14 +30,6 @@ const TAKEN = "2026-09-20T20:00:00.000Z";
 
 /** GST on, as the CA will have it: registered in Haryana. */
 const REGISTERED: GstRegistration = { gstin: "06AAACM0000A1Z5", stateCode: "HR", sac: "999721" };
-
-const contact = (booksCustomerId: string | null): FsmContact => ({
-  id: "fsm-contact-1",
-  name: "Rohit Malhotra",
-  mobile: "+919810000001",
-  email: null,
-  booksCustomerId,
-});
 
 const sent = (overrides: Partial<BooksInvoice> = {}): BooksInvoice => ({
   id: "inv-41",
@@ -58,32 +48,25 @@ function booksWith(invoice: BooksInvoice | null): StubBooks {
 
 /** What the pass told ops. */
 let told: string[];
-/** Whose record the passes run on: set by each mode's describe. */
-let mode: FieldRecord = "fsm";
 
-const optionsFor = (record: FieldRecord, overrides: Partial<BooksSyncOptions> = {}): BooksSyncOptions => ({
+const optionsFor = (overrides: Partial<BooksSyncOptions> = {}): BooksSyncOptions => ({
   refundAccountId: "bank-7",
   labelAsTest: true,
-  fieldRecord: record,
   gst: NO_GST,
   ...overrides,
 });
 
-function depsFor(books: BooksProvider, booksCustomerId: string | null, now: Date) {
-  const fsm = createStubFsm({ ...EMPTY_FSM, contacts: [contact(booksCustomerId)] });
+function depsFor(books: BooksProvider, now: Date) {
   const alert = (message: string) => {
     told.push(message);
     return Promise.resolve();
   };
   const alertOnce = createAlertOnce({ db: env.DB, alert, now: () => now, environment: "local", log: createLogger() });
   const resolveAlert = createResolveAlert({ db: env.DB, now: () => now });
-  return { fsm, books, alertOnce, resolveAlert };
+  return { books, alertOnce, resolveAlert };
 }
 
-/**
- * One pass, in the mode the test runs in. The client's Books customer is `booksCustomerId`: on FSM's path the one its
- * contact names, without FSM the one an earlier pass kept on them; null for none yet.
- */
+/** One pass. The client's Books customer is `booksCustomerId`, the one an earlier pass kept on them; null for none yet. */
 async function pass(
   books: BooksProvider,
   booksCustomerId: string | null,
@@ -91,13 +74,12 @@ async function pass(
   overrides: Partial<BooksSyncOptions> = {},
   budget: CallBudget = createCallBudget(Infinity),
 ): Promise<BooksSyncSummary> {
-  if (mode === "ours" && booksCustomerId !== null) {
+  if (booksCustomerId !== null) {
     await env.DB.prepare("UPDATE people SET books_customer_id = ?1 WHERE id = ?2 AND books_customer_id IS NULL")
       .bind(booksCustomerId, PERSON)
       .run();
   }
-  const deps = depsFor(books, booksCustomerId, now);
-  return syncBooks(env.DB, deps, optionsFor(mode, overrides), now, createLogger(), budget);
+  return syncBooks(env.DB, depsFor(books, now), optionsFor(overrides), now, createLogger(), budget);
 }
 
 const CLIENT_LINK = `http://ops.localhost:4323/clients/${PERSON}`;
@@ -171,28 +153,21 @@ const did = (counts: Partial<BooksSyncSummary>): BooksSyncSummary => ({
 
 beforeEach(async () => {
   told = [];
-  mode = "fsm";
   await env.DB.prepare(
-    `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id)
-     VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra', 'fsm-contact-1')`,
+    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
   )
     .bind(PERSON, NOW.toISOString())
     .run();
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
-       fsm_modified_at, synced_at, service_city)
-     VALUES (?1, 'fsm-visit-1', ?2, 'first_fit', 'scheduled', 'Scheduled', '2026-09-25T04:30:00.000Z',
-       '2026-09-25T07:30:00.000Z', ?3, ?3, 'Gurgaon')`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at, service_city)
+     VALUES (?1, ?1, ?2, 'first_fit', 'scheduled', '2026-09-25T04:30:00.000Z', '2026-09-25T07:30:00.000Z', ?3,
+       'Gurgaon')`,
   )
     .bind(VISIT, PERSON, NOW.toISOString())
     .run();
 });
 
-describe.each(["fsm", "ours"] as const)("on the %s record", (record) => {
-  beforeEach(() => {
-    mode = record;
-  });
-
+describe("payments and refunds", () => {
   describe("recording payments", () => {
     it("records a captured payment against the client's Books record, once, labelled as a test on staging", async () => {
       await payment();
@@ -663,39 +638,7 @@ describe.each(["fsm", "ours"] as const)("on the %s record", (record) => {
   });
 });
 
-describe("on FSM's record, a client's Books customer is FSM's", () => {
-  it("waits an hour to ask again while the client has not reached Books", async () => {
-    await payment();
-    const books = createStubBooks();
-    await pass(books, null);
-    expect(await paymentRow()).toMatchObject({ books_payment_id: null, books_checked_at: NOW.toISOString() });
-
-    await pass(books, "books-customer-9", later(RECHECK_AFTER_MS / 2));
-    expect(books.made.payments).toEqual([]);
-
-    await pass(books, "books-customer-9", later(RECHECK_AFTER_MS + 1000));
-    expect(books.made.payments).toHaveLength(1);
-    expect((await paymentRow())?.books_checked_at).toBeNull();
-    expect(books.made.customers).toEqual([]);
-  });
-
-  it("carries on past a client FSM would not read", async () => {
-    await payment();
-    const books = createStubBooks();
-    const fsm = { ...createStubFsm(EMPTY_FSM), contact: () => Promise.reject(new Error("FSM timed out")) };
-    const deps = { ...depsFor(books, null, NOW), fsm };
-
-    const summary = await syncBooks(env.DB, deps, optionsFor("fsm"), NOW, createLogger(), createCallBudget(Infinity));
-    expect(summary).toEqual(did({}));
-    expect((await paymentRow())?.books_checked_at).toBe(NOW.toISOString());
-  });
-});
-
-describe("without FSM, the pass makes each client's Books customer", () => {
-  beforeEach(() => {
-    mode = "ours";
-  });
-
+describe("the pass makes each client's Books customer", () => {
   const customerRow = () =>
     env.DB.prepare("SELECT books_customer_id, books_checked_at FROM people WHERE id = ?1")
       .bind(PERSON)
@@ -873,9 +816,8 @@ describe("without FSM, the pass makes each client's Books customer", () => {
   });
 });
 
-describe("without FSM, a client's new number or address reaches their Books customer", () => {
+describe("a client's new number or address reaches their Books customer", () => {
   beforeEach(async () => {
-    mode = "ours";
     await env.DB.prepare("UPDATE people SET books_customer_id = 'books-customer-9' WHERE id = ?1").bind(PERSON).run();
   });
 
@@ -963,13 +905,5 @@ describe("without FSM, a client's new number or address reaches their Books cust
     expect(await pass(books, null, NOW, {}, createCallBudget(CALLS_PER_CUSTOMER - 1))).toEqual(did({}));
     expect(books.made.customerUpdates).toEqual([]);
     expect(await changedAt()).toBe(NOW.toISOString());
-  });
-
-  it("leaves the customer to FSM's own sync on FSM's path", async () => {
-    mode = "fsm";
-    await changed();
-    const books = createStubBooks();
-    expect(await pass(books, "books-customer-9")).toEqual(did({}));
-    expect(books.made.customerUpdates).toEqual([]);
   });
 });
