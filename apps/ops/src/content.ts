@@ -1405,8 +1405,22 @@ export const noShows = {
      */
     charge: "Charge",
     waive: "Waive",
-    /** PLACEHOLDER: a charge is asked about once more, since it cannot be taken back here. */
-    confirm: (name: string, day: string) => `Charge ${name} for the visit of ${day}? It cannot be undone here.`,
+    /**
+     * PLACEHOLDER: a charge is asked about once more, with what it keeps of what was paid and what it refunds, since it
+     * cannot be taken back here.
+     */
+    confirm: {
+      keepsAll: (paid: string) => `Keep ${paid} of the ${paid} paid?`,
+      keepsPart: (kept: string, paid: string, refund: string) =>
+        `Keep ${kept} of the ${paid} paid, and refund ${refund}?`,
+      keepsNone: (paid: string) => `Keep nothing, and refund the ${paid} paid?`,
+      keepsCredit: "Keep the free service visit it was booked with?",
+      nothingPaid: "Nothing was paid for this visit, so the charge keeps nothing. Record it?",
+      creditToo: "The free service visit it was booked with is kept too.",
+      who: (name: string, day: string) => `Charging ${name} for the visit of ${day} cannot be undone here.`,
+      working: "Working out what the charge keeps.",
+      failed: "We could not work out what the charge keeps. Go back, then try again.",
+    },
     // PLACEHOLDER: a visit that carries no date, as a charge asked about names it.
     noDay: "a day not recorded",
     confirmCharge: "Charge the visit",
@@ -1431,6 +1445,18 @@ export const noShows = {
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
+  },
+  /** PLACEHOLDER: the board draws no list of the day's rulings. Each case ruled on today, the latest first. */
+  decided: {
+    title: "Decided today",
+    charged: (kept: string) => `Charged · kept ${kept}`,
+    chargedCredit: "Charged · kept a free service visit",
+    chargedNothing: "Charged · kept nothing",
+    // A charge ruled before charges recorded what they kept.
+    chargedUnrecorded: "Charged",
+    waived: "Waived",
+    at: (ruling: string, time: string) => `${ruling} · ${time}`,
+    empty: "Nothing has been decided today.",
   },
   /**
    * Board D1's second card, a disputed charge, one card a dispute. The board
@@ -1464,6 +1490,8 @@ export const noShows = {
     refund: "Refund",
     uphold: "Uphold",
     ruling: "Ruling",
+    /** PLACEHOLDER: the board draws one card, with no panel around it. A panel needs a name to be read by. */
+    queueTitle: "Disputed charges",
     /** PLACEHOLDER: the board always draws one. */
     none: "No charge is disputed.",
     errors: {
@@ -1503,6 +1531,8 @@ export const tasks = {
     partial_visit: "Visit left partly done",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
+    // PLACEHOLDER: a group the board does not draw; board D1 letters the card "Disputed charge".
+    no_show_dispute: "Disputed charge",
     number_change: "Number change",
     erasure_request: "Erasure request",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0072-ops-clients-and-queues.md).
@@ -1517,6 +1547,8 @@ export const tasks = {
   visit: (date: string) => `Visit of ${date}`,
   /** PLACEHOLDER: an erased client has no name left to show, so the line says when they were erased. */
   erased: (date: string) => `Client erased ${date}`,
+  /** PLACEHOLDER: a disputed charge whose client has since been erased. */
+  disputeErased: "A client since erased",
   /** PLACEHOLDER: a queue whose row has lost the client it was about. */
   unknown: "Client unknown",
   /** The client's page, which the board draws no way to. */
@@ -1531,6 +1563,7 @@ export const tasks = {
     leave_conflict: "Move it in Dispatch",
     referral_review: "Decide it in Referrals",
     no_show_decision: "Rule on it in Payments",
+    no_show_dispute: "Rule on it in Payments",
     number_change: "Decide it in Number changes",
     erasure_request: "Decide it in Deletion requests",
     grievance: "Answer it in Grievances",
@@ -1598,6 +1631,9 @@ export const tasks = {
     /** PLACEHOLDER: a visit closed partial in FSM's own screen, with no reason from the technician. */
     noReason: "No reason recorded",
     no_show_decision: (technician: string) => `${technician} attended`,
+    /** PLACEHOLDER: "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
+    no_show_dispute: (took: string) => `Disputes the charge that kept ${took}`,
+    disputedCredit: "a free service visit",
     number_change: "Both numbers proven by code",
     erasure_request: "Asked for in the client's own app",
     // PLACEHOLDER: a concern about their data, which the app promises an answer to within 30 days.
@@ -1670,6 +1706,59 @@ export const tasks = {
     "also be closed here, with why.",
   /** PLACEHOLDER: the board draws twelve tasks and no empty list. */
   empty: "Nothing is waiting.",
+} as const;
+
+/**
+ * PLACEHOLDER: no board draws it. Tasks' "Needs a hand": the alerts ops were told of in the alert space, each until
+ * somebody puts right what it was about. A few words name each kind; its message says what happened and what to do.
+ */
+export const needsAHand = {
+  title: "Needs a hand",
+  kinds: {
+    message_failed: "A WhatsApp message did not go",
+    messages_unsent: "WhatsApp messages not sent within a day",
+    crm_lead: "A lead did not reach the CRM",
+    crm_erasure: "An erasure did not finish in the CRM",
+    crm_contact_update: "A CRM lead was not updated",
+    contact_sync: "A contact change did not go through",
+    deletion_waiting: "A deletion request is nearly due",
+    books_erasure: "An erasure did not finish in Books",
+    cancel_refund_failed: "A refund failed",
+    no_show_refund_failed: "A refund failed",
+    no_show_credit_not_back: "A visit credit did not come back",
+    payment_link: "A payment link was refused",
+    payment_link_failed: "A payment link did not go",
+    invoice_draft: "An invoice is still a draft",
+    invoice_unpriced: "A visit has no price to invoice",
+    invoice_refused: "Books refused an invoice",
+    invoice_failed: "An invoice did not reach Books",
+    books_unapplied: "A payment has nothing to set against",
+    razorpay_refund_unheard: "A refund came before its payment",
+    low_stock: "Stock is low",
+    technician_code_refused: "A technician was refused a login code",
+    whatsapp_bridge: "WhatsApp is disconnected",
+    login_codes_failing: "Login codes are failing",
+    cron_job: "A scheduled job keeps failing",
+  } as Readonly<Record<string, string>>,
+  /** Books refusing or failing on a customer, a payment, its application or a refund. */
+  books: "Books needs a look",
+  /** Any other kind. */
+  other: "Something needs a look",
+  /** "3 times since 21 Sep", or "Since 21 Sep" for one. */
+  seen: (times: number, since: string) => (times === 1 ? `Since ${since}` : `${String(times)} times since ${since}`),
+  open: "Open",
+  sendAgain: "Send again",
+  sending: "Sending…",
+  done: "Mark done",
+  closing: "Closing…",
+  /** Under a failed message: the bridge may not have answered in time, and the client may have it already. */
+  messageHint: "If it says delivery unconfirmed, check with the client first: it may have arrived.",
+  shown: (shown: number, count: number) => `The ${String(shown)} longest open of ${String(count)}.`,
+  errors: {
+    not_permitted: NOT_PERMITTED,
+    not_found: "This was closed meanwhile. Reload the page to see the list now.",
+    unknown: "That did not go through. Try again.",
+  } as Readonly<Record<string, string>>,
 } as const;
 
 /**
