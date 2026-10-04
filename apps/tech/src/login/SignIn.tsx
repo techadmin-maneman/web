@@ -107,6 +107,8 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
+  // Left with digits that are not a mobile number: the hint says why Send stays off.
+  const [left, setLeft] = useState(false);
   // Counted afresh from each code sent, since each one is a new challenge.
   const resendIn = useCountdown(challenge === null ? 0 : RESEND_AFTER_S, challenge);
   const number = useRef<HTMLInputElement | null>(null);
@@ -143,8 +145,15 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   async function verify(): Promise<void> {
     if (challenge === null) return;
     setWorking(true);
-    const answer = await api.verify(challenge.challenge_id, code, await deviceId());
+    // A phone store that will not give the device ID is a failure to try again, never a button left busy.
+    const answer = await deviceId()
+      .then((device) => api.verify(challenge.challenge_id, code, device))
+      .catch(() => null);
     setWorking(false);
+    if (answer === null) {
+      setError(copy.errors.unknown);
+      return;
+    }
     if (!answer.ok) {
       // A closed code cannot be tried again: only a new one can.
       if (answer.status === 410) startAgain();
@@ -172,6 +181,8 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   // that caused it: a first sign-in in a browser needs no explanation.
   const quiet = challenge === null && error === null;
   const note = noteFor(why);
+  const hint = left && challenge === null && mobile !== "" && digits === null ? copy.mobileError : null;
+  const shown = error ?? hint;
 
   return (
     <main className={styles.screen}>
@@ -187,6 +198,10 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
           onChange={(event) => {
             setMobile(fieldDigits(event.target.value));
             setError(null);
+            setLeft(false);
+          }}
+          onBlur={() => {
+            setLeft(true);
           }}
           inputMode="numeric"
           autoComplete="tel-national"
@@ -231,10 +246,10 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       )}
 
       {challenge !== null && error === null && <p className={styles.note}>{copy.codeSent}</p>}
-      {quiet && note !== null && <p className={styles.note}>{note}</p>}
-      {error !== null && (
+      {quiet && hint === null && note !== null && <p className={styles.note}>{note}</p>}
+      {shown !== null && (
         <p className={styles.error} role="alert">
-          {error}
+          {shown}
         </p>
       )}
 

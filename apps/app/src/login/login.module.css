@@ -165,6 +165,7 @@
 .link {
   display: flex;
   align-items: center;
+  gap: var(--sp-8);
   align-self: flex-start;
   min-height: var(--tap);
   padding: 0;
@@ -173,6 +174,7 @@
   font: inherit;
   font-size: var(--fs-16);
   color: var(--ink-soft);
+  text-decoration: none;
   cursor: pointer;
 }
 

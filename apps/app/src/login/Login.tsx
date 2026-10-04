@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, type LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
 import { focusIfLost, nameInTitle } from "../lib/arrival.ts";
+import { apiNow } from "../lib/clock.ts";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
 import { MobileScreen } from "./MobileScreen.tsx";
@@ -69,6 +70,8 @@ export function Login({
   const [step, setStep] = useState<Step>({ kind: "mobile" });
   // The last code sent, which a step back and then forward again returns to.
   const lastChallenge = useRef<LoginChallenge | null>(null);
+  // When it was sent, by the API's clock: its countdowns run from then, however often the code screen is left.
+  const [sentAt, setSentAt] = useState(0);
 
   /** A step forward, with its own entry in the history. */
   const forward = (next: Step) => {
@@ -96,6 +99,7 @@ export function Login({
     focusIfLost(document.querySelector("h1"));
   }, [step.kind]);
   const [mobile, setMobile] = useState(linkedMobile);
+  // The API's reason no code was sent.
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);
   // One code at a time: a second send bills a second code, voids the first, and takes another
@@ -105,7 +109,7 @@ export function Login({
 
   /** Back to the number, saying why no code was sent. */
   const refused = (code: string) => {
-    setMobileError(MOBILE_ERRORS[code] ?? login.mobile.errors.unknown);
+    setMobileError(code in MOBILE_ERRORS ? code : "unknown");
     rewind();
   };
 
@@ -126,6 +130,7 @@ export function Login({
       setMobileError(null);
       setProblem(null);
       lastChallenge.current = answer.body;
+      setSentAt(apiNow());
       // A fresh code from the code screen stays on it; from the number, the code is a step forward.
       if (stepInHistory() === "mobile") forward({ kind: "code", challenge: answer.body });
       else setStep({ kind: "code", challenge: answer.body });
@@ -139,6 +144,7 @@ export function Login({
       if (answer.ok) {
         setProblem(null);
         lastChallenge.current = answer.body;
+        setSentAt(apiNow());
         setStep({ kind: "code", challenge: answer.body });
       } else {
         setProblem(sendAgainProblem(answer.status, answer.code));
@@ -186,6 +192,7 @@ export function Login({
     <CodeScreen
       mobile={mobile}
       challenge={challenge}
+      sentAt={sentAt}
       busy={busy}
       problem={problem}
       turnstileBox={turnstile.box}
