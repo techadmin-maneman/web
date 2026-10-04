@@ -23,10 +23,11 @@ import { WINDOW_LABELS, type WindowLabel } from "../config/booking.ts";
 import { BOOKING_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
-import { bookingUnderWay } from "../domain/holds.ts";
+import { bookingUnderWay, type BookingUnderWay } from "../domain/holds.ts";
 import { spendableCredits } from "../domain/credits.ts";
 import { homePrompts, promptFacts } from "../domain/home-prompt.ts";
 import { nextVisitFacts } from "../domain/next-visit.ts";
+import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../domain/one-visit-money.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { offeredAmong, servicesOnDay } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
@@ -44,8 +45,9 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { PriceSchema } from "./client-booking.ts";
+import { OwedPaymentSchema } from "./client-payments.ts";
 import { creditsBody, CreditsSchema } from "./client-refer.ts";
-import { VisitSummarySchema } from "./client-visits.ts";
+import { OneVisitPriceSchema, VisitSummarySchema } from "./client-visits.ts";
 import { ReferralRewardSchema } from "./referral-reward.ts";
 
 export const MeSchema = z
@@ -76,7 +78,11 @@ export const MeSchema = z
             "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm " +
             "the time on WhatsApp.",
         }),
-        one_visit: z.boolean().openapi({ description: "The consultation and the first fit in one visit." }),
+        one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
+          description:
+            "A consultation and fit in one visit asked for on /book: what it costs once fitted, after the code typed " +
+            "there. Null for a consultation alone.",
+        }),
       })
       .strict()
       .nullable()
@@ -96,7 +102,11 @@ export const MeSchema = z
             date: z.iso.date(),
             window: z.enum(BOOKING_WINDOWS),
             paid: z.boolean().openapi({ description: "Paid for in money, rather than free or covered by a credit." }),
-            one_visit: z.boolean().openapi({ description: "A consultation and fit in one visit." }),
+            one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
+              description:
+                "A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code " +
+                "entered there. Null for any other visit.",
+            }),
             told: z.boolean().openapi({
               description:
                 "Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes " +
@@ -111,6 +121,11 @@ export const MeSchema = z
           "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is " +
           "on its way, and becomes a visit once it is booked (ADR 0068).",
       }),
+    payment_owed: z.union([OwedPaymentSchema, z.null()]).openapi({
+      description:
+        "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the " +
+        "link Razorpay texted. Null when nothing is owed.",
+    }),
     credits: z
       .union([CreditsSchema, z.null()])
       .openapi({ description: "The credit tile: balance and earliest expiry; null with none left." }),
@@ -275,15 +290,29 @@ const PHASE1_WORDS: Partial<Record<BookingWindow, WindowLabel>> = { morning: "be
 
 type Consultation = NonNullable<z.infer<typeof MeSchema>["consultation"]>;
 
-function consultationOf(proposal: ProposedBooking, asked: Asked, place: string): Consultation {
+/** Home's consultation card; a one visit asked for says what it costs once fitted. */
+async function consultationOf(
+  db: D1Database,
+  proposal: ProposedBooking,
+  asked: Asked,
+  place: string,
+): Promise<Consultation> {
+  const date = proposal.proposed_visit_date;
   return {
-    date: proposal.proposed_visit_date,
+    date,
     window: asked.window,
     window_label: PHASE1_WORDS[asked.window] ?? null,
     place,
     requested: asked.requested,
-    one_visit: asked.oneVisit,
+    one_visit: asked.oneVisit ? await requestedOneVisitPrice(db, date, asked.code) : null,
   };
+}
+
+/** A visit on its way to being booked; a one visit says what it costs once fitted. */
+async function beingBookedBody(db: D1Database, underWay: BookingUnderWay | null) {
+  if (underWay === null) return null;
+  const { holdId, one_visit: oneVisit, ...booking } = underWay;
+  return { ...booking, one_visit: oneVisit ? await heldOneVisitPrice(db, holdId, booking.date) : null };
 }
 
 export const meRoute = createRoute({
@@ -316,7 +345,7 @@ async function formBookingOf(c: Context<AppEnv>, personId: string, today: string
     return { booking, proposal, card: null };
   }
   const place = address === null ? (proposal.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
-  return { booking, proposal, card: consultationOf(proposal, asked, place) };
+  return { booking, proposal, card: await consultationOf(db, proposal, asked, place) };
 }
 
 /** What Home's offer and prompt turn on: the figures ops set, then the client's facts, read together. */
@@ -341,7 +370,7 @@ export function registerClientMe(app: App): void {
 
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
-    const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite] = await Promise.all([
+    const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite, owed] = await Promise.all([
       liveContact(db, personId),
       nextVisit(db, personId, now),
       bookingUnderWay(db, personId),
@@ -352,6 +381,7 @@ export function registerClientMe(app: App): void {
       servicesOnDay(db, tomorrow),
       homeFactsOf(c, personId, now),
       pendingInviteOf(db, personId, now, nameOnInvite),
+      owedPayments(db, personId),
     ]);
     if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
 
@@ -377,9 +407,11 @@ export function registerClientMe(app: App): void {
         name,
         first_name: firstNameOf(name),
         initials: initialsOf(name),
-        consultation: form.card,
+        // A one visit on its way to being booked is shown as itself, not as the consultation it began as.
+        consultation: underWay?.one_visit === true ? null : form.card,
         next_visit: upcoming,
-        being_booked: underWay,
+        being_booked: await beingBookedBody(db, underWay),
+        payment_owed: owed[0] ?? null,
         credits: credits.visits > 0 ? creditsBody(credits) : null,
         prompt,
         invoice,

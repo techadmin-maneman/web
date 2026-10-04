@@ -11,6 +11,7 @@
 //        (https://razorpay.com/docs/api/refunds/create-normal/)
 //   POST https://api.razorpay.com/v1/payment_links            { id, short_url }
 //   GET  https://api.razorpay.com/v1/payment_links?reference_id=  { payment_links: [{ id, short_url }] }
+//   POST https://api.razorpay.com/v1/payment_links/{id}/notify_by/sms   { success: true }
 //   GET  https://api.razorpay.com/v1/payment_links/{id}       { id, status, reference_id, order_id }
 //   POST https://api.razorpay.com/v1/payment_links/{id}/cancel     { id, status: "cancelled" }
 //
@@ -87,6 +88,7 @@ const Created = z.object({ id: z.string() });
 const OrderPayments = z.object({ items: z.array(RazorpayPaymentSchema) });
 const LinkMade = z.object({ id: z.string(), short_url: z.string() });
 const LinksFound = z.object({ payment_links: z.array(LinkMade) });
+const Notified = z.object({ success: z.literal(true) });
 
 /**
  * How a link's page reads: in our name rather than the account's, and our reference labelled as one rather than as a
@@ -193,6 +195,10 @@ export function createRazorpay(
       const path = `/payment_links?reference_id=${encodeURIComponent(reference)}`;
       const [found] = (await call("find_payment_link", path, null, LinksFound)).payment_links;
       return found === undefined ? null : { id: found.id, shortUrl: found.short_url };
+    },
+    resendPaymentLink: async (linkId) => {
+      const path = `/payment_links/${encodeURIComponent(linkId)}/notify_by/sms`;
+      await call("resend_payment_link", path, {}, Notified);
     },
     paymentLink: (linkId) =>
       call("payment_link", `/payment_links/${encodeURIComponent(linkId)}`, null, RazorpayPaymentLinkSchema),

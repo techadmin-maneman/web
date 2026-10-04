@@ -277,7 +277,8 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "Who holds it",
         paragraphs: [
-          "Your details are held in our own database, hosted by Cloudflare, and in the customer system our team works from, Zoho CRM; your name, number and address also go to Zoho FSM, where our technicians' visits are arranged, so that the technician finds your door. Your hair profile stays in our own database. Payments are made through Razorpay, and our invoices are kept in Zoho Books.",
+          // PLACEHOLDER: counsel sees this wording, which no longer names Zoho FSM, before production (docs/open-points.md, item 149).
+          "Your details are held in our own database, hosted by Cloudflare, where your visits are arranged, and in the customer system our team works from, Zoho CRM. Your hair profile stays in our own database. Payments are made through Razorpay. Our invoices are kept in Zoho Books, made out to your name, number and address.",
           "We use your details to arrange and look after your visits, and for anything else only with your agreement, which you can withdraw in the app or by messaging us at {whatsapp}. To stop our WhatsApp messages, reply STOP to any of them. We never sell your details.",
         ],
       },

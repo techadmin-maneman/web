@@ -1429,6 +1429,8 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Payment links not yet paid, the oldest first: a one visit's, once the client is fitted. */
+                            owed: components["schemas"]["OwedPayment"][];
                             entries: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
                             /** @description Every change to the service-visit credits, newest first, which the app lists among the payments. */
                             credits: components["schemas"]["CreditLine"][];
@@ -2677,7 +2679,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2795,8 +2797,8 @@ export interface components {
                 place: string;
                 /** @description Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp. */
                 requested: boolean;
-                /** @description The consultation and the first fit in one visit. */
-                one_visit: boolean;
+                /** @description A consultation and fit in one visit asked for on /book: what it costs once fitted, after the code typed there. Null for a consultation alone. */
+                one_visit: components["schemas"]["OneVisitPrice"] | null;
             } | null;
             /** @description The next visit that has not happened: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;
@@ -2810,11 +2812,13 @@ export interface components {
                 window: "morning" | "afternoon" | "evening";
                 /** @description Paid for in money, rather than free or covered by a credit. */
                 paid: boolean;
-                /** @description A consultation and fit in one visit. */
-                one_visit: boolean;
+                /** @description A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code entered there. Null for any other visit. */
+                one_visit: components["schemas"]["OneVisitPrice"] | null;
                 /** @description Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits. */
                 told: boolean;
             } | null;
+            /** @description The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed. */
+            payment_owed: components["schemas"]["OwedPayment"] | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
             /** @description Board B1's one prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies. */
@@ -2896,6 +2900,14 @@ export interface components {
                 referrer_first_name: string | null;
             } | null;
         };
+        OneVisitPrice: {
+            /** @description In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced. */
+            amount: number | null;
+            /** @description The hair systems differ in price, so the amount is where they start. */
+            from: boolean;
+            /** @description The discount code on the visit; null for none. */
+            code: string | null;
+        };
         VisitSummary: {
             /** Format: uuid */
             id: string;
@@ -2923,11 +2935,28 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
+            /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
+            one_visit: components["schemas"]["OneVisitPrice"] | null;
         };
         /** @description Display name and initials only. */
         Technician: {
             name: string;
             initials: string;
+        };
+        OwedPayment: {
+            /** Format: uuid */
+            visit_id: string;
+            /**
+             * Format: date
+             * @description India's date of the visit.
+             */
+            date: string;
+            /** @description In paise, GST included, after any code: what the link asks for. */
+            amount: number;
+            /** @description The hair system fitted: "Mane Man Natural hair system". */
+            product: string;
+            /** @description The payment link Razorpay texted the client; null until it has made one. */
+            url: string | null;
         };
         Credits: {
             /** @description Service-visit credits left. */
@@ -3147,6 +3176,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
+            /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
+            one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
             /** @description Done, partly done, or a no-show: the client was not home. Null until it is closed. */

@@ -205,6 +205,8 @@ export interface Landing {
   readonly date: string;
   readonly window: BookingWindow;
   readonly reason: MoveReason;
+  /** Why the visit goes onto a day ops blacked out, as ops typed it; null for any other day. */
+  readonly blackoutReason: string | null;
 }
 
 /**
@@ -238,6 +240,7 @@ const moveBody = (appointmentId: string, to: Landing, shown: Shown) => ({
   reason: to.reason,
   expected_technician_id: shown.technicianId,
   expected_starts_at: shown.startsAt,
+  ...(to.blackoutReason === null ? {} : { blackout_reason: to.blackoutReason }),
 });
 
 export const api = {
@@ -339,6 +342,8 @@ export const api = {
   /** A visit left partly done, closed without a follow-up; the reason is kept with it, under the caller's name. */
   closeTask: (group: ClosableGroup, id: string, reason: string) =>
     client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
+  /** A one visit's payment link, texted to the client again by Razorpay, or made now where it never was. */
+  resendPaymentLink: (linkId: string) => client.post("/api/payment-links/{id}/resend", { path: { id: linkId } }),
   /** The open alerts ops have been told of, of the caller's own departments. */
   alerts: () => client.get("/api/alerts"),
   /** An alert marked done, under the caller's name. */

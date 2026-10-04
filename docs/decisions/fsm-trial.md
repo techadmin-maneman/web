@@ -1,6 +1,6 @@
 # Zoho FSM trial findings
 
-- Status: **answered on 22 September 2026**, from the documentation and a trial run against the real org (below). Webhooks are confirmed in P2-M2; question 4's coordinate was corrected on 23 September and question 8's CRM half answered on 24 September, both at the end.
+- Status: **history.** FSM was removed on 4 October 2026 ([0110](0110-field-work-without-fsm.md)); this record is kept as it stood. Was: **answered on 22 September 2026**, from the documentation and a trial run against the real org (below). Webhooks are confirmed in P2-M2; question 4's coordinate was corrected on 23 September and question 8's CRM half answered on 24 September, both at the end.
 - Referenced by: `docs/prompts/phase2-backend.md` ("Before you start", point 2)
 
 The Phase 2 backend reads field operations from Zoho FSM and writes them back to it. Where the trial finds a capability missing, the build stops and an ADR records the fallback. The roadmap's fallbacks are our own availability logic and our own photo-capture PWA.

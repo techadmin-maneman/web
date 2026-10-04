@@ -2164,7 +2164,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit */
+                /** @description past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -2240,7 +2240,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is */
+                /** @description past_day; window_passed; clash; on_leave; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -3443,6 +3443,72 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payment-links/{id}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Text the client their payment link again */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The link's own ID, as the task names it. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What sending it again came to */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaymentLinkResent"];
+                    };
+                };
+                /** @description access_required, or not_permitted */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such link, or its client is erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: Razorpay did not answer; try again in a minute */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -6462,7 +6528,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -6621,6 +6687,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
+            /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
+            one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description What the visit was closed as, a no-show being its own; null until it is closed. */
             outcome: ("done" | "partial" | "no_show") | null;
             /** @description For a visit left partly done, ops closing its task without a follow-up visit; null otherwise. */
@@ -6650,6 +6718,14 @@ export interface components {
             name: string;
             initials: string;
         };
+        OneVisitPrice: {
+            /** @description In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced. */
+            amount: number | null;
+            /** @description The hair systems differ in price, so the amount is where they start. */
+            from: boolean;
+            /** @description The discount code on the visit; null for none. */
+            code: string | null;
+        };
         VisitSummary: {
             /** Format: uuid */
             id: string;
@@ -6677,6 +6753,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
+            /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
+            one_visit: components["schemas"]["OneVisitPrice"] | null;
         };
         PaymentEntry: {
             /**
@@ -7196,7 +7274,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -7614,7 +7692,7 @@ export interface components {
             /** @description Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another. */
             version: number;
         };
-        /** @description Each technician's day in the caller's cities with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is. */
+        /** @description Each technician's day in the caller's cities with a window the job would land in, by the check a move runs: today, only at a start still ahead, and never on a day gone. A day not listed has none. Not where the job already is. */
         DispatchRoom: {
             /** Format: uuid */
             appointment_id: string;
@@ -7624,7 +7702,16 @@ export interface components {
                 /** Format: date */
                 date: string;
                 windows: ("morning" | "afternoon" | "evening")[];
+                /** @description When the job would start in each of those windows, as the move would place it. */
+                starts: {
+                    /** @enum {string} */
+                    window: "morning" | "afternoon" | "evening";
+                    /** Format: date-time */
+                    starts_at: string;
+                }[];
             }[];
+            /** @description The days of the week ops blacked out, other than the job's own. A move onto one needs a blackout_reason. */
+            blackouts: string[];
         };
         DispatchMoved: {
             /** Format: uuid */
@@ -7653,6 +7740,8 @@ export interface components {
              * @description The start the board showed the job with.
              */
             expected_starts_at: string;
+            /** @description Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day. */
+            blackout_reason?: string;
         };
         DispatchMoveRequest: {
             /** Format: uuid */
@@ -7675,6 +7764,8 @@ export interface components {
              * @description The start the board showed the job with.
              */
             expected_starts_at: string;
+            /** @description Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day. */
+            blackout_reason?: string;
             /**
              * @description Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress.
              * @enum {boolean}
@@ -7980,7 +8071,7 @@ export interface components {
                 /** Format: date-time */
                 starts_at: string;
             };
-            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
+            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; for a payment owed, the link's state ("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product. */
             detail: string | null;
             /**
              * Format: date-time
@@ -8079,6 +8170,13 @@ export interface components {
             change: ("cancelled" | "moved") | null;
             /** @description Who attended and found nobody in; null on a late cancellation. */
             technician: string | null;
+        };
+        PaymentLinkResent: {
+            /**
+             * @description resent: Razorpay texted the link again; sent: the link was never made, and now is and has been texted; not_texted: messaging may not text this number (a staging test record), so nothing was sent; paid: the client has paid, so nothing was sent; refused: Razorpay refused to make it, so ops send one from Razorpay's dashboard.
+             * @enum {string}
+             */
+            outcome: "resent" | "sent" | "not_texted" | "paid" | "refused";
         };
         TechnicianId: {
             /** Format: uuid */

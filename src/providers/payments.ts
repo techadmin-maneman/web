@@ -47,6 +47,8 @@ export interface PaymentsProvider {
   createPaymentLink(link: PaymentLinkRequest): Promise<MadeLink>;
   /** The link made under our reference, if there is one: what a try whose answer never came made. */
   findPaymentLink(reference: string): Promise<MadeLink | null>;
+  /** Razorpay texts a link it made to the customer again, by its ID. */
+  resendPaymentLink(linkId: string): Promise<void>;
   /** A payment link as Razorpay holds it now: "paid" once paid, with the order its payment was made on. */
   paymentLink(linkId: string): Promise<RazorpayPaymentLink>;
   /** Stops a link taking payment, and Razorpay's reminders of it. Refused for a link paid, expired or cancelled. */
@@ -84,6 +86,7 @@ export function createPaymentsProvider(
     refund: off,
     createPaymentLink: off,
     findPaymentLink: off,
+    resendPaymentLink: off,
     paymentLink: off,
     cancelPaymentLink: off,
   };
@@ -95,6 +98,8 @@ export interface StubPayments extends PaymentsProvider {
     readonly orders: { amount: number; receipt: string; notes: Record<string, string> }[];
     readonly refunds: { paymentId: string; amount: number }[];
     readonly links: PaymentLinkRequest[];
+    /** The links texted again, by Razorpay's ID. */
+    readonly resent: string[];
     readonly cancelledLinks: string[];
   };
   /** The payments a test says were made on an order; none on an order it names nothing for. */
@@ -113,6 +118,7 @@ export function createStubPayments(): StubPayments {
     orders: [] as { amount: number; receipt: string; notes: Record<string, string> }[],
     refunds: [] as { paymentId: string; amount: number }[],
     links: [] as PaymentLinkRequest[],
+    resent: [] as string[],
     cancelledLinks: [] as string[],
   };
   const receipts = new Set<string>();
@@ -146,6 +152,10 @@ export function createStubPayments(): StubPayments {
       return Promise.resolve(madeLink);
     },
     findPaymentLink: (reference) => Promise.resolve(linksByReference.get(reference) ?? null),
+    resendPaymentLink: (linkId) => {
+      made.resent.push(linkId);
+      return Promise.resolve();
+    },
     paymentLink: (linkId) => {
       const told = linksNow.get(linkId);
       if (told !== undefined) return Promise.resolve(told);

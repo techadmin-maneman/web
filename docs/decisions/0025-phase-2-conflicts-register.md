@@ -1,6 +1,6 @@
 # 0025. Phase 2: the conflicts register
 
-- Status: accepted, and kept up to date. Items marked **open** need a ruling before the milestone named.
+- Status: accepted, and kept up to date. Items marked **open** need a ruling before the milestone named. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): items 26, 30, 31 and 47, which turned on FSM, are settled by its removal.
 - Date: 2026-09-22
 
 ## Context

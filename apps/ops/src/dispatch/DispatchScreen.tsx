@@ -67,10 +67,13 @@ import { Toolbar } from "./Toolbar.tsx";
 import { Tray } from "./Tray.tsx";
 import { useBoard } from "./useBoard.ts";
 
-/** Where the job in hand would land, as the server answered; "unknown" if it could not, and every window is offered. */
+/**
+ * Where the job in hand would land, and the days ops blacked out, as the server answered; "unknown" if it could not,
+ * and every window is offered.
+ */
 type Rooms =
   | { readonly state: "checking" }
-  | { readonly state: "known"; readonly rooms: readonly Room[] }
+  | { readonly state: "known"; readonly rooms: readonly Room[]; readonly blackouts: readonly string[] }
   | { readonly state: "unknown" };
 
 /**
@@ -120,6 +123,15 @@ function windowsFrom(rooms: Rooms): InHand["windowsAt"] {
     rooms.rooms.find((room) => room.technician_id === technicianId && room.date === date)?.windows ?? [];
 }
 
+/** The start a move to this target takes, as the server answered; null where it could not say. */
+function landsAtFrom(rooms: Rooms, to: Target): string | null {
+  if (rooms.state !== "known") return null;
+  const room = rooms.rooms.find((each) => each.technician_id === to.technician.technician_id && each.date === to.date);
+  return room?.starts.find((each) => each.window === to.window)?.starts_at ?? null;
+}
+
+const isBlackout = (rooms: Rooms, date: string): boolean => rooms.state === "known" && rooms.blackouts.includes(date);
+
 /**
  * What a move did, in words, from the server's own answer. A message queued is not yet one sent, so the notice says
  * it is on its way, and where it fails the move waits on the Tasks board for a call.
@@ -145,6 +157,9 @@ function doneNotice(job: Job, to: Target, moved: Moved): Notice {
 /** Why a move was refused, in the board's words. Nothing was written either way. */
 function refusalOf(job: Job, to: Target, code: string): string {
   const copy = dispatch.landing;
+  if (code === "past_day") return copy.pastDay(shortDate(to.date));
+  if (code === "window_passed") return copy.windowPassed(shortDate(to.date), windowWord(to.window));
+  if (code === "blackout") return copy.blackout(shortDate(to.date));
   if (code === "clash") return copy.clash(to.technician.name, shortDate(to.date), windowWord(to.window));
   if (code === "on_leave") return copy.onLeave(to.technician.name, shortDate(to.date));
   if (code === "does_not_fit") {
@@ -288,7 +303,11 @@ export function DispatchScreen() {
         return;
       }
       void api.room(idOf(job), board.from).then((answer) => {
-        setRooms(answer.ok ? { state: "known", rooms: answer.body.rooms } : { state: "unknown" });
+        if (!answer.ok) {
+          setRooms({ state: "unknown" });
+          return;
+        }
+        setRooms({ state: "known", rooms: answer.body.rooms, blackouts: answer.body.blackouts });
       });
     },
     [board],
@@ -372,13 +391,19 @@ export function DispatchScreen() {
   );
 
   const send = useCallback(
-    async (reason: MoveReason) => {
+    async (reason: MoveReason, blackoutReason: string | null) => {
       const to = move?.to ?? null;
       if (move === null || to === null || move.sending) return;
       const { job } = move;
       setMove({ ...move, sending: true });
 
-      const landing: Landing = { technicianId: to.technician.technician_id, date: to.date, window: to.window, reason };
+      const landing: Landing = {
+        technicianId: to.technician.technician_id,
+        date: to.date,
+        window: to.window,
+        reason,
+        blackoutReason,
+      };
       const shown = shownOf(job);
       const answer: Answer<Moved> =
         job.kind === "block"
@@ -515,10 +540,12 @@ export function DispatchScreen() {
         <MovePicker
           job={picking.job}
           onCancel={unpick}
-          onSend={(reason) => void send(reason)}
+          onSend={(reason, blackoutReason) => void send(reason, blackoutReason)}
           sending={picking.sending}
           clearingCheckIn={picking.clearingCheckIn}
           to={picking.to}
+          landsAt={landsAtFrom(rooms, picking.to)}
+          blackout={isBlackout(rooms, picking.to.date)}
         />
       )}
     </Shell>

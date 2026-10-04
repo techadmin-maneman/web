@@ -3,36 +3,49 @@
 // the site shows as B2 until its day has passed, saying so while it is only asked for. A visit not yet closed stays
 // here until it is, so Home never says nothing is booked, nor offers the booking again, while one is under way. Nor
 // while a visit paid for, or booked free, waits to be booked: Home says it is being booked, and that the payment is in
-// (ADR 0068).
+// (ADR 0068). A consultation and fit in one visit says what it costs once fitted, and has its own steps to expect;
+// one booked on /book shows as booked before it is a visit, as the site's consultation does.
 //
-// Beneath the card, B1's credit tile while there is a balance, its one prompt, and an invoice just issued as a line
+// Beneath the card, a one visit's payment while the client owes it, B1's credit tile while there is a balance, its one prompt, and an invoice just issued as a line
 // beneath that (src/domain/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
-import { documentUrl, type Me } from "../api.ts";
+import { rupees } from "@maneman/web-kit/money";
+import { documentUrl, type Me, type OneVisitPrice } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
 import { BookNext } from "../booking/BookNext.tsx";
 import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { apiNow } from "../lib/clock.ts";
-import { bookingName, visitName } from "../lib/visit.ts";
+import { bookingName, oneVisitOf, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
 import { monthNow, nextVisitWords, replacementLine } from "./next-visit-words.ts";
-import { Actions, changingOf, hasBegun, notingOf, VisitCard, whenText, type NotingVisit } from "./VisitCard.tsx";
+import {
+  Actions,
+  changingOf,
+  hasBegun,
+  notingOf,
+  OneVisitTerms,
+  VisitCard,
+  whenText,
+  type NotingVisit,
+} from "./VisitCard.tsx";
 import styles from "./home.module.css";
 
 export function HomeScreen() {
   const { me, offline } = useSession();
-  // A Home the phone kept from an earlier release has no invoice line at all.
+  // A Home the phone kept from an earlier release has no invoice line, nor any payment owed.
   const invoice = me.invoice ?? null;
+  const owed = me.payment_owed ?? null;
   return (
     <Shell header={{ kind: "home" }} tab="/" kept>
       <div className={styles.home}>
         <HomeBody me={me} offline={offline} />
+        {owed !== null && <PaymentOwed owed={owed} />}
         {me.credits !== null && <CreditTile credits={me.credits} />}
         {me.prompt !== null && <Prompt prompt={me.prompt} />}
         {invoice !== null && <InvoiceLine invoice={invoice} />}
@@ -55,6 +68,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
       />
     );
   }
+  if (visit !== null && oneVisitOf(visit) !== null) return <OneVisit visit={visit} />;
   if (visit !== null) {
     return (
       <section aria-labelledby="next">
@@ -66,7 +80,13 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
     );
   }
   if (me.consultation !== null) return <ProposedConsultation consultation={me.consultation} />;
-  if (me.being_booked !== null) return <BeingBooked booking={me.being_booked} />;
+  if (me.being_booked !== null) {
+    const price = oneVisitOf(me.being_booked);
+    if (price === null) return <BeingBooked booking={me.being_booked} />;
+    // A one visit booked on /book is booked, as the site told the client; ops move it.
+    const { date, window } = me.being_booked;
+    return <Consultation date={date} when={windowText(window)} place="" changing={null} noting={null} price={price} />;
+  }
   if (me.state === "fitted" || me.booking.types.includes("first_fit")) {
     return <NothingNext promptBooks={me.prompt?.kind === "next_visit"} />;
   }
@@ -86,7 +106,7 @@ function ProposedConsultation({ consultation }: { consultation: NonNullable<Me["
       changing={null}
       noting={null}
       requested={consultation.requested}
-      oneVisit={consultation.one_visit}
+      price={oneVisitOf(consultation)}
     />
   );
 }
@@ -104,13 +124,14 @@ function Consultation(props: {
   begun?: boolean;
   /** Asked for on the site, and not yet booked. */
   requested?: boolean;
-  /** The consultation and the first fit in one visit, paid for once fitted. */
-  oneVisit?: boolean;
+  /** The consultation and the first fit in one visit: what it costs once fitted. */
+  price?: OneVisitPrice | null;
 }) {
   const copy = home.consultation;
   const date = shortDate(props.date);
   const begun = props.begun === true;
-  const oneVisit = props.oneVisit === true;
+  const price = props.price ?? null;
+  const oneVisit = price !== null;
   return (
     <>
       <section aria-labelledby="consultation">
@@ -123,6 +144,7 @@ function Consultation(props: {
           {props.place !== "" && <p className={styles.place}>{props.place}</p>}
           {!oneVisit && <p className={styles.free}>{copy.free}</p>}
           {props.requested === true && <p className={styles.free}>{copy.requested}</p>}
+          {price !== null && <OneVisitTerms price={price} />}
           {!begun && (
             <Actions
               what={oneVisit ? ONE_VISIT : VISIT_TYPES.consultation}
@@ -133,19 +155,34 @@ function Consultation(props: {
           )}
         </div>
       </section>
-      {!begun && <WhatToExpect />}
+      {!begun && <WhatToExpect steps={oneVisit ? home.oneVisit.expect : home.expect.steps} />}
     </>
   );
 }
 
-function WhatToExpect() {
+/** A consultation and fit in one visit on record: its card, with what it costs once fitted, and what to expect. */
+function OneVisit({ visit }: { visit: NonNullable<Me["next_visit"]> }) {
+  return (
+    <>
+      <section aria-labelledby="next">
+        <h1 className={styles.label} id="next">
+          {home.oneVisit.label}
+        </h1>
+        <VisitCard visit={visit} />
+      </section>
+      {!hasBegun(visit) && <WhatToExpect steps={home.oneVisit.expect} />}
+    </>
+  );
+}
+
+function WhatToExpect({ steps }: { steps: readonly string[] }) {
   return (
     <section className={styles.expect} aria-labelledby="expect">
       <h2 className={styles.label} id="expect">
         {home.expect.label}
       </h2>
       <ol className={styles.steps}>
-        {home.expect.steps.map((step, index) => (
+        {steps.map((step, index) => (
           <li key={step} className={styles.step}>
             <span className={styles.number} aria-hidden="true">
               {index + 1}
@@ -176,6 +213,27 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
         <p className={styles.free}>{booking.paid ? copy.paid : copy.free}</p>
         {booking.told && <p className={styles.free}>{copy.told}</p>}
       </div>
+    </section>
+  );
+}
+
+/** A one visit the client was fitted at and has not paid for: what for, how much, and the link to pay by. */
+function PaymentOwed({ owed }: { owed: NonNullable<Me["payment_owed"]> }) {
+  const copy = home.owed;
+  return (
+    <section className={styles.prompt} aria-labelledby="owed">
+      <h2 className={styles.label} id="owed">
+        {copy.label}
+      </h2>
+      <p className={styles.owedLine}>{copy.line(owed.product, rupees(owed.amount))}</p>
+      {owed.url === null ? (
+        <p className={styles.owedWait}>{copy.onItsWay}</p>
+      ) : (
+        <a className={styles.promptLink} href={owed.url} target="_blank" rel="noopener">
+          <span>{copy.pay}</span>
+          <VisuallyHidden>{`, ${copy.newTab}`}</VisuallyHidden>
+        </a>
+      )}
     </section>
   );
 }

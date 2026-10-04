@@ -339,6 +339,13 @@ a.subject:focus-visible {
   color: var(--error-on-paper);
 }
 
+/* What copying or sending a payment link came to; empty until then. */
+.said {
+  font-size: var(--fs-14);
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+}
+
 .sla {
   font-size: var(--fs-14);
   color: var(--text-muted);

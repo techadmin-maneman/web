@@ -512,11 +512,12 @@ describe("the session", () => {
         window_label: "after four",
         place: "Gurgaon",
         requested: true,
-        one_visit: false,
+        one_visit: null,
       },
       next_visit: null,
       // Nothing paid for or booked in the app is waiting for FSM (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
       being_booked: null,
+      payment_owed: null,
       credits: null,
       // A consultation is booked and no address given: board B1's prompt asks for one.
       prompt: { kind: "address" },
@@ -585,7 +586,7 @@ describe("the session", () => {
         window_label: null,
         place: "Gurgaon",
         requested: true,
-        one_visit: false,
+        one_visit: null,
       });
     });
 
@@ -593,7 +594,9 @@ describe("the session", () => {
       const cookie = await bookedOnTheSite();
       await requested(true);
 
-      expect(await home(cookie)).toMatchObject({ consultation: { requested: true, one_visit: true } });
+      expect(await home(cookie)).toMatchObject({
+        consultation: { requested: true, one_visit: { amount: 3_000_000, from: false, code: null } },
+      });
     });
 
     it("drops a request once its day has passed, so Home offers booking again", async () => {
@@ -629,7 +632,7 @@ describe("the session", () => {
         window_label: "after four",
         place: "Gurgaon",
         requested: false,
-        one_visit: false,
+        one_visit: null,
       });
     });
   });

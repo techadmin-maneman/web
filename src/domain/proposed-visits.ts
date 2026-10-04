@@ -20,6 +20,8 @@ export interface Asked {
   readonly requested: boolean;
   /** The consultation and the first fit in one visit. */
   readonly oneVisit: boolean;
+  /** The discount code typed on /book for a one visit; null for none. */
+  readonly code: string | null;
 }
 
 /** The latest booking a form left with a date; null when none has. */
@@ -64,20 +66,21 @@ async function hasVisit(db: D1Database, personId: string): Promise<boolean> {
  */
 export async function askedFor(db: D1Database, personId: string, booking: ProposedBooking): Promise<Asked | null> {
   if (booking.first_choice_window !== null) {
-    return { window: askedWindowOf(booking.first_choice_window), requested: true, oneVisit: false };
+    return { window: askedWindowOf(booking.first_choice_window), requested: true, oneVisit: false, code: null };
   }
   const asked = await db
     .prepare(
-      `SELECT asked, requested, one_visit FROM (
-         SELECT requested_window AS asked, 1 AS requested, one_visit, created_at FROM consultation_requests
+      `SELECT asked, requested, one_visit, code FROM (
+         SELECT requested_window AS asked, 1 AS requested, one_visit, discount_code AS code, created_at
+           FROM consultation_requests
          WHERE person_id = ?1 AND requested_date = ?2
          UNION ALL
-         SELECT window_label AS asked, 0 AS requested, 0 AS one_visit, created_at FROM slot_holds
-         WHERE person_id = ?1 AND date = ?2 AND type = 'consultation'
+         SELECT window_label AS asked, 0 AS requested, one_visit, NULL AS code, created_at FROM slot_holds
+         WHERE person_id = ?1 AND date = ?2 AND (type = 'consultation' OR one_visit = 1)
        ) ORDER BY created_at DESC LIMIT 1`,
     )
     .bind(personId, booking.proposed_visit_date)
-    .first<{ asked: BookingWindow; requested: number; one_visit: number }>();
+    .first<{ asked: BookingWindow; requested: number; one_visit: number; code: string | null }>();
   if (asked === null) return null;
-  return { window: asked.asked, requested: asked.requested === 1, oneVisit: asked.one_visit === 1 };
+  return { window: asked.asked, requested: asked.requested === 1, oneVisit: asked.one_visit === 1, code: asked.code };
 }
