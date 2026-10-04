@@ -2803,6 +2803,8 @@ export interface components {
                 paid: boolean;
                 /** @description A consultation and fit in one visit. */
                 one_visit: boolean;
+                /** @description Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits. */
+                told: boolean;
             } | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
@@ -3162,6 +3164,8 @@ export interface components {
             dispute: ("open" | "refunded" | "upheld") | null;
             /** @description Whether the client may dispute the charge now: one that took something, not disputed yet. */
             disputable: boolean;
+            /** @description When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise. */
+            dispute_closed_at: string | null;
         };
         PhotoTimeline: {
             visits: {

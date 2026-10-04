@@ -78,9 +78,9 @@ What the audit asked of FSM here (a Tasks group for a technician's close FSM ref
 
 The 2 October audit found that telling the chat only at 10, 100 and 1,000 sightings goes quiet in a long outage: the bridge check, every five minutes, posted at about 10 minutes, 1.6 hours and 16.6 hours, then nothing for days (PLAT-41). It also found open alerts whose subject was gone.
 
-- **An open alert is told again** at its first sighting once it has gone 24 hours untold, or 6 hours for the WhatsApp bridge, failing login codes, a paid booking with no visit, and a refund that failed (`retellAfterHours`, `src/policy/alerts.ts`). The 10, 100 and 1,000 counts still tell it too. Either reads "Still open since Mon 21 Sep, 12 pm, 37 times: …". `alerts.last_told_at` (migration 0087) holds when it was last told; one sighting tells it, however many come together.
+- **An open alert is told again** at its first sighting once it has gone 24 hours untold, or 6 hours for the WhatsApp bridge, failing login codes, a paid booking with no visit, and a refund that failed (`retellAfterHours`, `src/policy/alerts.ts`). The 10, 100 and 1,000 counts still tell it too. Either reads "Still open since Mon 21 Sep, 12 pm, 37 times: …". `alerts.last_told_at` (migration 0088) holds when it was last told; one sighting tells it, however many come together.
 - **Google's refusal and Turnstile's outage** are one alert each, no longer one a day, and close at the next search Google answers or the next visitor Turnstile checks.
-- Migration 0087 closed what was open with nothing left to put right: the dated Google and Turnstile alerts, invoice alerts of visits FSM had deleted, and technicians' steps no longer waiting for FSM. Nothing raises these two kinds once FSM is off, so no code closes them.
+- Migration 0088 closed what was open with nothing left to put right: the dated Google and Turnstile alerts, invoice alerts of visits FSM had deleted, and technicians' steps no longer waiting for FSM. Nothing raises these two kinds once FSM is off, so no code closes them.
 
 ## Consequences
 

@@ -49,6 +49,10 @@ export type HairProfile = Schema["HairProfile"];
 export type FitSpec = Schema["HairFitSpec"];
 export type History = Schema["HairHistory"];
 export type ProfileRequest = Schema["TechnicianProfileRequest"];
+export type ChecklistRequest = Schema["ChecklistRequest"];
+export type PieceFitted = Schema["PieceFitted"];
+export type PieceDeclined = Schema["PieceDeclined"];
+export type OutcomeRequest = Schema["OutcomeRequest"];
 
 export type VisitType = NonNullable<JobSummary["type"]>;
 /** No amount ever reaches this app: a badge only (board A1). */

@@ -1201,7 +1201,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1826,7 +1826,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Referral grants held for review, oldest first */
+        /** Referral grants held for review whose friend is in the caller's cities, oldest first */
         get: {
             parameters: {
                 query?: never;
@@ -1929,7 +1929,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no held grant by that ID */
+                /** @description not_found: no held grant by that ID in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2059,7 +2059,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Who is waiting, by pincode, the longest wait first */
+        /** Who is waiting in the caller's cities, by pincode, the longest wait first */
         get: {
             parameters: {
                 query?: never;
@@ -2143,6 +2143,15 @@ export interface paths {
                         };
                     };
                 };
+                /** @description access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description not_found: we have no such pincode */
                 404: {
                     headers: {
@@ -2167,7 +2176,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The referrers' figures, the busiest first, 50 at a time */
+        /** The figures of the referrers in the caller's cities, the busiest first, 50 at a time */
         get: {
             parameters: {
                 query?: {
@@ -3044,6 +3053,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/no-shows/{id}/charge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What charging an undecided no-show would keep of the visit's payment, and refund */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What a charge would do */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NoShowChargePreview"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such case in the caller's cities, or it was ruled on already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/no-shows/decided": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day's rulings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            cases: components["schemas"]["NoShowDecided"][];
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/no-shows/disputes": {
         parameters: {
             query?: never;
@@ -3221,7 +3333,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
+                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                     id: string;
                 };
                 cookie?: never;
@@ -4332,7 +4444,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order or outside_the_day (06:00 to 22:00) */
+                /** @description invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order, half_slot_too_short (under 45 minutes, the last one to the day's end included) or outside_the_day (06:00 to 22:00) */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -6547,6 +6659,8 @@ export interface components {
             invite: components["schemas"]["ClientInvite"] | null;
             /** @description Bookings FSM refused, waiting for a try or for ops; the soonest visit first. */
             held_bookings: components["schemas"]["HeldBooking"][];
+            /** @description Bookings that refunded their payment by themselves; the latest refund first. */
+            auto_refunds: components["schemas"]["AutoRefund"][];
         };
         ClientAddress: {
             line1: string;
@@ -6747,6 +6861,8 @@ export interface components {
             dispute: ("open" | "refunded" | "upheld") | null;
             /** @description Whether the client may dispute the charge now: one that took something, not disputed yet. */
             disputable: boolean;
+            /** @description When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise. */
+            dispute_closed_at: string | null;
         };
         RefundEntry: {
             /**
@@ -6918,6 +7034,28 @@ export interface components {
                 /** @description In paise before GST; null until the visit's price is known. */
                 amount_off: number | null;
             } | null;
+        };
+        AutoRefund: {
+            /** Format: uuid */
+            hold_id: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description Its service's name as it is now. */
+            service: string;
+            /**
+             * Format: date
+             * @description India's day the visit was to be on.
+             */
+            date: string;
+            /** @description In paise, GST included: what Razorpay took, all of which went back; null where it is not on record. */
+            amount: number | null;
+            /**
+             * @description lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun.
+             * @enum {string}
+             */
+            reason: "lapsed" | "not_movable";
+            /** Format: date-time */
+            refunded_at: string;
         };
         ClientPhotos: {
             visits: {
@@ -7870,6 +8008,37 @@ export interface components {
             /** @description Why, in ops' words. Never a medical detail. */
             note?: string;
         };
+        /** @description What charging the case would do, worked out as charging does. */
+        NoShowChargePreview: {
+            /** @description In paise: what was paid for the visit and not refunded. */
+            paid: number;
+            /** @description In paise: what charging keeps of it. The rest is refunded. */
+            kept: number;
+            /** @description Whether charging keeps the credit the visit was paid with. */
+            credit_kept: boolean;
+        };
+        NoShowDecided: {
+            /** Format: uuid */
+            id: string;
+            /** @description Whose visit it was; null once they have been erased. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            visit_date: string | null;
+            /** @enum {string} */
+            decision: "charged" | "waived";
+            /** Format: date-time */
+            decided_at: string;
+            /** @description What a charge took; null for a waiver, and for a charge ruled before it was recorded. */
+            charge: {
+                /** @description In paise: what the charge kept of the visit's payment. */
+                kept: number;
+                /** @description Whether the charge spent the credit the visit used. */
+                credit_spent: boolean;
+            } | null;
+        };
         /** @description A disputed charge, with the evidence its no-show was ruled on. */
         NoShowDispute: {
             /** Format: uuid */
@@ -7890,7 +8059,7 @@ export interface components {
             raised_at: string;
             /**
              * Format: date-time
-             * @description When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at.
+             * @description When ops should have ruled: the Tasks board's allowance for a disputed charge, from raised_at.
              */
             due: string;
             /** @description In paise: what the charge kept of the visit's payment. */
@@ -7925,7 +8094,7 @@ export interface components {
             staff: string[];
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
+                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */

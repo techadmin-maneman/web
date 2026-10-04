@@ -31,6 +31,8 @@ export type ClientInvoice = ClientRecord["invoices"][number];
 /** A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). */
 export type HeldBooking = ClientRecord["held_bookings"][number];
 export type HeldBookingRefunded = Body<paths["/api/held-bookings/{id}/refund"]["post"]>;
+/** A booking that refunded its payment by itself: paid after its hold lapsed, or a move whose visit had begun. */
+export type AutoRefund = ClientRecord["auto_refunds"][number];
 /** A visit ops book for a client: the windows free for it, what is sent, and what came of it. */
 export type VisitAvailability = Body<paths["/api/visits/availability"]["get"]>;
 export type AvailabilityQuery = NonNullable<paths["/api/visits/availability"]["get"]["parameters"]["query"]>;
@@ -128,6 +130,8 @@ export type StaffToken = StaffBook["service_tokens"][number];
 export type StaffTokenAdd = Sent<paths["/api/staff/service-tokens"]["post"]>;
 
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
+export type ChargePreview = Body<paths["/api/no-shows/{id}/charge"]["get"]>;
+export type DecidedNoShow = Body<paths["/api/no-shows/decided"]["get"]>["cases"][number];
 export type NoShowDispute = Body<paths["/api/no-shows/disputes"]["get"]>["disputes"][number];
 export type DisputeRuling = Sent<paths["/api/no-shows/disputes/{id}/ruling"]["post"]>["ruling"];
 export type DayMoney = Body<paths["/api/payments"]["get"]>;
@@ -355,6 +359,10 @@ export const api = {
   decideNoShow: (id: string, decision: "charged" | "waived", reason: string) =>
     client.post("/api/no-shows/{id}/decision", { path: { id }, body: { decision, reason } }),
   /** The disputed charges still to rule on (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). */
+  /** What charging the case would keep of the visit's payment and refund, read before the charge is sent. */
+  chargePreview: (id: string) => client.get("/api/no-shows/{id}/charge", { path: { id } }),
+  /** The cases ruled on today, the latest first, each with its ruling. */
+  decidedNoShows: () => client.get("/api/no-shows/decided"),
   disputes: () => client.get("/api/no-shows/disputes"),
   ruleOnDispute: (id: string, ruling: DisputeRuling, reason: string) =>
     client.post("/api/no-shows/disputes/{id}/ruling", { path: { id }, body: { ruling, reason } }),

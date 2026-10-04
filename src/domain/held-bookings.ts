@@ -22,10 +22,9 @@ import { firstNameOf } from "../lib/names.ts";
 import type { Logger } from "../log.ts";
 import { dueAnotherTry, FSM_RETRY, retriesEnd, triesStopped, type FsmRetry } from "../policy/held-bookings.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
-import { consentGiven } from "./messages.ts";
 import { heldMinutes, heldVisitTimes, visitTimes } from "./scheduling.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
-import { DESTINATIONS, NO_VISITS_CONSENT, type Composed } from "./visit-messages.ts";
+import { DESTINATIONS, underVisitsConsent, type Composed } from "./visit-messages.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 
 /** The alert a booking held for ops raises, once; closed when it is booked or given back. */
@@ -300,12 +299,15 @@ const REFUNDED_TEMPLATES = {
 } as const;
 
 /**
- * What the client is told when ops refund a booking FSM would not take: the visit, and what comes back to them. A
- * booking that moved a visit says the move was not made, since the visit it moved still stands. Sent only with their
- * consent to WhatsApp about their visits, as every message about a visit is.
+ * What the client is told when a booking is given back, by ops or by itself: the visit, and what comes back to them. A
+ * booking that moved a visit says the move was not made, since the visit it moved still stands. A refund goes whatever
+ * their consent; that nothing was booked goes only with their consent to WhatsApp about their visits.
  */
 export async function composeBookingRefunded(db: D1Database, holdId: string, personId: string): Promise<Composed> {
-  if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
+  return underVisitsConsent(db, personId, await composeGivenBack(db, holdId, personId));
+}
+
+async function composeGivenBack(db: D1Database, holdId: string, personId: string): Promise<Composed> {
   const hold = await db
     .prepare(
       `SELECT h.type, h.minutes, h.date, h.start_unit, h.move_kind, p.name,

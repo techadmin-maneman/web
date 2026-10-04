@@ -66,6 +66,9 @@ export const today = {
 /** "1 photo set", "3 actions": a count and the word for it. */
 const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
 
+/** "top", "top and left", "top, left and hair". */
+const listed = (words: readonly string[]) => new Intl.ListFormat("en-IN", { type: "conjunction" }).format(words);
+
 /**
  * Signing out wipes the phone, so it asks first when there is work on it that
  * has not reached us, and says so when there is no signal to sign out with.
@@ -129,15 +132,16 @@ export const queue = {
   title: "Waiting to reach us",
   nothing: "Everything has reached us.",
   events: (count: number) => `${String(count)} ${count === 1 ? "action" : "actions"} waiting`,
-  read: "Got it",
   // PLACEHOLDER: the board draws no step the API refused, and no way to put one right.
   correct: "Correct it",
+  retake: "Retake photos",
   back: "Back",
   // PLACEHOLDER: the board draws the sets, not how long they have been waiting.
   since: (time: string) => `Waiting since ${time}`,
-  // PLACEHOLDER: the board draws no deletion. "Got it" lets go of work, so it asks first.
+  // PLACEHOLDER: the board draws no deletion. It lets go of work, so it asks first.
   forget: {
-    title: "Delete what this job holds?",
+    open: "Delete this job's work",
+    title: "Delete this job's work?",
     what: (photos: number, actions: number) => {
       const held: string[] = [];
       if (photos > 0) held.push(counted(photos, "photograph", "photographs"));
@@ -379,6 +383,12 @@ export const capture = {
   missed: "That photograph did not keep. Capture it again.",
   done: "All five are on the phone. They go up when there is signal.",
   finish: "Done",
+  // PLACEHOLDER: the board draws no set the API refused.
+  refusedPhotos: (angles: readonly string[]) =>
+    angles.length === 1
+      ? `The ${listed(angles)} photograph would not upload. Take it again.`
+      : `The ${listed(angles)} photographs would not upload. Take them again.`,
+  refusedSet: "We could not record this set. Tap Done to send it again.",
 } as const;
 
 /** The six in-job steps (board B), and the hair profile no board draws, in the order the API runs them. */
@@ -470,6 +480,8 @@ export const closeOut = {
   label: "Closed out",
   who: (name: string, outcome: string) => `${name} · ${outcome}`,
   outcomes: { done: "done", partial: "partial", no_show: "no-show" },
+  // PLACEHOLDER: no board draws a consultation and fit in one visit closed as done once the client declined.
+  freeConsultation: "free consultation",
   duration: "Duration",
   // PLACEHOLDER: the board writes "1 h 22 m"; the phone times it from Start job (open point 60).
   length: (hours: number, minutes: number) =>
@@ -509,8 +521,8 @@ export const badges = {
 /**
  * PLACEHOLDER: no board draws a consultation and fit in one visit
  * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). The client chooses the product with the technician
- * at the piece step, or decides against it; closing the visit as done then texts them a payment link, or ends it as
- * a consultation. Never an amount.
+ * at the piece step, before the checklist, or decides against it; closing the visit as done then texts them a payment
+ * link, or ends it as a free consultation. Never an amount.
  */
 export const oneVisit = {
   name: "Consultation and fit",
@@ -521,9 +533,16 @@ export const oneVisit = {
   // PLACEHOLDER: ops offer no hair system for the visit's day, so there is nothing to choose from.
   noProducts: "No hair system is offered for this visit. Speak to ops before you fit anything.",
   chooseFirst: "Choose the hair system, or that the client decided against it",
-  declinedNote: "Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay.",
+  declinedNote: "Nothing is fitted. The visit ends as a free consultation.",
+  /** Closing as done, once the client decided against the fit. */
+  endsAsConsultation: "Ends as a free consultation. Nothing to pay.",
+  /** Closing as done, once the client chose a hair system: by its name in the console. */
+  linkFor: (product: string) => `Closing texts the client a payment link for ${product}.`,
+  /** A product the card no longer names, for linkFor. */
+  chosenProduct: "the hair system they chose",
+  /** Closing as done on a phone that does not know the client's choice, from a card kept by an earlier build. */
   closeNote:
-    "Closing as done texts the client a payment link for the product they chose. If they decided against it, the visit ends as a consultation.",
+    "Closing texts the client a payment link for their hair system, or ends a declined visit as a free consultation.",
   payment: "Payment",
   linkSent: "Link texted to the client",
   linkPaid: "Paid",

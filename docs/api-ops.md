@@ -715,7 +715,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or one who has been erased
+**404**: not_found: no such client in the caller's cities, or one who has been erased
 
 ```json
 {
@@ -1202,7 +1202,7 @@ Request body:
 
 ### GET /api/referrals/held
 
-Referral grants held for review, oldest first
+Referral grants held for review whose friend is in the caller's cities, oldest first
 
 **200**: Held grants
 
@@ -1342,7 +1342,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no held grant by that ID
+**404**: not_found: no held grant by that ID in the caller's cities
 
 ```json
 {
@@ -1453,7 +1453,7 @@ Request body:
 
 ### GET /api/waitlist
 
-Who is waiting, by pincode, the longest wait first
+Who is waiting in the caller's cities, by pincode, the longest wait first
 
 **200**: Areas with someone waiting
 
@@ -1594,6 +1594,14 @@ Request body:
 }
 ```
 
+**403**: access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **404**: not_found: we have no such pincode
 
 ```json
@@ -1604,7 +1612,7 @@ Request body:
 
 ### GET /api/referrers
 
-The referrers' figures, the busiest first, 50 at a time
+The figures of the referrers in the caller's cities, the busiest first, 50 at a time
 
 **200**: Referrers
 
@@ -2178,6 +2186,66 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 ```
 
 **404**: not_found: no such phone of that technician's, or he is not in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/no-shows/{id}/charge
+
+What charging an undecided no-show would keep of the visit's payment, and refund
+
+**200**: What a charge would do
+
+```json
+{
+  "$ref": "#/components/schemas/NoShowChargePreview"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such case in the caller's cities, or it was ruled on already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/no-shows/decided
+
+The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling
+
+**200**: The day's rulings
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "cases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/NoShowDecided"
+      }
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
 
 ```json
 {
@@ -3045,7 +3113,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order or outside_the_day (06:00 to 22:00)
+**400**: invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order, half_slot_too_short (under 45 minutes, the last one to the day's end included) or outside_the_day (06:00 to 22:00)
 
 ```json
 {
@@ -4850,6 +4918,13 @@ Request body:
         "$ref": "#/components/schemas/HeldBooking"
       },
       "description": "Bookings FSM refused, waiting for a try or for ops; the soonest visit first."
+    },
+    "auto_refunds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/AutoRefund"
+      },
+      "description": "Bookings that refunded their payment by themselves; the latest refund first."
     }
   },
   "required": [
@@ -4866,7 +4941,8 @@ Request body:
     "invoices",
     "history",
     "invite",
-    "held_bookings"
+    "held_bookings",
+    "auto_refunds"
   ],
   "additionalProperties": false
 }
@@ -5717,6 +5793,18 @@ Request body:
     "disputable": {
       "type": "boolean",
       "description": "Whether the client may dispute the charge now: one that took something, not disputed yet."
+    },
+    "dispute_closed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
     }
   },
   "required": [
@@ -5724,7 +5812,8 @@ Request body:
     "waited_minutes",
     "charge",
     "dispute",
-    "disputable"
+    "disputable",
+    "dispute_closed_at"
   ],
   "additionalProperties": false
 }
@@ -6370,6 +6459,71 @@ Request body:
     "retries_end",
     "retrying",
     "discount_code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AutoRefund
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "service": {
+      "type": "string",
+      "description": "Its service's name as it is now."
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's day the visit was to be on."
+    },
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, GST included: what Razorpay took, all of which went back; null where it is not on record."
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "lapsed",
+        "not_movable"
+      ],
+      "description": "lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun."
+    },
+    "refunded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "hold_id",
+    "type",
+    "service",
+    "date",
+    "amount",
+    "reason",
+    "refunded_at"
   ],
   "additionalProperties": false
 }
@@ -10664,6 +10818,131 @@ Request body:
 }
 ```
 
+### NoShowChargePreview
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "paid": {
+      "type": "integer",
+      "description": "In paise: what was paid for the visit and not refunded."
+    },
+    "kept": {
+      "type": "integer",
+      "description": "In paise: what charging keeps of it. The rest is refunded."
+    },
+    "credit_kept": {
+      "type": "boolean",
+      "description": "Whether charging keeps the credit the visit was paid with."
+    }
+  },
+  "required": [
+    "paid",
+    "kept",
+    "credit_kept"
+  ],
+  "additionalProperties": false,
+  "description": "What charging the case would do, worked out as charging does."
+}
+```
+
+### NoShowDecided
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Whose visit it was; null once they have been erased."
+    },
+    "visit_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "charged",
+        "waived"
+      ]
+    },
+    "decided_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "charge": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kept": {
+              "type": "integer",
+              "description": "In paise: what the charge kept of the visit's payment."
+            },
+            "credit_spent": {
+              "type": "boolean",
+              "description": "Whether the charge spent the credit the visit used."
+            }
+          },
+          "required": [
+            "kept",
+            "credit_spent"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What a charge took; null for a waiver, and for a charge ruled before it was recorded."
+    }
+  },
+  "required": [
+    "id",
+    "person",
+    "visit_date",
+    "decision",
+    "decided_at",
+    "charge"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### NoShowDispute
 
 ```json
@@ -10725,7 +11004,7 @@ Request body:
     "due": {
       "type": "string",
       "format": "date-time",
-      "description": "When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at."
+      "description": "When ops should have ruled: the Tasks board's allowance for a disputed charge, from raised_at."
     },
     "kept": {
       "type": "integer",
@@ -10885,6 +11164,7 @@ Request body:
               "partial_visit",
               "referral_review",
               "no_show_decision",
+              "no_show_dispute",
               "number_change",
               "erasure_request",
               "grievance",

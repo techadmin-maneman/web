@@ -2248,6 +2248,10 @@ Request body:
             "one_visit": {
               "type": "boolean",
               "description": "A consultation and fit in one visit."
+            },
+            "told": {
+              "type": "boolean",
+              "description": "Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits."
             }
           },
           "required": [
@@ -2255,7 +2259,8 @@ Request body:
             "date",
             "window",
             "paid",
-            "one_visit"
+            "one_visit",
+            "told"
           ],
           "additionalProperties": false
         },
@@ -3887,6 +3892,18 @@ Request body:
     "disputable": {
       "type": "boolean",
       "description": "Whether the client may dispute the charge now: one that took something, not disputed yet."
+    },
+    "dispute_closed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
     }
   },
   "required": [
@@ -3894,7 +3911,8 @@ Request body:
     "waited_minutes",
     "charge",
     "dispute",
-    "disputable"
+    "disputable",
+    "dispute_closed_at"
   ],
   "additionalProperties": false
 }

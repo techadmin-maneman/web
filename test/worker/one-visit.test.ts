@@ -10,7 +10,9 @@ import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts"
 import { raiseInvoices } from "../../src/domain/fsm-invoices.ts";
 import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { summaryOf } from "../../src/domain/job-sheet.ts";
+import { composeLinkPaid } from "../../src/domain/payment-links.ts";
 import { recordPayment } from "../../src/domain/payments.ts";
+import { renderMessage } from "../../src/config/message-templates.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
@@ -67,11 +69,12 @@ async function oneVisit(vendors: { payments?: PaymentsProvider } = {}): Promise<
   return job;
 }
 
-/** Works the visit to its piece step, sends it, then the after photographs; answers the piece step. */
+/** Works the visit to its piece step, sends it, then the rest up to the outcome; answers the piece step. */
 async function toThePiece(job: Working, piece: object): Promise<Response> {
-  await job.workTo("consumables");
-  await job.post(path("consumables"), { items: [] }, "event-consumables-01");
+  await job.workTo("piece");
   const answer = await job.post(path("piece"), piece, "event-piece-01");
+  await job.post(path("checklist"), { done: [] }, "event-checklist-01");
+  await job.post(path("consumables"), { items: [] }, "event-consumables-01");
   await job.post(path("photos"), { phase: "after" }, "event-afterphotos-01");
   return answer;
 }
@@ -100,32 +103,57 @@ describe("the technician's card", () => {
       type: "first_fit",
       one_visit: true,
       badge: "at_visit",
-      // The first fit's, with the client's hair profile once the product is chosen and fitted (ADR 0106).
-      steps: ["before_photos", "checklist", "consumables", "piece", "profile", "after_photos", "outcome"],
+      // The first fit's, the client's choice first, with their hair profile once the product is fitted (ADR 0106).
+      steps: ["before_photos", "piece", "checklist", "consumables", "profile", "after_photos", "outcome"],
       products: [
         { tier: "standard", name: "First fit" },
         { tier: "natural", name: "Mane Man Natural" },
       ],
       payment_link: null,
+      client_choice: null,
     });
     // The consultation's checklist, then the fit's: measure and explain, then fit.
     const checklist = (card.checklist as { id: string }[]).map((item) => item.id);
     expect(checklist.slice(0, 3)).toEqual(["scalp_checked", "measurements_taken", "options_shown"]);
     expect(checklist).toContain("piece_set");
+    // FLD-37: the consultation's alone, for a client who decides against the fit.
+    const ifDeclined = (card.checklist_if_declined as { id: string }[]).map((item) => item.id);
+    expect(ifDeclined).toEqual(["scalp_checked", "measurements_taken", "options_shown"]);
     expect(JSON.stringify(card)).not.toContain("4500000");
   });
 
   it("takes the consultation's items on the checklist step, as well as the fit's", async () => {
     const job = await oneVisit();
-    await job.workTo("checklist");
+    await job.workTo("piece");
+    await job.post(path("piece"), { ...A_PIECE, product: NATURAL.tier }, "event-piece-01");
     const answer = await job.post(path("checklist"), { done: ["measurements_taken", "piece_set"] }, "event-cl-01");
     expect(answer.status).toBe(202);
+  });
+
+  // FLD-37: the choice comes first, so the checklist after it knows whether anything is fitted.
+  it("takes the client's choice before the checklist, and says on the card what they chose", async () => {
+    const job = await oneVisit();
+    await job.workTo("piece");
+    const early = await job.post(path("checklist"), { done: ["scalp_checked"] }, "event-cl-early");
+    expect(early.status).toBe(409);
+    expect(await early.json()).toMatchObject({ error: { code: "out_of_order", fields: ["piece"] } });
+
+    await job.post(path("piece"), { declined: true }, "event-piece-01");
+    expect(await (await job.get(`/api/tech/jobs/${JOB}`)).json()).toMatchObject({ client_choice: { declined: true } });
+    expect((await job.post(path("checklist"), { done: ["scalp_checked"] }, "event-cl-01")).status).toBe(202);
   });
 
   it("calls any other first fit by its own steps, with no products and its own badge", async () => {
     const job = await working("first_fit");
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json();
-    expect(card).toMatchObject({ one_visit: false, badge: "prepaid", products: [], payment_link: null });
+    expect(card).toMatchObject({
+      one_visit: false,
+      badge: "prepaid",
+      products: [],
+      payment_link: null,
+      client_choice: null,
+      checklist_if_declined: [],
+    });
   });
 });
 
@@ -139,8 +167,7 @@ describe("the piece step of a one visit", () => {
 
   it("refuses a product not offered on the visit's day, and a piece with none", async () => {
     const job = await oneVisit();
-    await job.workTo("consumables");
-    await job.post(path("consumables"), { items: [] }, "event-consumables-01");
+    await job.workTo("piece");
     for (const [body, field] of [
       [{ ...A_PIECE, product: "platinum" }, "product"],
       [A_PIECE, "product"],
@@ -372,6 +399,20 @@ describe("closing a one visit the client decided against", () => {
     expect(summary.startsWith("Consultation and fit · ")).toBe(true);
     expect(summary).toContain("No piece: the client decided against the fit");
   });
+
+  // FLD-37: FSM's record read "Checklist 9/9: … Adhesive applied, Piece set and pressed … · No piece".
+  it("counts FSM's checklist against the consultation's alone, and names nothing of the fit", async () => {
+    const job = await oneVisit();
+    await job.workTo("piece");
+    await job.post(path("piece"), { declined: true }, "event-piece-01");
+    const ticked = ["scalp_checked", "measurements_taken", "options_shown", "piece_set"];
+    expect((await job.post(path("checklist"), { done: ticked }, "event-checklist-01")).status).toBe(202);
+
+    const visit = { id: JOB, fsmId: "ap-today", type: "first_fit" as const, oneVisit: true, personId: PERSON };
+    const summary = await summaryOf(env.DB, { ...visit, fsmContactId: "contact-1" }, { labelAsTest: false });
+    expect(summary).toContain("Checklist 3/3: ");
+    expect(summary).not.toContain("Piece set");
+  });
 });
 
 describe("Razorpay's word that a one visit's link is paid", () => {
@@ -450,6 +491,27 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     expect(await linkRow()).toMatchObject({ paid_at: "2026-09-22T08:57:15.000Z" });
     const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(tasks.filter((task) => task.group === "payment_owed")).toEqual([]);
+  });
+
+  // CP-54: the largest payment in the product was the only one we never confirmed.
+  it("queues the client's receipt once, however often the payment is told of, whatever their consent", async () => {
+    const linkId = await fittedAndClosed(createStubPayments());
+    await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-1");
+    await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-2");
+
+    const { results } = await env.DB.prepare(
+      "SELECT kind, subject_kind, subject_id, state FROM outbound_messages WHERE kind = 'link_paid'",
+    ).all();
+    expect(results).toEqual([{ kind: "link_paid", subject_kind: "appointment", subject_id: JOB, state: "queued" }]);
+    const composed = await composeLinkPaid(env.DB, JOB, PERSON);
+    expect(composed).toEqual({
+      template: "link_paid_v1",
+      params: ["Rohit", "Mane Man Natural hair system", "", "", "", "Rs. 45,000", LINK_REFERENCE],
+    });
+    expect("template" in composed && renderMessage(composed.template, composed.params)).toBe(
+      "Hello Rohit, thank you for your payment of Rs. 45,000 for your Mane Man Natural hair system, reference " +
+        `${LINK_REFERENCE}. Welcome to Mane Man. The receipt is in the app.`,
+    );
   });
 
   it("numbers a payment captured while the link waits after the link, never with the link's number", async () => {

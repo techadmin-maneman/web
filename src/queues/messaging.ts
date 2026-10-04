@@ -6,7 +6,8 @@
 // asked for at the gate, as the result template with a signed result link that
 // expires an hour after sending; a client's messages about their visits
 // (src/domain/visit-messages.ts) and the reminder of their next one
-// (src/domain/next-visit.ts); the referral, waitlist and launch messages; the
+// (src/domain/next-visit.ts); the receipt for a hair system paid by its link
+// (src/domain/payment-links.ts); the referral, waitlist and launch messages; the
 // booking form's notices to a number we know; ops' rejection of a request to
 // delete an account; and the answer to a STOP reply, each composed where its
 // subject lives. A reminder or the launch alert ends with the signed link that
@@ -41,6 +42,7 @@ import { composeCreditsExpiring } from "../domain/credit-reminders.ts";
 import { composeDeletionRejected } from "../domain/deletion.ts";
 import { composeBookingRefunded } from "../domain/held-bookings.ts";
 import { composeNextServiceReminder } from "../domain/next-visit.ts";
+import { composeLinkPaid } from "../domain/payment-links.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
 import { composeSiteNotice, isSiteNoticeKind } from "../domain/site-notices.ts";
@@ -235,6 +237,7 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
     return composeNextServiceReminder(db, row.subject_id, row.person_id, days);
   }
   if (row.kind === "booking_refunded") return composeBookingRefunded(db, row.subject_id, row.person_id);
+  if (row.kind === "link_paid") return composeLinkPaid(db, row.subject_id, row.person_id);
   if (row.kind === "friend_fitted") return composeFriendFitted(db, row.subject_id, row.person_id);
   if (row.kind === "friend_credited") return composeFriendCredited(db, row.subject_id, row.person_id);
   if (row.kind === "referral_rejected") return composeReferralRejected(db, row.subject_id, row.person_id);

@@ -263,7 +263,14 @@ describe("GET /api/payments, what else a visit took", () => {
       // Charged before a charge recorded what it took, so there is nothing to dispute.
       expect.objectContaining({
         id: PAY_OLD,
-        no_show: { decision: "charged", waited_minutes: 16, charge: null, dispute: null, disputable: false },
+        no_show: {
+          decision: "charged",
+          waited_minutes: 16,
+          charge: null,
+          dispute: null,
+          disputable: false,
+          dispute_closed_at: null,
+        },
       }),
     ]);
   });
