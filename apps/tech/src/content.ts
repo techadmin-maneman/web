@@ -22,6 +22,7 @@ export const signIn = {
     code_expired: "That code no longer works. Send the code again.",
     invalid_request: "Check the number and the code.",
     rate_limited: "Too many codes for this number today. Ask ops.",
+    sign_in_stopped: "Ops have stopped sign-in on your number. Ask them to let you back in.",
     busy: "Codes are not going out just now. Try again shortly.",
     offline: "You are offline. Connect, then sign in.",
     unknown: "That did not go through. Try again.",
@@ -341,7 +342,7 @@ export const notHome = {
     away: (km: string) => `You are ${km} from the address.`,
     // PLACEHOLDER: the board draws a distance; an address with no coordinates has none (ADR 0036).
     unmeasured: "We could not measure how far you are from the address.",
-    body: "Get to the door and tap again. No-show cannot be recorded from here.",
+    body: "Get to the door and tap again. At the door and still refused? Ask ops to let you check in. No-show cannot be recorded from here.",
     action: "Try again",
   },
   waiting: {

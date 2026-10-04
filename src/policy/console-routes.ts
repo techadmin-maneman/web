@@ -57,6 +57,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // Free to the client unless ops apply the client's own terms, as an ops move is free: everyday work, not a waiver.
   "POST /api/visits/{id}/cancel": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/close": inOwnPlaces("operations", "act"),
+  "POST /api/visits/{id}/let-in": inOwnPlaces("operations", "act"),
   "GET /api/technicians": inOwnPlaces("operations", "view"),
   "GET /api/technicians/work": inOwnPlaces("operations", "view"),
   // Who signs in to the technician app, and so sees clients' addresses: access, so MANAGE.
@@ -68,6 +69,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/technicians/{id}/leave": inOwnPlaces("operations", "act"),
   "POST /api/technicians/{id}/leave/{leave}/cancel": inOwnPlaces("operations", "act"),
   "POST /api/technicians/{id}/devices/{device}/revoke": inOwnPlaces("operations", "act"),
+  "POST /api/technicians/{id}/allow-sign-in": inOwnPlaces("operations", "act"),
   // The central store is in no city, so a delivery into it needs a national grant.
   "GET /api/stock": inOwnPlaces("operations", "view"),
   "POST /api/stock/deliveries": need("operations", "act"),

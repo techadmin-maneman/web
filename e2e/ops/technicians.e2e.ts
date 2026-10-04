@@ -247,6 +247,26 @@ test("names each phone, says when it was last used, and whether it is signed in,
   await expect(faizan.getByText("No phone logged in.")).toBeVisible();
 });
 
+// FLD-25: a revoke stops him signing in on any phone, since his code reaches the lost phone too; ops let him back.
+test("says when a revoke stopped him signing in, and lets him in again", async ({ page }) => {
+  const [imran, ...others] = TECHNICIANS.technicians;
+  const stopped = {
+    ...TECHNICIANS,
+    technicians: [{ ...imran, sign_in_stopped_at: "2027-08-05T05:00:00.000Z" }, ...others],
+  };
+  await open(page, {
+    [READ_ROSTER]: json(stopped),
+    [`POST /api/technicians/${IMRAN}/allow-sign-in`]: json({ allowed: true }),
+  });
+  const main = await pageOf(page, "Imran Qureshi", "Phones");
+  await expect(main.getByText("Sign-in stopped since 5 Aug 2027, when a phone was revoked.")).toBeVisible();
+
+  const sent = page.waitForRequest((request) => request.url().endsWith(`/api/technicians/${IMRAN}/allow-sign-in`));
+  await main.getByRole("button", { name: "Let him sign in again" }).click();
+  await sent;
+  await expect(main.getByRole("status")).toHaveText("He can sign in again.");
+});
+
 test("offers no revoke on a phone that is revoked already", async ({ page }) => {
   await open(page);
   const main = await pageOf(page, "Imran Qureshi", "Phones");
@@ -257,7 +277,7 @@ test("asks before it revokes a phone, and says what a revoke does", async ({ pag
   await open(page);
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
-  await expect(main.getByText("The session ends, and the phone drops its cached jobs")).toBeVisible();
+  await expect(main.getByText("The session ends, the phone drops its cached jobs")).toBeVisible();
 
   const sent = page.waitForRequest((request) => request.url().endsWith(REVOKE) && request.method() === "POST");
   await main.getByRole("button", { name: "Revoke this phone" }).click();
@@ -642,7 +662,10 @@ test("lists the technicians switched off apart, and switches one back on", async
   await expect(main.getByRole("navigation", { name: /^Ravi Kumar:/ })).toBeHidden();
   roster.current = {
     ...TECHNICIANS,
-    technicians: [...TECHNICIANS.technicians, { ...RAVI, initials: "RK", devices: [], leave: [] }],
+    technicians: [
+      ...TECHNICIANS.technicians,
+      { ...RAVI, initials: "RK", sign_in_stopped_at: null, devices: [], leave: [] },
+    ],
     switched_off: [],
   };
   await main.getByRole("button", { name: "Switch Ravi Kumar back on" }).click();

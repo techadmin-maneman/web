@@ -187,7 +187,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0099_retention.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -221,6 +221,9 @@ Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_i
 | `fsm_note_written_at` | TEXT | yes |  |  |
 | `fsm_status` | TEXT | yes |  |  |
 | `fsm_modified_at` | TEXT | yes |  |  |
+| `checkin_waived_at` | TEXT | yes |  |  |
+| `checkin_waived_by` | TEXT | yes |  |  |
+| `checkin_waived_reason` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -279,7 +282,7 @@ Made by `0090_board_version.sql`.
 
 Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 
-Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance.sql`, `0037_cron_indexes.sql`, `0057_consent_sources_and_checkin_coordinates.sql`, `0085_checkin_job_event.sql`, `0099_retention.sql`.
+Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance.sql`, `0037_cron_indexes.sql`, `0057_consent_sources_and_checkin_coordinates.sql`, `0085_checkin_job_event.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -297,6 +300,7 @@ Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance
 | `lat` | REAL | yes |  |  |
 | `lng` | REAL | yes |  |  |
 | `job_event_id` | TEXT | yes |  | → `job_events.id` |
+| `waived_by` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1828,7 +1832,7 @@ Triggers: `technician_leave_board_added`, `technician_leave_board_changed`.
 
 The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1842,6 +1846,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_han
 | `mobile_e164` | TEXT | yes |  |  |
 | `hand_written` | INTEGER | no | `0` |  |
 | `city` | TEXT | yes |  | → `cities.name` |
+| `sign_in_stopped_at` | TEXT | yes |  |  |
 
 Indexes:
 

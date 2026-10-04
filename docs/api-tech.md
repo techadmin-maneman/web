@@ -139,6 +139,14 @@ Request body:
 }
 ```
 
+**403**: sign_in_stopped: ops revoked a phone of his, and have not yet let him sign in again
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **410**: code_expired: expired, used, or void after five wrong codes
 
 ```json
@@ -190,6 +198,14 @@ The technician's jobs on a date. Today and tomorrow in full; later dates only ti
 ```json
 {
   "$ref": "#/components/schemas/TechnicianJobs"
+}
+```
+
+**400**: invalid_request: a date before yesterday
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 
@@ -1003,6 +1019,7 @@ Request body:
             "terms_changed",
             "consent_required",
             "device_revoked",
+            "sign_in_stopped",
             "superseded",
             "out_of_order",
             "not_today",
@@ -1458,6 +1475,7 @@ Request body:
     "day": {
       "type": "string",
       "enum": [
+        "past",
         "today",
         "tomorrow",
         "later"
@@ -1695,6 +1713,7 @@ Request body:
     "day": {
       "type": "string",
       "enum": [
+        "past",
         "today",
         "tomorrow",
         "later"

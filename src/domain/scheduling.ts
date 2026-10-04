@@ -23,6 +23,7 @@
 // longer of its service's length and its booked window
 // (docs/decisions/0085-services-ops-can-edit.md).
 
+import { failedUniqueOn } from "../lib/d1-errors.ts";
 import {
   PAYMENT_GRACE_SECONDS,
   UNITS_PER_DAY,
@@ -594,8 +595,9 @@ export async function holdSlot(
       ]);
       return { id, service, date, window, technician, startUnit: start, price, expiresAt };
     } catch (error) {
-      // Another hold took this technician's time between the look and the write: the next one, then.
-      if (!(error instanceof Error && error.message.includes("UNIQUE"))) throw error;
+      // Another hold took this technician's time between the look and the write: the next one, then. Any other
+      // failure, a new number's person written twice at once say, is not a lost window.
+      if (!failedUniqueOn(error, "slot_claims")) throw error;
     }
   }
   return null;
@@ -652,7 +654,7 @@ export async function retakeSlot(db: D1Database, hold: HeldTime, now: Date): Pro
     ]);
   } catch (error) {
     // The time went to another hold between the look and the write; or a try alongside took it back first.
-    if (!(error instanceof Error && error.message.includes("UNIQUE"))) throw error;
+    if (!failedUniqueOn(error, "slot_claims")) throw error;
   }
   const after = await db.prepare("SELECT state FROM slot_holds WHERE id = ?1").bind(hold.id).first<{ state: string }>();
   return after !== null && after.state !== "released";

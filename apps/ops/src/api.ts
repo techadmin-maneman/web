@@ -405,8 +405,12 @@ export const api = {
   /** What each of them has finished, over the period the route rules; the roster above carries no figure. */
   technicianWork: () => client.get("/api/technicians/work"),
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
+  /** Let the technician check in to the visit wherever his phone puts him, with why. */
+  letIn: (id: string, reason: string) => client.post("/api/visits/{id}/let-in", { path: { id }, body: { reason } }),
   revokeDevice: (id: string, deviceId: string) =>
     client.post("/api/technicians/{id}/devices/{device}/revoke", { path: { id, device: deviceId } }),
+  /** After a revoke stopped him signing in. */
+  allowSignIn: (id: string) => client.post("/api/technicians/{id}/allow-sign-in", { path: { id } }),
   /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0062). */
   standingLeave: (id: string) => client.get("/api/technicians/{id}/leave", { path: { id } }),
   recordLeave: (id: string, leave: { from: string; to: string; note: string | null }) =>

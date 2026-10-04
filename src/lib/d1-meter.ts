@@ -5,6 +5,8 @@
 // It also times how long the work waited on D1. Each statement is a round trip to the database's region and back,
 // so statements sent together cost one wait, and statements awaited one after another cost one each.
 
+import { retryTransient } from "./d1-retry.ts";
+
 export interface D1Usage {
   readonly rowsRead: number;
   readonly rowsWritten: number;
@@ -95,18 +97,24 @@ class Tally {
   }
 }
 
+/** A statement that only reads, which is safe to send again after a failure that passes by itself. */
+const readsOnly = (query: string): boolean =>
+  /^\s*(SELECT|WITH)\b/i.test(query) && !/\b(INSERT|UPDATE|DELETE)\b/i.test(query);
+
 class MeteredStatement implements D1PreparedStatement {
   /** The statement D1 itself made, which a batch must be given. */
   readonly real: D1PreparedStatement;
   private readonly tally: Tally;
+  private readonly reads: boolean;
 
-  constructor(real: D1PreparedStatement, tally: Tally) {
+  constructor(real: D1PreparedStatement, tally: Tally, reads: boolean) {
     this.real = real;
     this.tally = tally;
+    this.reads = reads;
   }
 
   bind(...values: unknown[]): D1PreparedStatement {
-    return new MeteredStatement(this.real.bind(...values), this.tally);
+    return new MeteredStatement(this.real.bind(...values), this.tally, this.reads);
   }
 
   async run<T = Record<string, unknown>>(): Promise<D1Result<T>> {
@@ -116,7 +124,8 @@ class MeteredStatement implements D1PreparedStatement {
   }
 
   async all<T = Record<string, unknown>>(): Promise<D1Result<T>> {
-    const result = await this.tally.timed(() => this.real.all<T>());
+    const send = () => this.real.all<T>();
+    const result = await this.tally.timed(() => (this.reads ? retryTransient(send) : send()));
     this.tally.add(result);
     return result;
   }
@@ -164,7 +173,7 @@ class MeteredD1 implements D1Database {
   }
 
   prepare(query: string): D1PreparedStatement {
-    return new MeteredStatement(this.real.prepare(query), this.tally);
+    return new MeteredStatement(this.real.prepare(query), this.tally, readsOnly(query));
   }
 
   batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]> {
@@ -197,7 +206,7 @@ class MeteredSession implements D1DatabaseSession {
   }
 
   prepare(query: string): D1PreparedStatement {
-    return new MeteredStatement(this.real.prepare(query), this.tally);
+    return new MeteredStatement(this.real.prepare(query), this.tally, readsOnly(query));
   }
 
   batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]> {

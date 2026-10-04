@@ -66,6 +66,7 @@
                   "terms_changed",
                   "consent_required",
                   "device_revoked",
+                  "sign_in_stopped",
                   "superseded",
                   "out_of_order",
                   "not_today",
@@ -476,6 +477,7 @@
           "day": {
             "type": "string",
             "enum": [
+              "past",
               "today",
               "tomorrow",
               "later"
@@ -698,6 +700,7 @@
           "day": {
             "type": "string",
             "enum": [
+              "past",
               "today",
               "tomorrow",
               "later"
@@ -2737,6 +2740,16 @@
               }
             }
           },
+          "403": {
+            "description": "sign_in_stopped: ops revoked a phone of his, and have not yet let him sign in again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "410": {
             "description": "code_expired: expired, used, or void after five wrong codes",
             "content": {
@@ -2818,6 +2831,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TechnicianJobs"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a date before yesterday",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

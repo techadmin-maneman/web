@@ -1180,6 +1180,10 @@ WHERE appointment_id = '<visit id>' ORDER BY received_at;
 
 ---
 
+### A technician at the door who cannot check in
+
+His phone says how far it puts him from the address, and refuses beyond the check-in radius (Settings · Rules). Where he is at the door and still refused, the address's pin is usually the building's or the society's gate. Open the visit on the dispatch board, press **Let him check in**, and say why: his next tap lands, for that visit only. The distance is still recorded, and a no-show's evidence shows that ops let him in, and why. Correct the address's pin on the client's page for next time.
+
 ## Someone says a screen failed
 
 The console and the technician app show a **Ref** under a page that did not load, and under a technician's step the API refused: the first eight characters of the call's request ID, and "Copy" copies the whole ID. Every line mm-api logged of that call carries it as `request_id`. In Workers Logs (the `mm-api` Worker → Logs), filter on `request_id` starting with the Ref, or equal to the copied ID. A change in the console that failed shows no Ref: every console call is in `audit_log` under the person, with its `request_id`.
@@ -1334,6 +1338,10 @@ Blackout days are days no visit is offered, in the app or from the site. Ops add
 ---
 
 ## Restoring D1
+
+**Never run `d1 export` against a live database in working hours.** An export holds the database while it runs: on 2 October 2026 one on staging failed a queue batch and a client's request. To look at the data, use Time Travel to a copy (below), or query it.
+
+A read D1 fails for a reason that passes by itself (a lost connection, its storage reset, an export holding it) is tried twice more, a moment apart (`src/lib/d1-retry.ts`); a page that still fails answers 503 "unavailable" and is logged as `d1_unavailable`, not as an error of ours.
 
 D1 Time Travel can put the database back to any minute in the last seven days (the Workers Free plan's window); `time-travel info` hands out bookmarks older than that, but they are not promised. A restore overwrites the whole database in place, cancels the queries running at the time, and undoes everything written since that minute. D1 is the only record of much of it, and the rest is in systems that will not send it again. So take the smallest repair that will do:
 

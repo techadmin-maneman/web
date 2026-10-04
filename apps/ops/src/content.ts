@@ -189,7 +189,29 @@ export const dispatch = {
     empty: "Nothing is waiting for a technician.",
   },
   /** Board A3: the drawer a block opens. */
+  /** PLACEHOLDER, every word: letting a technician check in past the geofence, which no board draws. */
+  letIn: {
+    title: (technician: string) => `Let ${technician} check in`,
+    note: "He can check in wherever his phone puts him, for this visit only. The distance is still recorded, with your reason.",
+    reason: "Why",
+    reasonHint:
+      "Kept with the visit, and shown with a no-show's evidence: say what you know, such as the pin being at the society gate.",
+    confirm: "Let him check in",
+    sending: "Letting him in",
+    close: "Close",
+    done: (technician: string) => `${technician} can check in now: ask him to tap I have arrived again.`,
+    errors: {
+      invalid_request: "Say why.",
+      not_changeable: "He has checked in already, or the visit is closed or cancelled. Reload the board.",
+      not_found: "That visit is not on the board any more. Reload it.",
+      not_permitted: NOT_PERMITTED,
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Please try again.",
+    } as Readonly<Record<string, string>>,
+  },
   drawer: {
+    /** The way past the geofence, for a visit today he has not checked in to. */
+    letIn: "Let him check in",
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
@@ -322,6 +344,8 @@ export const dispatch = {
     /** PLACEHOLDER: a visit ops cancelled, or closed by hand, from its drawer. */
     cancelled: (job: string) => `${job}'s visit is cancelled.`,
     closedByHand: (job: string) => `${job}'s visit is closed.`,
+    // PLACEHOLDER: the board draws no way past the geofence.
+    letIn: (technician: string, job: string) => `${technician} can check in to ${job}'s visit now.`,
     /**
      * A refusal names the technician and the window it asked for: the clash check
      * runs before anything is written (ADR 0034), and the API answers with the
@@ -1442,6 +1466,8 @@ export const noShows = {
      * charge a client on these facts and nothing was measured here at all.
      */
     unmeasured: "Not measured · the address has no location",
+    /** PLACEHOLDER: ops let him check in past the fence for this visit, from the dispatch board, with their reason. */
+    letIn: (reason: string | null) => (reason === null ? "ops let him check in" : `ops let him check in: ${reason}`),
     /**
      * What became of the reminder, dated, since it goes the evening before. A
      * reminder never sent is not one sent and never delivered.
@@ -1951,7 +1977,13 @@ export const technicians = {
     revoking: "Revoking",
     revoked: (date: string) => `Revoked ${date}`,
     /** PLACEHOLDER: the board draws no revoke, so nothing writes what one does. */
-    warning: "The session ends, and the phone drops its cached jobs when it is next online.",
+    warning:
+      "The session ends, the phone drops its cached jobs when it is next online, and he cannot sign in again until you let him.",
+    // PLACEHOLDER: the board draws no revoke, so nothing writes what follows one.
+    stopped: (date: string) => `Sign-in stopped since ${date}, when a phone was revoked.`,
+    allow: "Let him sign in again",
+    allowing: "Letting him in",
+    allowed: "He can sign in again.",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "That phone is not this technician's any more. Reload to see the roster as it stands.",
@@ -2400,6 +2432,7 @@ export const settings = {
         first_fit_to_book: "First fit to book, after the consultation",
         horizon: "How far ahead a visit may be booked",
         invoice_prompt: "A new invoice on Home",
+        replacement_order_lead: "Replacement order, before the hair system is due",
       },
       // PLACEHOLDER: what a referral earns, each side apart (docs/decisions/0107-referral-rewards-in-the-console.md).
       referral_reward: {

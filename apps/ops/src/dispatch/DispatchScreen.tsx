@@ -38,6 +38,7 @@ import {
 } from "../api.ts";
 import { CancelVisit } from "../clients/CancelVisit.tsx";
 import { CloseVisit } from "../clients/CloseVisit.tsx";
+import { LetIn } from "./LetIn.tsx";
 import { Shell } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess, type Access } from "../lib/access.ts";
@@ -51,6 +52,7 @@ import { dispatchAsked } from "../route.ts";
 import {
   blockOn,
   changeOf,
+  mayLetIn,
   idOf,
   nameOf,
   personOf,
@@ -204,10 +206,10 @@ function staleWords(job: Job, code: string, now: Board | null): string {
 /** Refusals that mean the job is no longer as the board had it: it is let go, and the board read again. */
 const STALE = new Set(["superseded", "not_found", "in_progress"]);
 
-/** A visit being cancelled or closed by hand, in its own panel, opened from its drawer. */
+/** A visit being cancelled, closed by hand, or its technician let in past the geofence, in its own panel. */
 interface Changing {
   readonly job: BlockJob;
-  readonly change: VisitChange;
+  readonly change: VisitChange | "let_in";
 }
 
 /** The change a block's visit takes now, if the person's access reaches it. */
@@ -221,6 +223,9 @@ function changeFor(job: BlockJob, access: Access): VisitChange | null {
 /** What a cancel or a close by hand did, over the board once its panel closes. */
 function changedNotice(changing: Changing): Notice {
   const name = nameOf(changing.job);
+  if (changing.change === "let_in") {
+    return { tone: "done", text: dispatch.landing.letIn(changing.job.technician.name, name), call: null };
+  }
   const text = changing.change === "cancel" ? dispatch.landing.cancelled(name) : dispatch.landing.closedByHand(name);
   return { tone: "done", text, call: null };
 }
@@ -228,6 +233,7 @@ function changedNotice(changing: Changing): Notice {
 function ChangePanel({ changing, onClose }: { changing: Changing; onClose: (changed: boolean) => void }) {
   const { job, change } = changing;
   const name = job.block.person?.name ?? nameOf(job);
+  if (change === "let_in") return <LetIn visitId={idOf(job)} technician={job.technician.name} onClose={onClose} />;
   if (change === "cancel") return <CancelVisit visitId={idOf(job)} name={name} onClose={onClose} />;
   return <CloseVisit visitId={idOf(job)} name={name} date={job.date} onClose={onClose} />;
 }
@@ -533,6 +539,15 @@ export function DispatchScreen() {
             setNotice(null);
             setChanging({ job: opened, change });
           }}
+          onLetIn={
+            mayLetIn(opened.block, Date.now()) && access.mayCall("POST /api/visits/{id}/let-in")
+              ? () => {
+                  setOpened(null);
+                  setNotice(null);
+                  setChanging({ job: opened, change: "let_in" });
+                }
+              : null
+          }
         />
       )}
       {changing !== null && <ChangePanel changing={changing} onClose={(done) => void changed(done)} />}

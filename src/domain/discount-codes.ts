@@ -7,6 +7,7 @@
 // keeping its time with nothing paid, no longer stands. Only a use that stands counts against its code's limits, or
 // takes money off.
 
+import { failedUniqueOn } from "../lib/d1-errors.ts";
 import {
   CODE_ALPHABET,
   COVERABLE,
@@ -121,7 +122,7 @@ export async function makeCodes(db: D1Database, input: NewCodes, change: Change)
       await db.batch(codeStatements(db, codes, input, change));
       return { kind: "made", codes };
     } catch (error) {
-      if (!(error instanceof Error && error.message.includes("UNIQUE"))) throw error;
+      if (!failedUniqueOn(error, "discount_codes")) throw error;
       if (input.code !== null) return { kind: "code_exists" };
     }
   }

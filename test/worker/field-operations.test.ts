@@ -315,6 +315,36 @@ describe("checking in", () => {
     expect((await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01")).status).toBe(409);
   });
 
+  // FLD-24: a building pin far from its door blocked the whole job, and ops had no lever but the radius for everyone.
+  it("passes outside the radius once ops let him in, keeping the distance and naming who let him", async () => {
+    const refused = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, DOWN_THE_ROAD, "event-far-01");
+    expect((await refused.json<{ passed: boolean }>()).passed).toBe(false);
+
+    const noReason = await opsPost(`/api/visits/${TODAY_JOB}/let-in`, { reason: "  " });
+    expect(noReason.status).toBe(400);
+    const letIn = await opsPost(`/api/visits/${TODAY_JOB}/let-in`, { reason: "The pin is at the society gate" });
+    expect(letIn.status).toBe(200);
+
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, DOWN_THE_ROAD, "event-far-02");
+    const body = await answer.json<{ passed: boolean; distance_m: number }>();
+    expect(body.passed).toBe(true);
+    expect(body.distance_m).toBeGreaterThan(2000);
+    const rows = await env.DB.prepare(
+      "SELECT passed, waived_by FROM checkins WHERE appointment_id = ?1 ORDER BY created_at, passed",
+    )
+      .bind(TODAY_JOB)
+      .all();
+    expect(rows.results).toEqual([
+      { passed: 0, waived_by: null },
+      { passed: 1, waived_by: expect.any(String) as string },
+    ]);
+    expect((await opsPost(`/api/visits/${TODAY_JOB}/let-in`, { reason: "Again" })).status).toBe(409);
+    const audited = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM audit_log WHERE action = 'visit.checkin_waive'",
+    ).first();
+    expect(audited).toEqual({ n: 1 });
+  });
+
   it("passes inside it, and opens the no-show wait", async () => {
     const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-near-01");
     const body = await answer.json<{ passed: boolean; distance_m: number; wait_ends_at: string }>();
@@ -1656,5 +1686,26 @@ describe("a revoked phone", () => {
       .bind(DEVICE)
       .first<{ wiped_at: string | null }>();
     expect(device?.wiped_at).toBe(NOW.toISOString());
+  });
+
+  it("stops him signing in, which the roster shows until ops let him in again", async () => {
+    await opsPost(`/api/technicians/${IMRAN}/devices/${DEVICE}/revoke`, {});
+    const roster = async () =>
+      (
+        await (
+          await request(ops, "/api/technicians", {}, bindings())
+        ).json<{ technicians: { id: string; sign_in_stopped_at: string | null }[] }>()
+      ).technicians.find((technician) => technician.id === IMRAN)?.sign_in_stopped_at;
+    expect(await roster()).toBe(NOW.toISOString());
+
+    const allowed = await opsPost(`/api/technicians/${IMRAN}/allow-sign-in`, {});
+    expect(allowed.status).toBe(200);
+    expect(await allowed.json()).toEqual({ allowed: true });
+    expect(await roster()).toBeNull();
+    expect((await opsPost(`/api/technicians/${IMRAN}/allow-sign-in`, {})).status).toBe(404);
+    const audited = await env.DB.prepare(
+      "SELECT action FROM audit_log WHERE action = 'technician.allow_sign_in'",
+    ).all();
+    expect(audited.results).toHaveLength(1);
   });
 });

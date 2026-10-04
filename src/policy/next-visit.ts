@@ -37,6 +37,8 @@ export const NEXT_VISIT_DAY_KEYS = [
   "horizon",
   // How long a newly issued invoice is Home's prompt (open point 46).
   "invoice_prompt",
+  // Before a hair system falls due, the Replacement order task: time to order one made to measure.
+  "replacement_order_lead",
 ] as const;
 export type NextVisitDayKey = (typeof NEXT_VISIT_DAY_KEYS)[number];
 export type NextVisitDays = Readonly<Record<NextVisitDayKey, number>>;
@@ -50,6 +52,8 @@ export const NEXT_VISIT_DAYS: NextVisitDays = {
   first_fit_to_book: 7,
   horizon: 45,
   invoice_prompt: 14,
+  // The owner's supplier takes about a month to make one (the 2 Oct audit, FLD-41).
+  replacement_order_lead: 30,
 };
 
 /** What ops may set each figure to. */
@@ -64,6 +68,7 @@ export const NEXT_VISIT_DAY_BOUNDS: Readonly<Record<NextVisitDayKey, { readonly 
     // Never shorter than the date strip's fortnight (board C2), which the app always shows whole.
     horizon: { min: 14, max: 90 },
     invoice_prompt: { min: 1, max: 60 },
+    replacement_order_lead: { min: 1, max: 90 },
   };
 
 /** The kinds of visit the app offers next: the first fit after a consultation, then a service or a replacement. */

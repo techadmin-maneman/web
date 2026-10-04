@@ -14,17 +14,26 @@ export const RULES = [
   "A job shows a Prepaid or Credit badge only, and no API response to a technician carries an amount.",
   // Ruled by the owner on 27 September 2026 (docs/open-points.md, item 92).
   "the other technician's first name may reach the phone",
+  // The 2 Oct audit (FLD-18, PS-09): a card that never locked again kept every past client readable on a lost phone.
+  "A card locks again at the end of the day after its visit, and the list reads no date before yesterday.",
 ] as const;
 
 /** Where a job sits on the technician's list. */
-export type JobDay = "today" | "tomorrow" | "later";
+export type JobDay = "past" | "today" | "tomorrow" | "later";
 
 export function jobDay(windowStart: Date, now: Date): JobDay {
   const today = indiaDate(now);
   const date = indiaDate(windowStart);
+  if (date < today) return "past";
   if (date === today) return "today";
   return date === addDays(today, 1) ? "tomorrow" : "later";
 }
+
+/**
+ * Whether a technician's list may be read for the date: none before yesterday, kept for a phone whose clock is
+ * behind. Dates ahead show only time, type and sector until the day before.
+ */
+export const listableDate = (date: string, now: Date): boolean => date >= addDays(indiaDate(now), -1);
 
 /**
  * The hour in India the day-before WhatsApp goes at (docs/decisions/0047-visit-messages.md): 6 pm, as the owner
@@ -53,9 +62,16 @@ export const UNLOCK_HOUR = DAY_BEFORE_REMINDER_HOUR;
 export const unlocksAt = (windowStart: Date, hour: number = UNLOCK_HOUR): Date =>
   indiaInstant(addDays(indiaDate(windowStart), -1), `${String(hour).padStart(2, "0")}:00`);
 
-/** Whether the address, access notes and client card are unlocked yet. */
+/**
+ * When a job locks again: the end of the day after its visit. A day to finish, close and send what the phone still
+ * holds, after which a lost phone, or a technician gone, can no longer read the client's door, number or profile.
+ * The phone's writes name the job and need no card, so work it still holds goes through after.
+ */
+export const relocksAt = (windowStart: Date): Date => indiaInstant(addDays(indiaDate(windowStart), 2), "00:00");
+
+/** Whether the address, access notes and client card are open: from the day before the visit to a day after it. */
 export const unlocked = (windowStart: Date, now: Date, hour: number = UNLOCK_HOUR): boolean =>
-  now.getTime() >= unlocksAt(windowStart, hour).getTime();
+  now.getTime() >= unlocksAt(windowStart, hour).getTime() && now.getTime() < relocksAt(windowStart).getTime();
 
 /**
  * The only money a technician's job carries: a badge, never an amount. The
