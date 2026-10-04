@@ -3,8 +3,8 @@
 // identity (docs/decisions/0031-access-and-audit.md). The console therefore
 // opens straight on a section: Tasks, or the first the person may open.
 //
-// The settings sections load the first time they open, so the console's first
-// load stays within its 150 KB budget (scripts/lib/spa-build.ts).
+// The settings sections and a technician's page load the first time they open, so
+// the console's first load stays within its 150 KB budget (scripts/lib/spa-build.ts).
 
 import { Fragment, lazy, Suspense, useEffect, type ComponentType } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
@@ -53,12 +53,16 @@ const PricesScreen = lazy(() => settingsPanels().then((module) => ({ default: mo
 const DiscountCodesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.DiscountCodesScreen })));
 const ServiceAreaScreen = lazy(() => settingsPanels().then((module) => ({ default: module.ServiceAreaScreen })));
 const StaffScreen = lazy(() => settingsPanels().then((module) => ({ default: module.StaffScreen })));
+const TechnicianScreen = lazy(() =>
+  loadOrReload(() => import("./technicians/TechnicianScreen.tsx")).then((module) => ({
+    default: module.TechnicianScreen,
+  })),
+);
 
 /** The screen each section of one page opens on. */
 const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   tasks: TasksScreen,
   dispatch: DispatchScreen,
-  technicians: TechniciansScreen,
   stock: StockScreen,
   grievances: GrievancesScreen,
   "number-changes": NumberChangesScreen,
@@ -78,6 +82,10 @@ function Page({ route, mayCall }: { route: Route; mayCall: MayCall }) {
   if (route.page === "clients") {
     if (route.clientId === null) return <FindClientScreen />;
     return <ClientScreen clientId={route.clientId} tab={route.tab} />;
+  }
+  if (route.page === "technicians") {
+    if (route.technicianId === null) return <TechniciansScreen />;
+    return <TechnicianScreen technicianId={route.technicianId} tab={route.tab} />;
   }
   const Screen = SCREENS[route.page];
   return <Screen />;

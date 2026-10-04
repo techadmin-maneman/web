@@ -2895,7 +2895,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -2985,7 +2985,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3315,7 +3315,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3415,7 +3415,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3515,7 +3515,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3615,7 +3615,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3715,7 +3715,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3815,7 +3815,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3905,7 +3905,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
