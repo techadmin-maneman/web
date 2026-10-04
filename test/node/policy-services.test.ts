@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 import { PRICE_TIER } from "../../src/config/ops-settings.ts";
 import { hasStandardService, STANDARD_TIER, VISIT_TYPES } from "../../src/config/visit-types.ts";
 import {
+  DESCRIPTION_LENGTH,
   isOffered,
+  isServiceDescription,
   namesMoreThanItsKind,
   retireRefusal,
   RULES,
@@ -56,6 +58,16 @@ describe("the services", () => {
       false,
       false,
     ]);
+  });
+
+  // BK-41, UX-27: a client choosing a hair system reads what sets each apart, in one line ops write.
+  it("describes a service in one line of up to 160 characters, or not at all", () => {
+    expect(isServiceDescription("Made for men who sweat.")).toBe(true);
+    expect(isServiceDescription("A".repeat(DESCRIPTION_LENGTH))).toBe(true);
+    expect(isServiceDescription("")).toBe(true);
+    expect(isServiceDescription("A".repeat(DESCRIPTION_LENGTH + 1))).toBe(false);
+    expect(isServiceDescription("Made for men\nwho sweat.")).toBe(false);
+    expect(isServiceDescription("Made for men\twho sweat.")).toBe(false);
   });
 
   it("keeps a kind with a standard service bookable: its last service never retired and priced cannot be retired", () => {

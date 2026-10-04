@@ -138,6 +138,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/blackouts/remove": need("admin", "manage"),
   "POST /api/services": need("admin", "manage"),
   "POST /api/services/{kind}/{tier}/name": need("admin", "manage"),
+  "POST /api/services/{kind}/{tier}/description": need("admin", "manage"),
   "POST /api/services/{kind}/{tier}/length": need("admin", "manage"),
   "POST /api/services/{kind}/order": need("admin", "manage"),
   "POST /api/services/{kind}/{tier}/retire": need("admin", "manage"),

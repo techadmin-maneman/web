@@ -2927,6 +2927,8 @@ export interface components {
             /** @description Its code within its kind, which booking it names. */
             tier: string;
             name: string;
+            /** @description The line ops wrote to read under its name; null for none. */
+            description: string | null;
             /** @description How long the visit is booked for. */
             minutes: number;
             price: components["schemas"]["Price"];

@@ -168,9 +168,10 @@ export function NotServedStep({ address, onSaved }: { address: Address; onSaved:
 
 /**
  * No board draws it: every service open to the client, when there is more than one, a kind at a time in the order
- * ops keep them, each with how long it takes and what it costs from the first day it can be booked (ADR 0085). The
- * services are native radio buttons of one name, drawn as the window step's rows: one choice among them all, one
- * tab stop, and the arrow keys move between them. `before`: the steps the sheet will take before the date.
+ * ops keep them, each with the line ops wrote for it, how long it takes and what it costs from the first day it can
+ * be booked (ADR 0085). The services are native radio buttons of one name, drawn as the window step's rows: one
+ * choice among them all, one tab stop, and the arrow keys move between them. `before`: the steps the sheet will take
+ * before the date.
  */
 export function ServiceStep(props: {
   before: number;
@@ -208,6 +209,9 @@ export function ServiceStep(props: {
                     />
                     <span>
                       <span className={styles.windowName}>{service.name}</span>
+                      {service.description !== null && (
+                        <span className={styles.serviceLine}>{service.description}</span>
+                      )}
                       <span className={styles.windowTime}>{booking.length(service.minutes)}</span>
                     </span>
                     <span className={styles.serviceMoney}>
