@@ -41,7 +41,7 @@ export const LOCAL_SETTINGS: Settings = {
   leadWebhookUrl: null,
   heartbeatUrl: null,
   analyticsToken: null,
-  zoho: null,
+  zohoCrm: null,
   zohoBooks: null,
   razorpay: null,
   geocode: { apiKey: null, dailyCeiling: 200 },

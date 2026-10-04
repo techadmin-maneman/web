@@ -10,7 +10,7 @@ import type { PlacesReached } from "../policy/access.ts";
 import { launchDateAfter } from "../policy/launch.ts";
 import { namedArea } from "./area-names.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { consentGiven, latestConsentSql } from "./messages.ts";
+import { consentGiven, latestConsentSql } from "./consents.ts";
 import { joinPacedLine } from "./paced-line.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import { firstNameOf } from "../lib/names.ts";

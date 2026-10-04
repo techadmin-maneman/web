@@ -23,7 +23,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import { memberOfStaffOf } from "../http/audit.ts";
+import { staffMemberOf } from "../http/audit.ts";
 import { closeTask } from "../domain/task-closures.ts";
 import { assignTask, handBackTask, staffSeenSince, type TaskKey } from "../domain/task-owners.ts";
 import { outstandingTasks, overdueCount, READ_CAP, tasksWithin, type Task } from "../domain/tasks.ts";
@@ -320,7 +320,7 @@ export function registerOpsTasks(app: App): void {
     const { requestId } = c.var;
     const db = c.env.DB;
     if (!(await permits(c, taskNeed(key.group, "act")))) return c.json(errorBody("not_permitted", requestId), 403);
-    const staff = memberOfStaffOf(c);
+    const staff = staffMemberOf(c);
     if (staff === null) return noMemberOfStaff(c);
 
     const task = await taskOnTheBoard(c, key);
@@ -349,7 +349,7 @@ export function registerOpsTasks(app: App): void {
     const key = c.req.valid("param");
     const { reason } = c.req.valid("json");
     const { requestId } = c.var;
-    const staff = memberOfStaffOf(c);
+    const staff = staffMemberOf(c);
     if (staff === null) return noMemberOfStaff(c);
     if ((await taskOnTheBoard(c, key)) === null) return c.json(errorBody("not_found", requestId), 404);
 

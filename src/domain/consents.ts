@@ -90,3 +90,23 @@ export function recordConsent(db: D1Database, answer: ConsentAnswer): ConsentWri
     );
   return { id, statement };
 }
+
+/**
+ * The person's latest word on a purpose as a subquery: 1, 0, or NULL where they never gave one. `personColumn`
+ * names the person's ID in the query it sits in. Consents are append-only, so the latest one stands.
+ */
+export const latestConsentSql = (personColumn: string, purpose: NoticePurpose): string =>
+  `(SELECT c.granted FROM consents c WHERE c.person_id = ${personColumn} AND c.purpose = '${purpose}'
+    ORDER BY c.created_at DESC, c.rowid DESC LIMIT 1)`;
+
+/** Whether the person's latest word on this purpose is yes. */
+export async function consentGiven(db: D1Database, personId: string, purpose: NoticePurpose): Promise<boolean> {
+  const latest = await db
+    .prepare(
+      `SELECT granted FROM consents WHERE person_id = ?1 AND purpose = ?2
+       ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+    )
+    .bind(personId, purpose)
+    .first<{ granted: number }>();
+  return latest?.granted === 1;
+}

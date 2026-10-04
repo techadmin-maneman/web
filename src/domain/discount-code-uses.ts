@@ -78,7 +78,7 @@ type Checked = { readonly ok: true; readonly code: CodeRow } | { readonly ok: fa
  * (src/domain/requested-codes.ts), else now. Every entry point checks here, so a credit the client still holds is
  * spent before any code at each of them.
  */
-export async function checkCode(
+export async function checkDiscountCode(
   db: D1Database,
   text: string,
   booking: CodeBooking,
@@ -357,7 +357,7 @@ export async function enterOnVisit(
   if ((await codeOnVisit(db, visit.id)) !== null) return { kind: "already_discounted" };
 
   const typedAt = visit.one_visit === null ? null : await typedForVisit(db, visit.id, entry.text);
-  const checked = await checkCode(
+  const checked = await checkDiscountCode(
     db,
     entry.text,
     { type, onCredit: visit.on_credit === 1, moves: false },

@@ -8,7 +8,7 @@
 // stays on the dispute.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { openDisputes, ruleOnDispute } from "../domain/no-show-disputes.ts";
 import { MESSAGE_STATES } from "../domain/no-shows.ts";
@@ -103,7 +103,7 @@ export function registerOpsDisputes(app: App): void {
   });
 
   app.openapi(rulingRoute, async (c) => {
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const { id } = c.req.valid("param");
     const { ruling, reason } = c.req.valid("json");
     if (needsReason("no_show_dispute", ruling) && (reason ?? "") === "") {

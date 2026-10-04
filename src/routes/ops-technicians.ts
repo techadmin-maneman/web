@@ -32,7 +32,7 @@ import {
   rosterTechnician,
   type RosterTechnician,
 } from "../domain/technician-roster.ts";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { technicianWork, type TechnicianWork } from "../domain/technician-work.ts";
 import { isWithin, techniciansWithin } from "../domain/places.ts";
@@ -225,7 +225,7 @@ const reactivateRoute = createRoute({
 function auditOf(c: Context<AppEnv>, action: AuditAction, id: string, detail?: AuditEntry["detail"]): AuditEntry {
   return {
     surface: "ops",
-    actor: staffOf(c),
+    actor: actorOf(c),
     action,
     subject: { kind: "technician", id },
     requestId: c.var.requestId,

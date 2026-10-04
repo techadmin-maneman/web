@@ -8,7 +8,7 @@
 // The console's form for it arrives with the client page's other screens.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { ADJUST_REASONS, adjustCredits } from "../domain/credits.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -66,7 +66,7 @@ const adjustRoute = createRoute({
 
 export function registerOpsCredits(app: App): void {
   app.openapi(adjustRoute, async (c) => {
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const personId = c.req.valid("param").id;
     const { visits, reason } = c.req.valid("json");
     const db = c.env.DB;

@@ -6,7 +6,7 @@
 // A launch is audited, and its alerts leave in a paced line.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { listCities } from "../domain/cities.ts";
 import { reachBinding, withinReach } from "../domain/places.ts";
@@ -190,7 +190,7 @@ export function registerOpsWaitlist(app: App): void {
     if (launchOn !== undefined && launchesLater(launchOn, today)) {
       return c.json(errorBody("launch_in_future", c.var.requestId, ["launch_on"]), 400);
     }
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const { alerts } = await launchPincode(db, {
       pincode: launchedPincode(known),
       launchDay: launchOn ?? today,

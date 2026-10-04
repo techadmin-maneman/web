@@ -11,7 +11,7 @@
 
 import type { LossExtent } from "../config/booking.ts";
 import { recordConsent } from "./consents.ts";
-import type { Attribution } from "./leads.ts";
+import type { LeadAttribution } from "./leads.ts";
 import { recordEvent, type JobRow } from "./tryon.ts";
 
 /**
@@ -53,7 +53,7 @@ export interface NewClaim {
   readonly stage: LossExtent;
   /** The gate's notice the page showed. */
   readonly gateNotice: string;
-  readonly attribution: Attribution;
+  readonly attribution: LeadAttribution;
   readonly ipHash: string;
   readonly requestId: string;
   readonly now: Date;

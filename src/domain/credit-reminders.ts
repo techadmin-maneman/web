@@ -10,7 +10,7 @@ import { firstNameOf } from "../lib/names.ts";
 import { CREDIT_REMINDER_DAYS, creditReminderOwed } from "../policy/credit-reminders.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import { GRANT_REMAINING } from "./credits.ts";
-import { consentGiven } from "./messages.ts";
+import { consentGiven } from "./consents.ts";
 import { NO_VISITS_CONSENT, remindersFrom, type Composed } from "./visit-messages.ts";
 
 /** How many reminders a cron pass queues. */

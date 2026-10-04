@@ -173,7 +173,7 @@ export interface Settings {
    */
   readonly analyticsToken: string | null;
   /** Present when CRM_PROVIDER is "zoho". */
-  readonly zoho: ZohoSettings | null;
+  readonly zohoCrm: ZohoSettings | null;
   /** Present when BOOKS_PROVIDER is "zoho". */
   readonly zohoBooks: ZohoBooksSettings | null;
   /**
@@ -400,9 +400,9 @@ function checkZohoHosts(read: Reader, hosts: readonly (readonly [name: string, h
 }
 
 /** The CRM's and Books' Zoho clients, each only where its provider is zoho. */
-function readZohoClients(read: Reader, providers: ProvidersRead): Pick<Settings, "zoho" | "zohoBooks"> {
+function readZohoClients(read: Reader, providers: ProvidersRead): Pick<Settings, "zohoCrm" | "zohoBooks"> {
   return {
-    zoho: readZoho(read, providers),
+    zohoCrm: readZoho(read, providers),
     zohoBooks: readZohoBooks(read, providers),
   };
 }

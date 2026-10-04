@@ -31,7 +31,7 @@ import {
   type Place,
 } from "../domain/stock.ts";
 import { isWithin, techniciansWithin } from "../domain/places.ts";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -246,7 +246,7 @@ async function answer(c: Context<AppEnv>) {
   };
 }
 
-const written = (c: Context<AppEnv>) => ({ actor: staffOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
+const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 /** The fields that name a place outside the caller's cities; the central store is in none of them. */
 async function placesOutOfReach(c: Context<AppEnv>, places: Readonly<Record<string, Place>>): Promise<string[]> {

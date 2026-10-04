@@ -5,7 +5,7 @@
 // Each decision is audited under the member of staff who made it.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { reachBinding, withinReach } from "../domain/places.ts";
 import { decideHeldReferral } from "../domain/referral-grants.ts";
@@ -135,7 +135,7 @@ export function registerOpsReferrals(app: App): void {
       return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
     }
     if (!(await withinRouteReach(c, "referral", id))) return c.json(errorBody("not_found", requestId), 404);
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const now = deps.now();
     const outcome = await decideHeldReferral(c.env.DB, {
       id,
