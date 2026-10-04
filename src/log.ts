@@ -41,8 +41,17 @@ const PERSONAL_FIELDS = [
   // Where the person lives, and how a technician gets in.
   "line1",
   "line2",
+  "flat",
+  "floor",
+  "tower",
+  "building",
+  "landmark",
   "locality",
   "access_notes",
+  // What a client or a technician wrote about a visit, which may say anything of them.
+  "note",
+  "notes",
+  "client_note",
   // An address's coordinates, and a phone's own, which locate a client's home
   // as surely as the street does (the technician app's check-in, P2-M4).
   "lat",
@@ -99,12 +108,18 @@ const INDIAN_MOBILE = /(?<!\d)(?:\+?91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}(?!\d)/g;
 
 // A UUID's last block is twelve hex characters, so about one in 270 is ten digits
 // starting 6-9 and would be masked as a mobile number. An ID is never a number we
-// are hiding, so a string that is exactly a UUID is left alone.
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// are hiding, so each is set aside while a string is scrubbed, wherever it stands
+// in it: an alert's link to a client's page once went to ops broken.
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+/** What stands in for the n-th ID set aside: no pattern above can match it. */
+const HELD = /(\d+)/g;
 
 export function scrubString(value: string): string {
-  if (UUID.test(value)) return value;
-  return value.replace(EMAIL, REDACTED).replace(INDIAN_MOBILE, REDACTED);
+  const ids: string[] = [];
+  const held = value.replace(UUID, (id) => `${String(ids.push(id) - 1)}`);
+  const scrubbed = held.replace(EMAIL, REDACTED).replace(INDIAN_MOBILE, REDACTED);
+  return scrubbed.replace(HELD, (_held, index: string) => ids[Number(index)] ?? "");
 }
 
 /**

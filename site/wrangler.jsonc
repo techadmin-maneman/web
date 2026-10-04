@@ -33,7 +33,7 @@
       "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
       "workers_dev": false,
       "preview_urls": false,
-      "observability": { "enabled": true },
+      "observability": { "enabled": true, "logs": { "invocation_logs": false } },
       "routes": [{ "pattern": "staging.maneman.in/*", "zone_name": "maneman.in" }],
       "main": "./src/worker.ts",
       "assets": {
@@ -49,7 +49,7 @@
       "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
       "workers_dev": false,
       "preview_urls": false,
-      "observability": { "enabled": true },
+      "observability": { "enabled": true, "logs": { "invocation_logs": false } },
       "routes": [{ "pattern": "maneman.in/*", "zone_name": "maneman.in" }],
       "main": "./src/worker.ts",
       "assets": {

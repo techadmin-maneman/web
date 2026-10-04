@@ -7,8 +7,9 @@
 //
 // Evolution is set to send those two events only (runbook, step 12); any other
 // event is ignored. The body names the chat and carries the instance's API key,
-// so it is never logged. Nor is the token: the request log records the route's
-// pattern, not its path.
+// so our logger never writes it, nor the token: its request line records the route's
+// pattern, not its path, and Cloudflare's own line, which would, is off
+// (observability.logs.invocation_logs, wrangler.jsonc).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
