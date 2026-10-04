@@ -60,6 +60,7 @@
     "test/node/tech-piece-label.test.ts",
     "test/node/tech-profile-form.test.ts",
     "test/node/tech-progress.test.ts",
+    "test/node/tech-receipt.test.ts",
     "test/node/tech-sent-before.test.ts",
     "test/node/tech-set-aside.test.ts",
     "test/node/tech-store.test.ts",

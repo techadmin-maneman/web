@@ -12,7 +12,7 @@
 
 import { PARTIAL_REASONS } from "../config/job-sheet.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
-import { UNTOLD_MOVE } from "./dispatch.ts";
+import { UNTOLD_MOVE, UNTOLD_REASON } from "./dispatch.ts";
 import { LEAVE_ON_THE_DAY } from "./leave.ts";
 import { citiesOf, type PlacedId, type PlacedRecord } from "./places.ts";
 import { reachesCity, type PlacesReached } from "../policy/access.ts";
@@ -142,7 +142,7 @@ const FIRST_FIT_EPISODE = "s.consulted_start";
 const OUTSTANDING = [
   withOwners(`
   SELECT 'untold_move' AS "group", m.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         m.now_start AS detail, m.created_at AS since, NULL AS due_by, '' AS episode
+         m.now_start || ' ' || ${UNTOLD_REASON} AS detail, m.created_at AS since, NULL AS due_by, '' AS episode
     FROM appointments a JOIN dispatch_moves m ON m.appointment_id = a.id JOIN people pe ON pe.id = a.person_id
    WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
      AND m.now_start >= ?1 AND pe.erased_at IS NULL AND ${UNTOLD_MOVE}
