@@ -1,12 +1,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
-import { saltedHash } from "../../src/lib/hash.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
-import { LOCAL_SETTINGS, NOW, appFor, captureLogs, fakeDependencies, markDatabase, request } from "./helpers.ts";
-
-const SECRET = "a-razorpay-webhook-secret-for-tests";
-const RAZORPAY = { razorpay: { keyId: "rzp_test_abc", keySecret: "key-secret", webhookSecret: SECRET } };
+import { saltedHash } from "../../src/lib/hash.ts";
+import { LOCAL_SETTINGS, NOW, captureLogs, deliverRazorpay, markDatabase } from "./helpers.ts";
 
 function paymentEvent(event: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -57,19 +54,8 @@ function refundEvent(event: string, amount: number, id = "rfnd_1", payment?: Rec
   };
 }
 
-async function deliver(event: object, eventId: string, options: { secret?: string; settings?: object } = {}) {
-  const body = JSON.stringify(event);
-  const app = appFor("local", fakeDependencies(), { ...LOCAL_SETTINGS, ...(options.settings ?? RAZORPAY) });
-  return request(app, "/api/hooks/razorpay", {
-    method: "POST",
-    body,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Razorpay-Signature": await saltedHash(options.secret ?? SECRET, body),
-      "X-Razorpay-Event-Id": eventId,
-    },
-  });
-}
+const deliver = (event: object, eventId: string | null, options: { secret?: string; settings?: object } = {}) =>
+  deliverRazorpay(event, { eventId, ...options });
 
 const payment = () => env.DB.prepare("SELECT * FROM payments WHERE razorpay_payment_id = 'pay_1'").first();
 

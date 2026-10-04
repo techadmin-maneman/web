@@ -10,7 +10,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { bookUnbookedHolds, confirmBooking } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
-import { saltedHash } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
@@ -21,11 +20,11 @@ import {
   fakeDependencies,
   fakeQueue,
   leaseRefused,
-  LOCAL_SETTINGS,
   markDatabase,
   NOW,
   request,
   savedAddress,
+  deliverRazorpay,
 } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -85,24 +84,15 @@ interface Through {
  */
 async function webhook(event: string, eventId: string, payment: object, now: Date, through: Through = {}) {
   const payments = through.payments ?? createStubPayments();
-  const deps = fakeDependencies({ now: () => now, payments });
-  const settings = { ...LOCAL_SETTINGS, razorpay: { keyId: "rzp_test_money", keySecret: "s", webhookSecret: SECRET } };
-  const app = appFor("local", deps, settings, "public");
   const refund = through.refund === undefined ? {} : { refund: { entity: through.refund } };
-  const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment }, ...refund } });
-  const answer = await request(
-    app,
-    "/api/hooks/razorpay",
+  const answer = await deliverRazorpay(
+    { entity: "event", event, payload: { payment: { entity: payment }, ...refund } },
     {
-      method: "POST",
-      body,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Razorpay-Signature": await saltedHash(SECRET, body),
-        "X-Razorpay-Event-Id": eventId,
-      },
+      eventId,
+      deps: fakeDependencies({ now: () => now, payments }),
+      settings: { razorpay: { keyId: "rzp_test_money", keySecret: "s", webhookSecret: SECRET } },
+      bindings: { MESSAGE_QUEUE: fakeQueue(), ...(through.db === undefined ? {} : { DB: through.db }) },
     },
-    { MESSAGE_QUEUE: fakeQueue(), ...(through.db === undefined ? {} : { DB: through.db }) },
   );
   return { status: answer.status };
 }

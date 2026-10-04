@@ -9,7 +9,8 @@ import {
   type Providers,
   type Surface,
 } from "../../src/config/environments.ts";
-import type { Settings } from "../../src/config/settings.ts";
+import type { RazorpaySettings, Settings } from "../../src/config/settings.ts";
+import { saltedHash } from "../../src/lib/hash.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import { erasePerson, personWithMobile, type ErasureSummary } from "../../src/domain/erasure.ts";
@@ -394,4 +395,39 @@ export function captureLogs(): { lines: () => Record<string, unknown>[]; spies: 
     lines: () =>
       spies.flatMap((spy) => spy.mock.calls.map((call) => JSON.parse(String(call[0])) as Record<string, unknown>)),
   };
+}
+
+/** What the webhook tests sign Razorpay's events with. */
+export const RAZORPAY_WEBHOOK_SECRET = "a-razorpay-webhook-secret-for-tests";
+
+/** Razorpay's keys as the webhook tests set them. */
+export const RAZORPAY: RazorpaySettings = {
+  keyId: "rzp_test_abc",
+  keySecret: "key-secret",
+  webhookSecret: RAZORPAY_WEBHOOK_SECRET,
+};
+
+/** What a webhook delivery carries besides its event. */
+export interface RazorpayDelivery {
+  /** X-Razorpay-Event-Id; null sends none, as a delivery the webhook then knows by its body's hash. */
+  readonly eventId?: string | null;
+  /** What the body is signed with: the settings' webhook secret, unless the test forges a delivery. */
+  readonly secret?: string;
+  readonly deps?: Dependencies;
+  readonly settings?: Partial<Settings>;
+  readonly bindings?: Partial<Env>;
+}
+
+/** Razorpay's event, signed as Razorpay signs it, delivered to the webhook. */
+export async function deliverRazorpay(event: object, delivery: RazorpayDelivery = {}): Promise<Response> {
+  const settings = { razorpay: RAZORPAY, ...delivery.settings };
+  const app = appFor("local", delivery.deps ?? fakeDependencies(), settings, "public");
+  const body = JSON.stringify(event);
+  const secret = delivery.secret ?? settings.razorpay?.webhookSecret ?? RAZORPAY_WEBHOOK_SECRET;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Razorpay-Signature": await saltedHash(secret, body),
+  };
+  if (delivery.eventId !== null) headers["X-Razorpay-Event-Id"] = delivery.eventId ?? `evt_${crypto.randomUUID()}`;
+  return request(app, "/api/hooks/razorpay", { method: "POST", body, headers }, delivery.bindings);
 }

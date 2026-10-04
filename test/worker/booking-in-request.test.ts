@@ -18,7 +18,6 @@ import {
   type OpsCancel,
 } from "../../src/domain/visit-changes.ts";
 import { readOpsInputs } from "../../src/domain/ops-settings.ts";
-import { saltedHash } from "../../src/lib/hash.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubPayments, PaymentUnanswered, type PaymentsProvider } from "../../src/providers/payments.ts";
@@ -32,12 +31,12 @@ import {
   fakeDependencies,
   fakeQueue,
   LOCAL_CONFIG,
-  LOCAL_SETTINGS,
   markDatabase,
   NOW,
   request,
   savedAddress,
   type TestDependencies,
+  deliverRazorpay,
 } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -85,22 +84,14 @@ function call(
 
 /** Razorpay's signed webhook for a payment. */
 async function webhook(event: string, eventId: string, payment: object, deps: TestDependencies = fakeDependencies()) {
-  const settings = { ...LOCAL_SETTINGS, razorpay: { keyId: "rzp_test_ours", keySecret: "s", webhookSecret: SECRET } };
-  const app = appFor("local", deps, settings, "public");
-  const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment } } });
-  const answer = await request(
-    app,
-    "/api/hooks/razorpay",
+  const answer = await deliverRazorpay(
+    { entity: "event", event, payload: { payment: { entity: payment } } },
     {
-      method: "POST",
-      body,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Razorpay-Signature": await saltedHash(SECRET, body),
-        "X-Razorpay-Event-Id": eventId,
-      },
+      eventId,
+      deps,
+      settings: { razorpay: { keyId: "rzp_test_ours", keySecret: "s", webhookSecret: SECRET } },
+      bindings: bindings(),
     },
-    bindings(),
   );
   return answer.status;
 }
