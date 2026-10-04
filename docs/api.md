@@ -1452,6 +1452,13 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "Tag given at upload: the git commit SHA in remote environments."
     },
+    "commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The git commit the code was built from, baked in at upload. A secret change publishes an untagged version of the same code, so this still names what is live when version_tag is null. Null in a local run."
+    },
     "d1": {
       "type": "string",
       "enum": [
@@ -1475,6 +1482,7 @@ Razorpay's webhook: payments and refunds
     "environment",
     "version_id",
     "version_tag",
+    "commit",
     "d1",
     "cron_completed_at"
   ],

@@ -347,6 +347,8 @@ A WhatsApp copy carries a link to `/api/result/…`, which the Evolution bridge 
 
 Access applies the most specific path, so the rest of staging stays behind the founders' login.
 
+**Access matches a bypass path without regard to case; the Workers' routes do not.** `/API/Result/…` and `/api/HOOKS/…` reach a Worker with no login, and today answer 404, because no route has those spellings. So the bypassed paths stay as narrow as they are, and every route added beneath them must be one anyone may call: `/api/result/` and `/api/hooks/` (step 12) hold nothing but signed links and webhooks that check their own secret. A route that needs the login goes under another path. A dedicated hooks host with nothing else on it would close this for good. It needs a DNS record and an Access application, so it waits for the owner.
+
 ### 10b. Invite previews through Access (staging only)
 
 Added 27 September 2026. An invite is a link to `https://staging.maneman.in/r/<code>`, and WhatsApp draws its preview from that page's Open Graph tags and the card they name. Its crawler has no Access login, so on staging it met the sign-in instead, and every invite shared from staging arrived with no image. Where the phone can share files the app now sends the card itself as well (ADR 0048, amended 27 September 2026), but the link's preview still needs the crawler to reach the page and the card:

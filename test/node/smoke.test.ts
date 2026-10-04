@@ -113,7 +113,7 @@ describe("smoke suite", () => {
       "mm-api /api/health: after 2 attempt(s): version_id is v-2, expected v-3",
     ]);
     expect(await failures(smokeOptions("production", {}, { versionTag: "def" }))).toEqual([
-      "mm-api /api/health: after 2 attempt(s): version_tag is abc, expected def",
+      "mm-api /api/health: after 2 attempt(s): version_tag is abc and commit undefined, expected def",
     ]);
   });
 

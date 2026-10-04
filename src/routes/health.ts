@@ -4,6 +4,10 @@ import { ENVIRONMENTS } from "../config/environments.ts";
 import { lastCompletedAt } from "../domain/cron-runs.ts";
 import type { Logger } from "../log.ts";
 
+// The commit the bundle was built from, defined at upload (scripts/lib/release.ts); undeclared locally and in tests.
+declare const BUILD_SHA: string | undefined;
+const COMMIT = typeof BUILD_SHA === "string" ? BUILD_SHA : null;
+
 export const HealthSchema = z
   .object({
     status: z.enum(["ok", "unavailable"]),
@@ -13,6 +17,14 @@ export const HealthSchema = z
       .string()
       .nullable()
       .openapi({ description: "Tag given at upload: the git commit SHA in remote environments." }),
+    commit: z
+      .string()
+      .nullable()
+      .openapi({
+        description:
+          "The git commit the code was built from, baked in at upload. A secret change publishes an untagged version " +
+          "of the same code, so this still names what is live when version_tag is null. Null in a local run.",
+      }),
     d1: z.enum(["ok", "unmarked", "mismatch", "unreachable"]).openapi({
       description:
         "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database.",
@@ -58,6 +70,7 @@ export function registerHealth(app: App): void {
       environment: c.var.config.environment,
       version_id: version.id,
       version_tag: version.tag === "" ? null : version.tag,
+      commit: COMMIT,
       d1: identity.state,
       cron_completed_at: identity.state === "ok" ? await cronCompletedAt(c.env.DB, c.var.log) : null,
     };
