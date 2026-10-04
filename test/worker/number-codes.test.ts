@@ -107,7 +107,8 @@ describe("POST /api/number-code", () => {
     expect(deps.alerts).toEqual([
       'The daily form_code ceiling (1) is reached; the site\'s WhatsApp codes for the one visit and the try-on answer "busy" until midnight IST.',
     ]);
-    expect(await ceilingReached(env.DB, "login_code", 1, clock)).toBe(false);
+    const oneCode = { ...LOCAL_SETTINGS, login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } };
+    expect(await ceilingReached(env.DB, "login_code", { now: clock, settings: oneCode })).toBe(false);
   });
 
   it("proves no number where codes have no pepper", async () => {

@@ -7,15 +7,11 @@
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
-import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
+import { withinCeiling } from "../domain/ceilings.ts";
 import { saveAddress, type Address, type AddressPin, type GivenToOps } from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
-import { indiaDate } from "../lib/india-time.ts";
 import type { LookupFailure } from "../providers/geocode.ts";
 import { queueContactSync } from "./contact-sync.ts";
-
-/** Suggestions one asker may have in a day, so one cannot spend the global ceiling. */
-const SUGGESTIONS_PER_DAY = 120;
 
 /**
  * Counts one Google request against the day's ceiling; false, with one alert a
@@ -25,10 +21,7 @@ const SUGGESTIONS_PER_DAY = 120;
  * (docs/decisions/0054-address-capture.md).
  */
 async function withinGeocodeCeiling(c: Context<AppEnv>, now: Date): Promise<boolean> {
-  const ceiling = c.var.config.settings.geocode.dailyCeiling;
-  if (await takeFromCeiling(c.env.DB, "geocode", ceiling, now)) return true;
-  await alertCeilingReached(c.env.DB, c.var.deps.alert, "geocode", ceiling, now);
-  return false;
+  return withinCeiling(c.env.DB, c.var.deps.alert, "geocode", { now, settings: c.var.config.settings });
 }
 
 const GOOGLE_REFUSED = "google_refused";
@@ -71,15 +64,15 @@ export type Suggested =
  */
 export async function suggestBuildings(
   c: Context<AppEnv>,
-  asking: { readonly limitScope: string; readonly asker: string; readonly q: string; readonly session: string },
+  asking: {
+    readonly limitScope: "address_suggest" | "ops_address_suggest";
+    readonly asker: string;
+    readonly q: string;
+    readonly session: string;
+  },
 ): Promise<Suggested> {
   const now = c.var.deps.now();
-  const within = await takeOne(c.env.DB, {
-    scope: asking.limitScope,
-    key: asking.asker,
-    window: indiaDate(now),
-    limit: SUGGESTIONS_PER_DAY,
-  });
+  const within = await takeOne(c.env.DB, asking.limitScope, asking.asker, { now, settings: c.var.config.settings });
   if (!within || !(await withinGeocodeCeiling(c, now))) return { ok: false, code: "busy" };
 
   const answer = await c.var.deps.geocode.suggest(asking.q, asking.session);

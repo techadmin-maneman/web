@@ -6,8 +6,8 @@
 // alerts, at most once a day per ceiling.
 
 import type { Alert } from "../providers/alerts.ts";
-import { indiaDate } from "../lib/india-time.ts";
-import { isSpent, takeOne } from "./rate-limit.ts";
+import { limitOf } from "../policy/rate-limits.ts";
+import { isSpent, takeOne, type CountedAt } from "./rate-limit.ts";
 
 export type Ceiling = "upload" | "render" | "result_read" | "login_code" | "tech_code" | "form_code" | "geocode";
 
@@ -25,25 +25,32 @@ const STOPPED: Readonly<Record<Ceiling, string>> = {
 };
 
 /** Counts one use against today's ceiling; false once the ceiling is reached. */
-export function takeFromCeiling(db: D1Database, ceiling: Ceiling, limit: number, now: Date): Promise<boolean> {
-  return takeOne(db, { scope: `ceiling:${ceiling}`, key: "all", window: indiaDate(now), limit });
+export function takeFromCeiling(db: D1Database, ceiling: Ceiling, at: CountedAt): Promise<boolean> {
+  return takeOne(db, `ceiling:${ceiling}`, "all", at);
 }
 
 /** Whether today's ceiling is reached already. Counts nothing. */
-export function ceilingReached(db: D1Database, ceiling: Ceiling, limit: number, now: Date): Promise<boolean> {
-  return isSpent(db, { scope: `ceiling:${ceiling}`, key: "all", window: indiaDate(now), limit });
+export function ceilingReached(db: D1Database, ceiling: Ceiling, at: CountedAt): Promise<boolean> {
+  return isSpent(db, `ceiling:${ceiling}`, "all", at);
 }
 
 export async function alertCeilingReached(
   db: D1Database,
   alert: Alert,
   ceiling: Ceiling,
-  limit: number,
-  now: Date,
+  at: CountedAt,
 ): Promise<void> {
-  const first = await takeOne(db, { scope: "alert:ceiling", key: ceiling, window: indiaDate(now), limit: 1 });
+  const first = await takeOne(db, "alert:ceiling", ceiling, at);
+  const limit = limitOf(`ceiling:${ceiling}`, at.settings);
   if (first)
     await alert(
       `The daily ${ceiling} ceiling (${String(limit)}) is reached; ${STOPPED[ceiling]} answer "busy" until midnight IST.`,
     );
+}
+
+/** Counts one use against today's ceiling; false, with one alert a day, once the ceiling is reached. */
+export async function withinCeiling(db: D1Database, alert: Alert, ceiling: Ceiling, at: CountedAt): Promise<boolean> {
+  if (await takeFromCeiling(db, ceiling, at)) return true;
+  await alertCeilingReached(db, alert, ceiling, at);
+  return false;
 }

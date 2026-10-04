@@ -36,16 +36,12 @@ import { json } from "../http/openapi.ts";
 import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
 import { numberChangeCodes, sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { APP_SWITCH_SOURCES, CONSENT_PURPOSES, screenAsks } from "../policy/consents.ts";
 import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import { GRIEVANCES_SHOWN } from "../policy/grievances.ts";
 import { latestGrievances, type ShownGrievance } from "../domain/grievances.ts";
 import { revokeCard } from "../domain/referral-cards.ts";
-
-/** Number changes a client may start in a day. */
-const NUMBER_CHANGES_PER_DAY = 3;
 
 const blankToNull = (value: string | null | undefined): string | null =>
   value === undefined || value === null || value.trim() === "" ? null : value;
@@ -571,12 +567,7 @@ export function registerClientProfile(app: App): void {
     if (newMobile === null || newMobile === current)
       return c.json(errorBody("invalid_request", requestId, ["new_mobile"]), 400);
 
-    const allowed = await takeOne(db, {
-      scope: "number_change:person",
-      key: personId,
-      window: indiaDate(now),
-      limit: NUMBER_CHANGES_PER_DAY,
-    });
+    const allowed = await takeOne(db, "number_change:person", personId, { now, settings: config.settings });
     if (!allowed) return c.json(errorBody("rate_limited", requestId), 429);
     if (!(await withinCodeCeiling(c, now)) || !(await withinCodeCeiling(c, now))) {
       return c.json(errorBody("busy", requestId), 503);

@@ -31,13 +31,14 @@ import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { messageClass, RESULT_TEMPLATE, stopLinkPurpose } from "../config/message-templates.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
-import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
+import { type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { StaticConfig } from "../guard.ts";
-import { takeOne, type Limit } from "../domain/rate-limit.ts";
-import { saltedHash } from "../lib/hash.ts";
-import { indiaDate } from "../lib/india-time.ts";
+import { takeOne } from "../domain/rate-limit.ts";
+import { mobileHashOf } from "../domain/number-codes.ts";
+import { heldBack } from "../policy/staging-test-records.ts";
+
 import { firstNameOf } from "../lib/names.ts";
 import { signToken } from "../lib/signed-token.ts";
 import { composeBookingRefunded } from "../domain/auto-refunds.ts";
@@ -176,25 +177,15 @@ const isVisitKind = (kind: string): kind is VisitMessageKind =>
  * our own scripts made, whatever its kind (people.test_record, src/policy/staging-test-records.ts). The try-on's
  * gate asks it too, since a try-on whose look would be held back does not run (ADR 0104).
  */
-export const heldBackByAllowlist = (
+export const messageHeldBack = (
   messaging: MessagingSettings,
   row: Pick<MessageRow, "mobile_e164" | "test_record" | "kind">,
 ): boolean =>
-  (messageClass(row.kind) === "automatic" || row.test_record === 1) && !onAllowlist(messaging, row.mobile_e164);
-
-/** The daily cap on try-on results sent to one number, which the gate checks before a look is made (ADR 0104). */
-export async function resultMessageCap(
-  settings: Pick<StaticConfig["settings"], "ipHashSalt" | "tryon">,
-  mobileE164: string,
-  now: Date,
-): Promise<Limit> {
-  return {
-    scope: "message:result:mobile",
-    key: await saltedHash(settings.ipHashSalt, `mobile:${mobileE164}`),
-    window: indiaDate(now),
-    limit: settings.tryon.resultMessageMobileDailyLimit,
-  };
-}
+  heldBack(messaging, {
+    automatic: messageClass(row.kind) === "automatic",
+    testRecord: row.test_record === 1,
+    mobileE164: row.mobile_e164,
+  });
 
 /** The try-on result: the person's result image, within the daily cap on result messages to one number. */
 async function resultContent(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
@@ -205,7 +196,9 @@ async function resultContent(db: D1Database, config: StaticConfig, row: MessageR
     .first<{ result_key: string | null; state: string }>();
   if (job?.state !== "ready" || job.result_key === null) return { skip: "no result to send" };
   if (row.attempts === 0) {
-    const withinCap = await takeOne(db, await resultMessageCap(config.settings, row.mobile_e164, now));
+    // The daily cap on try-on results sent to one number, which the gate checks before a look is made (ADR 0104).
+    const key = await mobileHashOf(config.settings.ipHashSalt, row.mobile_e164);
+    const withinCap = await takeOne(db, "message:result:mobile", key, { now, settings: config.settings });
     if (!withinCap) return { skip: "daily message limit reached" };
   }
   const resultKey = job.result_key;
@@ -297,7 +290,7 @@ export async function sendMessage(
 
   if (row.erased_at !== null) return skip("person erased");
   if (!messaging.enabled) return skip("messaging is off");
-  if (heldBackByAllowlist(messaging, row)) return skip("number not on the allowlist");
+  if (messageHeldBack(messaging, row)) return skip("number not on the allowlist");
   const content = await contentOf(db, config, row, now);
   if ("skip" in content) return skip(content.skip);
   const stopLink = await stopLinkOf(config, row, now);

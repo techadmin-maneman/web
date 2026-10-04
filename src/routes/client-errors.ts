@@ -13,10 +13,6 @@ import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { visitorOf } from "../http/visitor.ts";
-import { indiaHour } from "../lib/india-time.ts";
-
-const REPORTS_PER_ADDRESS_HOURLY = 20;
-const REPORTS_PER_HOUR = 300;
 
 const ReportSchema = z
   .object({
@@ -54,16 +50,10 @@ const reportRoute = createRoute({
 export function registerClientErrors(app: App): void {
   app.openapi(reportRoute, async (c) => {
     const db = c.env.DB;
-    const window = indiaHour(c.var.deps.now());
+    const at = { now: c.var.deps.now(), settings: c.var.config.settings };
     const { ipHash } = await visitorOf(c);
-    const withinAddress = await takeOne(db, {
-      scope: "client_error:ip",
-      key: ipHash,
-      window,
-      limit: REPORTS_PER_ADDRESS_HOURLY,
-    });
     const within =
-      withinAddress && (await takeOne(db, { scope: "client_error:all", key: "all", window, limit: REPORTS_PER_HOUR }));
+      (await takeOne(db, "client_error:ip", ipHash, at)) && (await takeOne(db, "client_error:all", "all", at));
     if (!within) return c.json(errorBody("rate_limited", c.var.requestId), 429);
 
     const { request_id: refusedRequestId, ...report } = c.req.valid("json");

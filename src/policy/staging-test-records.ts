@@ -9,6 +9,7 @@
 // name again, so a rename can make nothing a test record that was not one (the owner's decision 23 of 2 Oct 2026).
 
 import type { EnvironmentName } from "../config/environments.ts";
+import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 
 export const RULES = [
   "A record one of our own scripts made is messaged only if its number is on the allowlist, whatever the message's class.",
@@ -51,4 +52,16 @@ export function withoutTestMark(name: string): string {
  */
 export function skipsAddressLimits(environment: EnvironmentName | undefined, testRecord: boolean): boolean {
   return environment === "staging" && testRecord;
+}
+
+/**
+ * Whether staging's allowlist holds back what would go to this number: an automatic message (a reminder, or one to
+ * someone other than who acted; MESSAGE_CLASSES, src/config/message-templates.ts), or anything to a test record, off
+ * the allowlist (ADR 0097). A login code is never automatic. Production's allowlist is empty, so nothing is held back.
+ */
+export function heldBack(
+  messaging: MessagingSettings,
+  sent: { readonly automatic: boolean; readonly testRecord: boolean; readonly mobileE164: string },
+): boolean {
+  return (sent.automatic || sent.testRecord) && !onAllowlist(messaging, sent.mobileE164);
 }

@@ -212,8 +212,9 @@ describe("POST /api/tech/auth/otp, its limits", () => {
   // FLD-27: clients' logins and number changes spent the one ceiling technicians shared, so a technician on a new
   // phone could not start his day.
   it("still sends a technician his code once the client app's ceiling is spent", async () => {
-    await takeFromCeiling(env.DB, "login_code", 1, NOW);
-    tech = appFor("local", deps, { login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } }, "tech");
+    const oneCode = { ...LOCAL_SETTINGS, login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } };
+    await takeFromCeiling(env.DB, "login_code", { now: NOW, settings: oneCode });
+    tech = appFor("local", deps, oneCode, "tech");
 
     const answer = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
 

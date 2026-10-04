@@ -24,7 +24,7 @@ import { queueMessage } from "../http/queue-message.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { dueAt } from "../policy/tasks.ts";
-import { heldBackByAllowlist } from "../queues/messaging.ts";
+import { messageHeldBack } from "../queues/messaging.ts";
 import { scrubString } from "../log.ts";
 import { ErasureRefusedSchema, erasureRefused } from "./ops-erasure.ts";
 
@@ -276,7 +276,7 @@ async function tellDeletionDone(c: Context<AppEnv>, contact: ErasedContact): Pro
       return;
     }
     if (
-      heldBackByAllowlist(messaging, {
+      messageHeldBack(messaging, {
         mobile_e164: contact.mobileE164,
         test_record: contact.testRecord ? 1 : 0,
         kind: "deletion_done",
