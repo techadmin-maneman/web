@@ -2,7 +2,7 @@
 // counts board B5 and board B4 show: what is left of the wait, and how long the
 // job took.
 
-import { fullDate, inIndia, indiaClock, indiaDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaClock, indiaDate } from "@maneman/web-kit/dates";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -21,15 +21,8 @@ export function dayMonth(isoDate: string): string {
   return written.slice(0, written.lastIndexOf(" "));
 }
 
-/** "9:30 am", as the head of Today and a job's card write it. */
+/** "9:30 am", "4 pm": every time the app writes, the head of Today, a job's row and its card alike. */
 export const clock = indiaClock;
-
-/** "9:30", "2:00": the time down the left of a job row (board A1), which never carries am or pm. */
-export function clockShort(isoInstant: string): string {
-  const india = inIndia(isoInstant);
-  const hours = india.getUTCHours() % 12 === 0 ? 12 : india.getUTCHours() % 12;
-  return `${String(hours)}:${String(india.getUTCMinutes()).padStart(2, "0")}`;
-}
 
 /** The sector beside a job, which is all the place a locked job carries. */
 export const where = (sector: string | null): string => sector ?? "";

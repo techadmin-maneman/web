@@ -68,7 +68,7 @@ const HOUSE_CARD = readFileSync("apps/app/src/refer/invite-house.jpg");
 /** The invite's own card sent as a photograph, with the invite's words as its caption. */
 const cardWithInvite = (size: number) => ({
   files: [{ name: "mane-man-invite.jpg", type: "image/jpeg", size }],
-  text: expect.stringMatching(/Worth a look — .*\/r\/[A-Z0-9]{8}$/) as unknown as string,
+  text: expect.stringMatching(/Worth a look: .*\/r\/[A-Z0-9]{8}$/) as unknown as string,
 });
 
 const scan = async (page: Page) => {
@@ -86,12 +86,15 @@ async function toRefer(page: Page) {
 
 test("Refer: the invite, the house card, the preview, and the empty tracker", async ({ page }) => {
   await toRefer(page);
-  await expect(page.getByText("When a friend you refer is fitted, you both get 3 service visits free.")).toBeVisible();
-  await expect(page.getByText("No other discount applies.")).toBeVisible();
+  await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
+  // CP-11 of the audit, 2 October 2026: "No other discount applies", which the owner's ruling of 1 October undid.
+  await expect(page.getByText(/discount/i)).toHaveCount(0);
 
   await page.getByRole("button", { name: "Share an invite" }).click();
   const sheet = page.getByRole("dialog", { name: "Which card?" });
-  await expect(sheet.getByText("This is what he sees in the chat. No name on it, and no copy.")).toBeVisible();
+  await expect(
+    sheet.getByText("Pick the picture your friend sees. Your name and message go with it, never on it."),
+  ).toBeVisible();
   await scan(page);
   await sheet.getByRole("radio", { name: /A Mane Man example/ }).click();
   await sheet.getByRole("button", { name: "Continue to share" }).click();
@@ -100,7 +103,7 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
   const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
   await expect(preview.getByText("You have a Mane Man invite")).toBeVisible();
   await expect(
-    preview.getByText(/Had my hair system fitted at home by these people\. Worth a look — .*\/r\/[A-Z0-9]{8}/),
+    preview.getByText(/Got my hair system fitted at home by Mane Man\. Worth a look: .*\/r\/[A-Z0-9]{8}/),
   ).toBeVisible();
   await expect(preview.locator("img").first()).toHaveAttribute("src", /invite-house/);
   await expect(preview.getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=/);
@@ -181,7 +184,7 @@ test("keeps WhatsApp's link, with the words alone, where the phone shares no fil
   await whatsapp.click();
   const opened = await opening;
   await opened.waitForLoadState();
-  expect(opened.url()).toMatch(/^https:\/\/wa\.me\/\?text=Had%20my%20hair.*%2Fr%2F[A-Z0-9]{8}$/);
+  expect(opened.url()).toMatch(/^https:\/\/wa\.me\/\?text=Got%20my%20hair.*%2Fr%2F[A-Z0-9]{8}$/);
 
   await preview.getByRole("button", { name: "Other apps" }).click();
   await expect
@@ -219,7 +222,14 @@ test("shows a client's stored card in the preview, and sends that card", async (
 
   await toRefer(page);
   await page.getByRole("button", { name: "Share an invite" }).click();
-  await expect(page.getByRole("radio", { name: /My before and after/ })).toBeChecked();
+  const theirOwn = page.getByRole("radio", { name: /My before and after/ });
+  await expect(theirOwn).toBeChecked();
+  // UX-32 of the audit, 2 October 2026: the two cards are native radio buttons, which the arrow keys move between.
+  await theirOwn.focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("radio", { name: /A Mane Man example/ })).toBeChecked();
+  await page.keyboard.press("ArrowUp");
+  await expect(theirOwn).toBeChecked();
   await page.getByRole("button", { name: "Continue to share" }).click();
 
   const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
@@ -255,11 +265,51 @@ test("says when the phone refused the card's share, and nothing when the client 
   expect(await sharedSoFar(page)).toHaveLength(1);
 });
 
+// CP-41 and UX-32 of the audit, 2 October 2026: their own card was offered with no first-fit photographs to make it
+// of, and ended in an error. This client's first fit has an after photograph and no before (e2e/app/fitted.ts).
+test("offers their own card only once the first fit's photographs are in", async ({ page }) => {
+  await toRefer(page);
+  await page.getByRole("button", { name: "Share an invite" }).click();
+  const sheet = page.getByRole("dialog", { name: "Which card?" });
+  await expect(
+    sheet.getByText("Your own before and after appears once your first-fit photographs are in."),
+  ).toBeVisible();
+  await expect(sheet.getByRole("radio")).toHaveCount(1);
+  await expect(sheet.getByRole("radio", { name: /A Mane Man example/ })).toBeChecked();
+  await scan(page);
+});
+
+/** The first fit's front photographs, before and after, answered here at these links. */
+async function firstFitPair(page: Page, before: string, after: string) {
+  const front = (url: string) => ({ angle: "front", url, thumbnail_url: null, width: 600, height: 800 });
+  await page.route("**/api/photos", (route) =>
+    route.fulfill({
+      json: {
+        visits: [
+          {
+            visit_id: fittedClient().firstFit.id,
+            date: fittedClient().firstFit.date,
+            type: "first_fit",
+            photos: { before: [front(before)], after: [front(after)] },
+          },
+        ],
+      },
+    }),
+  );
+}
+
 // "Without consent, the first option opens F3 instead of selecting." And nothing is agreed to for a card the
-// phone could not make: this client's first fit has an after photograph and no before (e2e/app/fitted.ts).
+// phone could not make: here the first fit's photographs cannot be read.
 test("asks for the consent before choosing their own card, and records none when the card cannot be made", async ({
   page,
 }) => {
+  await firstFitPair(page, "/e2e/unreadable-before.jpg", "/e2e/unreadable-after.jpg");
+  // The photographs fetched to build the card are held until both taps are in, so the second lands mid-build.
+  const building = Promise.withResolvers<undefined>();
+  await page.route("**/e2e/unreadable-*.jpg", async (route) => {
+    if (route.request().resourceType() === "fetch") await building.promise;
+    await route.fulfill({ status: 404 });
+  });
   await toRefer(page);
   await page.getByRole("button", { name: "Share an invite" }).click();
   await page.getByRole("radio", { name: /My before and after/ }).click();
@@ -267,14 +317,16 @@ test("asks for the consent before choosing their own card, and records none when
   await expect(page.getByText("Your first name appears on your invite.")).toBeVisible();
 
   const consents = await holdOpen(page, "**/api/consents/*");
+  // A card is built from the photographs fetched for it, apart from those the card's drawing shows.
   let builds = 0;
   page.on("request", (sent) => {
-    if (sent.method() === "GET" && sent.url().endsWith("/api/photos")) builds += 1;
+    if (sent.resourceType() === "fetch" && sent.url().endsWith("/e2e/unreadable-before.jpg")) builds += 1;
   });
   const allow = page.getByRole("button", { name: "Allow for referral cards" });
   await allow.click();
   // Forced, because the tap this guards against is one the client makes whether it is taken or not.
   await allow.click({ force: true });
+  building.resolve(undefined);
 
   await expect(page.getByRole("heading", { name: "Preview · what your friend sees" })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveText("We could not make your card. The house example is used instead.");
@@ -290,21 +342,7 @@ test("makes their own card, records one consent and stores one card, when Allow 
       .jpeg()
       .toBuffer();
   const [before, after] = await Promise.all([block("#131c2e"), block("#1a2740")]);
-  const front = (url: string) => ({ angle: "front", url, thumbnail_url: null, width: 600, height: 800 });
-  await page.route("**/api/photos", (route) =>
-    route.fulfill({
-      json: {
-        visits: [
-          {
-            visit_id: fittedClient().firstFit.id,
-            date: fittedClient().firstFit.date,
-            type: "first_fit",
-            photos: { before: [front("/e2e/before.jpg")], after: [front("/e2e/after.jpg")] },
-          },
-        ],
-      },
-    }),
-  );
+  await firstFitPair(page, "/e2e/before.jpg", "/e2e/after.jpg");
   await page.route("**/e2e/before.jpg", (route) => route.fulfill({ body: before, contentType: "image/jpeg" }));
   await page.route("**/e2e/after.jpg", (route) => route.fulfill({ body: after, contentType: "image/jpeg" }));
   const stored: number[] = [];
@@ -379,7 +417,7 @@ test("says what ops set each side gets, and beside each friend what the client e
   }));
   await toRefer(page);
   await expect(
-    page.getByText("When a friend you refer is fitted, you get 2 service visits free, and your friend gets 4."),
+    page.getByText("When a friend you refer is fitted, you get 2 free service visits, and your friend gets 4."),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Share an invite" }).click();
@@ -426,17 +464,28 @@ test("draws a lead's empty Refer, with no count, where the Home carries no rewar
   await changed(page, "/api/me", ({ referral_reward: _gone, ...me }) => me);
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
-  await expect(page.getByText("Nobody you have referred has been fitted yet.")).toBeVisible();
+  await expect(page.getByText("Your invite opens after your first fit.")).toBeVisible();
   await expect(page.getByText("When a friend you refer is fitted, we tell you.")).toBeVisible();
 });
 
 // Board B2: before their first fit a client has nothing to vouch for, and the invite's own words would not be
-// true, so Refer is reachable but empty (CLI-07).
+// true, so Refer is reachable but empty (CLI-07). CP-12 of the audit, 2 October 2026: it told them nobody they
+// referred had been fitted.
 test("a client not yet fitted sees Refer's empty state, with no invite to send", async ({ page }) => {
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
-  await expect(page.getByText("Nobody you have referred has been fitted yet.")).toBeVisible();
-  await expect(page.getByText("When a friend you refer is fitted, you both get 3 service visits free.")).toBeVisible();
+  await expect(page.getByText("Your invite opens after your first fit.")).toBeVisible();
+  await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Share an invite" })).toHaveCount(0);
   await scan(page);
+});
+
+// CP-12 of the audit, 2 October 2026: an invited friend was never reminded in the app of the visits the invite
+// promised them.
+test("a client not yet fitted who came with an invite is told what it gives them at their fit", async ({ page }) => {
+  await changed(page, "/api/me", (me) => ({ ...me, pending_invite: { referrer_first_name: "Rohit" } }));
+  await signIn(page);
+  await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
+  await expect(page.getByText("Rohit's invite: your 3 free service visits arrive when you're fitted.")).toBeVisible();
+  await expect(page.getByText("Your own invite opens after your first fit.")).toBeVisible();
 });

@@ -395,4 +395,5 @@ export const SERVICE_AREA = {
     },
     { pincode: "122018", area: "Sec65", city: "Gurgaon", served: false, launch_on: null, waiting: 0, to_alert: 0 },
   ],
+  cities: ["Gurgaon", "Delhi", "Mumbai"],
 } satisfies OpsReply<"/api/service-area">;
