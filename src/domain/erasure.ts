@@ -309,6 +309,14 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
       .bind(personId),
     db.prepare("DELETE FROM number_change_requests WHERE person_id = ?1").bind(personId),
     db.prepare("UPDATE grievances SET text = 'Erased', response = NULL WHERE person_id = ?1").bind(personId),
+    // How they reached us, and how much hair they had lost; the lead stays, as the record of a booking.
+    db
+      .prepare(
+        `UPDATE leads SET loss_extent = NULL, utm_source = NULL, utm_medium = NULL, utm_campaign = NULL,
+           utm_content = NULL, gclid = NULL, fbclid = NULL, referrer = NULL, landing_path = NULL
+         WHERE person_id = ?1`,
+      )
+      .bind(personId),
     ...opsWordsAbout(db, personId),
     // Their first name on a referral, which the referrer's tracker shows until now; blank, it reads "A friend",
     // which says nothing of the erasure (LIFE-13). Counsel may rule it can stay (docs/open-points.md, item 63).

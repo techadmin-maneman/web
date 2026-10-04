@@ -327,7 +327,7 @@ CI deploys code but cannot attach cron schedules, queue consumers or routes (`do
 npm run apply-triggers -- --env <env>
 ```
 
-After every deploy, both workflows compare the live cron schedules and queue consumers with every Worker's config, and warn on a difference. CI's token cannot read the queues, so its consumers read "not compared"; check them, and confirm an `apply-triggers`, with a token of your own that can read Workers and Queues:
+After every deploy, both workflows compare the live cron schedules and queue consumers, with each consumer's settings, with every Worker's config, and warn on a difference. CI's token cannot read the queues, so its consumers read "not compared"; check them, and confirm an `apply-triggers`, with a token of your own that can read Workers and Queues:
 
 ```sh
 node --env-file=.env.cf-read scripts/check-triggers.ts <env> --strict
