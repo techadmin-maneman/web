@@ -810,7 +810,7 @@ A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept c
 SELECT job, failed_runs, last_failed_at, last_error FROM cron_jobs WHERE failed_runs > 0;
 ```
 
-The other jobs run regardless. The cron runs every minute, and each run only the jobs due in that minute: the table in `src/scheduled/cron.ts` gives each how often it runs (`every`: 5, 15 or 60 minutes) and in which minute (`at`). A run shares 40 outside calls between its jobs, and starts none after 30 seconds, so it ends before the next minute's; a job that finds them spent stops and leaves the rest to its next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
+The other jobs run regardless. The cron runs every minute, and each run only the jobs due in that minute: the table in `src/scheduled/cron.ts` gives each how often it runs (`every`: 5, 15 or 60 minutes) and in which minute (`at`). A minute's run shares 6 outside calls between its jobs, one record's worth, since each call costs it CPU time (a run of every job at once, as `npm run tick` asks for, has 40), and starts none after 30 seconds, so it ends before the next minute's; a job that finds them spent stops and leaves the rest to its next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
 
 Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
 
@@ -842,7 +842,7 @@ Every staging deploy also reports mm-api's CPU over the last day in its last ste
 
 Every alert is sent from inside mm-api, so a cron that stops altogether, or an API that is down, tells nobody. Two free monitors outside Cloudflare watch for that:
 
-1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it after every run, every minute, and pings `/fail` with the jobs' names when one failed, or when the run before never finished ("A cron run cut short"). No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
+1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it every five minutes while all is well, and pings `/fail` at once with the jobs' names when one failed, or when the run before never finished ("A cron run cut short"). No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
 2. **The API.** Any free uptime monitor checking `https://maneman.in/api/health` every 5 minutes for HTTP 200, telling the owner's e-mail. Production only: staging is behind Access. A 503 means the database is unreachable or not production's, and the answer's `d1` says which.
 
 ### What each alert means
@@ -922,7 +922,7 @@ Workers Logs (dashboard → Workers → the `mm-api` Worker → Logs) has one `z
 
 ### Zoho is down
 
-Nothing to do at first. A lead's first failure is retried by the queue 30 seconds later, then the sweeper retries it every five minutes. After 10 attempts (about 40 minutes) it stops and an alert names it. Once Zoho is back, replay the leads that gave up (below).
+Nothing to do at first. A lead's first failure is retried by the queue 30 seconds later, then the sweeper retries it every fifteen minutes. After 10 attempts (about two and a half hours) it stops and an alert names it. Once Zoho is back, replay the leads that gave up (below).
 
 ### The Zoho token was revoked or expired
 
@@ -1260,7 +1260,7 @@ WHERE t.name LIKE '%<name>%' ORDER BY d.last_seen_at DESC;
 The app sends the outbox one step at a time, oldest first, whenever it has signal and whenever it comes to the front. Its "Waiting to reach us" screen (`/waiting`) lists, for each job, the photo sets and steps still on the phone, since when, and what stopped the job's queue.
 
 - **No signal.** Nothing is wrong. Get to signal and open the app. The app warns when the phone has not promised to keep its store: an iPhone keeps it only with the app on its home screen (ADR 0053), so a technician on an iPhone should not leave work waiting for days.
-- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops close the visit by hand in the console (in FSM while FSM holds the record); then he taps "Got it", which asks first and deletes that job's queue from the phone.
+- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to 9 am tomorrow" or, before the phone has read the card again, "to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops close the visit by hand in the console (in FSM while FSM holds the record); then he taps "Got it", which asks first and deletes that job's queue from the phone.
 - **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
 - **Photographs failed**: "Retry".
 - **Never sign out or delete the app while work is waiting**: signing out wipes the phone. The app asks first, and offers "Send first".
