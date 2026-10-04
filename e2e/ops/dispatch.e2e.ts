@@ -21,6 +21,7 @@ const ASSIGN = "/api/dispatch/assign";
 const TOLD = `/api/dispatch/moves/${MOVED.move_id}/told` as const;
 const READ_BOARD: Call = `GET ${BOARD_PATH}`;
 const READ_ROOM: Call = "GET /api/dispatch/room";
+const READ_VERSION: Call = "GET /api/dispatch/version";
 const MOVE_IT: Call = `POST ${MOVE}`;
 const ASSIGN_IT: Call = `POST ${ASSIGN}`;
 const TOLD_IT: Call = `POST ${TOLD}`;
@@ -412,17 +413,24 @@ test("refuses a move made from a stale board, and says where the job is now", as
   await expect(page.getByText("Moving Rohit M.")).toBeHidden();
 });
 
-test("reads the board again when the tab comes back, without the loading state", async ({ page }) => {
+// PLAT-12: the board read itself in full on every focus and every minute; it now asks for its version first.
+test("reads the board again when the tab comes back to a board that has changed, without the loading state", async ({
+  page,
+}) => {
+  await page.clock.install();
   let reads = 0;
   await open(page, {
     [READ_BOARD]: (route: Route) => {
       reads += 1;
       return json(BOARD)(route);
     },
+    [READ_VERSION]: json({ version: BOARD.version + 1 }),
   });
   expect(reads).toBe(1);
 
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  // A look within half a minute of the last is skipped.
+  await page.clock.fastForward("00:31");
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   await expect.poll(() => reads).toBe(2);
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByText("Loading")).toHaveCount(0);

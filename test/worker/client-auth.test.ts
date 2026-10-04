@@ -540,6 +540,7 @@ describe("the session", () => {
       },
       // What a referral earns, which ops set, for the Refer tab (docs/decisions/0107-referral-rewards-in-the-console.md).
       referral_reward: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
+      pending_invite: null,
     });
   });
 

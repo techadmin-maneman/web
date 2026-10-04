@@ -3,16 +3,17 @@
 //
 // SECTIONS below is the one list of them, in the navigation's order: by
 // department, Tasks first. The navigation draws it, routeOf reads it, and each
-// page is titled from it. Three sections have pages beneath them:
+// page is titled from it. Four sections have pages beneath them:
 //
 //   /clients/:id/:tab       a client's page, a tab at a time
 //   /technicians/:id/:tab   a technician's page: his week, leave, phones and kit
+//   /areas/:tab             who waits where, and the pincodes we serve
 //   /settings/:tab          the rules, blackout days, consumables and the job sheet
 //
 // Anything else, "/" included, is where the console opens: Tasks, or for a
 // person who may not open Tasks, the first section they may.
 
-import { clients, settings, shell, technicians } from "./content.ts";
+import { areas, clients, settings, shell, technicians } from "./content.ts";
 import type { Department } from "./settings/grants.ts";
 
 /** The router the apps share (packages/ui/router.tsx): the console's pages take it from here. */
@@ -44,8 +45,7 @@ export const SECTIONS = [
   { page: "prices", path: "/prices", department: "finance", reads: "GET /api/services" },
   { page: "discount-codes", path: "/discount-codes", department: "finance", reads: "GET /api/discount-codes" },
   { page: "referrals", path: "/referrals", department: "growth", reads: "GET /api/referrals/held" },
-  { page: "waitlist", path: "/waitlist", department: "growth", reads: "GET /api/waitlist" },
-  { page: "service-area", path: "/service-area", department: "growth", reads: "GET /api/service-area" },
+  { page: "areas", path: "/areas", department: "growth", reads: "GET /api/waitlist" },
   { page: "settings", path: "/settings", department: "admin", reads: "GET /api/settings" },
   { page: "staff", path: "/staff", department: "admin", reads: "GET /api/staff" },
 ] as const satisfies readonly SectionShape[];
@@ -55,7 +55,7 @@ export type Page = Section["page"];
 export type SectionPath = Section["path"];
 
 /** A section that is one page, with nothing beneath it. */
-export type PlainPage = Exclude<Page, "clients" | "settings" | "technicians">;
+export type PlainPage = Exclude<Page, "areas" | "clients" | "settings" | "technicians">;
 
 /**
  * The tabs of the design's eight that a client's page carries, in its order,
@@ -75,8 +75,13 @@ export type TechnicianTab = (typeof TECHNICIAN_TABS)[number];
 export const SETTINGS_TABS = ["rules", "blackouts", "consumables", "job-sheet"] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
+/** Areas, a tab at a time: who waits in each pincode, then the pincodes we serve. Waiting has the section's own path. */
+export const AREA_TABS = ["waiting", "served"] as const;
+export type AreaTab = (typeof AREA_TABS)[number];
+
 export type Route =
   | { readonly page: PlainPage }
+  | { readonly page: "areas"; readonly tab: AreaTab }
   | { readonly page: "settings"; readonly tab: SettingsTab }
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab }
   | { readonly page: "technicians"; readonly technicianId: string | null; readonly tab: TechnicianTab };
@@ -84,14 +89,20 @@ export type Route =
 const TASKS: Route = { page: "tasks" };
 const CLIENT_PATH = /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|photos|consents|history))?)?$/;
 const SETTINGS_PATH = /^\/settings(?:\/(blackouts|consumables|job-sheet))?$/;
+const AREAS_PATH = /^\/areas(?:\/(served))?$/;
 const TECHNICIAN_PATH = /^\/technicians(?:\/([0-9a-f-]{36})(?:\/(week|leave|phones|kit))?)?$/;
 
-/** Settings tabs that became pages of their own departments, so a link or bookmark to one still lands. */
+/**
+ * Pages that moved, so a link or bookmark to one still lands: Settings tabs now in their own departments, and the
+ * waitlist and the service area, now the tabs of Areas.
+ */
 const MOVED: Readonly<Record<string, string>> = {
   "/settings/prices": "/prices",
   "/settings/discount-codes": "/discount-codes",
-  "/settings/area": "/service-area",
+  "/settings/area": "/areas/served",
   "/settings/staff": "/staff",
+  "/waitlist": "/areas",
+  "/service-area": "/areas/served",
 };
 
 /** Where a page that has moved is now; null for a path that has not moved. */
@@ -103,13 +114,16 @@ export function movedTo(path: string): string | null {
 /** The tab a client's path names; Pieces without one, as the board draws the page. */
 const clientTabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? OPENING_TAB;
 
+const areaTabOf = (named: string | undefined): AreaTab => AREA_TABS.find((tab) => tab === named) ?? AREA_TABS[0];
+
 const settingsTabOf = (named: string | undefined): SettingsTab =>
   SETTINGS_TABS.find((tab) => tab === named) ?? SETTINGS_TABS[0];
 
 const technicianTabOf = (named: string | undefined): TechnicianTab =>
   TECHNICIAN_TABS.find((tab) => tab === named) ?? TECHNICIAN_TABS[0];
 
-const isPlain = (page: Page): page is PlainPage => page !== "clients" && page !== "settings" && page !== "technicians";
+const WITH_TABS: readonly Page[] = ["areas", "clients", "settings", "technicians"];
+const isPlain = (page: Page): page is PlainPage => !WITH_TABS.includes(page);
 
 /** The page a path names, or null for a path the console has no page at. */
 export function knownRoute(asked: string): Route | null {
@@ -118,6 +132,8 @@ export function knownRoute(asked: string): Route | null {
   if (client !== null) return { page: "clients", clientId: client[1] ?? null, tab: clientTabOf(client[2]) };
   const setting = SETTINGS_PATH.exec(path);
   if (setting !== null) return { page: "settings", tab: settingsTabOf(setting[1]) };
+  const area = AREAS_PATH.exec(path);
+  if (area !== null) return { page: "areas", tab: areaTabOf(area[1]) };
   const technician = TECHNICIAN_PATH.exec(path);
   if (technician !== null) {
     return { page: "technicians", technicianId: technician[1] ?? null, tab: technicianTabOf(technician[2]) };
@@ -130,6 +146,8 @@ export function knownRoute(asked: string): Route | null {
 export const routeOf = (path: string): Route => knownRoute(path) ?? TASKS;
 
 export const settingsPath = (tab: SettingsTab): string => (tab === "rules" ? "/settings" : `/settings/${tab}`);
+
+export const areasPath = (tab: AreaTab): string => (tab === "waiting" ? "/areas" : `/areas/${tab}`);
 
 /** A technician's page, on its opening tab or the one named. */
 export const technicianPath = (technicianId: string, tab: TechnicianTab = TECHNICIAN_TABS[0]): string =>
@@ -220,6 +238,7 @@ export function redirectOf(path: string, mayCall: MayCall): string | null {
 /** Each section's name and each Settings tab's, from content.ts; typed here, so one left unnamed fails the build. */
 export const SECTION_NAMES: Readonly<Record<Page, string>> = shell.sections;
 export const SETTINGS_TAB_NAMES: Readonly<Record<SettingsTab, string>> = settings.tabs;
+export const AREA_TAB_NAMES: Readonly<Record<AreaTab, string>> = areas.tabs;
 export const TECHNICIAN_TAB_NAMES: Readonly<Record<TechnicianTab, string>> = technicians.tabs;
 
 /**
@@ -229,6 +248,7 @@ export const TECHNICIAN_TAB_NAMES: Readonly<Record<TechnicianTab, string>> = tec
 export function titleOf(route: Route): string {
   const section = SECTION_NAMES[route.page];
   if (route.page === "settings") return shell.documentTitle([SETTINGS_TAB_NAMES[route.tab], section]);
+  if (route.page === "areas") return shell.documentTitle([AREA_TAB_NAMES[route.tab], section]);
   if (route.page === "clients" && route.clientId !== null) {
     const tab = clients.tabs.find((each) => each.tab === route.tab);
     return shell.documentTitle(tab === undefined ? [section] : [tab.label, section]);
