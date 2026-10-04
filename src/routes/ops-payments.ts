@@ -15,6 +15,7 @@ import type { App } from "../http/context.ts";
 import { dayMoney } from "../domain/day-money.ts";
 import { errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { routeReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 
 /** As many lines as the board can usefully hold; past this the day is not one to read on a card. */
@@ -65,7 +66,7 @@ const DayMoneySchema = z
 const dayRoute = createRoute({
   method: "get",
   path: "/api/payments",
-  summary: "A day's money: what was collected, what went back, and each charge kept or ruled on",
+  summary: "A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on",
   request: {
     query: z.object({
       date: z.iso.date().optional().openapi({ description: "India's calendar date; today when it is left out." }),
@@ -81,7 +82,7 @@ const dayRoute = createRoute({
 export function registerOpsPayments(app: App): void {
   app.openapi(dayRoute, async (c) => {
     const { date } = c.req.valid("query");
-    const money = await dayMoney(c.env.DB, date ?? indiaDate(c.var.deps.now()), LIMIT);
+    const money = await dayMoney(c.env.DB, date ?? indiaDate(c.var.deps.now()), LIMIT, await routeReach(c));
     return c.json(money, 200);
   });
 }

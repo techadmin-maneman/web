@@ -23,7 +23,7 @@ export function tokenTable(): D1Database {
 /** A logger that adds "<step> <status>" to `callsMade` for each Zoho call, and keeps nothing else it is told. */
 export function callLogger(callsMade: string[]): Logger {
   const note = (event: string, fields?: LogFields) => {
-    if (event === "zoho_call") callsMade.push(`${String(fields?.step)} ${String(fields?.status)}`);
+    if (event === "vendor_call") callsMade.push(`${String(fields?.step)} ${String(fields?.status)}`);
   };
   const logger: Logger = { debug: note, info: note, warn: note, error: note, child: () => logger };
   return logger;

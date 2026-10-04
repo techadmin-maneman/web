@@ -19,7 +19,8 @@ import {
 import type { StaticConfig } from "../../src/guard.ts";
 import { meterDatabase } from "../../src/lib/d1-meter.ts";
 import { createLogger } from "../../src/log.ts";
-import { CRON_JOBS, EVERY_MINUTE, jobsDue, runCronJobs } from "../../src/scheduled/cron.ts";
+import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
+import { EVERY_MINUTE, jobsDue } from "../../src/scheduled/schedule.ts";
 import {
   LOCAL_CONFIG,
   NOW,

@@ -32,6 +32,7 @@ import type { Slas } from "../policy/tasks.ts";
 import type { TechnicianWorkFigures } from "../policy/technician-work.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
+import { createLogger } from "../log.ts";
 
 /** How long an isolate holds the store before reading it again. The staleness window. */
 export const SETTINGS_TTL_MS = MINUTE_MS;
@@ -99,6 +100,9 @@ function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInput
   };
 }
 
+/** Settings are read outside any one request, so a refused row is logged without a request's fields. */
+const log = createLogger();
+
 /**
  * A stored figure, if the register still allows it. A name the register has
  * since dropped, malformed JSON, or a figure now outside its bounds are all
@@ -108,8 +112,15 @@ function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInput
 function storedValue(name: string, stored: unknown): { name: OpsSettingName; value: SettingValue } | null {
   const setting = settingNamed(name);
   if (setting === undefined) return null;
-  const checked = checkValue(setting, withKeysAddedSince(setting, stored));
-  return checked.ok ? { name: setting.name as OpsSettingName, value: checked.value } : null;
+  const checked = checkValue(setting, fittedToRegisterKeys(setting, stored));
+  if (!checked.ok) {
+    log.warn("ops_setting_ignored", {
+      setting: setting.name,
+      fields: checked.refusals.map((refusal) => refusal.field),
+    });
+    return null;
+  }
+  return { name: setting.name as OpsSettingName, value: checked.value };
 }
 
 const parsedOrNull = (json: string): unknown => {
@@ -121,16 +132,16 @@ const parsedOrNull = (json: string): unknown => {
 };
 
 /**
- * A key the register has added to a closed set since the row was saved, such
- * as a new task group, takes its committed figure, and one it has dropped since
- * is let go; the keys ops set keep theirs.
+ * A stored closed set, fitted to the keys the register has now. A key added
+ * since the row was saved, such as a new task group, takes its committed
+ * figure; a key since removed is left out; the keys ops set keep theirs.
  */
-function withKeysAddedSince(setting: OpsSetting, stored: unknown): unknown {
+function fittedToRegisterKeys(setting: OpsSetting, stored: unknown): unknown {
   if (setting.keys === null || setting.keys === "open" || typeof setting.fallback !== "object") return stored;
   if (typeof stored !== "object" || stored === null || Array.isArray(stored)) return stored;
-  const keys: readonly string[] = setting.keys;
-  const stillKeys = Object.entries(stored).filter(([key]) => keys.includes(key));
-  return { ...setting.fallback, ...Object.fromEntries(stillKeys) };
+  const registerKeys: readonly string[] = setting.keys;
+  const stillKept = Object.entries(stored).filter(([key]) => registerKeys.includes(key));
+  return { ...setting.fallback, ...Object.fromEntries(stillKept) };
 }
 
 /** The inputs a snapshot holds: its JSON object of each name with its value, the committed figure for the rest. */

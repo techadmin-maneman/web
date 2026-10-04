@@ -207,19 +207,14 @@ describe("a technician's steps", () => {
   it("close a no-show as terminated, never started", async () => {
     await work(NOW, TODAY_JOB, [["checkin", AT_THE_DOOR, -30]]);
 
-    // Sixteen minutes on, the wait has run.
-    const closed = await postAt(
-      new Date(NOW.getTime() + 16 * 60_000),
-      `/api/tech/jobs/${TODAY_JOB}/no-show`,
-      undefined,
-      "event-noshow-01",
-    );
+    // Sixteen minutes after the booked start, the wait has run.
+    const closed = await postAt(minutesAfterStart(16), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
 
     expect(closed.status).toBe(200);
     expect(await statusOf(TODAY_JOB)).toBe("terminated");
     expect(await visitRowOf(TODAY_JOB)).toEqual({
       started_at: null,
-      ended_at: new Date(NOW.getTime() + 16 * 60_000).toISOString(),
+      ended_at: minutesAfterStart(16).toISOString(),
       duration_minutes: null,
       outcome: "no_show",
       partial_reason: null,

@@ -226,6 +226,41 @@ describe("what a visit message says", () => {
     expect(await text("visit_reminder")).toEqual({ skip: "the visit is no longer booked" });
     expect(await text("reschedule_confirmation")).toEqual({ skip: "the visit is no longer booked" });
   });
+
+  // The audit's gate: a 4 pm visit checked in at 11:31 would have told the client "has arrived" hours before it.
+  it("tells of no arrival, and no no-show's ruling, on a check-in before the earliest check-in", async () => {
+    await consent(true);
+    await visit();
+    // A check-in that passed, as the job event it landed as.
+    const checkIn = async (id: string, at: string) =>
+      env.DB.batch([
+        env.DB.prepare(
+          `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+             fsm_write_state, superseded, updated_at)
+           VALUES (?1, ?2, ?1, 't1', 'check_in', '{}', ?3, ?3, 'written', 0, ?3)`,
+        ).bind(`event-${id}`, VISIT, at),
+        env.DB.prepare(
+          `INSERT INTO checkins (id, appointment_id, technician_id, job_event_id, at, radius_m, passed, created_at)
+           VALUES (?1, ?2, 't1', ?3, ?4, 200, 1, ?4)`,
+        ).bind(id, VISIT, `event-${id}`, at),
+      ]);
+
+    // Two hours before Thursday's noon visit: an hour earlier than a technician may check in.
+    await checkIn("ci-early", "2026-09-24T04:30:00.000Z");
+    await env.DB.prepare(
+      `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, closed_at, decision,
+         decided_at, created_at)
+       VALUES ('ns-early', 'ci-early', ?1, ?2, ?3, ?3, 'waived', ?3, ?3)`,
+    )
+      .bind(VISIT, "2026-09-24T04:30:00.000Z", "2026-09-24T04:45:00.000Z")
+      .run();
+    expect(await text("arrival_notice")).toEqual({ skip: "the check-in came before the earliest check-in" });
+    expect(await text("no_show_decided")).toEqual({ skip: "the check-in came before the earliest check-in" });
+
+    // Forty-five minutes before it, in time.
+    await checkIn("ci-in-time", "2026-09-24T05:45:00.000Z");
+    expect(await text("arrival_notice")).not.toHaveProperty("skip");
+  });
 });
 
 describe("sending a visit message", () => {

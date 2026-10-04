@@ -5,11 +5,9 @@
 
 import { toE164 } from "../lib/mobile.ts";
 import type { EvolutionSettings } from "../providers/evolution.ts";
-import { RESULT_TEMPLATE } from "./message-templates.ts";
 import { ENABLED_SURFACES, type EnvironmentName, type ProviderVar } from "./environments.ts";
 import { GSTIN_FORMAT, SAC_FORMAT, STATE_CODE_FORMAT, type GstRegistration } from "./gst.ts";
 import { FIXED_LIMITS, type FixedLimit } from "./limits.ts";
-import { UNKNOWN_COLOR_ROUTE, type UnknownColorRoute } from "./tryon.ts";
 
 export interface TryonSettings {
   /** Per salted IP hash, per India clock hour. */
@@ -27,7 +25,6 @@ export interface TryonSettings {
   readonly resultReadDailyCeiling: number;
   /** Days a result is kept once ready: 30 in production, as the photo notice promises; less on staging. */
   readonly resultRetentionDays: number;
-  readonly unknownColorRoute: UnknownColorRoute;
   /** Alert when the AILabTools balance falls below this many credits. */
   readonly creditFloor: number;
   /** Signs upload and result links. */
@@ -39,8 +36,6 @@ export interface TryonSettings {
 export interface MessagingSettings {
   /** Off: every result message is skipped and the gate promises no WhatsApp copy. */
   readonly enabled: boolean;
-  /** The approved WhatsApp template that carries a result. */
-  readonly resultTemplate: string;
   /**
    * When not empty, an automatic message (a reminder, or one to someone other than who acted) goes only to these
    * E.164 numbers (staging: the founders' handsets); a login code and a message that answers the person who just
@@ -586,7 +581,6 @@ function readTryon(read: Reader, providers: ProvidersRead, isLocal: boolean): Tr
     uploadDailyCeiling: read.count("UPLOAD_DAILY_CEILING"),
     resultReadDailyCeiling: read.count("RESULT_READ_DAILY_CEILING"),
     resultRetentionDays: read.count("RESULT_RETENTION_DAYS"),
-    unknownColorRoute: UNKNOWN_COLOR_ROUTE,
     creditFloor: read.count("AILAB_CREDIT_FLOOR"),
     linkSigningKey: read.key("RESULT_SIGNING_KEY"),
     ailabApiKey: providers.IMAGE_PROVIDER === "ailabtools" ? read.text("AILAB_API_KEY") : null,
@@ -624,7 +618,6 @@ function readMessaging(
   const evolution = readEvolution(read, providers);
   const messaging: MessagingSettings = {
     enabled: read.flag("MESSAGING_ENABLED"),
-    resultTemplate: RESULT_TEMPLATE,
     allowlist: read.mobiles("MESSAGING_ALLOWLIST"),
     evolution,
   };

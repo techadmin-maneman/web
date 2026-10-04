@@ -2,19 +2,23 @@
 // everyday work, MANAGE is money given back or waived, prices, codes, settings, erasures and access.
 //
 // A route needs a national grant unless it keeps to the caller's own places itself (`ownPlaces`): until a list or a
-// record is narrowed to the caller's cities, a grant of one city or zone must not open it everywhere.
+// record is narrowed to the caller's cities, a grant of one city or zone must not open it everywhere. What is the same
+// in every place, as prices are, any place's View may read; changing it needs a national grant.
 
 import { can, DEPARTMENTS, NATIONAL, type Caller, type Department, type Level, type ZoneOfCity } from "./access.ts";
 import type { TaskGroup } from "./tasks.ts";
 
-/** A route that keeps to the caller's own departments, as Tasks lists each department its own groups. */
+/** A route that keeps to the caller's own departments and places, as Tasks lists each department its own groups. */
 export const OWN_DEPARTMENTS = "own";
 
 export interface RouteNeed {
   /** OWN_DEPARTMENTS: a grant in any department lets them in. */
   readonly department: Department | typeof OWN_DEPARTMENTS;
   readonly level: Level;
-  /** The route narrows what it reads or changes to the caller's places, so a grant over any place lets them in. */
+  /**
+   * The route narrows what it reads or changes to the caller's places, or reads only what is the same in every place,
+   * so a grant over any place lets them in.
+   */
   readonly ownPlaces?: true;
 }
 
@@ -22,8 +26,9 @@ export interface RouteNeed {
 export const SIGNED_IN = "signed_in";
 
 const need = (department: Department, level: Level): RouteNeed => ({ department, level });
+const readFromAnyPlace = (department: Department): RouteNeed => ({ department, level: "view", ownPlaces: true });
 const inOwnPlaces = (department: Department, level: Level): RouteNeed => ({ department, level, ownPlaces: true });
-const inOwnDepartments = (level: Level): RouteNeed => ({ department: OWN_DEPARTMENTS, level });
+const inOwnDepartments = (level: Level): RouteNeed => ({ department: OWN_DEPARTMENTS, level, ownPlaces: true });
 
 /** Every ops route, as "METHOD /path" with the OpenAPI document's placeholders. A route not here is refused. */
 export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>> = {
@@ -31,36 +36,38 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/whoami": SIGNED_IN,
   "POST /api/client-errors": SIGNED_IN,
 
-  // Operations: dispatch, today's tasks, visits, technicians, leave and stock.
-  "GET /api/dispatch": need("operations", "view"),
-  "GET /api/dispatch/room": need("operations", "view"),
-  "POST /api/dispatch/assign": need("operations", "act"),
-  "POST /api/dispatch/move": need("operations", "act"),
-  "POST /api/dispatch/moves/{id}/told": need("operations", "act"),
+  // Operations: dispatch, today's tasks, visits, technicians, leave and stock, each kept to the caller's cities.
+  "GET /api/dispatch": inOwnPlaces("operations", "view"),
+  "GET /api/dispatch/room": inOwnPlaces("operations", "view"),
+  "POST /api/dispatch/assign": inOwnPlaces("operations", "act"),
+  "POST /api/dispatch/move": inOwnPlaces("operations", "act"),
+  "POST /api/dispatch/moves/{id}/told": inOwnPlaces("operations", "act"),
   // Each department sees its own groups of tasks, and Act takes one of them or gives it to someone (TASK_DEPARTMENTS).
   "GET /api/tasks": inOwnDepartments("view"),
   "PUT /api/tasks/{group}/{id}/owner": inOwnDepartments("act"),
-  "POST /api/tasks/{group}/{id}/close": need("operations", "act"),
-  "GET /api/visits/availability": need("operations", "view"),
-  "POST /api/visits": need("operations", "act"),
+  "POST /api/tasks/{group}/{id}/close": inOwnPlaces("operations", "act"),
+  "GET /api/visits/availability": inOwnPlaces("operations", "view"),
+  "POST /api/visits": inOwnPlaces("operations", "act"),
   // Free to the client unless ops apply the client's own terms, as an ops move is free: everyday work, not a waiver.
-  "POST /api/visits/{id}/cancel": need("operations", "act"),
-  "POST /api/visits/{id}/close": need("operations", "act"),
-  "GET /api/technicians": need("operations", "view"),
-  "GET /api/technicians/work": need("operations", "view"),
+  "POST /api/visits/{id}/cancel": inOwnPlaces("operations", "act"),
+  "POST /api/visits/{id}/close": inOwnPlaces("operations", "act"),
+  "GET /api/technicians": inOwnPlaces("operations", "view"),
+  "GET /api/technicians/work": inOwnPlaces("operations", "view"),
   // Who signs in to the technician app, and so sees clients' addresses: access, so MANAGE.
-  "POST /api/technicians": need("operations", "manage"),
-  "PATCH /api/technicians/{id}": need("operations", "manage"),
-  "POST /api/technicians/{id}/deactivate": need("operations", "manage"),
-  "POST /api/technicians/{id}/reactivate": need("operations", "manage"),
-  "POST /api/technicians/{id}/leave": need("operations", "act"),
-  "POST /api/technicians/{id}/leave/{leave}/cancel": need("operations", "act"),
-  "POST /api/technicians/{id}/devices/{device}/revoke": need("operations", "act"),
-  "GET /api/stock": need("operations", "view"),
+  "POST /api/technicians": inOwnPlaces("operations", "manage"),
+  "PATCH /api/technicians/{id}": inOwnPlaces("operations", "manage"),
+  "POST /api/technicians/{id}/deactivate": inOwnPlaces("operations", "manage"),
+  "POST /api/technicians/{id}/reactivate": inOwnPlaces("operations", "manage"),
+  "GET /api/technicians/{id}/leave": inOwnPlaces("operations", "view"),
+  "POST /api/technicians/{id}/leave": inOwnPlaces("operations", "act"),
+  "POST /api/technicians/{id}/leave/{leave}/cancel": inOwnPlaces("operations", "act"),
+  "POST /api/technicians/{id}/devices/{device}/revoke": inOwnPlaces("operations", "act"),
+  // The central store is in no city, so a delivery into it needs a national grant.
+  "GET /api/stock": inOwnPlaces("operations", "view"),
   "POST /api/stock/deliveries": need("operations", "act"),
-  "POST /api/stock/transfers": need("operations", "act"),
-  "POST /api/stock/counts": need("operations", "act"),
-  "POST /api/stock/write-offs": need("operations", "act"),
+  "POST /api/stock/transfers": inOwnPlaces("operations", "act"),
+  "POST /api/stock/counts": inOwnPlaces("operations", "act"),
+  "POST /api/stock/write-offs": inOwnPlaces("operations", "act"),
 
   // Customer Care: clients, their requests, grievances, number changes and deletions, each kept to the caller's cities.
   "POST /api/clients/search": inOwnPlaces("customer_care", "view"),
@@ -83,25 +90,27 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/deletion-requests/{id}/decision": inOwnPlaces("customer_care", "manage"),
   "POST /api/clients/{id}/erasure": inOwnPlaces("customer_care", "manage"),
 
-  // Finance: payments, refunds, no-show charges and their disputes, discount codes and prices. Waiving a charge and
-  // refunding a disputed one ask MANAGE inside their routes (WAIVING_A_NO_SHOW, REFUNDING_A_DISPUTE). The price book
-  // lists every service with its prices, so reading it is Finance's; changing a service stays Admin's.
-  "GET /api/payments": need("finance", "view"),
-  "GET /api/no-shows": need("finance", "view"),
-  "POST /api/no-shows/{id}/decision": need("finance", "act"),
-  "GET /api/no-shows/disputes": need("finance", "view"),
-  "POST /api/no-shows/disputes/{id}/ruling": need("finance", "act"),
-  "POST /api/clients/{id}/credits": need("finance", "manage"),
-  "GET /api/discount-codes": need("finance", "view"),
+  // Finance: payments, refunds, no-show charges and their disputes, credits, discount codes and prices. A day's money,
+  // no-shows, disputes, credits and a code on a visit keep to the caller's cities. Codes and prices are the same in
+  // every place: any place's View reads them, and changing them needs a national grant. Waiving a charge and refunding
+  // a disputed one ask MANAGE inside their routes (WAIVING_A_NO_SHOW, REFUNDING_A_DISPUTE). The price book lists every
+  // service with its prices, so reading it is Finance's; changing a service stays Admin's.
+  "GET /api/payments": inOwnPlaces("finance", "view"),
+  "GET /api/no-shows": inOwnPlaces("finance", "view"),
+  "POST /api/no-shows/{id}/decision": inOwnPlaces("finance", "act"),
+  "GET /api/no-shows/disputes": inOwnPlaces("finance", "view"),
+  "POST /api/no-shows/disputes/{id}/ruling": inOwnPlaces("finance", "act"),
+  "POST /api/clients/{id}/credits": inOwnPlaces("finance", "manage"),
+  "GET /api/discount-codes": readFromAnyPlace("finance"),
   "POST /api/discount-codes": need("finance", "manage"),
   "POST /api/discount-codes/{id}/off": need("finance", "manage"),
-  "POST /api/visits/{id}/discount-code": need("finance", "act"),
-  "POST /api/visits/{id}/discount-code/remove": need("finance", "act"),
-  "GET /api/prices": need("finance", "view"),
+  "POST /api/visits/{id}/discount-code": inOwnPlaces("finance", "act"),
+  "POST /api/visits/{id}/discount-code/remove": inOwnPlaces("finance", "act"),
+  "GET /api/prices": readFromAnyPlace("finance"),
   "POST /api/prices": need("finance", "manage"),
   "POST /api/prices/correct": need("finance", "manage"),
   "POST /api/prices/withdraw": need("finance", "manage"),
-  "GET /api/services": need("finance", "view"),
+  "GET /api/services": readFromAnyPlace("finance"),
 
   // Growth: referrals, the waitlist, and launching areas.
   "GET /api/referrals/held": need("growth", "view"),
@@ -144,10 +153,12 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/staff/service-tokens/remove": need("admin", "manage"),
 };
 
-/** Waiving a no-show's charge gives money back, so it asks more than charging it does. */
-export const WAIVING_A_NO_SHOW: RouteNeed = need("finance", "manage");
-/** Refunding a disputed charge, where upholding it keeps the money. */
-export const REFUNDING_A_DISPUTE: RouteNeed = need("finance", "manage");
+/** Waiving a no-show's charge gives money back, so it asks more than charging it does, in the case's city. */
+export const WAIVING_A_NO_SHOW: RouteNeed = inOwnPlaces("finance", "manage");
+/** Refunding a disputed charge, where upholding it keeps the money, in the dispute's city. */
+export const REFUNDING_A_DISPUTE: RouteNeed = inOwnPlaces("finance", "manage");
+/** A technician with no city is seen only nationally, so leaving him without one asks Operations MANAGE nationally. */
+export const GIVING_NO_CITY: RouteNeed = need("operations", "manage");
 
 /** The department that decides each group of tasks: its people see the group on Tasks, and Act may take a task of it. */
 export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
@@ -168,8 +179,8 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   payment_owed: "finance",
 };
 
-/** What seeing a group of tasks, or taking a task of it, asks. */
-export const taskNeed = (group: TaskGroup, level: Level): RouteNeed => need(TASK_DEPARTMENTS[group], level);
+/** What seeing a group of tasks, or taking a task of it, asks: the board keeps each task to the caller's cities. */
+export const taskNeed = (group: TaskGroup, level: Level): RouteNeed => inOwnPlaces(TASK_DEPARTMENTS[group], level);
 
 /** Whether the caller's grants reach what a route asks: over any place if it keeps to their own, nationally if not. */
 export function meetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): boolean {

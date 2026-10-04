@@ -287,7 +287,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -295,7 +295,7 @@ Request body:
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -331,7 +331,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -339,7 +339,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -525,7 +525,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -577,7 +577,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -629,7 +629,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -681,7 +681,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -733,7 +733,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -785,7 +785,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -829,7 +829,7 @@ Close the job as a no-show, once the wait has run
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -977,6 +977,7 @@ Request body:
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -1005,6 +1006,7 @@ Request body:
             "does_not_fit",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
             "already_closed",
             "no_service_area",
             "service_exists",
@@ -1062,6 +1064,11 @@ Request body:
           ],
           "additionalProperties": false,
           "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+        },
+        "earliest_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [
@@ -1551,6 +1558,20 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobState"
     }
   },
   "required": [
@@ -1568,9 +1589,48 @@ Request body:
     "badge",
     "slots",
     "unlocked",
-    "unlocks_at"
+    "unlocks_at",
+    "client_name",
+    "progress"
   ],
   "additionalProperties": false
+}
+```
+
+### TechnicianJobState
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "started_at",
+    "outcome"
+  ],
+  "additionalProperties": false,
+  "description": "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet."
 }
 ```
 
@@ -1700,6 +1760,20 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobProgress"
     },
     "address": {
       "anyOf": [
@@ -1866,12 +1940,14 @@ Request body:
       ],
       "description": "Null until the day before the visit."
     },
-    "progress": {
-      "$ref": "#/components/schemas/TechnicianJobProgress"
-    },
     "no_show_wait_min": {
       "type": "integer",
       "description": "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it."
+    },
+    "checkin_from": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow."
     },
     "pieces": {
       "anyOf": [
@@ -2089,11 +2165,13 @@ Request body:
     "slots",
     "unlocked",
     "unlocks_at",
+    "client_name",
+    "progress",
     "address",
     "access_notes",
     "client",
-    "progress",
     "no_show_wait_min",
+    "checkin_from",
     "pieces",
     "last_visit",
     "reminder",
@@ -2137,7 +2215,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "When the job may close as a no-show, from the check-in we hold; null before one landed."
+      "description": "When the job may close as a no-show, from the check-in we hold, or from the booked start for one before it; null before one landed."
     },
     "distance_m": {
       "anyOf": [

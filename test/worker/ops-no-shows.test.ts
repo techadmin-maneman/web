@@ -162,6 +162,29 @@ describe("GET /api/no-shows", () => {
     expect((await cases())[0]?.person).toBeNull();
   });
 
+  // The audit's B13: a 4 pm visit checked in at 11:31, closed at 11:36 and charged, with nothing to say so.
+  it("flags a case whose wait ran from a check-in before the booked start", async () => {
+    expect((await cases())[0]).toMatchObject({ minutes_late: 309, closed_early: false });
+
+    await env.DB.prepare(
+      `UPDATE checkins SET at = '2026-09-19T02:00:00.000Z', claimed_at = '2026-09-19T02:00:00.000Z',
+         created_at = '2026-09-19T02:00:00.000Z'`,
+    ).run();
+    await env.DB.prepare(
+      `UPDATE no_show_cases SET wait_started_at = '2026-09-19T02:00:00.000Z', wait_ends_at = '2026-09-19T02:15:00.000Z',
+         closed_at = '2026-09-19T02:16:00.000Z'`,
+    ).run();
+    expect((await cases())[0]).toMatchObject({
+      checked_in_at: "2026-09-19T02:00:00.000Z",
+      minutes_late: -90,
+      closed_early: true,
+    });
+
+    // Closed sixteen minutes after the booked start: the client's own wait had run.
+    await env.DB.prepare("UPDATE no_show_cases SET closed_at = '2026-09-19T03:46:00.000Z'").run();
+    expect((await cases())[0]).toMatchObject({ closed_early: false });
+  });
+
   it("gives the moment it opened and the day it falls due, as the Tasks board reads it", async () => {
     // The placeholder allowance is two days (src/policy/tasks.ts), from the moment the case opened.
     expect((await cases())[0]).toMatchObject({
@@ -291,7 +314,7 @@ describe("POST /api/no-shows/:id/decision", () => {
 
     expect(deps.alerts).toEqual([
       `The refund of Rs. 2000 for visit ${VISIT}, a no-show waived, failed (its payment could not be read). ` +
-        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -596,7 +619,7 @@ describe("what charging a no-show costs the client", () => {
     expect(deps.alerts).toEqual([
       `The visit credit for visit ${VISIT}, a no-show charged, could not come back: its grant has expired or been ` +
         "withdrawn. The client is told so; settle it with them by hand if they are owed one. " +
-        `http://ops.localhost:4323/clients/${PERSON}`,
+        `http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -640,7 +663,7 @@ describe("what charging a no-show costs the client", () => {
 
     expect(deps.alerts).toEqual([
       `The refund of Rs. 26000 for visit ${VISIT}, a no-show charged, failed (Razorpay payment pay_visit). ` +
-        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     // The charge stands: the ruling is recorded whatever Razorpay says.
     expect(await recorded()).toMatchObject({ kept_amount: 400000 });

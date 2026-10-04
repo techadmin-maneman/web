@@ -5,6 +5,7 @@
 
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { FITTED } from "./fitted.ts";
 import { signToken } from "../lib/signed-token.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
 import { jobSheet } from "./job-sheet-settings.ts";
@@ -94,12 +95,12 @@ interface SummaryContext {
 }
 
 async function contextOf(db: D1Database, personId: string): Promise<SummaryContext> {
-  const address = await currentAddress(db, personId);
+  const [address, schedule] = await Promise.all([currentAddress(db, personId), loadSlotSchedule(db)]);
   const place = (row: AppointmentRow) =>
     address !== null
       ? `${address.locality}, ${address.city} ${address.pincode}`
       : [row.service_city, row.service_pincode].filter((part) => part !== null).join(" ");
-  return { place, schedule: await loadSlotSchedule(db) };
+  return { place, schedule };
 }
 
 /**
@@ -139,15 +140,18 @@ function summaryOf(row: AppointmentRow, context: SummaryContext, now: Date): Vis
  * or under way, and only if there is none of those, one that is over.
  */
 export async function nextVisit(db: D1Database, personId: string, now: Date): Promise<VisitSummary | null> {
-  const row = await db
-    .prepare(
-      `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-       WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES}
-       ORDER BY a.window_end < ?2 OR landed_outcome IS NOT NULL, a.window_start LIMIT 1`,
-    )
-    .bind(personId, now.toISOString())
-    .first<AppointmentRow>();
-  return row === null ? null : summaryOf(row, await contextOf(db, personId), now);
+  const [row, context] = await Promise.all([
+    db
+      .prepare(
+        `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
+         WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES}
+         ORDER BY a.window_end < ?2 OR landed_outcome IS NOT NULL, a.window_start LIMIT 1`,
+      )
+      .bind(personId, now.toISOString())
+      .first<AppointmentRow>(),
+    contextOf(db, personId),
+  ]);
+  return row === null ? null : summaryOf(row, context, now);
 }
 
 /** The three states the apps show a client in. */
@@ -166,14 +170,8 @@ export function clientStateOf(fitted: boolean, hasBooking: boolean): ClientState
 
 /** Whether the client has been fitted: a first fit, or any visit after one, has been done. */
 export async function isFitted(db: D1Database, personId: string): Promise<boolean> {
-  const row = await db
-    .prepare(
-      `SELECT 1 FROM appointments a WHERE ${LIVE} AND a.status = 'completed'
-       AND a.type IN ('first_fit', 'service', 'replacement') LIMIT 1`,
-    )
-    .bind(personId)
-    .first();
-  return row !== null;
+  const row = await db.prepare(`SELECT ${FITTED} AS fitted`).bind(personId).first<{ fitted: number }>();
+  return row?.fitted === 1;
 }
 
 /** `withCancelled`: past visits include those cancelled, so the client's own list keeps a record of a cancellation. */
@@ -183,22 +181,24 @@ export async function listVisits(
   now: Date,
   { withCancelled = false }: { readonly withCancelled?: boolean } = {},
 ): Promise<{ upcoming: VisitSummary[]; past: VisitSummary[] }> {
-  const context = await contextOf(db, personId);
   const pastStatus = withCancelled ? `(a.status IN ${PAST_STATUSES} OR ${CANCELLED})` : `a.status IN ${PAST_STATUSES}`;
-  const upcoming = await db
-    .prepare(
-      `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-       WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES} ORDER BY a.window_start`,
-    )
-    .bind(personId)
-    .all<AppointmentRow>();
-  const past = await db
-    .prepare(
-      `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-       WHERE ${LIVE} AND ${pastStatus} ORDER BY a.window_start DESC`,
-    )
-    .bind(personId)
-    .all<AppointmentRow>();
+  const [context, upcoming, past] = await Promise.all([
+    contextOf(db, personId),
+    db
+      .prepare(
+        `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
+         WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES} ORDER BY a.window_start`,
+      )
+      .bind(personId)
+      .all<AppointmentRow>(),
+    db
+      .prepare(
+        `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
+         WHERE ${LIVE} AND ${pastStatus} ORDER BY a.window_start DESC`,
+      )
+      .bind(personId)
+      .all<AppointmentRow>(),
+  ]);
   return {
     upcoming: upcoming.results.map((row) => summaryOf(row, context, now)),
     past: past.results.map((row) => summaryOf(row, context, now)),

@@ -18,6 +18,7 @@ import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { CODE_LENGTH, COVERABLE, DISCOUNT_KINDS, isCodeText, termsRefusal } from "../policy/discount-codes.ts";
 
@@ -180,7 +181,7 @@ const enterRoute = createRoute({
   responses: {
     200: { description: "The code on the visit", ...json(VisitCodeSchema) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found"),
+    404: errorResponse("not_found: no such visit in the caller's cities"),
     409: errorResponse(
       "already_discounted: the visit carries a code; price_settled: it is paid for, its payment link is made, it is " +
         "invoiced, or it is cancelled",
@@ -197,7 +198,7 @@ const removeRoute = createRoute({
   responses: {
     204: { description: "Taken off; its use stays on record, marked removed" },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such visit, or it carries no code"),
+    404: errorResponse("not_found: no such visit in the caller's cities, or it carries no code"),
     409: errorResponse("price_settled: it is paid for, its payment link is made, or it is invoiced"),
   },
 });
@@ -257,6 +258,7 @@ export function registerOpsDiscountCodes(app: App): void {
   app.openapi(enterRoute, async (c) => {
     const { requestId, log, deps } = c.var;
     const { id } = c.req.valid("param");
+    if (!(await withinRouteReach(c, "visit", id))) return c.json(errorBody("not_found", requestId), 404);
     const by = { kind: "ops", actor: staffOf(c) } as const;
     const entered = await enterOnVisit(
       c.env.DB,
@@ -277,8 +279,10 @@ export function registerOpsDiscountCodes(app: App): void {
 
   app.openapi(removeRoute, async (c) => {
     const { requestId, deps } = c.var;
+    const { id } = c.req.valid("param");
+    if (!(await withinRouteReach(c, "visit", id))) return c.json(errorBody("not_found", requestId), 404);
     const by = { kind: "ops", actor: staffOf(c) } as const;
-    const removed = await removeFromVisit(c.env.DB, { visitId: c.req.valid("param").id, by, requestId }, deps.now());
+    const removed = await removeFromVisit(c.env.DB, { visitId: id, by, requestId }, deps.now());
     if (removed === "price_settled") return c.json(errorBody("price_settled", requestId), 409);
     if (removed !== "removed") return c.json(errorBody("not_found", requestId), 404);
     return c.body(null, 204);

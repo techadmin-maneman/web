@@ -618,7 +618,7 @@ describe("the cron's cancel_refunds job", () => {
     expect(deps.alerts).toEqual([
       `Razorpay did not answer the refund of Rs. 2000 for visit ${VISIT}, cancelled by the client (payment ` +
         "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
-        `refund of Rs. 2000 is there. http://ops.localhost:4323/clients/${PERSON}`,
+        `refund of Rs. 2000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 

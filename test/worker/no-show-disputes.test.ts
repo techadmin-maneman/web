@@ -336,7 +336,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     expect(deps.alerts).toEqual([
       `The visit credit for visit ${VISIT}, a no-show refunded on dispute, could not come back: its grant has ` +
         "expired or been withdrawn. The client is told so; settle it with them by hand if they are owed one. " +
-        `http://ops.localhost:4323/clients/${PERSON}`,
+        `http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     expect(await env.DB.prepare("SELECT key FROM alerts WHERE key LIKE 'no_show_credit%'").first()).toEqual({
       key: `no_show_credit_not_back:refunded on dispute:${VISIT}`,
@@ -357,7 +357,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     expect(answer.status).toBe(200);
     expect(deps.alerts).toEqual([
       `The refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute, failed (Razorpay payment ` +
-        `pay_visit). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+        `pay_visit). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     expect(await env.DB.prepare("SELECT key FROM alerts").first()).toEqual({
       key: `no_show_refund_failed:refunded on dispute:${VISIT}`,
@@ -379,7 +379,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     expect(deps.alerts).toEqual([
       `Razorpay did not answer the refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute (payment ` +
         "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
-        `refund of Rs. 4000 is there. http://ops.localhost:4323/clients/${PERSON}`,
+        `refund of Rs. 4000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -403,7 +403,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     expect(answer.status).toBe(200);
     expect(deps.alerts).toEqual([
       `The refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute, failed (its payment could not be ` +
-        `read). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+        `read). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -503,7 +503,7 @@ describe("the client's data export", () => {
     }>();
     expect(exported.no_show_disputes).toEqual([
       {
-        appointment_id: VISIT,
+        visit: "2026-09-19T03:30:00.000Z",
         reason: "I was home all morning; the bell is broken",
         created_at: NOW.toISOString(),
         ruling: null,

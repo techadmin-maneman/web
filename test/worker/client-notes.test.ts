@@ -9,6 +9,7 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { jobDetail } from "../../src/domain/tech-jobs.ts";
 import { createLogger } from "../../src/log.ts";
 import { NO_SHOW_WAIT_MIN } from "../../src/policy/no-show.ts";
+import { PHONE_CLOCK } from "../../src/policy/phone-clock.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -63,7 +64,14 @@ describe("POST /api/appointments/:id/note", () => {
   it("reaches the technician on the client's card, from when the card opens", async () => {
     await note({ note: "Ring twice" });
     const card = (at: Date) =>
-      jobDetail(env.DB, { technicianId: TECHNICIAN, jobId: VISIT, now: at, unlockHour: 18, waits: NO_SHOW_WAIT_MIN });
+      jobDetail(env.DB, {
+        technicianId: TECHNICIAN,
+        jobId: VISIT,
+        now: at,
+        unlockHour: 18,
+        waits: NO_SHOW_WAIT_MIN,
+        phoneClock: PHONE_CLOCK,
+      });
 
     expect((await card(NOW))?.client).toBeNull();
     const evening = new Date("2026-09-21T13:00:00.000Z");

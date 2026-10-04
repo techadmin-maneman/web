@@ -178,7 +178,7 @@ describe("POST /api/appointments/:id/cancel", () => {
     expect(await done.json()).toMatchObject({ cancelled: true });
     expect(deps.alerts).toEqual([
       `The refund of Rs. 2000 for visit ${VISIT}, cancelled by the client, failed (Razorpay payment pay_visit). ` +
-        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -217,7 +217,7 @@ describe("POST /api/appointments/:id/cancel", () => {
     expect(deps.alerts).toEqual([
       `Razorpay did not answer the refund of Rs. 2000 for visit ${VISIT}, cancelled by the client (payment ` +
         "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
-        `refund of Rs. 2000 is there. http://ops.localhost:4323/clients/${PERSON}`,
+        `refund of Rs. 2000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 

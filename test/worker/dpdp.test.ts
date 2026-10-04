@@ -85,6 +85,18 @@ describe("erasure reaches Phase 2's data", () => {
     expect(left).toEqual({ photos: 0, sets: 0, addresses: 0, grievance: "Erased", visits: 1 });
   });
 
+  it("blanks how the client reached us and how much hair they had lost, and keeps the lead", async () => {
+    await phase2Data();
+    await everythingElseHeld();
+
+    await eraseByMobile(MOBILE, NOW);
+
+    const lead = await env.DB.prepare("SELECT source, loss_extent, gclid, landing_path FROM leads WHERE person_id = ?1")
+      .bind(PERSON)
+      .first();
+    expect(lead).toEqual({ source: "form", loss_extent: null, gclid: null, landing_path: null });
+  });
+
   // The Books customer kept the client's name, mobile and addresses (PS-02).
   it("erases the client's Books customer through the Books pass", async () => {
     await env.DB.prepare("UPDATE people SET books_customer_id = 'books-1' WHERE id = ?1").bind(PERSON).run();
@@ -176,7 +188,99 @@ describe("GET /api/me/export", () => {
     const audit = await env.DB.prepare("SELECT action FROM audit_log WHERE action = 'data.export'").first();
     expect(audit).toEqual({ action: "data.export" });
   });
+
+  // PS-21 of the audit, 2 October 2026: what the export left out.
+  it("gives the door, the client's note, how they reached us, their hair system, invite, sign-ins and requests", async () => {
+    await phase2Data();
+    await everythingElseHeld();
+    const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/export", {
+      headers: { Cookie: cookie },
+    });
+    const data = await answer.json<Record<string, unknown>>();
+    expect(data).toMatchObject({
+      addresses: [{ flat: "7B", floor: "3", tower: "C", landmark: "Opposite the park", given_on_the_phone: 1 }],
+      visits: [{ client_note: "Ring twice", technician: null }],
+      leads: [{ source: "form", loss_extent: "crown", gclid: "click-1", landing_path: "/book" }],
+      hair_systems: [{ piece_code: "MM-CLASSIC-01", base: "lace", fitted_at: "2026-09-01" }],
+      referred_by: [{ code: "ARJUN1", via: "consultation", friend_first_name: "Rohit", grant_state: "pending" }],
+      number_changes: [{ new_mobile_e164: "+919810000009", state: "verifying" }],
+      deletion_requests: [{ state: "rejected", reason: "A visit is still booked" }],
+      try_ons: [{ stage: "crown", preset: "classic_short", state: "expired" }],
+      sessions: [{ created_at: NOW.toISOString(), revoked_at: null }],
+    });
+    // Which member of staff took the address down stays ours.
+    expect(JSON.stringify(data.addresses)).not.toContain("ops@maneman.in");
+  });
+
+  it("gives the same as a page to read, labelled and in India's time, and audits it", async () => {
+    await phase2Data();
+    const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/export.html", {
+      headers: { Cookie: cookie },
+    });
+    expect(answer.status).toBe(200);
+    expect(answer.headers.get("Content-Type")).toBe("text/html; charset=utf-8");
+    expect(answer.headers.get("Content-Disposition")).toBe('attachment; filename="maneman-my-data.html"');
+    expect(answer.headers.get("Content-Security-Policy")).toBe("default-src 'none'; style-src 'unsafe-inline'");
+    const page = await answer.text();
+    expect(page).toContain("<dt>Name</dt><dd>Rohit Malhotra</dd>");
+    expect(page).toContain("<dt>With us since</dt><dd>21 Sep 2026, 12 pm</dd>");
+    expect(page).toContain("<dt>Your words</dt><dd>Please stop calling me.</dd>");
+    const audit = await env.DB.prepare(
+      "SELECT COUNT(*) AS exports FROM audit_log WHERE action = 'data.export'",
+    ).first();
+    expect(audit).toEqual({ exports: 1 });
+  });
+
+  it("gives no page without a session", async () => {
+    const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/export.html");
+    expect(answer.status).toBe(401);
+  });
 });
+
+/** A row in each table PS-21 found missing from the export, beside phase2Data's. */
+async function everythingElseHeld(): Promise<void> {
+  const at = NOW.toISOString();
+  await env.DB.batch([
+    env.DB.prepare(
+      `UPDATE addresses SET flat = '7B', floor = '3', tower = 'C', landmark = 'Opposite the park',
+         given_to_staff = 'ops@maneman.in'`,
+    ),
+    env.DB.prepare("UPDATE appointments SET client_note = 'Ring twice', client_note_at = ?1").bind(at),
+    env.DB.prepare(
+      `INSERT INTO leads (id, person_id, created_at, source, request_id, loss_extent, gclid, landing_path)
+       VALUES ('lead-1', ?1, ?2, 'form', 'request-1', 'crown', 'click-1', '/book')`,
+    ).bind(PERSON, at),
+    env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, fitted_at, synced_at)
+       VALUES ('piece-1', 'piece-1', ?1, 'MM-CLASSIC-01', 'lace', '2026-09-01', ?2)`,
+    ).bind(PERSON, at),
+    env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('referrer-1', ?1, '+919810000002', 'Arjun')",
+    ).bind(at),
+    env.DB.prepare(
+      "INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES ('ARJUN1', 'referrer-1', ?1, ?1)",
+    ).bind(at),
+    env.DB.prepare(
+      `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, friend_first_name,
+         created_at, updated_at)
+       VALUES ('attribution-1', 'ARJUN1', ?1, ?2, 'consultation', 'Rohit', ?2, ?2)`,
+    ).bind(PERSON, at),
+    env.DB.prepare(
+      `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state)
+       VALUES ('change-1', ?1, ?2, '+919810000009', 'verifying')`,
+    ).bind(PERSON, at),
+    env.DB.prepare(
+      `INSERT INTO deletion_requests (id, person_id, created_at, state, decided_at, reason)
+       VALUES ('deletion-1', ?1, ?2, 'rejected', ?2, 'A visit is still booked')`,
+    ).bind(PERSON, at),
+    env.DB.prepare(
+      `INSERT INTO tryon_jobs (id, person_id, created_at, upload_key, state, stage, preset, photo_consent_version,
+         photo_consent_at, ip_hash, request_id)
+       VALUES ('job-1', ?1, ?2, 'uploads/job-1', 'expired', 'crown', 'classic_short', 'photo-v3', ?2, 'an-ip-hash',
+         'request-2')`,
+    ).bind(PERSON, at),
+  ]);
+}
 
 describe("grievances", () => {
   it("are raised by the client, alert ops without their words, and are answered by ops", async () => {

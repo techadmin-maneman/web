@@ -250,7 +250,7 @@ test("names the client of a no-show, and leads to their visits and to the case",
     "href",
     "/clients/22000000-0000-4000-8000-000000000010/visits",
   );
-  await noShow.getByRole("link", { name: /^Rule on it in No-shows/ }).click();
+  await noShow.getByRole("link", { name: /^Rule on it in Payments/ }).click();
   expect(new URL(page.url()).pathname).toBe("/no-shows");
   expect(new URL(page.url()).hash).toBe("#case-66000000-0000-4000-8000-000000000001");
 });

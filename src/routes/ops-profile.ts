@@ -20,10 +20,11 @@ import { queueContactSync } from "../http/contact-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { queueMessage } from "../http/queue-message.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { dueAt } from "../policy/tasks.ts";
-import { heldBackByAllowlist, type MessagingMessage } from "../queues/messaging.ts";
+import { heldBackByAllowlist } from "../queues/messaging.ts";
 import { scrubString } from "../log.ts";
 import { ErasureRefusedSchema, erasureRefused } from "./ops-erasure.ts";
 
@@ -138,7 +139,9 @@ export const deletionDecisionRoute = createRoute({
     400: errorResponse("invalid_request: a rejection needs a reason"),
     404: errorResponse("not_found: no request waiting for ops by that ID in the caller's cities"),
     409: {
-      description: "visit_booked or payment_held: cancel the visits and refund the payments it names first",
+      description:
+        "visit_booked, payment_held or payment_owed: cancel the visits, refund the payments and settle the links it " +
+        "names first",
       ...json(ErasureRefusedSchema),
     },
   },
@@ -240,6 +243,8 @@ export function registerOpsProfile(app: App): void {
       staff: staffOf(c).id,
       reason,
       audit: decisionAudit(c, "deletion.decide", { kind: "deletion", id }, decision),
+      payments: c.var.deps.payments,
+      alertOnce: c.var.deps.alertOnce,
       requestId: c.var.requestId,
       now,
       log: c.var.log,
@@ -255,15 +260,6 @@ export function registerOpsProfile(app: App): void {
     if (outcome.told !== null) await tellDeletionDone(c, outcome.told);
     return c.json({ state: "done" as const }, 200);
   });
-}
-
-/** Sends a message written with the decision's batch to the messaging queue. One the queue drops, the sweeper sends. */
-async function queueMessage(c: Context<AppEnv>, messageId: string): Promise<void> {
-  try {
-    await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
-  } catch (error) {
-    c.var.log.warn("message_enqueue_failed", { outbound_message_id: messageId, error });
-  }
 }
 
 /**

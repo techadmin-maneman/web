@@ -5,7 +5,7 @@
 import { createAlertOnce, createResolveAlert, type AlertOnce, type ResolveAlert } from "./domain/alerts.ts";
 import type { StaticConfig } from "./guard.ts";
 import { createAccessVerifier, type AccessVerifier } from "./providers/cloudflare-access.ts";
-import type { Logger } from "./log.ts";
+import { createLogger, type Logger } from "./log.ts";
 import { createAlert, createLeadNotice, type Alert, type LeadNotice } from "./providers/alerts.ts";
 import { createBooksProvider, type BooksProvider } from "./providers/books.ts";
 import { createCodeSender, type CodeSender } from "./providers/codes.ts";
@@ -65,7 +65,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
   const httpFetch: typeof fetch = (input, init) => fetch(input, init);
   const now = (): Date => new Date();
   // Built once per isolate, so Access's signing keys are fetched once, not per request.
-  const access = createAccessVerifier(settings.access, { fetch: httpFetch, now });
+  const access = createAccessVerifier(settings.access, { fetch: httpFetch, now, log: createLogger() });
   // Each provider is made the first time it is used. Making every one on every invocation was half the CPU time of a
   // cron run that had nothing to do (docs/decisions/0009, "the cron's CPU time").
   return (env, log, caller = "background") => {
@@ -86,14 +86,14 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       createLeadNotice({ webhookUrl: settings.leadWebhookUrl, environment, fetch: httpFetch, log }),
     );
     const crm = lazily(() => createCrmProvider(settings.zoho, zoho));
-    const image = lazily(() => createImageProvider(settings.tryon.ailabApiKey, { fetch: httpFetch, now }));
+    const image = lazily(() => createImageProvider(settings.tryon.ailabApiKey, { fetch: httpFetch, now, log }));
     const codes = lazily(() => createCodeSender(providers.SMS_PROVIDER, { messaging: messaging(), log }));
     const books = lazily(() => createBooksProvider(providers.BOOKS_PROVIDER, settings.zohoBooks, zoho));
     const payments = lazily(() =>
       createPaymentsProvider(providers.PAYMENTS_PROVIDER, settings.razorpay, { fetch: httpFetch, log }),
     );
     const geocode = lazily(() =>
-      createGeocodeProvider(providers.GEOCODE_PROVIDER, settings.geocode.apiKey, { fetch: httpFetch }),
+      createGeocodeProvider(providers.GEOCODE_PROVIDER, settings.geocode.apiKey, { fetch: httpFetch, log }),
     );
     return {
       fetch: httpFetch,

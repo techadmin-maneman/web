@@ -2,8 +2,8 @@
 // docs/decisions/0031-access-and-audit.md):
 //   POST /api/clients/search               find a client by their whole mobile number
 //   POST /api/clients/find                 find clients by part of a name or of a number
-//   GET  /api/clients/:id                  who they are, their address, their visits, their payments, their history,
-//                                          and the invite they came with
+//   GET  /api/clients/:id                  who they are, their address, their visits, their payments, payment links
+//                                          and invoices, their history, and the invite they came with
 //   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
 //   POST /api/clients/:id/photos/view      open them: one audit entry, and who opened them before
 //   GET  /api/clients/:id/photos/:photoId  one photograph, served within a logged opening
@@ -34,6 +34,7 @@ import {
   ownPhotoKey,
   visitOutcomes,
 } from "../domain/client-visits.ts";
+import { INVOICE_STATES, LINK_STATES, paymentLinksOf, visitInvoicesOf } from "../domain/client-billing.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { clientVisitCodes } from "../domain/discount-code-uses.ts";
 import { reachBinding, withinReach } from "../domain/places.ts";
@@ -163,6 +164,44 @@ const OpsHistorySchema = z
   .strict()
   .openapi("ClientRecordHistory");
 
+const ClientPaymentLinkSchema = z
+  .object({
+    id: z.uuid(),
+    product: z.string().openapi({ description: "The service it pays for, by its name now." }),
+    visit_date: z
+      .union([z.iso.date(), z.null()])
+      .openapi({ description: "India's date of the visit it pays for; null where the visit has no start." }),
+    amount: z.number().int().openapi({ description: "In paise, GST included." }),
+    reference: z.union([z.string(), z.null()]).openapi({
+      description: "As the client reads it on Razorpay's page; null on a link made before links had one.",
+    }),
+    short_url: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "The address Razorpay texted the client; null until Razorpay has made the link." }),
+    sent_at: z.union([z.iso.datetime(), z.null()]),
+    state: z.enum(LINK_STATES).openapi({
+      description:
+        "making: Razorpay has not made it yet, and it is asked again; open: sent and not paid; paid; refused: " +
+        "Razorpay would not make it, so ops send one by hand; lapsed: closed unpaid.",
+    }),
+    paid_at: z.union([z.iso.datetime(), z.null()]),
+  })
+  .strict()
+  .openapi("ClientPaymentLink");
+
+const ClientInvoiceSchema = z
+  .object({
+    visit_id: z.uuid(),
+    date: z.iso.date(),
+    type: z.enum(VISIT_TYPES),
+    state: z.enum(INVOICE_STATES).openapi({
+      description: "to_raise: Books holds none yet; draft: Books holds it unsent; issued: sent to the client.",
+    }),
+    issued_at: z.union([z.iso.datetime(), z.null()]),
+  })
+  .strict()
+  .openapi("ClientInvoice");
+
 const ClientRecordSchema = z
   .object({
     id: z.uuid(),
@@ -179,6 +218,10 @@ const ClientRecordSchema = z
       .strict()
       .openapi({ description: "Upcoming soonest first; past newest first." }),
     payments: z.array(EntrySchema).openapi({ description: "Payments and refunds as one list, newest first." }),
+    payment_links: z.array(ClientPaymentLinkSchema).openapi({ description: "Every payment link, newest first." }),
+    invoices: z
+      .array(ClientInvoiceSchema)
+      .openapi({ description: "Each finished visit sold for a price, with its invoice; the latest visit first." }),
     history: OpsHistorySchema,
     invite: z
       .union([ClientInviteSchema, z.null()])
@@ -328,7 +371,7 @@ const recordRoute = createRoute({
   method: "get",
   path: "/api/clients/{id}",
   summary:
-    "The client's record: who they are, their address, their visits, their payments, their history and their invite",
+    "The client's record: who they are, their address, their visits, their money, their history and their invite",
   request: { params: clientId },
   responses: { 200: { description: "The record", ...json(ClientRecordSchema) }, 404: unknownClient },
 });
@@ -485,12 +528,14 @@ export function registerOpsClients(app: App): void {
     if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const now = c.var.deps.now();
-    const [address, credits, visits, fitted, payments, history, proposal, invite] = await Promise.all([
+    const [address, credits, visits, fitted, payments, links, invoices, history, proposal, invite] = await Promise.all([
       currentAddress(db, id),
       creditBalance(db, id, now),
       listVisits(db, id, now),
       isFitted(db, id),
       paymentEntries(db, id, now),
+      paymentLinksOf(db, id),
+      visitInvoicesOf(db, id),
       clientHistory(db, id),
       // A Phase 1 booking still waiting to be booked makes the person a lead, as it does on /api/me.
       latestProposal(db, id),
@@ -523,6 +568,8 @@ export function registerOpsClients(app: App): void {
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
         visits: { upcoming: withOutcome(visits.upcoming), past: withOutcome(visits.past) },
         payments,
+        payment_links: links,
+        invoices,
         history,
         invite,
       },

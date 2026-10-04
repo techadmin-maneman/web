@@ -12,7 +12,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { Mark } from "@maneman/ui/Mark";
 import { Link } from "@maneman/ui/router";
 import { useEffect, useState } from "react";
-import type { JobSummary } from "../api.ts";
+import type { JobState, JobSummary } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
 import {
   atRisk as atRiskCopy,
@@ -23,13 +23,14 @@ import {
   today as copy,
 } from "../content.ts";
 import { STROKE } from "../icons.ts";
+import { rowState, type RowState } from "../lib/progress.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, todayInIndia, where } from "../lib/when.ts";
 import { useSession } from "../session.ts";
 import { Failed, Loading } from "../states/States.tsx";
-import { keptClosedJobs } from "../store/jobs.ts";
+import { keptStates } from "../store/jobs.ts";
 import { replay, type Queued } from "../store/outbox.ts";
 import { photoSets } from "../waiting/sets.ts";
 import { JobRow } from "./JobRow.tsx";
@@ -38,37 +39,38 @@ import styles from "./today.module.css";
 /** Where a sign-out has got to: asking about unsent work, waiting on the API, or refused for want of signal. */
 type Leaving = "asking" | "going" | "stayed" | null;
 
-/**
- * Where a row's job stands: closed out on this phone or on the server, or
- * begun. The phone's own word comes first, since the server hears of a
- * close-out only once it has gone up.
- */
-function stateOf(job: JobSummary, queued: readonly Queued[], closedHere: ReadonlySet<string>): string | null {
-  if (closedHere.has(job.id) || job.status === "completed" || job.status === "terminated") {
-    return jobCopy.states.closed;
-  }
-  const startedHere = queued.some((event) => event.job_id === job.id && event.kind === "start");
-  return startedHere || job.status === "in_progress" ? jobCopy.states.inProgress : null;
+const ROW_STATES: Readonly<Record<RowState, string>> = {
+  closed: jobCopy.states.closed,
+  in_progress: jobCopy.states.inProgress,
+};
+
+function stateOf(job: JobSummary, queued: readonly Queued[], heard: ReadonlyMap<string, JobState>): string | null {
+  const state = rowState(job, queued, heard.get(job.id));
+  return state === null ? null : ROW_STATES[state];
 }
 
-/** The jobs closed out on this phone, read again whenever the outbox changes. */
-function useClosedHere(watch: unknown): ReadonlySet<string> {
-  const [closed, setClosed] = useState<ReadonlySet<string>>(new Set());
+/** The client's name from the day's list, else from the card the phone kept, for a day kept before the list had names. */
+const clientOf = (job: JobSummary, kept: ReadonlyMap<string, string>): string | undefined =>
+  job.client_name ?? kept.get(job.id);
+
+/** Where each job the phone holds stood when last heard of, read again whenever the outbox changes. */
+function useHeard(watch: unknown): ReadonlyMap<string, JobState> {
+  const [heard, setHeard] = useState<ReadonlyMap<string, JobState>>(new Map());
   useEffect(() => {
     let current = true;
-    void keptClosedJobs().then(
+    void keptStates().then(
       (found) => {
-        if (current) setClosed(found);
+        if (current) setHeard(found);
       },
       () => {
-        // A store that will not open says nothing of what closed; the rows go without.
+        // A store that will not open has nothing newer than the list; the rows go by it.
       },
     );
     return () => {
       current = false;
     };
   }, [watch]);
-  return closed;
+  return heard;
 }
 
 export function TodayScreen() {
@@ -84,7 +86,7 @@ export function TodayScreen() {
   const unsentActions = waiting.events.length;
   // What is still on its way: a job whose queue stopped says so in the banner above every screen.
   const sending = waiting.events.filter((event) => event.state === "waiting").length;
-  const closedHere = useClosedHere(waiting);
+  const heard = useHeard(waiting);
   const heading = useScreen(titles.today);
 
   async function leave(): Promise<void> {
@@ -98,8 +100,7 @@ export function TodayScreen() {
   const [cards, setCards] = useState(0);
   const names = useNames(cards);
 
-  // Fresh from the API: keep each card too, so a basement opens them (board A2),
-  // and so the rows can name the client the day's list does not carry.
+  // Fresh from the API: keep each card too, so a basement opens them (board A2).
   useEffect(() => {
     if (day.state === "loaded" && !day.fromPhone) {
       void keepCards(day.value).then(() => {
@@ -217,7 +218,7 @@ export function TodayScreen() {
         <ul className={styles.list}>
           {jobs.map((job) => (
             <li key={job.id}>
-              <JobRow job={job} client={names.get(job.id)} state={stateOf(job, waiting.events, closedHere)} />
+              <JobRow job={job} client={clientOf(job, names)} state={stateOf(job, waiting.events, heard)} />
             </li>
           ))}
         </ul>
@@ -240,7 +241,7 @@ export function TodayScreen() {
             <ul className={styles.list}>
               {tomorrowJobs.map((job) => (
                 <li key={job.id}>
-                  <JobRow job={job} client={names.get(job.id)} state={stateOf(job, waiting.events, closedHere)} />
+                  <JobRow job={job} client={clientOf(job, names)} state={stateOf(job, waiting.events, heard)} />
                 </li>
               ))}
             </ul>

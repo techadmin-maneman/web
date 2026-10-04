@@ -5,7 +5,8 @@
 // client-generated ID, and sent in order when the phone is back online. The
 // server makes each write idempotent on that ID." The ID is unique per job, so
 // a phone that replays its outbox lands each event once and gets the first
-// answer back.
+// answer back: the event that landed, or the refusal of one that was
+// superseded.
 //
 // "If the job has changed underneath (for example ops reassigned the job while
 // the phone was offline), the write is rejected with 409 superseded. The
@@ -23,7 +24,7 @@
 import { firstNameOf } from "../lib/names.ts";
 import { isNoShow, stepBefore, type JobEventKind } from "../policy/in-job-steps.ts";
 import { namesTheOtherTechnician } from "../policy/job-visibility.ts";
-import { onTheVisitsDay } from "../policy/phone-clock.ts";
+import { earliestCheckIn, onTheVisitsDay, tooEarlyToArrive, type PhoneClock } from "../policy/phone-clock.ts";
 import type { WorkableJob } from "./tech-jobs.ts";
 
 /** As job_events.fsm_write_state holds it: "written" once landed, "rejected" when superseded. */
@@ -63,9 +64,12 @@ export type Landing =
   | { readonly kind: "out_of_order"; readonly needs: JobEventKind }
   /** A check-in or a start on a day that is not the job's own. */
   | { readonly kind: "not_today" }
+  /** A check-in or a start before the earliest check-in, which it names. */
+  | { readonly kind: "too_early"; readonly earliest: Date }
   /** A no-show on a job already started: the client was home. */
   | { readonly kind: "already_started" };
 
+/** A write as the phone sent it. */
 export interface EventInput {
   readonly job: WorkableJob;
   readonly technicianId: string;
@@ -78,33 +82,65 @@ export interface EventInput {
   /** The job's start as the phone holds it, when the phone says; a different one means ops moved it. */
   readonly expectedStart: Date | null;
   readonly now: Date;
+  /** How long before the booked start a technician may check in, as ops set it. */
+  readonly phoneClock: PhoneClock;
+}
+
+/** A write that may land, with what it records. */
+export interface LandingInput extends EventInput {
   /** What the step records (src/domain/job-record.ts), written in the event's own batch. */
   readonly records: readonly D1PreparedStatement[];
+  /** Written in the event's own batch, and only if the event lands: a check-in's own row. */
+  readonly withEvent?: readonly D1PreparedStatement[];
 }
 
 /**
  * Records one event of the phone's outbox, once. A replay of an ID this job
- * already holds changes nothing and comes back as the event that landed first.
+ * already holds changes nothing and is answered as it was the first time.
  */
-export async function landJobEvent(db: D1Database, input: EventInput): Promise<Landing> {
+export async function landJobEvent(db: D1Database, input: LandingInput): Promise<Landing> {
+  const answered = await answerBeforeLanding(db, input);
+  if (answered !== null) return answered;
+  return landInOrder(db, input);
+}
+
+/**
+ * What a write is answered with before anything of it is measured or lands: a replay, as it was answered the first
+ * time; the refusal of a job that changed under the phone, which records that the phone tried; or of a check-in or a
+ * start on a day that is not the job's own, or before the earliest check-in. Null when the write may go on to land.
+ */
+export async function answerBeforeLanding(db: D1Database, input: EventInput): Promise<Landing | null> {
   const held = await eventByClientId(db, input.job.id, input.eventId);
-  if (held !== null) return { kind: "landed", event: held, replayed: true };
+  if (held !== null) return replayOf(db, held, input);
 
   const superseding = await whatChanged(db, input.job, input.technicianId, input.expectedStart);
   if (superseding.changed.length > 0) {
-    await record(db, input, { superseded: true });
+    await recordSuperseded(db, input);
     return { kind: "superseded", ...superseding };
   }
 
   const startsTheDay = input.kind === "check_in" || input.kind === "start";
   if (startsTheDay && !onTheVisitsDay(input.occurredAt, input.job.windowStart)) return { kind: "not_today" };
+  if (startsTheDay && tooEarlyToArrive(input.now, input.job.windowStart, input.phoneClock)) {
+    return { kind: "too_early", earliest: earliestCheckIn(input.job.windowStart, input.phoneClock) };
+  }
+  return null;
+}
 
+/** A write sent again: the event that landed, or, for one superseded then or since, what changed under the phone. */
+async function replayOf(db: D1Database, held: JobEvent, input: EventInput): Promise<Landing> {
+  if (!held.superseded) return { kind: "landed", event: held, replayed: true };
+  return { kind: "superseded", ...(await whatChanged(db, input.job, input.technicianId, input.expectedStart)) };
+}
+
+/** Lands a write answerBeforeLanding let through: refused before a step it needs, else recorded once. */
+export async function landInOrder(db: D1Database, input: LandingInput): Promise<Landing> {
   const done = await kindsLanded(db, input.job.id);
   if (isNoShow(input.kind, input.body) && done.has("start")) return { kind: "already_started" };
   const needs = stepBefore(input.kind, input.job.type, done, input.body, input.job.oneVisit !== null);
   if (needs !== null) return { kind: "out_of_order", needs };
 
-  const written = await record(db, input, { superseded: false });
+  const written = await record(db, input);
   if (written !== null) return { kind: "landed", event: written, replayed: false };
 
   // A second call with the same ID at the same moment lost the insert: answer with the row that won.
@@ -236,16 +272,20 @@ function eventOf(row: EventRow): JobEvent {
   };
 }
 
-/**
- * Writes the event and what the step records, in one batch. A superseded write records nothing: it is kept only as the
- * record that the phone tried.
- */
-async function record(db: D1Database, input: EventInput, options: { superseded: boolean }): Promise<JobEvent | null> {
-  const records = options.superseded ? [] : input.records;
-  const state: WriteState = options.superseded ? "rejected" : "written";
-  const [inserted] = await db.batch<EventRow>([eventStatement(db, input, state, options.superseded), ...records]);
+/** Writes the event in one batch with what is written with it and what the step records. Null when the same event ID landed first. */
+async function record(db: D1Database, input: LandingInput): Promise<JobEvent | null> {
+  const [inserted] = await db.batch<EventRow>([
+    eventStatement(db, input, "written", false),
+    ...(input.withEvent ?? []),
+    ...input.records,
+  ]);
   const row = inserted?.results[0];
   return row === undefined ? null : eventOf(row);
+}
+
+/** A superseded write records nothing: it is kept only as the record that the phone tried. */
+async function recordSuperseded(db: D1Database, input: EventInput): Promise<void> {
+  await eventStatement(db, input, "rejected", true).run();
 }
 
 function eventStatement(

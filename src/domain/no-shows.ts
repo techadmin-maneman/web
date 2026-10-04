@@ -19,6 +19,7 @@
 
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import type { PlacesReached } from "../policy/access.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
 import {
   canCloseAsNoShow,
@@ -28,6 +29,7 @@ import {
   disputeUntil,
   isDisputable,
   noShowWaitEnds,
+  waitStartsAt,
   withinDisputeWindow,
   type DisputeRuling,
   type DisputeState,
@@ -38,6 +40,7 @@ import {
 import { auditStatementIfRuled, type AuditEntry } from "./audit.ts";
 import type { Ruled } from "./after-a-ruling.ts";
 import type { LatestArrival } from "./check-ins.ts";
+import { reachBinding, withinReach } from "./places.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "./visit-changes.ts";
@@ -60,7 +63,7 @@ export interface NoShowCase {
   readonly person: { readonly id: string; readonly name: string } | null;
   readonly visit_date: string | null;
   readonly technician: string | null;
-  /** The phone's time for the arrival, held within bounds (src/policy/phone-clock.ts): what the wait ran from. */
+  /** The phone's time for the arrival, held within bounds (src/policy/phone-clock.ts). */
   readonly checked_in_at: string;
   /** What the phone itself said, before the bounds; null when it said nothing. */
   readonly phone_checked_in_at: string | null;
@@ -78,6 +81,8 @@ export interface NoShowCase {
   readonly message_state: MessageState;
   readonly message_delivered_at: string | null;
   readonly wait_ends_at: string;
+  /** The case closed before the client's own wait, from the booked start, had run: ops waive it, or give their reason to charge. */
+  readonly closed_early: boolean;
   readonly closed_at: string | null;
   /** When the case opened, which is when it started waiting for ops. */
   readonly opened_at: string;
@@ -91,6 +96,7 @@ interface CaseRow {
   person_id: string | null;
   person_name: string | null;
   checked_in_at: string;
+  wait_started_at: string;
   claimed_at: string | null;
   received_at: string;
   distance_m: number | null;
@@ -133,22 +139,22 @@ function evidenceMessage(
 }
 
 export type Readiness =
-  | { readonly kind: "ready"; readonly checkIn: LatestArrival; readonly waitEndsAt: Date }
+  | { readonly kind: "ready"; readonly checkIn: LatestArrival; readonly waitStartsAt: Date; readonly waitEndsAt: Date }
   | { readonly kind: "too_early"; readonly waitEndsAt: Date }
   | { readonly kind: "no_check_in" };
 
 /** Whether the job may close as a no-show now: a check-in, and its wait run out on both clocks. */
 export function noShowReadiness(
   checkIn: LatestArrival | null,
-  type: VisitType,
+  visit: { readonly windowStart: Date; readonly type: VisitType },
   now: Date,
   /** The waits in force, which ops set (ADR 0061). */
   wait: Waits,
 ): Readiness {
   if (checkIn === null) return { kind: "no_check_in" };
-  const waitEndsAt = noShowWaitEnds(checkIn, type, wait);
-  if (!canCloseAsNoShow(checkIn, type, now, wait)) return { kind: "too_early", waitEndsAt };
-  return { kind: "ready", checkIn, waitEndsAt };
+  const waitEndsAt = noShowWaitEnds(checkIn, visit.windowStart, visit.type, wait);
+  if (!canCloseAsNoShow(checkIn, visit.windowStart, visit.type, now, wait)) return { kind: "too_early", waitEndsAt };
+  return { kind: "ready", checkIn, waitStartsAt: waitStartsAt(checkIn.at, visit.windowStart), waitEndsAt };
 }
 
 /**
@@ -157,7 +163,7 @@ export function noShowReadiness(
  */
 export async function openNoShowCase(
   db: D1Database,
-  input: { appointmentId: string; checkIn: LatestArrival; waitEndsAt: Date; now: Date },
+  input: { appointmentId: string; checkIn: LatestArrival; waitStartsAt: Date; waitEndsAt: Date; now: Date },
 ): Promise<string> {
   const message = await evidenceMessage(db, input.appointmentId);
   const at = input.now.toISOString();
@@ -175,7 +181,7 @@ export async function openNoShowCase(
       crypto.randomUUID(),
       input.checkIn.id,
       input.appointmentId,
-      input.checkIn.at.toISOString(),
+      input.waitStartsAt.toISOString(),
       input.waitEndsAt.toISOString(),
       at,
       message?.id ?? null,
@@ -196,7 +202,7 @@ export async function openNoShowCase(
  */
 export interface NoShowNote {
   readonly decision: NoShowDecision;
-  /** From the check-in to the close: how long the technician waited at the door. */
+  /** From the wait's start to the close: how long the technician waited at the door once the visit was due. */
   readonly waited_minutes: number;
   /**
    * What a charge took: in paise, what it kept of the payment, and whether it spent the credit. Null unless ops
@@ -277,18 +283,26 @@ export async function noShowNotes(
   return new Map(results.map((row) => [row.appointment_id, noteOf(row, now)]));
 }
 
-/** The cases ops have still to rule on, oldest first, then the decided ones. */
+/** Whether a case closed before the same wait, counted from the booked start, would have run out. */
+function closedBeforeTheClientsWait(row: CaseRow): boolean {
+  if (row.window_start === null || row.closed_at === null) return false;
+  const waitMs = Date.parse(row.wait_ends_at) - Date.parse(row.wait_started_at);
+  return Date.parse(row.closed_at) < Date.parse(row.window_start) + waitMs;
+}
+
+/** The cases in the places reached that ops have still to rule on, oldest first, then the decided ones. */
 export async function listNoShowCases(
   db: D1Database,
   decision: NoShowDecision | "all",
   limit: number,
+  reached: PlacesReached,
 ): Promise<NoShowCase[]> {
   // The receipt is read from the message itself as well as from the case, since
   // it can arrive after the case opened.
   const { results } = await db
     .prepare(
       `SELECT n.id, n.appointment_id, pe.id AS person_id, pe.name AS person_name,
-         n.wait_started_at AS checked_in_at, c.claimed_at, c.created_at AS received_at, c.distance_m, c.radius_m,
+         c.at AS checked_in_at, n.wait_started_at, c.claimed_at, c.created_at AS received_at, c.distance_m, c.radius_m,
          n.message_id, o.state AS message_status, o.last_error AS message_error,
          COALESCE(n.message_delivered_at, o.delivered_at) AS message_delivered_at,
          n.wait_ends_at, n.closed_at, n.created_at, n.decision, n.decided_at,
@@ -299,11 +313,11 @@ export async function listNoShowCases(
        LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
        LEFT JOIN outbound_messages o ON o.id = n.message_id
        LEFT JOIN technicians t ON t.id = c.technician_id
-       WHERE (?1 = 'all' OR n.decision = ?1)
+       WHERE (?1 = 'all' OR n.decision = ?1) AND ${withinReach("no_show", "n", "?3")}
        ORDER BY n.decision = 'undecided' DESC, n.created_at
        LIMIT ?2`,
     )
-    .bind(decision, limit)
+    .bind(decision, limit, reachBinding(reached))
     .all<CaseRow>();
   return results.map((row) => ({
     id: row.id,
@@ -322,6 +336,7 @@ export async function listNoShowCases(
     message_state: messageStateOf(row),
     message_delivered_at: row.message_delivered_at,
     wait_ends_at: row.wait_ends_at,
+    closed_early: closedBeforeTheClientsWait(row),
     closed_at: row.closed_at,
     opened_at: row.created_at,
     decision: row.decision,

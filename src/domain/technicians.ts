@@ -207,23 +207,28 @@ export interface Device {
   readonly label: string | null;
   readonly last_seen_at: string;
   readonly revoked_at: string | null;
+  /** Whether the phone's last session is still live: false once he signed out, it ran out, or it was revoked. */
+  readonly signed_in: boolean;
 }
 
 /**
  * The phones every active technician has logged in on, by technician, the
  * latest used first. One read for the whole roster, however many there are.
  */
-export async function devicesByTechnician(db: D1Database): Promise<Map<string, Device[]>> {
+export async function devicesByTechnician(db: D1Database, now: Date): Promise<Map<string, Device[]>> {
   const { results } = await db
     .prepare(
-      `SELECT d.technician_id, d.device_id, d.label, d.last_seen_at, d.revoked_at
+      `SELECT d.technician_id, d.device_id, d.label, d.last_seen_at, d.revoked_at,
+         (s.id IS NOT NULL AND s.revoked_at IS NULL AND s.expires_at > ?1) AS signed_in
        FROM technician_devices d JOIN technicians t ON t.id = d.technician_id
+       LEFT JOIN sessions s ON s.id = d.session_id
        WHERE t.active = 1 ORDER BY d.last_seen_at DESC`,
     )
-    .all<Device & { technician_id: string }>();
+    .bind(now.toISOString())
+    .all<Omit<Device, "signed_in"> & { technician_id: string; signed_in: number }>();
   const devices = new Map<string, Device[]>();
-  for (const { technician_id: technicianId, ...device } of results) {
-    devices.set(technicianId, [...(devices.get(technicianId) ?? []), device]);
+  for (const { technician_id: technicianId, signed_in: signedIn, ...device } of results) {
+    devices.set(technicianId, [...(devices.get(technicianId) ?? []), { ...device, signed_in: signedIn === 1 }]);
   }
   return devices;
 }

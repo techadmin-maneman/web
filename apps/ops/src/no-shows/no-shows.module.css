@@ -28,6 +28,49 @@
 
 /* ---- The day's money, and the charges beneath it --------------------------- */
 
+/* The day the figures are for, and the field that asks for another, across from it. */
+.dayHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-16) var(--sp-20) 0;
+}
+
+.dayTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-18);
+}
+
+.dayLabel {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.dayField {
+  display: block;
+  width: var(--ops-date);
+  height: var(--tap);
+  margin-top: var(--sp-6);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-variant-numeric: tabular-nums;
+}
+
+.dayField:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
 /* Each figure stands on the top line, whatever its own name runs to. */
 .figures {
   display: flex;
@@ -245,6 +288,13 @@
  * must not be read past as though it held a figure.
  */
 .unmeasured {
+  color: var(--error-on-paper);
+}
+
+/* A case closed before the booked start's wait had run: it argues for the client, in the ink kept for that. */
+.closedEarly {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
   color: var(--error-on-paper);
 }
 

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError, validateStaticConfig } from "../../src/guard.ts";
-import { isKnownTemplate } from "../../src/config/message-templates.ts";
 
 const REAL = {
   IMAGE_PROVIDER: "ailabtools",
@@ -317,12 +316,6 @@ describe("validateStaticConfig: try-on and messaging", () => {
       "RESULT_SIGNING_KEY must be at least 32 characters",
       "RESULT_RETENTION_DAYS must be 1 to 30: the photo notice promises deletion within thirty days",
     ]);
-  });
-
-  it("sends the try-on result with a template that exists, and routes an unknown colour as the owner chose", () => {
-    const { settings } = validateStaticConfig(production);
-    expect(isKnownTemplate(settings.messaging.resultTemplate)).toBe(true);
-    expect(settings.tryon.unknownColorRoute).toBe("pro_black");
   });
 
   it("insists on an allowlist while staging messaging is on, and reads it as E.164", () => {

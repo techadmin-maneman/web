@@ -96,6 +96,34 @@ export const RECORD = {
       discount_code: null,
     },
   ],
+  /** The link that payment came by, and one ops sent for his next visit, still to be paid. */
+  payment_links: [
+    {
+      id: "35000000-0000-4000-8000-000000000002",
+      product: "Service visit",
+      visit_date: "2027-10-02",
+      amount: 236_000,
+      reference: "MM-2027-0902",
+      short_url: "https://rzp.io/i/MMsv902",
+      sent_at: "2027-09-21T05:00:00.000Z",
+      state: "open",
+      paid_at: null,
+    },
+    {
+      id: "35000000-0000-4000-8000-000000000001",
+      product: "Service visit",
+      visit_date: "2027-08-22",
+      amount: 236_000,
+      reference: "MM-2027-0841",
+      short_url: "https://rzp.io/i/MMsv841",
+      sent_at: "2027-08-19T06:00:00.000Z",
+      state: "paid",
+      paid_at: "2027-08-20T06:00:00.000Z",
+    },
+  ],
+  invoices: [
+    { visit_id: VISIT_ID, date: "2027-08-22", type: "service", state: "issued", issued_at: "2027-08-22T09:00:00.000Z" },
+  ],
   /*
    * What the record adds up to (src/domain/client-history.ts): the board's own
    * client, fitted in November 2026 and served since, with the piece B1 draws
@@ -127,6 +155,8 @@ export const NEW_RECORD = {
   address: null,
   visits: { upcoming: [], past: [] },
   payments: [],
+  payment_links: [],
+  invoices: [],
   history: {
     visits: 0,
     services: 0,

@@ -62,12 +62,11 @@ export const LOCAL_SETTINGS: Settings = {
     uploadDailyCeiling: 40,
     resultReadDailyCeiling: 400,
     resultRetentionDays: 30,
-    unknownColorRoute: "premium_original",
     creditFloor: 200,
     linkSigningKey: "test-link-signing-key-that-is-long-enough",
     ailabApiKey: null,
   },
-  messaging: { enabled: true, resultTemplate: "tryon_result_v1", allowlist: [], evolution: null },
+  messaging: { enabled: true, allowlist: [], evolution: null },
   devRoutes: false,
 };
 
@@ -272,8 +271,8 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
     fetch: fakeFetch({ [TURNSTILE_URL]: turnstilePasses }).fetch,
     now,
     crm: createStubCrm(createLogger()),
-    image: createImageProvider(null, { fetch, now }),
-    geocode: createGeocodeProvider("stub", null, { fetch }),
+    image: createImageProvider(null, { fetch, now, log: createLogger() }),
+    geocode: createGeocodeProvider("stub", null, { fetch, log: createLogger() }),
     messaging: createStubMessaging(createLogger()),
     alert,
     alertOnce: createAlertOnce({ db: env.DB, alert, now, environment: "local", log: createLogger() }),
@@ -284,7 +283,7 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
       return Promise.resolve();
     },
     leadNotices,
-    access: createAccessVerifier(null, { fetch, now }),
+    access: createAccessVerifier(null, { fetch, now, log: createLogger() }),
     codes: {
       smsAvailable: true,
       send: (channel, to, code) => {
@@ -352,6 +351,14 @@ export function leaseRefused(db: D1Database): D1Database {
     batch: <T = unknown>(statements: D1PreparedStatement[]) => db.batch<T>(statements),
   };
   return refusing as D1Database;
+}
+
+/** How many round trips to D1 a request waited on, one after another, as its Server-Timing header says. */
+export function d1TripsOf(response: Response): number {
+  const timing = response.headers.get("server-timing") ?? "";
+  const trips = /desc="(\d+) round trips"/.exec(timing)?.[1];
+  if (trips === undefined) throw new Error(`no D1 round trips in Server-Timing "${timing}"`);
+  return Number(trips);
 }
 
 /** A queue binding that keeps what is sent, instead of delivering it. */

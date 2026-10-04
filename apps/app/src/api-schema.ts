@@ -2565,6 +2565,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/export.html": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Everything held about the client, as a page to download and read */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description An HTML file, maneman-my-data.html, labelled and in India's time */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/html": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/grievances": {
         parameters: {
             query?: never;
@@ -2623,7 +2668,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2634,6 +2679,11 @@ export interface components {
                     /** @description When ops moved the job to them; null where nothing recorded when */
                     at: string | null;
                 };
+                /**
+                 * Format: date-time
+                 * @description too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one.
+                 */
+                earliest_at?: string;
             };
         };
         Health: {
@@ -2718,7 +2768,7 @@ export interface components {
             first_name: string;
             /** @description For the profile's button: the first letters of the first and last names. */
             initials: string;
-            /** @description A booking's proposed consultation, before it is a visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the person has a visit. */
+            /** @description A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is on record. Null once one is, and once its day has passed. */
             consultation: {
                 /** Format: date */
                 date: string;
@@ -2734,6 +2784,10 @@ export interface components {
                 window_label: "before noon" | "after four" | null;
                 /** @description Where it is: the saved address (locality, city and pincode), else the booking's city. */
                 place: string;
+                /** @description Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp. */
+                requested: boolean;
+                /** @description The consultation and the first fit in one visit. */
+                one_visit: boolean;
             } | null;
             /** @description The next visit that has not happened: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;

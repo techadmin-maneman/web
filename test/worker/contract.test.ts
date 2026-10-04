@@ -38,13 +38,15 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
     expect(renderApiMarkdown(buildOpenApiDocument(surface))).toBe(markdown.replace(/\r\n/g, "\n"));
   });
 
-  it("documents every GET response with a JSON schema, or as an image, a PDF, a redirect or no content", () => {
+  it("documents every GET response with a JSON schema, or as an image, a PDF, a page, a redirect or no content", () => {
     const generated = buildOpenApiDocument(surface);
     for (const [path, item] of Object.entries(generated.paths ?? {})) {
       for (const [status, response] of Object.entries(item.get?.responses ?? {}) as [string, unknown][]) {
         const types = Object.keys((response as { content?: Record<string, unknown> }).content ?? {});
+        // A page is a file too: a client's data export, readable, downloads as one.
         const isFile =
-          types.length > 0 && types.every((type) => type.startsWith("image/") || type === "application/pdf");
+          types.length > 0 &&
+          types.every((type) => type.startsWith("image/") || type === "application/pdf" || type === "text/html");
         // A redirect has no body: the invite's preview sends the house card to the site (ADR 0048).
         const isRedirect = status.startsWith("3") && types.length === 0;
         const isNoContent = status === "204" && types.length === 0;

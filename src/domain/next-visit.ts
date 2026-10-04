@@ -114,14 +114,18 @@ export async function nextVisitFacts(
   if (row.last_start !== null) {
     const last = new Date(row.last_start);
     const next = nextVisitAfter(indiaDate(last), row.piece_due, tomorrow, days);
+    const [tier, schedule] = await Promise.all([
+      serviceToOffer(db, personId, next.type, next.offeredOn),
+      loadSlotSchedule(db),
+    ]);
     return {
       booked,
       offer: {
         type: next.type,
-        tier: await serviceToOffer(db, personId, next.type, next.offeredOn),
+        tier,
         due_on: next.dueOn,
         date: next.offeredOn,
-        window: windowFor(next.type, (await loadSlotSchedule(db)).at(last).window),
+        window: windowFor(next.type, schedule.at(last).window),
       },
     };
   }

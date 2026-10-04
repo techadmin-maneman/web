@@ -18,7 +18,7 @@ import type { VisitType } from "../config/visit-types.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { createLogger, failureReason, type Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "./credits.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
 import { graceEndOf, heldVisitTimes, liveVisitOf, retakeSlot } from "./scheduling.ts";
@@ -39,6 +39,8 @@ export interface ConfirmOptions {
 interface HoldRow {
   id: string;
   person_id: string;
+  /** When the client was erased; null while they are not. */
+  person_erased_at: string | null;
   type: VisitType;
   tier: string;
   /** The length it was held for; null for a hold made before services had lengths. */
@@ -72,11 +74,12 @@ interface HoldRow {
 async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
   return db
     .prepare(
-      `SELECT h.id, h.person_id, h.type, h.tier, h.minutes, h.date, h.window_label, h.start_unit, h.technician_id,
-              h.amount, h.state, h.expires_at, h.grace_seconds, h.confirmed_at, h.razorpay_order_id, h.appointment_id,
-              h.moves_appointment_id, h.move_kind, h.use_credit, h.one_visit, h.pay_by_link, h.refunded_at, h.pincode,
-              sp.city
-       FROM slot_holds h LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
+      `SELECT h.id, h.person_id, p.erased_at AS person_erased_at, h.type, h.tier, h.minutes, h.date, h.window_label,
+              h.start_unit, h.technician_id, h.amount, h.state, h.expires_at, h.grace_seconds, h.confirmed_at,
+              h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind, h.use_credit, h.one_visit,
+              h.pay_by_link, h.refunded_at, h.pincode, sp.city
+       FROM slot_holds h JOIN people p ON p.id = h.person_id
+       LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
        WHERE h.id = ?1`,
     )
     .bind(holdId)
@@ -256,7 +259,8 @@ async function retakenInTime(
 
 /**
  * Books a hold once it is paid for (or free). A payment made too late is refunded instead. Answers "being_booked"
- * while another try holds the hold's lease.
+ * while another try holds the hold's lease. A hold whose client has been erased is never booked: it is let go, and any
+ * payment for it refunded.
  *
  * A refund asked of Razorpay is read again once the try holds the lease, since its `refunded_at` is set before the
  * call and kept once it goes through, even if the write that lets the hold go then fails.
@@ -275,6 +279,10 @@ export async function confirmBooking(
     return "already_booked";
   }
   const payment = await capturedFor(db, hold.razorpay_order_id);
+  if (hold.person_erased_at !== null) {
+    await giveBack(db, payments, hold.id, now, "the client was erased");
+    return payment === null ? "lapsed" : "refunded";
+  }
   if (paidInMoney(hold) && payment === null) {
     if (hold.confirmed_at === null) return "not_paid";
     // Only a capture confirms a paid hold, so this one's payment has since been refunded, by ops.
@@ -430,7 +438,7 @@ async function alertIfNoCreditPaid(db: D1Database, booked: HoldRow, options: Con
     message:
       `Booking ${booked.id} was booked on a visit credit, but the client had none left by then, ` +
       "so nothing has paid for it. Decide whether to charge for the visit.",
-    link: `/clients/${booked.person_id}`,
+    link: paymentsTab(booked.person_id),
   });
 }
 

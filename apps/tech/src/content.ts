@@ -4,8 +4,9 @@
 // PLACEHOLDER, pending the owner's wording.
 
 import type { Moved } from "@maneman/web-kit/api";
+import { shortDate } from "@maneman/web-kit/dates";
 import type { FitSpec, History } from "./api.ts";
-import { clock, dayMonth, todayInIndia } from "./lib/when.ts";
+import { clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
 
 export const signIn = {
   title: "Technician sign in",
@@ -64,6 +65,9 @@ export const today = {
 
 /** "1 photo set", "3 actions": a count and the word for it. */
 const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
+
+/** "top", "top and left", "top, left and hair". */
+const listed = (words: readonly string[]) => new Intl.ListFormat("en-IN", { type: "conjunction" }).format(words);
 
 /**
  * Signing out wipes the phone, so it asks first when there is work on it that
@@ -128,15 +132,16 @@ export const queue = {
   title: "Waiting to reach us",
   nothing: "Everything has reached us.",
   events: (count: number) => `${String(count)} ${count === 1 ? "action" : "actions"} waiting`,
-  read: "Got it",
   // PLACEHOLDER: the board draws no step the API refused, and no way to put one right.
   correct: "Correct it",
+  retake: "Retake photos",
   back: "Back",
   // PLACEHOLDER: the board draws the sets, not how long they have been waiting.
   since: (time: string) => `Waiting since ${time}`,
-  // PLACEHOLDER: the board draws no deletion. "Got it" lets go of work, so it asks first.
+  // PLACEHOLDER: the board draws no deletion. It lets go of work, so it asks first.
   forget: {
-    title: "Delete what this job holds?",
+    open: "Delete this job's work",
+    title: "Delete this job's work?",
     what: (photos: number, actions: number) => {
       const held: string[] = [];
       if (photos > 0) held.push(counted(photos, "photograph", "photographs"));
@@ -156,14 +161,15 @@ export const queue = {
  * (docs/api-tech.md). A field is named in preference to the code.
  */
 export const stopped: Readonly<Record<string, string>> = {
-  // PLACEHOLDER: the 409 names the fields that moved and never their values; a card fetched afterwards gives the new
-  // time (apps/tech/src/job/JobScreen.tsx), and a job given to another technician is named by movedTo below.
+  // PLACEHOLDER: the 409 names the fields that moved and never their values. The new time, once the card read again
+  // carries it, and whom a job went to are named by whatStopped below.
   superseded: "This job changed while the phone was offline.",
   technician: "This job is someone else's now.",
   time: "Ops moved this job to another time.",
   status: "This job was cancelled while the phone was offline.",
   out_of_order: "A step reached us before the one ahead of it.",
   not_today: "This job is on another day. Arrive and start it on the day.",
+  too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
   already_started: "This job was started, so it cannot close as a no-show.",
   photo_rejected: "The photographs would not upload.",
   not_found: "This job is no longer on your list, so what it holds cannot reach us.",
@@ -192,25 +198,51 @@ function movedTo(moved: Moved, now: Date): string {
   return `Ops moved this job to ${moved.technician} on ${dayMonth(day)} at ${time}.`;
 }
 
+/** "6 pm today", "9 am tomorrow", "9 am on Mon 5 Oct". */
+function timeAndDay(isoInstant: string, now: Date): string {
+  const time = clock(isoInstant);
+  const date = todayInIndia(new Date(isoInstant));
+  const today = todayInIndia(now);
+  if (date === today) return `${time} today`;
+  if (date === dayAfter(today)) return `${time} tomorrow`;
+  return `${time} on ${shortDate(date)}`;
+}
+
+interface Why {
+  readonly note: string | null;
+  readonly fields: readonly string[];
+  readonly moved?: Moved | null;
+  /** The job's start as the phone held it when the stopped write was queued. */
+  readonly startsAt?: string | null;
+}
+
+/** Whether the card the phone now holds starts at another time than the stopped write was sent with. */
+function startMoved(why: Why, startsNow: string | null): startsNow is string {
+  const startsAt = why.startsAt ?? null;
+  return startsAt !== null && startsNow !== null && startsAt !== startsNow;
+}
+
 /**
  * What stopped a job's queue, in the app's words: the fields named if the API
  * named any, else the code. A job the API says went to another technician names
- * them; a cancellation is named first among the fields.
+ * them; a job moved to another time names the new one once `startsNow`, the
+ * start on the card the phone holds, differs; a cancellation is named first.
  */
-export function whatStopped(
-  why: { readonly note: string | null; readonly fields: readonly string[]; readonly moved?: Moved | null },
-  now: Date = new Date(),
-): string {
+export function whatStopped(why: Why, now: Date = new Date(), startsNow: string | null = null): string {
   const field = why.fields.find((each) => stopped[each] !== undefined);
   const moved = why.moved ?? null;
   if (field === "technician" && moved !== null) return movedTo(moved, now);
+  // PLACEHOLDER: the prompt words a move to another technician; this one, to another time, is ours.
+  if (field === "time" && startMoved(why, startsNow)) return `Ops moved this job to ${timeAndDay(startsNow, now)}.`;
   return stopped[field ?? why.note ?? ""] ?? stopped.unknown ?? "";
 }
 
 /** The banner above every screen while a job's queue is stopped. */
 export const changed = {
   // PLACEHOLDER: the board draws what changed on the queue alone.
-  line: (who: string, what: string) => `${who} · ${what}`,
+  line: (job: string, what: string) => `${job}: ${what}`,
+  // PLACEHOLDER: a job the phone holds nothing of, not even its time.
+  someJob: "A job",
   open: "See what is waiting",
 } as const;
 
@@ -221,6 +253,12 @@ export const titles = {
   closeOut: "Closed out",
   of: (screen: string) => `${screen} · Mane Man technician`,
 } as const;
+
+/** When a locked card opens. One that opened while the screen was up says to open the job again. */
+function opensAt(unlocksAt: string, now: Date = new Date()): string {
+  if (Date.parse(unlocksAt) > now.getTime()) return `Opens at ${timeAndDay(unlocksAt, now)}.`;
+  return `Open since ${timeAndDay(unlocksAt, now)}. Go back and open the job again.`;
+}
 
 export const job = {
   back: "Back",
@@ -249,12 +287,12 @@ export const job = {
   // PLACEHOLDER: the board draws what changed on the queue alone (board A2).
   changed: {
     title: "This job changed",
-    movedTo: (time: string) => `Ops moved this job to ${time}.`,
     body: "Nothing more of it can be sent from this phone. Waiting to reach us says what it still holds.",
   },
   locked: {
     title: "Not yet",
-    body: "The address and the client's card open the day before.",
+    // PLACEHOLDER: the board draws no locked card. The hour is the API's unlocks_at.
+    opens: opensAt,
   },
   piece: {
     title: "The piece",
@@ -284,6 +322,8 @@ export const notHome = {
     step: "1 · Arrived",
     body: "Tap at the door. We record the time and check you are within 200 m.",
     action: "I have arrived",
+    // PLACEHOLDER: the board draws no check-in before its time.
+    opensAt: (time: string) => `Check-in opens at ${time}.`,
     // PLACEHOLDER: the board draws no screen for a phone that will not give its position.
     noPosition: "This phone will not give its position. Check its permissions, then tap again.",
   },
@@ -298,6 +338,8 @@ export const notHome = {
   waiting: {
     step: "2 · Waiting",
     left: (minutes: number) => `left of ${String(minutes)} minutes`,
+    // PLACEHOLDER: the board draws no arrival before the booked start.
+    fromStart: (time: string) => `The wait starts at ${time}, the booked start.`,
     // PLACEHOLDER: the board draws the wait running, not the moment it ends.
     over: "The wait is over.",
     // PLACEHOLDER: the board draws the check running, not one waiting for signal. The API counts the wait from when
@@ -341,6 +383,12 @@ export const capture = {
   missed: "That photograph did not keep. Capture it again.",
   done: "All five are on the phone. They go up when there is signal.",
   finish: "Done",
+  // PLACEHOLDER: the board draws no set the API refused.
+  refusedPhotos: (angles: readonly string[]) =>
+    angles.length === 1
+      ? `The ${listed(angles)} photograph would not upload. Take it again.`
+      : `The ${listed(angles)} photographs would not upload. Take them again.`,
+  refusedSet: "We could not record this set. Tap Done to send it again.",
 } as const;
 
 /** The six in-job steps (board B), and the hair profile no board draws, in the order the API runs them. */

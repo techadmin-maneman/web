@@ -17,7 +17,7 @@ import { fullDate, listMonth, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
 import { BookNext } from "../booking/BookNext.tsx";
-import { home, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
+import { home, ONE_VISIT, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { hasBegun, stageText } from "../home/VisitCard.tsx";
 import { CHEVRON } from "../icons.ts";
@@ -67,6 +67,14 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
   );
 }
 
+/** A consultation from the site: what it is, its window, and whether it is only asked for. */
+function proposedParts(consultation: NonNullable<Me["consultation"]>): string[] {
+  const what = consultation.one_visit ? ONE_VISIT : VISIT_TYPES.consultation;
+  const parts = [what, WINDOW_HOURS[consultation.window]];
+  if (consultation.requested) parts.push(visits.requested);
+  return parts;
+}
+
 function UpcomingItem({ entry }: { entry: UpcomingEntry }) {
   switch (entry.kind) {
     case "visit":
@@ -74,15 +82,11 @@ function UpcomingItem({ entry }: { entry: UpcomingEntry }) {
     case "being_booked":
       return <BeingBooked booking={entry.booking} />;
     case "consultation": {
-      // A booking's consultation, not yet a visit, has no page of its own to open.
+      // A consultation from the site has no page of its own to open.
       const { consultation } = entry;
       return (
         <li className={styles.card}>
-          <UpcomingCard
-            date={consultation.date}
-            parts={[VISIT_TYPES.consultation, WINDOW_HOURS[consultation.window]]}
-            prepaid={false}
-          />
+          <UpcomingCard date={consultation.date} parts={proposedParts(consultation)} prepaid={false} />
         </li>
       );
     }

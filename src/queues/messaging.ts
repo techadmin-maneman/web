@@ -26,7 +26,7 @@
 
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
-import { messageClass, stopLinkPurpose } from "../config/message-templates.ts";
+import { messageClass, RESULT_TEMPLATE, stopLinkPurpose } from "../config/message-templates.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
@@ -174,7 +174,7 @@ export async function resultMessageCap(
 
 /** The try-on result: the person's result image, within the daily cap on result messages to one number. */
 async function resultContent(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
-  const { messaging, tryon } = config.settings;
+  const { tryon } = config.settings;
   const job = await db
     .prepare("SELECT result_key, state FROM tryon_jobs WHERE id = ?1")
     .bind(row.subject_id)
@@ -186,7 +186,7 @@ async function resultContent(db: D1Database, config: StaticConfig, row: MessageR
   }
   const resultKey = job.result_key;
   return {
-    template: messaging.resultTemplate,
+    template: RESULT_TEMPLATE,
     params: [row.name],
     // The provider fetches the image when it sends.
     mediaUrl: async () => {

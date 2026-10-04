@@ -168,6 +168,17 @@ describe("the technician's profile step", () => {
     expect((await versions()).results).toEqual([]);
   });
 
+  it("is not found on a job that was never this technician's, and keeps nothing of it", async () => {
+    const job = await working("consultation");
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
+
+    const answer = await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+
+    expect(answer.status).toBe(404);
+    expect(await answer.json()).not.toHaveProperty("progress");
+    expect((await versions()).results).toEqual([]);
+  });
+
   it.each([
     [
       "a measurement past its range",

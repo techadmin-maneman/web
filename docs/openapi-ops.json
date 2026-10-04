@@ -48,6 +48,7 @@
                   "unauthorized",
                   "visit_booked",
                   "payment_held",
+                  "payment_owed",
                   "forbidden_origin",
                   "access_required",
                   "code_expired",
@@ -76,6 +77,7 @@
                   "does_not_fit",
                   "in_progress",
                   "too_early_to_close",
+                  "too_early_to_arrive",
                   "already_closed",
                   "no_service_area",
                   "service_exists",
@@ -133,6 +135,11 @@
                 ],
                 "additionalProperties": false,
                 "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+              },
+              "earliest_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
               }
             },
             "required": [
@@ -444,6 +451,20 @@
             },
             "description": "Payments and refunds as one list, newest first."
           },
+          "payment_links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientPaymentLink"
+            },
+            "description": "Every payment link, newest first."
+          },
+          "invoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientInvoice"
+            },
+            "description": "Each finished visit sold for a price, with its invoice; the latest visit first."
+          },
           "history": {
             "$ref": "#/components/schemas/ClientRecordHistory"
           },
@@ -469,6 +490,8 @@
           "credits",
           "visits",
           "payments",
+          "payment_links",
+          "invoices",
           "history",
           "invite"
         ],
@@ -1477,6 +1500,152 @@
         ],
         "additionalProperties": false
       },
+      "ClientPaymentLink": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product": {
+            "type": "string",
+            "description": "The service it pays for, by its name now."
+          },
+          "visit_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "India's date of the visit it pays for; null where the visit has no start."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "In paise, GST included."
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "As the client reads it on Razorpay's page; null on a link made before links had one."
+          },
+          "short_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The address Razorpay texted the client; null until Razorpay has made the link."
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "making",
+              "open",
+              "paid",
+              "refused",
+              "lapsed"
+            ],
+            "description": "making: Razorpay has not made it yet, and it is asked again; open: sent and not paid; paid; refused: Razorpay would not make it, so ops send one by hand; lapsed: closed unpaid."
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "product",
+          "visit_date",
+          "amount",
+          "reference",
+          "short_url",
+          "sent_at",
+          "state",
+          "paid_at"
+        ],
+        "additionalProperties": false
+      },
+      "ClientInvoice": {
+        "type": "object",
+        "properties": {
+          "visit_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "to_raise",
+              "draft",
+              "issued"
+            ],
+            "description": "to_raise: Books holds none yet; draft: Books holds it unsent; issued: sent to the client."
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "visit_id",
+          "date",
+          "type",
+          "state",
+          "issued_at"
+        ],
+        "additionalProperties": false
+      },
       "ClientRecordHistory": {
         "type": "object",
         "properties": {
@@ -2081,7 +2250,7 @@
                         "items": {
                           "$ref": "#/components/schemas/FreeTechnician"
                         },
-                        "description": "Who is free for the visit, the client's regular technician first."
+                        "description": "Who in the caller's cities is free for the visit, the client's regular technician first."
                       }
                     },
                     "required": [
@@ -2595,6 +2764,7 @@
                   "unauthorized",
                   "visit_booked",
                   "payment_held",
+                  "payment_owed",
                   "forbidden_origin",
                   "access_required",
                   "code_expired",
@@ -2623,6 +2793,7 @@
                   "does_not_fit",
                   "in_progress",
                   "too_early_to_close",
+                  "too_early_to_arrive",
                   "already_closed",
                   "no_service_area",
                   "service_exists",
@@ -2680,6 +2851,11 @@
                 ],
                 "additionalProperties": false,
                 "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+              },
+              "earliest_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
               }
             },
             "required": [
@@ -3654,7 +3830,8 @@
                 "type": "string",
                 "enum": [
                   "visit_booked",
-                  "payment_held"
+                  "payment_held",
+                  "payment_owed"
                 ]
               },
               "request_id": {
@@ -3713,6 +3890,46 @@
               "additionalProperties": false
             }
           },
+          "bookings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "window": {
+                  "type": "string",
+                  "enum": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "date",
+                "window"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Bookings paid for, or free, that are not yet visits."
+          },
           "payments": {
             "type": "array",
             "items": {
@@ -3739,12 +3956,42 @@
               ],
               "additionalProperties": false
             }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "amount": {
+                  "type": "integer",
+                  "description": "In paise."
+                }
+              },
+              "required": [
+                "id",
+                "reference",
+                "amount"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Payment links still unpaid: a fitted visit's, or one sent for a booking and still open."
           }
         },
         "required": [
           "error",
           "visits",
-          "payments"
+          "bookings",
+          "payments",
+          "links"
         ],
         "additionalProperties": false
       },
@@ -3753,7 +4000,7 @@
         "properties": {
           "override_open_bookings": {
             "type": "boolean",
-            "description": "Erase even with a visit booked or a payment held: only when ops will cancel and refund them today."
+            "description": "Erase even with a visit or booking still to happen, a payment held or a link unpaid: only when ops will settle them by hand today. Bookings not yet visits are let go, and open payment links cancelled."
           }
         },
         "additionalProperties": false
@@ -3895,7 +4142,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The cities the board can be narrowed to."
+            "description": "The cities the board can be narrowed to: the caller's."
           },
           "technicians": {
             "type": "array",
@@ -4456,7 +4703,7 @@
           "rooms"
         ],
         "additionalProperties": false,
-        "description": "Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is."
+        "description": "Each technician's day in the caller's cities with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is."
       },
       "DispatchMoved": {
         "type": "object",
@@ -4709,7 +4956,7 @@
           "checked_in_at": {
             "type": "string",
             "format": "date-time",
-            "description": "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here."
+            "description": "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here, or from the booked start for an arrival before it."
           },
           "phone_checked_in_at": {
             "anyOf": [
@@ -4804,6 +5051,10 @@
             "type": "string",
             "format": "date-time"
           },
+          "closed_early": {
+            "type": "boolean",
+            "description": "The wait ran from a check-in before the booked start, so the case closed before the client's own wait had run: waive it, or give the reason to charge."
+          },
           "closed_at": {
             "anyOf": [
               {
@@ -4862,6 +5113,7 @@
           "message_state",
           "message_delivered_at",
           "wait_ends_at",
+          "closed_early",
           "closed_at",
           "opened_at",
           "due",
@@ -5074,13 +5326,18 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "signed_in": {
+                        "type": "boolean",
+                        "description": "Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it."
                       }
                     },
                     "required": [
                       "device_id",
                       "label",
                       "last_seen_at",
-                      "revoked_at"
+                      "revoked_at",
+                      "signed_in"
                     ],
                     "additionalProperties": false
                   }
@@ -5167,7 +5424,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The cities a technician may be given, in display order."
+            "description": "The cities the caller may give a technician, those their Operations MANAGE reaches, in display order."
           }
         },
         "required": [
@@ -5212,6 +5469,109 @@
         ],
         "additionalProperties": false
       },
+      "TechnicianStandingLeave": {
+        "type": "object",
+        "properties": {
+          "leave": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "to": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Inclusive: a single day's leave has the same date twice."
+                },
+                "note": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "jobs": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TechnicianJobOnLeave"
+                  },
+                  "description": "The jobs still booked on its days from today on, soonest first."
+                }
+              },
+              "required": [
+                "id",
+                "from",
+                "to",
+                "note",
+                "jobs"
+              ],
+              "additionalProperties": false
+            },
+            "description": "His leave that has not ended yet, soonest first."
+          }
+        },
+        "required": [
+          "leave"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianJobOnLeave": {
+        "type": "object",
+        "properties": {
+          "appointment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "appointment_id",
+          "starts_at",
+          "type",
+          "client"
+        ],
+        "additionalProperties": false,
+        "description": "A job booked on a day the technician is away, which the leave moves nowhere: ops move it on the dispatch board, and it waits on the Tasks board until they do."
+      },
       "TechnicianLeaveRecorded": {
         "type": "object",
         "properties": {
@@ -5222,52 +5582,9 @@
           "jobs": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "appointment_id": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "starts_at": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "type": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "enum": [
-                        "consultation",
-                        "first_fit",
-                        "service",
-                        "replacement"
-                      ]
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "client": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "appointment_id",
-                "starts_at",
-                "type",
-                "client"
-              ],
-              "additionalProperties": false
+              "$ref": "#/components/schemas/TechnicianJobOnLeave"
             },
-            "description": "The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch board, and each waits on the Tasks board until they do (OPS-07)."
+            "description": "The jobs already booked on those days, soonest first."
           }
         },
         "required": [
@@ -5516,7 +5833,7 @@
                 },
                 "count": {
                   "type": "integer",
-                  "description": "How many are waiting in the group, all of them."
+                  "description": "How many are waiting in the group in the caller's cities, all of them."
                 },
                 "closable": {
                   "type": "boolean",
@@ -5888,7 +6205,7 @@
                 "type": "null"
               }
             ],
-            "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
+            "description": "The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does."
           }
         },
         "required": [
@@ -5935,7 +6252,7 @@
                 "type": "null"
               }
             ],
-            "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
+            "description": "The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does."
           }
         },
         "additionalProperties": false,
@@ -6017,7 +6334,7 @@
             "items": {
               "$ref": "#/components/schemas/TechnicianWork"
             },
-            "description": "Every active technician, by name, including those who finished nothing."
+            "description": "Every active technician in the caller's cities, by name, including those who finished nothing."
           }
         },
         "required": [
@@ -6131,10 +6448,6 @@
           },
           "note": {
             "type": "string"
-          },
-          "source": {
-            "type": "string",
-            "description": "The module the default lives in."
           },
           "set_by": {
             "anyOf": [
@@ -6255,7 +6568,6 @@
           "name",
           "title",
           "note",
-          "source",
           "set_by",
           "set_at",
           "kind",
@@ -6298,10 +6610,6 @@
           },
           "note": {
             "type": "string"
-          },
-          "source": {
-            "type": "string",
-            "description": "The module the default lives in."
           },
           "set_by": {
             "anyOf": [
@@ -6364,7 +6672,6 @@
           "name",
           "title",
           "note",
-          "source",
           "set_by",
           "set_at",
           "kind",
@@ -7894,7 +8201,7 @@
               ],
               "additionalProperties": false
             },
-            "description": "The central store first, then each active technician's kit, and any other still holding stock."
+            "description": "The central store first, then each active technician's kit, and any other still holding stock: those in the caller's cities, and the store only with a national grant."
           },
           "holdings": {
             "type": "array",
@@ -9043,7 +9350,7 @@
     },
     "/api/clients/{id}": {
       "get": {
-        "summary": "The client's record: who they are, their address, their visits, their payments, their history and their invite",
+        "summary": "The client's record: who they are, their address, their visits, their money, their history and their invite",
         "parameters": [
           {
             "schema": {
@@ -9321,7 +9628,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such client, or one who has been erased",
+            "description": "not_found: no such client in the caller's cities, or one who has been erased",
             "content": {
               "application/json": {
                 "schema": {
@@ -9405,7 +9712,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such client, or one who has been erased",
+            "description": "not_found: no such client in the caller's cities, or one who has been erased",
             "content": {
               "application/json": {
                 "schema": {
@@ -9472,7 +9779,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such client, or one who has been erased",
+            "description": "not_found: no such client in the caller's cities, or one who has been erased",
             "content": {
               "application/json": {
                 "schema": {
@@ -9482,7 +9789,7 @@
             }
           },
           "409": {
-            "description": "taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before",
+            "description": "taken: nobody chosen is free in that window now, or the technician chosen is not in the caller's cities; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before",
             "content": {
               "application/json": {
                 "schema": {
@@ -9572,7 +9879,7 @@
             }
           },
           "409": {
-            "description": "not_changeable: the visit has begun, passed or gone, or is no client's; terms_changed: the notice is not the one shown, so show the terms again",
+            "description": "not_changeable: the visit has begun, passed or gone, is no client's, or is not in the caller's cities; terms_changed: the notice is not the one shown, so show the terms again",
             "content": {
               "application/json": {
                 "schema": {
@@ -9652,7 +9959,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such visit",
+            "description": "not_found: no such visit in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -10105,7 +10412,7 @@
             }
           },
           "409": {
-            "description": "visit_booked or payment_held: settle what it names first, or say it will be settled today",
+            "description": "visit_booked, payment_held or payment_owed: settle what it names first, or say it will be settled today",
             "content": {
               "application/json": {
                 "schema": {
@@ -10397,7 +10704,7 @@
             }
           },
           "409": {
-            "description": "visit_booked or payment_held: cancel the visits and refund the payments it names first",
+            "description": "visit_booked, payment_held or payment_owed: cancel the visits, refund the payments and settle the links it names first",
             "content": {
               "application/json": {
                 "schema": {
@@ -10975,7 +11282,7 @@
     },
     "/api/dispatch": {
       "get": {
-        "summary": "The dispatch board: seven days of every active technician, with the unassigned tray",
+        "summary": "The dispatch board: seven days of the visits and active technicians in the caller's cities, with the unassigned tray",
         "parameters": [
           {
             "schema": {
@@ -11066,7 +11373,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such live job, or one the technician has started or closed, which stays where it is",
+            "description": "not_found: no such live job in the caller's cities, or one the technician has started or closed, which stays where it is",
             "content": {
               "application/json": {
                 "schema": {
@@ -11103,7 +11410,7 @@
             }
           },
           "400": {
-            "description": "invalid_request",
+            "description": "invalid_request: fields names technician_id for one not in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -11123,7 +11430,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such live job",
+            "description": "not_found: no such live job in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -11170,7 +11477,7 @@
             }
           },
           "400": {
-            "description": "invalid_request, including a move to the technician, day and window the job already has",
+            "description": "invalid_request, including a move to the technician, day and window the job already has, or to a technician not in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -11190,7 +11497,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such live job",
+            "description": "not_found: no such live job in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -11260,7 +11567,7 @@
             }
           },
           "404": {
-            "description": "not_found: no move of a live visit whose client is still to be told",
+            "description": "not_found: no move of a live visit in the caller's cities whose client is still to be told",
             "content": {
               "application/json": {
                 "schema": {
@@ -11274,7 +11581,7 @@
     },
     "/api/no-shows": {
       "get": {
-        "summary": "No-show cases: undecided first, each with its three facts",
+        "summary": "No-show cases in the caller's cities: undecided first, each with its three facts",
         "parameters": [
           {
             "schema": {
@@ -11371,7 +11678,7 @@
             }
           },
           "403": {
-            "description": "access_required, or not_permitted: waiving asks Finance MANAGE",
+            "description": "access_required, or not_permitted: waiving asks Finance MANAGE in the case's city",
             "content": {
               "application/json": {
                 "schema": {
@@ -11381,7 +11688,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such case, or it was ruled on already",
+            "description": "not_found: no such case in the caller's cities, or it was ruled on already",
             "content": {
               "application/json": {
                 "schema": {
@@ -11443,7 +11750,7 @@
     },
     "/api/technicians": {
       "get": {
-        "summary": "Active technicians, the phones they have logged in on and their leave, and those switched off",
+        "summary": "Active technicians in the caller's cities, the phones they have logged in on and their leave, and those switched off",
         "responses": {
           "200": {
             "description": "The technicians",
@@ -11491,7 +11798,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: no name, not an Indian mobile, or not one of our cities",
+            "description": "invalid_request: no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach",
             "content": {
               "application/json": {
                 "schema": {
@@ -11524,6 +11831,52 @@
       }
     },
     "/api/technicians/{id}/leave": {
+      "get": {
+        "summary": "A technician's leave that has not ended, each with the jobs still booked on its days",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The leave",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianStandingLeave"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such technician, or he is outside the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Record leave. Those days are then refused to booking and to the dispatch board alike",
         "parameters": [
@@ -11579,7 +11932,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such active technician",
+            "description": "not_found: no such active technician in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -11645,7 +11998,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such leave of that technician's",
+            "description": "not_found: no such leave of that technician's, or he is not in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -11713,7 +12066,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such phone of that technician's",
+            "description": "not_found: no such phone of that technician's, or he is not in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -11727,7 +12080,7 @@
     },
     "/api/no-shows/disputes": {
       "get": {
-        "summary": "Disputed no-show charges still to rule on, oldest first, each with its evidence",
+        "summary": "Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence",
         "responses": {
           "200": {
             "description": "The disputes",
@@ -11819,7 +12172,7 @@
             }
           },
           "403": {
-            "description": "access_required, or not_permitted: refunding asks Finance MANAGE",
+            "description": "access_required, or not_permitted: refunding asks Finance MANAGE in the dispute's city",
             "content": {
               "application/json": {
                 "schema": {
@@ -11829,7 +12182,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such dispute, or it was ruled on already",
+            "description": "not_found: no such dispute in the caller's cities, or it was ruled on already",
             "content": {
               "application/json": {
                 "schema": {
@@ -11846,7 +12199,7 @@
         "summary": "What ops still have to do, by group, the longest wait first",
         "responses": {
           "200": {
-            "description": "The groups with something in them, of the caller's own departments once the Staff list is enforced",
+            "description": "The groups with something in them, of the caller's own departments and cities once the Staff list is enforced",
             "content": {
               "application/json": {
                 "schema": {
@@ -11949,7 +12302,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such task on the board now; its thing may be done already",
+            "description": "not_found: no such task on the board now in the caller's cities; its thing may be done already",
             "content": {
               "application/json": {
                 "schema": {
@@ -12021,7 +12374,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such task on the board now; a follow-up may be booked, or it is closed already",
+            "description": "not_found: no such task on the board now in the caller's cities; a follow-up may be booked, or it is closed already",
             "content": {
               "application/json": {
                 "schema": {
@@ -12035,7 +12388,7 @@
     },
     "/api/payments": {
       "get": {
-        "summary": "A day's money: what was collected, what went back, and each charge kept or ruled on",
+        "summary": "A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on",
         "parameters": [
           {
             "schema": {
@@ -12119,7 +12472,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities",
+            "description": "invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach",
             "content": {
               "application/json": {
                 "schema": {
@@ -12139,7 +12492,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such technician",
+            "description": "not_found: no such technician in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -12197,7 +12550,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such technician",
+            "description": "not_found: no such technician in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -12257,7 +12610,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such technician",
+            "description": "not_found: no such technician in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -12863,7 +13216,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order or outside_the_day (06:00 to 22:00)",
+            "description": "invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order, half_slot_too_short (under 45 minutes, the last one to the day's end included) or outside_the_day (06:00 to 22:00)",
             "content": {
               "application/json": {
                 "schema": {
@@ -14052,7 +14405,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names consumable_code for one nobody added, or the place no technician is",
+            "description": "invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -14099,7 +14452,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names consumable_code, from, or to for the place it came from",
+            "description": "invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -14146,7 +14499,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names consumable_code for one nobody added, or the place no technician is",
+            "description": "invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -14193,7 +14546,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names consumable_code for one nobody added, or the place no technician is",
+            "description": "invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -14454,7 +14807,7 @@
             }
           },
           "404": {
-            "description": "not_found",
+            "description": "not_found: no such visit in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -14517,7 +14870,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such visit, or it carries no code",
+            "description": "not_found: no such visit in the caller's cities, or it carries no code",
             "content": {
               "application/json": {
                 "schema": {

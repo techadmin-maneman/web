@@ -8,12 +8,14 @@ import { findEligiblePerson } from "../../src/domain/login.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import type { Angle, Phase } from "../../src/domain/visit-photos.ts";
 import { RULES } from "../../src/policy/home-prompt.ts";
-import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, phaseOneLead, request } from "./helpers.ts";
 import { syntheticJpeg } from "./tryon-fixtures.ts";
 
 const MOBILE = "+919810000001";
 const OTHER_MOBILE = "+919810000002";
 const NAMES: Record<string, string> = { [MOBILE]: "Rohit Malhotra", [OTHER_MOBILE]: "Someone Else" };
+/** The most round trips to D1 Home may wait on in turn. It waited on 17 when each read waited for the one before. */
+const ME_TRIPS = 6;
 
 interface Visit {
   readonly name: string;
@@ -443,6 +445,30 @@ describe("GET /api/me's prompt and invoice line", () => {
       prompt: null,
       invoice: null,
     });
+  });
+
+  // PLAT-15: the app waits on Home each time it opens, and each D1 read is a round trip to the database's region. The
+  // reads that need nothing from each other go together, so Home waits on a few trips, not one for each read.
+  it("waits on few round trips to D1, even with the replacement leading, the longest way through", async () => {
+    await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
+    await signIn();
+    await giveAddress();
+    await fitPiece("2026-10-05");
+
+    const answer = await get("/api/me");
+
+    expect((await answer.json<{ prompt: unknown }>()).prompt).toMatchObject({ kind: "replacement_due" });
+    expect(d1TripsOf(answer)).toBeLessThanOrEqual(ME_TRIPS);
+  });
+
+  it("waits on as few for a lead whose booking from the site has no visit yet", async () => {
+    await phaseOneLead(MOBILE);
+    await signIn();
+
+    const answer = await get("/api/me");
+
+    expect((await answer.json<{ consultation: unknown }>()).consultation).not.toBeNull();
+    expect(d1TripsOf(answer)).toBeLessThanOrEqual(ME_TRIPS);
   });
 });
 

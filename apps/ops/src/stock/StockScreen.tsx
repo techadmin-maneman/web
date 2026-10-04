@@ -19,16 +19,16 @@ import { stock as copy } from "../content.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import form from "../settings/settings.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { placeName, StockForm } from "./StockForm.tsx";
+import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 
-/** The form offers all four movements. */
-const RECORDING: readonly OpsCall[] = [
-  "POST /api/stock/deliveries",
-  "POST /api/stock/transfers",
-  "POST /api/stock/counts",
-  "POST /api/stock/write-offs",
-];
+/** The call that records each movement. A delivery goes into the central store, which only national staff reach. */
+const RECORDING: Readonly<Record<Kind, OpsCall>> = {
+  delivery: "POST /api/stock/deliveries",
+  transfer: "POST /api/stock/transfers",
+  count: "POST /api/stock/counts",
+  write_off: "POST /api/stock/write-offs",
+};
 
 /** One place's figure: what it holds, marked Low at or below its level, and when it was last counted. */
 function Held({ book, code, technicianId }: { book: Stock; code: string; technicianId: string | null }) {
@@ -136,7 +136,7 @@ export function StockScreen() {
   /** The stock after a movement, so the table follows without reading it again. */
   const [book, setBook] = useState<Stock | null>(null);
   const access = useAccess();
-  const mayRecord = RECORDING.every((call) => access.mayCall(call));
+  const [firstKind, ...otherKinds] = KINDS.filter((kind) => access.mayCall(RECORDING[kind]));
 
   return (
     <Shell section="/stock" title={copy.title} sub={copy.sub}>
@@ -153,8 +153,8 @@ export function StockScreen() {
             <p className={form.note}>{copy.lowNote}</p>
             <OnHand book={book ?? loaded.value} />
           </section>
-          {mayRecord && (book ?? loaded.value).consumables.length > 0 && (
-            <StockForm book={book ?? loaded.value} onRecorded={setBook} />
+          {firstKind !== undefined && (book ?? loaded.value).consumables.length > 0 && (
+            <StockForm book={book ?? loaded.value} kinds={[firstKind, ...otherKinds]} onRecorded={setBook} />
           )}
           <Movements book={book ?? loaded.value} />
         </div>

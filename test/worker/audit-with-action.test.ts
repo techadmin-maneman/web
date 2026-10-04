@@ -336,4 +336,10 @@ describe("the client, when the audit entry cannot be written", () => {
     expect(answer.status).toBe(500);
     expect(await answer.text()).not.toContain("Rohit");
   });
+
+  it("gives no readable copy of the export", async () => {
+    const answer = await send(client, "GET", "/api/me/export.html");
+    expect(answer.status).toBe(500);
+    expect(await answer.text()).not.toContain("Rohit");
+  });
 });

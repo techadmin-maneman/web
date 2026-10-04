@@ -33,12 +33,14 @@ export const TECHNICIANS = {
         label: "Chrome on Android",
         last_seen_at: "2027-09-22T05:00:00.000Z",
         revoked_at: null,
+        signed_in: true,
       },
       {
         device_id: "5d20be8c61a9",
         label: "Safari on iPhone",
         last_seen_at: "2027-08-04T05:00:00.000Z",
         revoked_at: "2027-08-05T05:00:00.000Z",
+        signed_in: false,
       },
     ]),
     technician(
@@ -46,7 +48,16 @@ export const TECHNICIANS = {
       "Sandeep Yadav",
       "SY",
       "Sec 1–39",
-      [{ device_id: "c7e4f1a8902d", label: null, last_seen_at: "2027-09-21T05:00:00.000Z", revoked_at: null }],
+      // Signed out on his own: not revoked, and no session live.
+      [
+        {
+          device_id: "c7e4f1a8902d",
+          label: null,
+          last_seen_at: "2027-09-21T05:00:00.000Z",
+          revoked_at: null,
+          signed_in: false,
+        },
+      ],
       // Leave ops recorded here, which the dispatch board reads from the same rows (ADR 0062).
       [{ id: "89000000-0000-4000-8000-000000000001", from: "2027-10-02", to: "2027-10-06", note: "Family wedding" }],
     ),
@@ -95,6 +106,28 @@ export const LEAVE_RECORDED = { id: "89000000-0000-4000-8000-000000000002", jobs
   "/api/technicians/{id}/leave",
   "post"
 >;
+
+/** Sandeep's leave as his page reads it, with a job still booked on its days that ops have yet to move. */
+export const SANDEEP_LEAVE = {
+  leave: [
+    {
+      id: "89000000-0000-4000-8000-000000000001",
+      from: "2027-10-02",
+      to: "2027-10-06",
+      note: "Family wedding",
+      jobs: [
+        {
+          appointment_id: "22000000-0000-4000-8000-000000000001",
+          starts_at: "2027-10-04T05:00:00.000Z",
+          type: "service",
+          client: "Rohit Malhotra",
+        },
+      ],
+    },
+  ],
+} satisfies OpsReply<"/api/technicians/{id}/leave">;
+
+export const NO_LEAVE = { leave: [] } satisfies OpsReply<"/api/technicians/{id}/leave">;
 
 export const LEAVE_CANCELLED = { cancelled: true } satisfies OpsReply<
   "/api/technicians/{id}/leave/{leave}/cancel",
