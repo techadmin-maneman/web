@@ -114,7 +114,7 @@ describe("the reconciliation, overnight", () => {
 
     const second = run(listed, new Date(NIGHT.getTime() + 5 * 60_000));
     expect(await second.summary).toEqual({ queued: 2, nightPage: 2 });
-    expect(queuedIds(second.queue).sort()).toEqual(["ap-050", "ap-deleted"]);
+    expect(queuedIds(second.queue).sort()).toEqual([`ap-${String(PAGE_SIZE).padStart(3, "0")}`, "ap-deleted"]);
     expect(second.deps.alerts).toEqual([
       "FSM reconciliation repaired 2 appointment(s) tonight that the webhook missed or FSM deleted.",
     ]);
