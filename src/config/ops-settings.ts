@@ -174,7 +174,7 @@ export const OPS_SETTINGS = [
     // runs on our clock too, is the wait above, measured from when the check-in reached us.
     name: "phone_clock",
     title: "How far a phone is trusted about time",
-    note: "How long before the booked start a check-in may say the technician arrived, and how long a phone may hold something done without signal and still have its time believed. A time earlier than either is taken as the bound. The no-show wait also runs from when a check-in reaches us, whatever time the phone gave it.",
+    note: "How long before the booked start a technician may check in, and how long a phone may hold something done without signal and still have its time believed. A check-in before then is refused; a time held longer is taken as the bound. The no-show wait runs from the booked start, or from a later check-in, and from when the check-in reaches us, whatever time the phone gave it.",
     unit: "minutes",
     min: 0,
     max: 240,

@@ -1,7 +1,7 @@
 // Whether the triggers Cloudflare has attached are the ones each Worker's
-// config asks for: cron schedules and queue consumers. CI deploys code and
-// cannot attach triggers (docs/decisions/0010-applying-triggers.md), so after a
-// deploy this compares the live account with the configs of the commit now
+// config asks for: cron schedules, and queue consumers with their settings.
+// CI deploys code and cannot attach triggers (docs/decisions/0010-applying-triggers.md),
+// so after a deploy this compares the live account with the configs of the commit now
 // serving. It only reads, and says plainly what its token could not read.
 // Routes are not compared here: CI's tokens have no zone permission, and the
 // smoke suite proves each host reaches its Workers.
@@ -18,9 +18,19 @@ export interface Triggers {
   readonly consumers: readonly string[];
 }
 
+const ConfiguredConsumer = z.object({
+  queue: z.string(),
+  max_batch_size: z.number().optional(),
+  max_batch_timeout: z.number().optional(),
+  max_retries: z.number().optional(),
+  max_concurrency: z.number().optional(),
+  retry_delay: z.number().optional(),
+});
+type ConfiguredConsumer = z.infer<typeof ConfiguredConsumer>;
+
 const TriggerKeys = z.object({
   triggers: z.object({ crons: z.array(z.string()) }).optional(),
-  queues: z.object({ consumers: z.array(z.object({ queue: z.string() })).optional() }).optional(),
+  queues: z.object({ consumers: z.array(ConfiguredConsumer).optional() }).optional(),
 });
 const WorkerConfig = TriggerKeys.extend({ env: z.record(z.string(), TriggerKeys).optional() });
 
@@ -36,6 +46,11 @@ export function configuredTriggers(config: JsonObject, environment: RemoteEnviro
   };
 }
 
+/** Each queue consumer a Worker's config attaches in one environment, with its settings. */
+function configuredConsumers(config: JsonObject, environment: RemoteEnvironmentName): readonly ConfiguredConsumer[] {
+  return WorkerConfig.parse(config).env?.[environment]?.queues?.consumers ?? [];
+}
+
 export interface TriggerCheck {
   readonly environment: RemoteEnvironmentName;
   readonly accountId: string;
@@ -47,14 +62,33 @@ export interface TriggerCheck {
 
 const Schedules = z.object({ result: z.object({ schedules: z.array(z.object({ cron: z.string() })) }) });
 
-const QueueList = z.object({
-  result: z.array(
-    z.object({
-      queue_name: z.string(),
-      consumers: z.array(z.object({ script_name: z.string().optional(), script: z.string().optional() })).optional(),
-    }),
-  ),
+const LiveSettings = z.object({
+  batch_size: z.number().nullish(),
+  max_wait_time_ms: z.number().nullish(),
+  max_retries: z.number().nullish(),
+  max_concurrency: z.number().nullish(),
+  retry_delay: z.number().nullish(),
 });
+type LiveSettings = z.infer<typeof LiveSettings>;
+
+const LiveConsumer = z.object({
+  script_name: z.string().optional(),
+  script: z.string().optional(),
+  settings: LiveSettings.optional(),
+});
+
+const QueueList = z.object({
+  result: z.array(z.object({ queue_name: z.string(), consumers: z.array(LiveConsumer).optional() })),
+});
+
+/** Each consumer setting: its name in wrangler.jsonc, its name in the Queues API, and the API's units in one of ours. */
+const SETTINGS = [
+  { config: "max_batch_size", live: "batch_size", scale: 1 },
+  { config: "max_batch_timeout", live: "max_wait_time_ms", scale: 1000 },
+  { config: "max_retries", live: "max_retries", scale: 1 },
+  { config: "max_concurrency", live: "max_concurrency", scale: 1 },
+  { config: "retry_delay", live: "retry_delay", scale: 1 },
+] as const;
 
 /** Cloudflare's error code for "This Worker does not exist on your account". */
 const WORKER_NOT_FOUND = 10007;
@@ -97,13 +131,28 @@ function notRead(subject: string, answer: ApiAnswer, environment: RemoteEnvironm
   };
 }
 
-/** The queues whose consumer is this script, from one listing of the account's queues. */
-function queuesConsumedBy(script: string, queues: ApiAnswer): readonly string[] {
-  return QueueList.parse(queues.body)
-    .result.filter((queue) =>
-      (queue.consumers ?? []).some((consumer) => (consumer.script_name ?? consumer.script) === script),
-    )
-    .map((queue) => queue.queue_name);
+/** The settings of each queue this script consumes, by queue, from one listing of the account's queues. */
+function liveConsumersOf(script: string, queues: ApiAnswer): ReadonlyMap<string, LiveSettings> {
+  const consumers = new Map<string, LiveSettings>();
+  for (const queue of QueueList.parse(queues.body).result) {
+    const consumer = (queue.consumers ?? []).find((each) => (each.script_name ?? each.script) === script);
+    if (consumer !== undefined) consumers.set(queue.queue_name, consumer.settings ?? {});
+  }
+  return consumers;
+}
+
+/** "max_retries 5, attached 2" for each setting the config gives that the attached consumer does not have. */
+function settingDifferences(wanted: ConfiguredConsumer, live: LiveSettings): string[] {
+  const differences: string[] = [];
+  for (const setting of SETTINGS) {
+    const configured = wanted[setting.config];
+    if (configured === undefined) continue;
+    const liveValue = live[setting.live];
+    const attached = liveValue === null || liveValue === undefined ? "unset" : liveValue / setting.scale;
+    if (attached === configured) continue;
+    differences.push(`${setting.config} ${String(configured)}, attached ${String(attached)}`);
+  }
+  return differences;
 }
 
 /** A Worker the account does not have: expected only of an app not yet deployed, which attaches nothing. */
@@ -124,7 +173,28 @@ function cronFinding(script: string, wanted: Triggers, schedules: ApiAnswer, env
 function consumerFinding(script: string, wanted: Triggers, queues: ApiAnswer, environment: RemoteEnvironmentName) {
   const subject = `${script} queue consumers`;
   if (!queues.ok) return notRead(subject, queues, environment);
-  return compare(subject, wanted.consumers, queuesConsumedBy(script, queues), environment);
+  return compare(subject, wanted.consumers, [...liveConsumersOf(script, queues).keys()], environment);
+}
+
+/** Compares each attached consumer's settings with its config; one not attached at all is named by consumerFinding. */
+function consumerSettingsFinding(
+  script: string,
+  wanted: readonly ConfiguredConsumer[],
+  queues: ApiAnswer,
+  environment: RemoteEnvironmentName,
+): Finding {
+  const subject = `${script} queue consumer settings`;
+  if (!queues.ok) return notRead(subject, queues, environment);
+  const live = liveConsumersOf(script, queues);
+  const differences: string[] = [];
+  for (const consumer of wanted) {
+    const liveSettings = live.get(consumer.queue);
+    if (liveSettings === undefined) continue;
+    const differing = settingDifferences(consumer, liveSettings);
+    if (differing.length > 0) differences.push(`${consumer.queue}: ${differing.join(", ")}`);
+  }
+  if (differences.length === 0) return { subject, outcome: "matches", detail: "as configured" };
+  return { subject, outcome: "differs", detail: `${differences.join("; ")}. ${remedies(environment).apply}` };
 }
 
 export async function checkTriggers(check: TriggerCheck): Promise<Finding[]> {
@@ -143,6 +213,8 @@ export async function checkTriggers(check: TriggerCheck): Promise<Finding[]> {
     }
     findings.push(cronFinding(script, wanted, schedules, environment));
     findings.push(consumerFinding(script, wanted, queues, environment));
+    const consumers = configuredConsumers(worker.config, environment);
+    if (consumers.length > 0) findings.push(consumerSettingsFinding(script, consumers, queues, environment));
   }
   return findings;
 }
