@@ -10,7 +10,7 @@ import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { createStubPayments, type PaymentsProvider, type StubPayments } from "../../src/providers/payments.ts";
 import { ProviderError } from "../../src/providers/provider-error.ts";
-import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, PROVIDERS_FOR, request } from "./helpers.ts";
+import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -104,7 +104,7 @@ async function fittedWithLink(link: { sent?: boolean; refused?: boolean; paid?: 
 
 async function clientGet<Body>(path: string): Promise<Body> {
   const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
-  const app = appFor("local", fakeDependencies(), {}, "client", PROVIDERS_FOR.ours);
+  const app = appFor("local", fakeDependencies(), {}, "client");
   const answer = await request(app, path, { headers: { Cookie: cookie } });
   expect(answer.status).toBe(200);
   return answer.json<Body>();
@@ -215,7 +215,7 @@ describe("the Payment owed task", () => {
 
 describe("POST /api/payment-links/:id/resend", () => {
   function resend(payments: PaymentsProvider = createStubPayments(), id = LINK) {
-    const app = appFor("local", fakeDependencies({ payments }), {}, "ops", PROVIDERS_FOR.ours);
+    const app = appFor("local", fakeDependencies({ payments }), {}, "ops");
     return request(app, `/api/payment-links/${id}/resend`, {
       method: "POST",
       headers: { Origin: "https://maneman.test" },
