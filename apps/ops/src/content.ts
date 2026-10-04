@@ -2123,6 +2123,9 @@ export const numberChanges = {
   },
 } as const;
 
+/** A service's description in a check line: quoted, or "no description". */
+const descriptionWords = (line: string) => (line === "" ? "no description" : `“${line}”`);
+
 /**
  * Settings: the business inputs ops set for themselves. The design draws this
  * section and letters nothing inside it (docs/decisions/0061-ops-editable-inputs.md,
@@ -2131,8 +2134,6 @@ export const numberChanges = {
  * and a change that cannot be taken back is shown before it is made
  * (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
  */
-const descriptionWords = (line: string) => (line === "" ? "no description" : `“${line}”`);
-
 export const settings = {
   title: "Settings",
   sub: "A change takes effect within a minute. No release is needed.",
