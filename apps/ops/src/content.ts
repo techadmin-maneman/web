@@ -854,8 +854,6 @@ export const clients = {
     reference: (reference: string) => `Ref ${reference}`,
     copy: "Copy link",
     copied: "Copied",
-    /** Read out in place of "Copy link", which each open link shows. */
-    copyLabel: (what: string) => `Copy the payment link for ${what}`,
   },
   /* PLACEHOLDER, all of it: where each finished visit's invoice stands in Books. */
   invoices: {
