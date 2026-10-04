@@ -282,9 +282,7 @@ describe("GET /api/me/export", () => {
     });
     const data = await answer.json<Record<string, unknown>>();
     expect(data).toMatchObject({
-      addresses: [
-        { flat: "7B", floor: "3", tower: "C", landmark: "Opposite the park", given_to_staff: "ops@maneman.in" },
-      ],
+      addresses: [{ flat: "7B", floor: "3", tower: "C", landmark: "Opposite the park", given_on_the_phone: 1 }],
       visits: [{ client_note: "Ring twice", technician: null }],
       leads: [{ source: "form", loss_extent: "crown", gclid: "click-1", landing_path: "/book" }],
       hair_systems: [{ piece_code: "MM-CLASSIC-01", base: "lace", fitted_at: "2026-09-01" }],
@@ -294,6 +292,8 @@ describe("GET /api/me/export", () => {
       try_ons: [{ stage: "crown", preset: "classic_short", state: "expired" }],
       sessions: [{ created_at: NOW.toISOString(), revoked_at: null }],
     });
+    // Which member of staff took the address down stays ours.
+    expect(JSON.stringify(data.addresses)).not.toContain("ops@maneman.in");
   });
 
   it("gives the same as a page to read, labelled and in India's time, and audits it", async () => {

@@ -81,7 +81,7 @@ export const MY_DATA = {
         access_notes: text("Notes for the technician"),
         lat: text("Map pin, latitude"),
         lng: text("Map pin, longitude"),
-        given_to_staff: text("Taken down on the phone by"),
+        given_on_the_phone: yesNo("Given to us on the phone"),
         created_at: time("Added"),
         replaced_at: time("Replaced"),
       },

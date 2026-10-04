@@ -11,8 +11,9 @@ import { allViews } from "./photo-views.ts";
 /** Each part of the export one query reads, by its key in the file. */
 export const EXPORT_QUERIES = {
   person: "SELECT name, mobile_e164 AS mobile, email, contactable, created_at FROM people WHERE id = ?1",
+  // Whether they gave it to us on the phone, never which member of staff took it down.
   addresses: `SELECT flat, floor, tower, building, line1, line2, landmark, locality, city, pincode, access_notes, lat, lng,
-      given_to_staff, created_at, replaced_at
+      given_to_staff IS NOT NULL AS given_on_the_phone, created_at, replaced_at
     FROM addresses WHERE person_id = ?1 ORDER BY created_at`,
   consents: `SELECT purpose, granted, notice_version, source, created_at FROM consents WHERE person_id = ?1
     ORDER BY created_at, rowid`,
