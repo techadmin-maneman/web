@@ -194,8 +194,8 @@ export async function seedStaging(): Promise<StagingFixture> {
   await execute([
     `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, mobile_e164, hand_written)
        VALUES ${row(technicianId, `tech-proof-${tag}`, technicianName, "ST", 1, now, `+91${technicianMobile}`, 1)};`,
-    `INSERT INTO people (id, created_at, mobile_e164, name, contactable)
-       VALUES ${row(personId, now, `+91${clientMobile}`, clientName, 1)};`,
+    `INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record)
+       VALUES ${row(personId, now, `+91${clientMobile}`, clientName, 1, 1)};`,
     `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes, lat, lng,
        geocoded_at)
        VALUES ${row(addressId, personId, now, "Tower C, 14th floor", null, SECTOR, "Gurgaon", "122022", "PLACEHOLDER Gate code on the proof fixture", ADDRESS.lat, ADDRESS.lng, now)};`,

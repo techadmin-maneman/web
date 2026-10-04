@@ -15,6 +15,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
+import { isTestNumber } from "../domain/test-records.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { newLoginCode } from "../policy/one-time-code.ts";
 
@@ -97,15 +98,16 @@ const ask: RouteHandler<typeof askRoute, AppEnv> = async (c) => {
 
   const now = deps.now();
   const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
-  const asked = await mayAskForCode(c, { surface: "form", mobileHash, ipHash: visitor.ipHash, now, name: body.name });
+  const testRecord = await isTestNumber(c.env.DB, c.var.config.environment, mobileE164, body.name);
+  const asked = await mayAskForCode(c, { surface: "form", mobileHash, ipHash: visitor.ipHash, now, testRecord });
   if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
   if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
-  const counted = await countCode(c, "form", mobileE164, body.name, now);
+  const counted = await countCode(c, "form", mobileE164, testRecord, now);
   if (!counted) return c.json(errorBody("busy", requestId), 503);
 
-  const code = knownCode(login, body.name) ?? newLoginCode();
+  const code = knownCode(login, testRecord) ?? newLoginCode();
   const codeId = await createNumberCode(c.env.DB, { mobileHash, code, pepper: login.codePepper, now });
-  await sendCodeAfterResponse(c, mobileE164, body.name, "whatsapp", code);
+  await sendCodeAfterResponse(c, mobileE164, testRecord, "whatsapp", code);
   return c.json({ code_id: codeId }, 202);
 };
 

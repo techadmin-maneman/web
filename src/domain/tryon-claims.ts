@@ -43,6 +43,8 @@ export interface NewClaim {
   readonly job: JobRow;
   readonly mobileE164: string;
   readonly name: string;
+  /** Whether a person this makes is a test record (testRecordAtCreation, src/policy/staging-test-records.ts). */
+  readonly testRecord: boolean;
   /** The stage the visitor chose: the lead's extent of hair loss, and the stage the render is made for. */
   readonly stage: LossExtent;
   /** The gate's notice the page showed. */
@@ -70,10 +72,10 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
       // number at the gate, so the gate never renames the person it belongs to.
       db
         .prepare(
-          `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?, ?, ?, ?, 0)
+          `INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record) VALUES (?, ?, ?, ?, 0, ?)
            ON CONFLICT (mobile_e164) DO NOTHING`,
         )
-        .bind(crypto.randomUUID(), at, mobileE164, claim.name),
+        .bind(crypto.randomUUID(), at, mobileE164, claim.name, claim.testRecord ? 1 : 0),
       recordConsent(db, {
         person: { mobileE164 },
         purpose: "result_delivery",

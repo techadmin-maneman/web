@@ -196,7 +196,7 @@ describe("POST /api/auth/otp", () => {
     const TEST_RECORD = "+919810000050";
     await env.DB.batch([
       env.DB.prepare(
-        "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p-script', ?1, ?2, 'Staging test', 1)",
+        "INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record) VALUES ('p-script', ?1, ?2, 'Staging test', 1, 1)",
       ).bind(NOW.toISOString(), TEST_RECORD),
       env.DB.prepare(
         `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, proposed_visit_date, request_id)
@@ -212,6 +212,24 @@ describe("POST /api/auth/otp", () => {
     expect(logs.lines()).toContainEqual(
       expect.objectContaining({ event: "login_code_not_sent", reason: "number not on the allowlist" }),
     );
+  });
+
+  // PS-35: the mark is read from the person, so a record renamed "Staging test" is still a real one.
+  it("sends a code to a record named 'Staging test' that was never marked a test record", async () => {
+    const RENAMED = "+919810000051";
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p-renamed', ?1, ?2, 'Staging test', 1)",
+      ).bind(NOW.toISOString(), RENAMED),
+      env.DB.prepare(
+        `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, proposed_visit_date, request_id)
+         VALUES ('l-renamed', 'p-renamed', ?1, 'form', 'Gurgaon', 'weekday_pm', 'crown', '2026-09-24', 'r')`,
+      ).bind(NOW.toISOString()),
+    ]);
+    build({ messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } });
+
+    expect((await start("98100 00051")).res.status).toBe(202);
+    expect(deps.sentCodes).toHaveLength(1);
   });
 
   it("limits codes per number a day, booked or not, and per address an hour", async () => {

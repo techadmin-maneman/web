@@ -399,6 +399,17 @@ describe("POST /api/tryon/claim, before the look is made", () => {
   it("refuses a 'Staging test' claim off the allowlist, and takes one on it", async () => {
     const browser = visitor({ messaging: { allowlist: ["+919810000002"] } });
     const jobId = await browser.uploaded();
+    // Two test records our scripts made: the mark is stored on the person, never read from the name typed here.
+    for (const [id, mobile] of [
+      ["p-test-1", "+919810000001"],
+      ["p-test-2", "+919810000002"],
+    ] as const) {
+      await env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record) VALUES (?1, ?2, ?3, 'Staging test', 0, 1)",
+      )
+        .bind(id, new Date().toISOString(), mobile)
+        .run();
+    }
     const asStagingTest = async (mobile: string) =>
       browser.post("/api/tryon/claim", {
         job_id: jobId,
