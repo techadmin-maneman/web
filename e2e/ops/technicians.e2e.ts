@@ -48,22 +48,28 @@ const CANCEL_LEAVE: Call = `POST ${CANCEL}`;
 const PHONE = "Revoke Chrome on Android · 7f3b of Imran Qureshi";
 const INK = "rgb(22, 35, 58)"; // --ink, a primary button's own
 
-async function open(
-  page: Page,
-  revoke = json({ revoked_at: "2027-09-22T06:00:00.000Z" }),
-  leave = json(LEAVE_RECORDED),
-): Promise<void> {
-  await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, {
+/**
+ * What the roster and each technician's page are answered with, and `changed` over them. A newer answer() passes
+ * nothing on to an older one, so a spec that changes one answer midway sends the whole set again.
+ */
+function answersWith(changed: Answers = {}): Answers {
+  return {
     [READ_ROSTER]: json(TECHNICIANS),
     [READ_WORK]: json(TECHNICIAN_WORK),
     [IMRANS_LEAVE]: json(NO_LEAVE),
     [SANDEEPS_LEAVE]: json(SANDEEP_LEAVE),
     [FAIZANS_LEAVE]: json(NO_LEAVE),
-    [REVOKE_IT]: revoke,
-    [RECORD_LEAVE]: leave,
+    [READ_STOCK]: json(STOCK),
+    [REVOKE_IT]: json({ revoked_at: "2027-09-22T06:00:00.000Z" }),
+    [RECORD_LEAVE]: json(LEAVE_RECORDED),
     [CANCEL_LEAVE]: json(LEAVE_CANCELLED),
-  });
+    ...changed,
+  };
+}
+
+async function open(page: Page, changed: Answers = {}): Promise<void> {
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, answersWith(changed));
   await page.goto("/technicians");
   await expect(page.getByRole("heading", { level: 1, name: "Technicians" })).toBeVisible();
 }
@@ -269,7 +275,7 @@ test("keeps the phone when the revoke is called off", async ({ page }) => {
 });
 
 test("says so when the phone is no longer that technician's", async ({ page }) => {
-  await open(page, fails(404, "not_found"));
+  await open(page, { [REVOKE_IT]: fails(404, "not_found") });
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
   await main.getByRole("button", { name: "Revoke this phone" }).click();
@@ -324,8 +330,7 @@ test("lists what his kit holds, marking what is low, with the way to Stock", asy
       { consumable_code: "solvent", technician_id: SANDEEP, quantity: 40, low: false, counted_at: null },
     ],
   } satisfies OpsReply<"/api/stock">;
-  await open(page);
-  await answer(page, { [READ_STOCK]: json(kit) });
+  await open(page, { [READ_STOCK]: json(kit) });
   const main = await pageOf(page, "Imran Qureshi", "Kit");
 
   const tape = main.getByRole("row").filter({ hasText: "Tape strips" });
@@ -338,8 +343,7 @@ test("lists what his kit holds, marking what is low, with the way to Stock", asy
 });
 
 test("says so when his kit holds nothing on record", async ({ page }) => {
-  await open(page);
-  await answer(page, { [READ_STOCK]: json({ ...STOCK, holdings: [] }) });
+  await open(page, { [READ_STOCK]: json({ ...STOCK, holdings: [] }) });
   const main = await pageOf(page, "Faizan Ali", "Kit");
   await expect(main.getByText("Nothing in his kit on record.")).toBeVisible();
 });
@@ -410,7 +414,7 @@ test("records leave, saying first that nobody can be booked on those days, and s
       },
     ],
   } satisfies OpsReply<"/api/technicians/{id}/leave">;
-  await answer(page, { [IMRANS_LEAVE]: json(recorded) });
+  await answer(page, answersWith({ [IMRANS_LEAVE]: json(recorded) }));
   const sent = page.waitForRequest((request) => request.url().endsWith(LEAVE) && request.method() === "POST");
   await main.getByRole("button", { name: "Record it" }).click();
   expect((await sent).postDataJSON()).toEqual({ from: "2027-10-12", to: "2027-10-14", note: "Away" });
@@ -422,7 +426,7 @@ test("records leave, saying first that nobody can be booked on those days, and s
 });
 
 test("says so when the dates do not make a period, and records nothing", async ({ page }) => {
-  await open(page, undefined, fails(400, "invalid_request"));
+  await open(page, { [RECORD_LEAVE]: fails(400, "invalid_request") });
   const main = await pageOf(page, "Imran Qureshi", "Leave");
   await main.getByRole("button", { name: "Record leave for Imran Qureshi" }).click();
   await main.getByLabel("First day").fill("2027-10-14");
@@ -449,7 +453,7 @@ test("takes leave back only once asked, saying he can be booked on those days ag
   expect(posted).toEqual([]);
 
   await main.getByRole("button", { name: "Take back Sandeep Yadav's leave, 2 Oct 2027 to 6 Oct 2027" }).click();
-  await answer(page, { [SANDEEPS_LEAVE]: json(NO_LEAVE) });
+  await answer(page, answersWith({ [SANDEEPS_LEAVE]: json(NO_LEAVE) }));
   const sent = page.waitForRequest((request) => request.url().endsWith(CANCEL) && request.method() === "POST");
   await main.getByRole("button", { name: "Take it back" }).click();
   await sent;
