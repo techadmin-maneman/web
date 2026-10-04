@@ -191,6 +191,11 @@ function Field({
   const anHour = text !== "" && Number.isInteger(typed) && typed >= 0 && typed <= 23;
   let unit = bounds.unit;
   if (clock) unit = anHour ? copy.hour(typed) : "";
+  // A figure outside the bounds is not a change Save can send, so the box says why rather than Save going grey.
+  const outside = text.trim() !== "" && !whole(text, bounds.min, bounds.max);
+  const range = clock
+    ? copy.allowedHours(copy.hour(bounds.min), copy.hour(bounds.max))
+    : copy.allowed(bounds.min, bounds.max, bounds.unit);
   return (
     <div className={styles.field}>
       <label className={styles.fieldLabel} htmlFor={id}>
@@ -207,16 +212,15 @@ function Field({
           max={bounds.max}
           value={text}
           aria-describedby={hint}
+          aria-invalid={outside}
           onChange={(event) => {
             onChange(event.target.value);
           }}
         />
         <span className={styles.unit}>{unit}</span>
       </div>
-      <p className={styles.hint} id={hint}>
-        {clock
-          ? copy.allowedHours(copy.hour(bounds.min), copy.hour(bounds.max))
-          : copy.allowed(bounds.min, bounds.max, bounds.unit)}
+      <p className={outside ? styles.fieldError : styles.hint} id={hint}>
+        {outside && !clock ? copy.outOfBounds(String(bounds.min), `${String(bounds.max)} ${bounds.unit}`) : range}
       </p>
     </div>
   );

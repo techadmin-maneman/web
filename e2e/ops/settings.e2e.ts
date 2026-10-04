@@ -185,6 +185,18 @@ test.describe("the rules", () => {
     await expect(save).toBeDisabled();
   });
 
+  // OIA-25 and UX-45: a figure past its bounds left Save grey with no reason.
+  test("says beside the box why a figure past its bounds cannot be saved", async ({ page }) => {
+    await open(page);
+    const radius = page.getByLabel("Check-in radius");
+    await radius.fill("1440");
+    await expect(radius).toHaveAttribute("aria-invalid", "true");
+    await expect(radius).toHaveAccessibleDescription("Enter a whole figure from 50 to 1000 metres.");
+    await expect(section(page, "Visits in the field").getByRole("button", { name: "Save" })).toBeDisabled();
+    await radius.fill("150");
+    await expect(radius).toHaveAttribute("aria-invalid", "false");
+  });
+
   // FEO-06: the refusal named its field and the console dropped it, so every refusal read the same.
   test("names the box the API refused", async ({ page }) => {
     await open(page, "/settings", {

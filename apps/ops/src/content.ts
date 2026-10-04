@@ -2426,6 +2426,8 @@ export const settings = {
       return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
     },
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
+    /** A figure typed outside its bounds, said in the hint's place, since it leaves Save with nothing to send. */
+    outOfBounds: (min: string, max: string) => `Enter a whole figure from ${min} to ${max}.`,
     committed: "Nobody has set this, so the standard figure stands.",
     save: "Save",
     saving: "Saving",
