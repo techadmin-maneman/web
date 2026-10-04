@@ -1,8 +1,22 @@
 /*
- * Board C3: who is waiting, by pincode, and the panel that confirms a launch
- * before anything is sent. The two counts, the list and those who asked to be
- * told, sit one above the other so the gap between them is visible.
+ * Areas. Board C3: who is waiting, by pincode, and the panel that confirms a
+ * launch before anything is sent, which Served's save opens too. The two
+ * counts, the list and those who asked to be told, sit one above the other so
+ * the gap between them is visible.
  */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--ops-wide);
+}
+
+.closed {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
 
 .column {
   display: flex;
@@ -58,6 +72,18 @@
   padding-inline: var(--sp-4);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* "Came by referral" and "Asked to be told" say what the figures are, over two lines at the board's widths. */
+.table thead .referred,
+.table thead .alerts {
+  white-space: normal;
+  vertical-align: bottom;
+}
+
+/* A pincode the service area does not hold, which is added before it is marked live. */
+.notHeld {
+  color: var(--text-muted);
 }
 
 /* The board's own widths for the four columns of figures and dates. */
@@ -272,4 +298,43 @@
   font-size: var(--fs-14);
   line-height: var(--lh-160);
   color: var(--text-soft);
+}
+
+/* One line a pincode, where a save on Served marks several live. */
+.lines {
+  margin: var(--sp-12) 0 0;
+  padding-left: var(--sp-20);
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+}
+
+/* The launch panel where Served opens it, inside the table's own panel. */
+.inPanel {
+  margin: var(--sp-14) var(--sp-20) 0;
+}
+
+/* ---- Adding a pincode the service area does not hold --------------------- */
+
+.addForm .field:first-child {
+  margin-top: var(--sp-12);
+}
+
+.box {
+  display: block;
+  width: 100%;
+  max-width: var(--ops-area);
+  height: var(--tap);
+  margin-top: var(--sp-6);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-15);
+}
+
+.box:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }

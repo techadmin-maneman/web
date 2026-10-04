@@ -1767,6 +1767,8 @@ Request body:
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -2549,6 +2551,30 @@ Request body:
     },
     "referral_reward": {
       "$ref": "#/components/schemas/ReferralReward"
+    },
+    "pending_invite": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "referrer_first_name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Who sent it, exactly where the invite's own page names them; null where it does not."
+            }
+          },
+          "required": [
+            "referrer_first_name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The invite a client not yet fitted came with, while its free service visits (referral_reward's friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it lapsed."
     }
   },
   "required": [
@@ -2563,7 +2589,8 @@ Request body:
     "prompt",
     "invoice",
     "booking",
-    "referral_reward"
+    "referral_reward",
+    "pending_invite"
   ],
   "additionalProperties": false
 }
