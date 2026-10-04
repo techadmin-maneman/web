@@ -303,10 +303,9 @@ describe("a grant of Finance in one city", () => {
     expect((await get(delhi, "/api/services")).status).toBe(200);
   });
 
-  it("is not let make a code or refund a held booking, which need a national grant", async () => {
+  it("is not let make a code, which needs a national grant", async () => {
     const code = { code: "FIVEPC", kind: "percent", value: 5, covers: ["service"], once_per_client: true };
     expect((await post(delhi, "/api/discount-codes", code)).status).toBe(403);
-    expect((await post(delhi, "/api/held-bookings/99999999-9999-4999-8999-999999999999/refund")).status).toBe(403);
   });
 });
 

@@ -56,7 +56,7 @@ export const termsOf = (row: { kind: DiscountKind; value: number; cap: number | 
 /**
  * Whether a use stands, `use` naming the discount_code_uses row and `now` the bound parameter for now: not taken off
  * its booking, not on a hold that was let go, or that stopped keeping its time with nothing paid, and not on a visit
- * cancelled, by the client, by ops or by FSM, which gives the code back, as the owner ruled on 1 October 2026.
+ * cancelled, by the client or by ops, which gives the code back, as the owner ruled on 1 October 2026.
  */
 export const standing = (use: string, now: string): string =>
   `${use}.removed_at IS NULL AND (${use}.hold_id IS NULL OR EXISTS (

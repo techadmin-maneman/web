@@ -1,4 +1,4 @@
-// The Books item each service is invoiced on, where FSM's catalogue no longer is. The invoice pass bills a visit on
+// The Books item each service is invoiced on. The invoice pass bills a visit on
 // its service's item, and waits for a service that has none.
 //
 // Once an hour each service offered today is matched to its item: the one kept on it, else the active one Books holds

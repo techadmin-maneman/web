@@ -1,24 +1,20 @@
-// Booking a held window (src/domain/bookings.ts): Checkout's order, the write to
-// FSM once Razorpay confirms the capture, and the refund when the payment came
-// too late or FSM will not take the visit. NOW is Monday 21 September 2026, 12
-// noon in India. Every name and number here is made up.
+// Booking a held window (src/domain/bookings.ts): Checkout's order, the visit
+// written once Razorpay confirms the capture, and the refund when the payment
+// came too late. NOW is Monday 21 September 2026, 12 noon in India. Every name
+// and number here is made up.
 
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { autoRefundsOf } from "../../src/domain/auto-refunds.ts";
+import { beforeEach, describe, expect, it } from "vitest";
+import { autoRefundsOf, composeBookingRefunded } from "../../src/domain/auto-refunds.ts";
 import { confirmBooking } from "../../src/domain/bookings.ts";
-import { composeBookingRefunded } from "../../src/domain/held-bookings.ts";
-import { createLogger } from "../../src/log.ts";
-import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
-import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import {
   appFor,
-  captureLogs,
   fakeDependencies,
   fakeQueue,
+  leaseRefused,
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
@@ -27,36 +23,27 @@ import {
 } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
-const world = () => ({
-  ...EMPTY_FSM,
-  items: [
-    { id: "item-service", name: "Service visit", type: "Service" as const, price: null },
-    { id: "item-consult", name: "Consultation", type: "Service" as const, price: null },
-  ],
-});
-
 let cookie: string;
 
 beforeEach(async () => {
   await markDatabase();
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
   )
     .bind(NOW.toISOString())
     .run();
   await env.DB.prepare(
-    `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id)
-     VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra', 'contact-1')`,
+    `INSERT INTO people (id, created_at, mobile_e164, name)
+     VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')`,
   )
     .bind(PERSON, NOW.toISOString())
     .run();
   await savedAddress(PERSON);
   // Fitted: a service visit done with Imran.
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
-       fsm_modified_at, synced_at)
-     VALUES ('past', 'fsm-past', ?1, 'service', 'completed', 'Completed', '2026-09-01T06:30:00.000Z',
-       '2026-09-01T08:00:00.000Z', 't1', ?2, ?2)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+     VALUES ('past', 'past', ?1, 'service', 'completed', '2026-09-01T06:30:00.000Z', '2026-09-01T08:00:00.000Z', 't1',
+       ?2)`,
   )
     .bind(PERSON, NOW.toISOString())
     .run();
@@ -79,6 +66,15 @@ async function heldService(app = appFor("local", fakeDependencies(), {}, "client
   const answer = await post(app, "/api/holds", { type: "service", date: "2026-09-22", window: "afternoon" });
   return (await answer.json<{ id: string }>()).id;
 }
+
+/** The visit a hold booked, by its hold. */
+const visitOf = (holdId: string) =>
+  env.DB.prepare(
+    `SELECT a.id, a.fsm_id, a.type, a.tier, a.status, a.technician_id, a.window_start, a.window_end
+     FROM appointments a JOIN slot_holds h ON h.appointment_id = a.id WHERE h.id = ?1`,
+  )
+    .bind(holdId)
+    .first<{ id: string; fsm_id: string; window_end: string }>();
 
 /** Razorpay's capture of the hold's order, as the webhook records it. */
 async function captured(holdId: string, capturedAt = NOW.toISOString()) {
@@ -145,13 +141,12 @@ describe("POST /api/bookings", () => {
   it("books a free consultation straight away, and refuses a hold that has lapsed", async () => {
     await env.DB.prepare("DELETE FROM appointments").run(); // a lead: a consultation is what they may book
     const app = appFor("local", fakeDependencies(), {}, "client");
-    const queue = fakeQueue();
     const consult = await (
       await post(app, "/api/holds", { type: "consultation", date: "2026-09-22", window: "morning" })
     ).json<{ id: string }>();
-    const answer = await post(app, "/api/bookings", { hold_id: consult.id }, { FSM_QUEUE: queue });
+    const answer = await post(app, "/api/bookings", { hold_id: consult.id }, { MESSAGE_QUEUE: fakeQueue() });
     expect(await answer.json()).toEqual({ hold_id: consult.id, checkout: null });
-    expect(queue.sent).toEqual([{ hold_id: consult.id, request_id: expect.any(String) as string }]);
+    expect(await visitOf(consult.id)).toMatchObject({ type: "consultation", status: "scheduled" });
 
     const later = appFor("local", fakeDependencies({ now: () => new Date(NOW.getTime() + 11 * 60_000) }), {}, "client");
     const lapsed = await post(later, "/api/bookings", { hold_id: consult.id });
@@ -160,30 +155,24 @@ describe("POST /api/bookings", () => {
 });
 
 describe("confirmBooking", () => {
-  it("books a paid hold in FSM with its technician and times, then in the mirror, and links the payment", async () => {
+  it("books a paid hold with its technician and times, its own ID its FSM ID, and links the payment", async () => {
     const app = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(app);
     await post(app, "/api/bookings", { hold_id: holdId });
-    const fsm = createStubFsm(world());
     const payments = createStubPayments();
-    expect(await confirmBooking(env.DB, fsm, payments, holdId, NOW, { labelAsTest: true })).toBe("not_paid");
+    expect(await confirmBooking(env.DB, payments, holdId, NOW, {})).toBe("not_paid");
 
     await captured(holdId);
-    expect(await confirmBooking(env.DB, fsm, payments, holdId, NOW, { labelAsTest: true })).toBe("booked");
-    expect(fsm.made.visits).toEqual([
-      {
-        contactId: "contact-1",
-        summary: "Staging test: Service visit for Rohit Malhotra",
-        serviceId: "item-service",
-        technicianId: "resource-1",
-        start: "2026-09-22T12:00:00+05:30",
-        end: "2026-09-22T13:30:00+05:30",
-      },
-    ]);
-    const visit = await env.DB.prepare(
-      "SELECT id, status, technician_id FROM appointments WHERE fsm_id LIKE 'stub-appointment-%'",
-    ).first<{ id: string }>();
-    expect(visit).toMatchObject({ status: "scheduled", technician_id: "t1" });
+    expect(await confirmBooking(env.DB, payments, holdId, NOW, {})).toBe("booked");
+    const visit = await visitOf(holdId);
+    expect(visit).toMatchObject({
+      type: "service",
+      status: "scheduled",
+      technician_id: "t1",
+      window_start: "2026-09-22T06:30:00.000Z",
+      window_end: "2026-09-22T08:00:00.000Z",
+    });
+    expect(visit?.fsm_id).toBe(visit?.id);
     const paid = await env.DB.prepare(
       "SELECT appointment_id FROM payments WHERE razorpay_payment_id = 'pay_1'",
     ).first();
@@ -194,8 +183,9 @@ describe("confirmBooking", () => {
     const hold = await request(app, `/api/holds/${holdId}`, { headers: { Cookie: cookie } });
     expect(await hold.json()).toMatchObject({ state: "booked", paid: true, visit_id: visit?.id });
     // Told again, it books nothing twice.
-    expect(await confirmBooking(env.DB, fsm, payments, holdId, NOW, { labelAsTest: true })).toBe("already_booked");
-    expect(fsm.made.visits).toHaveLength(1);
+    expect(await confirmBooking(env.DB, payments, holdId, NOW, {})).toBe("already_booked");
+    const visits = await env.DB.prepare("SELECT COUNT(*) AS n FROM appointments WHERE type = 'service'").first();
+    expect(visits).toEqual({ n: 2 });
   });
 
   it("refunds, once, a payment made after its hold had lapsed and the two minutes' grace after it", async () => {
@@ -204,12 +194,11 @@ describe("confirmBooking", () => {
     await post(app, "/api/bookings", { hold_id: holdId });
     await captured(holdId, new Date(NOW.getTime() + 13 * 60_000).toISOString());
     const payments = createStubPayments();
-    const fsm = createStubFsm(world());
     const later = new Date(NOW.getTime() + 13 * 60_000);
-    expect(await confirmBooking(env.DB, fsm, payments, holdId, later, { labelAsTest: true })).toBe("refunded");
-    expect(await confirmBooking(env.DB, fsm, payments, holdId, later, { labelAsTest: true })).toBe("refunded");
+    expect(await confirmBooking(env.DB, payments, holdId, later, {})).toBe("refunded");
+    expect(await confirmBooking(env.DB, payments, holdId, later, {})).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_1", amount: 200000 }]);
-    expect(fsm.made.visits).toEqual([]);
+    expect(await visitOf(holdId)).toBeNull();
   });
 
   // MON-14: a lapse refund sent no message and showed nowhere in the console.
@@ -221,16 +210,14 @@ describe("confirmBooking", () => {
     await captured(holdId, later.toISOString());
     const notified: string[] = [];
     const options = {
-      labelAsTest: true,
       notify: (messageId: string) => {
         notified.push(messageId);
         return Promise.resolve();
       },
     };
-    const fsm = createStubFsm(world());
     const payments = createStubPayments();
-    expect(await confirmBooking(env.DB, fsm, payments, holdId, later, options)).toBe("refunded");
-    expect(await confirmBooking(env.DB, fsm, payments, holdId, later, options)).toBe("refunded");
+    expect(await confirmBooking(env.DB, payments, holdId, later, options)).toBe("refunded");
+    expect(await confirmBooking(env.DB, payments, holdId, later, options)).toBe("refunded");
 
     const { results } = await env.DB.prepare(
       "SELECT id, kind, subject_kind, subject_id, state FROM outbound_messages WHERE person_id = ?1",
@@ -264,51 +251,19 @@ describe("confirmBooking", () => {
     const consult = await (
       await post(app, "/api/holds", { type: "consultation", date: "2026-09-22", window: "morning" })
     ).json<{ id: string }>();
-    await post(app, "/api/bookings", { hold_id: consult.id }, { FSM_QUEUE: fakeQueue() });
+    // Confirmed, and its booking lost with the request, as the half-hour pass finds it.
+    await post(app, "/api/bookings", { hold_id: consult.id }, { DB: leaseRefused(env.DB) });
     await env.DB.prepare("UPDATE slot_holds SET state = 'released' WHERE id = ?1").bind(consult.id).run();
     const later = new Date(NOW.getTime() + 13 * 60_000);
-    const fsm = createStubFsm(world());
-    expect(await confirmBooking(env.DB, fsm, createStubPayments(), consult.id, later, { labelAsTest: true })).toBe(
-      "lapsed",
-    );
+    expect(await confirmBooking(env.DB, createStubPayments(), consult.id, later)).toBe("lapsed");
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first()).toEqual({ n: 0 });
     expect(await autoRefundsOf(env.DB, PERSON)).toEqual([]);
-  });
-
-  // Before the owner's ruling of 27 September 2026 the fifth refusal refunded the client (ADR 0095).
-  it("holds the booking for ops, refunding nothing, when FSM will not take the visit after five tries", async () => {
-    const app = appFor("local", fakeDependencies(), {}, "client");
-    const holdId = await heldService(app);
-    await post(app, "/api/bookings", { hold_id: holdId });
-    await captured(holdId);
-    const payments = createStubPayments();
-    const failing: FsmProvider = {
-      ...createStubFsm(world()),
-      createWorkOrder: () => Promise.reject(new Error("Zoho 400 INVALID_DATA: no resource")),
-    };
-    const deps = fakeDependencies({ fsm: failing, payments });
-    const batchOf = (attempts: number) => ({
-      queue: "mm-fsm-sync-local",
-      messages: [{ id: "m1", body: { hold_id: holdId, request_id: "r1" }, attempts, ack: vi.fn(), retry: vi.fn() }],
-      ackAll: vi.fn(),
-      retryAll: vi.fn(),
-    });
-    const first = batchOf(1);
-    await handleFsmSyncBatch(first as unknown as MessageBatch, env, deps, createLogger());
-    expect(first.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
-    expect(payments.made.refunds).toEqual([]);
-
-    const fifth = batchOf(5);
-    await handleFsmSyncBatch(fifth as unknown as MessageBatch, env, deps, createLogger());
-    expect(fifth.messages[0]?.ack).toHaveBeenCalled();
-    expect(payments.made.refunds).toEqual([]);
-    expect(deps.alerts).toEqual([expect.stringMatching(/could not be written to FSM.*Nothing is refunded/)]);
   });
 });
 
 /**
  * A service ops added to a kind (docs/decisions/0085-services-ops-can-edit.md): a premium service visit of two hours
- * at Rs. 2,500, priced from January, whose item FSM holds in `withItem` alone.
+ * at Rs. 2,500, priced from January.
  */
 async function premiumService(): Promise<void> {
   await env.DB.batch([
@@ -322,18 +277,13 @@ async function premiumService(): Promise<void> {
   ]);
 }
 
-const withItem = () => ({
-  ...world(),
-  items: [...world().items, { id: "item-premium", name: "Premium service", type: "Service" as const, price: 250000 }],
-});
-
 async function heldPremium(app: ReturnType<typeof appFor>): Promise<string> {
   const body = { type: "service", tier: "premium", date: "2026-09-22", window: "afternoon" };
   return (await (await post(app, "/api/holds", body)).json<{ id: string }>()).id;
 }
 
 describe("booking a service ops added", () => {
-  it("holds it at its own price and length, and books it in FSM on its own item, as its own service", async () => {
+  it("holds it at its own price and length, and books it as its own service", async () => {
     await premiumService();
     const app = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldPremium(app);
@@ -345,25 +295,14 @@ describe("booking a service ops added", () => {
     expect(started.checkout).toMatchObject({ amount: 250000, description: "Premium service · Tue 22 Sep" });
 
     await captured(holdId);
-    const fsm = createStubFsm(withItem());
-    expect(await confirmBooking(env.DB, fsm, createStubPayments(), holdId, NOW, { labelAsTest: true })).toBe("booked");
+    expect(await confirmBooking(env.DB, createStubPayments(), holdId, NOW, {})).toBe("booked");
 
-    expect(fsm.made.visits).toEqual([
-      {
-        contactId: "contact-1",
-        summary: "Staging test: Premium service for Rohit Malhotra",
-        serviceId: "item-premium",
-        technicianId: "resource-1",
-        start: "2026-09-22T12:00:00+05:30",
-        end: "2026-09-22T14:00:00+05:30",
-      },
-    ]);
-    const visit = await env.DB.prepare(
-      "SELECT type, tier, window_end FROM appointments WHERE fsm_id LIKE 'stub-appointment-%'",
-    ).first();
-    expect(visit).toEqual({ type: "service", tier: "premium", window_end: "2026-09-22T08:30:00.000Z" });
-    const kept = await env.DB.prepare("SELECT fsm_item_id FROM services WHERE tier = 'premium'").first();
-    expect(kept).toEqual({ fsm_item_id: "item-premium" });
+    expect(await visitOf(holdId)).toMatchObject({
+      type: "service",
+      tier: "premium",
+      window_start: "2026-09-22T06:30:00.000Z",
+      window_end: "2026-09-22T08:30:00.000Z",
+    });
   });
 
   // ADR 0068: what a client was sold stays sold, whatever ops change after.
@@ -379,45 +318,26 @@ describe("booking a service ops added", () => {
     ]);
     await post(app, "/api/bookings", { hold_id: holdId });
     await captured(holdId);
-    const fsm = createStubFsm(withItem());
 
-    await confirmBooking(env.DB, fsm, createStubPayments(), holdId, NOW, { labelAsTest: true });
+    await confirmBooking(env.DB, createStubPayments(), holdId, NOW, {});
 
-    expect(fsm.made.visits[0]?.end).toBe("2026-09-22T14:00:00+05:30");
+    expect((await visitOf(holdId))?.window_end).toBe("2026-09-22T08:30:00.000Z");
     const paid = await env.DB.prepare("SELECT amount FROM payments WHERE razorpay_payment_id = 'pay_1'").first();
     expect(paid).toEqual({ amount: 250000 });
-  });
-
-  it("books it on its kind's standard item where FSM has none of its own, and tells ops once", async () => {
-    await premiumService();
-    const deps = fakeDependencies();
-    const logs = captureLogs();
-    const app = appFor("local", deps, {}, "client");
-    const holdId = await heldPremium(app);
-    await post(app, "/api/bookings", { hold_id: holdId });
-    await captured(holdId);
-    const fsm = createStubFsm(world());
-    const options = { labelAsTest: true, alertOnce: deps.alertOnce, log: createLogger() };
-
-    expect(await confirmBooking(env.DB, fsm, createStubPayments(), holdId, NOW, options)).toBe("booked");
-
-    expect(fsm.made.workOrders.map((order) => order.serviceId)).toEqual(["item-service"]);
-    expect(deps.alerts).toEqual([expect.stringContaining('no item for the service "Premium service"')]);
-    expect(logs.lines().filter((line) => line.event === "fsm_item_fallback")).toHaveLength(1);
-    // The visit is still the premium one the client paid for; its invoice is checked against that (ADR 0070).
-    const visit = await env.DB.prepare("SELECT tier FROM appointments WHERE fsm_id LIKE 'stub-appointment-%'").first();
-    expect(visit).toEqual({ tier: "premium" });
   });
 });
 
 describe("Razorpay's capture of a hold's payment", () => {
-  it("queues the booking", async () => {
+  it("books the visit in the webhook's own request", async () => {
     const secret = "a-razorpay-webhook-secret-for-tests";
+    const client = appFor("local", fakeDependencies(), {}, "client");
+    const holdId = await heldService(client);
+    const started = await post(client, "/api/bookings", { hold_id: holdId });
+    const { checkout } = await started.json<{ checkout: { order_id: string } }>();
     const app = appFor("local", fakeDependencies(), {
       ...LOCAL_SETTINGS,
       razorpay: { keyId: "rzp_test_abc", keySecret: "s", webhookSecret: secret },
     });
-    const holdId = "33333333-3333-4333-8333-333333333333";
     const body = JSON.stringify({
       entity: "event",
       event: "payment.captured",
@@ -428,16 +348,15 @@ describe("Razorpay's capture of a hold's payment", () => {
             amount: 200000,
             currency: "INR",
             status: "captured",
-            order_id: "order_9",
+            order_id: checkout.order_id,
             method: "upi",
             contact: "+919810000001",
             notes: { hold_id: holdId, person_id: PERSON },
-            created_at: 1790067435,
+            created_at: Math.floor(NOW.getTime() / 1000),
           },
         },
       },
     });
-    const queue = fakeQueue();
     const answer = await request(
       app,
       "/api/hooks/razorpay",
@@ -450,9 +369,9 @@ describe("Razorpay's capture of a hold's payment", () => {
           "X-Razorpay-Event-Id": "evt_9",
         },
       },
-      { FSM_QUEUE: queue },
+      { MESSAGE_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(200);
-    expect(queue.sent).toEqual([{ hold_id: holdId, request_id: expect.any(String) as string }]);
+    expect(await visitOf(holdId)).toMatchObject({ type: "service", status: "scheduled" });
   });
 });

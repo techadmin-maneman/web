@@ -4,8 +4,7 @@
 //
 // What these hold: a consumable is added, renamed, costed, retired and
 // restored, each with its audit entry and never two of one name; a service's
-// expected use names only consumables and services that exist; and the
-// console is told where each stands in FSM's catalogue.
+// expected use names only consumables and services that exist.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -28,7 +27,6 @@ interface Consumable {
   reorder_central: number | null;
   retired_from: string | null;
   offered: boolean;
-  fsm: { state: string; item_id: string | null; name: string | null };
 }
 
 interface Consumables {
@@ -41,7 +39,6 @@ interface Consumables {
     expected: { code: string; quantity: number }[];
   }[];
   today: string;
-  fsm_push: boolean;
 }
 
 const listed = async (): Promise<Consumables> => (await request(ops, "/api/consumables")).json<Consumables>();
@@ -66,7 +63,7 @@ beforeEach(async () => {
 });
 
 describe("the catalogue", () => {
-  it("adds a consumable under a code made from its name, offered from now, and not yet read in FSM", async () => {
+  it("adds a consumable under a code made from its name, offered from now", async () => {
     const { consumables } = await add(TAPE);
 
     expect(consumables).toEqual([
@@ -79,15 +76,10 @@ describe("the catalogue", () => {
         reorder_central: 100,
         retired_from: null,
         offered: true,
-        fsm: { state: "unchecked", item_id: null, name: null },
       },
     ]);
     const [entry] = (await auditFor("consumable.add")).results;
     expect(entry).toMatchObject({ actor: "ops@localhost", subject_id: "tape_strips" });
-  });
-
-  it("says the push to FSM is off, so the console can say FSM is set by hand", async () => {
-    expect((await listed()).fsm_push).toBe(false);
   });
 
   it("refuses a second consumable of the same name, whatever its case, and names the field", async () => {
@@ -171,27 +163,6 @@ describe("the catalogue", () => {
 
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { fields: ["from"] } });
-  });
-
-  it("says where each stands in FSM's catalogue, as the hourly check last found it", async () => {
-    await add(TAPE);
-    await add(SOLVENT);
-    await add({ name: "Shampoo sachet", unit: "sachet", unit_cost: 800 });
-    await env.DB.batch([
-      env.DB.prepare(
-        "UPDATE consumables SET fsm_item_id = 'part-1', fsm_name = 'Tape strips', fsm_checked_at = ?1 WHERE code = 'tape_strips'",
-      ).bind("2026-09-21T06:00:00.000Z"),
-      env.DB.prepare(
-        "UPDATE consumables SET fsm_item_id = 'part-2', fsm_name = 'Solvent (old)', fsm_checked_at = ?1 WHERE code = 'solvent'",
-      ).bind("2026-09-21T06:00:00.000Z"),
-    ]);
-
-    const states = Object.fromEntries((await listed()).consumables.map((each) => [each.code, each.fsm]));
-    expect(states).toEqual({
-      tape_strips: { state: "linked", item_id: "part-1", name: "Tape strips" },
-      solvent: { state: "renamed", item_id: "part-2", name: "Solvent (old)" },
-      shampoo_sachet: { state: "unchecked", item_id: null, name: null },
-    });
   });
 });
 

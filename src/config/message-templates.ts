@@ -102,8 +102,7 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, you have {{2}} free to book by {{3}}. A visit booked by then is covered, even one on a later date. Book in the Mane Man app.",
   visit_cancelled_refund_v1:
     "Hello {{1}}, your {{2}} on {{3}} is cancelled. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
-  // A booking given back, with a visit's params: one FSM would not take, which ops refunded or let go, one paid after
-  // its hold lapsed, or a move whose visit had begun.
+  // A booking given back, with a visit's params: one paid after its hold lapsed, or a move whose visit had begun.
   booking_refunded_v1:
     "Hello {{1}}, we could not book your {{2}} on {{3}}. {{6}} is on its way back to your {{8}}, in 5 to 7 working days. You can book another time in the Mane Man app.",
   booking_not_made_v1:
@@ -211,7 +210,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   arrival_notice: "automatic", // the technician's own action, not the client's
   no_show_decided: "automatic", // ops ruled on it
   no_show_dispute_ruled: "automatic", // ops ruled on the client's dispute
-  booking_refunded: "automatic", // a booking given back, by ops or by itself
+  booking_refunded: "automatic", // a booking given back by itself
   next_service_reminder: "automatic", // scheduled
   friend_fitted: "automatic", // to the referrer, for the friend's action
   friend_credited: "automatic", // to the friend, for the job ops closed

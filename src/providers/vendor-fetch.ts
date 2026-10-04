@@ -9,7 +9,6 @@ import { ProviderError } from "./provider-error.ts";
 /** Each vendor, as its calls are logged, and as its errors name it. */
 const VENDOR_NAMES = {
   "zoho-crm": "Zoho CRM",
-  "zoho-fsm": "Zoho FSM",
   "zoho-books": "Zoho Books",
   razorpay: "Razorpay",
   evolution: "WhatsApp bridge",

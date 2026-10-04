@@ -6,9 +6,7 @@ import { z } from "zod";
 import { pollsPerRender } from "../../scripts/lib/free-tier-budget.ts";
 import { readJsonc } from "../../scripts/lib/jsonc.ts";
 import { DOWNLOAD_QUEUE_RETRIES, MAX_SEND_ATTEMPTS, SUBMIT_ATTEMPTS } from "../../src/config/pipeline.ts";
-import { REFUSALS_BEFORE_HELD } from "../../src/policy/held-bookings.ts";
 import { MAX_CONTACT_UPDATE_ATTEMPTS } from "../../src/queues/crm-sync.ts";
-import { MAX_FSM_SYNC_ATTEMPTS } from "../../src/queues/fsm-sync.ts";
 
 /** The most deliveries one render takes: its submits, its polls to the give-up time and one past it, its downloads. */
 const RENDER_DELIVERIES = SUBMIT_ATTEMPTS + pollsPerRender() + 1 + DOWNLOAD_QUEUE_RETRIES;
@@ -19,7 +17,6 @@ const LAST_DELIVERY: Readonly<Record<string, number>> = {
   "crm-sync": MAX_CONTACT_UPDATE_ATTEMPTS,
   render: RENDER_DELIVERIES,
   messaging: MAX_SEND_ATTEMPTS,
-  "fsm-sync": Math.max(MAX_FSM_SYNC_ATTEMPTS, REFUSALS_BEFORE_HELD),
 };
 
 const REDELIVERY_DELAY_SECONDS = 30;

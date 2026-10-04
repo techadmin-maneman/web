@@ -64,7 +64,7 @@ export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
 
 /**
  * The statuses in which each kind is still true of the visit. Most are about a visit still booked; a cancel and a
- * no-show are about one that no longer is, and the technician's arrival may already have started the visit in FSM.
+ * no-show are about one that no longer is, and the technician's arrival may already have started the visit.
  */
 const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentStatus[] | "any">> = {
   consultation_confirmation: ["scheduled", "dispatched"],

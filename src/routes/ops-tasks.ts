@@ -8,8 +8,7 @@
 // A task is not a record. It is a row in a queue the database already keeps,
 // read at the moment ops look: a held grant, an undecided no-show, a number
 // change waiting for ops, an erasure asked for, a grievance to answer, a piece
-// past its replacement date, an invoice still a draft, an erasure FSM would not
-// finish, a client past their next service with nothing booked, a first fit
+// past its replacement date, an invoice still a draft, a client past their next service with nothing booked, a first fit
 // asked for and not booked. Each task leaves when the thing itself is done,
 // wherever it is done, but for a visit left partly done, which ops may close
 // without a follow-up. What is kept about a task is whose it is, and why ops
@@ -81,8 +80,8 @@ const TaskSchema = z
       }),
     detail: z.union([z.string(), z.null()]).openapi({
       description:
-        "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM " +
-        'contact; for a move the client has not heard of, the start it moved to and why ("no_consent" or ' +
+        "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; " +
+        'for a move the client has not heard of, the start it moved to and why ("no_consent" or ' +
         '"not_sent", as the dispatch board\'s untold says); for a consultation asked for, its day and window and, ' +
         "where a first fit was asked for with it, " +
         '"first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit\'s start and ' +

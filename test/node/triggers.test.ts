@@ -11,7 +11,7 @@ import { WORKERS } from "../../scripts/lib/workers.ts";
 
 const API = readJsonc("wrangler.jsonc");
 const APP = readJsonc("apps/app/wrangler.jsonc");
-const CONSUMERS = ["mm-crm-sync-staging", "mm-render-staging", "mm-messaging-staging", "mm-fsm-sync-staging"];
+const CONSUMERS = ["mm-crm-sync-staging", "mm-render-staging", "mm-messaging-staging"];
 
 describe("what each Worker's config attaches", () => {
   it("mm-api: the every-minute cron and a consumer for each queue it reads", () => {
@@ -19,7 +19,7 @@ describe("what each Worker's config attaches", () => {
     expect(triggers.crons).toEqual([EVERY_MINUTE]);
     expect(configuredTriggers(API, "production").crons).toEqual([EVERY_MINUTE]);
     expect([...triggers.consumers].sort()).toEqual([...CONSUMERS].sort());
-    expect(configuredTriggers(API, "production").consumers).toContain("mm-fsm-sync-prod");
+    expect(configuredTriggers(API, "production").consumers).toContain("mm-messaging-prod");
   });
 
   it.each(WORKERS.filter((worker) => worker.kind !== "api"))("$name: nothing", (worker) => {
@@ -100,13 +100,6 @@ const STAGING_ON_4_OCTOBER = ok([
     max_concurrency: 1,
     retry_delay: 0,
   }),
-  liveQueue("mm-fsm-sync-staging", {
-    batch_size: 10,
-    max_retries: 5,
-    max_wait_time_ms: 5000,
-    max_concurrency: 1,
-    retry_delay: 0,
-  }),
   liveQueue("mm-messaging-staging", {
     batch_size: 5,
     max_retries: 5,
@@ -152,13 +145,13 @@ describe("the live account against the configs", () => {
 
   it("names a consumer the config added that no one has attached, and says how to attach it", async () => {
     const findings = await check({
-      [QUEUES]: queuesConsumedBy("mm-api-staging", CONSUMERS.slice(0, 3)),
+      [QUEUES]: queuesConsumedBy("mm-api-staging", CONSUMERS.slice(0, 2)),
       "/workers/scripts/mm-api-staging/schedules": cron,
       "/workers/scripts/mm-app-staging/schedules": ok({ schedules: [] }),
     });
     const consumers = findings.find((finding) => finding.subject === "mm-api-staging queue consumers");
     expect(consumers?.outcome).toBe("differs");
-    expect(consumers?.detail).toContain("configured but not attached: mm-fsm-sync-staging");
+    expect(consumers?.detail).toContain("configured but not attached: mm-messaging-staging");
     expect(consumers?.detail).toContain("npm run apply-triggers -- --env staging");
     const settings = findings.find((finding) => finding.subject === "mm-api-staging queue consumer settings");
     expect(settings?.outcome).toBe("matches");

@@ -274,17 +274,4 @@ describe("closing a visit by hand from the console", () => {
     expect(sent[0]?.body.outcome).toBe("partial");
     expect(text()).toContain("Closed as partly done. Its follow-up waits on Tasks.");
   });
-
-  it("says where the visit is closed while FSM holds its record", async () => {
-    await show(closePanel());
-    fill("Work began at", "09:20");
-    fill("Work ended at", "10:50");
-    fill("What happened, and how you know", "Phone lost");
-    answers.push(() => refusal(409, "managed_in_fsm"));
-    await press("Close the visit");
-
-    expect(text()).toContain("FSM holds this visit's record, so close it in FSM.");
-    await press("Close");
-    expect(closedWith).toEqual([false]);
-  });
 });

@@ -7,7 +7,7 @@
 // These are the referral landing's two routes without the invite, and they share
 // their whole path (src/domain/public-booking.ts, and src/http/public-form.ts for
 // the person): the same Turnstile check, the same daily limits per number and
-// address, the same consent notices, the same held slot written to FSM, and the
+// address, the same consent notices, the same held slot booked as a visit, and the
 // same lead behind it so the CRM funnel sees every booking. Whether we come is
 // decided by the pincode, which GET /api/pincodes/{pin} answers for the form.
 //

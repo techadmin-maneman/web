@@ -20,7 +20,7 @@
   white-space: nowrap;
 }
 
-/* A consumable FSM does not hold as ours, or one retired, reads quieter than one in order. */
+/* A consumable retired reads quieter than one in order. */
 .quiet {
   color: var(--text-muted);
 }

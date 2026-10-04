@@ -246,7 +246,7 @@ export type Decision = "confirm" | "reject";
  * someone else already holds it, and keeps the number it replaced, which the
  * referral fraud rules compare (src/domain/referral-grants.ts). Only a change
  * waiting for ops can be decided. The caller sends a confirmed number on to
- * FSM's contact and the CRM lead.
+ * the client's Books customer and the CRM lead.
  */
 export async function decideNumberChange(
   db: D1Database,

@@ -9,7 +9,6 @@ import {
   type Providers,
   type Surface,
 } from "../../src/config/environments.ts";
-import type { FieldRecord } from "../../src/config/field-record.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
@@ -24,7 +23,6 @@ import { createImageProvider } from "../../src/providers/image.ts";
 import type { CodeChannel } from "../../src/providers/codes.ts";
 import { createStubBooks } from "../../src/providers/books.ts";
 import { createGeocodeProvider } from "../../src/providers/geocode.ts";
-import { createFsmProvider, createStubFsm, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubMessaging } from "../../src/providers/messaging.ts";
 
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
@@ -36,14 +34,12 @@ export const LOCAL_SETTINGS: Settings = {
   acceptTurnstileTestToken: false,
   selfServeBooking: true,
   referrerNameOnInvite: true,
-  fsmCataloguePush: false,
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
   leadWebhookUrl: null,
   heartbeatUrl: null,
   analyticsToken: null,
   zoho: null,
-  zohoFsm: null,
   zohoBooks: null,
   razorpay: null,
   geocode: { apiKey: null, dailyCeiling: 200 },
@@ -82,7 +78,6 @@ export const LOCAL_CONFIG: StaticConfig = {
     MESSAGING_PROVIDER: "stub",
     ACCESS_PROVIDER: "stub",
     SMS_PROVIDER: "stub",
-    FSM_PROVIDER: "stub",
     BOOKS_PROVIDER: "stub",
     PAYMENTS_PROVIDER: "stub",
     GEOCODE_PROVIDER: "stub",
@@ -297,7 +292,6 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
       },
     },
     sentCodes,
-    fsm: createStubFsm(),
     books: createStubBooks(),
     payments: createStubPayments(),
     ...overrides,
@@ -321,17 +315,6 @@ export function appFor(
   return createApp(config, () => deps, surface);
 }
 
-/** FSM as FSM_PROVIDER "none" leaves it: every call fails, so whatever reaches it fails the test. */
-export function fsmSwitchedOff(): FsmProvider {
-  return createFsmProvider("none", null, { db: env.DB, fetch, now: () => NOW, log: createLogger() });
-}
-
-/** The providers for each holder of the record of field work: FSM, or our own database with FSM switched off. */
-export const PROVIDERS_FOR: Readonly<Record<FieldRecord, Partial<Providers>>> = {
-  fsm: {},
-  ours: { FSM_PROVIDER: "none" },
-};
-
 export function request(app: App, path: string, init?: RequestInit, bindings: Partial<Env> = {}): Promise<Response> {
   return Promise.resolve(app.request(`https://maneman.test${path}`, init, { ...env, ...bindings }));
 }
@@ -354,6 +337,20 @@ export function failingAfterTheFirstBatch(db: D1Database): D1Database {
     },
   };
   return failing as D1Database;
+}
+
+/** The database, refusing a booking the lease on its hold, as a request whose connection is lost just then. */
+export function leaseRefused(db: D1Database): D1Database {
+  const lost = () => Promise.reject(new Error("D1_ERROR: Network connection lost."));
+  const prepare = (sql: string) => {
+    if (!sql.includes("SET booking_until = ?2")) return db.prepare(sql);
+    return { bind: () => ({ first: lost, run: lost, all: lost }) } as unknown as D1PreparedStatement;
+  };
+  const refusing: Pick<D1Database, "prepare" | "batch"> = {
+    prepare,
+    batch: <T = unknown>(statements: D1PreparedStatement[]) => db.batch<T>(statements),
+  };
+  return refusing as D1Database;
 }
 
 /** How many round trips to D1 a request waited on, one after another, as its Server-Timing header says. */

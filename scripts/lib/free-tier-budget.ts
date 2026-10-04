@@ -39,7 +39,7 @@ export const HEADROOM = 0.8;
  * Nothing in Phase 2 has a ceiling in config yet, so its share is set aside here.
  */
 export const PHASE_2_ALLOWANCE = {
-  /** FSM webhook hints read back from the queue, and the Phase 2 messages. */
+  /** The Phase 2 messages, and the CRM's sync, read back from their queues. */
   queueOperationsPerDay: 2_000,
   /** Clients' photographs, which are never deleted, and referral cards: the storage meter's share. */
   r2StorageBytes: PHASE_2_SHARE_BYTES,

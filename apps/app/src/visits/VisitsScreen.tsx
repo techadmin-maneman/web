@@ -1,8 +1,8 @@
 // Visits (board C1): what is coming on ink, what has been done or cancelled
 // below, each opening its own page (C9 for one done). A booking's
-// consultation, not yet in FSM, shows as the one upcoming, and a visit being
-// booked shows in its day's place, in Home's words. A visit FSM has not
-// closed stays under upcoming, saying where it stands, and "Book your next
+// consultation, not yet a visit, shows as the one upcoming, and a visit being
+// booked shows in its day's place, in Home's words. A visit not yet closed
+// stays under upcoming, saying where it stands, and "Book your next
 // visit" waits while it is. That opens WhatsApp to ops while self-serve
 // booking is off, and waits for the connection offline. "Prepaid" marks a
 // visit paid for ahead, or covered by a credit.
@@ -43,7 +43,7 @@ function UpcomingCard({ date, parts, prepaid }: { date: string; parts: readonly 
   );
 }
 
-/** A visit FSM has, which opens its own page; the window, or where one that has begun stands. */
+/** A visit, which opens its own page; the window, or where one that has begun stands. */
 function Upcoming({ visit }: { visit: VisitSummary }) {
   const when = stageText(visit) ?? WINDOW_HOURS[visit.window_label];
   const parts = [visitTitle(visit), when, ...technicianOf(visit)];
@@ -56,7 +56,7 @@ function Upcoming({ visit }: { visit: VisitSummary }) {
   );
 }
 
-/** A visit paid for, or booked free, that FSM does not have yet: no page to open, and never said to be booked. */
+/** A visit paid for, or booked free, that is not booked yet: no page to open, and never said to be booked. */
 function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) {
   const words = home.beingBooked;
   return (
@@ -99,9 +99,7 @@ function UpcomingItem({ entry }: { entry: UpcomingEntry }) {
  * until there is something true to say: a client with no visit and no piece has
  * no record, and sees C1 exactly as it is drawn.
  *
- * The replacement is given as a month, never a day. The date is worked out
- * afresh from FSM's install date on every sync, so a day shown here could move
- * under the client who read it (ADR 0059).
+ * The replacement is given as a month, never a day (ADR 0059).
  */
 function Record({ history }: { history: Visits["history"] }) {
   const due = history.replacement_due;

@@ -128,20 +128,6 @@ describe("queue handler", () => {
     expect(summary?.d1_queries).toBeGreaterThan(1);
   });
 
-  it("acknowledges an fsm-sync message without reaching FSM, which is off locally", async () => {
-    await markDatabase();
-    const logs = captureLogs();
-    const batch = queueBatch("mm-fsm-sync-local", [{ fsm_id: "fsm-1", request_id: "r" }]);
-
-    await worker.queue(batch as unknown as MessageBatch, env);
-
-    expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
-    expect(batch.messages[0]?.retry).not.toHaveBeenCalled();
-    expect(logs.lines()).toContainEqual(
-      expect.objectContaining({ event: "fsm_message_dropped", kind: "appointment_read" }),
-    );
-  });
-
   it("retries messages from a queue it does not know", async () => {
     await markDatabase();
     const batch = queueBatch("mm-mystery-local", [{}]);
@@ -166,7 +152,6 @@ describe("scheduled handler while D1 is being restored", () => {
     CRM_QUEUE: fakeQueue(),
     RENDER_QUEUE: fakeQueue(),
     MESSAGE_QUEUE: fakeQueue(),
-    FSM_QUEUE: fakeQueue(),
   };
 
   it("runs no job and notes no run", async () => {
@@ -219,7 +204,6 @@ describe("scheduled handler", () => {
       CRM_QUEUE: fakeQueue(),
       RENDER_QUEUE: fakeQueue(),
       MESSAGE_QUEUE: fakeQueue(),
-      FSM_QUEUE: fakeQueue(),
     });
     const summary = logs.lines().find((line) => line.event === "cron_run");
     expect(Object.keys(summary?.d1_rows_read_by_job as object)).toEqual(["unbooked_holds", "books_sync"]);
@@ -235,7 +219,6 @@ describe("scheduled handler", () => {
       CRM_QUEUE: fakeQueue(),
       RENDER_QUEUE: fakeQueue(),
       MESSAGE_QUEUE: fakeQueue(),
-      FSM_QUEUE: fakeQueue(),
     });
     const summary = logs.lines().find((line) => line.event === "cron_run");
     const read = rowsRead();
@@ -254,7 +237,7 @@ describe("scheduled handler", () => {
     await markDatabase();
     const now = new Date().toISOString();
     await env.DB.prepare(
-      "INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id) VALUES ('p-1', ?1, '+919810000001', 'Rohit Malhotra', 'c-1')",
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p-1', ?1, '+919810000001', 'Rohit Malhotra')",
     )
       .bind(now)
       .run();
@@ -270,9 +253,8 @@ describe("scheduled handler", () => {
       CRM_QUEUE: fakeQueue(),
       RENDER_QUEUE: fakeQueue(),
       MESSAGE_QUEUE: fakeQueue(),
-      FSM_QUEUE: fakeQueue(),
     });
-    // Locally FSM is off, so the pass makes the client's customer in the stub Books and records the payment there.
+    // The pass makes the client's customer in the stub Books and records the payment there.
     expect(await booksPaymentOf("pay-1")).not.toBeNull();
   });
 
@@ -283,7 +265,7 @@ describe("scheduled handler", () => {
     const ninetyMinutesAgo = new Date(Date.now() - 90 * 60_000).toISOString();
     await env.DB.batch([
       env.DB.prepare(
-        "INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id) VALUES ('p-1', ?1, '+919810000001', 'Rohit Malhotra', 'c-1')",
+        "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p-1', ?1, '+919810000001', 'Rohit Malhotra')",
       ).bind(now),
       env.DB.prepare(
         `INSERT INTO payments (id, person_id, razorpay_payment_id, amount, currency, status, captured_at, created_at,
@@ -301,7 +283,6 @@ describe("scheduled handler", () => {
       CRM_QUEUE: fakeQueue(),
       RENDER_QUEUE: fakeQueue(),
       MESSAGE_QUEUE: fakeQueue(),
-      FSM_QUEUE: fakeQueue(),
     });
 
     expect(logs.lines().filter((line) => line.event === "cron_job_failed")).toEqual([

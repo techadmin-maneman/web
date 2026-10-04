@@ -1,5 +1,5 @@
-// What Visits lists under Upcoming, soonest first: the visits FSM has, and what Home also shows before FSM has it.
-// That is a booking's consultation from the site, while FSM has no visit of the client's, and a visit paid for, or
+// What Visits lists under Upcoming, soonest first: the client's visits, and what Home also shows before they are
+// visits. That is a booking's consultation from the site, while the client has no visit, and a visit paid for, or
 // booked free, that is being booked.
 
 import type { Me, VisitSummary } from "../api.ts";
@@ -31,6 +31,6 @@ export function upcomingEntries(
   const entries: UpcomingEntry[] = upcoming.map((visit) => ({ kind: "visit", visit }));
   if (consultation !== null && upcoming.length === 0) entries.push({ kind: "consultation", consultation });
   if (beingBooked !== null) entries.push({ kind: "being_booked", booking: beingBooked });
-  // The sort keeps a day's visits FSM has ahead of one being booked that day.
+  // The sort keeps a day's visits ahead of one being booked that day.
   return entries.sort((first, second) => dateOf(first).localeCompare(dateOf(second)));
 }

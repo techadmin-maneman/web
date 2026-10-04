@@ -10,7 +10,6 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
-import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { TASKS_SHOWN } from "../../src/routes/ops-tasks.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 import { enforce, listStaff, opsAs, person as staffPerson } from "./staff-fixtures.ts";
@@ -211,12 +210,6 @@ describe("GET /api/tasks", () => {
     )
       .bind(PERSON, NOW.toISOString())
       .run();
-    await env.DB.prepare(
-      `UPDATE people SET erased_at = '2026-09-20T06:00:00.000Z', fsm_contact_id = 'fsm-contact-4',
-         fsm_erasure_attempts = ?1 WHERE id = ?2`,
-    )
-      .bind(MAX_SYNC_ATTEMPTS, REFERRED)
-      .run();
     // A visit Rohit was left partly done on, and another client's job, with no address, on Chetan's day off.
     await person(OTHER, "Karan Bhatia", "+919810000003");
     await env.DB.batch([
@@ -258,9 +251,8 @@ describe("GET /api/tasks", () => {
       "erasure_request",
       "grievance",
       "draft_invoice",
-      "erasure_unfinished",
     ]);
-    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it("leaves out a group with nothing waiting, as the board draws none", async () => {
@@ -482,36 +474,6 @@ describe("GET /api/tasks", () => {
     expect(tasksIn(await tasks(), "draft_invoice")).toEqual([
       expect.objectContaining({ id: VISIT, detail: "books-inv-7" }),
     ]);
-  });
-
-  it("lists an erased client whose FSM contact the sweeper gave up on, until it is anonymised", async () => {
-    const erased = (attempts: number) =>
-      env.DB.prepare(
-        `UPDATE people SET erased_at = '2026-09-20T06:00:00.000Z', fsm_contact_id = 'fsm-contact-4',
-           fsm_erasure_attempts = ?1 WHERE id = ?2`,
-      )
-        .bind(attempts, PERSON)
-        .run();
-
-    // Still being asked: nothing for ops yet.
-    await erased(MAX_SYNC_ATTEMPTS - 1);
-    expect(groupNames(await tasks())).toEqual([]);
-
-    await erased(MAX_SYNC_ATTEMPTS);
-    expect(tasksIn(await tasks(), "erasure_unfinished")).toEqual([
-      {
-        id: PERSON,
-        // Erased: the record is gone, and only FSM's contact is left to name.
-        person: null,
-        detail: "fsm-contact-4",
-        since: "2026-09-20T06:00:00.000Z",
-        due: "2026-09-22T06:00:00.000Z",
-        owner: null,
-      },
-    ]);
-
-    await env.DB.prepare("UPDATE people SET fsm_erased_at = ?1").bind(NOW.toISOString()).run();
-    expect(groupNames(await tasks())).toEqual([]);
   });
 
   // The brief: "ops need the full set because these drive the task queue". A visit left partly done made no task

@@ -419,7 +419,7 @@ async function run(): Promise<Replayed> {
     // No signal, or none usable: everything still waiting stays waiting.
     if (answer.code === "offline") return { sent, superseded, refused, stopped: "offline" };
     if (answer.status === 401) return { sent, superseded, refused, stopped: "signed-out" };
-    // FSM changed underneath the phone, or a step arrived before the one ahead of
+    // The job changed underneath the phone, or a step arrived before the one ahead of
     // it, or the job has closed, or it is no longer this technician's at all.
     const jobStopped = answer.code === SUPERSEDED || answer.code === OUT_OF_ORDER || answer.code === ALREADY_CLOSED;
     if (jobStopped || answer.status === 404) {

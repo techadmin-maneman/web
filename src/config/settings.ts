@@ -5,7 +5,7 @@
 
 import { toE164 } from "../lib/mobile.ts";
 import type { EvolutionSettings } from "../providers/evolution.ts";
-import { ENABLED_SURFACES, FSM_CATALOGUE_PUSH, type EnvironmentName, type ProviderVar } from "./environments.ts";
+import { ENABLED_SURFACES, type EnvironmentName, type ProviderVar } from "./environments.ts";
 import { GSTIN_FORMAT, SAC_FORMAT, STATE_CODE_FORMAT, type GstRegistration } from "./gst.ts";
 import { FIXED_LIMITS, type FixedLimit } from "./limits.ts";
 import { MAX_RESULT_RETENTION_DAYS } from "./tryon.ts";
@@ -65,19 +65,6 @@ export interface ZohoSettings {
    * an org without a rule must not stop the Worker from starting.
    */
   readonly larId: string | null;
-}
-
-/** FSM's Zoho client, in the real org (ADR 0025, item 26). */
-export interface ZohoFsmSettings {
-  readonly clientId: string;
-  readonly clientSecret: string;
-  readonly refreshToken: string;
-  /** e.g. accounts.zoho.in */
-  readonly accountsHost: string;
-  /** e.g. www.zohoapis.in, where FSM answers at /fsm/v1. */
-  readonly apiHost: string;
-  /** The secret in FSM's webhook URL. Without it the webhook answers 404, and the reconciliation alone keeps the mirror. */
-  readonly webhookToken: string | null;
 }
 
 /** Books' own Zoho client, in the real org. */
@@ -173,12 +160,6 @@ export interface Settings {
   readonly selfServeBooking: boolean;
   /** The referrer's first name on their invite, for those who agreed to it (ADR 0025, item 24). */
   readonly referrerNameOnInvite: boolean;
-  /**
-   * A price ops set is written to FSM's catalogue, which prices a visit's invoice: FSM_CATALOGUE_PUSH in
-   * ./environments.ts (docs/decisions/0073-prices-from-the-price-book.md). Off everywhere until the owner switches
-   * it on in production; off, the hourly catalogue check tells ops what to set by hand.
-   */
-  readonly fsmCataloguePush: boolean;
   readonly ipHashSalt: string;
   /** Where alerts are posted. Optional locally only. */
   readonly alertWebhookUrl: string | null;
@@ -193,8 +174,6 @@ export interface Settings {
   readonly analyticsToken: string | null;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zoho: ZohoSettings | null;
-  /** Present when FSM_PROVIDER is "zoho". */
-  readonly zohoFsm: ZohoFsmSettings | null;
   /** Present when BOOKS_PROVIDER is "zoho". */
   readonly zohoBooks: ZohoBooksSettings | null;
   /**
@@ -210,8 +189,9 @@ export interface Settings {
   readonly tryon: TryonSettings;
   readonly messaging: MessagingSettings;
   /**
-   * DEV_ROUTES=on, locally only: the routes that stand in for what FSM does on staging, such as closing a job
-   * (src/routes/dev-fsm.ts). The guard refuses it anywhere else, and no other environment's app has the routes.
+   * DEV_ROUTES=on, locally only: the routes that stand in on a laptop for what a technician's phone does, such as
+   * closing a job (src/routes/dev-visits.ts). The guard refuses it anywhere else, and no other environment's app has
+   * the routes.
    */
   readonly devRoutes: boolean;
 }
@@ -346,9 +326,6 @@ export function readSettings(
   if (environment === "production" && acceptTurnstileTestToken) {
     read.problems.push("TURNSTILE_ACCEPT_TEST_TOKEN is on in production");
   }
-  // An environment the guard could not name pushes nothing.
-  const fsmCataloguePush = environment !== undefined && FSM_CATALOGUE_PUSH[environment];
-
   const ipHashSalt = read.text("IP_HASH_SALT");
   if (ipHashSalt !== "" && ipHashSalt.length < 32) read.problems.push("IP_HASH_SALT must be at least 32 characters");
 
@@ -377,9 +354,7 @@ export function readSettings(
 
   const devRoutes = read.optionalText("DEV_ROUTES");
   if (devRoutes !== null && environment !== "local") {
-    read.problems.push(
-      "DEV_ROUTES is set outside local: its routes stand in for FSM and would close jobs no technician worked",
-    );
+    read.problems.push("DEV_ROUTES is set outside local: its routes would close jobs no technician worked");
   }
 
   const tryon = readTryon(read, providers, isLocal);
@@ -392,7 +367,6 @@ export function readSettings(
     acceptTurnstileTestToken,
     selfServeBooking,
     referrerNameOnInvite: read.flag("REFERRER_NAME_ON_INVITE"),
-    fsmCataloguePush,
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
@@ -425,11 +399,10 @@ function checkZohoHosts(read: Reader, hosts: readonly (readonly [name: string, h
   }
 }
 
-/** The CRM's, FSM's and Books' Zoho clients, each only where its provider is zoho. */
-function readZohoClients(read: Reader, providers: ProvidersRead): Pick<Settings, "zoho" | "zohoFsm" | "zohoBooks"> {
+/** The CRM's and Books' Zoho clients, each only where its provider is zoho. */
+function readZohoClients(read: Reader, providers: ProvidersRead): Pick<Settings, "zoho" | "zohoBooks"> {
   return {
     zoho: readZoho(read, providers),
-    zohoFsm: readZohoFsm(read, providers),
     zohoBooks: readZohoBooks(read, providers),
   };
 }
@@ -450,27 +423,6 @@ function readZoho(read: Reader, providers: ProvidersRead): ZohoSettings | null {
     ["ZOHO_API_HOST", zoho.apiHost],
   ]);
   return zoho;
-}
-
-/** FSM's Zoho client, when FSM_PROVIDER is zoho. */
-function readZohoFsm(read: Reader, providers: ProvidersRead): ZohoFsmSettings | null {
-  if (providers.FSM_PROVIDER !== "zoho") return null;
-  const zohoFsm: ZohoFsmSettings = {
-    clientId: read.text("ZOHO_FSM_CLIENT_ID"),
-    clientSecret: read.text("ZOHO_FSM_CLIENT_SECRET"),
-    refreshToken: read.text("ZOHO_FSM_REFRESH_TOKEN"),
-    accountsHost: read.text("ZOHO_FSM_ACCOUNTS_HOST"),
-    apiHost: read.text("ZOHO_FSM_API_HOST"),
-    webhookToken: read.optionalText("FSM_WEBHOOK_TOKEN"),
-  };
-  if (zohoFsm.webhookToken !== null && zohoFsm.webhookToken.length < 32) {
-    read.problems.push("FSM_WEBHOOK_TOKEN must be at least 32 characters");
-  }
-  checkZohoHosts(read, [
-    ["ZOHO_FSM_ACCOUNTS_HOST", zohoFsm.accountsHost],
-    ["ZOHO_FSM_API_HOST", zohoFsm.apiHost],
-  ]);
-  return zohoFsm;
 }
 
 /** Books' own Zoho client, its organisation and refund account, when BOOKS_PROVIDER is zoho. */
