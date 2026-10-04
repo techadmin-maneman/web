@@ -1,4 +1,4 @@
-// Migration 0087: the generic "First fit" migration 0050 seeded is retired everywhere, and nothing else changes.
+// Migration 0088: the generic "First fit" migration 0050 seeded is retired everywhere, and nothing else changes.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
@@ -30,7 +30,7 @@ function applyThis(db: DatabaseSync): void {
 const retiredDates = (db: DatabaseSync) =>
   db.prepare("SELECT kind, tier, retired_date FROM services ORDER BY kind, tier").all();
 
-describe("migration 0087", () => {
+describe("migration 0088", () => {
   it("retires the generic first fit from 2 October 2026 and leaves every other service offered", () => {
     const db = upTo();
     db.exec(`INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
@@ -44,7 +44,7 @@ describe("migration 0087", () => {
       { kind: "service", tier: "standard", retired_date: null },
     ]);
     expect(db.prepare("SELECT updated_by FROM services WHERE kind = 'first_fit' AND tier = 'standard'").get()).toEqual({
-      updated_by: "migrations/0087_retire_generic_first_fit.sql",
+      updated_by: "migrations/0088_retire_generic_first_fit.sql",
     });
     db.close();
   });

@@ -484,7 +484,7 @@ async function photos(browser: Browser, design: Page): Promise<void> {
  */
 async function noShows(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/no-shows");
-  const money = page.getByRole("region", { name: "Today" });
+  const money = page.getByRole("region", { name: "Today", exact: true });
   await money.getByText("Cancelled 9:14 am · visit was 10 am").waitFor();
   await pair(OUT, PANEL, "d1-day-money", await panelOf(design, "Payments", 0), await money.screenshot());
 
