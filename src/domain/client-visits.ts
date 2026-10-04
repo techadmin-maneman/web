@@ -54,6 +54,8 @@ export interface VisitSummary {
   readonly place: string;
   /** A consultation and fit in one visit not yet closed: what it costs once fitted. Null for any other visit. */
   readonly one_visit: OneVisitPrice | null;
+  /** The client's note to the technician on this visit, as they last wrote it; null for none. */
+  readonly client_note: string | null;
 }
 
 interface AppointmentRow {
@@ -74,6 +76,7 @@ interface AppointmentRow {
   prepaid: number;
   begun: number;
   landed_outcome: VisitOutcome | null;
+  client_note: string | null;
 }
 
 /**
@@ -88,7 +91,7 @@ const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id
 const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.service_city,
   a.service_pincode, (SELECT s.name FROM services s WHERE s.kind = a.type AND s.tier = a.tier) AS service_name,
   t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
-  ${visitBegun("a")} AS begun, ${landedOutcome("a")} AS landed_outcome`;
+  ${visitBegun("a")} AS begun, ${landedOutcome("a")} AS landed_outcome, a.client_note`;
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
 /** The statuses of a visit not yet closed. */
 const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
@@ -156,6 +159,7 @@ async function summaryOf(
         : { name: row.technician_name, initials: row.technician_initials },
     place: context.place(row),
     one_visit: await oneVisitOf(db, row),
+    client_note: row.client_note,
   };
 }
 

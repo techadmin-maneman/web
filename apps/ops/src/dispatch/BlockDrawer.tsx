@@ -71,6 +71,7 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
     { key: copy.rows.area, value: block.sector === null ? dispatch.unknown : copy.area(block.sector, block.pincode) },
     { key: copy.rows.state, value: stateOf(block) },
     ...(referredBy === null ? [] : [{ key: copy.rows.referred, value: referredBy }]),
+    ...(block.client_note === null ? [] : [{ key: copy.rows.note, value: block.client_note }]),
   ];
   const warning = warningOf(job);
 

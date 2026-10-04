@@ -593,6 +593,11 @@ export const booking = {
 export const note = {
   title: (technician: string | null) =>
     technician === null ? "Add a note for your technician" : `Add a note for ${technician}`,
+  /** PLACEHOLDER: the sheet again, on a visit that already has the client's note. */
+  yours: (technician: string | null) =>
+    technician === null ? "Your note for your technician" : `Your note for ${technician}`,
+  /** PLACEHOLDER: the note shown back on its visit's card. */
+  shown: (text: string) => `Your note: “${text}”`,
   label: "What should they know at the door?",
   offline: "No connection. Your note stays here until you are back online.",
   save: "Save the note",

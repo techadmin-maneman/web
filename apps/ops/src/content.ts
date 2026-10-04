@@ -220,7 +220,15 @@ export const dispatch = {
       Record<string, string>
     >,
     // PLACEHOLDER: the board draws no Service row; it names a first fit's hair system, say.
-    rows: { type: "Type", service: "Service", area: "Area", state: "State", referred: "Referred by" },
+    rows: {
+      type: "Type",
+      service: "Service",
+      area: "Area",
+      state: "State",
+      referred: "Referred by",
+      // PLACEHOLDER: the board draws no note; the technician reads it on the client's card.
+      note: "Client's note",
+    },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** "Sector 65 · 122018": the area the visit's pincode is in, and the pincode. */
@@ -528,6 +536,8 @@ export const clients = {
    * searches for their building and saves it (docs/decisions/0092-task-owners.md).
    */
   visits: {
+    /** PLACEHOLDER: the client's note to the technician, under the visit it is on. */
+    clientNote: (text: string) => `Their note: “${text}”`,
     address: "Visits go to",
     noAddress: "No address saved yet. The client adds it in their app, or gives it to you on the phone.",
     access: "Access",

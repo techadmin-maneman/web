@@ -101,6 +101,8 @@ interface Visit {
   readonly badge: PaymentBadge;
   /** The visit's size on the board, from its length: 1, 1, 1.5 and 2 for the kinds' own. */
   readonly slots: number;
+  /** The client's note to the technician, as they last wrote it; null for none. */
+  readonly client_note: string | null;
 }
 
 export interface Block extends Visit {
@@ -205,7 +207,7 @@ const landed = (kind: string): string =>
  */
 const BOARD_JOBS = `
   SELECT a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
-    a.service_pincode, a.asked_window, a.person_id, d.locality, sp.area, s.minutes AS service_minutes,
+    a.service_pincode, a.asked_window, a.person_id, a.client_note, d.locality, sp.area, s.minutes AS service_minutes,
     s.name AS service_name,
     p.name AS client_name, p.mobile_e164 AS client_mobile, p.erased_at AS client_erased_at,
     t.name AS technician_name, t.active AS technician_active,
@@ -338,6 +340,7 @@ export async function dispatchBoard(
 
 interface BoardJobRow {
   id: string;
+  client_note: string | null;
   type: VisitType | null;
   /** Its service's tier; null where the mirror knows none, which is the standard tier's. */
   tier: string | null;
@@ -387,6 +390,8 @@ function visitOf(job: BoardJobRow): Visit {
       oneVisit: paidAtTheVisit(job.one_visit),
     }),
     slots: slotsFor(unitsFor(bookedMinutes(job))),
+    // An erased client's note went with them.
+    client_note: job.client_erased_at === null ? job.client_note : null,
   };
 }
 

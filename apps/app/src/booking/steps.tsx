@@ -44,6 +44,7 @@ import { CodeBox } from "./CodeBox.tsx";
 import { consentLines } from "./consents.ts";
 import { dayInsideNotice, isFull, offeredFullLine, windowContinue, windowNote, type Day } from "./days.ts";
 import { atStake, insideNotice, type AtStake } from "./late-change.ts";
+import { NoteSheet } from "./NoteSheet.tsx";
 import styles from "./booking.module.css";
 
 /** The id every step's heading carries, which names the sheet (BookingSheet.tsx). */
@@ -713,17 +714,51 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
       <p className={styles.confirmedTitle}>{when}</p>
       {reminded && <p className={styles.confirmedLine}>{copy.tellsYou(technician)}</p>}
       <Settled hold={hold} />
-      <a
-        className={styles.note}
-        href={whatsappWith(messages.note(VISIT_TYPES[hold.type], shortDate(hold.date)))}
-        rel="noopener"
-      >
-        {copy.note(technician)}
-      </a>
+      <ConfirmedNote hold={hold} technician={technician} />
       <button className={styles.done} type="button" onClick={onDone}>
         {copy.close}
       </button>
     </div>
+  );
+}
+
+/**
+ * Add a note, on the visit just booked: kept on it for the technician, as Home's card keeps one. A booking whose visit
+ * is not written yet sends it to us on WhatsApp instead.
+ */
+function ConfirmedNote({ hold, technician }: { hold: Hold; technician: string }) {
+  const [open, setOpen] = useState(false);
+  const message = messages.note(VISIT_TYPES[hold.type], shortDate(hold.date));
+  if (hold.visit_id === null) {
+    return (
+      <a className={styles.note} href={whatsappWith(message)} rel="noopener">
+        {booking.confirmed.note(technician)}
+      </a>
+    );
+  }
+  return (
+    <>
+      <button
+        className={styles.note}
+        type="button"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        {booking.confirmed.note(technician)}
+      </button>
+      {open && (
+        <NoteSheet
+          visitId={hold.visit_id}
+          technician={technician}
+          initial={null}
+          message={message}
+          onClose={() => {
+            setOpen(false);
+          }}
+        />
+      )}
+    </>
   );
 }
 

@@ -5297,6 +5297,17 @@ Request body:
       "type": "string",
       "description": "The saved address's area, city and pincode, else the visit's city and pincode."
     },
+    "client_note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's note to the technician on this visit, as they last wrote it; null for none."
+    },
     "one_visit": {
       "anyOf": [
         {
@@ -5433,6 +5444,7 @@ Request body:
     "prepaid",
     "technician",
     "place",
+    "client_note",
     "one_visit",
     "outcome",
     "closed_without_follow_up",
@@ -5616,6 +5628,17 @@ Request body:
       "type": "string",
       "description": "The saved address's area, city and pincode, else the visit's city and pincode."
     },
+    "client_note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's note to the technician on this visit, as they last wrote it; null for none."
+    },
     "one_visit": {
       "anyOf": [
         {
@@ -5642,6 +5665,7 @@ Request body:
     "prepaid",
     "technician",
     "place",
+    "client_note",
     "one_visit"
   ],
   "additionalProperties": false
@@ -9385,6 +9409,17 @@ Request body:
             "type": "number",
             "description": "Consultation 1, service 1, replacement 1.5, first fit 2."
           },
+          "client_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The client's note to the technician, as they last wrote it; null for none."
+          },
           "starts_at": {
             "type": "string",
             "format": "date-time"
@@ -9467,6 +9502,7 @@ Request body:
           "person",
           "badge",
           "slots",
+          "client_note",
           "starts_at",
           "asked_window",
           "offered_window",
@@ -9645,6 +9681,17 @@ Request body:
       "type": "number",
       "description": "Consultation 1, service 1, replacement 1.5, first fit 2."
     },
+    "client_note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's note to the technician, as they last wrote it; null for none."
+    },
     "starts_at": {
       "type": "string",
       "format": "date-time"
@@ -9734,6 +9781,7 @@ Request body:
     "person",
     "badge",
     "slots",
+    "client_note",
     "starts_at",
     "window",
     "status",

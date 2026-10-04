@@ -26,13 +26,17 @@ export function NoteSheet(props: {
   visitId: string;
   /** "Imran": who reads it, when the visit has a technician. */
   technician: string | null;
+  /** The note the client left on the visit before, which the sheet opens with; null for none. */
+  initial: string | null;
   /** The message to ops on WhatsApp, should the app not be able to keep the note. */
   message: string;
+  /** Told the note as it was kept, so the visit's card shows it at once. */
+  onSaved?: (note: string) => void;
   onClose: () => void;
 }) {
   const { offline } = useSession();
   const dialog = useRef<HTMLDialogElement>(null);
-  const [text, setText] = useState("");
+  const [text, setText] = useState(props.initial ?? "");
   const [step, setStep] = useState<Step>({ kind: "writing" });
   const [busy, setBusy] = useState(false);
 
@@ -46,8 +50,10 @@ export function NoteSheet(props: {
     setBusy(true);
     const answer = await api.note(props.visitId, text.trim());
     setBusy(false);
-    if (answer.ok) setStep({ kind: "saved" });
-    else setStep({ kind: answer.code === "ops_assisted" ? "with_ops" : "failed" });
+    if (answer.ok) {
+      setStep({ kind: "saved" });
+      props.onSaved?.(answer.body.note);
+    } else setStep({ kind: answer.code === "ops_assisted" ? "with_ops" : "failed" });
   };
 
   return (
@@ -65,7 +71,7 @@ export function NoteSheet(props: {
             }}
           >
             <h2 className={styles.changeTitle} id="note-title">
-              {copy.title(props.technician)}
+              {props.initial === null ? copy.title(props.technician) : copy.yours(props.technician)}
             </h2>
             <label className={styles.noteField}>
               <span className={styles.noteLabel}>{copy.label}</span>
