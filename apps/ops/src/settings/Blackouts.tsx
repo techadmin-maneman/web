@@ -5,16 +5,18 @@
 // The API keeps one row a day. The list shows the days run together where they
 // follow one another for the same reason, added by the same press, so each run
 // names who added all of it; offering them again sends that run of days back. Blacking out a day moves nothing already booked on it, so
-// each run says how many visits are still booked on it.
+// each run says how many visits are still booked on it, and opens the dispatch board on its first day to move them.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Blackout } from "../api.ts";
+import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content.ts";
 import { addDays } from "../dispatch/job.ts";
 import { useAccess } from "../lib/access.ts";
+import { dispatchPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
@@ -172,10 +174,12 @@ interface PeriodRowProps {
   readonly period: Period;
   /** Whether the person's access lets them offer the days again. */
   readonly mayRemove: boolean;
+  /** Whether it lets them open the dispatch board, where the visits still booked on the days are moved. */
+  readonly mayShow: boolean;
   readonly onRemoved: (days: readonly Blackout[]) => void;
 }
 
-function PeriodRow({ period, mayRemove, onRemoved }: PeriodRowProps) {
+function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
   const words = periodWords(period);
@@ -198,6 +202,17 @@ function PeriodRow({ period, mayRemove, onRemoved }: PeriodRowProps) {
       </p>
       <p className={styles.set}>{setLine(period)}</p>
       {period.booked > 0 && <p className={styles.checkWarning}>{copy.booked(period.booked)}</p>}
+      {period.booked > 0 && mayShow && (
+        <div className={styles.actions}>
+          <OpsLink
+            className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })}
+            to={dispatchPath({ from: period.from })}
+            label={copy.showLabel(words)}
+          >
+            {copy.show}
+          </OpsLink>
+        </div>
+      )}
       {mayRemove && (
         <div className={styles.actions}>
           <Button
@@ -228,6 +243,7 @@ export function Blackouts() {
   const access = useAccess();
   const mayAdd = access.mayCall("POST /api/blackouts");
   const mayRemove = access.mayCall("POST /api/blackouts/remove");
+  const mayShow = access.mayCall("GET /api/dispatch");
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
@@ -247,7 +263,13 @@ export function Blackouts() {
       ) : (
         <ul className={styles.rules}>
           {periods.map((period) => (
-            <PeriodRow key={period.from} period={period} mayRemove={mayRemove} onRemoved={setChanged} />
+            <PeriodRow
+              key={period.from}
+              period={period}
+              mayRemove={mayRemove}
+              mayShow={mayShow}
+              onRemoved={setChanged}
+            />
           ))}
         </ul>
       )}

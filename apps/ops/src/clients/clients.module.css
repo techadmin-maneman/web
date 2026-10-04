@@ -243,6 +243,24 @@
   color: var(--text-muted);
 }
 
+/* A visit to come's way to the dispatch board, beneath its date, on a target 24 px tall (WCAG 2.5.8). */
+.boardLink {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-height: var(--sp-24);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: var(--sp-4);
+}
+
+.boardLink:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
 /* A visit left partly done that ops closed without a follow-up, beneath its state. */
 .closedLine {
   display: block;
