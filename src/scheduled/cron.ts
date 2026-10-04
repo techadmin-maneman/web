@@ -468,10 +468,13 @@ function failedJobs(outcomes: readonly CronOutcome[]): string[] {
   return outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.job);
 }
 
-/** Keeping the run record must never stop the jobs, so a failure to is only logged. */
+/**
+ * Keeping the run record must never stop the jobs, so a failure to is only logged. The alert providers are made only
+ * if a run was cut short: making them on every run cost each one CPU time.
+ */
 async function recordStart({ env, deps, log }: CronRun, startedAt: string): Promise<RunStart> {
   try {
-    return await startRun({ db: env.DB, alertOnce: deps.alertOnce }, startedAt);
+    return await startRun({ db: env.DB, alertOnce: (alert) => deps.alertOnce(alert) }, startedAt);
   } catch (error) {
     log.error("cron_run_not_recorded", { error });
     return { cutShortAt: null, failing: new Set() };
@@ -481,7 +484,7 @@ async function recordStart({ env, deps, log }: CronRun, startedAt: string): Prom
 async function recordFinish({ env, deps, log }: CronRun, startedAt: string, failedJobCount: number): Promise<void> {
   const run = { startedAt, completedAt: deps.now().toISOString(), failedJobs: failedJobCount };
   try {
-    await finishRun({ db: env.DB, resolveAlert: deps.resolveAlert }, run);
+    await finishRun({ db: env.DB, resolveAlert: (key) => deps.resolveAlert(key) }, run);
   } catch (error) {
     log.error("cron_run_not_recorded", { error });
   }
