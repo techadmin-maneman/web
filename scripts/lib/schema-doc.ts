@@ -132,7 +132,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   serviceable_pincodes:
     "Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).",
   services:
-    "What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).",
+    "What clients may book: each kind of visit's services, their names, the line clients read under each, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).",
   sessions:
     "The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).",
   slot_claims:

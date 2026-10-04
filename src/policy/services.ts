@@ -4,10 +4,11 @@
 // docs/decisions/0085-services-ops-can-edit.md). src/domain/services.ts keeps them, and the price book prices each
 // by its kind and tier (src/domain/price-book.ts).
 
-import { hasStandardService, type VisitType } from "../config/visit-types.ts";
+import { hasStandardService, STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
+import type { OneVisitState } from "./one-visit.ts";
 
 export const RULES = [
-  "every service belongs to one of four kinds (consultation, first fit, service visit, replacement), and the kind decides the technician's steps, the booking rules and which fees apply; within a kind ops add, rename, price, reorder and retire services from the console, each synced to FSM; a new kind needs a release.",
+  "every service belongs to one of four kinds (consultation, first fit, service visit, replacement), and the kind decides the technician's steps, the booking rules and which fees apply; within a kind ops add, rename, describe, price, reorder and retire services from the console, each synced to FSM; a new kind needs a release.",
   "Retiring a service stops clients seeing it from a date and changes nothing already sold; prices stay dated rows.",
 ] as const;
 
@@ -18,11 +19,31 @@ export const RULES = [
 export const isOffered = (retiredDate: string | null, on: string): boolean => retiredDate === null || on < retiredDate;
 
 /**
+ * Whether a visit's service says more than its kind, so the technician, ops and the client see it named: a first
+ * fit's hair system, say. A kind's standard service is named as the kind is. A one visit is held as the first hair
+ * system on offer until the client chooses theirs, so it names none before then.
+ */
+export function namesMoreThanItsKind(tier: string | null, oneVisit: OneVisitState | null): boolean {
+  if (tier === null || tier === STANDARD_TIER) return false;
+  return oneVisit !== "booked";
+}
+
+/**
  * A service's name, as clients, ops and FSM's catalogue read it: a letter or a digit first, so a spreadsheet opening
  * an exported list never reads it as a formula, then letters in any script, digits, spaces and . , ' ( ) & - + /,
  * up to 60.
  */
 export const SERVICE_NAME = /^[\p{L}\p{N}][\p{L}\p{M}\p{N} .,'()&+/-]{1,59}$/u;
+
+/** The longest line a service's description may be. */
+export const DESCRIPTION_LENGTH = 160;
+
+/**
+ * Whether a service's description, trimmed, is one line of up to DESCRIPTION_LENGTH characters. An empty one is: it
+ * clears the description.
+ */
+export const isServiceDescription = (line: string): boolean =>
+  line.length <= DESCRIPTION_LENGTH && !/\p{Cc}/u.test(line);
 
 /** The longest a tier's code may be (PRICE_TIER, src/config/ops-settings.ts). */
 const CODE_LENGTH = 32;

@@ -693,6 +693,17 @@
               }
             ]
           },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -859,6 +870,7 @@
           "ends_at",
           "length_minutes",
           "type",
+          "service",
           "status",
           "stage",
           "prepaid",
@@ -936,6 +948,17 @@
               }
             ]
           },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -992,6 +1015,7 @@
           "ends_at",
           "length_minutes",
           "type",
+          "service",
           "status",
           "stage",
           "prepaid",
@@ -4594,6 +4618,17 @@
                     }
                   ]
                 },
+                "service": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+                },
                 "client": {
                   "anyOf": [
                     {
@@ -4726,6 +4761,7 @@
               "required": [
                 "appointment_id",
                 "type",
+                "service",
                 "client",
                 "sector",
                 "pincode",
@@ -4835,6 +4871,17 @@
                 "type": "null"
               }
             ]
+          },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
           },
           "client": {
             "anyOf": [
@@ -4967,6 +5014,7 @@
         "required": [
           "appointment_id",
           "type",
+          "service",
           "client",
           "sector",
           "pincode",
@@ -7757,6 +7805,10 @@
           "max_minutes": {
             "type": "integer"
           },
+          "max_description": {
+            "type": "integer",
+            "description": "The most characters a description may have."
+          },
           "max_amount_ex_gst": {
             "type": "integer"
           },
@@ -7771,6 +7823,7 @@
           "late_fees",
           "min_minutes",
           "max_minutes",
+          "max_description",
           "max_amount_ex_gst",
           "max_gst_percent"
         ],
@@ -7794,6 +7847,17 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The line clients read under its name as they choose; null until ops write one."
           },
           "minutes": {
             "type": "integer",
@@ -7848,6 +7912,7 @@
           "kind",
           "tier",
           "name",
+          "description",
           "minutes",
           "sort",
           "retired_date",
@@ -7901,6 +7966,19 @@
         },
         "required": [
           "name"
+        ],
+        "additionalProperties": false
+      },
+      "ServiceDescribe": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        "required": [
+          "description"
         ],
         "additionalProperties": false
       },
@@ -14246,6 +14324,98 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ServiceRename"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Every service as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsServices"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names the box refused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no service of that kind has that code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/services/{kind}/{tier}/description": {
+      "post": {
+        "summary": "The line clients read under a service's name as they choose. An empty one clears it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,31}$"
+            },
+            "required": true,
+            "name": "tier",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceDescribe"
               }
             }
           }

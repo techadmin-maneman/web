@@ -294,12 +294,15 @@ export const job = {
     // PLACEHOLDER: the board draws no locked card. The hour is the API's unlocks_at.
     opens: opensAt,
   },
+  // PLACEHOLDER: the board draws the profile's rows inside the piece card; they are a section of their own.
+  profileTitle: "Hair profile",
   piece: {
     title: "The piece",
     // PLACEHOLDER: the board's piece card reads tier, colour, adhesive, template and scalp, which nothing records.
-    // PLACEHOLDER: the board draws no "Hair system" row; on a first fit it is the one the client was sold.
+    // PLACEHOLDER: the board draws no "Paid for" row, nor a warning when the hair profile names another product.
+    mismatch: (inProfile: string) => `The hair profile says ${inProfile}. Check with ops before you fit.`,
     rows: {
-      sold: "Hair system",
+      paidFor: "Paid for",
       piece: "Piece",
       base: "Base",
       lot: "Supplier lot",
@@ -628,9 +631,9 @@ export const profile = {
     year: "The transplant's year",
     skin: "Skin conditions and allergies",
   },
-  // The piece card's rows from the profile: the board's Tier, Colour, Adhesive and Scalp, and the base's size.
+  // The card's rows from the profile: the board's Tier, as the hair system, Colour, Adhesive and Scalp, and the base's size.
   card: {
-    tier: "Tier",
+    tier: "Hair system",
     baseSize: "Base size",
     colour: "Colour",
     adhesive: "Adhesive",

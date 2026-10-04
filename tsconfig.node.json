@@ -52,6 +52,7 @@
     "test/node/tech-api.test.ts",
     "test/node/tech-content.test.ts",
     "test/node/tech-kept.test.ts",
+    "test/node/tech-paid-for.test.ts",
     "test/node/tech-outbox.test.ts",
     "test/node/tech-outbox-replay.test.ts",
     "test/node/tech-piece-label.test.ts",

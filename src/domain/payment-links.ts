@@ -181,9 +181,10 @@ export async function sendPaymentLink(
   const made = await linkFor(db, visit, now);
   if (made.kind === "free") return "free";
   if (made.kind !== "link") {
+    const product = (await serviceOf(db, "first_fit", visit.tier))?.name ?? visit.tier;
     await deps.alertOnce({
       key: refusedKey(visit.appointmentId),
-      message: `${notMade(visit, made.kind)} Send the client a link from Razorpay's dashboard with reference ${visit.appointmentId}.`,
+      message: `${notMade(visit, product, made.kind)} Send the client a link from Razorpay's dashboard with reference ${visit.appointmentId}.`,
       link: paymentsTab(visit.personId),
     });
     return made.kind === "unpriced" ? "unpriced" : "unavailable";
@@ -194,9 +195,9 @@ export async function sendPaymentLink(
   return askRazorpay(db, deps, link, visit, now);
 }
 
-/** Why a one visit's link was not made, for ops. */
-function notMade(visit: FittedVisit, why: "unpriced" | "code_changing"): string {
-  const fitted = `Visit ${visit.appointmentId} was a consultation and fit, and the client was fitted with ${visit.tier}`;
+/** Why a one visit's link was not made, for ops, naming the hair system the client was fitted with. */
+function notMade(visit: FittedVisit, product: string, why: "unpriced" | "code_changing"): string {
+  const fitted = `Visit ${visit.appointmentId} was a consultation and fit, and the client was fitted with ${product}`;
   if (why === "unpriced")
     return `${fitted}, which the price book has no price for that day, so no payment link was sent. Price it first.`;
   return `${fitted}; a discount code went on or came off it each time its payment link was written, so none was sent.`;

@@ -193,7 +193,8 @@ export const dispatch = {
     badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
       Record<string, string>
     >,
-    rows: { type: "Type", area: "Area", state: "State", referred: "Referred by" },
+    // PLACEHOLDER: the board draws no Service row; it names a first fit's hair system, say.
+    rows: { type: "Type", service: "Service", area: "Area", state: "State", referred: "Referred by" },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** "Sector 65 · 122018": the area the visit's pincode is in, and the pincode. */
@@ -724,6 +725,8 @@ export const clients = {
       service: "Service visit",
       replacement: "Replacement",
     },
+    /** "First fit · Mane Man Essential": the kind, and the service it was sold as where that says more. */
+    what: (kind: string, service: string | null) => (service === null ? kind : `${kind} · ${service}`),
     /** A visit to come, by where it stands, and one done, by how FSM closed it. */
     stages: {
       booked: "Booked",
@@ -2023,6 +2026,8 @@ export const numberChanges = {
  * and a change that cannot be taken back is shown before it is made
  * (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
  */
+const descriptionWords = (line: string) => (line === "" ? "no description" : `“${line}”`);
+
 export const settings = {
   title: "Settings",
   sub: "A change takes effect within a minute. No release is needed.",
@@ -2295,10 +2300,13 @@ export const settings = {
     kinds: dispatch.typeNames,
     /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
     hairSystems:
-      "Clients book a first fit only as one of these hair systems, by its name and price here. With none offered " +
-      "and priced, first fits and the consultation and fit in one visit cannot be booked.",
+      "Clients book a first fit only as one of these hair systems, by its name, description and price here. With " +
+      "none offered and priced, first fits and the consultation and fit in one visit cannot be booked.",
     /** "180 minutes · code premium": how long it is held and booked for, and what the price book prices it by. */
     facts: (minutes: number, tier: string) => `${String(minutes)} minutes · code ${tier}`,
+    /** The line clients read under the service's name in the app as they choose. */
+    described: (line: string) => `Clients read: “${line}”`,
+    notDescribed: "No description, so clients read the name alone.",
     fsm: { linked: "In FSM's catalogue", notYet: "Not found in FSM's catalogue yet" },
     offered: "Offered",
     retiring: (from: string) => `Clients stop seeing it from ${from}`,
@@ -2326,6 +2334,7 @@ export const settings = {
       correct: "Correct",
       takeBack: "Take back",
       rename: "Rename",
+      describe: "Change description",
       length: "Change length",
       retire: "Retire",
       restore: "Restore",
@@ -2340,6 +2349,7 @@ export const settings = {
       correct: (name: string, from: string) => `Correct the ${name} price from ${from}`,
       takeBack: (name: string, from: string) => `Take back the ${name} price from ${from}`,
       rename: (name: string) => `Rename ${name}`,
+      describe: (name: string) => `Change the description of ${name}`,
       length: (name: string) => `Change the length of ${name}`,
       retire: (name: string) => `Retire ${name}`,
       restore: (name: string) => `Restore ${name}`,
@@ -2359,6 +2369,11 @@ export const settings = {
       renameTitle: (name: string) => `Rename ${name}`,
       name: "Name",
       nameHint: "What clients, ops and FSM's catalogue call it. A letter or a digit first.",
+      describeTitle: (name: string) => `The description of ${name}`,
+      description: "Description",
+      descriptionHint: (max: number) =>
+        `One line clients read under its name as they choose: what sets it apart. Up to ${String(max)} characters. ` +
+        "Leave it empty to show none.",
       lengthTitle: (name: string) => `The length of ${name}`,
       minutes: "Length, in minutes",
       minutesHint: (min: number, max: number) =>
@@ -2383,6 +2398,8 @@ export const settings = {
       sameDay: "A price is already set from that day. This replaces it.",
       rename: (was: string, now: string, tier: string) =>
         `${was} → ${now}. Its code stays ${tier}, and with it every price it has and every visit sold.`,
+      describe: (name: string, was: string, now: string) =>
+        `${name}: ${descriptionWords(was)} → ${descriptionWords(now)}`,
       length: (name: string, was: number, now: number) =>
         `${name}: ${String(was)} → ${String(now)} minutes. A visit held or booked before keeps its own length.`,
       retire: (name: string, from: string) =>
@@ -2408,6 +2425,7 @@ export const settings = {
       not_permitted: NOT_PERMITTED,
       tier: "No service of this kind has that code, or a code cannot be made from that name. Nothing was changed.",
       name: "A name starts with a letter or a digit, runs from 2 to 60 characters, and opens no formula. Nothing was changed.",
+      description: "A description is one line, up to the length under the field. Nothing was changed.",
       minutes: "A length is whole minutes, inside the range under the field. Nothing was changed.",
       retired_date:
         "A service retires from today or a day after it, and one already retired is restored first. Nothing was changed.",

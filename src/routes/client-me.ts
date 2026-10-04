@@ -193,6 +193,9 @@ export const MeSchema = z
                 type: z.enum(VISIT_TYPES),
                 tier: z.string().openapi({ description: "Its code within its kind, which booking it names." }),
                 name: z.string(),
+                description: z
+                  .union([z.string(), z.null()])
+                  .openapi({ description: "The line ops wrote to read under its name; null for none." }),
                 minutes: z.number().int().openapi({ description: "How long the visit is booked for." }),
                 price: PriceSchema.openapi({ description: "Its price tomorrow, the first day it can be booked." }),
               })
@@ -341,6 +344,7 @@ export function registerClientMe(app: App): void {
       type: service.kind,
       tier: service.tier,
       name: service.name,
+      description: service.description,
       minutes: service.minutes,
       price: service.price,
     }));

@@ -4,7 +4,16 @@
 import { describe, expect, it } from "vitest";
 import { PRICE_TIER } from "../../src/config/ops-settings.ts";
 import { hasStandardService, STANDARD_TIER, VISIT_TYPES } from "../../src/config/visit-types.ts";
-import { isOffered, retireRefusal, RULES, SERVICE_NAME, tierCodeOf } from "../../src/policy/services.ts";
+import {
+  DESCRIPTION_LENGTH,
+  isOffered,
+  isServiceDescription,
+  namesMoreThanItsKind,
+  retireRefusal,
+  RULES,
+  SERVICE_NAME,
+  tierCodeOf,
+} from "../../src/policy/services.ts";
 
 describe("the services", () => {
   it(RULES[0], () => {
@@ -51,6 +60,16 @@ describe("the services", () => {
     ]);
   });
 
+  // BK-41, UX-27: a client choosing a hair system reads what sets each apart, in one line ops write.
+  it("describes a service in one line of up to 160 characters, or not at all", () => {
+    expect(isServiceDescription("Made for men who sweat.")).toBe(true);
+    expect(isServiceDescription("A".repeat(DESCRIPTION_LENGTH))).toBe(true);
+    expect(isServiceDescription("")).toBe(true);
+    expect(isServiceDescription("A".repeat(DESCRIPTION_LENGTH + 1))).toBe(false);
+    expect(isServiceDescription("Made for men\nwho sweat.")).toBe(false);
+    expect(isServiceDescription("Made for men\twho sweat.")).toBe(false);
+  });
+
   it("keeps a kind with a standard service bookable: its last service never retired and priced cannot be retired", () => {
     for (const kind of ["consultation", "service", "replacement"] as const) {
       expect(retireRefusal(kind, [])).toBe("last_of_kind");
@@ -65,5 +84,16 @@ describe("the services", () => {
     expect(hasStandardService("first_fit")).toBe(false);
     expect(retireRefusal("first_fit", [])).toBeNull();
     expect(retireRefusal("first_fit", [{ retiredDate: "2026-12-01", pricedBy: true }])).toBeNull();
+  });
+
+  // MON-10: the product a client paid for reaches the technician, ops and the client by its service's name.
+  it("names a visit's service where it says more than the kind", () => {
+    expect(namesMoreThanItsKind("essential", null)).toBe(true);
+    expect(namesMoreThanItsKind("essential", "fitted")).toBe(true);
+    // A kind's standard service is named as the kind is; a visit the mirror knows no service of was the standard one.
+    expect(namesMoreThanItsKind(STANDARD_TIER, null)).toBe(false);
+    expect(namesMoreThanItsKind(null, null)).toBe(false);
+    // A one visit is held as the first hair system on offer until the client chooses.
+    expect(namesMoreThanItsKind("essential", "booked")).toBe(false);
   });
 });

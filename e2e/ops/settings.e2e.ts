@@ -596,6 +596,21 @@ test.describe("the services and their prices", () => {
     expect((await request).postDataJSON()).toEqual({ name: "Premium first fit" });
   });
 
+  test("gives a service the line clients read under its name, shown beside the one it replaces", async ({ page }) => {
+    await open(page, "/prices", { "POST /api/services/first_fit/premium/description": json(SERVICES) });
+    await expect(page.getByText("Clients read: “A finer lace front, for a closer look.”")).toBeVisible();
+    await page.getByRole("button", { name: "Change the description of Premium" }).click();
+    await expect(page.getByLabel("Description", { exact: true })).toHaveAttribute("maxlength", "160");
+    await page.getByLabel("Description", { exact: true }).fill("Natural, even at the parting.");
+    await page.getByRole("button", { name: "Check the change" }).click();
+    await expect(page.getByRole("group", { name: "Check the change" })).toContainText(
+      "Premium: “A finer lace front, for a closer look.” → “Natural, even at the parting.”",
+    );
+    const request = posted(page, "/api/services/first_fit/premium/description");
+    await page.getByRole("button", { name: "Save it" }).click();
+    expect((await request).postDataJSON()).toEqual({ description: "Natural, even at the parting." });
+  });
+
   test("gives a service another length, inside what the day holds", async ({ page }) => {
     await open(page, "/prices", { "POST /api/services/first_fit/premium/length": json(SERVICES) });
     await page.getByRole("button", { name: "Change the length of Premium" }).click();

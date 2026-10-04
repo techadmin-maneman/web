@@ -50,7 +50,7 @@ const summary = (id: string, date: string) =>
     window_label: "morning",
     type: "service",
     one_visit: false,
-    product: null,
+    service: null,
     sector: "Sector 65",
     status: "scheduled",
     badge: "prepaid",

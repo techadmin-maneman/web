@@ -333,6 +333,24 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(page.getByText("A label reads MM, the base, the number and a letter: MM-STD-4417-B.")).toBeVisible();
   });
 
+  test("says what a first fit was paid for, and warns when the hair profile names another product", async ({
+    page,
+  }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.service = { tier: "natural", name: "Mane Man Natural" };
+    fake.profile = ROHITS_PROFILE;
+    startedThrough(fake, "before_photos", "checklist", "consumables");
+    await page.goto(`/jobs/${JOB_ID}/piece`);
+
+    await expect(page.getByRole("region", { name: "Paid for" })).toContainText("Mane Man Natural");
+    await expect(
+      page.getByRole("alert").filter({
+        hasText: "The hair profile says Mane Man Essential. Check with ops before you fit.",
+      }),
+    ).toBeVisible();
+  });
+
   test("the label field is the whole of its 64 px box, so a gloved tap lands in it", async ({ page }) => {
     await onThePiece(page);
     const box = await page.getByRole("textbox", { name: "The new piece's label" }).boundingBox();
@@ -650,11 +668,11 @@ test.describe("the client's hair profile", () => {
     });
   });
 
-  test("puts the profile's tier, colour, adhesive and scalp on the piece card", async ({ page }) => {
+  test("puts the profile's hair system, colour, adhesive and scalp on the card's hair profile", async ({ page }) => {
     const fake = await fakeTech(page);
     fake.profile = ROHITS_PROFILE;
     await page.goto(`/jobs/${JOB_ID}`);
-    const card = page.getByRole("region", { name: "The piece" });
+    const card = page.getByRole("region", { name: "Hair profile" });
     await expect(card.getByText("Mane Man Essential")).toBeVisible();
     await expect(card.getByText("8 × 10 in")).toBeVisible();
     await expect(card.getByText("#1B / 20% grey")).toBeVisible();

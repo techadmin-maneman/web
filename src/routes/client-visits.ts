@@ -41,6 +41,11 @@ export const VisitSummarySchema = z
     ends_at: z.iso.datetime(),
     length_minutes: z.number().int(),
     type: z.union([z.enum(VISIT_TYPES), z.null()]),
+    service: z.union([z.string(), z.null()]).openapi({
+      description:
+        "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, " +
+        "say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses.",
+    }),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
     stage: z.union([z.enum(["booked", "in_progress", "done", "closing"]), z.null()]).openapi({
       description:
