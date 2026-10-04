@@ -4,8 +4,11 @@
 /** The longest name a form takes. */
 export const MOST_NAME_LENGTH = 60;
 
-/** Letters in any script, with the spaces, dots, apostrophes and hyphens names hold, starting with a letter. */
-const PERSON_NAME = /^\p{L}[\p{L}\p{M} .'’-]*$/u;
+/**
+ * Letters in any script, with the spaces, apostrophes and hyphens names hold, starting with a letter. A dot ends a word
+ * ("A. Kumar"), so no domain ("example.com") passes.
+ */
+const PERSON_NAME = /^\p{L}(?:[\p{L}\p{M}'’ -]|\.(?= |$))*$/u;
 
 /** Whether `typed`, trimmed, can stand as a person's name: letters only, no digits, links or symbols. */
 export function isPersonName(typed: string): boolean {
