@@ -13,6 +13,7 @@ import {
   maySendAgain,
   messageFailedKey,
 } from "../../src/policy/alerts.ts";
+import { markDoneNeed } from "../../src/policy/console-routes.ts";
 
 describe("an alert's key", () => {
   it("names its kind up to the first colon, and what it is about after it", () => {
@@ -34,6 +35,7 @@ describe("the department that acts on an alert", () => {
     expect(alertDepartment("cancel_refund_failed")).toBe("finance");
     expect(alertDepartment("invoice_draft")).toBe("finance");
     expect(alertDepartment("books_refund_refused")).toBe("finance");
+    expect(alertDepartment("razorpay_refund_unheard")).toBe("finance");
     expect(alertDepartment("low_stock")).toBe("operations");
   });
 
@@ -49,6 +51,8 @@ describe("what marking an alert done asks", () => {
     expect(markDoneLevel("crm_erasure")).toBe("manage");
     expect(markDoneLevel("message_failed")).toBe("act");
     expect(markDoneLevel("cancel_refund_failed")).toBe("act");
+    expect(markDoneNeed("crm_erasure")).toEqual({ department: "customer_care", level: "manage" });
+    expect(markDoneNeed("low_stock")).toEqual({ department: "operations", level: "act" });
   });
 });
 

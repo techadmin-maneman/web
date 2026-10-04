@@ -5,7 +5,7 @@
 // record is narrowed to the caller's cities, a grant of one city or zone must not open it everywhere.
 
 import { can, DEPARTMENTS, NATIONAL, type Caller, type Department, type Level, type ZoneOfCity } from "./access.ts";
-import { alertDepartment } from "./alerts.ts";
+import { alertDepartment, markDoneLevel } from "./alerts.ts";
 import type { TaskGroup } from "./tasks.ts";
 
 /** A route that keeps to the caller's own departments, as Tasks lists each department its own groups. */
@@ -184,6 +184,9 @@ export const taskNeed = (group: TaskGroup, level: Level): RouteNeed => need(TASK
 
 /** What seeing a kind of alert, or acting on one, asks: the department its kind belongs to (src/policy/alerts.ts). */
 export const alertNeed = (kind: string, level: Level): RouteNeed => need(alertDepartment(kind), level);
+
+/** What marking a kind of alert done asks: Act in its department, or Manage where done records an erasure. */
+export const markDoneNeed = (kind: string): RouteNeed => alertNeed(kind, markDoneLevel(kind));
 
 /** Whether the caller's grants reach what a route asks: over any place if it keeps to their own, nationally if not. */
 export function meetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): boolean {

@@ -10,7 +10,13 @@ import type { paths } from "../api-schema.ts";
 import type { MayCall } from "../route.ts";
 
 /** The choices inside a call that ask more than the call does, as the API asks them. */
-export { alertNeed, REFUNDING_A_DISPUTE, taskNeed, WAIVING_A_NO_SHOW } from "../../../../src/policy/console-routes.ts";
+export {
+  alertNeed,
+  markDoneNeed,
+  REFUNDING_A_DISPUTE,
+  taskNeed,
+  WAIVING_A_NO_SHOW,
+} from "../../../../src/policy/console-routes.ts";
 
 let asked: Promise<Answer<Whoami>> | null = null;
 let answered: Whoami | null = null;

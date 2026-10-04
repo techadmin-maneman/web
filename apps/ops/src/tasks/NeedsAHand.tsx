@@ -10,7 +10,7 @@ import { useRef, useState } from "react";
 import { api, type OpenAlert } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { needsAHand as copy } from "../content.ts";
-import { alertNeed, useAccess, type Access } from "../lib/access.ts";
+import { alertNeed, markDoneNeed, useAccess, type Access } from "../lib/access.ts";
 import { PanelFailed } from "../states/States.tsx";
 import styles from "./tasks.module.css";
 
@@ -23,7 +23,14 @@ function titleOf(kind: string): string {
 
 type Action = "send" | "done";
 
-function AlertRow({ alert, mayAct, onClosed }: { alert: OpenAlert; mayAct: boolean; onClosed: () => void }) {
+interface RowProps {
+  readonly alert: OpenAlert;
+  readonly maySend: boolean;
+  readonly mayMarkDone: boolean;
+  readonly onClosed: () => void;
+}
+
+function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
   const [busy, once] = useOneAtATime();
   const [acting, setActing] = useState<Action | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
@@ -52,13 +59,13 @@ function AlertRow({ alert, mayAct, onClosed }: { alert: OpenAlert; mayAct: boole
               <VisuallyHidden>{` · ${title}`}</VisuallyHidden>
             </OpsLink>
           )}
-          {mayAct && alert.send_again && (
+          {maySend && alert.send_again && (
             <button type="button" className={styles.act} disabled={busy} onClick={() => void act("send")}>
               {acting === "send" ? copy.sending : copy.sendAgain}
               <VisuallyHidden>{` · ${title}`}</VisuallyHidden>
             </button>
           )}
-          {mayAct && (
+          {mayMarkDone && (
             <button type="button" className={styles.act} disabled={busy} onClick={() => void act("done")}>
               {acting === "done" ? copy.closing : copy.done}
               <VisuallyHidden>{` · ${title}`}</VisuallyHidden>
@@ -107,7 +114,8 @@ function AlertList({ access }: { access: Access }) {
           <AlertRow
             key={alert.id}
             alert={alert}
-            mayAct={access.reaches(alertNeed(alert.kind, "act"))}
+            maySend={access.reaches(alertNeed(alert.kind, "act"))}
+            mayMarkDone={access.reaches(markDoneNeed(alert.kind))}
             onClosed={() => {
               onClosed(alert.id);
             }}

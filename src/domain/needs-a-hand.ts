@@ -102,8 +102,8 @@ export type SendAgainEnv = Pick<Env, "DB" | "CRM_QUEUE" | "MESSAGE_QUEUE">;
 
 /**
  * Puts what the alert gave up on back where the sweeper finds it, closes the alert with its audit entry, and puts it
- * on its queue so it goes at once. A queue that refuses it costs nothing but time: the sweeper sends it within five
- * minutes.
+ * on its queue so it goes at once. A queue that refuses it costs nothing but time: the sweeper sends it on its next
+ * pass.
  */
 export async function sendAgain(
   env: SendAgainEnv,

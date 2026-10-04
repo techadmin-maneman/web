@@ -1637,6 +1637,7 @@ export const needsAHand = {
     invoice_refused: "Books refused an invoice",
     invoice_failed: "An invoice did not reach Books",
     books_unapplied: "A payment has nothing to set against",
+    razorpay_refund_unheard: "A refund came before its payment",
     low_stock: "Stock is low",
     technician_code_refused: "A technician was refused a login code",
     whatsapp_bridge: "WhatsApp is disconnected",
