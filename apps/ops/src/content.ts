@@ -281,23 +281,26 @@ export const dispatch = {
     /** The tray's jobs have no technician yet, so there is nothing to move them from. */
     to: (to: string) => `To ${to}`,
     legend: "Why it is moving",
-    /** The five the design lists, in its order (src/policy/dispatch.ts). */
+    /**
+     * The design's five, in its order (src/policy/dispatch.ts), less "Skill needed · first fit certified": no
+     * technician's skills are recorded, so nothing would stand behind it.
+     */
     reasons: [
       { reason: "technician_unavailable", label: "Technician unavailable" },
       { reason: "client_asked", label: "Client asked to move it" },
       { reason: "zone_rebalance", label: "Zone rebalance" },
-      { reason: "skill_needed", label: "Skill needed · first fit certified" },
       { reason: "running_over", label: "Running over on an earlier job" },
     ],
     /** The board's line, for a client who agreed to WhatsApp about his visits. */
-    note: (job: string) => `${job} is messaged on WhatsApp with the new window. Their payment carries over.`,
+    note: (job: string) => `${job} is messaged on WhatsApp with the new window.`,
     /** PLACEHOLDER: one who has not; the move goes to the Tasks board until ops say they called (ADR 0069). */
-    call: (name: string, mobile: string) =>
-      `${name} has not agreed to WhatsApp — call ${mobile} with the new window. Their payment carries over.`,
+    call: (name: string, mobile: string) => `${name} has not agreed to WhatsApp — call ${mobile} with the new window.`,
+    /** After the line, where the visit was paid for: prepaid, or with the client's credit. */
+    carries: "Their payment carries over.",
     /** PLACEHOLDER: a change of technician alone leaves the client's window as it was. */
     sameTime: (job: string) => `Only the technician changes. ${job} keeps the same window, so nobody is messaged.`,
     /** PLACEHOLDER: a visit with no client on our records. */
-    noClient: "This visit has no client on our records to tell. Their payment carries over.",
+    noClient: "This visit has no client on our records to tell.",
     /**
      * The board's extra line inside the notice the visit was sold under, which the board writes as 24 hours. The
      * client keeps the free change they had: their own change counts from the time before we moved it (ADR 0096).
