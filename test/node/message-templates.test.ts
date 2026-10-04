@@ -81,6 +81,5 @@ describe("the link that stops a message", () => {
     expect(renderWithStopLink("launch_alert_v1", params, "https://maneman.in/stop#t")).toBe(
       `${renderMessage("launch_alert_v1", params) ?? ""}\n\nStop these messages: https://maneman.in/stop#t`,
     );
-    expect(renderWithStopLink("nope", params, "https://maneman.in/stop#t")).toBeNull();
   });
 });

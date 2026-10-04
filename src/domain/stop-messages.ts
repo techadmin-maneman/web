@@ -3,6 +3,7 @@
 // consents and is answered once. A withdrawal is written only while the purpose is given, with its audit entry in
 // the same batch.
 
+import type { Composed } from "./visit-messages.ts";
 import { DAY_MS } from "../lib/durations.ts";
 import { firstNameOf } from "../lib/names.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
@@ -128,10 +129,7 @@ export async function stopByReply(
 }
 
 /** The answer to a STOP reply. It needs no consent: it answers the person's own message. */
-export async function composeMessagesStopped(
-  db: D1Database,
-  personId: string,
-): Promise<{ template: string; params: string[] } | { skip: string }> {
+export async function composeMessagesStopped(db: D1Database, personId: string): Promise<Composed> {
   const person = await db.prepare("SELECT name FROM people WHERE id = ?1").bind(personId).first<{ name: string }>();
   if (person === null) return { skip: "no such person" };
   return { template: "messages_stopped_v1", params: [firstNameOf(person.name)] };

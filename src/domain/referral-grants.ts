@@ -15,8 +15,9 @@
 // item 93). One a discount code left nothing to pay is settled by the fit itself, as the owner ruled on 1 October
 // 2026, "Yes, once fitted" (docs/decisions/0108-discount-codes.md).
 
+import type { Composed } from "./visit-messages.ts";
 import { fullDate } from "@maneman/web-kit/dates";
-import { serviceVisits } from "../config/message-templates.ts";
+import { serviceVisits, type TemplateName } from "../config/message-templates.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { FRAUD_SIGNALS, REFERRAL_MONTHLY_CAP, type FraudSignal } from "../policy/fraud-holds.ts";
 import { inviteLapsed } from "../policy/invites.ts";
@@ -378,7 +379,7 @@ export async function clawBackRefunded(db: D1Database, now: Date): Promise<numbe
 }
 
 /** The referrer's text, by what each side was given: the same, different, nothing to the friend. */
-function friendFittedTemplate(referrerVisits: number, friendVisits: number): string {
+function friendFittedTemplate(referrerVisits: number, friendVisits: number): TemplateName {
   if (friendVisits === 0) return "friend_fitted_yours_v1";
   if (friendVisits === referrerVisits) return "friend_fitted_v2";
   return "friend_fitted_each_v1";
@@ -392,7 +393,7 @@ export async function composeFriendFitted(
   db: D1Database,
   attributionId: string,
   referrerId: string,
-): Promise<{ template: string; params: string[] } | { skip: string }> {
+): Promise<Composed> {
   const row = await db
     .prepare(
       `SELECT rp.name AS referrer, fp.name AS friend, mine.visits AS referrer_visits, mine.expires_at,
@@ -440,7 +441,7 @@ export async function composeFriendCredited(
   db: D1Database,
   attributionId: string,
   friendId: string,
-): Promise<{ template: string; params: string[] } | { skip: string }> {
+): Promise<Composed> {
   if (!(await consentGiven(db, friendId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
   const row = await db
     .prepare(
@@ -468,7 +469,7 @@ export async function composeReferralRejected(
   db: D1Database,
   attributionId: string,
   personId: string,
-): Promise<{ template: string; params: string[] } | { skip: string }> {
+): Promise<Composed> {
   const row = await db
     .prepare(
       `SELECT r.referred_person_id AS friend_id, fp.name AS friend, rc.person_id AS referrer_id, rp.name AS referrer

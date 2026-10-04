@@ -2,6 +2,7 @@
 // Launching marks the pincode served from a day, and tells those who asked to be told. The alerts are paced, so
 // a launch does not send a hundred WhatsApps in a second and cost us the number.
 
+import type { Composed } from "./visit-messages.ts";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import type { EnvironmentName } from "../config/environments.ts";
 import { indiaInstant } from "../lib/india-time.ts";
@@ -193,7 +194,7 @@ export async function composeLaunchAlert(
   pincode: string,
   personId: string,
   environment: EnvironmentName,
-): Promise<{ template: string; params: string[] } | { skip: string }> {
+): Promise<Composed> {
   const stillAgreed = await consentGiven(db, personId, "whatsapp_launches");
   if (!stillAgreed) return { skip: "no consent to WhatsApp about launches" };
   const row = await db
@@ -245,7 +246,7 @@ export async function composeWaitlistConfirmation(
   db: D1Database,
   entryId: string,
   personId: string,
-): Promise<{ template: string; params: string[] } | { skip: string }> {
+): Promise<Composed> {
   if (!(await consentGiven(db, personId, "contact"))) return { skip: "no consent to be contacted about the request" };
   const row = await db
     .prepare(

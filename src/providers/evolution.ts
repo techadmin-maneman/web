@@ -41,7 +41,7 @@ export function createEvolutionMessaging(
   return {
     async send({ to, template, params, mediaUrl, stopLink }): Promise<SendResult> {
       const text = renderWithStopLink(template, params, stopLink);
-      if (text === null) return { ok: false, transient: false, detail: `unknown template ${template}` };
+      if (text === null) return { ok: false, transient: false, detail: `template ${template} is missing a param` };
 
       const number = to.replace(/\D/g, ""); // "+919810000000" -> "919810000000"
       const [path, body] =

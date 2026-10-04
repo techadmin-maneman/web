@@ -131,7 +131,6 @@ describe("message templates", () => {
       /^Hi Arjun, here's your new look from Mane Man\..*: https:\/\/maneman\.in\/book$/,
     );
     expect(renderMessage("tryon_result_v1", ["Arjun"])).toBeNull();
-    expect(renderMessage("nope", ["Arjun"])).toBeNull();
   });
 
   it("sends the try-on result with a template that exists", () => {
