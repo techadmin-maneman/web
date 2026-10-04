@@ -27,12 +27,12 @@ What a later release drops, once no deployed Worker reads it. Each waits for the
 
 A migration's comments are part of it, so they are never edited either (rule 1), and some have gone out of date. What is true now:
 
-| Migration                 | It says                                                             | True now                                                                                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Any, citing an open point | "docs/open-points.md, item N"                                       | The open points were renumbered on 27 September 2026; `docs/open-points.md`, "Numbers before 27 September 2026", maps each old number to its new one                      |
+| Migration                 | It says                                                             | True now                                                                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Any, citing an open point | "docs/open-points.md, item N"                                       | The open points were renumbered on 27 September 2026; `docs/open-points.md`, "Numbers before 27 September 2026", maps each old number to its new one                    |
 | 0026 (field operations)   | "The milestone itself waits on Zoho's licensing answer"             | The owner ruled on 23 September 2026 that we build our own apps and go on, so P2-M4 went ahead; Zoho's written answer is still wanted (`docs/archive/fsm-licensing.md`) |
-| 0027 (pieces and zones)   | The piece label's format "is a placeholder until the owner sets it" | Set on 24 September 2026: `MM-<base>-<digits>-<letter>`, typed by hand (`PIECE_CODE_PATTERN`, `src/config/pieces.ts`)                                                     |
-| 0027 (pieces and zones)   | `fitted_at` and `replacement_due_at`, named as instants             | Each holds a calendar day, `YYYY-MM-DD` (`docs/schema.md`, "Times and dates")                                                                                             |
+| 0027 (pieces and zones)   | The piece label's format "is a placeholder until the owner sets it" | Set on 24 September 2026: `MM-<base>-<digits>-<letter>`, typed by hand (`PIECE_CODE_PATTERN`, `src/config/pieces.ts`)                                                   |
+| 0027 (pieces and zones)   | `fitted_at` and `replacement_due_at`, named as instants             | Each holds a calendar day, `YYYY-MM-DD` (`docs/schema.md`, "Times and dates")                                                                                           |
 
 ## Deleting rows
 

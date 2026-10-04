@@ -176,13 +176,13 @@ Ops change these in the console, and each is in force within a minute: services 
 
 ## Where each piece is decided
 
-| Piece                                     | Decision record                                                     |
-| ----------------------------------------- | ------------------------------------------------------------------- |
-| Services ops can edit                     | `docs/decisions/0085-services-ops-can-edit.md`                      |
-| The next visit, offered in the app        | `docs/decisions/0086-the-next-visit-is-offered.md`                  |
-| Consumables, stock and the job sheet      | `docs/decisions/0087-consumables-and-stock.md`                      |
-| Prices from the price book                | `docs/decisions/0073-prices-from-the-price-book.md`                 |
-| What ops may set in the console           | `docs/decisions/0061-ops-editable-inputs.md`                        |
-| A paid hold is kept                       | `docs/decisions/0068-a-paid-hold-is-kept.md`                        |
+| Piece                                     | Decision record                                                             |
+| ----------------------------------------- | --------------------------------------------------------------------------- |
+| Services ops can edit                     | `docs/decisions/0085-services-ops-can-edit.md`                              |
+| The next visit, offered in the app        | `docs/decisions/0086-the-next-visit-is-offered.md`                          |
+| Consumables, stock and the job sheet      | `docs/decisions/0087-consumables-and-stock.md`                              |
+| Prices from the price book                | `docs/decisions/0073-prices-from-the-price-book.md`                         |
+| What ops may set in the console           | `docs/decisions/0061-ops-editable-inputs.md`                                |
+| A paid hold is kept                       | `docs/decisions/0068-a-paid-hold-is-kept.md`                                |
 | The owner's rulings, and every open point | ADR 0025; `docs/open-points.md`; `docs/archive/owner-answers-2026-09-27.md` |
-| Going live                                | `docs/go-live.md`; `docs/runbook.md`                                |
+| Going live                                | `docs/go-live.md`; `docs/runbook.md`                                        |
