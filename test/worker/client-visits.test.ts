@@ -521,7 +521,7 @@ describe("what was done on a visit (board C9)", () => {
     await event("e-1", { done: ["piece_refitted", "piece_removed"] });
 
     const visit = await (await get(`/api/visits/${visitId}`)).json<{ what_was_done: string[] | null }>();
-    expect(visit.what_was_done).toEqual(["PLACEHOLDER Piece removed", "PLACEHOLDER Piece refitted"]);
+    expect(visit.what_was_done).toEqual(["Hair system removed", "Hair system refitted"]);
   });
 
   it("is in the words ops gave the checklist in the console, an item since taken off still named", async () => {

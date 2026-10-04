@@ -39,6 +39,9 @@ function startedThrough(fake: Fake, ...steps: Step[]): void {
 
 const writesTo = (fake: Fake, step: string) => fake.writes.filter((write) => write.path.endsWith(`/${step}`));
 
+/** The checklist's items, each a button in its own row of the list. */
+const checklistItems = (page: Page) => page.getByRole("listitem").getByRole("button");
+
 test("a double tap on Start job starts the job once", async ({ page }) => {
   const fake = await fakeTech(page);
   await atTheDoor(page);
@@ -70,7 +73,7 @@ test("a double tap on Next finishes one step, and never the step it opens", asyn
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
   await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
-  for (const item of await page.getByRole("button", { name: /PLACEHOLDER/ }).all()) await item.click();
+  for (const item of await checklistItems(page).all()) await item.click();
 
   await page.getByRole("button", { name: "Next" }).dblclick();
 
@@ -117,7 +120,7 @@ test("draws nothing in gold but the one primary action", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  const items = page.getByRole("button", { name: /PLACEHOLDER/ });
+  const items = checklistItems(page);
   await expect(items).toHaveCount(3);
   for (const item of await items.all()) await item.click();
   await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
@@ -205,7 +208,7 @@ test("a focused checklist line shows its whole focus ring, not one cut by the sc
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  const first = page.getByRole("button", { name: /PLACEHOLDER Piece removed/ });
+  const first = page.getByRole("button", { name: /Hair system removed/ });
   await expect(first).toBeVisible();
 
   await first.focus();
@@ -254,7 +257,7 @@ test.describe("on a 360 × 640 phone", () => {
     expect(await pageScrolls(page)).toBe(false);
 
     // Reaching each item scrolls the list alone; the head and the foot stay where they are.
-    const items = page.getByRole("button", { name: /PLACEHOLDER/ });
+    const items = checklistItems(page);
     await expect(items).toHaveCount(9);
     for (const item of await items.all()) await item.click();
 
@@ -475,7 +478,7 @@ test("a refused outcome opens as it was chosen", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Partial · pick a reason" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "Client stopped it partway" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "PLACEHOLDER More time needed" }).click();
+  await page.getByRole("button", { name: "More time needed" }).click();
   await page.getByRole("button", { name: "Next" }).click();
 
   await expect
@@ -549,7 +552,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.getByRole("button", { name: "Next" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "Consultation checklist" })).toBeVisible();
-    const items = page.getByRole("button", { name: /PLACEHOLDER/ });
+    const items = checklistItems(page);
     await expect(items).toHaveCount(3);
     await expect(page.getByRole("button", { name: /Adhesive applied/ })).toHaveCount(0);
     for (const item of await items.all()) await item.click();
@@ -568,7 +571,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.getByRole("button", { name: "Next" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /PLACEHOLDER/ })).toHaveCount(9);
+    await expect(checklistItems(page)).toHaveCount(9);
   });
 
   // MON-52, CP-37: a declined visit offers no code and promises no link, and closes as what it became.

@@ -53,7 +53,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByText("1 h 25 m")).toBeVisible();
   // Board C9's "What was done": the checklist the technician ticked, from his phone.
   await expect(page.getByRole("term").filter({ hasText: "What was done" }).locator("+ dd")).toHaveText(
-    "PLACEHOLDER Piece removed, PLACEHOLDER Scalp cleaned, PLACEHOLDER Piece cleaned.",
+    "Hair system removed, Scalp cleaned, Hair system cleaned.",
   );
   // The row shows the thumbnail the technician's phone made, not the whole photograph (ADR 0093).
   const front = page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` });

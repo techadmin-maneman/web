@@ -30,12 +30,14 @@ describe("the production site build", () => {
     const output = `${build.stdout}${build.stderr}`;
     expect(build.status, output).not.toBe(0);
     const problems = output.split("\n").filter((line) => line.startsWith("  - "));
-    expect(problems).toEqual([
+    expect(problems.slice(0, 4)).toEqual([
       "  - the photo notice (photo-v4) is not approved",
       "  - the gate notice (gate-v4) is not approved",
       "  - the privacy page's wording is not approved",
       "  - the terms page's wording is not approved",
     ]);
+    // The sentences counsel has still to see are marked in the site's content, and refused with the rest (CQ-43).
+    expect(problems.slice(4)).toEqual([expect.stringMatching(/^ {2}- site\/src\/content\/site\.ts: \d+ lines marked/)]);
   });
 
   it.runIf(BUILDS)("passes the publish gate", { timeout: 180_000 }, () => {

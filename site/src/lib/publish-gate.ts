@@ -114,8 +114,9 @@ export function publishProblems(
   return problems;
 }
 
-export function assertPublishable(): void {
-  const problems = publishProblems();
+/** Stops the build on these problems and any others the caller found, the content gate's among them. */
+export function assertPublishable(more: readonly string[] = []): void {
+  const problems = [...publishProblems(), ...more];
   if (problems.length > 0) {
     throw new Error(
       `The production build is blocked (docs/frontend.md):\n${problems.map((problem) => `  - ${problem}`).join("\n")}`,
