@@ -63,6 +63,7 @@ const job = (id: number, date: string, time: string, minutes: number, type: stri
   slots: SLOTS[type] ?? 1,
   unlocked: true,
   unlocks_at: `${date}T00:00:00.000Z`,
+  progress: { started_at: null, outcome: null },
 });
 
 const JOBS = [
