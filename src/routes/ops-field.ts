@@ -5,6 +5,7 @@
 //   GET  /api/clients/:id/pieces                         the pieces tab
 //   GET  /api/technicians                                who works, their phones and leave, and who is switched off
 //   POST /api/technicians/:id/devices/:device/revoke     revoke a phone; it drops its cached jobs
+//   GET  /api/technicians/:id/leave                      his leave still to end, each with the jobs booked on it
 //   POST /api/technicians/:id/leave                      record leave; the board and booking both refuse those days
 //   POST /api/technicians/:id/leave/:leave/cancel        take it back
 //
@@ -25,7 +26,7 @@ import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { listCities } from "../domain/cities.ts";
-import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
+import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave, standingLeave } from "../domain/leave.ts";
 import { afterRuling } from "../domain/after-a-ruling.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
@@ -33,7 +34,7 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import { permits, withinRouteReach } from "../http/staff-access.ts";
 import { WAIVING_A_NO_SHOW } from "../policy/console-routes.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
-import { roster, type RosterTechnician } from "../domain/technician-roster.ts";
+import { roster, rosterTechnician, type RosterTechnician } from "../domain/technician-roster.ts";
 import { fieldRecord } from "../config/field-record.ts";
 import { isOursToChange } from "../policy/technician-roster.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -162,6 +163,10 @@ const TechniciansSchema = z
                 label: z.union([z.string(), z.null()]),
                 last_seen_at: z.iso.datetime(),
                 revoked_at: z.union([z.iso.datetime(), z.null()]),
+                signed_in: z.boolean().openapi({
+                  description:
+                    "Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it.",
+                }),
               })
               .strict(),
           ),
@@ -201,28 +206,48 @@ const LeaveRequestSchema = z
   .strict()
   .openapi("TechnicianLeaveRequest");
 
+const JobOnLeaveSchema = z
+  .object({
+    appointment_id: z.uuid(),
+    starts_at: z.iso.datetime(),
+    type: z.union([z.enum(VISIT_TYPES), z.null()]),
+    client: z.union([z.string(), z.null()]),
+  })
+  .strict()
+  .openapi("TechnicianJobOnLeave", {
+    description:
+      "A job booked on a day the technician is away, which the leave moves nowhere: ops move it on the dispatch " +
+      "board, and it waits on the Tasks board until they do.",
+  });
+
 const LeaveRecordedSchema = z
   .object({
     id: z.uuid(),
-    jobs: z
-      .array(
-        z
-          .object({
-            appointment_id: z.uuid(),
-            starts_at: z.iso.datetime(),
-            type: z.union([z.enum(VISIT_TYPES), z.null()]),
-            client: z.union([z.string(), z.null()]),
-          })
-          .strict(),
-      )
-      .openapi({
-        description:
-          "The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch " +
-          "board, and each waits on the Tasks board until they do (OPS-07).",
-      }),
+    jobs: z.array(JobOnLeaveSchema).openapi({ description: "The jobs already booked on those days, soonest first." }),
   })
   .strict()
   .openapi("TechnicianLeaveRecorded");
+
+const StandingLeaveSchema = z
+  .object({
+    leave: z
+      .array(
+        z
+          .object({
+            id: z.uuid(),
+            from: z.iso.date(),
+            to: z.iso.date().openapi({ description: "Inclusive: a single day's leave has the same date twice." }),
+            note: z.union([z.string(), z.null()]),
+            jobs: z
+              .array(JobOnLeaveSchema)
+              .openapi({ description: "The jobs still booked on its days from today on, soonest first." }),
+          })
+          .strict(),
+      )
+      .openapi({ description: "His leave that has not ended yet, soonest first." }),
+  })
+  .strict()
+  .openapi("TechnicianStandingLeave");
 
 const noShowsRoute = createRoute({
   method: "get",
@@ -264,6 +289,18 @@ const techniciansRoute = createRoute({
   responses: {
     200: { description: "The technicians", ...json(TechniciansSchema) },
     403: errorResponse("access_required"),
+  },
+});
+
+const standingLeaveRoute = createRoute({
+  method: "get",
+  path: "/api/technicians/{id}/leave",
+  summary: "A technician's leave that has not ended, each with the jobs still booked on its days",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "The leave", ...json(StandingLeaveSchema) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such technician, or he is outside the caller's cities"),
   },
 });
 
@@ -396,7 +433,7 @@ export function registerOpsField(app: App): void {
     // The phones and the leave are one read each for the whole roster, not one per technician.
     const [everyone, devices, leave, cities] = await Promise.all([
       roster(c.env.DB),
-      devicesByTechnician(c.env.DB),
+      devicesByTechnician(c.env.DB, c.var.deps.now()),
       leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
       listCities(c.env.DB),
     ]);
@@ -421,6 +458,23 @@ export function registerOpsField(app: App): void {
       }));
     const switchedOff = everyone.filter((technician) => !technician.active).map(summaryOf);
     return c.json({ technicians, switched_off: switchedOff, cities: cities.map((city) => city.name) }, 200);
+  });
+
+  app.openapi(standingLeaveRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const technician = await rosterTechnician(c.env.DB, id);
+    if (technician === null || !(await withinRouteReach(c, "technician", id))) {
+      return c.json(errorBody("not_found", c.var.requestId), 404);
+    }
+    const periods = await standingLeave(c.env.DB, id, indiaDate(c.var.deps.now()));
+    const leave = periods.map((period) => ({
+      id: period.id,
+      from: period.from,
+      to: period.to,
+      note: period.note,
+      jobs: period.jobs,
+    }));
+    return c.json({ leave }, 200);
   });
 
   app.openapi(leaveRoute, async (c) => {
