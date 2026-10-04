@@ -3,7 +3,8 @@
 // book's: the build writes them with the figures it has, and the mm-site Worker
 // builds both again with the book's (docs/decisions/0073-prices-from-the-price-book.md).
 
-import { business, faq, PRICES_SHOWN, whatsapp } from "../content/site.ts";
+import { business, faq, whatsapp } from "../content/site.ts";
+import { PRICES_SHOWN } from "./flags.ts";
 import { fillPrices, type PriceWords } from "./prices.ts";
 import { SITE_ORIGIN } from "./site-origin.ts";
 

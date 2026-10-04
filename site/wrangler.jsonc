@@ -4,7 +4,9 @@
 // the referral landing (docs/decisions/0027-referral-landing.md), where it also
 // writes each invite's preview into the page WhatsApp fetches and sends a bare /r
 // to /book, and on the built films, which it gives a byte range at a time, as iOS
-// Safari needs. Local and staging serve
+// Safari needs. While the site gives no prices (PRICES_SHOWN, site/src/lib/flags.ts),
+// / is left to the assets, and /book is the Worker's for what a referral earns;
+// test/node/site-prices.test.ts keeps the list in step. Local and staging serve
 // the Astro build (site/dist/<environment>, from npm run build:site). Production
 // keeps its placeholder page until the site goes live there, which the owner
 // will do in one release with the backend.
@@ -22,7 +24,7 @@
     "directory": "./dist/local",
     "not_found_handling": "404-page",
     "binding": "ASSETS",
-    "run_worker_first": ["/", "/book", "/r", "/r/*", "/_astro/*.mp4"]
+    "run_worker_first": ["/book", "/r", "/r/*", "/_astro/*.mp4"]
   },
   "services": [{ "binding": "API", "service": "mm-api" }],
   "env": {
@@ -38,7 +40,7 @@
         "directory": "./dist/staging",
         "not_found_handling": "404-page",
         "binding": "ASSETS",
-        "run_worker_first": ["/", "/book", "/r", "/r/*", "/_astro/*.mp4"]
+        "run_worker_first": ["/book", "/r", "/r/*", "/_astro/*.mp4"]
       },
       "services": [{ "binding": "API", "service": "mm-api-staging" }]
     },
@@ -54,7 +56,7 @@
         "directory": "./placeholder/production",
         "not_found_handling": "404-page",
         "binding": "ASSETS",
-        "run_worker_first": ["/", "/book", "/r", "/r/*", "/_astro/*.mp4"]
+        "run_worker_first": ["/book", "/r", "/r/*", "/_astro/*.mp4"]
       },
       "services": [{ "binding": "API", "service": "mm-api-production" }]
     }

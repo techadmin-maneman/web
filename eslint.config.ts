@@ -198,6 +198,11 @@ export default defineConfig(
     rules: { "no-console": "off" },
   },
   {
+    // The site Worker has no logger: one warning line for each mm-api answer it cannot use.
+    files: ["site/src/worker.ts"],
+    rules: { "no-console": ["error", { allow: ["warn"] }] },
+  },
+  {
     files: ["test/**/*.ts", "e2e/**/*.ts"],
     rules: { "no-console": "off" },
   },
