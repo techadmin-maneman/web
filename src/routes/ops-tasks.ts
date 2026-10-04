@@ -91,7 +91,9 @@ const TaskSchema = z
         '"first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit\'s start and ' +
         "the day the next service fell due; for a first fit to book, the consultation's start and the window the fit " +
         "is offered in, the consultation's (\"any\" where a fit cannot start in it); for a payment owed, the link's state " +
-        '("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product.',
+        '("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product; ' +
+        'for a payment to refund, why ("let_go", a hold let go whose refund Razorpay would not make, or ' +
+        '"refund_failed"), what is owed back in paise, and the Razorpay payment.',
     }),
     since: z.iso.datetime().openapi({ description: "When it started waiting." }),
     due: z.iso.datetime().openapi({

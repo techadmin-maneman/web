@@ -95,6 +95,7 @@ export const TASK_GROUPS = [
   "grievance",
   "draft_invoice",
   "payment_owed",
+  "payment_to_refund",
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
 
@@ -102,7 +103,7 @@ export type TaskGroup = (typeof TASK_GROUPS)[number];
  * How long a task may wait before it is overdue, and the one deadline its own
  * queue counts down to as well. The board writes "2 days", "1 day", "Today"
  * and "Overdue 3" and names no group's own allowance, and the prompt states
- * none, so every group waits the same two days, with three exceptions:
+ * none, so every group waits the same two days, with four exceptions:
  * placeholders until the owner rules each one (docs/open-points.md, item 61).
  */
 export type Slas = Readonly<Record<TaskGroup, number>>;
@@ -128,6 +129,8 @@ export const TASK_SLA_HOURS: Slas = {
   grievance: 30 * 24,
   draft_invoice: 48,
   payment_owed: 48,
+  // Money owed back to a client: refunded within the day.
+  payment_to_refund: 24,
 };
 
 /**

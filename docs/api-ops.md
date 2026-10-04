@@ -11130,7 +11130,8 @@ Request body:
               "erasure_request",
               "grievance",
               "draft_invoice",
-              "payment_owed"
+              "payment_owed",
+              "payment_to_refund"
             ]
           },
           "count": {
@@ -11238,7 +11239,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's (\"any\" where a fit cannot start in it); for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product."
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's (\"any\" where a fit cannot start in it); for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product; for a payment to refund, why (\"let_go\", a hold let go whose refund Razorpay would not make, or \"refund_failed\"), what is owed back in paise, and the Razorpay payment."
     },
     "since": {
       "type": "string",

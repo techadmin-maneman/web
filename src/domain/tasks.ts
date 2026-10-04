@@ -293,6 +293,10 @@ const OUTSTANDING = [
   //
   // A client's dispute of a no-show's charge, still to rule on: what the charge kept, in paise. It waits from when the
   // client raised it. The index on the open disputes reads only those.
+  //
+  // A payment to refund: why ("let_go", a hold let go whose refund Razorpay would not make, or "refund_failed", a
+  // refund Razorpay failed), what is owed back in paise, and the Razorpay payment, for ops to refund from Razorpay's
+  // dashboard. It goes once a refund of the payment is made. Migration 0096's indexes read only those two sets.
   withOwners(`
   SELECT 'payment_owed' AS "group", l.id AS id, a.person_id AS person_id, pe.name AS person_name,
          CASE WHEN l.refused_at IS NOT NULL THEN 'refused' WHEN l.sent_at IS NULL THEN 'unsent'
@@ -307,6 +311,23 @@ const OUTSTANDING = [
     FROM no_show_disputes d JOIN no_show_cases n ON n.id = d.case_id
     LEFT JOIN people pe ON pe.id = d.person_id AND pe.erased_at IS NULL
    WHERE d.ruling IS NULL
+  UNION ALL
+  SELECT 'payment_to_refund', p.id, pe.id, pe.name,
+         'let_go ' || (p.amount - p.refunded_amount) || ' ' || p.razorpay_payment_id, h.updated_at, NULL, ''
+    FROM payments p JOIN slot_holds h ON h.razorpay_order_id = p.razorpay_order_id
+    JOIN people pe ON pe.id = h.person_id
+   WHERE p.status = 'captured' AND p.appointment_id IS NULL AND h.state = 'released' AND h.refunded_at IS NULL
+     AND pe.erased_at IS NULL
+  UNION ALL
+  SELECT 'payment_to_refund', p.id, pe.id, pe.name,
+         'refund_failed ' || r.amount || ' ' || p.razorpay_payment_id, r.updated_at, NULL, ''
+    FROM refunds r JOIN payments p ON p.id = r.payment_id
+    JOIN people pe ON pe.id = p.person_id
+   WHERE r.status = 'failed' AND p.status <> 'refunded' AND pe.erased_at IS NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM refunds later
+        WHERE later.payment_id = r.payment_id AND later.status IN ('created', 'processed')
+          AND later.created_at > r.created_at)
 `),
 ] as const;
 
@@ -456,6 +477,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   grievance: "grievance",
   draft_invoice: "visit",
   payment_owed: "payment_link",
+  payment_to_refund: "payment",
 };
 
 const recordOf = (task: Task): PlacedId => ({ kind: TASK_RECORDS[task.group], id: task.id });

@@ -1628,6 +1628,8 @@ export const tasks = {
     draft_invoice: "Draft invoice",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
     payment_owed: "Payment owed",
+    // PLACEHOLDER: a group the board does not draw: money owed back that no refund has reached.
+    payment_to_refund: "Payment to refund",
   } as Readonly<Record<string, string>>,
   /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */
   visit: (date: string) => `Visit of ${date}`,
@@ -1743,6 +1745,9 @@ export const tasks = {
      */
     payment_owed: (product: string, amount: string, link: LinkState) =>
       `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
+    /** PLACEHOLDER: "Rs. 2,000 owed back on pay_Q1x; Razorpay refused the refund": refunded from Razorpay's dashboard. */
+    payment_to_refund: (amount: string, payment: string, why: string) =>
+      `${amount} owed back on ${payment}; ${why === "refund_failed" ? "Razorpay failed the refund" : "Razorpay would not refund it"}`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
     unknown: "Held for review",
   },

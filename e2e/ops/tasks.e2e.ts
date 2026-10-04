@@ -308,6 +308,45 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
   await expect(row(page, "Nikhil Suri").getByRole("status")).toHaveText("Texted to them again.");
 });
 
+// MON-05, MON-13: money owed back that no refund reached waited nowhere.
+test("lists each payment to refund, why, and what is owed back, and leads to the client's payments", async ({
+  page,
+}) => {
+  const task = (id: string, name: string, detail: string) => ({
+    id,
+    person: { id: "22000000-0000-4000-8000-000000000030", name },
+    detail,
+    since: "2027-09-20T07:30:00.000Z",
+    due: "2027-09-21T07:30:00.000Z",
+    owner: null,
+  });
+  await open(page, {
+    overdue: 0,
+    truncated: false,
+    staff: [],
+    groups: [
+      {
+        group: "payment_to_refund",
+        count: 2,
+        closable: false,
+        tasks: [
+          task("96000000-0000-4000-8000-000000000031", "Nikhil Suri", "let_go 200000 pay_Q1late"),
+          task("96000000-0000-4000-8000-000000000032", "Manoj Iyer", "refund_failed 3540000 pay_Q2fail"),
+        ],
+      },
+    ],
+  });
+  await expect(groupNames(page)).toHaveText(["Payment to refund"]);
+  await expect(row(page, "Nikhil Suri")).toContainText(
+    "Rs. 2,000 owed back on pay_Q1late; Razorpay would not refund it",
+  );
+  await expect(row(page, "Manoj Iyer")).toContainText("Rs. 35,400 owed back on pay_Q2fail; Razorpay failed the refund");
+  await expect(row(page, "Manoj Iyer").getByRole("link", { name: "Manoj Iyer", exact: true })).toHaveAttribute(
+    "href",
+    "/clients/22000000-0000-4000-8000-000000000030/payments",
+  );
+});
+
 // A no-show once named its technician alone and led nowhere (OPS-05).
 test("names the client of a no-show, and leads to their visits and to the case", async ({ page }) => {
   await open(page);
