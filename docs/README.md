@@ -16,6 +16,7 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 | Document                                                         | Read it for                                                                               |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | [decisions/](decisions/README.md)                                | Every decision, as an ADR; 0025 is the register of the owner's rulings and the departures |
+| [../CONTRIBUTING.md](../CONTRIBUTING.md)                         | Shipping a change: the branch, the checks, the size, when a person must look              |
 | [migrations.md](migrations.md)                                   | Writing a migration D1 will take, and the contract steps waiting                          |
 | [frontend.md](frontend.md)                                       | The public site in detail: content, prices, notices, analytics                            |
 | [fidelity-method.md](fidelity-method.md), [fidelity/](fidelity/) | How a screen is compared with its design, and the pairs                                   |
@@ -29,6 +30,7 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 | [go-live.md](go-live.md)                                                                       | What takes each release to production, in the owner's order                             |
 | [open-points.md](open-points.md), [open-points-settled.md](open-points-settled.md)             | What is still owed before production, what staging uses meanwhile, and what was settled |
 | [tech-field-test.md](tech-field-test.md), [technician-test-setup.md](technician-test-setup.md) | The technician app's field test, and signing in to it on your own phone                 |
+| [env-files.md](env-files.md)                                                                   | The git-ignored files the scripts read their secrets from, and their templates          |
 | [turnstile.md](turnstile.md)                                                                   | The Turnstile widgets, their site keys and hostnames                                    |
 
 ## Reference

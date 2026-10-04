@@ -62,7 +62,7 @@ npm run db:seed:local   # clients, visits and a technician to sign in as
 npm run dev:all         # mm-api, the public site and the three apps; every login code is 246810
 ```
 
-`docs/getting-started.md` has the rest: the host each app is opened on (each needs its own, such as `http://app.localhost:4322`), the commands that stand in for the cron, Razorpay and a technician's phone, and moving a port. `npm run dev` runs mm-api alone on `:8787`. Locally every provider is a stub, and Turnstile uses Cloudflare's test keys: send `"turnstile_token": "XXXX.DUMMY.TOKEN.XXXX"`.
+`docs/getting-started.md` has the rest: the host each app is opened on (each needs its own, such as `http://app.localhost:4322`), the commands that stand in for the cron, Razorpay and a technician's phone, and moving a port. `npm run dev` runs mm-api alone on `:8787`, with the same login code. To ship a change, read `CONTRIBUTING.md`. Locally every provider is a stub, and Turnstile uses Cloudflare's test keys: send `"turnstile_token": "XXXX.DUMMY.TOKEN.XXXX"`.
 
 ## Checks
 

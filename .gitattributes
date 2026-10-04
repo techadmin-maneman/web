@@ -1,2 +1,22 @@
 # LF everywhere, so Prettier and the contract test see the same bytes on every OS.
 * text=auto eol=lf
+
+# What `npm run gen` writes, the lockfile and the fidelity pictures: folded in a diff, and left out of a pull
+# request's size (scripts/lib/pr-size.ts, which lists the same files).
+package-lock.json linguist-generated=true
+src/worker-configuration.d.ts linguist-generated=true
+docs/openapi.json linguist-generated=true
+docs/openapi-client.json linguist-generated=true
+docs/openapi-ops.json linguist-generated=true
+docs/openapi-tech.json linguist-generated=true
+docs/api.md linguist-generated=true
+docs/api-client.md linguist-generated=true
+docs/api-ops.md linguist-generated=true
+docs/api-tech.md linguist-generated=true
+docs/schema.md linguist-generated=true
+docs/decisions/README.md linguist-generated=true
+docs/fidelity/** linguist-generated=true
+site/src/lib/api-schema.ts linguist-generated=true
+apps/app/src/api-schema.ts linguist-generated=true
+apps/ops/src/api-schema.ts linguist-generated=true
+apps/tech/src/api-schema.ts linguist-generated=true

@@ -45,3 +45,15 @@ describe("the review budget step in CI", () => {
     expect(script).not.toContain("process.exit");
   });
 });
+
+describe(".gitattributes", () => {
+  // GitHub folds what it marks; the budget leaves out what isGenerated names: the two lists are one.
+  it("marks as generated the files the budget leaves out, and the fidelity pictures", () => {
+    const marked = readFileSync(".gitattributes", "utf8")
+      .split("\n")
+      .filter((line) => line.includes("linguist-generated"))
+      .map((line) => line.split(/\s+/)[0] ?? "");
+    expect(marked).toContain("docs/fidelity/**");
+    expect(marked.filter((path) => !path.endsWith("/**") && !isGenerated(path))).toEqual([]);
+  });
+});
