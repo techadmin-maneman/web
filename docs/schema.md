@@ -1064,7 +1064,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1083,6 +1083,7 @@ Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand
 | `sent_at` | TEXT | yes |  |  |
 | `delivered_at` | TEXT | yes |  |  |
 | `read_at` | TEXT | yes |  |  |
+| `due_at` | TEXT | yes |  |  |
 
 Indexes:
 

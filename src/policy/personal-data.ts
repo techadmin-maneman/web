@@ -256,6 +256,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "subject_kind",
       "subject_id",
       "queued_at",
+      "due_at",
       "sending_at",
       "provider_message_id",
       "attempts",
