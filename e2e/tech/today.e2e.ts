@@ -26,8 +26,9 @@ test("lists the day's jobs in order, with no amount anywhere (board A1)", async 
   await expect(page.getByText("First at 9:30 am · Sector 65")).toBeVisible();
 
   const rows = page.getByRole("listitem");
-  // The client's name arrives with the card, which the day's list does not carry.
+  // The day's list names the client of a job that has unlocked.
   await expect(rows.first()).toContainText("Rohit M.");
+  await expect(rows.nth(1)).toContainText("Vikram S.");
   await expect(rows.first()).toContainText("Sector 65");
   await expect(rows.first()).toContainText("Prepaid");
   await expect(rows.nth(1)).toContainText("Credit");

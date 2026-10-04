@@ -381,8 +381,11 @@ async function bookable(
   on: string,
 ): Promise<PricedService | "no_product" | "not_bookable"> {
   const db = c.env.DB;
-  if (!(await bookableTypes(db, personId)).includes(wanted.type)) return "not_bookable";
-  const service = await bookableService(db, wanted.type, wanted.tier, on);
+  const [types, service] = await Promise.all([
+    bookableTypes(db, personId),
+    bookableService(db, wanted.type, wanted.tier, on),
+  ]);
+  if (!types.includes(wanted.type)) return "not_bookable";
   if (service !== null) return service;
   const noProduct = wanted.type === "first_fit" && (await offeredProducts(db, on)).length === 0;
   return noProduct ? "no_product" : "not_bookable";
@@ -445,6 +448,16 @@ async function soldAs(
     terms: termsInForce(inputs, hold.type),
     lateFee: lateFeeItem === undefined ? null : await lateFeeOn(c.env.DB, lateFeeItem, hold.date),
   };
+}
+
+/** Whether a credit pays for the hold: one the kind of visit and move can take, while the client has one to spend. */
+async function creditPays(
+  db: D1Database,
+  hold: { personId: string; type: VisitType; moveKind: "move" | "replace" | null },
+  now: Date,
+): Promise<boolean> {
+  if (!takesCredit(hold.type, hold.moveKind)) return false;
+  return (await spendableCredits(db, hold.personId, now)).visits > 0;
 }
 
 /** Starts paying for a live hold: what Checkout opens with, or null for one that is free and sent to be booked. */
@@ -533,30 +546,36 @@ export function registerClientBooking(app: App): void {
   });
 
   app.openapi(holdRoute, async (c) => {
-    const session = clientOf(c);
+    const personId = clientOf(c).subjectId;
     const { type, tier, date, window, moving: movingId } = c.req.valid("json");
     const now = c.var.deps.now();
-    const move = movingId === undefined ? null : await moveTermsFor(c, session.subjectId, movingId, type, date);
+    // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
+    const [move, offered, range, address, inputs] = await Promise.all([
+      movingId === undefined ? null : moveTermsFor(c, personId, movingId, type, date),
+      movingId === undefined ? bookable(c, personId, { type, tier }, date) : null,
+      rangeFor(c, personId, type),
+      currentAddress(c.env.DB, personId),
+      opsInputs(c),
+    ]);
     if (movingId !== undefined && move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
-    const offered = move === null ? await bookable(c, session.subjectId, { type, tier }, date) : null;
     if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
-    const service = move === null ? offered : await movedService(c, move.terms.visit);
-    const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
-    const { opens, last } = await rangeFor(c, session.subjectId, type);
-    if (service === null || price === null || date < opens || date > last) {
-      return c.json(errorBody("not_bookable", c.var.requestId), 422);
-    }
-    const address = await currentAddress(c.env.DB, session.subjectId);
-    if (!isFullAddress(address)) return c.json(errorBody("address_required", c.var.requestId), 409);
-    if (!(await isServed(c.env.DB, address.pincode))) return c.json(errorBody("not_served", c.var.requestId), 422);
     const moves =
       move === null
         ? undefined
         : { visit: move.moving, kind: move.terms.move.cost === "charged" ? ("replace" as const) : ("move" as const) };
-    const useCredit =
-      takesCredit(type, moves?.kind ?? null) && (await spendableCredits(c.env.DB, session.subjectId, now)).visits > 0;
-    const inputs = await opsInputs(c);
-    const sold = await soldAs(c, { type, date, move: move?.terms ?? null, kind: moves?.kind ?? null }, inputs);
+    const moveKind = moves?.kind ?? null;
+    const [service, sold, useCredit, served] = await Promise.all([
+      move === null ? offered : movedService(c, move.terms.visit),
+      soldAs(c, { type, date, move: move?.terms ?? null, kind: moveKind }, inputs),
+      creditPays(c.env.DB, { personId, type, moveKind }, now),
+      isFullAddress(address) ? isServed(c.env.DB, address.pincode) : false,
+    ]);
+    const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
+    if (service === null || price === null || date < range.opens || date > range.last) {
+      return c.json(errorBody("not_bookable", c.var.requestId), 422);
+    }
+    if (!isFullAddress(address)) return c.json(errorBody("address_required", c.var.requestId), 409);
+    if (!served) return c.json(errorBody("not_served", c.var.requestId), 422);
     // A visit moved late books a new one in its place, which keeps the visit's discount code, unless a credit pays it
     // (docs/decisions/0108-discount-codes.md).
     const carried =
@@ -564,7 +583,7 @@ export function registerClientBooking(app: App): void {
     const hold = await holdSlot(
       c.env.DB,
       {
-        personId: session.subjectId,
+        personId,
         service: { type, tier: service.tier, minutes: service.minutes },
         date,
         window,
@@ -583,7 +602,7 @@ export function registerClientBooking(app: App): void {
     );
     if (hold === null) return c.json(errorBody("taken", c.var.requestId), 409);
     c.var.log.info("slot_held", { hold_id: hold.id, type, tier: service.tier, date, window });
-    const held = await clientHold(c.env.DB, hold.id, session.subjectId, now);
+    const held = await clientHold(c.env.DB, hold.id, personId, now);
     if (held === null) return c.json(errorBody("taken", c.var.requestId), 409);
     return c.json(held, 201);
   });

@@ -40,7 +40,7 @@ import { clashes } from "../policy/dispatch.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { bookedLength, unitsFor } from "../policy/visit-length.ts";
 import { unitAt } from "../policy/slot-times.ts";
-import { isFitted } from "./client-visits.ts";
+import { FITTED } from "./fitted.ts";
 import type { Price } from "./price-book.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
@@ -172,17 +172,43 @@ export async function occupancy(
     return day;
   };
 
-  // A hold's claims, and a dispatch move's while it can still finish.
-  const claims = await db
-    .prepare(
-      `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
-       WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR ${graceEnds("h")} > ?3)
-       UNION ALL
-       SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN dispatch_moves m ON m.id = c.move_id
-       WHERE c.date BETWEEN ?1 AND ?2 AND m.fsm_write_state = 'pending' AND m.created_at > ?4`,
-    )
-    .bind(from, to, now.toISOString(), movesOpenSince(now))
-    .all<{ technician_id: string; date: string; claim: string }>();
+  const [claims, leave, visits, schedule] = await Promise.all([
+    // A hold's claims, and a dispatch move's while it can still finish.
+    db
+      .prepare(
+        `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
+         WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR ${graceEnds("h")} > ?3)
+         UNION ALL
+         SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN dispatch_moves m ON m.id = c.move_id
+         WHERE c.date BETWEEN ?1 AND ?2 AND m.fsm_write_state = 'pending' AND m.created_at > ?4`,
+      )
+      .bind(from, to, now.toISOString(), movesOpenSince(now))
+      .all<{ technician_id: string; date: string; claim: string }>(),
+    db
+      .prepare(
+        `SELECT technician_id, from_date, to_date FROM technician_leave
+         WHERE cancelled_at IS NULL AND from_date <= ?2 AND to_date >= ?1`,
+      )
+      .bind(from, to)
+      .all<{ technician_id: string; from_date: string; to_date: string }>(),
+    // A visit is the standard tier's where the mirror knows no other (migration 0050).
+    db
+      .prepare(
+        `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes FROM appointments a
+         LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
+         WHERE a.deleted_at IS NULL AND a.technician_id IS NOT NULL
+           AND a.status IN ('scheduled', 'dispatched', 'in_progress')
+           AND a.window_start >= ?1 AND a.window_start < ?2 AND a.id IS NOT ?3`,
+      )
+      .bind(
+        indiaInstant(from, "00:00").toISOString(),
+        indiaInstant(addDays(to, 1), "00:00").toISOString(),
+        exceptVisitId,
+      )
+      .all<BookedVisit & { technician_id: string }>(),
+    loadSlotSchedule(db),
+  ]);
+
   for (const { technician_id: technicianId, date, claim } of claims.results) {
     const [kind, value = ""] = claim.split(":");
     const day = dayOf(technicianId, date);
@@ -192,13 +218,6 @@ export async function occupancy(
 
   // Leave takes the whole day, so the day is marked rather than its slots filled:
   // ops are told the technician is away, not that every window happens to be busy.
-  const leave = await db
-    .prepare(
-      `SELECT technician_id, from_date, to_date FROM technician_leave
-       WHERE cancelled_at IS NULL AND from_date <= ?2 AND to_date >= ?1`,
-    )
-    .bind(from, to)
-    .all<{ technician_id: string; from_date: string; to_date: string }>();
   for (const period of leave.results) {
     // Both ends are inclusive, and the dates sort as they read, so a plain comparison walks the period.
     let date = period.from_date < from ? from : period.from_date;
@@ -207,18 +226,6 @@ export async function occupancy(
     }
   }
 
-  // A visit is the standard tier's where the mirror knows no other (migration 0050).
-  const visits = await db
-    .prepare(
-      `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes FROM appointments a
-       LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
-       WHERE a.deleted_at IS NULL AND a.technician_id IS NOT NULL
-         AND a.status IN ('scheduled', 'dispatched', 'in_progress')
-         AND a.window_start >= ?1 AND a.window_start < ?2 AND a.id IS NOT ?3`,
-    )
-    .bind(indiaInstant(from, "00:00").toISOString(), indiaInstant(addDays(to, 1), "00:00").toISOString(), exceptVisitId)
-    .all<BookedVisit & { technician_id: string }>();
-  const schedule = await loadSlotSchedule(db);
   for (const visit of visits.results) {
     const { date, time, window } = schedule.at(visit.window_start);
     const day = dayOf(visit.technician_id, date);
@@ -231,28 +238,40 @@ export async function occupancy(
   return (technicianId, date) => days.get(`${technicianId}/${date}`) ?? emptyDay();
 }
 
-/**
- * The types a client may book: a consultation first, then a first fit, then service visits and replacements.
- * A consultation or a first fit is booked once at a time: not while one is still to happen.
- */
-export async function bookableTypes(db: D1Database, personId: string): Promise<VisitType[]> {
-  const open: VisitType[] = [];
-  for (const type of await typesAtStage(db, personId)) {
-    if ((await liveVisitOf(db, personId, type)) === null) open.push(type);
-  }
-  return open;
+/** A visit booked and still to happen. */
+const STILL_TO_HAPPEN = "deleted_at IS NULL AND status IN ('scheduled', 'dispatched', 'in_progress')";
+/** A hold paid for, or booked free, on its way to being a visit. */
+const PAID_HOLD = "state = 'held' AND confirmed_at IS NOT NULL";
+
+/** What decides the types a client ?1 may book, in one statement. */
+const STAGE = `SELECT
+  ${FITTED} AS fitted,
+  EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL AND status = 'completed'
+    AND type = 'consultation') AS consulted,
+  EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND ${STILL_TO_HAPPEN}
+      AND (type = 'consultation' OR one_visit = 'booked'))
+    OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD}
+      AND (type = 'consultation' OR one_visit = 1)) AS consultation_live,
+  EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND ${STILL_TO_HAPPEN} AND type = 'first_fit')
+    OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD} AND type = 'first_fit')
+    AS first_fit_live`;
+
+interface StageRow {
+  fitted: number;
+  consulted: number;
+  consultation_live: number;
+  first_fit_live: number;
 }
 
-async function typesAtStage(db: D1Database, personId: string): Promise<VisitType[]> {
-  if (await isFitted(db, personId)) return ["service", "replacement"];
-  const consulted = await db
-    .prepare(
-      `SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL AND status = 'completed'
-         AND type = 'consultation' LIMIT 1`,
-    )
-    .bind(personId)
-    .first();
-  return consulted === null ? ["consultation"] : ["first_fit"];
+/**
+ * The types a client may book: a consultation first, then a first fit, then service visits and replacements.
+ * A consultation or a first fit is booked once at a time: not while one is still to happen (liveVisitOf).
+ */
+export async function bookableTypes(db: D1Database, personId: string): Promise<VisitType[]> {
+  const row = await db.prepare(STAGE).bind(personId).first<StageRow>();
+  if (row?.fitted === 1) return ["service", "replacement"];
+  if (row?.consulted === 1) return row.first_fit_live === 1 ? [] : ["first_fit"];
+  return row?.consultation_live === 1 ? [] : ["consultation"];
 }
 
 /** The kinds of visit a client has one of at a time. */
@@ -276,27 +295,28 @@ export async function liveVisitOf(
   exceptHoldId: string | null = null,
 ): Promise<LiveVisit | null> {
   if (!ONE_AT_A_TIME.includes(type)) return null;
-  const booked = await db
-    .prepare(
-      `SELECT window_start FROM appointments
-       WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 'booked')) AND deleted_at IS NULL
-         AND status IN ('scheduled', 'dispatched', 'in_progress')
-       ORDER BY window_start LIMIT 1`,
-    )
-    .bind(personId, type)
-    .first<{ window_start: string }>();
+  const [booked, paid] = await Promise.all([
+    db
+      .prepare(
+        `SELECT window_start FROM appointments
+         WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 'booked')) AND ${STILL_TO_HAPPEN}
+         ORDER BY window_start LIMIT 1`,
+      )
+      .bind(personId, type)
+      .first<{ window_start: string }>(),
+    db
+      .prepare(
+        `SELECT date, window_label FROM slot_holds
+         WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 1)) AND ${PAID_HOLD}
+           AND id IS NOT ?3 LIMIT 1`,
+      )
+      .bind(personId, type, exceptHoldId)
+      .first<{ date: string; window_label: BookingWindow }>(),
+  ]);
   if (booked !== null) {
     const { date, window } = (await loadSlotSchedule(db)).at(booked.window_start);
     return { date, window };
   }
-  const paid = await db
-    .prepare(
-      `SELECT date, window_label FROM slot_holds
-       WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 1)) AND state = 'held'
-         AND confirmed_at IS NOT NULL AND id IS NOT ?3 LIMIT 1`,
-    )
-    .bind(personId, type, exceptHoldId)
-    .first<{ date: string; window_label: BookingWindow }>();
   return paid === null ? null : { date: paid.date, window: paid.window_label };
 }
 
@@ -498,13 +518,14 @@ export async function holdSlot(
 ): Promise<Hold | null> {
   const { personId, service, date, window, price, moves, useCredit = false, oneVisit = false, from = "app" } = input;
   const units = unitsFor(service.minutes);
-  if ((await loadBlackouts(db, date, date)).has(date)) return null;
   const moving = moves?.kind === "move" ? moves.visit : null;
-  const [technicians, regular, held] = await Promise.all([
+  const [blackouts, technicians, regular, held] = await Promise.all([
+    loadBlackouts(db, date, date),
     techniciansFor(db, moving),
     moving === null ? regularTechnician(db, personId) : moving.technicianId,
     occupancy(db, date, date, now, moving?.visitId ?? null),
   ]);
+  if (blackouts.has(date)) return null;
   const chosen =
     input.technicianId === undefined
       ? technicians
