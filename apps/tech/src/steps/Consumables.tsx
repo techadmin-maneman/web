@@ -15,7 +15,7 @@ import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
-import type { Job } from "../api.ts";
+import type { EventBody, Job } from "../api.ts";
 import { job as jobCopy, steps as copy } from "../content.ts";
 import { STEPPER_STROKE } from "../icons.ts";
 import { Failed, Loading } from "../states/States.tsx";
@@ -104,7 +104,7 @@ function Counting({
 }: {
   job: Job;
   refused: Queued | null;
-  onFinish: (body: unknown) => void;
+  onFinish: (body: EventBody<"consumables">) => void;
   onBack: () => void;
 }) {
   const offered = job.consumables;

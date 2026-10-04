@@ -7,8 +7,16 @@
 // (`docs/open-points.md`, item 132), so neither side can quietly drop one.
 
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
-import { EVENT_ID_HEADER, pathFor, ROUTES, ROUTES_ASSUMED, type EventKind } from "../../apps/tech/src/routes.ts";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import type { components } from "../../apps/tech/src/api-schema.ts";
+import {
+  EVENT_ID_HEADER,
+  pathFor,
+  ROUTES,
+  ROUTES_ASSUMED,
+  type EventBody,
+  type EventKind,
+} from "../../apps/tech/src/routes.ts";
 
 interface Document {
   paths: Record<string, Record<string, { responses: Record<string, { description?: string }> }>>;
@@ -50,6 +58,23 @@ describe("the routes the technician app calls", () => {
       const path = `/api${pathFor(kind, job)}`.replace(job, "{id}");
       expect(document.paths[path]?.post, `${kind} goes to ${path}`).toBeDefined();
     }
+  });
+});
+
+// Checked when the tests are type-checked: the outbox can queue no body its route would refuse.
+describe("what each of the outbox's events sends", () => {
+  it("is its route's request body, as the document writes it", () => {
+    type Schemas = components["schemas"];
+    expectTypeOf<EventBody<"check_in">>().toEqualTypeOf<Schemas["CheckInRequest"]>();
+    expectTypeOf<EventBody<"start">>().toEqualTypeOf<null>();
+    expectTypeOf<EventBody<"before_photos">>().toEqualTypeOf<Schemas["TechnicianPhotosRequest"]>();
+    expectTypeOf<EventBody<"after_photos">>().toEqualTypeOf<Schemas["TechnicianPhotosRequest"]>();
+    expectTypeOf<EventBody<"checklist">>().toEqualTypeOf<Schemas["ChecklistRequest"]>();
+    expectTypeOf<EventBody<"consumables">>().toEqualTypeOf<Schemas["ConsumablesRequest"]>();
+    expectTypeOf<EventBody<"piece">>().toEqualTypeOf<Schemas["PieceRequest"]>();
+    expectTypeOf<EventBody<"profile">>().toEqualTypeOf<Schemas["TechnicianProfileRequest"]>();
+    expectTypeOf<EventBody<"outcome">>().toEqualTypeOf<Schemas["OutcomeRequest"]>();
+    expectTypeOf<EventBody<"no_show">>().toEqualTypeOf<null>();
   });
 });
 

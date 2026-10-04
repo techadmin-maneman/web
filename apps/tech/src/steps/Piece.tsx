@@ -26,7 +26,7 @@ import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
-import { api, unreachable, type Job, type PieceLookup } from "../api.ts";
+import { api, unreachable, type EventBody, type Job, type PieceLookup } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { STROKE, TAG } from "../icons.ts";
 import { paidFor, profileNamesAnother } from "../job/paid-for.ts";
@@ -163,7 +163,7 @@ function Fitting({
 }: {
   job: Job;
   refused: Queued | null;
-  onFinish: (body: unknown) => void;
+  onFinish: (body: EventBody<"piece">) => void;
   onBack: () => void;
 }) {
   const sent = pieceSent(refused);
@@ -219,14 +219,15 @@ function Fitting({
     return given(oldReason) ? null : copy.piece.old.needsReason;
   }
 
-  function body(): Record<string, unknown> {
+  function body(): EventBody<"piece"> {
     if (declined) return { declined: true };
-    const sent: Record<string, unknown> = { piece_code: code };
-    if (job.one_visit && choice !== null) sent.product = choice;
-    if (given(base)) sent.base = base.trim();
-    if (given(lot)) sent.supplier_lot = lot.trim();
-    if (given(oldCode)) sent.old_piece = { piece_code: oldCode, failure_reason: oldReason.trim() };
-    return sent;
+    return {
+      piece_code: code,
+      ...(job.one_visit && choice !== null ? { product: choice } : {}),
+      ...(given(base) ? { base: base.trim() } : {}),
+      ...(given(lot) ? { supplier_lot: lot.trim() } : {}),
+      ...(given(oldCode) ? { old_piece: { piece_code: oldCode, failure_reason: oldReason.trim() } } : {}),
+    };
   }
 
   const stillMissing = missing();

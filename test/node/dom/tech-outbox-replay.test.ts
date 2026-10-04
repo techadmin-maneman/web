@@ -88,7 +88,7 @@ const answerPhotos =
 describe("sending what the phone holds", () => {
   it("sends each write oldest first, with its own event ID, and lets it go once it lands", async () => {
     const start = await queue("start", "a", null);
-    const checklist = await queue("checklist", "a", { items: [] });
+    const checklist = await queue("checklist", "a", { done: [] });
     const sent = api(() => accepted);
 
     expect(await replay()).toMatchObject({ sent: 2, stopped: null });

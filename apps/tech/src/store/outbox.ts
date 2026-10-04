@@ -18,6 +18,7 @@ import {
   unreachable,
   type Angle,
   type CheckIn,
+  type EventBody,
   type EventKind,
   type JobState,
   type Phase,
@@ -114,10 +115,10 @@ export async function held(): Promise<JobAccount[]> {
  * against the one it holds; once he has checked in, the start the card said
  * then.
  */
-export async function queue(
-  kind: EventKind,
+export async function queue<K extends EventKind>(
+  kind: K,
   jobId: string,
-  body: unknown,
+  body: EventBody<K>,
   startsAt: string | null = null,
 ): Promise<Queued> {
   const already = (await events()).find(
@@ -159,7 +160,7 @@ async function startSentWith(kind: EventKind, jobId: string, startsAt: string | 
  * its place in the queue, so the steps queued behind it follow it, and it goes
  * under a new event ID, since the API recorded nothing of the refused one.
  */
-export async function correct(seq: number, body: unknown): Promise<void> {
+export async function correct(seq: number, body: EventBody<EventKind>): Promise<void> {
   const refused = await get<Queued>("outbox", seq);
   if (refused === null) return;
   await put("outbox", { ...refused, id: uuidv7(), body, state: "waiting", note: null, fields: [], request_id: null });
