@@ -114,9 +114,6 @@ const Invoice = z.object({
   reference_number: z.string().nullish(),
 });
 
-const Recorded = z.object({ payment: z.object({ payment_id: z.string() }) });
-const Refunded = z.object({ payment_refund: z.object({ payment_refund_id: z.string() }) });
-
 /** The payments a search found. Books may match a reference loosely, so each is compared again here. */
 const PaymentsFound = z.object({
   customerpayments: z.array(z.object({ payment_id: z.string(), reference_number: z.string().nullish() })).default([]),
@@ -156,15 +153,11 @@ async function orNull<T>(work: () => Promise<T>): Promise<T | null> {
 
 type Documents = Pick<BooksProvider, "invoice" | "issueInvoice" | "invoicePdf">;
 
-function documentCalls({ request, org }: BooksApi): Documents {
+function documentCalls({ request, org, read }: BooksApi): Documents {
   const path = (id: string, extra = "") => `/books/v3/invoices/${encodeURIComponent(id)}?${org}${extra}`;
 
   return {
-    invoice: (id) =>
-      orNull(async () => {
-        const answer = await (await request("invoice", path(id))).json<{ invoice?: unknown }>();
-        return booksInvoiceOf(Invoice.parse(answer.invoice));
-      }),
+    invoice: (id) => orNull(async () => booksInvoiceOf(await read("invoice", path(id), Invoice, ["invoice"]))),
 
     async issueInvoice(id) {
       await request("issue_invoice", `/books/v3/invoices/${encodeURIComponent(id)}/status/sent?${org}`, {
@@ -187,20 +180,19 @@ type Payments = Pick<
   "findPayment" | "recordPayment" | "receiptPdf" | "applyToInvoice" | "findRefund" | "recordRefund"
 >;
 
-function paymentCalls({ request, org }: BooksApi): Payments {
+function paymentCalls({ request, org, read }: BooksApi): Payments {
   const payments = (id?: string, tail = "") =>
     `/books/v3/customerpayments${id === undefined ? "" : `/${encodeURIComponent(id)}`}${tail}?${org}`;
 
   return {
     async findPayment(customerId, reference) {
       const query = `&customer_id=${encodeURIComponent(customerId)}&reference_number=${encodeURIComponent(reference)}`;
-      const response = await request("find_payment", `${payments()}${query}`);
-      const found = PaymentsFound.parse(await response.json()).customerpayments;
+      const found = (await read("find_payment", `${payments()}${query}`, PaymentsFound, [])).customerpayments;
       return found.find((each) => each.reference_number === reference)?.payment_id ?? null;
     },
 
-    async recordPayment(payment) {
-      const response = await request("record_payment", payments(), {
+    recordPayment: (payment) =>
+      read("record_payment", payments(), z.string(), ["payment", "payment_id"], {
         method: "POST",
         body: {
           customer_id: payment.customerId,
@@ -210,9 +202,7 @@ function paymentCalls({ request, org }: BooksApi): Payments {
           reference_number: payment.reference,
           description: payment.description,
         },
-      });
-      return Recorded.parse(await response.json()).payment.payment_id;
-    },
+      }),
 
     receiptPdf: (paymentId) =>
       orNull(async () => {
@@ -229,13 +219,12 @@ function paymentCalls({ request, org }: BooksApi): Payments {
     },
 
     async findRefund(paymentId, reference) {
-      const response = await request("find_refund", payments(paymentId, "/refunds"));
-      const found = RefundsFound.parse(await response.json()).payment_refunds;
+      const found = (await read("find_refund", payments(paymentId, "/refunds"), RefundsFound, [])).payment_refunds;
       return found.find((each) => each.reference_number === reference)?.payment_refund_id ?? null;
     },
 
-    async recordRefund(paymentId, refund) {
-      const response = await request("record_refund", payments(paymentId, "/refunds"), {
+    recordRefund: (paymentId, refund) =>
+      read("record_refund", payments(paymentId, "/refunds"), z.string(), ["payment_refund", "payment_refund_id"], {
         method: "POST",
         body: {
           date: refund.date,
@@ -245,9 +234,7 @@ function paymentCalls({ request, org }: BooksApi): Payments {
           reference_number: refund.reference,
           description: refund.description,
         },
-      });
-      return Refunded.parse(await response.json()).payment_refund.payment_refund_id;
-    },
+      }),
   };
 }
 

@@ -924,7 +924,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1549,7 +1549,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Referral grants held for review, oldest first */
+        /** Referral grants held for review whose friend is in the caller's cities, oldest first */
         get: {
             parameters: {
                 query?: never;
@@ -1652,7 +1652,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no held grant by that ID */
+                /** @description not_found: no held grant by that ID in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1782,7 +1782,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Who is waiting, by pincode, the longest wait first */
+        /** Who is waiting in the caller's cities, by pincode, the longest wait first */
         get: {
             parameters: {
                 query?: never;
@@ -1866,6 +1866,15 @@ export interface paths {
                         };
                     };
                 };
+                /** @description access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description not_found: we have no such pincode */
                 404: {
                     headers: {
@@ -1890,7 +1899,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The referrers' figures, the busiest first, 50 at a time */
+        /** The figures of the referrers in the caller's cities, the busiest first, 50 at a time */
         get: {
             parameters: {
                 query?: {
@@ -6079,6 +6088,8 @@ export interface components {
             history: components["schemas"]["ClientRecordHistory"];
             /** @description The invite they came with, or ops attached; null for none. */
             invite: components["schemas"]["ClientInvite"] | null;
+            /** @description Bookings that refunded their payment by themselves; the latest refund first. */
+            auto_refunds: components["schemas"]["AutoRefund"][];
         };
         ClientAddress: {
             line1: string;
@@ -6407,6 +6418,28 @@ export interface components {
                 /** @description Null once either side is erased. */
                 reason: string | null;
             } | null;
+        };
+        AutoRefund: {
+            /** Format: uuid */
+            hold_id: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description Its service's name as it is now. */
+            service: string;
+            /**
+             * Format: date
+             * @description India's day the visit was to be on.
+             */
+            date: string;
+            /** @description In paise, GST included: what Razorpay took, all of which went back; null where it is not on record. */
+            amount: number | null;
+            /**
+             * @description lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun.
+             * @enum {string}
+             */
+            reason: "lapsed" | "not_movable";
+            /** Format: date-time */
+            refunded_at: string;
         };
         ClientPhotos: {
             visits: {

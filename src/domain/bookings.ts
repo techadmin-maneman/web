@@ -4,7 +4,7 @@
 // one batch; the request that confirms a free visit books it the same way. A hold the client has paid for, or booked
 // free, keeps its time until it is booked or refunded: one whose request failed part-way is booked by the cron within
 // the half hour. A payment is in time if Razorpay made it before the hold ran out, give or take the grace; one made
-// later is refunded in full.
+// later is refunded in full, and the client told.
 //
 // A hold that moves a visit (docs/decisions/0046-moving-and-cancelling.md) either moves it in place, once its late fee
 // is paid or at once when free, or books a new visit and cancels the old one, whose payment is kept. A visit the
@@ -19,6 +19,7 @@ import type { CallBudget } from "../lib/call-budget.ts";
 import { createLogger, failureReason, type Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
+import { refundedMessage, type AutoRefundReason } from "./auto-refunds.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "./credits.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
 import { graceEndOf, heldVisitTimes, liveVisitOf, retakeSlot } from "./scheduling.ts";
@@ -291,7 +292,7 @@ export async function confirmBooking(
   }
   const stillLetGo = hold.state === "released" && !(await retakenInTime(db, hold, payment, now));
   if (stillLetGo || (payment !== null && paidTooLate(hold, payment))) {
-    await giveBack(db, payments, hold.id, now, "the hold had lapsed");
+    await giveBackUnkept(db, payments, hold, now, "lapsed", options);
     return payment === null ? "lapsed" : "refunded";
   }
 
@@ -303,7 +304,7 @@ export async function confirmBooking(
       return "refunded";
     }
     if (leased.move_kind === "move") return await moveInPlace(db, payments, leased, now, options);
-    if (await replacesBegunVisit(db, leased)) return await moveRefused(db, payments, leased, now);
+    if (await replacesBegunVisit(db, leased)) return await moveRefused(db, payments, leased, now, options);
     return await bookNewVisit(db, leased, now, options);
   } catch (error) {
     await releaseLease(db, hold.id);
@@ -488,7 +489,7 @@ async function moveInPlace(
     )
     .bind(hold.moves_appointment_id)
     .first<{ id: string; window_start: string }>();
-  if (visit === null) return moveRefused(db, payments, hold, now);
+  if (visit === null) return moveRefused(db, payments, hold, now, options);
   const { start, end } = await heldVisitTimes(db, hold);
 
   const at = now.toISOString();
@@ -548,8 +549,14 @@ async function replacesBegunVisit(db: D1Database, hold: HoldRow): Promise<boolea
 }
 
 /** Lets a move's hold go, and gives its payment back, since the visit it moves can no longer be changed. */
-async function moveRefused(db: D1Database, payments: PaymentsProvider, hold: HoldRow, now: Date): Promise<Confirmed> {
-  await giveBack(db, payments, hold.id, now, "the visit could no longer be moved");
+async function moveRefused(
+  db: D1Database,
+  payments: PaymentsProvider,
+  hold: HoldRow,
+  now: Date,
+  options: ConfirmOptions,
+): Promise<Confirmed> {
+  await giveBackUnkept(db, payments, hold, now, "not_movable", options);
   return hold.amount > 0 ? "refunded" : "lapsed";
 }
 
@@ -639,7 +646,8 @@ export class RefundUnanswered extends Error {
 /**
  * Lets a hold go, and refunds in full, once, any payment taken for it. Says what it did with the money; throws
  * RefundRefused, or RefundUnanswered, and keeps the hold, when Razorpay will not refund it or will not say whether it
- * did. `alongside` is written in the same batch as the hold is let go, such as ops' audit entry.
+ * did. `alongside` is written in the same batch as the hold is let go, such as ops' audit entry; `ifRefunded` is
+ * written in that batch only when this call made the refund.
  */
 export async function giveBack(
   db: D1Database,
@@ -648,6 +656,7 @@ export async function giveBack(
   now: Date,
   reason: string,
   alongside: readonly D1PreparedStatement[] = [],
+  ifRefunded: readonly D1PreparedStatement[] = [],
 ): Promise<GivenBack> {
   const hold = await holdOf(db, holdId);
   if (hold === null) throw new Error("no such hold to give back");
@@ -663,8 +672,44 @@ export async function giveBack(
       .prepare("UPDATE slot_holds SET state = 'released', updated_at = ?1 WHERE id = ?2 AND state = 'held'")
       .bind(now.toISOString(), hold.id),
     ...alongside,
+    ...(given.kind === "refunded" ? ifRefunded : []),
   ]);
   return given;
+}
+
+/** Each reason as Razorpay's notes on the refund give it. */
+const AUTO_REFUND_NOTES: Readonly<Record<AutoRefundReason, string>> = {
+  lapsed: "the hold had lapsed",
+  not_movable: "the visit could no longer be moved",
+};
+
+/**
+ * Lets go a hold the booking could not keep: one paid after it lapsed, or a move whose visit has begun. A payment
+ * refunded here is marked as refunded by the booking itself, and the client is told, both in the batch that lets the
+ * hold go.
+ */
+async function giveBackUnkept(
+  db: D1Database,
+  payments: PaymentsProvider,
+  hold: HoldRow,
+  now: Date,
+  reason: AutoRefundReason,
+  options: ConfirmOptions,
+): Promise<GivenBack> {
+  const message = refundedMessage(db, { personId: hold.person_id, holdId: hold.id, now });
+  const marked = db.prepare("UPDATE slot_holds SET auto_refund_reason = ?2 WHERE id = ?1").bind(hold.id, reason);
+  const given = await giveBack(db, payments, hold.id, now, AUTO_REFUND_NOTES[reason], [], [marked, message.statement]);
+  if (given.kind === "refunded") await tellOfRefund(message.id, options);
+  return given;
+}
+
+/** Queues the client's message of a refund. One the queue refuses is in the outbox, and the sweeper sends it. */
+async function tellOfRefund(messageId: string, options: ConfirmOptions): Promise<void> {
+  try {
+    await options.notify?.(messageId);
+  } catch (error) {
+    options.log?.warn("refund_message_not_queued", { message_id: messageId, error });
+  }
 }
 
 /** What letting go a hold with no captured payment did with the money: nothing, or it was refunded before, by ops. */

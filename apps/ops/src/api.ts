@@ -28,6 +28,8 @@ export type ClientVisit = ClientRecord["visits"]["past"][number];
 export type ClientPayment = ClientRecord["payments"][number];
 export type ClientPaymentLink = ClientRecord["payment_links"][number];
 export type ClientInvoice = ClientRecord["invoices"][number];
+/** A booking that refunded its payment by itself: paid after its hold lapsed, or a move whose visit had begun. */
+export type AutoRefund = ClientRecord["auto_refunds"][number];
 /** A visit ops book for a client: the windows free for it, what is sent, and what came of it. */
 export type VisitAvailability = Body<paths["/api/visits/availability"]["get"]>;
 export type AvailabilityQuery = NonNullable<paths["/api/visits/availability"]["get"]["parameters"]["query"]>;

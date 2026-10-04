@@ -1,8 +1,4 @@
-// The rules ops set for themselves: the check-in radius, the no-show wait,
-// when a job's address unlocks, how long a task may wait, the replacement
-// cycle per base (docs/decisions/0061-ops-editable-inputs.md), the days the
-// next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md), and
-// every other policy the code held (docs/decisions/0088-every-policy-in-the-console.md).
+// Settings › Rules: every rule ops set for themselves, a section per subject, each section with one Save.
 //
 // A rule is numbers or choices. Every number says its unit and its bounds
 // before anything is typed, each box its own where a rule's figures differ, and
@@ -13,32 +9,47 @@
 // take, each in the console's words.
 //
 // Nothing is sent until ops have seen the change: each figure that moves, the
-// old beside the new, and only the second press sends it, as a price is set
-// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+// old beside the new, and only the second press sends it, as a price is set.
 
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type ChoiceRule, type NumberRule, type OpsSetting, type SettingValue } from "../api.ts";
+import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { useTargetRow } from "../lib/target.ts";
+import type { SectionPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { CHARGES_A_LATE_FEE, CONSOLE_GROUP, sectionsOf, type RuleGroupId, type RuleSection } from "./rule-groups.ts";
 import styles from "./settings.module.css";
 
 const copy = settings.rules;
 
-/**
- * How a rule's form is going. While ops check a change, `value` is what would be sent: the figures typed, or null
- * to go back to the standard figure.
- */
+/** Where the late fees are priced. */
+const PRICES_PATH: SectionPath = "/prices";
+
+/** Each section's heading, from content.ts; typed here, so a group left unnamed fails the build. */
+const GROUP_NAMES: Readonly<Record<RuleGroupId, string>> = copy.groups;
+
+/** One rule a Save would send: the figures typed, or null to put its standard figure back. */
+interface Change {
+  readonly rule: OpsSetting;
+  readonly value: SettingValue | null;
+}
+
+/** How a section's form is going. A refusal keeps the rule it came from, so it shows under that rule. */
 type Saving =
   | { readonly step: "editing" | "saved" }
-  | { readonly step: "checking" | "saving"; readonly value: SettingValue | null }
-  | { readonly step: "failed"; readonly code: string; readonly fields: readonly string[] };
+  | { readonly step: "checking" | "saving"; readonly changes: readonly Change[] }
+  | { readonly step: "failed"; readonly rule: string; readonly code: string; readonly fields: readonly string[] };
 
 /** A rule's draft: the text in each box, or the choice, keyed as the value is. One number uses the rule's own name. */
 type Draft = Readonly<Record<string, string>>;
+
+/** Each rule's draft in a section, by the rule's name. */
+type Drafts = Readonly<Record<string, Draft>>;
 
 function keyLabel(rule: OpsSetting, key: string): string {
   if (key === "default") return copy.defaultKey;
@@ -69,6 +80,8 @@ const draftOf = (rule: OpsSetting): Draft =>
   typeof rule.value === "number"
     ? { [rule.name]: String(rule.value) }
     : Object.fromEntries(Object.entries(rule.value).map(([key, each]) => [key, String(each)]));
+
+const draftIn = (drafts: Drafts, rule: OpsSetting): Draft => drafts[rule.name] ?? draftOf(rule);
 
 const whole = (text: string, min: number, max: number): boolean => {
   const value = Number(text);
@@ -107,6 +120,9 @@ function numberWords(rule: NumberRule, key: string, figure: number | undefined, 
   return side === "was" ? copy.confirm.noFigure : copy.confirm.otherBases;
 }
 
+/** A box as the check names it: a keyed rule's box with its rule, since two rules may both have a First fit box. */
+const checkLabel = (rule: OpsSetting, key: string): string => copy.confirm.keyed(rule.title, keyLabel(rule, key));
+
 /** Each figure `next` would change, in the order the boxes are shown. */
 function movedBy(rule: OpsSetting, next: SettingValue): Moved[] {
   if (rule.kind === "choice") {
@@ -114,8 +130,8 @@ function movedBy(rule: OpsSetting, next: SettingValue): Moved[] {
     return rule.keys
       .filter((key) => rule.value[key] !== now[key])
       .map((key) => ({
-        key,
-        label: keyLabel(rule, key),
+        key: `${rule.name}.${key}`,
+        label: checkLabel(rule, key),
         was: choiceLabel(rule, rule.value[key] ?? ""),
         now: choiceLabel(rule, now[key] ?? ""),
       }));
@@ -133,11 +149,19 @@ function movedBy(rule: OpsSetting, next: SettingValue): Moved[] {
   return keys
     .filter((key) => current[key] !== after[key])
     .map((key) => ({
-      key,
-      label: keyLabel(rule, key),
+      key: `${rule.name}.${key}`,
+      label: checkLabel(rule, key),
       was: numberWords(rule, key, current[key], "was"),
       now: numberWords(rule, key, after[key], "now"),
     }));
+}
+
+/** The rules whose boxes hold a figure that moves; none while any box holds what its rule cannot take. */
+function changesIn(rules: readonly OpsSetting[], drafts: Drafts): Change[] {
+  if (rules.some((rule) => !isComplete(rule, draftIn(drafts, rule)))) return [];
+  return rules
+    .map((rule) => ({ rule, value: valueOf(rule, draftIn(drafts, rule)) }))
+    .filter((change) => movedBy(change.rule, change.value).length > 0);
 }
 
 function Field({
@@ -284,17 +308,16 @@ function setLine(rule: OpsSetting): string {
   return copy.setBy(rule.set_by, longDate(rule.set_at));
 }
 
-/** The old figure beside the new, for every one the change moves, before anything is sent. */
+/** The old figure beside the new, for every one the section's change moves, before anything is sent. */
 function Check({
-  rule,
-  value,
+  id,
+  changes,
   busy,
   onSend,
   onBack,
 }: {
-  rule: OpsSetting;
-  /** What would be sent: the figures typed, or null to go back to the standard figure. */
-  value: SettingValue | null;
+  id: string;
+  changes: readonly Change[];
   busy: boolean;
   onSend: () => void;
   onBack: () => void;
@@ -303,14 +326,19 @@ function Check({
   useEffect(() => {
     panel.current?.focus();
   }, []);
-  const moved = movedBy(rule, value ?? rule.default);
-  const title = `${rule.name}-check`;
+  const title = `${id}-check`;
+  const toStandard = changes.filter((change) => change.value === null);
+  const moved = changes.flatMap(({ rule, value }) => movedBy(rule, value ?? rule.default));
   return (
     <div className={styles.check} ref={panel} tabIndex={-1} role="group" aria-labelledby={title}>
       <p className={styles.checkTitle} id={title}>
         {copy.confirm.title}
       </p>
-      {value === null && <p className={styles.checkLine}>{copy.confirm.standard}</p>}
+      {toStandard.map(({ rule }) => (
+        <p key={rule.name} className={styles.checkLine}>
+          {copy.confirm.standard(rule.title)}
+        </p>
+      ))}
       <ul className={styles.checkList}>
         {moved.map((each) => (
           <li key={each.key}>{copy.confirm.change(each.label, each.was, each.now)}</li>
@@ -375,84 +403,152 @@ function Fields({
   );
 }
 
-interface RuleProps {
-  readonly rule: OpsSetting;
-  /** Whether the person's access lets them change it; if not, its boxes only show the figures. */
+/** What the person's access lets them do here: change the rules, and open Prices, where the late fees are set. */
+interface Allowed {
   readonly mayChange: boolean;
-  readonly onSaved: (saved: OpsSetting) => void;
+  readonly mayOpenPrices: boolean;
 }
 
-function Rule({ rule, mayChange, onSaved }: RuleProps) {
-  const [draft, setDraft] = useState<Draft>(() => draftOf(rule));
-  const [saving, setSaving] = useState<Saving>({ step: "editing" });
+interface RuleProps {
+  readonly rule: OpsSetting;
+  readonly draft: Draft;
+  readonly allowed: Allowed;
+  /** While the section's change is checked or sent, every box holds still. */
+  readonly held: boolean;
+  readonly refusal: string | undefined;
+  readonly onEdit: (key: string, text: string) => void;
+  readonly onStandard: () => void;
+}
 
-  // A figure that would not move is not a change: the log never records one that was not (ADR 0061).
-  const changed = isComplete(rule, draft) && movedBy(rule, valueOf(rule, draft)).length > 0;
-  const checking = saving.step === "checking" || saving.step === "saving";
-  const busy = saving.step === "saving";
-  const edit = (key: string, text: string) => {
-    setDraft({ ...draft, [key]: text });
-    setSaving({ step: "editing" });
-  };
-
-  const send = async (value: SettingValue | null) => {
-    setSaving({ step: "saving", value });
-    const answer = await api.setSetting(rule.name, value);
-    if (!answer.ok) {
-      setSaving({ step: "failed", code: answer.code, fields: answer.fields });
-      return;
-    }
-    setDraft(draftOf(answer.body));
-    setSaving({ step: "saved" });
-    onSaved(answer.body);
-  };
-
+function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleProps) {
+  const pricedInPrices = allowed.mayOpenPrices && CHARGES_A_LATE_FEE.includes(rule.name);
+  const mayGoBack = allowed.mayChange && !held && rule.set_by !== null;
   return (
-    <li className={styles.rule}>
-      <fieldset className={styles.group} disabled={checking || !mayChange}>
+    <li className={styles.rule} id={rule.name} tabIndex={-1}>
+      <fieldset className={styles.group} disabled={held || !allowed.mayChange}>
         <legend className={styles.ruleTitle}>{rule.title}</legend>
         <p className={styles.note}>{rule.note}</p>
-        <Fields rule={rule} draft={draft} onChange={edit} />
-        {mayChange && rule.kind === "number" && rule.keys === "open" && <AddKey rule={rule} onAdd={edit} />}
+        {pricedInPrices && (
+          <p className={styles.note}>
+            <OpsLink className={styles.link} to={PRICES_PATH}>
+              {copy.lateFees}
+            </OpsLink>
+          </p>
+        )}
+        <Fields rule={rule} draft={draft} onChange={onEdit} />
+        {allowed.mayChange && rule.kind === "number" && rule.keys === "open" && <AddKey rule={rule} onAdd={onEdit} />}
       </fieldset>
 
       <p className={styles.set}>{setLine(rule)}</p>
+      {mayGoBack && (
+        <div className={styles.actions}>
+          <Button variant="outline" size="small" className={styles.quiet} onClick={onStandard}>
+            {copy.reset}
+          </Button>
+        </div>
+      )}
+      {refusal !== undefined && (
+        <p className={styles.error} role="alert">
+          {refusal}
+        </p>
+      )}
+    </li>
+  );
+}
+
+interface GroupSectionProps {
+  readonly section: RuleSection<OpsSetting>;
+  readonly allowed: Allowed;
+  readonly onSaved: (saved: OpsSetting) => void;
+  /** What the section shows above its rules. */
+  readonly children?: ReactNode;
+}
+
+/** One subject's rules, under its own heading and anchor, sent together by one Save. */
+function GroupSection({ section, allowed, onSaved, children }: GroupSectionProps) {
+  const { id, rules } = section;
+  const [drafts, setDrafts] = useState<Drafts>(() =>
+    Object.fromEntries(rules.map((rule) => [rule.name, draftOf(rule)])),
+  );
+  const [saving, setSaving] = useState<Saving>({ step: "editing" });
+
+  // A figure that would not move is not a change: the log never records one that was not.
+  const changes = changesIn(rules, drafts);
+  const checking = saving.step === "checking" || saving.step === "saving";
+
+  const edit = (rule: OpsSetting) => (key: string, text: string) => {
+    setDrafts({ ...drafts, [rule.name]: { ...draftIn(drafts, rule), [key]: text } });
+    setSaving({ step: "editing" });
+  };
+
+  const refusalFor = (rule: OpsSetting): string | undefined => {
+    if (saving.step !== "failed" || saving.rule !== rule.name) return undefined;
+    return refusalOf(rule, saving.code, saving.fields);
+  };
+
+  // One rule at a time, in the order shown: a refusal stops the rest, and says which rule it was.
+  const send = async (sending: readonly Change[]) => {
+    setSaving({ step: "saving", changes: sending });
+    for (const { rule, value } of sending) {
+      const answer = await api.setSetting(rule.name, value);
+      if (!answer.ok) {
+        setSaving({ step: "failed", rule: rule.name, code: answer.code, fields: answer.fields });
+        return;
+      }
+      setDrafts((already) => ({ ...already, [rule.name]: draftOf(answer.body) }));
+      onSaved(answer.body);
+    }
+    setSaving({ step: "saved" });
+  };
+
+  const titleId = `${id}-title`;
+  return (
+    <section className={styles.ruleGroup} id={id} tabIndex={-1} aria-labelledby={titleId}>
+      <h3 className={styles.ruleGroupTitle} id={titleId}>
+        {GROUP_NAMES[id]}
+      </h3>
+      {children}
+      <ul className={styles.rules}>
+        {rules.map((rule) => (
+          <Rule
+            key={rule.name}
+            rule={rule}
+            draft={draftIn(drafts, rule)}
+            allowed={allowed}
+            held={checking}
+            refusal={refusalFor(rule)}
+            onEdit={edit(rule)}
+            onStandard={() => {
+              setSaving({ step: "checking", changes: [{ rule, value: null }] });
+            }}
+          />
+        ))}
+      </ul>
+
       {checking && (
         <Check
-          rule={rule}
-          value={saving.value}
-          busy={busy}
-          onSend={() => void send(saving.value)}
+          id={id}
+          changes={saving.changes}
+          busy={saving.step === "saving"}
+          onSend={() => void send(saving.changes)}
           onBack={() => {
             setSaving({ step: "editing" });
           }}
         />
       )}
-      {!checking && mayChange && (
+      {!checking && allowed.mayChange && (
         <div className={styles.actions}>
           <Button
             variant="primary"
             size="small"
             className={styles.save}
-            disabled={!changed}
+            disabled={changes.length === 0}
             onClick={() => {
-              setSaving({ step: "checking", value: valueOf(rule, draft) });
+              setSaving({ step: "checking", changes });
             }}
           >
             {copy.save}
           </Button>
-          {rule.set_by !== null && (
-            <Button
-              variant="outline"
-              size="small"
-              className={styles.quiet}
-              onClick={() => {
-                setSaving({ step: "checking", value: null });
-              }}
-            >
-              {copy.reset}
-            </Button>
-          )}
         </div>
       )}
       {saving.step === "saved" && (
@@ -460,12 +556,37 @@ function Rule({ rule, mayChange, onSaved }: RuleProps) {
           {copy.saved}
         </p>
       )}
-      {saving.step === "failed" && (
-        <p className={styles.error} role="alert">
-          {refusalOf(rule, saving.code, saving.fields)}
-        </p>
-      )}
-    </li>
+    </section>
+  );
+}
+
+/** What photographs and referral cards hold in R2, and the database, once read; nothing while they are not. */
+function Storage() {
+  const [loaded] = useLoad(api.storage);
+  if (loaded.state !== "loaded") return null;
+  const storage = loaded.value;
+  return (
+    <div className={styles.storage}>
+      <p>{settings.storage(storage.held_bytes, storage.share_bytes)}</p>
+      <p>{settings.database(storage.database_bytes, storage.database_limit_bytes)}</p>
+    </div>
+  );
+}
+
+/** A link to each section, so a rule is one press away rather than a long scroll. */
+function JumpList({ sections }: { sections: readonly RuleSection<OpsSetting>[] }) {
+  return (
+    <nav className={styles.jump} aria-label={copy.jump}>
+      <ul className={styles.jumpList}>
+        {sections.map((section) => (
+          <li key={section.id}>
+            <a className={styles.link} href={`#${section.id}`}>
+              {GROUP_NAMES[section.id]}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
@@ -473,10 +594,22 @@ export function Rules() {
   const [loaded, retry] = useLoad(api.settings);
   /** What each rule reads as now, so "Set by" follows a save without reading the whole list again. */
   const [saved, setSaved] = useState<Readonly<Record<string, OpsSetting>>>({});
-  const mayChange = useAccess().mayCall("POST /api/settings/{name}");
+  const access = useAccess();
+  const allowed: Allowed = {
+    mayChange: access.mayCall("POST /api/settings/{name}"),
+    mayOpenPrices: access.mayCall("GET /api/services"),
+  };
+  // A link to a rule or a section, as Prices' to the late-fee rule, lands on it once the rules are on the page.
+  useTargetRow(loaded.state === "loaded", "start");
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
+
+  const current = loaded.value.settings.map((rule) => saved[rule.name] ?? rule);
+  const sections = sectionsOf(current);
+  const keep = (next: OpsSetting) => {
+    setSaved((already) => ({ ...already, [next.name]: next }));
+  };
 
   return (
     <section className={styles.panel} aria-labelledby="rules">
@@ -485,21 +618,12 @@ export function Rules() {
           {copy.title}
         </h2>
       </div>
-      <ul className={styles.rules}>
-        {loaded.value.settings.map((rule) => {
-          const current = saved[rule.name] ?? rule;
-          return (
-            <Rule
-              key={rule.name}
-              rule={current}
-              mayChange={mayChange}
-              onSaved={(next) => {
-                setSaved((already) => ({ ...already, [next.name]: next }));
-              }}
-            />
-          );
-        })}
-      </ul>
+      <JumpList sections={sections} />
+      {sections.map((section) => (
+        <GroupSection key={section.id} section={section} allowed={allowed} onSaved={keep}>
+          {section.id === CONSOLE_GROUP && <Storage />}
+        </GroupSection>
+      ))}
     </section>
   );
 }

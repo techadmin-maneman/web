@@ -211,13 +211,31 @@ describe("what a visit message says", () => {
     });
   });
 
-  it("sends nothing without the client's consent to WhatsApp about visits, or once it is switched off", async () => {
+  // MON-14: a receipt or a refund is transactional, so it goes whatever the client's consent to visit messages.
+  it("sends a receipt without the client's consent to WhatsApp about visits, and nothing else", async () => {
     await visit();
     await paid();
-    expect(await text("payment_receipt")).toEqual({ skip: "no consent to WhatsApp about visits" });
+    expect(await text("payment_receipt")).toContain("Paid Rs. 2,000, reference MM-2026-0841.");
+    expect(await text("visit_reminder")).toEqual({ skip: "no consent to WhatsApp about visits" });
     await consent(true, "2026-09-20T06:30:00.000Z");
     await consent(false);
-    expect(await text("payment_receipt")).toEqual({ skip: "no consent to WhatsApp about visits" });
+    expect(await text("payment_receipt")).toContain("Paid Rs. 2,000, reference MM-2026-0841.");
+    expect(await text("reschedule_confirmation")).toEqual({ skip: "no consent to WhatsApp about visits" });
+  });
+
+  it("tells of a cancel's refund without that consent, but not of a cancel with nothing to give back", async () => {
+    await visit("service", THURSDAY_NOON, "cancelled");
+    await paid();
+    await env.DB.prepare(
+      `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, payment_id,
+         created_at)
+       VALUES ('c1', ?1, ?2, 'cancelled', 'free', ?3, 200000, ?4, ?5)`,
+    )
+      .bind(VISIT, PERSON, THURSDAY_NOON, PAYMENT, NOW.toISOString())
+      .run();
+    expect(await text("cancel_confirmation")).toContain("Rs. 2,000 is on its way back to your UPI");
+    await env.DB.prepare("UPDATE visit_changes SET refund_amount = 0").run();
+    expect(await text("cancel_confirmation")).toEqual({ skip: "no consent to WhatsApp about visits" });
   });
 
   it("sends no reminder or move for a visit no longer booked", async () => {

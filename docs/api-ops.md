@@ -555,7 +555,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or one who has been erased
+**404**: not_found: no such client in the caller's cities, or one who has been erased
 
 ```json
 {
@@ -1042,7 +1042,7 @@ Request body:
 
 ### GET /api/referrals/held
 
-Referral grants held for review, oldest first
+Referral grants held for review whose friend is in the caller's cities, oldest first
 
 **200**: Held grants
 
@@ -1182,7 +1182,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no held grant by that ID
+**404**: not_found: no held grant by that ID in the caller's cities
 
 ```json
 {
@@ -1293,7 +1293,7 @@ Request body:
 
 ### GET /api/waitlist
 
-Who is waiting, by pincode, the longest wait first
+Who is waiting in the caller's cities, by pincode, the longest wait first
 
 **200**: Areas with someone waiting
 
@@ -1434,6 +1434,14 @@ Request body:
 }
 ```
 
+**403**: access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **404**: not_found: we have no such pincode
 
 ```json
@@ -1444,7 +1452,7 @@ Request body:
 
 ### GET /api/referrers
 
-The referrers' figures, the busiest first, 50 at a time
+The figures of the referrers in the caller's cities, the busiest first, 50 at a time
 
 **200**: Referrers
 
@@ -4584,6 +4592,13 @@ Request body:
         }
       ],
       "description": "The invite they came with, or ops attached; null for none."
+    },
+    "auto_refunds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/AutoRefund"
+      },
+      "description": "Bookings that refunded their payment by themselves; the latest refund first."
     }
   },
   "required": [
@@ -4599,7 +4614,8 @@ Request body:
     "payment_links",
     "invoices",
     "history",
-    "invite"
+    "invite",
+    "auto_refunds"
   ],
   "additionalProperties": false
 }
@@ -5978,6 +5994,71 @@ Request body:
     "grant",
     "since",
     "attached"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AutoRefund
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "service": {
+      "type": "string",
+      "description": "Its service's name as it is now."
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's day the visit was to be on."
+    },
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, GST included: what Razorpay took, all of which went back; null where it is not on record."
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "lapsed",
+        "not_movable"
+      ],
+      "description": "lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun."
+    },
+    "refunded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "hold_id",
+    "type",
+    "service",
+    "date",
+    "amount",
+    "reason",
+    "refunded_at"
   ],
   "additionalProperties": false
 }

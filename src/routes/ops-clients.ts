@@ -3,7 +3,8 @@
 //   POST /api/clients/search               find a client by their whole mobile number
 //   POST /api/clients/find                 find clients by part of a name or of a number
 //   GET  /api/clients/:id                  who they are, their address, their visits, their payments, payment links
-//                                          and invoices, their history, and the invite they came with
+//                                          and invoices, their history, the invite they came with, and any
+//                                          booking that refunded its payment by itself
 //   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
 //   POST /api/clients/:id/photos/view      open them: one audit entry, and who opened them before
 //   GET  /api/clients/:id/photos/:photoId  one photograph, served within a logged opening
@@ -34,6 +35,7 @@ import {
   ownPhotoKey,
   visitOutcomes,
 } from "../domain/client-visits.ts";
+import { AUTO_REFUND_REASONS, autoRefundsOf, type AutoRefund } from "../domain/auto-refunds.ts";
 import { INVOICE_STATES, LINK_STATES, paymentLinksOf, visitInvoicesOf } from "../domain/client-billing.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { clientVisitCodes } from "../domain/discount-code-uses.ts";
@@ -164,6 +166,34 @@ const OpsHistorySchema = z
   .strict()
   .openapi("ClientRecordHistory");
 
+/** A booking that refunded its payment by itself, as the client's Visits tab says it, and the client was told. */
+const AutoRefundSchema = z
+  .object({
+    hold_id: z.uuid(),
+    type: z.enum(VISIT_TYPES),
+    service: z.string().openapi({ description: "Its service's name as it is now." }),
+    date: z.iso.date().openapi({ description: "India's day the visit was to be on." }),
+    amount: z.union([z.number().int(), z.null()]).openapi({
+      description:
+        "In paise, GST included: what Razorpay took, all of which went back; null where it is not on record.",
+    }),
+    reason: z.enum(AUTO_REFUND_REASONS).openapi({
+      description: "lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun.",
+    }),
+    refunded_at: z.iso.datetime(),
+  })
+  .strict()
+  .openapi("AutoRefund");
+
+const autoRefundOf = (refund: AutoRefund) => ({
+  hold_id: refund.holdId,
+  type: refund.type,
+  service: refund.serviceName,
+  date: refund.date,
+  amount: refund.amount,
+  reason: refund.reason,
+  refunded_at: refund.refundedAt,
+});
 const ClientPaymentLinkSchema = z
   .object({
     id: z.uuid(),
@@ -226,6 +256,9 @@ const ClientRecordSchema = z
     invite: z
       .union([ClientInviteSchema, z.null()])
       .openapi({ description: "The invite they came with, or ops attached; null for none." }),
+    auto_refunds: z
+      .array(AutoRefundSchema)
+      .openapi({ description: "Bookings that refunded their payment by themselves; the latest refund first." }),
   })
   .strict()
   .openapi("ClientRecord");
@@ -528,19 +561,21 @@ export function registerOpsClients(app: App): void {
     if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const now = c.var.deps.now();
-    const [address, credits, visits, fitted, payments, links, invoices, history, proposal, invite] = await Promise.all([
-      currentAddress(db, id),
-      creditBalance(db, id, now),
-      listVisits(db, id, now),
-      isFitted(db, id),
-      paymentEntries(db, id, now),
-      paymentLinksOf(db, id),
-      visitInvoicesOf(db, id),
-      clientHistory(db, id),
-      // A Phase 1 booking still waiting to be booked makes the person a lead, as it does on /api/me.
-      latestProposal(db, id),
-      clientInviteOf(db, id),
-    ]);
+    const [address, credits, visits, fitted, payments, links, invoices, history, proposal, invite, refunded] =
+      await Promise.all([
+        currentAddress(db, id),
+        creditBalance(db, id, now),
+        listVisits(db, id, now),
+        isFitted(db, id),
+        paymentEntries(db, id, now),
+        paymentLinksOf(db, id),
+        visitInvoicesOf(db, id),
+        clientHistory(db, id),
+        // A Phase 1 booking still waiting to be booked makes the person a lead, as it does on /api/me.
+        latestProposal(db, id),
+        clientInviteOf(db, id),
+        autoRefundsOf(db, id),
+      ]);
     const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
     const [outcomes, closings, codes] = await Promise.all([
       visitOutcomes(db, visitIds),
@@ -572,6 +607,7 @@ export function registerOpsClients(app: App): void {
         invoices,
         history,
         invite,
+        auto_refunds: refunded.map(autoRefundOf),
       },
       200,
     );
