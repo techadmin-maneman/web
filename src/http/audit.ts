@@ -14,8 +14,8 @@ import { errorBody } from "./errors.ts";
 /** A GET of one path by one member of staff within this many minutes of the last is the same look. */
 const REPEAT_LOOK_MINUTES = 10;
 
-/** Says only whether the Worker and its database are up. */
-const UNAUDITED_ROUTES = new Set(["/api/health"]);
+/** Say nothing of anyone: whether the Worker and its database are up, and the dispatch board's version number. */
+const UNAUDITED_ROUTES = new Set(["/api/health", "/api/dispatch/version"]);
 
 /** The routes that open one client's record or one visit, and what the `:id` in them names. */
 const SUBJECT_ROUTES: readonly { readonly prefix: string; readonly kind: string }[] = [

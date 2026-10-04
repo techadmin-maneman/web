@@ -1693,6 +1693,26 @@ The dispatch board: seven days of the visits and active technicians in the calle
 }
 ```
 
+### GET /api/dispatch/version
+
+The board's version, which the open board asks for every minute: one row, where the board itself is hundreds
+
+**200**: The version now
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchBoardVersion"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/dispatch/room
 
 Where a job in hand can go in the board's week, before ops pick a reason. Writes nothing
@@ -9242,6 +9262,10 @@ Request body:
 {
   "type": "object",
   "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another."
+    },
     "from": {
       "type": "string",
       "format": "date"
@@ -9576,6 +9600,7 @@ Request body:
     }
   },
   "required": [
+    "version",
     "from",
     "dates",
     "city",
@@ -9815,6 +9840,24 @@ Request body:
     "mobile",
     "whatsapp_visits",
     "referred_by"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DispatchBoardVersion
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another."
+    }
+  },
+  "required": [
+    "version"
   ],
   "additionalProperties": false
 }

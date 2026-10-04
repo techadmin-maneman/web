@@ -2269,6 +2269,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dispatch/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The board's version, which the open board asks for every minute: one row, where the board itself is hundreds */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The version now */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DispatchBoardVersion"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dispatch/room": {
         parameters: {
             query?: never;
@@ -7647,6 +7692,8 @@ export interface components {
             launch_on?: string;
         };
         DispatchBoard: {
+            /** @description Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another. */
+            version: number;
             /** Format: date */
             from: string;
             /** @description 7 days, the board's columns. */
@@ -7766,6 +7813,10 @@ export interface components {
             whatsapp_visits: boolean;
             /** @description Who invited him, by name; null when he came on his own. */
             referred_by: string | null;
+        };
+        DispatchBoardVersion: {
+            /** @description Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another. */
+            version: number;
         };
         /** @description Each technician's day in the caller's cities with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is. */
         DispatchRoom: {
