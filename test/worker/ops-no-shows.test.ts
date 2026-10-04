@@ -1,4 +1,4 @@
-// The no-show queue ops rule on (Ops Console, board D1; src/routes/ops-field.ts).
+// The no-show queue ops rule on (Ops Console, board D1; src/routes/ops/field.ts).
 // NOW is Monday 21 September 2026, 12 noon in India. Nothing here is a real
 // person, number or address.
 //

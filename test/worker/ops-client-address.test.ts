@@ -1,4 +1,4 @@
-// An address a client gives ops on the phone, recorded on their page (src/routes/ops-client-address.ts;
+// An address a client gives ops on the phone, recorded on their page (src/routes/ops/client-address.ts;
 // docs/decisions/0092-task-owners.md, open point 62). Saved as the client's own save in the app saves one, marked as
 // given to ops. NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 

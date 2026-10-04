@@ -1,4 +1,4 @@
-// The day's half-slot times in the console (src/routes/ops-slot-times.ts; docs/decisions/0102-window-times.md). NOW
+// The day's half-slot times in the console (src/routes/ops/slot-times.ts; docs/decisions/0102-window-times.md). NOW
 // is Monday 21 September 2026, 12 noon in India. Nothing here is a real person or number.
 
 import { env } from "cloudflare:workers";

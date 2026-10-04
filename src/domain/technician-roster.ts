@@ -1,5 +1,5 @@
 // Ops add a technician, change his name, number, zone or city, and switch him off or back on
-// (src/routes/ops-technicians.ts).
+// (src/routes/ops/technicians.ts).
 //
 // A technician added here gets an ID of our own, written as his FSM ID too (docs/schema.md). Two active technicians
 // never share a number: the number is how he signs in (src/domain/technicians.ts).

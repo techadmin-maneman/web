@@ -1,4 +1,4 @@
-// Blackout days, set by ops in Settings (src/routes/ops-blackouts.ts,
+// Blackout days, set by ops in Settings (src/routes/ops/blackouts.ts,
 // docs/decisions/0088-every-policy-in-the-console.md). NOW is Monday 21 September
 // 2026, 12 noon in India. Nothing here is a real person or number.
 //

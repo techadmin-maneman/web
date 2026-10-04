@@ -1,4 +1,4 @@
-// Discount codes in the console (src/routes/ops-discount-codes.ts; docs/decisions/0108-discount-codes.md): ops make
+// Discount codes in the console (src/routes/ops/discount-codes.ts; docs/decisions/0108-discount-codes.md): ops make
 // one or a batch, switch one off, and enter one on a client's visit or take it off before it is paid for or invoiced.
 // The invoice that shows the code is tested with the Books pass (test/worker/books-invoices.test.ts). NOW is Monday
 // 21 September 2026, 12 noon in India. Every name, number and code here is made up.

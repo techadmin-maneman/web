@@ -11,7 +11,7 @@
 // to the state a purpose already holds writes neither a ledger row (ADR 0058)
 // nor an audit entry. A number change or deletion request is audited as it is
 // made; its effect comes only with ops' decision, which is audited in turn
-// (src/routes/ops-profile.ts).
+// (src/routes/ops/profile.ts).
 
 import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";

@@ -41,7 +41,7 @@ export const CrmSyncMessageSchema = z.union([
   z.object({ erase_person_id: z.uuid(), request_id: z.string() }),
   /**
    * A person whose number or address changed (src/http/contact-sync.ts), or whom ops attached an invite to
-   * (src/routes/ops-client-referral.ts), written onto their record; the second is noted on it too.
+   * (src/routes/ops/client-referral.ts), written onto their record; the second is noted on it too.
    */
   z.object({
     update_person_id: z.string().min(1),

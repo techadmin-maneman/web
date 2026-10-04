@@ -1,4 +1,4 @@
-// The Staff page's routes (src/routes/ops-staff.ts): the list narrowed to the viewer's own places, a change only
+// The Staff page's routes (src/routes/ops/staff.ts): the list narrowed to the viewer's own places, a change only
 // within the editor's Admin MANAGE, never a list left without Admin MANAGE nationally, the switch only for those who
 // hold it, and every change audited under its maker.
 

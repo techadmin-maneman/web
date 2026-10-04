@@ -1,5 +1,5 @@
 // The consumables ops keep, and what each service is expected to use, on the ops
-// surface (src/routes/ops-consumables.ts, docs/decisions/0087-consumables-and-stock.md).
+// surface (src/routes/ops/consumables.ts, docs/decisions/0087-consumables-and-stock.md).
 // NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a consumable is added, renamed, costed, retired and

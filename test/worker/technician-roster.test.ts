@@ -1,4 +1,4 @@
-// Ops add, change, switch off and switch back on the technicians themselves (src/routes/ops-technicians.ts).
+// Ops add, change, switch off and switch back on the technicians themselves (src/routes/ops/technicians.ts).
 // NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";

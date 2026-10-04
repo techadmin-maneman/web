@@ -1,5 +1,5 @@
 // Ops attaching an invite to a client on the client's page, for a friend who booked away from the invite's own page
-// (src/routes/ops-client-referral.ts; docs/decisions/0089-an-invite-is-not-lost.md). NOW is Monday 21 September
+// (src/routes/ops/client-referral.ts; docs/decisions/0089-an-invite-is-not-lost.md). NOW is Monday 21 September
 // 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";

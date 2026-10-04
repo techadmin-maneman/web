@@ -43,7 +43,7 @@ export const SENSITIVE_PATHS = [
   "src/providers/payments/",
   "src/providers/books/",
   "src/routes/hooks/razorpay",
-  "src/routes/ops-credits",
+  "src/routes/ops/credits",
   // Consent
   "src/domain/booking-consents",
   "src/domain/profile",
@@ -54,12 +54,12 @@ export const SENSITIVE_PATHS = [
   "src/domain/deletion",
   "src/domain/data-export",
   "src/policy/account-deletion",
-  "src/routes/ops-erasure",
+  "src/routes/ops/erasure",
   "src/routes/client/data",
   // Health data
   "src/domain/hair-profiles",
   "src/policy/hair-profile",
-  "src/routes/ops-hair-profile",
+  "src/routes/ops/hair-profile",
   "src/routes/hair-profile-schemas",
   // Every table
   "migrations/",

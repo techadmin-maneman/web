@@ -1,5 +1,5 @@
 // A client disputing a no-show's charge in the app, and ops ruling Refund or Uphold in the console
-// (src/routes/client-disputes.ts, src/routes/ops-disputes.ts; docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+// (src/routes/client/disputes.ts, src/routes/ops/disputes.ts; docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 // NOW is Monday 21 September 2026, 12 noon in India. Nothing here is a real person, number or address.
 //
 // "The client disputes a charge in the app, and ops rule Refund or Uphold in the console with a reason, and the

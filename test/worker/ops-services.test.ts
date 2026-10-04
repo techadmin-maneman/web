@@ -1,6 +1,6 @@
-// The services clients book, set in the console (src/routes/ops-services.ts,
+// The services clients book, set in the console (src/routes/ops/services.ts,
 // docs/decisions/0085-services-ops-can-edit.md), and the prices each carries
-// (src/routes/ops-settings.ts). NOW is Monday 21 September 2026, 12 noon in
+// (src/routes/ops/settings.ts). NOW is Monday 21 September 2026, 12 noon in
 // India. Nothing here is a person.
 //
 // What these hold: a kind is code and its services are ops', each added,
