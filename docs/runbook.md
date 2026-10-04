@@ -978,12 +978,11 @@ Staging writes to the owner's real Books and CRM, which production shares (open 
 
 ### Staging left FSM
 
-Staging switched to our own database on 4 October 2026 (FSM-PR10), and FSM's code was deleted the same day (FSM-PR11). Production never used FSM. Once FSM-PR11 is deployed to staging, nothing reads the old queue: take its consumer off and delete it, then confirm what is attached matches the config.
+Staging switched to our own database on 4 October 2026 (FSM-PR10), and FSM's code was deleted the same day (FSM-PR11). Production never used FSM. Once FSM-PR11 was live on staging, the old queue's consumer was taken off and the queue deleted (4 October 2026):
 
 ```sh
 W queues consumer remove mm-fsm-sync-staging mm-api-staging
 W queues delete mm-fsm-sync-staging
-node --env-file=<file> scripts/check-triggers.ts staging --strict
 ```
 
 FSM's trial lapses around 7 October 2026 with whatever test records it still holds; nothing of ours reads them. The only way back to FSM is to revert FSM-PR11 and FSM-PR10.
