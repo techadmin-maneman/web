@@ -155,8 +155,8 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       return;
     }
     if (!answer.ok) {
-      // A closed code cannot be tried again: only a new one can.
-      if (answer.status === 410) startAgain();
+      // A closed code cannot be tried again: only a new one can, and none signs in a technician ops stopped.
+      if (answer.status === 410 || answer.code === "sign_in_stopped") startAgain();
       setError(messageFor(answer.code, copy.errors.unknown));
       return;
     }

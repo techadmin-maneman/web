@@ -236,6 +236,22 @@ async function capturedFor(db: D1Database, orderId: string | null): Promise<Capt
     .first<CapturedPayment>();
 }
 
+/**
+ * What is left to give back of an order's payment: a captured one in full, or what a partial refund from Razorpay's
+ * dashboard left of it. Null when nothing is.
+ */
+async function refundableFor(db: D1Database, orderId: string | null): Promise<CapturedPayment | null> {
+  if (orderId === null) return null;
+  return db
+    .prepare(
+      `SELECT razorpay_payment_id, amount - refunded_amount AS amount, created_at AS paid_at FROM payments
+       WHERE razorpay_order_id = ?1 AND status IN ('captured', 'partially_refunded') AND amount > refunded_amount
+       ORDER BY created_at LIMIT 1`,
+    )
+    .bind(orderId)
+    .first<CapturedPayment>();
+}
+
 /** Whether Razorpay made the payment after the hold ran out and the grace it was made with. */
 function paidTooLate(hold: HoldRow, payment: CapturedPayment): boolean {
   return Date.parse(payment.paid_at) > graceEndOf(hold).getTime();
@@ -687,7 +703,7 @@ export class RefundUnanswered extends Error {
 }
 
 /**
- * Lets a hold go, and refunds in full, once, any payment taken for it. Says what it did with the money; throws
+ * Lets a hold go, and refunds, once, what is left of any payment taken for it. Says what it did with the money; throws
  * RefundRefused, or RefundUnanswered, and keeps the hold, when Razorpay will not refund it or will not say whether it
  * did. `alongside` is written in the same batch as the hold is let go, such as ops' audit entry; `ifRefunded` is
  * written in that batch only when this call made the refund.
@@ -704,7 +720,7 @@ export async function giveBack(
   const hold = await holdOf(db, holdId);
   if (hold === null) throw new Error("no such hold to give back");
   if (hold.state === "booked") return { kind: "booked" };
-  const payment = await capturedFor(db, hold.razorpay_order_id);
+  const payment = await refundableFor(db, hold.razorpay_order_id);
   const given: GivenBack =
     payment === null
       ? await nothingToRefund(db, hold.razorpay_order_id)

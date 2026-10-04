@@ -69,6 +69,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/technicians/{id}/leave": inOwnPlaces("operations", "act"),
   "POST /api/technicians/{id}/leave/{leave}/cancel": inOwnPlaces("operations", "act"),
   "POST /api/technicians/{id}/devices/{device}/revoke": inOwnPlaces("operations", "act"),
+  "POST /api/technicians/{id}/allow-sign-in": inOwnPlaces("operations", "act"),
   // The central store is in no city, so a delivery into it needs a national grant.
   "GET /api/stock": inOwnPlaces("operations", "view"),
   "POST /api/stock/deliveries": need("operations", "act"),
@@ -192,6 +193,7 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   grievance: "customer_care",
   draft_invoice: "finance",
   payment_owed: "finance",
+  payment_to_refund: "finance",
 };
 
 /** What seeing a group of tasks, or taking a task of it, asks: the board keeps each task to the caller's cities. */

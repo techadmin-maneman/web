@@ -4,7 +4,8 @@
 //   POST /api/no-shows/:id/decision                      charge or waive, from the evidence
 //   GET  /api/clients/:id/pieces                         the pieces tab
 //   GET  /api/technicians                                who works, their phones and leave, and who is switched off
-//   POST /api/technicians/:id/devices/:device/revoke     revoke a phone; it drops its cached jobs
+//   POST /api/technicians/:id/devices/:device/revoke     revoke a phone; it drops its cached jobs, and he is stopped signing in
+//   POST /api/technicians/:id/allow-sign-in              let him sign in again after a revoke
 //   GET  /api/technicians/:id/leave                      his leave still to end, each with the jobs booked on it
 //   POST /api/technicians/:id/leave                      record leave; the board and booking both refuse those days
 //   POST /api/technicians/:id/leave/:leave/cancel        take it back
@@ -35,7 +36,7 @@ import { queueMessage } from "../http/queue-message.ts";
 import { permitsOn, reachOf, routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { reachesCity } from "../policy/access.ts";
 import { WAIVING_A_NO_SHOW } from "../policy/console-routes.ts";
-import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
+import { allowSignIn, devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { roster, rosterTechnician, type RosterTechnician } from "../domain/technician-roster.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -162,6 +163,9 @@ const TechniciansSchema = z
           zone: z.union([z.string(), z.null()]),
           city: CITY,
           mobile: MOBILE,
+          sign_in_stopped_at: z.union([z.iso.datetime(), z.null()]).openapi({
+            description: "When revoking a phone of his stopped him signing in; null while he may. Ops let him again.",
+          }),
           devices: z.array(
             z
               .object({
@@ -350,6 +354,18 @@ const revokeRoute = createRoute({
   },
 });
 
+const allowSignInRoute = createRoute({
+  method: "post",
+  path: "/api/technicians/{id}/allow-sign-in",
+  summary: "Let a technician sign in again, on any phone, after ops revoked one of his",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "He may sign in again", ...json(z.object({ allowed: z.literal(true) }).strict()) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such technician stopped signing in, or he is not in the caller's cities"),
+  },
+});
+
 export function registerOpsField(app: App): void {
   app.openapi(noShowsRoute, async (c) => {
     const { decision } = c.req.valid("query");
@@ -449,6 +465,7 @@ export function registerOpsField(app: App): void {
       .map((technician) => ({
         ...summaryOf(technician),
         initials: technician.initials,
+        sign_in_stopped_at: technician.signInStoppedAt,
         devices: devices.get(technician.id) ?? [],
         leave: leave
           .filter((period) => period.technician_id === technician.id)
@@ -552,5 +569,22 @@ export function registerOpsField(app: App): void {
     if (revokedAt === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     c.var.log.info("technician_device_revoked", { technician_id: id, device_id: device });
     return c.json({ revoked_at: revokedAt }, 200);
+  });
+
+  app.openapi(allowSignInRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    const audit = {
+      surface: "ops",
+      actor: staffOf(c),
+      action: "technician.allow_sign_in",
+      subject: { kind: "technician", id },
+      requestId: c.var.requestId,
+    } as const;
+    if (!(await allowSignIn(c.env.DB, id, audit, c.var.deps.now()))) {
+      return c.json(errorBody("not_found", c.var.requestId), 404);
+    }
+    c.var.log.info("technician_sign_in_allowed", { technician_id: id });
+    return c.json({ allowed: true as const }, 200);
   });
 }

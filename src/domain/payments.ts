@@ -217,7 +217,10 @@ export function referenceHold(db: D1Database, holdId: string, now: Date): D1Prep
     .bind(holdId, ...referenceYear(now));
 }
 
-/** Our refund's state from Razorpay's: processed and failed as they are, anything earlier still created. */
+/**
+ * Our refund's state from Razorpay's: processed and failed as they are, anything earlier still created. Created ranks
+ * below both, so an event that arrives late never takes a refund back to created, and a processed one stays processed.
+ */
 function refundStateOf(status: string): "processed" | "failed" | "created" {
   if (status === "processed" || status === "failed") return status;
   return "created";
@@ -242,7 +245,8 @@ export async function recordRefund(db: D1Database, refund: RazorpayRefund, now: 
         `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, speed, created_at, processed_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
          ON CONFLICT (razorpay_refund_id) DO UPDATE SET
-           status = CASE WHEN refunds.status = 'processed' THEN refunds.status ELSE excluded.status END,
+           status = CASE WHEN refunds.status = 'processed' OR excluded.status = 'created' THEN refunds.status
+                         ELSE excluded.status END,
            speed = COALESCE(excluded.speed, refunds.speed),
            processed_at = COALESCE(refunds.processed_at, excluded.processed_at),
            updated_at = excluded.updated_at`,
@@ -274,6 +278,41 @@ export async function recordRefund(db: D1Database, refund: RazorpayRefund, now: 
       .bind(payment.id, payment.amount, at),
   ]);
   return true;
+}
+
+/** A refund as we keep it, after its latest event: what ops are told of one that failed. */
+export interface KeptRefund {
+  readonly status: "created" | "processed" | "failed";
+  readonly amount: number;
+  readonly paymentId: string;
+  readonly personId: string | null;
+}
+
+export async function keptRefund(db: D1Database, razorpayRefundId: string): Promise<KeptRefund | null> {
+  return db
+    .prepare(
+      `SELECT r.status, r.amount, p.razorpay_payment_id AS paymentId, p.person_id AS personId
+       FROM refunds r JOIN payments p ON p.id = r.payment_id WHERE r.razorpay_refund_id = ?1`,
+    )
+    .bind(razorpayRefundId)
+    .first<KeptRefund>();
+}
+
+/**
+ * Another payment captured on the same order: a client who paid twice, a late authorisation after a retry at
+ * Checkout. Null when this is the order's only one.
+ */
+export async function otherCaptureOf(db: D1Database, payment: RazorpayPayment): Promise<string | null> {
+  if (typeof payment.order_id !== "string") return null;
+  return db
+    .prepare(
+      `SELECT razorpay_payment_id FROM payments
+       WHERE razorpay_order_id = ?1 AND razorpay_payment_id <> ?2
+         AND status IN ('captured', 'partially_refunded', 'refunded')
+       ORDER BY created_at LIMIT 1`,
+    )
+    .bind(payment.order_id, payment.id)
+    .first<string>("razorpay_payment_id");
 }
 
 /** Our person: named in our order's notes, else found by the mobile number paid with. Never made up. */

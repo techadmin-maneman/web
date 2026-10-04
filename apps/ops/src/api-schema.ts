@@ -2896,6 +2896,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/technicians/{id}/allow-sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Let a technician sign in again, on any phone, after ops revoked one of his */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description He may sign in again */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            allowed: true;
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such technician stopped signing in, or he is not in the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/no-shows/{id}/charge": {
         parameters: {
             query?: never;
@@ -3188,7 +3247,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed";
+                    group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "payment_to_refund";
                     id: string;
                 };
                 cookie?: never;
@@ -6610,7 +6669,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -7360,7 +7419,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -7963,6 +8022,8 @@ export interface components {
                 city: string | null;
                 /** @description The number he signs in with, +91 and ten digits; null where none is recorded. */
                 mobile: string | null;
+                /** @description When revoking a phone of his stopped him signing in; null while he may. Ops let him again. */
+                sign_in_stopped_at: string | null;
                 devices: {
                     device_id: string;
                     label: string | null;
@@ -8132,7 +8193,7 @@ export interface components {
             staff: string[];
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed";
+                group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "payment_to_refund";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -8144,7 +8205,7 @@ export interface components {
         Task: {
             /**
              * Format: uuid
-             * @description The queued row's own id, so the task can be reached where it is decided.
+             * @description The queued row's own id, so the task can be reached where it is decided; for a first fit to book, the client's.
              */
             id: string;
             /** @description Null for an erased client, whose record is gone. */
@@ -8162,7 +8223,7 @@ export interface components {
                 /** Format: date-time */
                 starts_at: string;
             };
-            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; for a payment owed, the link's state ("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product. */
+            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's ("any" where a fit cannot start in it); for a payment owed, the link's state ("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product; for a payment to refund, why ("let_go", a hold let go whose refund Razorpay would not make, or "refund_failed"), what is owed back in paise, and the Razorpay payment. */
             detail: string | null;
             /**
              * Format: date-time

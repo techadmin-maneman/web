@@ -57,6 +57,9 @@ const FINANCE_KINDS = [
   "razorpay_refund_unheard",
   "razorpay_payment_unheard",
   "razorpay_catch_up_not_booked",
+  "hold_refund_failed",
+  "refund_failed",
+  "second_capture",
 ];
 
 const OPERATIONS_KINDS = [
@@ -88,6 +91,8 @@ const RETOLD_EVERY_6_HOURS = [
   "no_show_refund_failed",
   "razorpay_refund_unheard",
   "razorpay_catch_up_not_booked",
+  "hold_refund_failed",
+  "refund_failed",
 ];
 
 /** How long an open alert goes untold before its next sighting tells the chat again. */

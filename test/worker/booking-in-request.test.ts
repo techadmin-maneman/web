@@ -4,7 +4,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { autoRefundsOf } from "../../src/domain/auto-refunds.ts";
-import { bookUnbookedHolds, confirmBooking } from "../../src/domain/bookings.ts";
+import { bookUnbookedHolds, confirmBooking, giveBack } from "../../src/domain/bookings.ts";
 import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { settleOwedRefunds } from "../../src/domain/cancel-refunds.ts";
@@ -23,6 +23,8 @@ import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubPayments, PaymentUnanswered, type PaymentsProvider } from "../../src/providers/payments.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
+import { outstandingTasks } from "../../src/domain/tasks.ts";
+import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import {
   appFor,
   captureLogs,
@@ -1035,5 +1037,59 @@ describe("confirmBooking", () => {
     expect(again).toBe("already_booked");
     expect((await visitsOf(PERSON, "service")).results).toHaveLength(1);
     expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(1);
+  });
+});
+
+// MON-05, MON-47: a refund Razorpay refused for a hold already let go was swallowed, the money kept and nobody told;
+// and giving back a hold after a partial refund in Razorpay's dashboard refunded nothing of the rest.
+describe("money owed back on a hold", () => {
+  const refusing = (payments: PaymentsProvider): PaymentsProvider => ({
+    ...payments,
+    refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")),
+  });
+
+  it("tells ops at once of a late payment Razorpay will not refund, and lists it on Tasks", async () => {
+    await fittedClient();
+    const ordered = await heldAndOrdered();
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM slot_claims WHERE hold_id = ?1").bind(ordered.holdId),
+      env.DB.prepare("UPDATE slot_holds SET state = 'released', updated_at = ?2 WHERE id = ?1").bind(
+        ordered.holdId,
+        at(11 * 60).toISOString(),
+      ),
+    ]);
+    const deps = fakeDependencies({ payments: refusing(createStubPayments()) });
+
+    await webhook("payment.captured", "evt_late", payment("pay_late", ordered, at(13 * 60)), deps);
+
+    expect(deps.alerts).toEqual([
+      expect.stringContaining(
+        `Booking ${ordered.holdId} owes back payment pay_late of Rs. 2,000, and Razorpay refused the refund.`,
+      ),
+    ]);
+    const tasks = (await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS)).tasks;
+    expect(tasks.filter((task) => task.group === "payment_to_refund")).toMatchObject([
+      { person: { id: PERSON }, detail: "let_go 200000 pay_late" },
+    ]);
+  });
+
+  it("refunds what a partial refund in Razorpay's dashboard left when the hold is given back", async () => {
+    await fittedClient();
+    const ordered = await heldAndOrdered();
+    await webhook("payment.captured", "evt_paid", payment("pay_part", ordered, at(13 * 60)), fakeDependencies());
+    await env.DB.prepare(
+      "UPDATE payments SET status = 'partially_refunded', refunded_amount = 50000 WHERE razorpay_payment_id = 'pay_part'",
+    ).run();
+    await env.DB.prepare("UPDATE slot_holds SET state = 'held', refunded_at = NULL WHERE id = ?1")
+      .bind(ordered.holdId)
+      .run();
+    const payments = createStubPayments();
+
+    expect(await giveBack(env.DB, payments, ordered.holdId, NOW, "test")).toEqual({
+      kind: "refunded",
+      paymentId: "pay_part",
+      amount: 150000,
+    });
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_part", amount: 150000 }]);
   });
 });

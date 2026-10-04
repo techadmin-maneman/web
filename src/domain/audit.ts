@@ -34,9 +34,10 @@ export const AUDIT_ACTIONS = [
   "grievance.raise",
   "grievance.resolve",
   // Field operations (docs/decisions/0052-technician-sessions.md): ops ruling on a
-  // no-show from its evidence, and ops revoking the phone a technician works from.
+  // no-show from its evidence, ops revoking the phone a technician works from, and letting him sign in again after.
   "no_show.decide",
   "technician_device.revoke",
+  "technician.allow_sign_in",
   // A client disputing a no-show's charge, and ops ruling on it (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
   "no_show.dispute",
   "no_show.dispute_rule",

@@ -253,7 +253,7 @@ export const MeSchema = z
           .openapi({
             description:
               "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit " +
-              "once the consultation is done, from the lead time and in the window the site's request asked for; " +
+              "once the consultation is done, from the lead time and in the consultation's window; " +
               "or the next service on its due day, in the last visit's window, or the replacement where the piece " +
               "falls due first, on the earlier of its own due day and the service's (ADR 0086).",
           }),

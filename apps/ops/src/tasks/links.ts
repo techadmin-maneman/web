@@ -14,6 +14,7 @@ const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   replacement_order: "pieces",
   draft_invoice: "payments",
   payment_owed: "payments",
+  payment_to_refund: "payments",
   erasure_request: "consents",
   grievance: "consents",
 };

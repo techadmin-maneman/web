@@ -84,7 +84,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).",
   events: "What happened, for analysis, with no personal data in its payload.",
   first_fit_requests:
-    "A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).",
+    "A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.",
   fsm_items:
     "FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).",
   grievances: "A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).",
@@ -94,7 +94,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   job_events:
     "The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).",
   last_visits:
-    "Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).",
+    "Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.",
   leads:
     "Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).",
   maintenance:

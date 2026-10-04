@@ -2124,6 +2124,46 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 }
 ```
 
+### POST /api/technicians/{id}/allow-sign-in
+
+Let a technician sign in again, on any phone, after ops revoked one of his
+
+**200**: He may sign in again
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "allowed": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "allowed"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician stopped signing in, or he is not in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/no-shows/{id}/charge
 
 What charging an undecided no-show would keep of the visit's payment, and refund
@@ -4537,6 +4577,7 @@ Request body:
             "terms_changed",
             "consent_required",
             "device_revoked",
+            "sign_in_stopped",
             "superseded",
             "out_of_order",
             "not_today",
@@ -7719,6 +7760,7 @@ Request body:
             "terms_changed",
             "consent_required",
             "device_revoked",
+            "sign_in_stopped",
             "superseded",
             "out_of_order",
             "not_today",
@@ -10533,6 +10575,18 @@ Request body:
             ],
             "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
           },
+          "sign_in_stopped_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When revoking a phone of his stopped him signing in; null while he may. Ops let him again."
+          },
           "devices": {
             "type": "array",
             "items": {
@@ -10596,6 +10650,7 @@ Request body:
           "zone",
           "city",
           "mobile",
+          "sign_in_stopped_at",
           "devices",
           "leave"
         ],
@@ -11245,7 +11300,8 @@ Request body:
               "erasure_request",
               "grievance",
               "draft_invoice",
-              "payment_owed"
+              "payment_owed",
+              "payment_to_refund"
             ]
           },
           "count": {
@@ -11294,7 +11350,7 @@ Request body:
     "id": {
       "type": "string",
       "format": "uuid",
-      "description": "The queued row's own id, so the task can be reached where it is decided."
+      "description": "The queued row's own id, so the task can be reached where it is decided; for a first fit to book, the client's."
     },
     "person": {
       "anyOf": [
@@ -11353,7 +11409,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product."
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's (\"any\" where a fit cannot start in it); for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product; for a payment to refund, why (\"let_go\", a hold let go whose refund Razorpay would not make, or \"refund_failed\"), what is owed back in paise, and the Razorpay payment."
     },
     "since": {
       "type": "string",

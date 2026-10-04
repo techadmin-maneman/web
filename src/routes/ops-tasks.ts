@@ -8,8 +8,9 @@
 // A task is not a record. It is a row in a queue the database already keeps,
 // read at the moment ops look: a held grant, an undecided no-show, a number
 // change waiting for ops, an erasure asked for, a grievance to answer, a piece
-// past its replacement date, an invoice still a draft, a client past their next service with nothing booked, a first fit
-// asked for and not booked. Each task leaves when the thing itself is done,
+// past its replacement date, an invoice still a draft, a client past their next
+// service with nothing booked, a client
+// consulted and not fitted. Each task leaves when the thing itself is done,
 // wherever it is done, but for a visit left partly done, which ops may close
 // without a follow-up. What is kept about a task is whose it is, and why ops
 // closed it, keyed by its group and its row's id
@@ -54,7 +55,10 @@ const OwnerSchema = z
 
 const TaskSchema = z
   .object({
-    id: z.uuid().openapi({ description: "The queued row's own id, so the task can be reached where it is decided." }),
+    id: z.uuid().openapi({
+      description:
+        "The queued row's own id, so the task can be reached where it is decided; for a first fit to book, the client's.",
+    }),
     person: z
       .union([
         z
@@ -85,9 +89,11 @@ const TaskSchema = z
         '"not_sent", as the dispatch board\'s untold says); for a consultation asked for, its day and window and, ' +
         "where a first fit was asked for with it, " +
         '"first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit\'s start and ' +
-        "the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; " +
-        'for a payment owed, the link\'s state ("sent", "unsent" or "refused"), its amount in paise, its address ' +
-        '("-" until Razorpay made it) and the product.',
+        "the day the next service fell due; for a first fit to book, the consultation's start and the window the fit " +
+        "is offered in, the consultation's (\"any\" where a fit cannot start in it); for a payment owed, the link's state " +
+        '("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product; ' +
+        'for a payment to refund, why ("let_go", a hold let go whose refund Razorpay would not make, or ' +
+        '"refund_failed"), what is owed back in paise, and the Razorpay payment.',
     }),
     since: z.iso.datetime().openapi({ description: "When it started waiting." }),
     due: z.iso.datetime().openapi({

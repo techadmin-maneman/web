@@ -56,8 +56,8 @@
 // At-risk client is the board's own group, built as the owner ruled on 27
 // September 2026 (docs/decisions/0086-the-next-visit-is-offered.md): a fitted
 // client with nothing booked, days past the day their next service fell due
-// (src/policy/next-visit.ts). First fit to book is ours: a first fit asked for
-// on the site's form, still not booked days after the consultation. Both go as
+// (src/policy/next-visit.ts). First fit to book is ours: a client consulted and
+// not fitted since, with nothing booked days after the consultation. Both go as
 // soon as a later visit is booked, as a visit left partly done does.
 //
 // Two things about a task are kept, both as the owner ruled on 27 September
@@ -95,6 +95,7 @@ export const TASK_GROUPS = [
   "grievance",
   "draft_invoice",
   "payment_owed",
+  "payment_to_refund",
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
 
@@ -102,7 +103,7 @@ export type TaskGroup = (typeof TASK_GROUPS)[number];
  * How long a task may wait before it is overdue, and the one deadline its own
  * queue counts down to as well. The board writes "2 days", "1 day", "Today"
  * and "Overdue 3" and names no group's own allowance, and the prompt states
- * none, so every group waits the same two days, with three exceptions:
+ * none, so every group waits the same two days, with four exceptions:
  * placeholders until the owner rules each one (docs/open-points.md, item 61).
  */
 export type Slas = Readonly<Record<TaskGroup, number>>;
@@ -128,6 +129,8 @@ export const TASK_SLA_HOURS: Slas = {
   grievance: 30 * 24,
   draft_invoice: 48,
   payment_owed: 48,
+  // Money owed back to a client: refunded within the day.
+  payment_to_refund: 24,
 };
 
 /**

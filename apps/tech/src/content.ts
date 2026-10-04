@@ -22,6 +22,7 @@ export const signIn = {
     code_expired: "That code no longer works. Send the code again.",
     invalid_request: "Check the number and the code.",
     rate_limited: "Too many codes for this number today. Ask ops.",
+    sign_in_stopped: "Ops have stopped sign-in on your number. Ask them to let you back in.",
     busy: "Codes are not going out just now. Try again shortly.",
     offline: "You are offline. Connect, then sign in.",
     unknown: "That did not go through. Try again.",

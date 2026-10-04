@@ -64,13 +64,13 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [discount_codes](#discount_codes): The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
-- [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).
+- [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
 - [fsm_items](#fsm_items): FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).
 - [grievances](#grievances): A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).
 - [hair_profiles](#hair_profiles): Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
-- [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
+- [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
 - [leads](#leads): Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
 - [maintenance](#maintenance): One row while D1 is being restored: the cron and the queue consumers stand still until it is deleted (runbook, "Restoring D1").
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
@@ -690,7 +690,7 @@ Indexes:
 
 ## first_fit_requests
 
-A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).
+A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
 
 Made by `0047_first_fit_requests.sql`; changed by `0056_task_owners.sql`.
 
@@ -832,9 +832,9 @@ Indexes:
 
 ## last_visits
 
-Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
+Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
 
-Made by `0053_balances_and_last_visits.sql`; changed by `0056_task_owners.sql`.
+Made by `0053_balances_and_last_visits.sql`; changed by `0056_task_owners.sql`, `0095_last_visits_unfitted.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -846,6 +846,7 @@ Made by `0053_balances_and_last_visits.sql`; changed by `0056_task_owners.sql`.
 Indexes:
 
 - `last_visits_by_visit_start`: on (`visit_start`)
+- `last_visits_unfitted`: on (`consulted_start`), where `visit_start IS NULL OR visit_start < consulted_start`
 
 Triggers: `last_visits_fitted_added`, `last_visits_fitted_changed`.
 
@@ -1151,7 +1152,7 @@ Indexes:
 
 The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 
-Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`.
+Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0096_payments_to_refund.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1188,6 +1189,7 @@ Indexes:
 - `payments_by_order`: on (`razorpay_order_id`)
 - `payments_by_person`: on (`person_id`, `created_at`)
 - `payments_refunded_visits`: on (`appointment_id`), where `status = 'refunded' AND kind = 'visit'`
+- `payments_unbooked`: on (`razorpay_order_id`), where `status = 'captured' AND appointment_id IS NULL`
 - A `UNIQUE` constraint: unique on (`reference`)
 - A `UNIQUE` constraint: unique on (`razorpay_payment_id`)
 - A `UNIQUE` constraint: unique on (`reference_year`, `reference_number`)
@@ -1399,7 +1401,7 @@ Indexes:
 
 The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
 
-Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0037_cron_indexes.sql`.
+Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0037_cron_indexes.sql`, `0096_payments_to_refund.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1419,6 +1421,7 @@ Indexes:
 
 - `refunds_books_unrecorded`: on (`created_at`), where `status = 'processed' AND books_refund_id IS NULL`
 - `refunds_by_payment`: on (`payment_id`)
+- `refunds_failed`: on (`payment_id`), where `status = 'failed'`
 - A `UNIQUE` constraint: unique on (`razorpay_refund_id`)
 
 ## serviceable_pincodes
@@ -1824,7 +1827,7 @@ Triggers: `technician_leave_board_added`, `technician_leave_board_changed`.
 
 The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1838,6 +1841,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_han
 | `mobile_e164` | TEXT | yes |  |  |
 | `hand_written` | INTEGER | no | `0` |  |
 | `city` | TEXT | yes |  | → `cities.name` |
+| `sign_in_stopped_at` | TEXT | yes |  |  |
 
 Indexes:
 

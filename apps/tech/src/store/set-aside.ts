@@ -2,6 +2,7 @@
 // seven days, for him alone, and go once he is switched back on and signs in. Everything else goes at once, as at
 // any sign-out: the day, the clients' cards and who he is. Any other end of a session wipes the phone whole.
 
+import { reportClientError } from "@maneman/web-kit/client-errors";
 import { DEVICE_REVOKED, TECHNICIAN_INACTIVE } from "../api.ts";
 import { clear, DAY_CACHE, get, put, remove, wipe } from "./db.ts";
 import { keptMe } from "./device.ts";
@@ -34,7 +35,10 @@ export async function leaveSignedOut(code: string | null, now: number = Date.now
   } catch {
     // A store that will not answer keeps nothing: the phone is wiped whole below.
   }
-  await wipe();
+  // A delete the browser refused is tried once more, and told to us if it fails again: clients' details may be left.
+  if (!(await wipe()) && !(await wipe())) {
+    reportClientError({ kind: "error", message: "the phone's store could not be wiped when its session ended" });
+  }
   return false;
 }
 
