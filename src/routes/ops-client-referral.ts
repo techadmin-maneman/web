@@ -17,6 +17,7 @@ import type { App, AppEnv } from "../http/context.ts";
 import { attribute, clientInviteOf, CODE_PATTERN, GRANT_STATES, howTheyCame, inviteOf } from "../domain/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { withinRouteReach } from "../http/staff-access.ts";
 import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../config/crm.ts";
 import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
@@ -82,7 +83,7 @@ const attachRoute = createRoute({
     201: { description: "Attached", ...json(ClientInviteSchema) },
     400: errorResponse("invalid_request: no reason, or a code that is not shaped like one"),
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such client, or one who has been erased"),
+    404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     409: {
       description:
         "own_invite: the client is the code's own referrer; already_invited: the client came with an invite " +
@@ -132,7 +133,9 @@ export function registerOpsClientReferral(app: App): void {
       .prepare("SELECT id FROM people WHERE id = ?1 AND erased_at IS NULL")
       .bind(personId)
       .first<{ id: string }>();
-    if (person === null) return c.json(errorBody("not_found", requestId), 404);
+    if (person === null || !(await withinRouteReach(c, "client", personId))) {
+      return c.json(errorBody("not_found", requestId), 404);
+    }
     const invite = await inviteOf(db, code, false);
     if (invite === null) return c.json(errorBody("unknown_invite", requestId), 422);
 

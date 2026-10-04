@@ -1,6 +1,6 @@
 # 0109. The console by departments, and who may do what in it
 
-- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care and Operations by place
+- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care, Operations and Growth by place
 - Date: 2026-10-02
 
 ## Context
@@ -42,7 +42,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 - A person Access lets in who is not on the list, or is switched off, is refused everything (`403 not_permitted`) except `GET /api/whoami`, which tells the console to say so, and the health check.
 - A route `ROUTE_NEEDS` does not list is refused. HEAD asks what GET asks, as Hono answers it with the GET route.
-- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today the Staff routes, Customer Care's and Operations' do (below, "Customer Care by place" and "Operations by place"). So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
+- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today the Staff routes, Customer Care's, Operations' and Growth's do (below, "Customer Care by place", "Operations by place" and "Growth by place"). So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
 
 **The owner is the national super-admin:** every department at Manage, nationally.
 
@@ -107,6 +107,13 @@ Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_k
 - A technician is seen, changed, switched off or on, given leave or a phone revoked only in the caller's cities. A technician is given only a city the caller's Operations Manage reaches; no city, only with a national grant.
 - Stock shows the kits of the technicians in the caller's cities. The central store is in no city: it, and a delivery into it, need a national grant.
 - Held bookings wait on FSM, which is leaving: retrying, stopping and linking one still need a national grant.
+
+## Growth by place (amended 4 October 2026)
+
+- Held referrals, referrers, attaching an invite, the waitlist and launching a pincode keep to the caller's cities and are `ownPlaces`, at the route's own level.
+- A held referral is where the friend is, and a referrer where they themselves are, wherever their friends are. One elsewhere is left out of its list; deciding a referral or attaching an invite to a client elsewhere is `404 not_found`.
+- The waitlist lists the pincodes in the caller's cities. A pincode is launched only with Growth Manage in its city; elsewhere it is refused, `403 not_permitted`, not hidden, since whether we serve a pincode is no secret.
+- The service area lists every pincode we know, in every city, with how many wait in each: reading and changing it still need a national grant.
 
 ## Consequences
 

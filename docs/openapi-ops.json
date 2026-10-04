@@ -10379,7 +10379,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such client, or one who has been erased",
+            "description": "not_found: no such client in the caller's cities, or one who has been erased",
             "content": {
               "application/json": {
                 "schema": {
@@ -11050,7 +11050,7 @@
     },
     "/api/referrals/held": {
       "get": {
-        "summary": "Referral grants held for review, oldest first",
+        "summary": "Referral grants held for review whose friend is in the caller's cities, oldest first",
         "responses": {
           "200": {
             "description": "Held grants",
@@ -11213,7 +11213,7 @@
             }
           },
           "404": {
-            "description": "not_found: no held grant by that ID",
+            "description": "not_found: no held grant by that ID in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -11353,7 +11353,7 @@
     },
     "/api/waitlist": {
       "get": {
-        "summary": "Who is waiting, by pincode, the longest wait first",
+        "summary": "Who is waiting in the caller's cities, by pincode, the longest wait first",
         "responses": {
           "200": {
             "description": "Areas with someone waiting",
@@ -11514,6 +11514,16 @@
               }
             }
           },
+          "403": {
+            "description": "access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "not_found: we have no such pincode",
             "content": {
@@ -11529,7 +11539,7 @@
     },
     "/api/referrers": {
       "get": {
-        "summary": "The referrers' figures, the busiest first, 50 at a time",
+        "summary": "The figures of the referrers in the caller's cities, the busiest first, 50 at a time",
         "parameters": [
           {
             "schema": {

@@ -148,6 +148,36 @@ describe("the routes a caller's calls go ahead on", () => {
     expect(routes).not.toContain("POST /api/held-bookings/{id}/retry");
   });
 
+  it("are, for Growth in one city, every Growth route up to the level granted but the service area's", () => {
+    const growthInDelhi: Caller = {
+      kind: "person",
+      active: true,
+      grants: [{ department: "growth", level: "act", place: { geography: "city", name: "Delhi" } }],
+    };
+    const routes = routesOpenTo(growthInDelhi, true, NO_ZONES);
+
+    expect(routes).toEqual(
+      expect.arrayContaining([
+        "GET /api/referrals/held",
+        "POST /api/referrals/{id}/decision",
+        "GET /api/referrers",
+        "POST /api/clients/{id}/referral",
+        "GET /api/waitlist",
+      ]),
+    );
+    expect(routes).not.toContain("POST /api/pincodes/{pin}/launch");
+    expect(routes).not.toContain("GET /api/service-area");
+
+    const managingInDelhi: Caller = {
+      kind: "person",
+      active: true,
+      grants: [{ department: "growth", level: "manage", place: { geography: "city", name: "Delhi" } }],
+    };
+    const managing = routesOpenTo(managingInDelhi, true, NO_ZONES);
+    expect(managing).toContain("POST /api/pincodes/{pin}/launch");
+    expect(managing).not.toContain("POST /api/service-area");
+  });
+
   it("are every route for a service token on the list, and none but the signed-in ones for one not on it", () => {
     expect(routesOpenTo({ kind: "service", allowed: true }, true, NO_ZONES)).toEqual(Object.keys(ROUTE_NEEDS));
     expect(routesOpenTo({ kind: "service", allowed: false }, true, NO_ZONES)).toEqual(SIGNED_IN_ROUTES);
