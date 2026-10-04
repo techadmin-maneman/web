@@ -1,17 +1,15 @@
 // Logging in to the technician app (src/routes/tech-auth.ts). NOW is Monday
 // 21 September 2026, 12 noon in India. Every name and number here is made up.
 //
-// "A technician is recognised only if FSM lists him as an active field
-// technician", and a number FSM does not list gets the same answer as one it
-// does, so the screen never says which is which.
+// A technician is recognised only while he is active on the console's roster,
+// and a number the roster does not hold gets the same answer as one it does,
+// so the screen never says which is which.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { takeFromCeiling } from "../../src/domain/ceilings.ts";
-import { syncTechnicians } from "../../src/domain/fsm-mirror.ts";
 import { buildOpenApiDocument } from "../../src/openapi.ts";
-import { createStubFsm, EMPTY_FSM, type FsmTechnician } from "../../src/providers/fsm.ts";
 import {
   appFor,
   captureLogs,
@@ -31,24 +29,14 @@ const DEVICE = "phone-abc-123";
 let tech: App;
 let deps: TestDependencies;
 
-const technician = (overrides: Partial<FsmTechnician> = {}): FsmTechnician => ({
-  id: "resource-9",
-  userId: "user-9",
-  name: "Naveen Rao",
-  active: true,
-  mobile: "+919810000007",
-  zone: "Gurgaon",
-  ...overrides,
-});
-
 beforeEach(async () => {
   await markDatabase();
-  deps = fakeDependencies({ fsm: createStubFsm({ ...EMPTY_FSM, technicians: [technician()] }) });
+  deps = fakeDependencies();
   tech = appFor("local", deps, {}, "tech");
   await env.DB.prepare(
     `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
-     VALUES (?1, 'resource-1', 'Imran Qureshi', 'IQ', 1, 'Gurgaon', '+919810000009', ?3),
-            (?2, 'resource-3', 'Vikram Sethi', 'VS', 0, 'Gurgaon', '+919810000006', ?3)`,
+     VALUES (?1, ?1, 'Imran Qureshi', 'IQ', 1, 'Gurgaon', '+919810000009', ?3),
+            (?2, ?2, 'Vikram Sethi', 'VS', 0, 'Gurgaon', '+919810000006', ?3)`,
   )
     .bind(IMRAN, RETIRED, NOW.toISOString())
     .run();
@@ -68,7 +56,7 @@ async function challengeFor(mobile: string): Promise<{ id: string; code: string 
 }
 
 describe("POST /api/tech/auth/otp", () => {
-  it("sends a code to a technician FSM lists as active", async () => {
+  it("sends a code to a technician the roster holds as active", async () => {
     const { code } = await challengeFor("98100 00009");
 
     expect(deps.sentCodes).toHaveLength(1);
@@ -76,7 +64,7 @@ describe("POST /api/tech/auth/otp", () => {
     expect(code).toMatch(/^\d{6}$/);
   });
 
-  it("answers the same for a number FSM does not list, and sends nothing", async () => {
+  it("answers the same for a number the roster does not hold, and sends nothing", async () => {
     const known = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
     const unknown = await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
 
@@ -85,13 +73,13 @@ describe("POST /api/tech/auth/otp", () => {
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000009"]);
   });
 
-  it("sends nothing to a technician FSM no longer lists as active", async () => {
+  it("sends nothing to a technician ops switched off", async () => {
     await challengeFor("98100 00006");
     expect(deps.sentCodes).toEqual([]);
   });
 
   // The answer is the same whether or not a code went, so the log is the one place that says which.
-  it("says in the log why a number FSM does not list was sent nothing, and never the number", async () => {
+  it("says in the log why a number the roster does not hold was sent nothing, and never the number", async () => {
     const logs = captureLogs();
     const answer = await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
 
@@ -139,16 +127,6 @@ describe("POST /api/tech/auth/otp", () => {
     );
   });
 
-  it("reads FSM again for a number the mirror does not know, so a new technician need not wait", async () => {
-    await challengeFor("98100 00007");
-
-    expect(deps.sentCodes).toHaveLength(1);
-    const added = await env.DB.prepare("SELECT name, zone FROM technicians WHERE mobile_e164 = '+919810000007'").first<{
-      name: string;
-      zone: string;
-    }>();
-    expect(added).toEqual({ name: "Naveen Rao", zone: "Gurgaon" });
-  });
 });
 
 describe("POST /api/tech/auth/verify", () => {
@@ -178,7 +156,7 @@ describe("POST /api/tech/auth/verify", () => {
     expect(dead.status).toBe(410);
   });
 
-  it("opens nothing for a challenge whose number FSM does not list", async () => {
+  it("opens nothing for a challenge whose number the roster does not hold", async () => {
     const { id } = await challengeFor("98100 00004");
 
     const answer = await post("/api/tech/auth/verify", { challenge_id: id, code: "123456", device_id: DEVICE });
@@ -263,8 +241,6 @@ describe("POST /api/tech/auth/otp, its limits", () => {
   });
 
   it("tells ops when a technician's network has asked for its codes this hour", async () => {
-    // Without FSM, so the numbers nobody knows do not read a list that leaves Imran out.
-    tech = appFor("local", deps, {}, "tech", { FSM_PROVIDER: "none" });
     for (let other = 0; other < 10; other += 1) {
       await post("/api/tech/auth/otp", { mobile: `98200 0000${String(other)}`, device_id: DEVICE });
     }
@@ -278,50 +254,19 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     ]);
   });
 
-  it("tells ops nothing when a number FSM does not list is refused", async () => {
+  it("tells ops nothing when a number the roster does not hold is refused", async () => {
     for (let sent = 0; sent < 6; sent += 1)
       await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
     expect(deps.alerts).toEqual([]);
   });
 
-  it("spends none of the day's ceiling on a number FSM does not list", async () => {
+  it("spends none of the day's ceiling on a number the roster does not hold", async () => {
     tech = appFor("local", deps, { login: { ...LOCAL_SETTINGS.login, techCodeDailyCeiling: 1 } }, "tech");
     expect((await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE })).status).toBe(202);
-    expect((await post("/api/tech/auth/otp", { mobile: "98100 00007", device_id: DEVICE })).status).toBe(202);
-    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000007"]);
+    expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(202);
+    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000009"]);
   });
 
-  it("reads FSM's technicians for numbers the mirror does not know at most once in ten minutes", async () => {
-    let clock = NOW;
-    const listed: FsmTechnician[] = [];
-    const fsm = createStubFsm({ ...EMPTY_FSM, technicians: listed });
-    let reads = 0;
-    deps = fakeDependencies({
-      now: () => clock,
-      fsm: {
-        ...fsm,
-        technicians: () => {
-          reads += 1;
-          return fsm.technicians();
-        },
-      },
-    });
-    tech = appFor("local", deps, {}, "tech");
-
-    // Naveen tries before ops have added him in FSM, and again straight after.
-    await post("/api/tech/auth/otp", { mobile: "98100 00007", device_id: DEVICE });
-    listed.push(technician());
-    clock = new Date(NOW.getTime() + 60_000);
-    await post("/api/tech/auth/otp", { mobile: "98100 00007", device_id: DEVICE });
-    await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
-    expect(reads).toBe(1);
-    expect(deps.sentCodes).toEqual([]);
-
-    clock = new Date(NOW.getTime() + 10 * 60_000);
-    await post("/api/tech/auth/otp", { mobile: "98100 00007", device_id: DEVICE });
-    expect(reads).toBe(2);
-    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000007"]);
-  });
 });
 
 describe("a signed-in phone", () => {
@@ -373,9 +318,9 @@ describe("a signed-in phone", () => {
   });
 
   // A technician who has left keeps his phone, and on it the cards of the day:
-  // clients' addresses and mobiles. Being inactive in FSM ends his session at once,
+  // clients' addresses and mobiles. Being switched off ends his session at once,
   // and says why, so the phone sets aside what it has not sent rather than wipe it.
-  it("is signed out on its next call once FSM no longer lists him as active", async () => {
+  it("is signed out on its next call once ops switch him off", async () => {
     const cookie = await signIn();
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();
 
@@ -391,57 +336,10 @@ describe("a signed-in phone", () => {
   });
 });
 
-describe("the technician list", () => {
-  // ADR 0052: "A technician is recognised only if FSM lists him as an active field
-  // technician." FSM's list leaves out a user whose service resource was removed.
-  it("stops a technician FSM no longer lists at all, once the list is read again, and names him", async () => {
-    expect(await syncTechnicians(env.DB, deps.fsm, NOW.toISOString())).toEqual(["resource-1"]);
-
-    const rows = await env.DB.prepare("SELECT fsm_id, active FROM technicians ORDER BY fsm_id").all();
-    expect(rows.results).toEqual([
-      { fsm_id: "resource-1", active: 0 },
-      { fsm_id: "resource-3", active: 0 },
-      { fsm_id: "resource-9", active: 1 },
-    ]);
-    await challengeFor("98100 00009");
-    expect(deps.sentCodes).toEqual([]);
-  });
-
-  it("logs whom it stopped when a code request for a number it does not know reads the list again", async () => {
-    const logs = captureLogs();
-    expect((await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE })).status).toBe(202);
-
-    expect(logs.lines()).toContainEqual(
-      expect.objectContaining({ event: "technicians_deactivated", count: 1, fsm_ids: ["resource-1"] }),
-    );
-    const imran = await env.DB.prepare("SELECT active FROM technicians WHERE id = ?1").bind(IMRAN).first();
-    expect(imran).toEqual({ active: 0 });
-  });
-
-  // The tester's row on staging (scripts/seed-technician-tester.ts) and the staging proof's are written by hand,
-  // and FSM's list never names them. Until migration 0046 the list switched each off, and the tester's code
-  // request answered 202 and sent nothing.
-  it("leaves a technician written by hand alone, and his code still goes", async () => {
-    await env.DB.prepare(
-      `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
-       VALUES (?1, 'tech-tester-1a2b3c4d', 'Test Technician', 'TT', 1, 'Gurgaon', '+919810000008', ?2, 1)`,
-    )
-      .bind(TESTER, NOW.toISOString())
-      .run();
-
-    // A number the mirror does not know reads FSM's list again, which names neither Imran nor the tester.
-    await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
-    const { code } = await challengeFor("98100 00008");
-
-    const tester = await env.DB.prepare("SELECT active FROM technicians WHERE id = ?1").bind(TESTER).first();
-    expect(tester).toEqual({ active: 1 });
-    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000008"]);
-    expect(code).toMatch(/^\d{6}$/);
-  });
-
-  // The owner signs in on their own FSM user from 27 September 2026 (docs/owner-answers-2026-09-27.md). A test row
-  // left behind on the same number must not take the sign-in, whichever was written first.
-  it("prefers the technician FSM lists to one written by hand on the same number", async () => {
+describe("two technicians on one number", () => {
+  // The owner signs in on their own technician row from 27 September 2026 (docs/owner-answers-2026-09-27.md). A test
+  // row left behind on the same number must not take the sign-in, whichever was written first.
+  it("prefers the technician's own row to one written by hand on the same number", async () => {
     await env.DB.batch([
       env.DB.prepare("DELETE FROM technicians WHERE id = ?1").bind(IMRAN),
       env.DB.prepare(
@@ -450,7 +348,7 @@ describe("the technician list", () => {
       ).bind(TESTER, NOW.toISOString()),
       env.DB.prepare(
         `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
-         VALUES (?1, 'resource-1', 'Imran Qureshi', 'IQ', 1, 'Gurgaon', '+919810000009', ?2)`,
+         VALUES (?1, ?1, 'Imran Qureshi', 'IQ', 1, 'Gurgaon', '+919810000009', ?2)`,
       ).bind(IMRAN, NOW.toISOString()),
     ]);
 
@@ -458,30 +356,6 @@ describe("the technician list", () => {
 
     const challenge = await env.DB.prepare("SELECT technician_id FROM otp_challenges WHERE id = ?1").bind(id).first();
     expect(challenge).toEqual({ technician_id: IMRAN });
-  });
-
-  // FSM writes a user's mobile as "91-9810000007"; the mirror read that as no number, so he could never sign in.
-  it("reads a number FSM writes in its own 91- form, and his code goes to it", async () => {
-    deps = fakeDependencies({
-      fsm: createStubFsm({ ...EMPTY_FSM, technicians: [technician({ mobile: "91-9810000007" })] }),
-    });
-    tech = appFor("local", deps, {}, "tech");
-
-    await syncTechnicians(env.DB, deps.fsm, NOW.toISOString());
-    const naveen = await env.DB.prepare("SELECT mobile_e164 FROM technicians WHERE fsm_id = 'resource-9'").first();
-    expect(naveen).toEqual({ mobile_e164: "+919810000007" });
-
-    await challengeFor("+91 98100 00007");
-    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000007"]);
-  });
-
-  it("stops no one when FSM lists no one, which is a failed read rather than an empty org", async () => {
-    expect(await syncTechnicians(env.DB, createStubFsm(EMPTY_FSM), NOW.toISOString())).toEqual([]);
-
-    const active = await env.DB.prepare("SELECT COUNT(*) AS n FROM technicians WHERE active = 1").first<{
-      n: number;
-    }>();
-    expect(active?.n).toBe(1);
   });
 });
 

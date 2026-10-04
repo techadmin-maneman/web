@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError, validateStaticConfig } from "../../src/guard.ts";
-import { FSM_CATALOGUE_PUSH } from "../../src/config/environments.ts";
 import { isKnownTemplate } from "../../src/config/message-templates.ts";
 
 const REAL = {
@@ -9,7 +8,6 @@ const REAL = {
   MESSAGING_PROVIDER: "evolution",
   ACCESS_PROVIDER: "cloudflare",
   SMS_PROVIDER: "none",
-  FSM_PROVIDER: "none",
   BOOKS_PROVIDER: "none",
   PAYMENTS_PROVIDER: "none",
   GEOCODE_PROVIDER: "none",
@@ -20,7 +18,6 @@ const STUBS = {
   MESSAGING_PROVIDER: "stub",
   ACCESS_PROVIDER: "stub",
   SMS_PROVIDER: "stub",
-  FSM_PROVIDER: "stub",
   BOOKS_PROVIDER: "stub",
   PAYMENTS_PROVIDER: "stub",
   GEOCODE_PROVIDER: "stub",
@@ -61,16 +58,6 @@ const ZOHO = {
   ZOHO_LAR_ID: "4876876000000123",
 };
 
-/** FSM on Zoho, as staging has it: the client surface is on there. */
-const ZOHO_FSM = {
-  FSM_PROVIDER: "zoho",
-  ZOHO_FSM_CLIENT_ID: "1000.FSMCLIENT",
-  ZOHO_FSM_CLIENT_SECRET: "fsm-secret",
-  ZOHO_FSM_REFRESH_TOKEN: "1000.fsm-refresh",
-  ZOHO_FSM_ACCOUNTS_HOST: "accounts.zoho.in",
-  ZOHO_FSM_API_HOST: "www.zohoapis.in",
-};
-
 /** Books on Zoho, on a client of its own. */
 const ZOHO_BOOKS = {
   BOOKS_PROVIDER: "zoho",
@@ -83,8 +70,8 @@ const ZOHO_BOOKS = {
 };
 
 const production = { ENVIRONMENT: "production", ...REAL, ...SETTINGS, ...ALERTS, ...ZOHO, ...IMAGE, ...EVOLUTION };
-/** Staging has the client surface on, so FSM and Books are connected there. */
-const stagingBase = { ...production, ENVIRONMENT: "staging", ...ZOHO_FSM, ...ZOHO_BOOKS };
+/** Staging has the client surface on, so Books is connected there. */
+const stagingBase = { ...production, ENVIRONMENT: "staging", ...ZOHO_BOOKS };
 
 /** `env` without the named vars and secrets. */
 function without(env: Record<string, unknown>, names: readonly string[]): Record<string, unknown> {
@@ -131,7 +118,7 @@ describe("validateStaticConfig: environment and providers", () => {
 
   it("refuses a production Worker holding any stub provider, naming each one", () => {
     expect(problemsOf({ ...production, IMAGE_PROVIDER: "stub" })).toEqual(["IMAGE_PROVIDER is a stub in production"]);
-    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(9);
+    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(8);
   });
 
   it("refuses a missing or unknown provider", () => {
@@ -352,19 +339,6 @@ describe("validateStaticConfig: try-on and messaging", () => {
   });
 });
 
-// docs/decisions/0073-prices-from-the-price-book.md: staging's FSM is the owner's real org and its price book holds
-// placeholders, so a price typed into staging's console must never reprice the real catalogue.
-describe("the catalogue push", () => {
-  it("is never on in staging, which shares the owner's real FSM org", () => {
-    expect(FSM_CATALOGUE_PUSH.staging).toBe(false);
-  });
-
-  it("is each environment's own, as the settings read it", () => {
-    expect(validateStaticConfig(production).settings.fsmCataloguePush).toBe(FSM_CATALOGUE_PUSH.production);
-    expect(validateStaticConfig(stagingBase).settings.fsmCataloguePush).toBe(false);
-  });
-});
-
 describe("validateStaticConfig: the local fixed login code", () => {
   it("is taken locally, for the browser tests", () => {
     const local = { ENVIRONMENT: "local", ...STUBS, ...SETTINGS, OTP_FIXED_CODE: "123456" };
@@ -434,18 +408,7 @@ describe("validateStaticConfig: Cloudflare Access", () => {
   });
 });
 
-describe("validateStaticConfig: Zoho FSM and Books", () => {
-  it("reads the FSM client and its hosts in staging", () => {
-    expect(validateStaticConfig(stagingBase).settings.zohoFsm).toEqual({
-      clientId: "1000.FSMCLIENT",
-      clientSecret: "fsm-secret",
-      refreshToken: "1000.fsm-refresh",
-      accountsHost: "accounts.zoho.in",
-      apiHost: "www.zohoapis.in",
-      webhookToken: null,
-    });
-  });
-
+describe("validateStaticConfig: Zoho Books", () => {
   it("reads Books' own client, its hosts, its organisation and the refund account in staging", () => {
     expect(validateStaticConfig(stagingBase).settings.zohoBooks).toEqual({
       clientId: "1000.BOOKSCLIENT",
@@ -494,35 +457,14 @@ describe("validateStaticConfig: Zoho FSM and Books", () => {
     ]);
   });
 
-  it("requires every FSM setting while FSM is Zoho", () => {
-    const fsmSettings = Object.keys(ZOHO_FSM).filter((name) => name !== "FSM_PROVIDER");
-    expect(problemsOf(without(stagingBase, fsmSettings))).toEqual([
-      "ZOHO_FSM_CLIENT_ID is not set",
-      "ZOHO_FSM_CLIENT_SECRET is not set",
-      "ZOHO_FSM_REFRESH_TOKEN is not set",
-      "ZOHO_FSM_ACCOUNTS_HOST is not set",
-      "ZOHO_FSM_API_HOST is not set",
-    ]);
-  });
-
-  it("reads Books without FSM's client where FSM is off, as production has it", () => {
+  it("reads Books' client in production too", () => {
     const config = validateStaticConfig({ ...production, ...ZOHO_BOOKS });
     expect(config.settings.zohoBooks?.clientId).toBe("1000.BOOKSCLIENT");
-    expect(config.settings.zohoFsm).toBeNull();
-  });
-
-  it("reads FSM without Books' client where Books is not Zoho", () => {
-    const booksSettings = Object.keys(ZOHO_BOOKS);
-    const config = validateStaticConfig({ ...without(stagingBase, booksSettings), BOOKS_PROVIDER: "stub" });
-    expect(config.settings.zohoFsm?.clientId).toBe("1000.FSMCLIENT");
-    expect(config.settings.zohoBooks).toBeNull();
   });
 
   it("needs nothing from Zoho for the stubs or for none", () => {
     const local = validateStaticConfig({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS });
-    expect(local.settings.zohoFsm).toBeNull();
     expect(local.settings.zohoBooks).toBeNull();
-    expect(validateStaticConfig(production).settings.zohoFsm).toBeNull();
     expect(validateStaticConfig(production).settings.zohoBooks).toBeNull();
   });
 
@@ -533,14 +475,7 @@ describe("validateStaticConfig: Zoho FSM and Books", () => {
     expect(problemsOf(production)).toEqual([]);
   });
 
-  it("allows FSM off where the client surface is on, since our own database then holds the visits", () => {
-    expect(problemsOf({ ...without(stagingBase, Object.keys(ZOHO_FSM)), FSM_PROVIDER: "none" })).toEqual([]);
-  });
-
   it("refuses a Zoho host given as a URL", () => {
-    expect(problemsOf({ ...stagingBase, ZOHO_FSM_API_HOST: "https://www.zohoapis.in" })).toEqual([
-      "ZOHO_FSM_API_HOST must be a Zoho hostname, without https://",
-    ]);
     expect(problemsOf({ ...stagingBase, ZOHO_BOOKS_ACCOUNTS_HOST: "https://accounts.zoho.in" })).toEqual([
       "ZOHO_BOOKS_ACCOUNTS_HOST must be a Zoho hostname, without https://",
     ]);
@@ -605,10 +540,10 @@ describe("validateStaticConfig: the local dev routes", () => {
     expect(validateStaticConfig(local).settings.devRoutes).toBe(false);
   });
 
-  it("stop staging and production from starting, where they would close FSM jobs no technician worked", () => {
+  it("stop staging and production from starting, where they would close jobs no technician worked", () => {
     for (const environment of [stagingBase, production]) {
       expect(problemsOf({ ...environment, DEV_ROUTES: "on" })).toContain(
-        "DEV_ROUTES is set outside local: its routes stand in for FSM and would close jobs no technician worked",
+        "DEV_ROUTES is set outside local: its routes would close jobs no technician worked",
       );
     }
   });
