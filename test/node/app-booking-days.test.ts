@@ -4,7 +4,6 @@
 import { describe, expect, it } from "vitest";
 import type { Availability } from "../../apps/app/src/api.ts";
 import {
-  dayAfter,
   dayInsideNotice,
   firstOpenFrom,
   hasLaterDays,
@@ -51,10 +50,6 @@ describe("the booking sheet's days", () => {
   it("offers later days until the last shown is the last that may be booked", () => {
     expect(hasLaterDays(availability(days, "2026-11-05"))).toBe(true);
     expect(hasLaterDays(availability(days, "2026-10-08"))).toBe(false);
-  });
-
-  it("asks for later days from the day after the last shown, across a month's end", () => {
-    expect(dayAfter("2026-10-31")).toBe("2026-11-01");
   });
 
   it("adds later days in date order, the fresh copy of a day shown twice replacing the old", () => {

@@ -138,9 +138,3 @@ export const mayLetIn = (block: Block, now: number): boolean =>
 
 /** "Rohit", as the drawer's WhatsApp button names him. */
 export const firstNameOf = (person: BoardClient): string => person.name.trim().split(/\s+/)[0] ?? person.name;
-
-/** The India date `days` after `date`: the board's weeks are counted in whole days. */
-export function addDays(date: string, days: number): string {
-  const [year, month, day] = date.split("-").map(Number);
-  return new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, (day ?? 1) + days)).toISOString().slice(0, 10);
-}

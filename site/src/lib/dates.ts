@@ -1,5 +1,7 @@
 // The booking form's days, in India's calendar.
 
+import { addDays, todayInIndia } from "@maneman/web-kit/dates";
+
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const SHORT_WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = [
@@ -23,25 +25,9 @@ function partsOf(date: string): { day: number; month: number; weekday: number } 
   return { day, month, weekday: new Date(Date.UTC(year, month - 1, day)).getUTCDay() };
 }
 
-/** Today in India, as a calendar date. The visitor's own clock may be anywhere. */
-export function indiaToday(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
-}
-
-/** The first day a consultation can be booked: tomorrow in India. */
+/** The first day a consultation can be booked: tomorrow in India, wherever the visitor's own clock is set. */
 export function indiaTomorrow(now: Date = new Date()): string {
-  return addDays(indiaToday(now), 1);
-}
-
-export function addDays(date: string, days: number): string {
-  const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
-  const moved = new Date(Date.UTC(year, month - 1, day + days));
-  return moved.toISOString().slice(0, 10);
+  return addDays(todayInIndia(now.getTime()), 1);
 }
 
 /** One day of the date strip: drawn "Sat" over "3", read out as "Saturday 3 October". */

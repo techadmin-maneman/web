@@ -13,10 +13,6 @@ export interface NextVisitWords {
   readonly book: string;
 }
 
-/** The phone's month now, YYYY-MM. */
-export const monthNow = (now: Date): string =>
-  `${String(now.getFullYear())}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
 /** The month a replacement falls due, YYYY-MM, said as past once that month is. */
 export function replacementLine(dueMonth: string, thisMonth: string): string {
   const month = listMonth(dueMonth, Number(thisMonth.slice(0, 4)));

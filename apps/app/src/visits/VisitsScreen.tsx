@@ -13,7 +13,8 @@
 
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
-import { fullDate, listMonth, shortDate } from "@maneman/web-kit/dates";
+import { fullDate, listMonth, monthInIndia, shortDate, yearInIndia } from "@maneman/web-kit/dates";
+import { apiNow } from "../lib/clock.ts";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
 import { BookNext } from "../booking/BookNext.tsx";
@@ -111,9 +112,9 @@ function UpcomingItem({ entry }: { entry: UpcomingEntry }) {
 function Record({ history }: { history: Visits["history"] }) {
   const due = history.replacement_due;
   if (history.visits === 0 && due === null) return null;
-  const now = new Date();
-  const thisMonth = `${String(now.getFullYear())}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const month = due === null ? "" : listMonth(due.month, now.getFullYear());
+  const now = apiNow();
+  const thisMonth = monthInIndia(now);
+  const month = due === null ? "" : listMonth(due.month, yearInIndia(now));
   return (
     <section className={styles.record} aria-labelledby="record">
       <h2 className={`${styles.label ?? ""} ${styles.recordLabel ?? ""}`} id="record">

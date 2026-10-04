@@ -23,6 +23,35 @@ const MONTH_NAMES = [
 /** India is five and a half hours ahead of UTC, all year: it keeps no summer time. */
 const INDIA_OFFSET_MS = 330 * 60 * 1000;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** "2026-09-24" as its numbered parts, month 1 to 12. */
+function partsOf(isoDate: string): { year: number; month: number; day: number } {
+  const [year = 1970, month = 1, day = 1] = isoDate.split("-").map(Number);
+  return { year, month, day };
+}
+
+/** "2026-09-30", 2 → "2026-10-02". A calendar date moves by whole days, so no time zone applies. */
+export function addDays(isoDate: string, days: number): string {
+  return new Date(Date.parse(`${isoDate}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/** Whole minutes from one instant to another: negative when `to` is the earlier. */
+export const minutesBetween = (from: string, to: string): number =>
+  Math.round((Date.parse(to) - Date.parse(from)) / 60_000);
+
+/**
+ * India's calendar date at `nowMs`, YYYY-MM-DD, whatever zone the phone is set to. The client app passes apiNow(),
+ * so a phone whose clock is out cannot move the day either.
+ */
+export const todayInIndia = (nowMs: number): string => new Date(nowMs + INDIA_OFFSET_MS).toISOString().slice(0, 10);
+
+/** India's month at `nowMs`, YYYY-MM. */
+export const monthInIndia = (nowMs: number): string => todayInIndia(nowMs).slice(0, 7);
+
+/** India's year at `nowMs`. */
+export const yearInIndia = (nowMs: number): number => partsOf(todayInIndia(nowMs)).year;
+
 /** An instant as India's wall clock, to be read with the getUTC methods: its date, hour and minute there. */
 export function inIndia(isoInstant: string): Date {
   return new Date(new Date(isoInstant).getTime() + INDIA_OFFSET_MS);
@@ -33,29 +62,33 @@ export function indiaInstant(date: string, time: string): Date {
   return new Date(Date.parse(`${date}T${time}:00Z`) - INDIA_OFFSET_MS);
 }
 
+/** The day of the week a calendar date falls on, 0 for Sunday. */
+const weekdayOf = (isoDate: string): number => new Date(`${isoDate}T00:00:00Z`).getUTCDay();
+
+/** "2026-08-22" → "22 Aug", as board A3 dates the last visit. */
+export function dayMonth(isoDate: string): string {
+  const { month, day } = partsOf(isoDate);
+  return `${String(day)} ${MONTHS[month - 1] ?? ""}`;
+}
+
 /** "2026-09-24" → "Thu 24 Sep". */
 export function shortDate(isoDate: string): string {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  const date = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1));
-  return `${DAYS[date.getUTCDay()] ?? ""} ${String(date.getUTCDate())} ${MONTHS[date.getUTCMonth()] ?? ""}`;
+  return `${DAYS[weekdayOf(isoDate)] ?? ""} ${dayMonth(isoDate)}`;
 }
 
 /** "2026-09-24" → "Thursday 24 Sep", as board C3 heads the day. */
 export function weekdayDate(isoDate: string): string {
-  const day = new Date(`${isoDate}T00:00:00Z`).getUTCDay();
-  return `${WEEKDAYS[day] ?? ""} ${shortDate(isoDate).slice(4)}`;
+  return `${WEEKDAYS[weekdayOf(isoDate)] ?? ""} ${dayMonth(isoDate)}`;
 }
 
 /** "2027-08-22" → "22 Aug 2027". */
 export function fullDate(isoDate: string): string {
-  const [year = "", month, day] = isoDate.split("-");
-  return `${String(Number(day))} ${MONTHS[Number(month) - 1] ?? ""} ${year}`;
+  return `${dayMonth(isoDate)} ${String(partsOf(isoDate).year)}`;
 }
 
 /** "2027-08-22" → "22 Aug" in 2027, and "22 Aug 2027" in any other year: as board E1 dates its entries. */
 export function listDate(isoDate: string, thisYear: number): string {
-  const full = fullDate(isoDate);
-  return isoDate.startsWith(String(thisYear)) ? full.slice(0, full.lastIndexOf(" ")) : full;
+  return partsOf(isoDate).year === thisYear ? dayMonth(isoDate) : fullDate(isoDate);
 }
 
 /** "2028-03" → "Mar 2028", as the ops board heads a client's replacement. */

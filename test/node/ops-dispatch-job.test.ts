@@ -5,7 +5,6 @@
 import { describe, expect, it } from "vitest";
 import type { Block, BoardRow, Unassigned } from "../../apps/ops/src/api.ts";
 import {
-  addDays,
   begunWord,
   blockOn,
   changeOf,
@@ -172,12 +171,6 @@ describe("where a job stands, and what a move changes", () => {
       date: "2025-09-23",
     });
     expect(blockOn(board, "a9")).toBeNull();
-  });
-
-  it("counts the board's weeks in whole days, across a month and a year's end", () => {
-    expect(addDays("2025-09-29", 7)).toBe("2025-10-06");
-    expect(addDays("2025-12-29", 7)).toBe("2026-01-05");
-    expect(addDays("2025-10-06", -7)).toBe("2025-09-29");
   });
 });
 

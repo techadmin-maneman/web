@@ -18,7 +18,7 @@
 import { Button } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { type Loaded, useLoad } from "@maneman/ui/useLoad";
-import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, indiaDate, minutesBetween, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { api, type Charge, type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
@@ -147,7 +147,6 @@ function Money() {
 const copy = noShows.queue;
 
 /** Whole minutes from one instant to another. */
-const minutesBetween = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 60_000);
 
 /** "5 h 8 m after the booked start", or before it, as board D3 writes a length. */
 function offsetOf(minutesLate: number): string {
