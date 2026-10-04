@@ -253,17 +253,21 @@ export const ROHITS_PROFILE: HairProfile = {
   history: { remedies: ["minoxidil"], transplant_year: null, skin_and_allergies: "Dry at the crown" },
 };
 
-/** The API's steps (src/policy/in-job-steps.ts): a consultation and a one visit take the profile. */
+/**
+ * The API's steps (src/policy/in-job-steps.ts): a consultation and a one visit take the profile, and a consultation
+ * takes no after photographs.
+ */
 function stepsFor(type: VisitType, oneVisit = false): Step[] {
   const takesPiece = oneVisit || type === "replacement" || type === "first_fit";
   const takesProfile = oneVisit || type === "consultation";
+  const takesAfterPhotos = oneVisit || type !== "consultation";
   return [
     "before_photos",
     "checklist",
     "consumables",
     ...(takesPiece ? (["piece"] as const) : []),
     ...(takesProfile ? (["profile"] as const) : []),
-    "after_photos",
+    ...(takesAfterPhotos ? (["after_photos"] as const) : []),
     "outcome",
   ];
 }

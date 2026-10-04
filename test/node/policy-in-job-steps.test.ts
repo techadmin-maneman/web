@@ -2,7 +2,14 @@
 
 import { describe, expect, it } from "vitest";
 import { ANGLES } from "../../src/domain/visit-photos.ts";
-import { PHOTO_ANGLES, RULES, stepBefore, stepsFor } from "../../src/policy/in-job-steps.ts";
+import {
+  CONSULTATION_PHOTOS_RULE,
+  PHOTO_ANGLES,
+  RULES,
+  stepBefore,
+  stepsFor,
+  takesStep,
+} from "../../src/policy/in-job-steps.ts";
 
 const done = (...kinds: string[]): ReadonlySet<string> => new Set(kinds);
 
@@ -34,6 +41,20 @@ describe("the steps of a job", () => {
 
   it("gives a first fit the piece step too: it fits the client's first piece (docs/decisions/0038-offline-writes.md)", () => {
     expect(stepsFor("first_fit")).toContain("piece");
+  });
+
+  it(CONSULTATION_PHOTOS_RULE, () => {
+    expect(stepsFor("consultation")).toEqual(["before_photos", "checklist", "consumables", "outcome"]);
+    expect(takesStep("after_photos", "consultation")).toBe(false);
+    expect(takesStep("before_photos", "consultation")).toBe(true);
+    // A consultation and fit in one visit fits a piece, so it is photographed after as a first fit is.
+    expect(takesStep("after_photos", "consultation", true)).toBe(true);
+    for (const type of ["first_fit", "service", "replacement"] as const) {
+      expect(takesStep("after_photos", type)).toBe(true);
+    }
+    // Its outcome follows the consumables.
+    const toConsumables = done("check_in", "start", "before_photos", "checklist", "consumables");
+    expect(stepBefore("outcome", "consultation", toConsumables, { outcome: "done" })).toBeNull();
   });
 
   it("takes no step before the one ahead of it, so a job sheet cannot close from an empty screen", () => {

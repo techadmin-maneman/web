@@ -81,13 +81,13 @@ import {
   uploadLink,
   type PhotoSlot,
 } from "../domain/tech-photos.ts";
-import { ANGLES, PHASES } from "../domain/visit-photos.ts";
+import { ANGLES, PHASES, type Phase } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse, type ErrorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { requireTechnicianSession, technicianOf } from "../http/technician-session.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { timeOfUuidV7 } from "../lib/uuidv7.ts";
-import { CARD_STEPS, stepsFor, type JobEventKind } from "../policy/in-job-steps.ts";
+import { CARD_STEPS, takesStep, type JobEventKind } from "../policy/in-job-steps.ts";
 import { takesProfile } from "../policy/hair-profile.ts";
 import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import { noShowWaitEnds } from "../policy/no-show.ts";
@@ -854,6 +854,7 @@ export function registerTechJobs(app: App): void {
       return c.json(refusalOf(c, superseded(superseding)), 409);
     }
     const { phase, angle } = c.req.valid("json");
+    if (!takesPhotoSet(job, phase)) return c.json(errorBody("invalid_request", c.var.requestId, ["phase"]), 400);
     const link = await uploadLink(c.var.config.settings.tryon.linkSigningKey, { appointmentId: id, phase, angle }, now);
     return c.json(
       { upload_url: link.url, small_upload_url: link.smallUrl, expires_at: link.expiresAt.toISOString() },
@@ -897,10 +898,10 @@ export function registerTechJobs(app: App): void {
 
   app.openapi(photosRoute, async (c) => {
     const phase = c.req.valid("json").phase;
-    return step(c, phase === "before" ? "before_photos" : "after_photos", async (job) => ({
-      phase,
-      angles: await anglesHeld(c.env.DB, job.id, phase),
-    }));
+    return step(c, photoStepOf(phase), async (job) => {
+      if (!takesPhotoSet(job, phase)) return { invalid: ["phase"] };
+      return { phase, angles: await anglesHeld(c.env.DB, job.id, phase) };
+    });
   });
 
   // An item ops have taken off since the phone kept the job is still one it may send.
@@ -1110,13 +1111,20 @@ async function step(
   return c.json(landing.accepted, 202);
 }
 
+const photoStepOf = (phase: Phase) => (phase === "before" ? "before_photos" : "after_photos");
+
+/** Whether the job takes this set of photographs: a consultation takes none after. */
+function takesPhotoSet(job: WorkableJob, phase: Phase): boolean {
+  return takesStep(photoStepOf(phase), job.type, job.oneVisit !== null);
+}
+
 type PieceBody = z.infer<typeof PieceRequestSchema>;
 
 /** The piece step's body for this job: a one visit's choice, or a piece fitted or failed where the job takes one. */
 async function pieceBody(c: Ctx, job: WorkableJob, body: PieceBody): Promise<StepBody> {
   if (job.oneVisit !== null) return oneVisitPiece(c, job, body);
   if ("declined" in body || body.product !== undefined) return { invalid: ["product"] };
-  if (!(stepsFor(job.type) as string[]).includes("piece")) return { invalid: ["piece_code"] };
+  if (!takesStep("piece", job.type)) return { invalid: ["piece_code"] };
   return fittedPiece(body);
 }
 

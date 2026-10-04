@@ -264,6 +264,15 @@ const SearchAnswer = z.object({ data: z.array(z.object({ id: z.string() })).defa
 
 type ZohoApi = ReturnType<typeof createZohoApi>;
 
+/** The CRM's one read on its own, finding a person's Lead by their person ID, for a caller that must never write. */
+export function createZohoLeadFinder(
+  settings: ZohoSettings,
+  deps: ZohoDependencies,
+): (personId: string) => Promise<string | null> {
+  const api = createZohoApi(settings, deps);
+  return (personId) => api.findLeadByPersonId(personId);
+}
+
 function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
   const request = createZohoRequester("crm", settings, deps);
 

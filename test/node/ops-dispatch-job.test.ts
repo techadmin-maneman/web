@@ -11,6 +11,7 @@ import {
   changesTime,
   firstNameOf,
   isMovable,
+  movesIfCheckInCleared,
   nameOf,
   shownOf,
   whenOf,
@@ -118,6 +119,14 @@ describe("where a job stands, and what a move changes", () => {
     expect(isMovable(block({ status: "in_progress" }))).toBe(false);
     expect(isMovable(block({ status: "scheduled", begun: "arrived" }))).toBe(false);
     expect(isMovable(block({ status: "completed" }))).toBe(false);
+  });
+
+  it("moves a visit the technician has only checked in at once ops clear the check-in, and none further on", () => {
+    expect(movesIfCheckInCleared(block({ status: "scheduled", begun: "arrived" }))).toBe(true);
+    expect(movesIfCheckInCleared(block({ status: "dispatched", begun: "arrived" }))).toBe(true);
+    expect(movesIfCheckInCleared(block({ status: "scheduled", begun: null }))).toBe(false);
+    expect(movesIfCheckInCleared(block({ status: "dispatched", begun: "started" }))).toBe(false);
+    expect(movesIfCheckInCleared(block({ status: "in_progress", begun: "arrived" }))).toBe(false);
   });
 
   it("says how far the technician has got on a visit not yet done, from his phone", () => {

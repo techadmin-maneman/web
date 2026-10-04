@@ -1629,8 +1629,38 @@ describe.each(RECORDS)("dispatch, once the technician has begun, on %s's record"
       reason: "running_over",
     });
 
+  /** Tomorrow at 09:00 in India, where a move to tomorrow's morning puts today's job. */
+  const TOMORROW_MORNING = "2026-09-22T03:30:00.000Z";
+
+  const moveTomorrowMorning = (extra: Record<string, unknown> = {}) =>
+    opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
+      date: "2026-09-22",
+      window: "morning",
+      reason: "client_asked",
+      ...extra,
+    });
+
   const visitNow = () =>
     env.DB.prepare("SELECT technician_id, window_start FROM appointments WHERE id = ?1").bind(TODAY_JOB).first();
+
+  const stepsLanded = async () =>
+    (
+      await env.DB.prepare("SELECT kind, superseded FROM job_events WHERE appointment_id = ?1 ORDER BY received_at")
+        .bind(TODAY_JOB)
+        .all()
+    ).results;
+
+  const checkInsCleared = async () =>
+    (
+      await env.DB.prepare("SELECT subject_id, detail FROM audit_log WHERE action = 'dispatch.check_in_cleared'").all<{
+        subject_id: string;
+        detail: string;
+      }>()
+    ).results;
+
+  const roomNow = () => request(ops, `/api/dispatch/room?appointment_id=${TODAY_JOB}&from=2026-09-21`, {}, bindings());
 
   /** Today's job as the board draws it on Imran's row. */
   async function blockOnTheBoard(): Promise<Record<string, unknown> | undefined> {
@@ -1664,16 +1694,71 @@ describe.each(RECORDS)("dispatch, once the technician has begun, on %s's record"
     expect(await visitNow()).toEqual({ technician_id: IMRAN, window_start: TODAY_START.toISOString() });
   });
 
-  it("offers it no room, and the board says how far he has got", async () => {
+  it("offers room once he has checked in, none once he has started, and the board says how far he has got", async () => {
     expect(await blockOnTheBoard()).toMatchObject({ begun: null });
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
 
-    const room = await request(ops, `/api/dispatch/room?appointment_id=${TODAY_JOB}&from=2026-09-21`, {}, bindings());
-
-    expect(room.status).toBe(404);
+    expect((await roomNow()).status).toBe(200);
     expect(await blockOnTheBoard()).toMatchObject({ begun: "arrived" });
     await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+    expect((await roomNow()).status).toBe(404);
     expect(await blockOnTheBoard()).toMatchObject({ begun: "started" });
+  });
+
+  it("moves a visit he has only checked in at once ops clear the check-in, and records who chose it", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    const answer = await moveTomorrowMorning({ clear_check_in: true });
+
+    expect(answer.status).toBe(200);
+    expect(await visitNow()).toEqual({ technician_id: IMRAN, window_start: TOMORROW_MORNING });
+    expect(await stepsLanded()).toEqual([{ kind: "check_in", superseded: 1 }]);
+    const move = await env.DB.prepare("SELECT id FROM dispatch_moves").first<{ id: string }>();
+    expect(await checkInsCleared()).toEqual([{ subject_id: TODAY_JOB, detail: JSON.stringify({ move_id: move?.id }) }]);
+  });
+
+  it("refuses his next step sent with the start he saw at check-in, and takes his check-in on the new day", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    await moveTomorrowMorning({ clear_check_in: true });
+
+    const start = await postAt(minutesAfterStart(5), `/api/tech/jobs/${TODAY_JOB}/start`, undefined, uuidv7At(5), {
+      "X-Job-Starts-At": TODAY_START.toISOString(),
+    });
+
+    expect(start.status).toBe(409);
+    expect(await start.json()).toMatchObject({ error: { code: "superseded", fields: ["time"] } });
+    const tomorrow = new Date(Date.parse(TOMORROW_MORNING) + 2 * 60_000);
+    const checkIn = `/api/tech/jobs/${TODAY_JOB}/checkin`;
+    const atTheNewTime = { "X-Job-Starts-At": TOMORROW_MORNING };
+    const again = await postAt(tomorrow, checkIn, AT_THE_DOOR, uuidv7(tomorrow.getTime()), atTheNewTime);
+    expect(again.status).toBe(200);
+    expect(await again.json()).toMatchObject({ passed: true });
+    expect((await stepsLanded()).filter((step) => step.superseded === 0)).toEqual([
+      { kind: "check_in", superseded: 0 },
+    ]);
+  });
+
+  it("will not clear the check-in of a visit he has started, and writes nothing", async () => {
+    await startJob();
+
+    const answer = await moveTomorrowMorning({ clear_check_in: true });
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "in_progress" } });
+    expect(await visitNow()).toEqual({ technician_id: IMRAN, window_start: TODAY_START.toISOString() });
+    expect(await stepsLanded()).toEqual([
+      { kind: "check_in", superseded: 0 },
+      { kind: "start", superseded: 0 },
+    ]);
+    expect(await checkInsCleared()).toEqual([]);
+  });
+
+  it("moves a visit nobody has begun as any other move, clearing nothing", async () => {
+    const answer = await moveTomorrowMorning({ clear_check_in: true });
+
+    expect(answer.status).toBe(200);
+    expect(await visitNow()).toEqual({ technician_id: IMRAN, window_start: TOMORROW_MORNING });
+    expect(await checkInsCleared()).toEqual([]);
   });
 });
 

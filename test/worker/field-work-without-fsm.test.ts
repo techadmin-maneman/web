@@ -505,6 +505,50 @@ describe("dispatch, without FSM", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first()).toEqual({ n: 0 });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_claims").first()).toEqual({ n: 0 });
   });
+
+  it("writes nothing when the technician starts the visit under a move that clears his check-in", async () => {
+    await work(minutesAfterStart(2), TODAY_JOB, [["checkin", AT_THE_DOOR, 2]]);
+    // His start lands between the move's checks and its write.
+    const db = env.DB;
+    const startedMeanwhile: Pick<D1Database, "prepare" | "batch"> = {
+      prepare: (sql) => db.prepare(sql),
+      batch: async <T = unknown>(statements: D1PreparedStatement[]) => {
+        await postAt(minutesAfterStart(5), `/api/tech/jobs/${TODAY_JOB}/start`, undefined, uuidv7At(5));
+        return db.batch<T>(statements);
+      },
+    };
+
+    const outcome = await moveJob(
+      startedMeanwhile as D1Database,
+      { fsm: fsmSwitchedOff(), labelAsTest: true, record: "ours" },
+      {
+        appointmentId: TODAY_JOB,
+        date: "2026-09-22",
+        window: "morning",
+        reason: "client_asked",
+        actor: "ops@maneman.test",
+        expected: { technicianId: IMRAN, startsAt: TODAY_START.toISOString() },
+        clearCheckIn: {
+          surface: "ops",
+          actor: { kind: "staff", id: "ops@maneman.test" },
+          action: "dispatch.check_in_cleared",
+          subject: { kind: "appointment", id: TODAY_JOB },
+          requestId: null,
+        },
+      },
+      NOW,
+    );
+
+    expect(outcome).toEqual({ kind: "in_progress" });
+    const visit = await env.DB.prepare("SELECT window_start, status FROM appointments WHERE id = ?1")
+      .bind(TODAY_JOB)
+      .first();
+    expect(visit).toEqual({ window_start: TODAY_START.toISOString(), status: "in_progress" });
+    const cleared = await env.DB.prepare("SELECT COUNT(*) AS n FROM job_events WHERE superseded = 1").first();
+    expect(cleared).toEqual({ n: 0 });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first()).toEqual({ n: 0 });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log").first()).toEqual({ n: 0 });
+  });
 });
 
 describe("an erasure, without FSM", () => {

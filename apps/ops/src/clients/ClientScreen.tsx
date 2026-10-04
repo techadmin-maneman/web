@@ -23,6 +23,7 @@ import type { ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Consents } from "./Consents.tsx";
+import { Erased } from "./Erase.tsx";
 import { History, replacementDueOf } from "./History.tsx";
 import type { InviteNews } from "./Invite.tsx";
 import { Payments } from "./Payments.tsx";
@@ -106,6 +107,7 @@ function Tab({
   address,
   onAddress,
   onChanged,
+  onErased,
   photos,
 }: {
   clientId: string;
@@ -118,6 +120,7 @@ function Tab({
   address: Address;
   onAddress: (address: NonNullable<Address>) => void;
   onChanged: () => void;
+  onErased: () => void;
   photos: ReturnType<typeof usePhotos>;
 }) {
   if (tab === "visits") {
@@ -139,7 +142,7 @@ function Tab({
       />
     );
   }
-  if (tab === "consents") return <Consents clientId={clientId} />;
+  if (tab === "consents") return <Consents clientId={clientId} name={record.name} onErased={onErased} />;
   if (tab === "history") return <History history={record.history} />;
   return <Photos photos={photos} name={record.name} />;
 }
@@ -153,6 +156,15 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   const [attached, setAttached] = useState<Attached | null>(null);
   // An address a client gave on the phone, saved on this page, which stands over the one read on opening.
   const [given, setGiven] = useState<{ address: NonNullable<Address> } | null>(null);
+  const [erasedId, setErasedId] = useState<string | null>(null);
+
+  if (erasedId === clientId) {
+    return (
+      <Shell section="/clients" title={clients.title} flush>
+        <Erased />
+      </Shell>
+    );
+  }
 
   return (
     <Shell section="/clients" title={clients.title} flush>
@@ -198,6 +210,9 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                   setGiven({ address });
                 }}
                 onChanged={retry}
+                onErased={() => {
+                  setErasedId(clientId);
+                }}
                 photos={photos}
               />
             </div>
