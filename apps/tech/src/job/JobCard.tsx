@@ -161,7 +161,10 @@ export function JobCard({ job }: { job: Job }) {
       <section className={styles.address}>
         <p className={styles.line}>{addressLine(job.address)}</p>
         {job.address.landmark !== null && job.address.landmark.trim() !== "" && (
-          <p className={styles.access}>{copy.near(job.address.landmark)}</p>
+          <dl className={styles.landmark}>
+            <dt className={styles.landmarkLabel}>{copy.landmark}</dt>
+            <dd className={styles.access}>{job.address.landmark}</dd>
+          </dl>
         )}
         {job.access_notes !== null && <p className={styles.access}>{job.access_notes}</p>}
         {client !== null && clientNote !== null && (

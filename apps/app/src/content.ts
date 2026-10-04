@@ -941,8 +941,8 @@ export const profile = {
   // PLACEHOLDER: the design draws the profile with an address already given, and no form.
   noAddress: "No address yet. Add it before you book.",
   addAddress: "Add your address and access notes",
-  // PLACEHOLDER: the design draws no landmark line (ADR 0054).
-  near: (landmark: string) => `Near ${landmark}`,
+  // PLACEHOLDER: the design draws no landmark; the client types it as they like, so it shows as typed.
+  landmark: "Landmark",
   // PLACEHOLDER: an address the client gave ops on the phone, which ops saved for them (ADR 0092).
   givenToOps: (date: string) =>
     `You gave us this address on the phone on ${date}. If anything is wrong, change it here.`,
