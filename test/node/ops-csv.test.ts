@@ -1,10 +1,10 @@
 // The service-area file the console takes back and hands out
-// (apps/ops/src/settings/csv.ts). A file that leaves a column out must not
+// (apps/ops/src/areas/csv.ts). A file that leaves a column out must not
 // switch every pincode off (FEO-03), and a list opened in a spreadsheet must
 // not run anything written into it (SEC-03).
 
 import { describe, expect, it } from "vitest";
-import { readServiceAreaCsv, serviceAreaCsv } from "../../apps/ops/src/settings/csv.ts";
+import { readServiceAreaCsv, serviceAreaCsv } from "../../apps/ops/src/areas/csv.ts";
 
 describe("reading the file ops upload", () => {
   it("refuses a file without all three of its columns, rather than reading a missing one as no", () => {

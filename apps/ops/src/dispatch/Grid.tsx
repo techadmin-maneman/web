@@ -10,7 +10,7 @@
 // of windows are not each a stop in the tab order (FEO-14).
 
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { shortDate } from "@maneman/web-kit/dates";
+import { inIndia, shortDate } from "@maneman/web-kit/dates";
 import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
 import label from "../components/label.module.css";
@@ -33,6 +33,12 @@ const whatOf = (block: Block) =>
   [block.sector, block.type === null ? null : dispatch.types[block.type]]
     .filter((part): part is string => typeof part === "string")
     .join(" · ");
+
+/** "10:30", "16:00": when a block starts, on India's 24-hour clock, short enough to sit beside the client's name. */
+function startOf(block: Block): string {
+  const india = inIndia(block.starts_at);
+  return `${String(india.getUTCHours())}:${String(india.getUTCMinutes()).padStart(2, "0")}`;
+}
 
 /** The board's three inks: a first fit on ink, a replacement shaded, everything else on light paper. */
 function inkOf(block: Block): string | undefined {
@@ -95,7 +101,10 @@ function BlockButton({ job, onOpen, onTake }: BlockButtonProps) {
         onOpen(job, event.currentTarget);
       }}
     >
-      <span className={styles.who}>{block.client ?? dispatch.unknown}</span>
+      <span className={styles.who}>
+        <span className={styles.name}>{block.client ?? dispatch.unknown}</span>
+        <span className={styles.at}>{startOf(block)}</span>
+      </span>
       <span className={styles.what}>{whatOf(block)}</span>
       {begun !== null && <span className={styles.what}>{begun}</span>}
     </button>

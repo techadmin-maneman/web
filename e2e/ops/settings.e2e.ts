@@ -35,13 +35,13 @@ const ROUTES: Answers = {
   "GET /api/discount-codes": json(DISCOUNT_CODES),
 };
 
-const PANELS = ["/settings", "/prices", "/discount-codes", "/service-area", "/settings/blackouts"];
+const PANELS = ["/settings", "/prices", "/discount-codes", "/areas/served", "/settings/blackouts"];
 
-/** The panels that were tabs of Settings and are now sections of their own departments, by their headings. */
+/** The panels that were tabs of Settings and are now in sections of their own departments, by their headings. */
 const OWN_SECTIONS: Readonly<Record<string, string>> = {
   "/prices": "Prices",
   "/discount-codes": "Discount codes",
-  "/service-area": "Service area",
+  "/areas/served": "Areas",
 };
 
 async function open(page: Page, path = "/settings", extra: Answers = {}): Promise<void> {
@@ -398,10 +398,10 @@ test.describe("the rules", () => {
   test("offers a base of its own on the open rule, and none where the keys are fixed", async ({ page }) => {
     await open(page);
     await expect(
-      page.getByRole("group", { name: "Replacement cycle" }).getByLabel("Base, exactly as FSM names it"),
+      page.getByRole("group", { name: "Replacement cycle" }).getByLabel("Base, exactly as the technician records it"),
     ).toBeVisible();
     await expect(
-      page.getByRole("group", { name: "No-show wait" }).getByLabel("Base, exactly as FSM names it"),
+      page.getByRole("group", { name: "No-show wait" }).getByLabel("Base, exactly as the technician records it"),
     ).toHaveCount(0);
   });
 });
@@ -413,17 +413,13 @@ test.describe("the services and their prices", () => {
   const block = (page: Page, name: string) =>
     page.getByRole("listitem").filter({ has: page.getByRole("heading", { name, exact: true }) });
 
-  test("lists each kind's services with their length, whether FSM has them, and whether they are offered", async ({
-    page,
-  }) => {
+  test("lists each kind's services with their length, and whether they are offered", async ({ page }) => {
     await open(page, "/prices");
     for (const kind of ["Consultation", "First fit", "Service visit", "Replacement"]) {
       await expect(page.getByRole("heading", { level: 3, name: kind, exact: true })).toBeVisible();
     }
-    await expect(block(page, "Service visit")).toContainText(
-      "90 minutes · code standard · In FSM's catalogue · Offered",
-    );
-    await expect(block(page, "Premium")).toContainText("240 minutes · code premium · Not found in FSM's catalogue yet");
+    await expect(block(page, "Service visit")).toContainText("90 minutes · code standard · Offered");
+    await expect(block(page, "Premium")).toContainText("240 minutes · code premium");
     await expect(block(page, "Lace replacement")).toContainText("Retired from 1 Sep 2027");
   });
 
@@ -596,6 +592,21 @@ test.describe("the services and their prices", () => {
     expect((await request).postDataJSON()).toEqual({ name: "Premium first fit" });
   });
 
+  test("gives a service the line clients read under its name, shown beside the one it replaces", async ({ page }) => {
+    await open(page, "/prices", { "POST /api/services/first_fit/premium/description": json(SERVICES) });
+    await expect(page.getByText("Clients read: “A finer lace front, for a closer look.”")).toBeVisible();
+    await page.getByRole("button", { name: "Change the description of Premium" }).click();
+    await expect(page.getByLabel("Description", { exact: true })).toHaveAttribute("maxlength", "160");
+    await page.getByLabel("Description", { exact: true }).fill("Natural, even at the parting.");
+    await page.getByRole("button", { name: "Check the change" }).click();
+    await expect(page.getByRole("group", { name: "Check the change" })).toContainText(
+      "Premium: “A finer lace front, for a closer look.” → “Natural, even at the parting.”",
+    );
+    const request = posted(page, "/api/services/first_fit/premium/description");
+    await page.getByRole("button", { name: "Save it" }).click();
+    expect((await request).postDataJSON()).toEqual({ description: "Natural, even at the parting." });
+  });
+
   test("gives a service another length, inside what the day holds", async ({ page }) => {
     await open(page, "/prices", { "POST /api/services/first_fit/premium/length": json(SERVICES) });
     await page.getByRole("button", { name: "Change the length of Premium" }).click();
@@ -655,11 +666,11 @@ test.describe("the services and their prices", () => {
   });
 });
 
-test.describe("the service area", () => {
+test.describe("the service area, Areas' Served tab", () => {
   const area = (page: Page, pincode: string) => page.getByRole("textbox", { name: `Area name for ${pincode}` });
 
   test("lists one city at a time, since 198 pincodes is not a page", async ({ page }) => {
-    await open(page, "/service-area");
+    await open(page, "/areas/served");
     await expect(page.getByRole("button", { name: "Delhi · 1 of 2" })).toBeVisible();
     await expect(area(page, "110017")).toHaveValue("Saket");
     // Gurgaon's pincode is not drawn until its city is chosen.
@@ -670,7 +681,7 @@ test.describe("the service area", () => {
   });
 
   test("sends only the pincodes that changed", async ({ page }) => {
-    await open(page, "/service-area", {
+    await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
     await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
@@ -686,7 +697,7 @@ test.describe("the service area", () => {
 
   // OPS-13: launch messages read "we now come to Sec91", with no way to say it better.
   test("sends a better name for an area, and refuses one a spreadsheet would run", async ({ page }) => {
-    await open(page, "/service-area", {
+    await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
     await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
@@ -703,26 +714,29 @@ test.describe("the service area", () => {
   });
 
   test("fills a whole city in one press", async ({ page }) => {
-    await open(page, "/service-area");
+    await open(page, "/areas/served");
     await page.getByRole("button", { name: "Serve all of Delhi" }).click();
     await expect(page.getByRole("button", { name: "Delhi · 2 of 2" })).toBeVisible();
     await expect(page.getByRole("checkbox", { name: "Served 110024" })).toBeChecked();
   });
 
-  // FEO-02: serving a pincode here sent none of the launch alerts the waitlist's launch sends.
+  // FEO-02: serving a pincode here sent none of the launch alerts the waitlist's launch sends. OIA-13: it had a
+  // launch panel of its own; it now opens the one Waiting uses.
   test("says who serving a pincode will message, and messages them only once ops agree", async ({ page }) => {
-    await open(page, "/service-area", {
+    await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 3 }),
     });
     await page.getByRole("checkbox", { name: "Served 110024" }).check();
     await page.getByRole("button", { name: "Save these pincodes" }).click();
 
-    const check = page.getByRole("group", { name: "This messages 3 people" });
+    const check = page.getByRole("region", { name: "Mark 110024 live" });
     await expect(check).toBeFocused();
+    await expect(check).toContainText("This messages 3 people");
     await expect(check).toContainText("110024, Lajpat Nagar: 3 waiting ask to be told.");
+    await expect(check).toContainText("The 2 who did not opt in are not messaged.");
 
     const sent = posted(page, "/api/service-area");
-    await check.getByRole("button", { name: "Save and message 3" }).click();
+    await check.getByRole("button", { name: "Save and send to 3" }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110024", served: true, launch_on: null }],
     });
@@ -730,7 +744,7 @@ test.describe("the service area", () => {
   });
 
   test("says so when a change would leave nowhere served", async ({ page }) => {
-    await open(page, "/service-area", {
+    await open(page, "/areas/served", {
       "POST /api/service-area": fails(400, "no_service_area"),
     });
     await page.getByRole("checkbox", { name: "Served 110017" }).uncheck();
@@ -747,7 +761,7 @@ test.describe("the service area", () => {
 
   // FEO-01: the table kept the old values after an upload, and the next Save put them back.
   test("puts a file's changes in the table, so the one Save sends the file's values", async ({ page }) => {
-    await open(page, "/service-area", {
+    await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 0 }),
     });
     await upload(page, "pincode,served,launch_on\n110017,yes,2026-09-01\n110024,no,2026-11-01\n");
@@ -766,9 +780,54 @@ test.describe("the service area", () => {
     await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
   });
 
+  // BK-38 of the audit, 2 October 2026: a pincode served from a later day was served at once.
+  test("will not serve a pincode from a day still to come", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-10-04T06:00:00.000Z"));
+    await open(page, "/areas/served");
+    await page.getByRole("checkbox", { name: "Served 110024" }).check();
+    await page.getByLabel("Launch date for 110024").fill("2026-10-20");
+    await expect(page.getByRole("alert")).toContainText("110024: a pincode goes live today or from a day already past");
+    await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
+  });
+
+  // BK-36 and OIA-13: no screen could add a pincode the reference file does not hold.
+  test("adds a pincode the file does not hold, unserved, in its city's list", async ({ page }) => {
+    const added = {
+      pincode: "400050",
+      area: "Bandra West",
+      city: "Mumbai",
+      served: false,
+      launch_on: null,
+      waiting: 0,
+      to_alert: 0,
+    };
+    await open(page, "/areas/served", { "POST /api/pincodes": json(added, 201) });
+    const form = page.getByRole("group", { name: "Add a pincode" });
+    await form.getByLabel("Pincode").fill("400050");
+    await form.getByLabel("Area, as messages name it").fill("Bandra West");
+    await form.getByLabel("City").selectOption("Mumbai");
+    const sent = posted(page, "/api/pincodes");
+    await form.getByRole("button", { name: "Add it" }).click();
+    expect((await sent).postDataJSON()).toEqual({ pincode: "400050", area: "Bandra West", city: "Mumbai" });
+
+    await expect(form.getByRole("status")).toHaveText(
+      "400050 is in Mumbai now, not served yet. Tick Served and save to mark it live.",
+    );
+    await expect(page.getByRole("button", { name: "Mumbai · 0 of 1" })).toHaveAttribute("aria-current", "true");
+    await expect(area(page, "400050")).toHaveValue("Bandra West");
+  });
+
+  test("refuses a pincode the API could not hold before it is sent", async ({ page }) => {
+    await open(page, "/areas/served");
+    const form = page.getByRole("group", { name: "Add a pincode" });
+    await form.getByLabel("Pincode").fill("012345");
+    await expect(form.getByRole("alert")).toHaveText("A pincode is six digits and starts with 1 to 8.");
+    await expect(form.getByRole("button", { name: "Add it" })).toBeDisabled();
+  });
+
   // FEO-03: a file without its served column switched every pincode in it off.
   test("refuses a file that leaves out one of its three columns", async ({ page }) => {
-    await open(page, "/service-area");
+    await open(page, "/areas/served");
     await upload(page, "pincode,launch_on\n110017,2026-09-01\n");
     await expect(page.getByRole("alert")).toContainText("needs a pincode, a served and a launch_on column");
     await expect(page.getByRole("button", { name: "Put these in the table" })).toHaveCount(0);

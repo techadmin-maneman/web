@@ -16,7 +16,6 @@ import {
 } from "../../src/domain/visit-messages.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import type { MessagingProvider } from "../../src/providers/messaging.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
@@ -69,9 +68,8 @@ async function consent(granted: boolean, at = NOW.toISOString()) {
 
 async function visit(type = "service", start = THURSDAY_NOON, status = "scheduled") {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
-       window_end, technician_id, fsm_modified_at, synced_at)
-     VALUES (?1, 'fsm-visit-1', 'fsm-order-1', ?2, ?3, ?4, 'Scheduled', ?5, ?5, 't1', ?6, ?6)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+     VALUES (?1, ?1, ?2, ?3, ?4, ?5, ?5, 't1', ?6)`,
   )
     .bind(VISIT, PERSON, type, status, start, NOW.toISOString())
     .run();
@@ -99,13 +97,12 @@ beforeEach(async () => {
   await markDatabase();
   captureLogs();
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
   )
     .bind(NOW.toISOString())
     .run();
   await env.DB.prepare(
-    `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id)
-     VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra', 'contact-1')`,
+    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
   )
     .bind(PERSON, NOW.toISOString())
     .run();
@@ -630,13 +627,8 @@ describe("what queues a visit message", () => {
       body: JSON.stringify({ type: "consultation", date: "2026-09-22", window: "morning" }),
     });
     const hold = await answer.json<{ id: string }>();
-    const fsm = createStubFsm({
-      ...EMPTY_FSM,
-      items: [{ id: "item-consult", name: "Consultation", type: "Service", price: null }],
-    });
     const notified: string[] = [];
-    const outcome = await confirmBooking(env.DB, fsm, createStubPayments(), hold.id, NOW, {
-      labelAsTest: true,
+    const outcome = await confirmBooking(env.DB, createStubPayments(), hold.id, NOW, {
       notify: (id) => {
         notified.push(id);
         return Promise.resolve();

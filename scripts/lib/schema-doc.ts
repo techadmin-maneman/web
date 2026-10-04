@@ -48,6 +48,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).",
   audit_log:
     "Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).",
+  board_version:
+    "One row: a number that triggers raise whenever a visit, a move, leave, a technician or the day's slot times change, so the open dispatch board reads itself again only then (ADR 0069).",
   checkins:
     'Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).',
   checklist_items:
@@ -132,7 +134,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   serviceable_pincodes:
     "Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).",
   services:
-    "What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).",
+    "What clients may book: each kind of visit's services, their names, the line clients read under each, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).",
   sessions:
     "The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).",
   slot_claims:
@@ -365,6 +367,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     what: "Housekeeping",
     tables: [
       "alerts",
+      "board_version",
       "cron_jobs",
       "cron_runs",
       "credit_expiry_cursor",

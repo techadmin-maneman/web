@@ -4,16 +4,15 @@ import { confirmBooking } from "../../src/domain/bookings.ts";
 import { alertAgedDeletions, deletionsWaiting } from "../../src/domain/deletion.ts";
 import { erasePerson } from "../../src/domain/erasure.ts";
 import { sendUnsentLinks } from "../../src/domain/payment-links.ts";
+import { recordRefund } from "../../src/domain/payments.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { putCounted, readMeter } from "../../src/domain/storage-meter.ts";
-import type { Providers } from "../../src/config/environments.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { secretsMatch } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
 import type { PlacesReached } from "../../src/policy/access.ts";
 import { STUB_IDENTITY } from "../../src/providers/cloudflare-access.ts";
-import { createStubFsm } from "../../src/providers/fsm.ts";
 import { createStubPayments, type StubPayments } from "../../src/providers/payments.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
@@ -81,20 +80,19 @@ interface Erasing {
   readonly queues?: Partial<Env>;
   readonly deps?: Dependencies;
   readonly surface?: "ops" | "public";
-  readonly providers?: Partial<Providers>;
 }
 
 /** Ops erasing the client from their page in the console. */
 function erase(personId: string, erasing: Erasing = {}) {
   return request(
-    appFor("local", erasing.deps ?? fakeDependencies(), {}, erasing.surface ?? "ops", erasing.providers),
+    appFor("local", erasing.deps ?? fakeDependencies(), {}, erasing.surface ?? "ops"),
     `/api/clients/${personId}/erasure`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
       body: JSON.stringify(erasing.body ?? {}),
     },
-    erasing.queues ?? { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() },
+    erasing.queues ?? { CRM_QUEUE: fakeQueue() },
   );
 }
 
@@ -107,9 +105,9 @@ beforeEach(async () => {
 });
 
 describe("POST /api/clients/:id/erasure", () => {
-  it("deletes the photos and results, blanks the person, cancels unsent messages and queues the CRM and FSM", async () => {
+  it("deletes the photos and results, blanks the person, cancels unsent messages and queues the CRM", async () => {
     const personId = await personWithHistory();
-    const queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
+    const queues = { CRM_QUEUE: fakeQueue() };
 
     const response = await erase(personId, { queues });
 
@@ -125,7 +123,6 @@ describe("POST /api/clients/:id/erasure", () => {
     });
     const queued = [{ erase_person_id: personId, request_id: expect.any(String) as string }];
     expect(queues.CRM_QUEUE.sent).toEqual(queued);
-    expect(queues.FSM_QUEUE.sent).toEqual(queued);
 
     expect(await env.UPLOADS.head("uploads/ready")).toBeNull();
     expect(await env.UPLOADS.head("uploads/running")).toBeNull();
@@ -254,23 +251,13 @@ describe("POST /api/clients/:id/erasure", () => {
     expect(await statusOf(personId, { body: { mobile: "98100 00001" } })).toBe(400);
   });
 
-  it("still erases when the queues are down, leaving the CRM and FSM to the sweeper", async () => {
+  it("still erases when the queue is down, leaving the CRM to the sweeper", async () => {
     const personId = await book();
     const down = { send: () => Promise.reject(new Error("queue unavailable")) } as unknown as Queue;
 
-    expect(await statusOf(personId, { queues: { CRM_QUEUE: down, FSM_QUEUE: down } })).toBe(200);
+    expect(await statusOf(personId, { queues: { CRM_QUEUE: down } })).toBe(200);
 
     expect(logs.lines().some((line) => line.event === "erasure_enqueue_failed")).toBe(true);
-  });
-
-  it("leaves FSM alone where it is not connected", async () => {
-    const personId = await book();
-    const queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
-
-    expect(await statusOf(personId, { queues, providers: { FSM_PROVIDER: "none" } })).toBe(200);
-
-    expect(queues.CRM_QUEUE.sent).toHaveLength(1);
-    expect(queues.FSM_QUEUE.sent).toEqual([]);
   });
 });
 
@@ -323,6 +310,87 @@ describe("a client erased with a deletion request open", () => {
   });
 });
 
+// PS-18 and OIA-18 of the audit, 2 October 2026: an erased client's open grievance stayed in Grievances for good, with
+// an answer box for nobody, and the alerts about them kept linking to their page.
+describe("what an erasure leaves open for ops", () => {
+  const EARLIER = "2026-09-01T06:00:00.000Z";
+
+  it("closes their open grievance under whoever erased them, and blanks the answer to one closed before", async () => {
+    const personId = await book();
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO grievances (id, person_id, text, state, created_at) VALUES ('g-open', ?1, 'Please call first.', 'open', ?2)",
+      ).bind(personId, EARLIER),
+      env.DB.prepare(
+        `INSERT INTO grievances (id, person_id, text, state, response, resolved_by, resolved_at, created_at)
+         VALUES ('g-answered', ?1, 'Stop the calls.', 'resolved', 'We have stopped them.', 'priya@maneman.in', ?2, ?2)`,
+      ).bind(personId, EARLIER),
+    ]);
+
+    expect(await statusOf(personId)).toBe(200);
+
+    const { results } = await env.DB.prepare(
+      "SELECT id, text, state, response, resolved_by, resolved_at FROM grievances ORDER BY id",
+    ).all();
+    expect(results).toEqual([
+      {
+        id: "g-answered",
+        text: "Erased",
+        state: "resolved",
+        response: null,
+        resolved_by: "priya@maneman.in",
+        resolved_at: EARLIER,
+      },
+      {
+        id: "g-open",
+        text: "Erased",
+        state: "resolved",
+        response: "Client erased",
+        resolved_by: STAFF,
+        resolved_at: NOW.toISOString(),
+      },
+    ]);
+  });
+
+  it("resolves the Customer Care alerts that link to their page, and keeps those about a visit, a booking or money", async () => {
+    const personId = await book();
+    const other = crypto.randomUUID();
+    const alerts: [key: string, link: string | null][] = [
+      ["message_failed:m-1", `/clients/${personId}`],
+      [`crm_contact_update:${personId}`, `/clients/${personId}`],
+      // A client who paid and has no visit or refund: the erasure lets the booking go, and the money stays owed.
+      ["booking_held:hold-1", `/clients/${personId}/visits`],
+      ["unbooked_hold:hold-2", `/clients/${personId}`],
+      ["hair_profile_from_older:v1", `/clients/${personId}/pieces`],
+      ["books_refund_refused:refund-1", `/clients/${personId}/payments`],
+      ["message_failed:someone-else", `/clients/${other}`],
+      ["message_failed:someone-like-them", `/clients/${personId}0`],
+      ["message_failed:no-link", null],
+    ];
+    await env.DB.batch(
+      alerts.map(([key, link]) =>
+        env.DB.prepare(
+          `INSERT INTO alerts (id, key, message, link, count, first_seen_at, last_seen_at)
+           VALUES (?1, ?2, 'An alert.', ?3, 1, ?4, ?4)`,
+        ).bind(crypto.randomUUID(), key, link, EARLIER),
+      ),
+    );
+
+    expect(await statusOf(personId)).toBe(200);
+
+    const { results } = await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL ORDER BY key").all();
+    expect(results.map((row) => row.key)).toEqual([
+      "booking_held:hold-1",
+      "books_refund_refused:refund-1",
+      "hair_profile_from_older:v1",
+      "message_failed:no-link",
+      "message_failed:someone-else",
+      "message_failed:someone-like-them",
+      "unbooked_hold:hold-2",
+    ]);
+  });
+});
+
 describe("erasePerson", () => {
   it("deletes a result a running render stored after the jobs were read", async () => {
     const personId = await book();
@@ -350,12 +418,11 @@ async function clientWithEverything(): Promise<string> {
   const at = NOW.toISOString();
   await env.DB.batch([
     env.DB.prepare(
-      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
     ).bind(at),
     env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, technician_id,
-         fsm_modified_at, synced_at)
-       VALUES (?1, 'fsm-1', ?2, 'service', 'completed', 'Completed', '2026-09-01T06:30:00.000Z', 't1', ?3, ?3)`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, technician_id, synced_at)
+       VALUES (?1, ?1, ?2, 'service', 'completed', '2026-09-01T06:30:00.000Z', 't1', ?3)`,
     ).bind(VISIT, personId, at),
     env.DB.prepare(
       `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode, lat, lng, access_notes, flat)
@@ -592,12 +659,11 @@ describe("erasure blanks what ops wrote about the client", () => {
            ?2, 'ops@localhost', 'Named Vikram on WhatsApp', ?2, ?2)`,
       ).bind(FRIEND, at),
       env.DB.prepare(
-        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
       ).bind(at),
       env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, technician_id,
-           fsm_modified_at, synced_at)
-         VALUES ('visit-9', 'fsm-9', ?1, 'service', 'terminated', 'Terminated', '2026-09-19T03:30:00.000Z', 't1', ?2, ?2)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, technician_id, synced_at)
+         VALUES ('visit-9', 'visit-9', ?1, 'service', 'terminated', '2026-09-19T03:30:00.000Z', 't1', ?2)`,
       ).bind(FRIEND, at),
       env.DB.prepare(
         `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, radius_m, passed, created_at)
@@ -629,6 +695,13 @@ describe("erasure blanks what ops wrote about the client", () => {
          VALUES ('change-10', 'visit-10', ?1, 'cancelled', 'late', '2026-09-24T03:30:00.000Z', ?2, 'ops@localhost',
            'His mother is unwell', 'free')`,
       ).bind(FRIEND, at),
+      // A visit of his ops moved onto a day they had blacked out.
+      env.DB.prepare(
+        `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
+           reason, actor, fsm_write_state, created_at, updated_at, blackout_reason)
+         VALUES ('move-9', 'visit-9', 't1', 't1', '2026-09-18T03:30:00.000Z', '2026-09-19T03:30:00.000Z',
+           'client_asked', 'ops@localhost', 'written', ?1, ?1, 'His only day off before the wedding')`,
+      ).bind(at),
     ]);
   }
 
@@ -639,10 +712,11 @@ describe("erasure blanks what ops wrote about the client", () => {
          (SELECT decision_reason FROM no_show_cases) AS no_show,
          (SELECT reason FROM task_closures) AS closed,
          (SELECT close_reason FROM visits) AS closed_by_hand,
-         (SELECT cancel_reason FROM visit_changes) AS cancelled`,
+         (SELECT cancel_reason FROM visit_changes) AS cancelled,
+         (SELECT blackout_reason FROM dispatch_moves) AS moved_onto_blackout`,
     ).first();
 
-  it("blanks the reasons ops gave about the friend: the invite attached, the grant's review, the no-show ruling, a visit's task closed, a visit closed by hand and one cancelled", async () => {
+  it("blanks the reasons ops gave about the friend: the invite attached, the grant's review, the no-show ruling, a visit's task closed, a visit closed by hand, one cancelled and one moved onto a blacked-out day", async () => {
     await reasonsWritten();
 
     expect(await erasePerson(env, FRIEND, NOW, createLogger())).not.toBeNull();
@@ -654,6 +728,7 @@ describe("erasure blanks what ops wrote about the client", () => {
       closed: null,
       closed_by_hand: null,
       cancelled: null,
+      moved_onto_blackout: null,
     });
     // The decisions themselves stay, as records.
     const ruled = await env.DB.prepare(
@@ -701,6 +776,7 @@ describe("erasure blanks what ops wrote about the client", () => {
       closed: "Moving to Pune, wants no more visits",
       closed_by_hand: "He had to leave for the hospital",
       cancelled: "His mother is unwell",
+      moved_onto_blackout: "His only day off before the wedding",
     });
   });
 
@@ -717,6 +793,7 @@ describe("erasure blanks what ops wrote about the client", () => {
       closed: "Moving to Pune, wants no more visits",
       closed_by_hand: "He had to leave for the hospital",
       cancelled: "His mother is unwell",
+      moved_onto_blackout: "His only day off before the wedding",
     });
   });
 });
@@ -741,9 +818,8 @@ describe("erasure blanks a check-in's coordinates", () => {
         "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('other', ?1, '+919810000077', 'Kabir Anand')",
       ).bind(at),
       env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, technician_id,
-           fsm_modified_at, synced_at)
-         VALUES ('visit-other', 'fsm-other', 'other', 'service', 'completed', 'Completed', ?1, 't1', ?1, ?1)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, technician_id, synced_at)
+         VALUES ('visit-other', 'visit-other', 'other', 'service', 'completed', ?1, 't1', ?1)`,
       ).bind(at),
       env.DB.prepare(
         `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, accuracy_m, radius_m, passed, created_at)
@@ -787,8 +863,8 @@ describe("erasure blanks what a pay step kept on a hold", () => {
 /** A visit still to happen, paid for, as a client's Monday service is. */
 async function bookedVisit(personId: string): Promise<void> {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at, synced_at)
-     VALUES ('visit-live', 'fsm-live', ?1, 'service', 'scheduled', 'Scheduled', '2026-09-28T03:30:00.000Z', ?2, ?2)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
+     VALUES ('visit-live', 'visit-live', ?1, 'service', 'scheduled', '2026-09-28T03:30:00.000Z', ?2)`,
   )
     .bind(personId, NOW.toISOString())
     .run();
@@ -804,6 +880,46 @@ async function paymentHeld(personId: string): Promise<void> {
     .bind(personId, NOW.toISOString())
     .run();
 }
+
+interface CancelOwing {
+  /** In paise, of the Rs. 30,000 paid: what the cancel gives back, and what it keeps. */
+  readonly refund: number;
+  readonly kept: number;
+  /** Whether the cancel's refund is settled: made, or refused by Razorpay and left to ops. */
+  readonly settled: boolean;
+  /** Our refund's ID, once Razorpay made it. */
+  readonly refundId: string | null;
+}
+
+/** A first fit paid Rs. 30,000 and cancelled since, with the cancel's refund as given. */
+async function cancelledFirstFit(personId: string, cancel: CancelOwing): Promise<void> {
+  const at = NOW.toISOString();
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
+       VALUES ('visit-cancelled', 'visit-cancelled', ?1, 'first_fit', 'cancelled', '2026-09-22T03:30:00.000Z', ?2)`,
+    ).bind(personId, at),
+    env.DB.prepare(
+      `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, status,
+         captured_at, created_at, updated_at)
+       VALUES ('payment-fit', 'MM-2026-0004', ?1, 'visit-cancelled', 'pay_fit', 3000000, 'INR', 'captured', ?2, ?2, ?2)`,
+    ).bind(personId, at),
+    env.DB.prepare(
+      `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, kept_amount,
+         payment_id, created_at, refund_settled_at, razorpay_refund_id)
+       VALUES ('change-1', 'visit-cancelled', ?1, 'cancelled', 'late', '2026-09-22T03:30:00.000Z', ?2, ?3,
+         'payment-fit', ?4, ?5, ?6)`,
+    ).bind(personId, cancel.refund, cancel.kept, at, cancel.settled ? at : null, cancel.refundId),
+  ]);
+}
+
+/** Razorpay's webhook reporting a refund of the first fit's payment processed. */
+const refundReported = (amount: number) =>
+  recordRefund(
+    env.DB,
+    { id: "rfnd_fit", payment_id: "pay_fit", amount, status: "processed", created_at: NOW.getTime() / 1000 },
+    NOW,
+  );
 
 describe("erasure while something is still owed", () => {
   it("refuses a client with a visit booked, and names the visit", async () => {
@@ -839,6 +955,44 @@ describe("erasure while something is still owed", () => {
     });
   });
 
+  it("refuses a client whose cancelled visit's refund is not yet made, names what it owes, and erases once made", async () => {
+    const personId = await book();
+    // A late cancel keeps the first fit's Rs. 4,000 late fee, and the cron is still asking for the rest.
+    await cancelledFirstFit(personId, { refund: 2600000, kept: 400000, settled: false, refundId: null });
+    const owed = {
+      error: { code: "payment_held" },
+      visits: [],
+      payments: [{ id: "payment-fit", reference: "MM-2026-0004", amount: 2600000 }],
+    };
+
+    const pending = await erase(personId);
+    expect(pending.status).toBe(409);
+    expect(await pending.json()).toMatchObject(owed);
+
+    // Razorpay refused it, so it waits for ops to refund by hand.
+    await env.DB.prepare("UPDATE visit_changes SET refund_settled_at = ?1").bind(NOW.toISOString()).run();
+    const leftToOps = await erase(personId);
+    expect(leftToOps.status).toBe(409);
+    expect(await leftToOps.json()).toMatchObject(owed);
+
+    expect(await refundReported(2600000)).toBe(true);
+    expect(await statusOf(personId)).toBe(200);
+  });
+
+  it("is not held up by a cancel that kept what was paid", async () => {
+    const personId = await book();
+    await cancelledFirstFit(personId, { refund: 0, kept: 3000000, settled: true, refundId: null });
+
+    expect(await statusOf(personId)).toBe(200);
+  });
+
+  it("is not held up by a cancel's refund Razorpay made, before it reports the refund processed", async () => {
+    const personId = await book();
+    await cancelledFirstFit(personId, { refund: 3000000, kept: 0, settled: true, refundId: "rfnd_fit" });
+
+    expect(await statusOf(personId)).toBe(200);
+  });
+
   it("erases anyway when ops say they will settle both by hand today, and the log says so", async () => {
     const personId = await book();
     await bookedVisit(personId);
@@ -854,7 +1008,7 @@ describe("erasure while something is still owed", () => {
 /** Imran, whose Wednesday a booking holds. */
 async function technician(): Promise<void> {
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
   )
     .bind(NOW.toISOString())
     .run();
@@ -922,10 +1076,8 @@ async function fittedVisitUnpaid(personId: string): Promise<void> {
   const at = NOW.toISOString();
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
-         synced_at, one_visit)
-       VALUES ('visit-fitted', 'visit-fitted', ?1, 'first_fit', 'completed', NULL, '2026-09-14T03:30:00.000Z', ?2, ?2,
-         'booked')`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at, one_visit)
+       VALUES ('visit-fitted', 'visit-fitted', ?1, 'first_fit', 'completed', '2026-09-14T03:30:00.000Z', ?2, 'booked')`,
     ).bind(personId, at),
     env.DB.prepare(
       `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, razorpay_link_id,
@@ -1062,10 +1214,7 @@ describe("a booking of a client erased since", () => {
       env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?1 WHERE id = 'hold-paying'").bind(at),
     ]);
     const payments = createStubPayments();
-    const outcome = await confirmBooking(env.DB, createStubFsm(), payments, "hold-paying", NOW, {
-      record: "ours",
-      labelAsTest: true,
-    });
+    const outcome = await confirmBooking(env.DB, payments, "hold-paying", NOW);
 
     expect(outcome).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 200000 }]);
@@ -1077,16 +1226,19 @@ describe("a booking of a client erased since", () => {
     expect(await holdStates()).toEqual([{ id: "hold-paying", state: "released" }]);
   });
 
-  it("is never written to FSM, and is let go, when a try for it still comes", async () => {
+  it("is never booked, and is let go, when a try for it still comes", async () => {
     const personId = await book();
     await freeBooking(personId);
     await env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(personId, NOW.toISOString()).run();
-    const fsm = createStubFsm();
 
-    const outcome = await confirmBooking(env.DB, fsm, createStubPayments(), "hold-free", NOW, { labelAsTest: true });
+    const outcome = await confirmBooking(env.DB, createStubPayments(), "hold-free", NOW);
 
     expect(outcome).toBe("lapsed");
-    expect(fsm.made.workOrders).toEqual([]);
+    expect(
+      await env.DB.prepare("SELECT COUNT(*) AS n FROM appointments WHERE person_id = ?1").bind(personId).first(),
+    ).toEqual({
+      n: 0,
+    });
     expect(await holdStates()).toEqual([{ id: "hold-free", state: "released" }]);
     expect(await claimsLeft()).toEqual([]);
   });
@@ -1129,7 +1281,7 @@ describe("ops deciding a deletion", () => {
         headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
         body: JSON.stringify({ decision, reason }),
       },
-      { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() },
+      { CRM_QUEUE: fakeQueue() },
     );
   }
 

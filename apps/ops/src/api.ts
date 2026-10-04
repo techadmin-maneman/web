@@ -23,14 +23,15 @@ export type Launch = Body<paths["/api/pincodes/{pin}/launch"]["post"]>;
 export type Decision = Body<paths["/api/referrals/{id}/decision"]["post"]>;
 
 export type ClientsFound = Body<paths["/api/clients/find"]["post"]>;
-export type ClientRecord = Body<paths["/api/clients/{id}"]["get"]>;
+/** A client's page: their record, or what is kept of them once erased. */
+type ClientPage = Body<paths["/api/clients/{id}"]["get"]>;
+export type ClientRecord = components["schemas"]["ClientRecord"];
+export type ErasedClientRecord = components["schemas"]["ErasedClientRecord"];
+export const isErased = (page: ClientPage): page is ErasedClientRecord => "erased_at" in page;
 export type ClientVisit = ClientRecord["visits"]["past"][number];
 export type ClientPayment = ClientRecord["payments"][number];
 export type ClientPaymentLink = ClientRecord["payment_links"][number];
 export type ClientInvoice = ClientRecord["invoices"][number];
-/** A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). */
-export type HeldBooking = ClientRecord["held_bookings"][number];
-export type HeldBookingRefunded = Body<paths["/api/held-bookings/{id}/refund"]["post"]>;
 /** A booking that refunded its payment by itself: paid after its hold lapsed, or a move whose visit had begun. */
 export type AutoRefund = ClientRecord["auto_refunds"][number];
 /** A visit ops book for a client: the windows free for it, what is sent, and what came of it. */
@@ -104,6 +105,7 @@ export type ServiceAdd = Sent<paths["/api/services"]["post"]>;
 export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
 export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
 export type AreaChanged = Body<paths["/api/service-area"]["post"]>;
+export type NewPincode = Sent<paths["/api/pincodes"]["post"]>;
 
 /** The consumables, each service's expected use, the job sheet, and the stock (docs/decisions/0087-consumables-and-stock.md). */
 export type Consumables = Body<paths["/api/consumables"]["get"]>;
@@ -203,6 +205,8 @@ export interface Landing {
   readonly date: string;
   readonly window: BookingWindow;
   readonly reason: MoveReason;
+  /** Why the visit goes onto a day ops blacked out, as ops typed it; null for any other day. */
+  readonly blackoutReason: string | null;
 }
 
 /**
@@ -236,6 +240,7 @@ const moveBody = (appointmentId: string, to: Landing, shown: Shown) => ({
   reason: to.reason,
   expected_technician_id: shown.technicianId,
   expected_starts_at: shown.startsAt,
+  ...(to.blackoutReason === null ? {} : { blackout_reason: to.blackoutReason }),
 });
 
 export const api = {
@@ -243,6 +248,8 @@ export const api = {
   whoami: () => client.get("/api/whoami"),
   /** Seven days from `from`, or from today, in one city or every one. No name or number is in the query. */
   board: (asked: BoardQuery) => client.get("/api/dispatch", { query: setOnly({ from: asked.from, city: asked.city }) }),
+  /** A number that moves whenever something the board draws changes; one row, where the board is hundreds. */
+  boardVersion: () => client.get("/api/dispatch/version"),
   /** Where a job in hand would land in the week from `from`, by the check a move runs. Writes nothing. */
   room: (appointmentId: string, from: string) =>
     client.get("/api/dispatch/room", { query: { appointment_id: appointmentId, from } }),
@@ -280,15 +287,6 @@ export const api = {
    */
   findClients: (text: string) => client.post("/api/clients/find", { body: { text } }),
   client: (id: string) => client.get("/api/clients/{id}", { path: { id } }),
-  /** FSM tried again now for a booking it refused, as the hourly try would. */
-  retryHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/retry", { path: { id } }),
-  /** Its hourly tries stopped, before ops book it in FSM by hand. */
-  stopHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/stop", { path: { id } }),
-  /** The visit ops booked in FSM by hand is this booking. */
-  linkHeldBooking: (id: string, visitId: string) =>
-    client.post("/api/held-bookings/{id}/link", { path: { id }, body: { visit_id: visitId } }),
-  /** What FSM holds for it cancelled, its payment refunded, and the client told. */
-  refundHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/refund", { path: { id } }),
   /** A client's 14 days of windows for a kind of visit, who is free in each, and how it would be paid. */
   visitAvailability: (query: AvailabilityQuery) => client.get("/api/visits/availability", { query }),
   /** A visit booked for a client: at once when nothing is paid at booking, else a payment link goes to them. */
@@ -327,7 +325,7 @@ export const api = {
       file: true,
     }),
   clientConsents: (id: string) => client.get("/api/clients/{id}/consents", { path: { id } }),
-  /** The client's pieces. The route reads FSM afresh first, since FSM is the record. */
+  /** The client's pieces. */
   clientPieces: (id: string) => client.get("/api/clients/{id}/pieces", { path: { id } }),
   /** The client's hair profile as it stands, and every version of it. */
   clientHairProfile: (id: string) => client.get("/api/clients/{id}/hair-profile", { path: { id } }),
@@ -336,12 +334,16 @@ export const api = {
     client.post("/api/clients/{id}/hair-profile", { path: { id }, body: correction }),
   /** Every queue ops still have to work through, and whose each task is. A task leaves when its row is decided. */
   tasks: () => client.get("/api/tasks"),
+  /** What waits on ops for one client alone, for the head of their page. */
+  clientTasks: (person: string) => client.get("/api/tasks", { query: { person } }),
   /** A task made a member of staff's, by their Access e-mail, or nobody's with null (ADR 0092). */
   setTaskOwner: (group: TaskGroup["group"], id: string, owner: string | null) =>
     client.put("/api/tasks/{group}/{id}/owner", { path: { group, id }, body: { owner } }),
   /** A visit left partly done, closed without a follow-up; the reason is kept with it, under the caller's name. */
   closeTask: (group: ClosableGroup, id: string, reason: string) =>
     client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
+  /** A one visit's payment link, texted to the client again by Razorpay, or made now where it never was. */
+  resendPaymentLink: (linkId: string) => client.post("/api/payment-links/{id}/resend", { path: { id: linkId } }),
   /** The open alerts ops have been told of, of the caller's own departments. */
   alerts: () => client.get("/api/alerts"),
   /** An alert marked done, under the caller's name. */
@@ -434,6 +436,9 @@ export const api = {
   /** Its code stays, and with it every price it has and every visit sold under them. */
   renameService: (kind: Kind, tier: string, name: string) =>
     client.post("/api/services/{kind}/{tier}/name", { path: { kind, tier }, body: { name } }),
+  /** The line clients read under its name as they choose; an empty one clears it. */
+  describeService: (kind: Kind, tier: string, description: string) =>
+    client.post("/api/services/{kind}/{tier}/description", { path: { kind, tier }, body: { description } }),
   /** How long visits booked from now on are held and booked for. */
   setServiceLength: (kind: Kind, tier: string, minutes: number) =>
     client.post("/api/services/{kind}/{tier}/length", { path: { kind, tier }, body: { minutes } }),
@@ -462,16 +467,18 @@ export const api = {
   enterVisitCode: (visitId: string, code: string) =>
     client.post("/api/visits/{id}/discount-code", { path: { id: visitId }, body: { code } }),
   removeVisitCode: (visitId: string) => client.post("/api/visits/{id}/discount-code/remove", { path: { id: visitId } }),
-  /** Every pincode, with how many wait there and how many serving it would tell. */
+  /** Every pincode, with how many wait there and how many serving it would tell, and our cities. */
   serviceArea: () => client.get("/api/service-area"),
   /**
    * Only the pincodes named change. The route refuses a change that would leave
-   * none served, and launches each pincode it begins serving: `alerted` counts
-   * the WhatsApps that queues.
+   * none served, or serve one from a day to come, and launches each pincode it
+   * begins serving: `alerted` counts the WhatsApps that queues.
    */
   setServiceArea: (changes: readonly AreaChange[]) =>
     client.post("/api/service-area", { body: { changes: [...changes] } }),
-  /** Every consumable, where each stands in FSM's catalogue, and each service's expected use. */
+  /** A pincode the service area does not hold, added unserved in one of our cities. */
+  addPincode: (pincode: NewPincode) => client.post("/api/pincodes", { body: pincode }),
+  /** Every consumable, and each service's expected use. */
   consumables: () => client.get("/api/consumables"),
   addConsumable: (added: NewConsumable) => client.post("/api/consumables", { body: added }),
   /** Only the fields sent change; a null level clears it. */

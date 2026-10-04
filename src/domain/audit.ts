@@ -59,13 +59,16 @@ export const AUDIT_ACTIONS = [
   "slot_times.set",
   "pincode.set",
   "pincode.rename",
+  // A pincode ops add to the service area, unserved, in one of our cities.
+  "pincode.add",
   // The days no visit is offered, which the runbook's SQL set before (docs/decisions/0088-every-policy-in-the-console.md).
   "blackout.add",
   "blackout.remove",
-  // The services clients book (docs/decisions/0085-services-ops-can-edit.md): one added to a kind, renamed, given
-  // another length, a kind's put in another order, one retired from a day, and one offered again.
+  // The services clients book (docs/decisions/0085-services-ops-can-edit.md): one added to a kind, renamed, described,
+  // given another length, a kind's put in another order, one retired from a day, and one offered again.
   "service.add",
   "service.rename",
+  "service.describe",
   "service.length",
   "service.reorder",
   "service.retire",
@@ -97,13 +100,7 @@ export const AUDIT_ACTIONS = [
   // An alert on Tasks' "Needs a hand" marked done, and the message, lead or CRM erasure it gave up on sent again.
   "alert.resolve",
   "alert.send_again",
-  // A booking FSM would not take, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): FSM tried again
-  // at ops' asking and taking it, the visit ops booked in FSM by hand linked to it, its refund, its hourly tries
-  // stopped so ops book it in FSM by hand, and a link that let it go instead, its payment having gone back.
-  "booking.retry",
-  "booking.link",
-  "booking.refund",
-  "booking.stop",
+  // A hold ops made and let go, since its booking could not go ahead.
   "booking.give_back",
   // A visit ops booked for a client from the console: its slot held, and booked at once or sent a payment link. One
   // they cancelled for the client, and one they closed by hand whose technician's phone was lost.
@@ -216,25 +213,6 @@ export function auditStatementIfRuled(
        WHERE EXISTS (SELECT 1 FROM ${ruled.table} WHERE id = ?10 AND ruling_id = ?11)`,
     )
     .bind(...valuesOf(entry, now), ruled.id, ruled.rulingId);
-}
-
-/**
- * The entry for a hold booked as a visit earlier in the same batch, by a statement that books nothing when another
- * booking took the visit a moment before: it is written only if the hold is now booked as that visit.
- */
-export function auditStatementIfBooked(
-  db: D1Database,
-  entry: AuditEntry,
-  now: Date,
-  booked: { readonly holdId: string; readonly visitId: string },
-): D1PreparedStatement {
-  return db
-    .prepare(
-      `INSERT INTO audit_log (${COLUMNS})
-       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
-       WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?10 AND state = 'booked' AND appointment_id = ?11)`,
-    )
-    .bind(...valuesOf(entry, now), booked.holdId, booked.visitId);
 }
 
 /**

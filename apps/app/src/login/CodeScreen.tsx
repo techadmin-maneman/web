@@ -4,14 +4,14 @@ import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useEffect, useMemo, useRef, useState, type RefCallback } from "react";
+import { useEffect, useRef, useState, type RefCallback } from "react";
 import type { LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
 import { BUBBLE } from "../icons.ts";
-import { apiNow } from "../lib/clock.ts";
 import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
 import { CodeField } from "./CodeField.tsx";
 import styles from "./login.module.css";
+import { MessageUs } from "./MessageUs.tsx";
 import { masked } from "./mobile.ts";
 
 export type CodeProblem =
@@ -23,6 +23,8 @@ export type CodeProblem =
 interface Props {
   readonly mobile: string;
   readonly challenge: LoginChallenge;
+  /** When the code was sent, by the API's clock. */
+  readonly sentAt: number;
   readonly busy: boolean;
   readonly problem: CodeProblem | null;
   /** Where Turnstile renders while a new code is offered, which needs its check. */
@@ -97,10 +99,12 @@ export function CodeScreen(props: Props) {
   const copy = login.code;
   const { challenge, problem } = props;
   const [code, setCode] = useState("");
+  // The problem the client has typed since: its line goes, unless the code is closed and typing cannot help.
+  const [typedSince, setTypedSince] = useState<CodeProblem | null>(null);
   const field = useRef<HTMLInputElement>(null);
-  // Counted from when this code was sent: a new code, a new count.
-  const resendAt = useMemo(() => apiNow() + challenge.resend_in_s * 1000, [challenge]);
-  const smsAt = useMemo(() => apiNow() + (challenge.sms_in_s ?? 0) * 1000, [challenge]);
+  // Counted from when this code was sent, so the help screen and back do not start the count again.
+  const resendAt = props.sentAt + challenge.resend_in_s * 1000;
+  const smsAt = props.sentAt + (challenge.sms_in_s ?? 0) * 1000;
   const resendIn = useSecondsLeft(resendAt);
   const smsIn = useSecondsLeft(smsAt);
   const closed = problem?.kind === "closed" || (problem?.kind === "mismatch" && problem.left === 0);
@@ -115,7 +119,7 @@ export function CodeScreen(props: Props) {
     if (problem !== null) field.current?.focus();
   }, [problem]);
 
-  const message = problemLine(problem);
+  const message = problem !== null && problem === typedSince && !closed ? null : problemLine(problem);
   const sent = challenge.channel === "sms" ? copy.sentSms : copy.sentWhatsapp;
   const offerSms = challenge.sms_in_s !== null && smsIn === 0 && challenge.channel !== "sms" && !closed;
 
@@ -136,7 +140,16 @@ export function CodeScreen(props: Props) {
       >
         <h1 className={styles.title}>{copy.title}</h1>
         <p className={styles.lead}>{sent(masked(props.mobile))}</p>
-        <CodeField ref={field} value={code} label={copy.label} invalid={problem !== null} onChange={setCode} />
+        <CodeField
+          ref={field}
+          value={code}
+          label={copy.label}
+          invalid={message !== null}
+          onChange={(typed) => {
+            setCode(typed);
+            setTypedSince(problem);
+          }}
+        />
         {message !== null && (
           // Busy while a code is on its way, so a screen reader is told the screen is working
           // rather than re-reading the problem the client has already acted on.
@@ -144,6 +157,7 @@ export function CodeScreen(props: Props) {
             {message}
           </p>
         )}
+        {message !== null && problem?.kind === "limited" && <MessageUs />}
         {challenge.channel === "sms" && (
           <div className={styles.automatic}>
             <Icon d={BUBBLE} size={17} />

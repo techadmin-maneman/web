@@ -18,7 +18,6 @@ export {
   CONSENTS,
   ERASURE_REQUESTED,
   HAIR_PROFILE,
-  HELD_BOOKING,
   NEW_RECORD,
   NO_HAIR_PROFILE,
   PHOTOS,
@@ -54,4 +53,4 @@ export {
   TECHNICIANS,
   TECHNICIAN_WORK,
 } from "./fixtures/technicians.ts";
-export { AREAS, LAUNCHED, PREVIEW } from "./fixtures/waitlist.ts";
+export { ADDED, AREAS, LAUNCHED, PREVIEW, UNHELD } from "./fixtures/waitlist.ts";

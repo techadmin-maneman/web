@@ -241,17 +241,17 @@ export const DISCOUNT_CODES = {
 
 /**
  * The services, kind by kind (docs/decisions/0085-services-ops-can-edit.md): each kind's standard service, a
- * premium first fit ops added and FSM has no item for yet, a lace replacement retired, and a service visit whose new
- * price starts in October, with the one it replaced folded into its history.
+ * premium first fit ops added, a lace replacement retired, and a service visit whose new price starts in October,
+ * with the one it replaced folded into its history.
  */
 const service = (fields: {
   kind: "consultation" | "first_fit" | "service" | "replacement";
   tier: string;
   name: string;
+  description?: string;
   minutes: number;
   sort?: number;
   retired_date?: string | null;
-  fsm_item_id?: string | null;
   prices: {
     amount_ex_gst: number;
     gst_percent: number;
@@ -262,11 +262,11 @@ const service = (fields: {
   kind: fields.kind,
   tier: fields.tier,
   name: fields.name,
+  description: fields.description ?? null,
   minutes: fields.minutes,
   sort: fields.sort ?? 0,
   retired_date: fields.retired_date ?? null,
   offered: fields.retired_date === undefined || fields.retired_date === null || fields.retired_date > "2027-09-21",
-  fsm_item_id: fields.fsm_item_id === undefined ? `fsm-${fields.kind}-${fields.tier}` : fields.fsm_item_id,
   updated_by: "ops@maneman.in",
   updated_at: "2027-09-01T06:00:00.000Z",
   prices: fields.prices.map((price) => ({ item: fields.kind, tier: fields.tier, ...price })),
@@ -299,9 +299,9 @@ export const SERVICES = {
       kind: "first_fit",
       tier: "premium",
       name: "Premium",
+      description: "A finer lace front, for a closer look.",
       minutes: 240,
       sort: 1,
-      fsm_item_id: null,
       prices: [{ amount_ex_gst: 4_000_000, gst_percent: 0, valid_from: "2027-09-01", in_force: true }],
     }),
     service({
@@ -364,6 +364,7 @@ export const SERVICES = {
   ],
   min_minutes: 30,
   max_minutes: 360,
+  max_description: 160,
   max_amount_ex_gst: 100_000_000,
   max_gst_percent: 28,
 } satisfies OpsReply<"/api/services">;
@@ -391,4 +392,5 @@ export const SERVICE_AREA = {
     },
     { pincode: "122018", area: "Sec65", city: "Gurgaon", served: false, launch_on: null, waiting: 0, to_alert: 0 },
   ],
+  cities: ["Gurgaon", "Delhi", "Mumbai"],
 } satisfies OpsReply<"/api/service-area">;

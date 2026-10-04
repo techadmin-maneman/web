@@ -33,13 +33,13 @@ describe("the Tasks board's sections", () => {
     for (const each of TASK_GROUPS) expect(DEPARTMENTS).toContain(TASK_DEPARTMENTS[each]);
   });
 
-  // On staging, 29 "Booking not in FSM" rows stood between "Call about a move" and "Job on a day off", and data-rights
+  // On staging, 29 rows of one group stood between "Call about a move" and "Job on a day off", and data-rights
   // deadlines were mixed in with sales follow-ups, in one list (OIA-02).
   it("puts each group under its department, in the navigation's order, each keeping the policy's order", () => {
     const sections = sectionsOf([
       group("untold_move", 1),
-      group("held_booking", 29),
       group("leave_conflict", 2),
+      group("replacement_order", 29),
       group("consultation_request", 3),
       group("referral_review", 1),
       group("no_show_decision", 2),
@@ -49,7 +49,7 @@ describe("the Tasks board's sections", () => {
 
     expect(sections.map((each) => each.department)).toEqual(["operations", "customer_care", "finance", "growth"]);
     expect(sections.map((each) => each.groups.map((one) => one.group))).toEqual([
-      ["untold_move", "held_booking", "leave_conflict"],
+      ["untold_move", "leave_conflict", "replacement_order"],
       ["consultation_request", "erasure_request"],
       ["no_show_decision", "draft_invoice"],
       ["referral_review"],
@@ -57,7 +57,7 @@ describe("the Tasks board's sections", () => {
   });
 
   it("counts every task waiting in a department, not only those listed", () => {
-    const [operations] = sectionsOf([group("held_booking", 29), group("untold_move", 1)]);
+    const [operations] = sectionsOf([group("replacement_order", 29), group("untold_move", 1)]);
     expect(operations?.count).toBe(30);
   });
 
@@ -75,7 +75,7 @@ describe("the first task past its day", () => {
 
   it("says where it stands in its group, so a group folded above it can be unfolded", () => {
     const dues = [...Array.from({ length: ROWS_FOLDED }, () => LATER), PAST];
-    const place = firstOverdue(sectionsOf([group("held_booking", dues.length, dues)]), NOW);
+    const place = firstOverdue(sectionsOf([group("replacement_order", dues.length, dues)]), NOW);
     expect(place?.index).toBe(ROWS_FOLDED);
   });
 

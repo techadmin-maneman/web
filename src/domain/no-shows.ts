@@ -115,27 +115,44 @@ interface CaseRow {
   technician: string | null;
 }
 
-function messageStateOf(row: CaseRow): MessageState {
-  if (row.message_id === null) return "none";
-  if (row.message_delivered_at !== null) return "delivered";
-  if (row.message_status === "sent") return "sent";
-  if (row.message_status === "skipped" && row.message_error === NO_VISITS_CONSENT) return "no_consent";
+/** A WhatsApp's row, as far as the no-show evidence reads it. */
+export interface EvidenceMessage {
+  readonly id: string;
+  /** queued, sent, skipped or failed; a delivered one is sent, with delivered_at set. */
+  readonly state: string;
+  readonly last_error: string | null;
+  readonly delivered_at: string | null;
+}
+
+/** What became of a WhatsApp. Only delivered and sent ones went to the client. */
+export function messageStateOf(message: Omit<EvidenceMessage, "id"> | null): MessageState {
+  if (message === null) return "none";
+  if (message.delivered_at !== null) return "delivered";
+  if (message.state === "sent") return "sent";
+  if (message.state === "skipped" && message.last_error === NO_VISITS_CONSENT) return "no_consent";
   return "not_sent";
 }
 
 /**
  * The WhatsApp ops read the receipt of, as `?1` names the visit: of the day-before reminder and the arrival notice,
- * one WhatsApp reported delivered, else the latest. The technician's card reads the same (src/domain/tech-jobs.ts).
+ * one reported delivered, else one sent, else the latest, so an arrival notice that never went cannot hide a
+ * reminder that did. The technician's card reads the same (src/domain/tech-jobs.ts).
  */
-export const EVIDENCE_MESSAGE = `SELECT id, delivered_at FROM outbound_messages
+const EVIDENCE_MESSAGE = `SELECT id, state, last_error, delivered_at FROM outbound_messages
   WHERE subject_kind = 'appointment' AND subject_id = ?1 AND kind IN ('visit_reminder', 'arrival_notice')
-  ORDER BY delivered_at IS NULL, created_at DESC, rowid DESC LIMIT 1`;
+  ORDER BY delivered_at IS NULL, state <> 'sent', created_at DESC, rowid DESC LIMIT 1`;
 
-function evidenceMessage(
-  db: D1Database,
-  appointmentId: string,
-): Promise<{ id: string; delivered_at: string | null } | null> {
-  return db.prepare(EVIDENCE_MESSAGE).bind(appointmentId).first<{ id: string; delivered_at: string | null }>();
+export function evidenceMessage(db: D1Database, appointmentId: string): Promise<EvidenceMessage | null> {
+  return db.prepare(EVIDENCE_MESSAGE).bind(appointmentId).first<EvidenceMessage>();
+}
+
+/** The columns a case's WhatsApp is read by: `n.message_id`, and the state, error and receipt of its message. */
+export type MessageColumns = Pick<CaseRow, "message_id" | "message_status" | "message_error" | "message_delivered_at">;
+
+/** The WhatsApp a case names, as its row joins it; null where it named none. */
+export function caseMessage(row: MessageColumns): Omit<EvidenceMessage, "id"> | null {
+  if (row.message_id === null) return null;
+  return { state: row.message_status ?? "", last_error: row.message_error, delivered_at: row.message_delivered_at };
 }
 
 export type Readiness =
@@ -343,7 +360,7 @@ export async function listNoShowCases(
     minutes_late: row.window_start === null ? null : minutesBetween(row.window_start, row.checked_in_at),
     distance_m: row.distance_m,
     radius_m: row.radius_m,
-    message_state: messageStateOf(row),
+    message_state: messageStateOf(caseMessage(row)),
     message_delivered_at: row.message_delivered_at,
     wait_ends_at: row.wait_ends_at,
     closed_early: closedBeforeTheClientsWait(row),
@@ -354,7 +371,7 @@ export async function listNoShowCases(
   }));
 }
 
-/** The terms in force, which a visit ops booked in FSM, and no hold sold, is charged under. */
+/** The terms in force, which a visit no hold sold is charged under. */
 export type TermsInputs = Pick<OpsInputs, "changeNoticeHours" | "lateChangeCharges" | "noShowCharges">;
 
 interface OpenCase {
@@ -376,8 +393,8 @@ interface NoShowCharge {
 }
 
 /**
- * What charging this visit costs: the no-show charge its booking was sold under, kept on its hold, or for a visit ops
- * booked in FSM the one in force (docs/decisions/0088-every-policy-in-the-console.md). A visit of no kind we sell
+ * What charging this visit costs: the no-show charge its booking was sold under, kept on its hold, or for a visit no
+ * hold sold the one in force (docs/decisions/0088-every-policy-in-the-console.md). A visit of no kind we sell
  * keeps what it took, as every charge did before a charge was priced.
  */
 async function chargeOf(db: D1Database, visit: OpenCase, inForce: TermsInputs): Promise<NoShowCharge> {

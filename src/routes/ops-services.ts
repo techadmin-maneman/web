@@ -4,6 +4,7 @@
 //   GET  /api/services                            every service, offered or retired, and its dated prices
 //   POST /api/services                            a service added to a kind
 //   POST /api/services/{kind}/{tier}/name         renamed; its code, and so its prices, stay
+//   POST /api/services/{kind}/{tier}/description  the line clients read under its name
 //   POST /api/services/{kind}/{tier}/length       how long it is booked for, from now on
 //   POST /api/services/{kind}/order               a kind's services in another order
 //   POST /api/services/{kind}/{tier}/retire       no longer offered from a day, today or later
@@ -11,19 +12,19 @@
 //
 // A kind is code, and so is what it decides: the technician's steps, the booking rules and the fees. Every change
 // here is audited in the same batch as the change itself (ADR 0031), and nothing already sold moves with it: a hold
-// keeps the service's price, late fee and length it was made with. While the owner has FSM_CATALOGUE_PUSH on, a
-// change FSM's catalogue should follow queues it (docs/decisions/0073-prices-from-the-price-book.md).
+// keeps the service's price, late fee and length it was made with. Books' items follow the services at the hourly
+// item check (src/domain/books-items.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { PRICE_BOUNDS, PRICE_TIER } from "../config/ops-settings.ts";
 import { VISIT_BLOCKS } from "../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
-import { queueCatalogueSync } from "../domain/fsm-catalogue.ts";
 import { priceBook, type PriceRow } from "../domain/price-book.ts";
 import {
   addService,
   allServices,
+  describeService,
   renameService,
   reorderServices,
   restoreService,
@@ -37,7 +38,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { LATE_FEES } from "../policy/moving-a-visit.ts";
-import { isOffered } from "../policy/services.ts";
+import { DESCRIPTION_LENGTH, isOffered } from "../policy/services.ts";
 import { SERVICE_MINUTES } from "../policy/visit-length.ts";
 import { PriceRowSchema } from "./ops-settings.ts";
 
@@ -51,15 +52,15 @@ const ServiceSchema = z
       .string()
       .openapi({ description: "Its code within its kind, which the price book prices it by; never changed." }),
     name: z.string(),
-    minutes: z.number().int().openapi({ description: "How long FSM books it for, and the time the day keeps." }),
+    description: z.union([z.string(), z.null()]).openapi({
+      description: "The line clients read under its name as they choose; null until ops write one.",
+    }),
+    minutes: z.number().int().openapi({ description: "How long it is booked for, and the time the day keeps." }),
     sort: z.number().int(),
     retired_date: z.union([z.iso.date(), z.null()]).openapi({
       description: "India's date from which clients no longer see it or book it; null while it is offered.",
     }),
     offered: z.boolean().openapi({ description: "Offered today: not retired by today. Priced or not." }),
-    fsm_item_id: z.union([z.string(), z.null()]).openapi({
-      description: "Its item in FSM's catalogue, once found by its name or made; null until then.",
-    }),
     updated_by: z.string(),
     updated_at: z.iso.datetime(),
     prices: z.array(PriceRowSchema).openapi({ description: "Every price it has had and is to have, newest first." }),
@@ -89,6 +90,7 @@ const ServicesSchema = z
       }),
     min_minutes: z.number().int(),
     max_minutes: z.number().int(),
+    max_description: z.number().int().openapi({ description: "The most characters a description may have." }),
     max_amount_ex_gst: z.number().int(),
     max_gst_percent: z.number().int(),
   })
@@ -150,6 +152,25 @@ const renameRoute = createRoute({
           .object({ name: z.string().max(60) })
           .strict()
           .openapi("ServiceRename"),
+      ),
+    },
+  },
+  responses: { 200: answered, ...refused },
+});
+
+const describeRoute = createRoute({
+  method: "post",
+  path: "/api/services/{kind}/{tier}/description",
+  summary: "The line clients read under a service's name as they choose. An empty one clears it",
+  request: {
+    params: Path,
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({ description: z.string().max(DESCRIPTION_LENGTH) })
+          .strict()
+          .openapi("ServiceDescribe"),
       ),
     },
   },
@@ -237,6 +258,7 @@ async function servicesBody(c: Context<AppEnv>) {
     late_fees: LATE_FEE_KINDS.map(({ kind, item }) => ({ kind, item, prices: pricesOf(item, "standard") })),
     min_minutes: SERVICE_MINUTES.min,
     max_minutes: SERVICE_MINUTES.max,
+    max_description: DESCRIPTION_LENGTH,
     max_amount_ex_gst: PRICE_BOUNDS.maxPaise,
     max_gst_percent: PRICE_BOUNDS.maxGstPercent,
   };
@@ -261,11 +283,6 @@ function refusalBody(c: Context<AppEnv>, refusal: ServiceRefusal) {
 /** A write's answer that is a refusal rather than the service, or services, it wrote. */
 const isRefusal = (result: object): result is ServiceRefusal => "refused" in result;
 
-/** FSM's catalogue follows a name or an offer only while the owner has the push on. */
-async function catalogueFollows(c: Context<AppEnv>): Promise<void> {
-  if (c.var.config.settings.fsmCataloguePush) await queueCatalogueSync(c.env.FSM_QUEUE, c.var.requestId);
-}
-
 const writeOf = (c: Context<AppEnv>) => ({ actor: staffOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 export function registerOpsServices(app: App): void {
@@ -282,7 +299,14 @@ export function registerOpsServices(app: App): void {
     const { kind, tier } = c.req.valid("param");
     const renamed = await renameService(c.env.DB, { ...writeOf(c), kind, tier, name: c.req.valid("json").name });
     if (isRefusal(renamed)) return refusalBody(c, renamed);
-    await catalogueFollows(c);
+    return c.json(await servicesBody(c), 200);
+  });
+
+  app.openapi(describeRoute, async (c) => {
+    const { kind, tier } = c.req.valid("param");
+    const description = c.req.valid("json").description;
+    const described = await describeService(c.env.DB, { ...writeOf(c), kind, tier, description });
+    if (isRefusal(described)) return refusalBody(c, described);
     return c.json(await servicesBody(c), 200);
   });
 
@@ -314,7 +338,6 @@ export function registerOpsServices(app: App): void {
     const { kind, tier } = c.req.valid("param");
     const restored = await restoreService(c.env.DB, { ...writeOf(c), kind, tier });
     if (isRefusal(restored)) return refusalBody(c, restored);
-    await catalogueFollows(c);
     return c.json(await servicesBody(c), 200);
   });
 }

@@ -1,5 +1,5 @@
-// The booking sheet's days and windows: which days are full, which to choose for a visit offered on a day, later
-// days added to those shown, and what the date and window steps say of them.
+// The booking sheet's days and windows: which days are full or inside the notice, which to choose for a visit offered
+// on a day, later days added to those shown, and what the date and window steps say of them.
 
 import { weekdayDate } from "@maneman/web-kit/dates";
 import type { Availability, BookingWindow } from "../api.ts";
@@ -9,6 +9,14 @@ export type Day = Availability["days"][number];
 type WhoWouldCome = Day["windows"][number]["with"];
 
 export const isFull = (day: Day): boolean => day.windows.every((window) => window.with === null);
+
+/** Whether a visit booked now in any of the day's open windows would already cost the client to change. */
+export const dayInsideNotice = (day: Day): boolean =>
+  day.windows.some((window) => window.with !== null && window.change_charged);
+
+/** The window step's button: on to payment, or, for a day that costs nothing, only on. */
+export const windowContinue = (day: Day): string =>
+  day.price.amount === 0 ? booking.window.continueFree : booking.window.continue;
 
 /** The first day on or after `date` with a window open; null where the days shown have none. */
 export function firstOpenFrom(days: readonly Day[], date: string): string | null {

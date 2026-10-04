@@ -31,6 +31,8 @@ export type TryOn = Schemas["TryOn"];
 export type Angle = PhotoLink["angle"];
 export type Entry = Schemas["PaymentEntry"] | Schemas["RefundEntry"];
 export type CreditLine = Schemas["CreditLine"];
+export type OwedPayment = Schemas["OwedPayment"];
+export type OneVisitPrice = Schemas["OneVisitPrice"];
 export type EntryDetail = Schemas["PaymentDetail"] | Schemas["RefundDetail"];
 export type Availability = Schemas["Availability"];
 export type Hold = Schemas["Hold"];
@@ -102,7 +104,17 @@ export function onSessionEnded(listener: () => void): () => void {
   };
 }
 
+/**
+ * How long a call waits before the screen says there is no connection: a stalled signal must not leave Pay,
+ * Continue or Cancel busy until the page is reloaded.
+ */
+const PATIENCE_MS = { read: 15_000, write: 20_000 } as const;
+
+/** The referral card, the largest thing the app sends. */
+const CARD_PATIENCE_MS = 60_000;
+
 const client = createClient<paths, ErrorCode>({
+  patience: PATIENCE_MS,
   onSessionEnded: () => {
     for (const listener of sessionListeners) listener();
   },
@@ -187,6 +199,7 @@ export const putCard = (card: Blob) =>
   client.request<Success<OperationAt<paths, "/api/refer/card", "put">>>("PUT", "/api/refer/card", {
     body: card,
     headers: { "Content-Type": "image/jpeg" },
+    patience: CARD_PATIENCE_MS,
   });
 
 /** The client's card as stored, which the phone keeps a day: each version has a link of its own. */

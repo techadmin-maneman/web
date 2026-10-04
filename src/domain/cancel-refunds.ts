@@ -115,8 +115,7 @@ export async function settleOwedRefunds(
 }
 
 /**
- * Refunds owed by cancels the request did not settle. Only a visit that is cancelled: where FSM holds the record, a
- * claim whose FSM cancel never finished leaves the visit as it was, and owes nothing. One with a refund ID was refunded
+ * Refunds owed by cancels the request did not settle, of visits that are cancelled. One with a refund ID was refunded
  * by a Worker that did not yet mark refunds settled.
  */
 async function owedRefunds(db: D1Database, now: Date): Promise<OwedRefund[]> {

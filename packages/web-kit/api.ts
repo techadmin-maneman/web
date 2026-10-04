@@ -97,7 +97,7 @@ export type LocalCode = "offline" | "unknown";
 /** The technician a job went to, by first name, and when ops moved it there (docs/open-points.md, item 92). */
 export interface Moved {
   readonly technician: string;
-  /** Null when it was moved in FSM itself. */
+  /** Null where nothing recorded when. */
   readonly at: string | null;
 }
 
@@ -120,9 +120,21 @@ export type Answer<T, Code extends string = string> =
       readonly requestId: string | null;
     };
 
+/** How long a call waits before it counts as no connection, in milliseconds: a GET, and any other call. */
+export interface Patience {
+  readonly read: number;
+  readonly write: number;
+}
+
+/**
+ * For an app that sets no patience of its own: past the API's slowest answer a person waits on, and well short
+ * of the many minutes a browser would leave a button busy on a signal that never answers.
+ */
+const DEFAULT_PATIENCE: Patience = { read: 60_000, write: 60_000 };
+
 export interface ClientOptions {
-  /** How long a call waits before it counts as no connection; unbounded unless an app sets it. */
-  readonly patience?: number;
+  /** How long a call waits before it counts as no connection; DEFAULT_PATIENCE unless the app sets its own. */
+  readonly patience?: Patience;
   /** "manual" where a redirect is never the API's, as behind the console's Access. */
   readonly redirect?: RequestRedirect;
   /** Whether a refusal means the session has ended: a 401 unless the app says more. */
@@ -164,14 +176,11 @@ export function urlOf(template: string, path: object | undefined, query: object 
 }
 
 /** One request, or null when nothing answered in time. */
-async function reach(url: string, init: RequestInit, patience: number | undefined): Promise<Response | null> {
+async function reach(url: string, init: RequestInit, patience: number): Promise<Response | null> {
   const giveUp = new AbortController();
-  const timer =
-    patience === undefined
-      ? undefined
-      : setTimeout(() => {
-          giveUp.abort();
-        }, patience);
+  const timer = setTimeout(() => {
+    giveUp.abort();
+  }, patience);
   try {
     return await fetch(url, { ...init, credentials: "same-origin", signal: giveUp.signal });
   } catch {
@@ -235,6 +244,11 @@ export interface Client<Paths, Code extends string> {
 export function createClient<Paths, Code extends string = string>(options: ClientOptions = {}): Client<Paths, Code> {
   const sessionEnded = options.sessionEnded ?? isSessionEnded;
   const missingCode = options.missingCode ?? (() => "unknown");
+  const patience = options.patience ?? DEFAULT_PATIENCE;
+
+  function patienceFor(method: string): number {
+    return method.toUpperCase() === "GET" ? patience.read : patience.write;
+  }
 
   async function read<T>(response: Response, file: boolean): Promise<Answer<T, Code>> {
     if (response.ok) {
@@ -278,7 +292,7 @@ export function createClient<Paths, Code extends string = string>(options: Clien
         ...(body === undefined ? {} : { body }),
         ...(options.redirect === undefined ? {} : { redirect: options.redirect }),
       },
-      init.patience ?? options.patience,
+      init.patience ?? patienceFor(method),
     );
     if (response === null) {
       options.onUnreached?.();

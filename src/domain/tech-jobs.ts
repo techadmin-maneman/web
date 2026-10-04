@@ -1,5 +1,4 @@
-// The technician's day, read from the FSM mirror (src/policy/job-visibility.ts,
-// docs/decisions/0032-fsm-mirror.md).
+// The technician's day (src/policy/job-visibility.ts).
 //
 // "Today's jobs in order; tomorrow collapsed. Jobs further out show only time,
 // type and sector. The address, access notes and client card unlock the day
@@ -43,7 +42,7 @@ import { latestArrival } from "./check-ins.ts";
 import { codeOnVisit, type VisitCode } from "./discount-code-uses.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles.ts";
-import { EVIDENCE_MESSAGE } from "./no-shows.ts";
+import { evidenceMessage, messageStateOf } from "./no-shows.ts";
 import { decisionAtVisit } from "./one-visit.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { bookedMinutes } from "./scheduling.ts";
@@ -69,8 +68,10 @@ export interface JobSummary {
   readonly sector: string | null;
   readonly status: AppointmentStatus;
   readonly badge: PaymentBadge;
-  /** How much of the day the visit takes, as board A1 writes it beneath the time: 1, 1.5 or 2 slots. */
+  /** How much of the day the visit takes: 1, 1.5 or 2 slots. */
   readonly slots: number | null;
+  /** How long the visit is booked for, which the technician's day reads beside the time. */
+  readonly minutes: number | null;
   readonly unlocked: boolean;
   readonly unlocks_at: string;
   /** The client's name once the job unlocks, as the card gives it, so the day's list can say whom each job is for. */
@@ -142,7 +143,7 @@ export interface LastVisit {
 }
 
 export interface JobDetail extends JobSummary {
-  /** Null while the job is locked, whatever the mirror holds. */
+  /** Null while the job is locked. */
   readonly address: JobAddress | null;
   readonly access_notes: string | null;
   readonly client: JobClient | null;
@@ -154,7 +155,7 @@ export interface JobDetail extends JobSummary {
   /** The client's pieces, newest fit first; null while the job is locked. */
   readonly pieces: CardPiece[] | null;
   readonly last_visit: LastVisit | null;
-  /** The day-before WhatsApp, or the arrival one, and when it reached the client's phone. */
+  /** The day-before WhatsApp, or the arrival one, that went to the client, and when it reached his phone. */
   readonly reminder: { readonly delivered_at: string | null } | null;
   /**
    * On a one visit and a consultation, the products by name: the first fit's services offered that day, which the
@@ -202,7 +203,7 @@ interface JobRow {
   window_start: string;
   window_end: string | null;
   type: VisitType | null;
-  /** The visit's service within its kind; null where the mirror knows none. */
+  /** The visit's service within its kind; null where it names none. */
   tier: string | null;
   one_visit: OneVisitState | null;
   status: AppointmentStatus;
@@ -236,7 +237,7 @@ interface JobRow {
 }
 
 // `free`: the price book's row for the visit's own service, its kind and its tier (the standard tier's where the
-// mirror knows no other), on the visit's day in India charges nothing, as it does a consultation.
+// visit names no other), on the visit's day in India charges nothing, as it does a consultation.
 const SELECT_JOB = `
   SELECT a.id, a.window_start, a.window_end, a.type, a.tier, a.one_visit, a.status, a.person_id, a.service_city,
     a.client_note,
@@ -487,10 +488,16 @@ export async function lastVisitPhoto(
   return photo === null ? null : { key: photo.r2_key, contentType: photo.content_type };
 }
 
-/** The WhatsApp ops read the receipt of on a no-show, as they read it (src/domain/no-shows.ts). */
+/**
+ * The WhatsApp ops read the receipt of on a no-show (src/domain/no-shows.ts), where it went to the client; null where
+ * none did, since one queued, skipped or failed never reached his phone.
+ */
 async function reminderOf(db: D1Database, appointmentId: string): Promise<{ delivered_at: string | null } | null> {
-  const message = await db.prepare(EVIDENCE_MESSAGE).bind(appointmentId).first<{ delivered_at: string | null }>();
-  return message === null ? null : { delivered_at: message.delivered_at };
+  const message = await evidenceMessage(db, appointmentId);
+  if (message === null) return null;
+  const state = messageStateOf(message);
+  if (state !== "delivered" && state !== "sent") return null;
+  return { delivered_at: message.delivered_at };
 }
 
 function addressOf(row: JobRow): JobAddress | null {
@@ -579,6 +586,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSch
     status: row.status,
     badge: badgeOf(row),
     slots: row.type === null ? null : slotsFor(unitsFor(bookedMinutes(row))),
+    minutes: row.type === null ? null : bookedMinutes(row),
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
     client_name: open ? row.client_name : null,

@@ -8,7 +8,7 @@ Nothing reaches production while a point in `docs/open-points.md` is open, excep
 
 - **Code:** 268eaa4, of 21 September 2026, with migrations to 0004. The next release carries every migration since.
 - **Surfaces:** the public surface alone (`ENABLED_SURFACES`, `src/config/environments.ts`); `mm-site` serves `site/placeholder/production`.
-- **Providers** (`wrangler.jsonc`, `env.production.vars`): CRM `zoho`, WhatsApp `evolution` with `MESSAGING_ENABLED` `"false"`, FSM, Books, payments and the geocoder `none`, `SELF_SERVE_BOOKING` `"false"`.
+- **Providers** (`wrangler.jsonc`, `env.production.vars`): CRM `zoho`, WhatsApp `evolution` with `MESSAGING_ENABLED` `"false"`, Books, payments and the geocoder `none`, `SELF_SERVE_BOOKING` `"false"`.
 - **Apps:** `mm-app-production` exists with no route. The release leaves every app alone until its surface is switched on (item 152, fixed 27 September 2026).
 
 ## 1. Now, in parallel
@@ -17,7 +17,7 @@ Nothing here needs a release. The first two have dates.
 
 **The owner**
 
-- [ ] **Subscribe before the trials end, on or about 7 October 2026:** FSM Professional for 100 appointments a month, and Books Standard (items 18 and 4). After that date FSM drops to Free, which has no assets or job sheets.
+- [ ] **Subscribe to Books Standard before its trial ends, on or about 7 October 2026** (item 4). FSM's trial lapses: no plan is bought (ADR 0110).
 - [ ] **Start Razorpay's KYC** for live mode (item 6); it takes days and gates every live payment.
 - [ ] **Start DLT registration** for SMS login codes (item 37): the entity, a sender ID and the login-code template.
 - [ ] **A dedicated WhatsApp number** on its own Evolution instance, its webhook to us (item 38; RB 12, and "The WhatsApp number is banned" for moving a number).
@@ -25,7 +25,7 @@ Nothing here needs a release. The first two have dates.
 - [ ] **Buy GitHub Team** (items 88 and 89), then require every `ci.yml` job on `main`, limit the `production` environment to `main`, and delete merged branches. Check whether required reviewers on a private repository's environment need a higher plan.
 - [ ] **Zoho tokens** (RB 8 and 11b.1): a Self Client refresh token for scripts and proofs alone (item 32); the CRM token again with `ZohoCRM.modules.contacts.ALL` (item 21); and every token with only the scopes its sync uses (item 36).
 - [ ] **The CRM** (RB 8): `node --env-file=.env.crm-<env> scripts/setup-crm.ts --check`, then without `--check`, then `node --env-file=.env.worker-<env> scripts/check-zoho-setup.ts` (item 34); and, by hand, the one workflow rule: contact consent becoming true assigns an owner, nothing firing for "Try-on — delivery only" (item 35).
-- [ ] **FSM's settings:** "Allow overlapping appointments" off (item 29); your own mobile number on your FSM user, so you sign in to the technician app as the sync lists you (item 27); each technician as an FSM user with his mobile number and his territory (item 27).
+- [ ] **The technicians:** each one added in the console's Technicians with his mobile number, his city and his zone; your own as well, to sign in to the technician app yourself.
 - [ ] **Books:** delete the receipt `4242595000000065003`, which a proof seeded for a payment that never happened (item 19); add a bank account "Razorpay – staging test" and give its ID to ops for staging's `BOOKS_REFUND_ACCOUNT_ID` (item 10).
 - [ ] **Staging's invite previews:** in Cloudflare Zero Trust, an Access application for `staging.maneman.in` with a Bypass / Everyone policy on the paths `r/`, `images/` and `api/og/`, so WhatsApp can fetch an invite's page and card (RB 10b, with the check that WhatsApp's crawler gets through; RB 10 has the same for `api/result/`).
 - [ ] **Material and words:** the home page's cleared material (items 73 to 81); the house referral card, 1200 x 630 under 300 KB (item 52); the Grievance Officer's name and address for the privacy page (item 51); the GA4 and Meta Pixel IDs (item 84); your wording in the texts file (items 39, 41, 42 and 45).
@@ -33,10 +33,9 @@ Nothing here needs a release. The first two have dates.
 
 **Ops, or a developer with the Cloudflare account**
 
-- [ ] **Production's resources** (items 85 and 86; RB 1):
+- [ ] **Production's resources** (item 86; RB 1):
 
   ```sh
-  W queues create mm-fsm-sync-prod
   W r2 bucket create mm-prod-client-photos --location apac
   W r2 bucket create mm-prod-referral-cards --location apac
   node --env-file=.env.cf-read scripts/check-buckets.ts production --strict
@@ -52,22 +51,21 @@ Nothing here needs a release. The first two have dates.
 
 Each is written up in `docs/verification.md` when it passes. The payment run is what item 8 waits on before self-serve booking goes on in production.
 
-- [ ] **The whole payment path, once, in Razorpay's test mode** (item 91). The owner's number on staging's `MESSAGING_ALLOWLIST` (RB 7); nobody else driving staging's FSM for the hour (item 32); the address typed by hand if item 54 is not fixed yet. Then, in order:
-  1. Book a consultation on `/book` with a number FSM has never seen, giving the full address: FSM gets one contact with the pincode on its service address and one work order ending "(booking …)", the CRM a lead, and the logs no `fsm_*_lookup_failed` (item 24).
+- [ ] **The whole payment path, once, in Razorpay's test mode** (item 91). The owner's number on staging's `MESSAGING_ALLOWLIST` (RB 7); the address typed by hand if item 54 is not fixed yet. Then, in order:
+  1. Book a consultation on `/book` with a new number, giving the full address: the console's Tasks board lists the consultation asked for, and the CRM has a lead.
   2. Sign in at app-staging with the WhatsApp code.
-  3. Complete the consultation in FSM (Dispatch, Start Work, Complete Work): within five minutes the app offers the first fit.
+  3. Book the consultation from the console, then close it as done in the technician app: the app offers the first fit.
   4. Take the first fit to the pay step and let the countdown run out: the slot goes back.
-  5. Book again and pay: Checkout opens over the sheet and takes taps; fail once, then pay. `razorpay_events` holds `payment.failed`, `payment.authorized`, `payment.captured` and `order.paid`, each once; the hold is `booked`; FSM has the work order and its appointment; the receipt message arrives.
-  6. Within about three hours the receipt opens in the app, and Books shows the payment (item 25).
-  7. Move the fit more than 24 hours out: no payment, the same FSM appointment moved, the message arrives.
-  8. Move it in the app to tomorrow's first window, then move it again: the ₹4,000 late fee is asked for and paid. Had ops moved it there in FSM instead, the second move would be free, since a move by ops keeps the client's free change (ADR 0096).
+  5. Book again and pay: Checkout opens over the sheet and takes taps; fail once, then pay. `razorpay_events` holds `payment.failed`, `payment.authorized`, `payment.captured` and `order.paid`, each once; the hold is `booked`, and the visit is on the dispatch board; the receipt message arrives.
+  6. Within the hour Books shows the client's customer and the payment.
+  7. Move the fit more than 24 hours out: no payment, the same visit moved on the dispatch board, the message arrives.
+  8. Move it in the app to tomorrow's first window, then move it again: the ₹4,000 late fee is asked for and paid. Had ops moved it there on the dispatch board instead, the second move would be free, since a move by ops keeps the client's free change (ADR 0096).
   9. Complete the fit: within five minutes the invoice is raised and **sent**, the payment applied in Books, and the app shows the tax invoice. A draft instead is a finding (ruling 46 of ADR 0025).
   10. Book and pay a service visit more than 24 hours out, then cancel it: refunded in full, and the refund reaches Books within the hour.
   11. Book and pay one for tomorrow's first window, then cancel: the payment is kept, and the app says so.
   12. Give the client a credit in the console and book a service visit: "Credit covers it"; cancel it more than 24 hours out and the credit comes back.
   13. Read every open alert (RB, "Alerts and the cron"), check Razorpay's webhook deliveries all succeeded, and list every Zoho record the run made, for item 19's clean-up.
-- [ ] **The Zoho calls not yet tried on the org** (items 24 and 25), as each point lists them.
-- [ ] **A technician's writes reaching FSM** (item 57): one job each closed as done, partial and no-show, and one reassignment, read back in FSM; the done job's consumables on FSM's summary and out of his kit on the Stock page (ADR 0087). This needs your mobile on your FSM user (item 27).
+- [ ] **A technician's writes** (item 57): one job each closed in the app as done, partial and no-show, and one reassignment, read back in the console; the done job's consumables out of his kit on the Stock page (ADR 0087).
 - [ ] **The field test** (item 72) with the first technician and the owner, on his own phone: it tunes the check-in radius (item 56).
 - [ ] **A try-on on a mid-range Android phone over mobile data**, and staging's `alerts` read after a day (item 91).
 
@@ -76,7 +74,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 **Before it:**
 
 - [ ] The home page's material in `site/src/assets`, each block `publish: true` (items 73 to 81), and the production build looked at (`docs/frontend.md`, "Going live in production").
-- [ ] Counsel's wording of the privacy page and the terms (items 44 and 149), and the try-on's notices approved (item 146): production's site build refuses `photo-v3` and `gate-v3` until they are (ADR 0104).
+- [ ] Counsel's wording of the privacy page and the terms (items 44 and 149), and the try-on's notices approved (item 146): production's site build refuses `photo-v4` and `gate-v4` until they are (ADR 0104).
 - [ ] The Grievance Officer on the privacy page (item 51).
 - [ ] The analytics IDs, and the consent banner they need (item 84).
 - [ ] The dedicated WhatsApp number (item 38) and `MESSAGING_ENABLED` `"true"` in production's vars (item 164): the try-on's look goes to WhatsApp only, so while it is off the try-on does not run (ADR 0104).
@@ -108,9 +106,9 @@ With self-serve booking off, a consultation booked on the site is a request: the
 - [ ] The payment run of section 2 passed (item 8).
 - [ ] Razorpay live: KYC, live keys, and the live webhook to `https://maneman.in/api/hooks/razorpay` with the nine events of "The dashboards" below (items 5, 6 and 154; RB 11c).
 - [ ] The Razorpay and Zoho tables of "The dashboards" below walked on staging and production, each result recorded.
-- [ ] The CA's answers, and GST on in Books with the real GSTIN, FSM and Books synced again (items 2, 3, 9, 14, 16, 17 and 26).
+- [ ] The CA's answers, and GST on in Books with the real GSTIN, Books synced again (items 2, 3, 9, 14, 16, 17 and 26).
 - [ ] Counsel's answers (items 22, 23, 40, 41, 55, 63, 69 and 148).
-- [ ] The org clean of staging's records before production reads FSM (items 19 and 155).
+- [ ] The org clean of staging's records before production goes live (item 19).
 - [ ] The owner's prices and services in production's console (items 1 and 13); the job sheet's lists, the consumables with their costs, reorder levels and each service's use, and each kit's and the central store's opening count on the Stock page (item 28, ADR 0087).
 - [ ] The texts approved (items 39, 41 and 42), and the engineering the rulings still owe (`docs/implementation-plan-2026-09-27.md`).
 
@@ -118,16 +116,15 @@ With self-serve booking off, a consultation booked on the site is a request: the
 
 - [ ] DNS and Access for `app.maneman.in`, `ops.maneman.in` and `tech.maneman.in`, with `mm-ci-production` on each (RB 11, points 1 and 2); `ACCESS_OPS_AUD` for the ops console (RB 11, point 3).
 - [ ] Turnstile for the client app's login: add `app.maneman.in` to the hostnames of the `mm-production` widget (Cloudflare dashboard → Turnstile → mm-production → Hostname management). Until then no one can ask for a login code there (`docs/turnstile.md`).
-- [ ] FSM and Books: each one's client and its secrets, `setup-fsm.ts --check`, the providers `zoho`, the hosts and `ZOHO_BOOKS_ORG_ID`, and `BOOKS_REFUND_ACCOUNT_ID` of the account "Razorpay" (RB 11b, points 1 to 7).
-- [ ] FSM's two webhooks for production, the second for deletion, with a token you keep (item 31; RB 11b, point 6).
+- [ ] Books: its client and secrets, `check-books-setup.ts --env production`, the provider `zoho`, the hosts and `ZOHO_BOOKS_ORG_ID`, and `BOOKS_REFUND_ACCOUNT_ID` of the account "Razorpay" (RB 11b, points 1 to 6).
 - [ ] The rest of production's secrets, each before the release that needs it (RB 7): `OTP_PEPPER` (`openssl rand -hex 32`; the site's WhatsApp codes need it too, so without it the one visit and `/try` cannot prove a number), `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `EVOLUTION_WEBHOOK_TOKEN`, and `GOOGLE_MAPS_API_KEY` once production has its own restricted key (RB 13). A required secret left empty stops every request, so check `GET /api/health` after each.
 - [ ] Bootstrap `mm-ops-production` and `mm-tech-production`, and add both to `mm-ci-production` (RB 11, point 6; RB 6).
 
-**The code**, in one pull request: `ENABLED_SURFACES.production` gains the three surfaces, `env.production.routes` their `/api/*` routes, and each app's `wrangler.jsonc` its production route (RB 11, point 4); `env.production.vars` set `FSM_PROVIDER`, `BOOKS_PROVIDER` and `PAYMENTS_PROVIDER` on, `RAZORPAY_KEY_ID` to the live key, `GEOCODE_PROVIDER` `"google"` and `SELF_SERVE_BOOKING` `"true"`; `FSM_CATALOGUE_PUSH.production` `true` (item 11).
+**The code**, in one pull request: `ENABLED_SURFACES.production` gains the three surfaces, `env.production.routes` their `/api/*` routes, and each app's `wrangler.jsonc` its production route (RB 11, point 4); `env.production.vars` set `BOOKS_PROVIDER` and `PAYMENTS_PROVIDER` on, `RAZORPAY_KEY_ID` to the live key, `GEOCODE_PROVIDER` `"google"` and `SELF_SERVE_BOOKING` `"true"`; `BOOKS_ITEM_PUSH` moved from staging to production (RB 11b, point 7).
 
 **The release:** as the site's, then `npm run apply-triggers -- --env production` to attach the apps' routes (never `W deploy`, RB 11, point 5), and `npm run smoke -- --environment production --surfaces`.
 
-**The owner's live proof, behind Access:** sign in with a real code on the dedicated number; pay a real service visit; see it booked in FSM and its receipt in the app; cancel it more than 24 hours out, and see the refund reach Razorpay, the app and Books. Stop before an invoice is issued, which only a credit note undoes. Then set a price in the console and see `fsm_catalogue_pushed` in the logs and no `fsm_catalogue` alert an hour later (item 25). The same hour's check adds each consumable to FSM's catalogue as a part at Rs. 0: see `fsm_part_added` in the logs, each part in FSM, and Settings · Consumables saying "In FSM" beside each, with no `fsm_catalogue:consumables` alert (ADR 0087).
+**The owner's live proof, behind Access:** sign in with a real code on the dedicated number; pay a real service visit; see it booked on the dispatch board and its receipt in the app; cancel it more than 24 hours out, and see the refund reach Razorpay, the app and Books. Stop before an invoice is issued, which only a credit note undoes. Then set a price in the console and see no `books_item` alert an hour later.
 
 **Open the doors:** delete the Access applications for `app.maneman.in` and `tech.maneman.in`; the ops console stays behind Access. Read the open alerts after the first day (RB, "Alerts and the cron").
 
@@ -166,7 +163,7 @@ These settings live only in each vendor's dashboard, where no test can read them
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
 | Books: "MM person ID"   | A custom field on customers: Text, unique, API name `cf_mm_person_id`                                                                                                            | 2 October 2026 |
 | Books: items            | One service item for each service on sale in the console, under the console's name and at the price book's price. Each is made and priced from the console; none is made by hand |                |
-| Books: discounts        | At line-item level, before tax (item 181; RB 11b, point 9)                                                                                                                       |                |
+| Books: discounts        | At line-item level, before tax (item 181; RB 11b, point 8)                                                                                                                       |                |
 | Books: refund accounts  | Bank accounts in INR: "Razorpay – staging test" for staging and "Razorpay" for production, each one's ID that environment's `BOOKS_REFUND_ACCOUNT_ID` (item 10; RB 11b, point 7) |                |
 | Books: payment mode     | "Razorpay", under which every payment and refund is recorded                                                                                                                     |                |
 | Books: GST              | Off until the CA answers; then on, with the real GSTIN and state, each item's SAC and rate, and the same in `BOOKS_GSTIN`, `BOOKS_GST_STATE`, `BOOKS_SAC` (items 2, 3)           |                |

@@ -151,17 +151,24 @@ Request body:
 
 ### GET /api/clients/{id}
 
-The client's record: who they are, their address, their visits, their money, their history and their invite
+The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits and their money
 
 **200**: The record
 
 ```json
 {
-  "$ref": "#/components/schemas/ClientRecord"
+  "anyOf": [
+    {
+      "$ref": "#/components/schemas/ClientRecord"
+    },
+    {
+      "$ref": "#/components/schemas/ErasedClientRecord"
+    }
+  ]
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
+**404**: not_found: no such client, or the client is outside the caller's cities
 
 ```json
 {
@@ -296,166 +303,6 @@ Request body:
 ```
 
 **404**: not_found: no such client in the caller's cities, or one who has been erased
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-### POST /api/held-bookings/{id}/retry
-
-Try FSM again now for a booking it refused, as the hourly try would
-
-**200**: What FSM made of it
-
-```json
-{
-  "$ref": "#/components/schemas/HeldBookingTried"
-}
-```
-
-**403**: access_required
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**404**: not_found: no booking held for FSM with that id; it may be booked or refunded
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**409**: not_changeable: the visit's time has passed; refund it, or link a visit booked in FSM. superseded: a try is writing the booking to FSM at this moment; look again in a minute
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-### POST /api/held-bookings/{id}/stop
-
-Stop the hourly tries of a booking FSM refused, before ops book it in FSM by hand and link it
-
-**200**: No longer tried by itself; it waits for a link or a refund
-
-```json
-{
-  "$ref": "#/components/schemas/HeldBookingStopped"
-}
-```
-
-**403**: access_required
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**404**: not_found: no booking held for FSM with that id; it may be booked or refunded
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**409**: superseded: a try is writing the booking to FSM at this moment; look again in a minute
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-### POST /api/held-bookings/{id}/link
-
-The visit ops booked in FSM by hand is this booking: book it as that visit, and make nothing twice
-
-Request body:
-
-```json
-{
-  "$ref": "#/components/schemas/HeldBookingLink"
-}
-```
-
-**200**: Booked as the visit, and the client told
-
-```json
-{
-  "$ref": "#/components/schemas/HeldBookingLinked"
-}
-```
-
-**400**: invalid_request: not a visit this booking can be, or the booking moves a visit
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**403**: access_required
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**404**: not_found: no booking held for FSM with that id; it may be booked or refunded, or its payment was refunded in Razorpay's dashboard, and it has now been let go
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**409**: superseded: a try is writing the booking to FSM at this moment; look again in a minute
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-### POST /api/held-bookings/{id}/refund
-
-Give back a booking FSM would not take: its work order cancelled, its payment refunded, the client told
-
-**200**: What happened to the money and to FSM
-
-```json
-{
-  "$ref": "#/components/schemas/HeldBookingRefunded"
-}
-```
-
-**403**: access_required
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**404**: not_found: no booking held for FSM with that id; it may be booked or refunded
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**409**: superseded: a try is writing the booking to FSM at this moment; look again in a minute
 
 ```json
 {
@@ -611,7 +458,7 @@ Request body:
 }
 ```
 
-**503**: unavailable: FSM did not answer; nothing changed
+**503**: unavailable: the cancel could not be written; nothing changed
 
 ```json
 {
@@ -663,7 +510,7 @@ Request body:
 }
 ```
 
-**409**: already_closed: the visit is closed or cancelled, or the technician's phone closed it; managed_in_fsm: FSM holds the record, so the visit is closed there
+**409**: already_closed: the visit is closed or cancelled, or the technician's phone closed it
 
 ```json
 {
@@ -924,7 +771,7 @@ Request body:
 
 ### POST /api/clients/{id}/erasure
 
-Erase a client now: their photographs and details. The CRM, FSM and Books follow within minutes
+Erase a client now: their photographs and details. The CRM and Books follow within minutes
 
 Request body:
 
@@ -1352,7 +1199,7 @@ Request body:
 
 ### GET /api/grievances
 
-Open grievances in the caller's cities, oldest first
+Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's
 
 **200**: Open grievances
 
@@ -1543,11 +1390,19 @@ Who is waiting in the caller's cities, by pincode, the longest wait first
     "more": {
       "type": "boolean",
       "description": "More than 200 pincodes have someone waiting; these are the longest waits."
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Our cities the caller may add a pincode in: those their Growth MANAGE reaches."
     }
   },
   "required": [
     "areas",
-    "more"
+    "more",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -1594,6 +1449,14 @@ Request body:
 }
 ```
 
+**400**: launch_in_future: launch_on is a day still to come
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE
 
 ```json
@@ -1602,7 +1465,7 @@ Request body:
 }
 ```
 
-**404**: not_found: we have no such pincode
+**404**: not_found: the service area holds no such pincode, so it is added first
 
 ```json
 {
@@ -1693,6 +1556,26 @@ The dispatch board: seven days of the visits and active technicians in the calle
 }
 ```
 
+### GET /api/dispatch/version
+
+The board's version, which the open board asks for every minute: one row, where the board itself is hundreds
+
+**200**: The version now
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchBoardVersion"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/dispatch/room
 
 Where a job in hand can go in the board's week, before ops pick a reason. Writes nothing
@@ -1723,7 +1606,7 @@ Where a job in hand can go in the board's week, before ops pick a reason. Writes
 
 ### POST /api/dispatch/assign
 
-Put a job on a technician, with a reason. The clash check runs before any write to FSM
+Put a job on a technician, with a reason. The clash check runs before anything is written
 
 Request body:
 
@@ -1765,15 +1648,7 @@ Request body:
 }
 ```
 
-**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**502**: fsm_refused: FSM would not take it; nothing moved. fsm_partly: FSM took the technician and not the time; the job is read again from FSM
+**409**: past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
 
 ```json
 {
@@ -1825,15 +1700,7 @@ Request body:
 }
 ```
 
-**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**502**: fsm_refused; fsm_partly: FSM took the technician and not the time
+**409**: past_day; window_passed; clash; on_leave; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is
 
 ```json
 {
@@ -2350,6 +2217,14 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
+**400**: invalid_request: person is not a client's id
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required, or not_permitted: no View in any department
 
 ```json
@@ -2540,6 +2415,42 @@ A day's money in the caller's cities: what was collected, what went back, and ea
 }
 ```
 
+### POST /api/payment-links/{id}/resend
+
+Text the client their payment link again
+
+**200**: What sending it again came to
+
+```json
+{
+  "$ref": "#/components/schemas/PaymentLinkResent"
+}
+```
+
+**403**: access_required, or not_permitted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such link, or its client is erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Razorpay did not answer; try again in a minute
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### PATCH /api/technicians/{id}
 
 Change a technician's name, number, zone or city
@@ -2584,7 +2495,7 @@ Request body:
 }
 ```
 
-**409**: number_in_use: another active technician signs in with that number; managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record
+**409**: number_in_use: another active technician signs in with that number
 
 ```json
 {
@@ -2613,14 +2524,6 @@ Switch a technician off: he is signed out at once, and his visits still to come 
 ```
 
 **404**: not_found: no such technician in the caller's cities
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**409**: managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record
 
 ```json
 {
@@ -2668,7 +2571,7 @@ Switch a technician back on, so he can sign in again
 }
 ```
 
-**409**: number_in_use: another active technician signs in with his number now; managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record
+**409**: number_in_use: another active technician signs in with his number now
 
 ```json
 {
@@ -2992,10 +2895,18 @@ Every pincode we hold, its city, and whether a technician goes there
       "items": {
         "$ref": "#/components/schemas/ServedPincode"
       }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Our cities, which a pincode added must be in."
     }
   },
   "required": [
-    "pincodes"
+    "pincodes",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -3047,7 +2958,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served
+**400**: invalid_request: fields names a pincode we do not hold. launch_in_future: fields names a pincode it would serve from a day still to come. no_service_area: it would leave none served
 
 ```json
 {
@@ -3056,6 +2967,50 @@ Request body:
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/pincodes
+
+Add a pincode the service area does not hold, unserved, in one of our cities
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewPincode"
+}
+```
+
+**201**: The pincode, as the service area now lists it
+
+```json
+{
+  "$ref": "#/components/schemas/ServedPincode"
+}
+```
+
+**400**: invalid_request: fields names the box refused, city for a city that is not one of ours
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: the city is outside the caller's Growth MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: pincode_held: the service area holds that pincode already
 
 ```json
 {
@@ -3361,6 +3316,58 @@ Request body:
 }
 ```
 
+### POST /api/services/{kind}/{tier}/description
+
+The line clients read under a service's name as they choose. An empty one clears it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceDescribe"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/services/{kind}/{tier}/length
 
 How long a service is booked for, from now on. A visit held or booked before keeps its own
@@ -3563,7 +3570,7 @@ Offer a retired service again, or take back a retirement still to come
 
 ### GET /api/consumables
 
-Every consumable, where each stands in FSM's catalogue, and what each service is expected to use
+Every consumable, and what each service is expected to use
 
 **200**: Every consumable and each service's expected use
 
@@ -4190,7 +4197,7 @@ Request body:
 }
 ```
 
-**409**: already_discounted: the visit carries a code; price_settled: it is paid for, its payment link is made, it is invoiced, or FSM has cancelled it
+**409**: already_discounted: the visit carries a code; price_settled: it is paid for, its payment link is made, it is invoiced, or it is cancelled
 
 ```json
 {
@@ -4472,17 +4479,19 @@ Request body:
             "already_started",
             "piece_code",
             "technician_inactive",
-            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
-            "fsm_refused",
-            "fsm_partly",
+            "past_day",
+            "window_passed",
+            "blackout",
             "in_progress",
             "too_early_to_close",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -4529,7 +4538,7 @@ Request body:
                   "type": "null"
                 }
               ],
-              "description": "When ops moved the job to them; null when it was moved in FSM itself"
+              "description": "When ops moved the job to them; null where nothing recorded when"
             }
           },
           "required": [
@@ -4912,13 +4921,6 @@ Request body:
       ],
       "description": "The invite they came with, or ops attached; null for none."
     },
-    "held_bookings": {
-      "type": "array",
-      "items": {
-        "$ref": "#/components/schemas/HeldBooking"
-      },
-      "description": "Bookings FSM refused, waiting for a try or for ops; the soonest visit first."
-    },
     "auto_refunds": {
       "type": "array",
       "items": {
@@ -4941,7 +4943,6 @@ Request body:
     "invoices",
     "history",
     "invite",
-    "held_bookings",
     "auto_refunds"
   ],
   "additionalProperties": false
@@ -5171,7 +5172,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -5189,7 +5190,18 @@ Request body:
     },
     "place": {
       "type": "string",
-      "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+      "description": "The saved address's area, city and pincode, else the visit's city and pincode."
+    },
+    "one_visit": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/OneVisitPrice"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
     },
     "outcome": {
       "anyOf": [
@@ -5205,7 +5217,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "What FSM closed the visit as, a no-show being its own; null until it is closed."
+      "description": "What the visit was closed as, a no-show being its own; null until it is closed."
     },
     "closed_without_follow_up": {
       "anyOf": [
@@ -5316,6 +5328,7 @@ Request body:
     "prepaid",
     "technician",
     "place",
+    "one_visit",
     "outcome",
     "closed_without_follow_up",
     "discount_code",
@@ -5345,6 +5358,48 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Display name and initials only."
+}
+```
+
+### OneVisitPrice
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced."
+    },
+    "from": {
+      "type": "boolean",
+      "description": "The hair systems differ in price, so the amount is where they start."
+    },
+    "code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code on the visit; null for none."
+    }
+  },
+  "required": [
+    "amount",
+    "from",
+    "code"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -5436,7 +5491,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -5454,7 +5509,18 @@ Request body:
     },
     "place": {
       "type": "string",
-      "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+      "description": "The saved address's area, city and pincode, else the visit's city and pincode."
+    },
+    "one_visit": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/OneVisitPrice"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
     }
   },
   "required": [
@@ -5470,7 +5536,8 @@ Request body:
     "stage",
     "prepaid",
     "technician",
-    "place"
+    "place",
+    "one_visit"
   ],
   "additionalProperties": false
 }
@@ -6363,131 +6430,6 @@ Request body:
 }
 ```
 
-### HeldBooking
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "id": {
-      "type": "string",
-      "format": "uuid",
-      "description": "The booking's hold, which the three actions name."
-    },
-    "type": {
-      "type": "string",
-      "enum": [
-        "consultation",
-        "first_fit",
-        "service",
-        "replacement"
-      ]
-    },
-    "service": {
-      "type": "string",
-      "description": "Its service's name as it is now."
-    },
-    "starts_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When the visit it holds starts."
-    },
-    "window": {
-      "type": "string",
-      "enum": [
-        "morning",
-        "afternoon",
-        "evening"
-      ]
-    },
-    "paid": {
-      "type": "integer",
-      "description": "In paise, GST included: what Razorpay took; 0 when a credit covers it, or it is free."
-    },
-    "uses_credit": {
-      "type": "boolean"
-    },
-    "moves_visit": {
-      "type": "boolean",
-      "description": "It moves a visit already booked: trying FSM again moves it, and there is no new visit to link."
-    },
-    "held_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When FSM's fifth refusal running held it."
-    },
-    "refusal": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "FSM's latest refusal, as the log gives it."
-    },
-    "retries_end": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When the hourly tries end, or ended, as ops set them."
-    },
-    "retrying": {
-      "type": "boolean",
-      "description": "Still tried every hour: inside its tries, and its visit to come."
-    },
-    "discount_code": {
-      "anyOf": [
-        {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string"
-            },
-            "amount_off": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "In paise before GST; null until the visit's price is known."
-            }
-          },
-          "required": [
-            "code",
-            "amount_off"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "The discount code the client booked with (docs/decisions/0108-discount-codes.md)."
-    }
-  },
-  "required": [
-    "id",
-    "type",
-    "service",
-    "starts_at",
-    "window",
-    "paid",
-    "uses_credit",
-    "moves_visit",
-    "held_at",
-    "refusal",
-    "retries_end",
-    "retrying",
-    "discount_code"
-  ],
-  "additionalProperties": false
-}
-```
-
 ### AutoRefund
 
 ```json
@@ -6550,6 +6492,92 @@ Request body:
     "refunded_at"
   ],
   "additionalProperties": false
+}
+```
+
+### ErasedClientRecord
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "erased_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "visits": {
+      "type": "object",
+      "properties": {
+        "upcoming": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ClientVisit"
+          }
+        },
+        "past": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ClientVisit"
+          }
+        }
+      },
+      "required": [
+        "upcoming",
+        "past"
+      ],
+      "additionalProperties": false,
+      "description": "Upcoming soonest first; past newest first. No discount code may be entered or taken off: price_open is false."
+    },
+    "payments": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PaymentEntry"
+          },
+          {
+            "$ref": "#/components/schemas/RefundEntry"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "payment": "#/components/schemas/PaymentEntry",
+            "refund": "#/components/schemas/RefundEntry"
+          }
+        }
+      },
+      "description": "Payments and refunds as one list, newest first."
+    },
+    "payment_links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientPaymentLink"
+      },
+      "description": "Every payment link, newest first."
+    },
+    "invoices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientInvoice"
+      },
+      "description": "Each finished visit sold for a price, with its invoice; the latest visit first."
+    }
+  },
+  "required": [
+    "id",
+    "erased_at",
+    "visits",
+    "payments",
+    "payment_links",
+    "invoices"
+  ],
+  "additionalProperties": false,
+  "description": "What is kept of a client once erased: their visits and their money. Nothing names them."
 }
 ```
 
@@ -6939,205 +6967,6 @@ Request body:
   "required": [
     "visits",
     "reason"
-  ],
-  "additionalProperties": false
-}
-```
-
-### HeldBookingTried
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "outcome": {
-      "type": "string",
-      "enum": [
-        "booked",
-        "given_back",
-        "refused",
-        "to_link"
-      ],
-      "description": "booked: in FSM and the mirror, and the client told. given_back: its payment had been refunded, or its hold lapsed, so it was let go. refused: FSM refused again, and it waits as before. to_link: a visit of the client's, of the booking's kind, reached FSM after the booking was held and is no booking's, so nothing was written; link it if it is the one ops booked."
-    },
-    "refusal": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "FSM's refusal, as the log gives it, when it refused."
-    }
-  },
-  "required": [
-    "outcome",
-    "refusal"
-  ],
-  "additionalProperties": false
-}
-```
-
-### HeldBookingStopped
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "stopped": {
-      "type": "boolean",
-      "enum": [
-        true
-      ]
-    }
-  },
-  "required": [
-    "stopped"
-  ],
-  "additionalProperties": false
-}
-```
-
-### HeldBookingLinked
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "fsm": {
-      "$ref": "#/components/schemas/LeftInFsm"
-    }
-  },
-  "required": [
-    "fsm"
-  ],
-  "additionalProperties": false
-}
-```
-
-### LeftInFsm
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "kind": {
-      "type": "string",
-      "enum": [
-        "nothing",
-        "cancelled",
-        "not_cancelled",
-        "unknown"
-      ],
-      "description": "What an earlier try left in FSM: nothing; a work order now cancelled; one FSM would not cancel, to cancel by hand; or unknown, when FSM could not be asked, so look for \"(booking <id>)\" among its work orders."
-    },
-    "work_order_id": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "FSM's, where there is one to name."
-    }
-  },
-  "required": [
-    "kind",
-    "work_order_id"
-  ],
-  "additionalProperties": false
-}
-```
-
-### HeldBookingLink
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "visit_id": {
-      "type": "string",
-      "format": "uuid",
-      "description": "The visit, as the client's page lists it once FSM's webhook or the reconciliation has mirrored it: the client's, of the booking's kind, still to happen, first seen since the client paid, not the visit the booking replaces, and no other booking's."
-    }
-  },
-  "required": [
-    "visit_id"
-  ],
-  "additionalProperties": false
-}
-```
-
-### HeldBookingRefunded
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "money": {
-      "$ref": "#/components/schemas/HeldBookingMoney"
-    },
-    "fsm": {
-      "$ref": "#/components/schemas/LeftInFsm"
-    }
-  },
-  "required": [
-    "money",
-    "fsm"
-  ],
-  "additionalProperties": false
-}
-```
-
-### HeldBookingMoney
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "kind": {
-      "type": "string",
-      "enum": [
-        "refunded",
-        "refunded_before",
-        "nothing_paid",
-        "booked",
-        "refund_refused",
-        "refund_unanswered"
-      ],
-      "description": "refunded in full now; refunded_before, by an earlier press or in Razorpay's dashboard; nothing_paid, as a free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by Razorpay, so nothing has gone back and the booking still waits; refund_unanswered, Razorpay would not say whether it refunded, so it may have, and the booking still waits: pressing again cannot refund twice."
-    },
-    "payment_id": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "Razorpay's, where there is a payment."
-    },
-    "amount": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "In paise, where one was refunded."
-    }
-  },
-  "required": [
-    "kind",
-    "payment_id",
-    "amount"
   ],
   "additionalProperties": false
 }
@@ -7813,17 +7642,19 @@ Request body:
             "already_started",
             "piece_code",
             "technician_inactive",
-            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
-            "fsm_refused",
-            "fsm_partly",
+            "past_day",
+            "window_passed",
+            "blackout",
             "in_progress",
             "too_early_to_close",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -7870,7 +7701,7 @@ Request body:
                   "type": "null"
                 }
               ],
-              "description": "When ops moved the job to them; null when it was moved in FSM itself"
+              "description": "When ops moved the job to them; null where nothing recorded when"
             }
           },
           "required": [
@@ -9048,7 +8879,8 @@ Request body:
           "amount"
         ],
         "additionalProperties": false
-      }
+      },
+      "description": "Money owed back: a payment held with no visit behind it, or what a cancelled visit's refund has still to return."
     },
     "links": {
       "type": "array",
@@ -9226,7 +9058,7 @@ Request body:
     "launch_on": {
       "type": "string",
       "format": "date",
-      "description": "India's date it starts; today if left out."
+      "description": "India's date it started: today if left out, and never a day to come."
     }
   },
   "required": [
@@ -9242,6 +9074,10 @@ Request body:
 {
   "type": "object",
   "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another."
+    },
     "from": {
       "type": "string",
       "format": "date"
@@ -9572,10 +9408,11 @@ Request body:
         ],
         "additionalProperties": false
       },
-      "description": "Leave ops recorded, clipped to this week. Not from FSM: its availability answers free time, not leave."
+      "description": "Leave ops recorded, clipped to this week."
     }
   },
   "required": [
+    "version",
     "from",
     "dates",
     "city",
@@ -9709,7 +9546,7 @@ Request body:
     },
     "notice_hours": {
       "type": "integer",
-      "description": "The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does."
+      "description": "The notice the visit was sold under, in hours, or the one in force for a visit no hold sold: a change of the client's own inside it costs them, one ops make never does."
     },
     "untold": {
       "anyOf": [
@@ -9723,11 +9560,19 @@ Request body:
             "starts_at": {
               "type": "string",
               "format": "date-time"
+            },
+            "reason": {
+              "type": "string",
+              "enum": [
+                "no_consent",
+                "not_sent"
+              ]
             }
           },
           "required": [
             "move_id",
-            "starts_at"
+            "starts_at",
+            "reason"
           ],
           "additionalProperties": false
         },
@@ -9735,7 +9580,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told."
+      "description": "The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told."
     },
     "begun": {
       "anyOf": [
@@ -9820,6 +9665,24 @@ Request body:
 }
 ```
 
+### DispatchBoardVersion
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another."
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### DispatchRoom
 
 ```json
@@ -9854,23 +9717,60 @@ Request body:
               ]
             },
             "minItems": 1
+          },
+          "starts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "window": {
+                  "type": "string",
+                  "enum": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ]
+                },
+                "starts_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "window",
+                "starts_at"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "description": "When the job would start in each of those windows, as the move would place it."
           }
         },
         "required": [
           "technician_id",
           "date",
-          "windows"
+          "windows",
+          "starts"
         ],
         "additionalProperties": false
       }
+    },
+    "blackouts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date"
+      },
+      "description": "The days of the week ops blacked out, other than the job's own. A move onto one needs a blackout_reason."
     }
   },
   "required": [
     "appointment_id",
-    "rooms"
+    "rooms",
+    "blackouts"
   ],
   "additionalProperties": false,
-  "description": "Each technician's day in the caller's cities with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is."
+  "description": "Each technician's day in the caller's cities with a window the job would land in, by the check a move runs: today, only at a start still ahead, and never on a day gone. A day not listed has none. Not where the job already is."
 }
 ```
 
@@ -9955,6 +9855,12 @@ Request body:
       "type": "string",
       "format": "date-time",
       "description": "The start the board showed the job with."
+    },
+    "blackout_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day."
     }
   },
   "required": [
@@ -10021,6 +9927,12 @@ Request body:
       "type": "string",
       "format": "date-time",
       "description": "The start the board showed the job with."
+    },
+    "blackout_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day."
     },
     "clear_check_in": {
       "type": "boolean",
@@ -10506,10 +10418,6 @@ Request body:
             ],
             "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
           },
-          "editable": {
-            "type": "boolean",
-            "description": "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs."
-          },
           "devices": {
             "type": "array",
             "items": {
@@ -10573,7 +10481,6 @@ Request body:
           "zone",
           "city",
           "mobile",
-          "editable",
           "devices",
           "leave"
         ],
@@ -10623,10 +10530,6 @@ Request body:
               }
             ],
             "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
-          },
-          "editable": {
-            "type": "boolean",
-            "description": "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs."
           }
         },
         "required": [
@@ -10634,8 +10537,7 @@ Request body:
           "name",
           "zone",
           "city",
-          "mobile",
-          "editable"
+          "mobile"
         ],
         "additionalProperties": false
       },
@@ -11096,6 +10998,17 @@ Request body:
       "type": "integer",
       "description": "The check-in radius in force when he checked in."
     },
+    "message_state": {
+      "type": "string",
+      "enum": [
+        "delivered",
+        "sent",
+        "not_sent",
+        "no_consent",
+        "none"
+      ],
+      "description": "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered."
+    },
     "message_delivered_at": {
       "anyOf": [
         {
@@ -11134,6 +11047,7 @@ Request body:
     "received_at",
     "distance_m",
     "radius_m",
+    "message_state",
     "message_delivered_at",
     "closed_at"
   ],
@@ -11202,7 +11116,6 @@ Request body:
             "type": "string",
             "enum": [
               "untold_move",
-              "held_booking",
               "leave_conflict",
               "address_to_confirm",
               "consultation_request",
@@ -11217,8 +11130,7 @@ Request body:
               "erasure_request",
               "grievance",
               "draft_invoice",
-              "payment_owed",
-              "erasure_unfinished"
+              "payment_owed"
             ]
           },
           "count": {
@@ -11326,7 +11238,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted."
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product."
     },
     "since": {
       "type": "string",
@@ -11614,7 +11526,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Null for a visit FSM never matched to one of our people."
+      "description": "Null for a visit with no client of ours."
     },
     "amount": {
       "anyOf": [
@@ -11681,6 +11593,31 @@ Request body:
     "visit_started_at",
     "change",
     "technician"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PaymentLinkResent
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "resent",
+        "sent",
+        "not_texted",
+        "paid",
+        "refused"
+      ],
+      "description": "resent: Razorpay texted the link again; sent: the link was never made, and now is and has been texted; not_texted: messaging may not text this number (a staging test record), so nothing was sent; paid: the client has paid, so nothing was sent; refused: Razorpay refused to make it, so ops send one from Razorpay's dashboard."
+    }
+  },
+  "required": [
+    "outcome"
   ],
   "additionalProperties": false
 }
@@ -11948,7 +11885,7 @@ Request body:
     },
     "skill": {
       "type": "null",
-      "description": "The board's \"First fit\" or \"Service\". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59)."
+      "description": "The board's \"First fit\" or \"Service\". Nothing records what a technician is trained for, so this is always null (docs/open-points.md, item 59)."
     }
   },
   "required": [
@@ -12007,7 +11944,6 @@ Request body:
         "task_sla_hours",
         "piece_cycle_days",
         "payment_hold",
-        "fsm_retry",
         "dispute_window_days",
         "technician_work",
         "booking_days",
@@ -12175,7 +12111,6 @@ Request body:
         "task_sla_hours",
         "piece_cycle_days",
         "payment_hold",
-        "fsm_retry",
         "dispute_window_days",
         "technician_work",
         "booking_days",
@@ -12583,6 +12518,36 @@ Request body:
   },
   "required": [
     "changes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NewPincode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincode": {
+      "type": "string",
+      "pattern": "^[1-8]\\d{5}$"
+    },
+    "area": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&-]{1,39}$/u",
+      "description": "What messages call the area."
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    }
+  },
+  "required": [
+    "pincode",
+    "area",
+    "city"
   ],
   "additionalProperties": false
 }
@@ -13034,6 +12999,10 @@ Request body:
     "max_minutes": {
       "type": "integer"
     },
+    "max_description": {
+      "type": "integer",
+      "description": "The most characters a description may have."
+    },
     "max_amount_ex_gst": {
       "type": "integer"
     },
@@ -13048,6 +13017,7 @@ Request body:
     "late_fees",
     "min_minutes",
     "max_minutes",
+    "max_description",
     "max_amount_ex_gst",
     "max_gst_percent"
   ],
@@ -13077,9 +13047,20 @@ Request body:
     "name": {
       "type": "string"
     },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The line clients read under its name as they choose; null until ops write one."
+    },
     "minutes": {
       "type": "integer",
-      "description": "How long FSM books it for, and the time the day keeps."
+      "description": "How long it is booked for, and the time the day keeps."
     },
     "sort": {
       "type": "integer"
@@ -13100,17 +13081,6 @@ Request body:
       "type": "boolean",
       "description": "Offered today: not retired by today. Priced or not."
     },
-    "fsm_item_id": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "Its item in FSM's catalogue, once found by its name or made; null until then."
-    },
     "updated_by": {
       "type": "string"
     },
@@ -13130,11 +13100,11 @@ Request body:
     "kind",
     "tier",
     "name",
+    "description",
     "minutes",
     "sort",
     "retired_date",
     "offered",
-    "fsm_item_id",
     "updated_by",
     "updated_at",
     "prices"
@@ -13193,6 +13163,24 @@ Request body:
   },
   "required": [
     "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceDescribe
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 160
+    }
+  },
+  "required": [
+    "description"
   ],
   "additionalProperties": false
 }
@@ -13281,10 +13269,6 @@ Request body:
       "type": "string",
       "format": "date"
     },
-    "fsm_push": {
-      "type": "boolean",
-      "description": "Whether FSM's catalogue follows by itself (FSM_CATALOGUE_PUSH); off, ops set it there by hand."
-    },
     "max_unit_cost": {
       "type": "integer"
     },
@@ -13299,7 +13283,6 @@ Request body:
     "consumables",
     "services",
     "today",
-    "fsm_push",
     "max_unit_cost",
     "max_expected",
     "max_reorder_level"
@@ -13364,48 +13347,6 @@ Request body:
     "offered": {
       "type": "boolean",
       "description": "Whether the technician app offers it today."
-    },
-    "fsm": {
-      "type": "object",
-      "properties": {
-        "state": {
-          "type": "string",
-          "enum": [
-            "linked",
-            "renamed",
-            "missing",
-            "unchecked"
-          ],
-          "description": "A part by this name; a part still under another name; no part by this name; or not read yet. The hourly check reads FSM's catalogue."
-        },
-        "item_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "name": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "What FSM calls the part."
-        }
-      },
-      "required": [
-        "state",
-        "item_id",
-        "name"
-      ],
-      "additionalProperties": false
     }
   },
   "required": [
@@ -13416,8 +13357,7 @@ Request body:
     "reorder_kit",
     "reorder_central",
     "retired_from",
-    "offered",
-    "fsm"
+    "offered"
   ],
   "additionalProperties": false
 }

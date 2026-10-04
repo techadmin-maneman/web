@@ -9,7 +9,7 @@ import { mobileDigits } from "@maneman/web-kit/mobile";
  */
 export const INDIAN_MOBILE_PATTERN = /^(?:(?:\+|00?)?91|0)?[\s-]*[6-9](?:[\s-]*\d){9}$/;
 
-/** The number as E.164, however it was written, by a visitor, by FSM or by Razorpay; null if it is not a mobile. */
+/** The number as E.164, however it was written, by a visitor or by Razorpay; null if it is not a mobile. */
 export function toE164(input: string): string | null {
   const digits = mobileDigits(input);
   return digits === null ? null : `+91${digits}`;

@@ -77,16 +77,16 @@ export const ERROR_CODES = [
   "piece_code",
   // Ops switched the technician off: the phone sets his unsent work aside rather than wiping it.
   "technician_inactive",
-  // A technician FSM lists is changed in FSM, while FSM is the record of field work.
-  "managed_in_fsm",
   // Dispatch (docs/decisions/0034-clash-check.md): the technician already holds a job in that
-  // window, is away that day (ADR 0062), the window is free but the visit has no room in it,
-  // or FSM would not take the move, or took only its new technician.
+  // window, is away that day (ADR 0062), or the window is free but the visit has no room in it.
   "clash",
   "on_leave",
   "does_not_fit",
-  "fsm_refused",
-  "fsm_partly",
+  // A dispatch move to a day gone, or to today's window once every start in it has passed; or onto a day ops blacked
+  // out, without the reason that lets it through.
+  "past_day",
+  "window_passed",
+  "blackout",
   // The technician has begun the visit, so a move would leave his work on another day or with another technician.
   "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
@@ -99,6 +99,10 @@ export const ERROR_CODES = [
   // A service-area change that would leave no pincode served at all, and every
   // client on the waitlist (docs/decisions/0061-ops-editable-inputs.md).
   "no_service_area",
+  // A pincode served from a day still to come, which /book would take bookings for at once; and a pincode ops would add
+  // that the service area holds already.
+  "launch_in_future",
+  "pincode_held",
   // The services clients book (docs/decisions/0085-services-ops-can-edit.md): another service has the name, or its
   // kind the code; retiring it would leave its kind with nothing to book; a price for a service retired by its day.
   "service_exists",
@@ -146,7 +150,7 @@ export const ErrorResponseSchema = z
           .object({
             technician: z.string().openapi({ description: "Their first name, and nothing else of theirs" }),
             at: z.union([z.iso.datetime(), z.null()]).openapi({
-              description: "When ops moved the job to them; null when it was moved in FSM itself",
+              description: "When ops moved the job to them; null where nothing recorded when",
             }),
           })
           .strict()

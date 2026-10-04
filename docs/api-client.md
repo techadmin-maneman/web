@@ -279,7 +279,7 @@ The Home card: who the client is and what is booked
 
 ### GET /api/profile
 
-The profile: name, number, address, consents, and any number change or deletion under way
+The profile: name, number, address, consents, any number change or deletion under way, and the latest concerns raised
 
 **200**: The profile
 
@@ -877,6 +877,13 @@ The client's payments and refunds, newest first
 {
   "type": "object",
   "properties": {
+    "owed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/OwedPayment"
+      },
+      "description": "Payment links not yet paid, the oldest first: a one visit's, once the client is fitted."
+    },
     "entries": {
       "type": "array",
       "items": {
@@ -906,6 +913,7 @@ The client's payments and refunds, newest first
     }
   },
   "required": [
+    "owed",
     "entries",
     "credits"
   ],
@@ -1651,7 +1659,7 @@ Everything held about the client, as a page to download and read
 
 ### POST /api/grievances
 
-Raise a grievance about how the client's data is handled. The same words, still open, are one
+Raise a grievance about how the client's data is handled. The same words, still open, are one; 5 new ones a day
 
 Request body:
 
@@ -1681,6 +1689,14 @@ Request body:
 ```
 
 **401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: 5 new grievances a day
 
 ```json
 {
@@ -1748,17 +1764,19 @@ Request body:
             "already_started",
             "piece_code",
             "technician_inactive",
-            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
-            "fsm_refused",
-            "fsm_partly",
+            "past_day",
+            "window_passed",
+            "blackout",
             "in_progress",
             "too_early_to_close",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -1805,7 +1823,7 @@ Request body:
                   "type": "null"
                 }
               ],
-              "description": "When ops moved the job to them; null when it was moved in FSM itself"
+              "description": "When ops moved the job to them; null where nothing recorded when"
             }
           },
           "required": [
@@ -2189,8 +2207,15 @@ Request body:
           "description": "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp."
         },
         "one_visit": {
-          "type": "boolean",
-          "description": "The consultation and the first fit in one visit."
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/OneVisitPrice"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A consultation and fit in one visit asked for on /book: what it costs once fitted, after the code typed there. Null for a consultation alone."
         }
       },
       "required": [
@@ -2213,7 +2238,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The next visit that has not happened, from FSM: a consultation for a lead."
+      "description": "The next visit that has not happened: a consultation for a lead."
     },
     "being_booked": {
       "anyOf": [
@@ -2246,8 +2271,15 @@ Request body:
               "description": "Paid for in money, rather than free or covered by a credit."
             },
             "one_visit": {
-              "type": "boolean",
-              "description": "A consultation and fit in one visit."
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OneVisitPrice"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code entered there. Null for any other visit."
             },
             "told": {
               "type": "boolean",
@@ -2268,7 +2300,18 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The soonest visit paid for, or booked free, that FSM does not have yet: neither booked nor refunded. It is on its way, or held after FSM refused it, and becomes a visit once FSM takes it (ADR 0095)."
+      "description": "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is on its way, and becomes a visit once it is booked (ADR 0068)."
+    },
+    "payment_owed": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/OwedPayment"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed."
     },
     "credits": {
       "anyOf": [
@@ -2541,6 +2584,30 @@ Request body:
     },
     "referral_reward": {
       "$ref": "#/components/schemas/ReferralReward"
+    },
+    "pending_invite": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "referrer_first_name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Who sent it, exactly where the invite's own page names them; null where it does not."
+            }
+          },
+          "required": [
+            "referrer_first_name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The invite a client not yet fitted came with, while its free service visits (referral_reward's friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it lapsed."
     }
   },
   "required": [
@@ -2551,11 +2618,55 @@ Request body:
     "consultation",
     "next_visit",
     "being_booked",
+    "payment_owed",
     "credits",
     "prompt",
     "invoice",
     "booking",
-    "referral_reward"
+    "referral_reward",
+    "pending_invite"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OneVisitPrice
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced."
+    },
+    "from": {
+      "type": "boolean",
+      "description": "The hair systems differ in price, so the amount is where they start."
+    },
+    "code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code on the visit; null for none."
+    }
+  },
+  "required": [
+    "amount",
+    "from",
+    "code"
   ],
   "additionalProperties": false
 }
@@ -2649,7 +2760,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -2667,7 +2778,18 @@ Request body:
     },
     "place": {
       "type": "string",
-      "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+      "description": "The saved address's area, city and pincode, else the visit's city and pincode."
+    },
+    "one_visit": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/OneVisitPrice"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
     }
   },
   "required": [
@@ -2683,7 +2805,8 @@ Request body:
     "stage",
     "prepaid",
     "technician",
-    "place"
+    "place",
+    "one_visit"
   ],
   "additionalProperties": false
 }
@@ -2708,6 +2831,52 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Display name and initials only."
+}
+```
+
+### OwedPayment
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date of the visit."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included, after any code: what the link asks for."
+    },
+    "product": {
+      "type": "string",
+      "description": "The hair system fitted: \"Mane Man Natural hair system\"."
+    },
+    "url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The payment link Razorpay texted the client; null until it has made one."
+    }
+  },
+  "required": [
+    "visit_id",
+    "date",
+    "amount",
+    "product",
+    "url"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -2769,6 +2938,17 @@ Request body:
     "name": {
       "type": "string"
     },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The line ops wrote to read under its name; null for none."
+    },
     "minutes": {
       "type": "integer",
       "description": "How long the visit is booked for."
@@ -2781,6 +2961,7 @@ Request body:
     "type",
     "tier",
     "name",
+    "description",
     "minutes",
     "price"
   ],
@@ -3026,6 +3207,64 @@ Request body:
         }
       ],
       "description": "The client's latest request to delete their account that ops rejected, for 30 days after, while no other request is waiting."
+    },
+    "grievances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "text": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "resolved"
+            ]
+          },
+          "raised_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "response": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ops' answer, which they write knowing the client reads it; null while open."
+          },
+          "answered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "state",
+          "raised_at",
+          "response",
+          "answered_at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The client's latest 5 concerns about their data, newest first: every one still open, and those answered within 30 days."
     }
   },
   "required": [
@@ -3037,7 +3276,8 @@ Request body:
     "number_change",
     "number_change_decided",
     "deletion",
-    "deletion_rejected"
+    "deletion_rejected",
+    "grievances"
   ],
   "additionalProperties": false
 }
@@ -3522,7 +3762,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The month the piece now in wear falls due, and null when no piece is in wear. A month, not a day: FSM's install date is read again on every sync, so the day can move (ADR 0059)."
+      "description": "The month the piece now in wear falls due, and null when no piece is in wear. A month, not a day (ADR 0059)."
     }
   },
   "required": [
@@ -3627,7 +3867,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -3645,7 +3885,18 @@ Request body:
     },
     "place": {
       "type": "string",
-      "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+      "description": "The saved address's area, city and pincode, else the visit's city and pincode."
+    },
+    "one_visit": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/OneVisitPrice"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
     },
     "duration_minutes": {
       "anyOf": [
@@ -3672,7 +3923,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Done, partly done, or a no-show: the client was not home. Null until FSM closes it."
+      "description": "Done, partly done, or a no-show: the client was not home. Null until it is closed."
     },
     "what_was_done": {
       "anyOf": [
@@ -3686,7 +3937,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was recorded, as for a visit closed in FSM's own screens."
+      "description": "The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was recorded."
     },
     "photos": {
       "$ref": "#/components/schemas/PhotoSet"
@@ -3748,6 +3999,7 @@ Request body:
     "prepaid",
     "technician",
     "place",
+    "one_visit",
     "duration_minutes",
     "outcome",
     "what_was_done",
@@ -3818,7 +4070,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Its small copy, for a row of thumbnails, likewise; null for a photograph with none, such as one copied from FSM, which the row shows itself."
+      "description": "Its small copy, for a row of thumbnails, likewise; null for a photograph with none, which the row shows itself."
     },
     "width": {
       "anyOf": [
@@ -5360,6 +5612,10 @@ Request body:
       ],
       "description": "Whoever did the client's latest visit."
     },
+    "change_notice_hours": {
+      "type": "integer",
+      "description": "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it."
+    },
     "last": {
       "type": "string",
       "format": "date",
@@ -5419,13 +5675,18 @@ Request body:
                     }
                   ],
                   "description": "Who would come: the regular technician, another, or nobody (full)."
+                },
+                "change_charged": {
+                  "type": "boolean",
+                  "description": "Booked now, moving or cancelling it would already cost the client: it starts inside the notice, and its kind is charged there."
                 }
               },
               "required": [
                 "window",
                 "start",
                 "end",
-                "with"
+                "with",
+                "change_charged"
               ],
               "additionalProperties": false
             }
@@ -5445,6 +5706,7 @@ Request body:
     "service",
     "price",
     "regular",
+    "change_notice_hours",
     "last",
     "days"
   ],

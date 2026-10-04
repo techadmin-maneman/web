@@ -6,10 +6,14 @@ import { mobileDigits } from "@maneman/web-kit/mobile";
 import { useState, type RefCallback } from "react";
 import { login } from "../content.ts";
 import styles from "./login.module.css";
+import { MessageUs } from "./MessageUs.tsx";
+
+const ERRORS: Readonly<Record<string, string>> = login.mobile.errors;
 
 interface Props {
   readonly initial: string;
   readonly busy: boolean;
+  /** The API's reason no code was sent, as login.mobile.errors names it. */
   readonly error: string | null;
   /** The session ended while the app was open, so the client is told why they are here. */
   readonly ended: boolean;
@@ -22,7 +26,8 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
   const copy = login.mobile;
   const [typed, setTyped] = useState(initial);
   const [invalid, setInvalid] = useState(false);
-  const shown = invalid ? copy.errors.invalid : error;
+  const refused = error === null ? null : (ERRORS[error] ?? copy.errors.unknown);
+  const shown = invalid ? copy.errors.invalid : refused;
 
   return (
     <main className={styles.screen}>
@@ -68,6 +73,7 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
               {shown}
             </p>
           )}
+          {!invalid && error === "rate_limited" && <MessageUs />}
           <div ref={turnstileBox} className={styles.turnstile} />
           <div className={styles.foot}>
             <Button variant="light" size="action" className={styles.primary} type="submit" disabled={busy} busy={busy}>

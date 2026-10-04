@@ -69,7 +69,7 @@ Request body:
 
 ### POST /api/tech/auth/otp
 
-Send a login code on WhatsApp. The answer is the same whether or not FSM lists the number
+Send a login code on WhatsApp. The answer is the same whether or not the number is a technician's
 
 Request body:
 
@@ -79,7 +79,7 @@ Request body:
 }
 ```
 
-**202**: A code is on its way, if FSM lists this number
+**202**: A code is on its way, if the number is a technician's
 
 ```json
 {
@@ -295,7 +295,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -339,7 +339,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -499,7 +499,7 @@ The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB 
 
 ### POST /api/tech/jobs/{id}/photos
 
-The phase's five photographs are in; attach them to FSM
+The phase's five photographs are in
 
 Request body:
 
@@ -541,7 +541,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -593,7 +593,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -645,7 +645,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -697,7 +697,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again
 
 ```json
 {
@@ -749,7 +749,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -801,7 +801,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -845,7 +845,7 @@ Close the job as a no-show, once the wait has run
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home
 
 ```json
 {
@@ -1009,17 +1009,19 @@ Request body:
             "already_started",
             "piece_code",
             "technician_inactive",
-            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
-            "fsm_refused",
-            "fsm_partly",
+            "past_day",
+            "window_passed",
+            "blackout",
             "in_progress",
             "too_early_to_close",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -1066,7 +1068,7 @@ Request body:
                   "type": "null"
                 }
               ],
-              "description": "When ops moved the job to them; null when it was moved in FSM itself"
+              "description": "When ops moved the job to them; null where nothing recorded when"
             }
           },
           "required": [
@@ -1563,6 +1565,17 @@ Request body:
       ],
       "description": "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type."
     },
+    "minutes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How long the visit is booked for, in minutes. Null for an unknown type."
+    },
     "unlocked": {
       "type": "boolean"
     },
@@ -1599,6 +1612,7 @@ Request body:
     "status",
     "badge",
     "slots",
+    "minutes",
     "unlocked",
     "unlocks_at",
     "client_name",
@@ -1787,6 +1801,17 @@ Request body:
         }
       ],
       "description": "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type."
+    },
+    "minutes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How long the visit is booked for, in minutes. Null for an unknown type."
     },
     "unlocked": {
       "type": "boolean"
@@ -1983,6 +2008,10 @@ Request body:
       "format": "date-time",
       "description": "The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow."
     },
+    "checkin_radius_m": {
+      "type": "integer",
+      "description": "How near the address a check-in must be, in metres, as ops set it."
+    },
     "pieces": {
       "anyOf": [
         {
@@ -2061,7 +2090,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The day-before or arrival WhatsApp to the client, and when it was delivered."
+      "description": "The day-before or arrival WhatsApp that went to the client, and when it was delivered; null when none went, as when one was skipped or failed."
     },
     "steps": {
       "type": "array",
@@ -2240,6 +2269,7 @@ Request body:
     "status",
     "badge",
     "slots",
+    "minutes",
     "unlocked",
     "unlocks_at",
     "client_name",
@@ -2249,6 +2279,7 @@ Request body:
     "client",
     "no_show_wait_min",
     "checkin_from",
+    "checkin_radius_m",
     "pieces",
     "last_visit",
     "reminder",
@@ -3111,7 +3142,8 @@ Request body:
         "pending",
         "written",
         "rejected"
-      ]
+      ],
+      "description": "Kept for phones that read it: \"written\" once the step has landed, which it has."
     },
     "progress": {
       "$ref": "#/components/schemas/TechnicianJobProgress"
@@ -3485,7 +3517,7 @@ Request body:
     "progress"
   ],
   "additionalProperties": false,
-  "description": "Kept in our records alone: nothing of it goes to FSM."
+  "description": "Kept in our records alone."
 }
 ```
 

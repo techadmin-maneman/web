@@ -34,7 +34,10 @@ export type Me = Schema["TechnicianMe"];
 export type Challenge = Schema["TechnicianChallenge"];
 export type Verified = Schema["TechnicianVerify"];
 export type JobSummary = Schema["TechnicianJob"];
-export type Job = Schema["TechnicianJobDetail"];
+/** A job's card. One an earlier build kept on the phone carries no check-in radius. */
+export type Job = Omit<Schema["TechnicianJobDetail"], "checkin_radius_m"> & {
+  readonly checkin_radius_m: Schema["TechnicianJobDetail"]["checkin_radius_m"] | null;
+};
 export type Progress = Schema["TechnicianJobProgress"];
 /** What the day's list carries of a job's progress: when it began and how it closed. */
 export type JobState = Schema["TechnicianJobState"];
@@ -145,7 +148,7 @@ const client = createClient<paths, ErrorCode>({
   onUnreached: () => {
     reached(false);
   },
-  // FSM changed the job under the phone and the answer lost its body on the way: still a job to stop.
+  // The job changed under the phone and the answer lost its body on the way: still a job to stop.
   missingCode: (status) => (status === 409 ? SUPERSEDED : "unknown"),
 });
 

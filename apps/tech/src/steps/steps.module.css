@@ -121,7 +121,7 @@
   justify-content: center;
   width: var(--tech-box);
   height: var(--tech-box);
-  border: var(--rule-strong) solid var(--ink-line);
+  border: var(--rule-strong) solid var(--ink-line-strong);
 }
 
 .boxDone {
@@ -255,8 +255,8 @@
   padding: var(--sp-16) 0 0;
 }
 
-/* The label's field, drawn where the board draws "Scan the piece": 64 px, the whole of it the input, edged in paper. */
-.scan {
+/* The label's field, typed though the board draws "Scan the piece": 64 px, all of it the input, edged in paper. */
+.labelField {
   display: flex;
   gap: var(--sp-12);
   align-items: stretch;
@@ -265,7 +265,7 @@
   border: var(--hairline) solid var(--paper);
 }
 
-.scanIcon {
+.labelIcon {
   flex-shrink: 0;
   align-self: center;
   color: var(--paper);
@@ -289,7 +289,7 @@
 .box64 {
   min-height: var(--tech-stepper);
   padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
 }
 
 .input::placeholder,
@@ -329,7 +329,7 @@
   width: 100%;
   min-height: var(--tech-stepper);
   padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
   background: transparent;
   font: inherit;
   font-size: var(--fs-17);
@@ -539,7 +539,7 @@
 
 /* A full-width row inside the scrolling body draws its ring inside itself, so the body's edge never cuts it. */
 .check:focus-visible,
-.scan:focus-within {
+.labelField:focus-within {
   outline: var(--focus-width) solid var(--paper);
   outline-offset: calc(-1 * var(--focus-width));
 }

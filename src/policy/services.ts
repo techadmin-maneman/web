@@ -8,7 +8,7 @@ import { hasStandardService, STANDARD_TIER, type VisitType } from "../config/vis
 import type { OneVisitState } from "./one-visit.ts";
 
 export const RULES = [
-  "every service belongs to one of four kinds (consultation, first fit, service visit, replacement), and the kind decides the technician's steps, the booking rules and which fees apply; within a kind ops add, rename, price, reorder and retire services from the console, each synced to FSM; a new kind needs a release.",
+  "every service belongs to one of four kinds (consultation, first fit, service visit, replacement), and the kind decides the technician's steps, the booking rules and which fees apply; within a kind ops add, rename, describe, price, reorder and retire services from the console, each synced to Books; a new kind needs a release.",
   "Retiring a service stops clients seeing it from a date and changes nothing already sold; prices stay dated rows.",
 ] as const;
 
@@ -29,11 +29,21 @@ export function namesMoreThanItsKind(tier: string | null, oneVisit: OneVisitStat
 }
 
 /**
- * A service's name, as clients, ops and FSM's catalogue read it: a letter or a digit first, so a spreadsheet opening
+ * A service's name, as clients, ops and Books' items read it: a letter or a digit first, so a spreadsheet opening
  * an exported list never reads it as a formula, then letters in any script, digits, spaces and . , ' ( ) & - + /,
  * up to 60.
  */
 export const SERVICE_NAME = /^[\p{L}\p{N}][\p{L}\p{M}\p{N} .,'()&+/-]{1,59}$/u;
+
+/** The longest line a service's description may be. */
+export const DESCRIPTION_LENGTH = 160;
+
+/**
+ * Whether a service's description, trimmed, is one line of up to DESCRIPTION_LENGTH characters. An empty one is: it
+ * clears the description.
+ */
+export const isServiceDescription = (line: string): boolean =>
+  line.length <= DESCRIPTION_LENGTH && !/\p{Cc}/u.test(line);
 
 /** The longest a tier's code may be (PRICE_TIER, src/config/ops-settings.ts). */
 const CODE_LENGTH = 32;

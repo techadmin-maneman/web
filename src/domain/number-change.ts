@@ -221,7 +221,7 @@ export async function verifyNumberChange(
   return { verification, change: (await findNumberChange(db, change.id)) ?? change };
 }
 
-/** The changes waiting for ops in the places reached, oldest first. */
+/** The changes waiting for ops in the places reached, oldest first, as Tasks counts them: none of an erased client's. */
 export async function changesAwaitingOps(
   db: D1Database,
   reached: PlacesReached,
@@ -231,7 +231,8 @@ export async function changesAwaitingOps(
       `SELECT r.id, r.person_id, r.new_mobile_e164, r.state, r.old_verified_at, r.new_verified_at, r.created_at,
          p.mobile_e164 AS old_mobile_e164
        FROM number_change_requests r JOIN people p ON p.id = r.person_id
-       WHERE r.state = 'awaiting_ops' AND ${withinReach("number_change", "r", "?1")} ORDER BY r.created_at`,
+       WHERE r.state = 'awaiting_ops' AND p.erased_at IS NULL AND ${withinReach("number_change", "r", "?1")}
+       ORDER BY r.created_at`,
     )
     .bind(reachBinding(reached))
     .all<Row & { old_mobile_e164: string }>();
@@ -245,7 +246,7 @@ export type Decision = "confirm" | "reject";
  * someone else already holds it, and keeps the number it replaced, which the
  * referral fraud rules compare (src/domain/referral-grants.ts). Only a change
  * waiting for ops can be decided. The caller sends a confirmed number on to
- * FSM's contact and the CRM lead.
+ * the client's Books customer and the CRM lead.
  */
 export async function decideNumberChange(
   db: D1Database,

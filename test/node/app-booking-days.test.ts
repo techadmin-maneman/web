@@ -5,9 +5,11 @@ import { describe, expect, it } from "vitest";
 import type { Availability } from "../../apps/app/src/api.ts";
 import {
   dayAfter,
+  dayInsideNotice,
   firstOpenFrom,
   hasLaterDays,
   offeredFullLine,
+  windowContinue,
   windowNote,
   withDays,
   type Day,
@@ -19,8 +21,8 @@ const day = (date: string, open: boolean): Day => ({
   date,
   price: PRICE,
   windows: [
-    { window: "morning", start: "09:00", end: "12:00", with: open ? "another" : null },
-    { window: "afternoon", start: "12:00", end: "16:00", with: null },
+    { window: "morning", start: "09:00", end: "12:00", with: open ? "another" : null, change_charged: false },
+    { window: "afternoon", start: "12:00", end: "16:00", with: null, change_charged: false },
   ],
 });
 
@@ -29,6 +31,7 @@ const availability = (days: Day[], last: string): Availability => ({
   service: { tier: "standard", name: "Service visit", minutes: 90 },
   price: PRICE,
   regular: null,
+  change_notice_hours: 24,
   last,
   days,
 });
@@ -84,6 +87,34 @@ describe("what the date step says of a full day offered", () => {
   it("nothing once the client has chosen some other day, or where the day offered is open", () => {
     expect(offeredFullLine([...days, day("2026-10-08", true)], "2026-10-06", "2026-10-08")).toBeNull();
     expect(offeredFullLine(days, "2026-10-07", "2026-10-07")).toBeNull();
+  });
+});
+
+describe("the days the date step marks inside the notice", () => {
+  const withMorning = (who: "another" | null, charged: boolean): Day => {
+    const open = day("2026-10-03", true);
+    const morning = { window: "morning" as const, start: "09:00", end: "12:00", with: who, change_charged: charged };
+    return { ...open, windows: [morning] };
+  };
+
+  it("marks a day with an open window that is already charged to change (MON-08, BK-11)", () => {
+    expect(dayInsideNotice(withMorning("another", true))).toBe(true);
+    expect(dayInsideNotice(withMorning("another", false))).toBe(false);
+  });
+
+  it("leaves a full window out of the mark, since it cannot be booked", () => {
+    expect(dayInsideNotice(withMorning(null, true))).toBe(false);
+  });
+});
+
+describe("the window step's button (MON-33, UX-06, CP-05)", () => {
+  it("goes on to payment for a day with a price", () => {
+    expect(windowContinue(day("2026-10-05", true))).toBe("Continue to payment");
+  });
+
+  it("only goes on for a day that costs nothing, as a consultation does", () => {
+    const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
+    expect(windowContinue({ ...day("2026-10-05", true), price: free })).toBe("Continue");
   });
 });
 

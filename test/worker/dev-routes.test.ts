@@ -1,8 +1,6 @@
-// The local stand-in for closing a job in FSM (src/routes/dev-fsm.ts). Locally
-// FSM is a stub that remembers nothing, so no visit ever closed and nothing
-// that follows a close could be run (LIFE-17). It exists only where DEV_ROUTES
-// is on, which the guard allows only locally; on any other environment's app
-// it is not there at all. NOW is Monday 21 September 2026, 12 noon in India.
+// The local stand-in for closing a visit without the technician app (src/routes/dev-visits.ts), so what follows a
+// close can be run locally (LIFE-17). It exists only where DEV_ROUTES is on, which the guard allows only locally; on
+// any other environment's app it is not there at all. NOW is Monday 21 September 2026, 12 noon in India.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -16,8 +14,8 @@ const END = "2026-09-21T06:00:00.000Z";
 
 async function booked(status = "scheduled"): Promise<void> {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, type, window_start, window_end, status, fsm_status, fsm_modified_at, synced_at)
-     VALUES (?1, 'fsm-visit-1', 'service', ?2, ?3, ?4, 'Scheduled', ?5, ?5)`,
+    `INSERT INTO appointments (id, fsm_id, type, window_start, window_end, status, synced_at)
+     VALUES (?1, ?1, 'service', ?2, ?3, ?4, ?5)`,
   )
     .bind(VISIT, START, END, status, NOW.toISOString())
     .run();
@@ -30,9 +28,9 @@ const close = (environment: EnvironmentName, body: object, devRoutes = true) =>
     body: JSON.stringify(body),
   });
 
-const mirrored = () =>
+const closed = () =>
   env.DB.prepare(
-    `SELECT a.status, a.fsm_status, v.outcome, v.started_at, v.ended_at, v.duration_minutes
+    `SELECT a.status, v.outcome, v.started_at, v.ended_at, v.duration_minutes
      FROM appointments a LEFT JOIN visits v ON v.appointment_id = a.id WHERE a.id = ?1`,
   )
     .bind(VISIT)
@@ -43,15 +41,14 @@ describe("POST /api/dev/appointments/:id/close, locally", () => {
     await markDatabase();
   });
 
-  it("closes the visit in the mirror as FSM's Complete Work would, over its booked window", async () => {
+  it("closes the visit as done over its booked window", async () => {
     await booked();
     const answer = await close("local", { outcome: "done" });
 
     expect(answer.status).toBe(200);
     expect(await answer.json()).toEqual({ appointment_id: VISIT, status: "completed" });
-    expect(await mirrored()).toEqual({
+    expect(await closed()).toEqual({
       status: "completed",
-      fsm_status: "Completed",
       outcome: "done",
       started_at: START,
       ended_at: END,
@@ -59,12 +56,12 @@ describe("POST /api/dev/appointments/:id/close, locally", () => {
     });
   });
 
-  it("ends it partly done as FSM's Terminate would", async () => {
+  it("ends it partly done", async () => {
     await booked();
     const answer = await close("local", { outcome: "partial" });
 
     expect(await answer.json()).toEqual({ appointment_id: VISIT, status: "terminated" });
-    expect(await mirrored()).toMatchObject({ status: "terminated", fsm_status: "Terminated", outcome: "partial" });
+    expect(await closed()).toMatchObject({ status: "terminated", outcome: "partial" });
   });
 
   it("refuses a visit that is not there, or one already closed or cancelled", async () => {
@@ -78,7 +75,7 @@ describe("POST /api/dev/appointments/:id/close, locally", () => {
   it("is not there without DEV_ROUTES, even locally", async () => {
     await booked();
     expect((await close("local", { outcome: "done" }, false)).status).toBe(404);
-    expect((await mirrored())?.status).toBe("scheduled");
+    expect((await closed())?.status).toBe("scheduled");
   });
 });
 
@@ -93,7 +90,7 @@ describe("POST /api/dev/appointments/:id/close, anywhere but locally", () => {
 
       expect(answer.status).toBe(404);
       expect(await answer.json()).toMatchObject({ error: { code: "not_found" } });
-      expect((await mirrored())?.status).toBe("scheduled");
+      expect((await closed())?.status).toBe("scheduled");
     },
   );
 });

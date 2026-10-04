@@ -1,20 +1,17 @@
-// A client's rights over their data (docs/decisions/0049-dpdp.md): erasure reaching Phase 2's data, FSM and Books, the
+// A client's rights over their data (docs/decisions/0049-dpdp.md): erasure reaching Phase 2's data and Books, the
 // data export, grievances, and the deletion window's alert. NOW is Monday 21 September 2026, 12 noon in India.
 // Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { eraseBooksCustomers } from "../../src/domain/books-erasure.ts";
 import { alertAgedDeletions } from "../../src/domain/deletion.ts";
+import { tellOfNewGrievances } from "../../src/domain/grievances.ts";
 import { logPhotoView } from "../../src/domain/photo-views.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubBooks } from "../../src/providers/books.ts";
-import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
-import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
-import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
-import { sweep } from "../../src/scheduled/sweeper.ts";
 import {
   appFor,
   captureLogs,
@@ -35,9 +32,7 @@ let cookie: string;
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
-  await env.DB.prepare(
-    "INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id) VALUES (?1, ?2, ?3, 'Rohit Malhotra', 'contact-1')",
-  )
+  await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Rohit Malhotra')")
     .bind(PERSON, NOW.toISOString(), MOBILE)
     .run();
   cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
@@ -46,8 +41,8 @@ beforeEach(async () => {
 /** A visit with a photograph in the client-photos bucket, an address, and a grievance. */
 async function phase2Data() {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at, synced_at)
-     VALUES (?1, 'fsm-1', ?2, 'service', 'completed', 'Completed', '2026-09-01T06:30:00.000Z', ?3, ?3)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
+     VALUES (?1, ?1, ?2, 'service', 'completed', '2026-09-01T06:30:00.000Z', ?3)`,
   )
     .bind(VISIT, PERSON, NOW.toISOString())
     .run();
@@ -103,75 +98,10 @@ describe("erasure reaches Phase 2's data", () => {
     expect(lead).toEqual({ source: "form", loss_extent: null, gclid: null, landing_path: null });
   });
 
-  it("anonymises the FSM contact afterwards, through the sweeper and the fsm-sync queue, once", async () => {
+  // The Books customer kept the client's name, mobile and addresses (PS-02).
+  it("erases the client's Books customer through the Books pass", async () => {
+    await env.DB.prepare("UPDATE people SET books_customer_id = 'books-1' WHERE id = ?1").bind(PERSON).run();
     await eraseByMobile(MOBILE, NOW);
-    const later = new Date(NOW.getTime() + 10 * 60_000);
-    const fsmQueue = fakeQueue();
-    const bindings = {
-      ...env,
-      CRM_QUEUE: fakeQueue(),
-      RENDER_QUEUE: fakeQueue(),
-      MESSAGE_QUEUE: fakeQueue(),
-      FSM_QUEUE: fsmQueue,
-    };
-    await sweep(bindings, fakeDependencies({ now: () => later }), createLogger(), {
-      fsmConnected: true,
-      budget: createCallBudget(Infinity),
-    });
-    expect(fsmQueue.sent).toEqual([{ erase_person_id: PERSON, request_id: "sweeper" }]);
-
-    const fsm = createStubFsm();
-    const message = { id: "m1", body: fsmQueue.sent[0], attempts: 1, ack: vi.fn(), retry: vi.fn() };
-    const batch = { queue: "mm-fsm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
-    await handleFsmSyncBatch(batch as unknown as MessageBatch, env, fakeDependencies({ fsm }), createLogger());
-    expect(fsm.made.erased).toEqual(["contact-1"]);
-    expect(message.ack).toHaveBeenCalled();
-
-    const again = fakeQueue();
-    await sweep({ ...bindings, FSM_QUEUE: again }, fakeDependencies({ now: () => later }), createLogger(), {
-      budget: createCallBudget(Infinity),
-      fsmConnected: true,
-    });
-    expect(again.sent).toEqual([]);
-  });
-
-  it("tells ops once when FSM will not anonymise the contact and the sweeper stops asking", async () => {
-    await eraseByMobile(MOBILE, NOW);
-    const fsm = createStubFsm();
-    const deps = fakeDependencies({
-      fsm: { ...fsm, eraseContact: () => Promise.reject(new Error("FSM answered 500")) },
-    });
-    const attempt = async (attempts: number) => {
-      await env.DB.prepare("UPDATE people SET fsm_erasure_attempts = ?1 WHERE id = ?2").bind(attempts, PERSON).run();
-      const message = { id: "m1", body: { erase_person_id: PERSON, request_id: "sweeper" }, attempts: 1, ack: vi.fn() };
-      const batch = { queue: "mm-fsm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
-      await handleFsmSyncBatch(batch as unknown as MessageBatch, env, deps, createLogger());
-    };
-
-    await attempt(MAX_SYNC_ATTEMPTS - 2);
-    expect(deps.alerts).toEqual([]);
-
-    await attempt(MAX_SYNC_ATTEMPTS - 1);
-    expect(deps.alerts).toEqual([
-      `FSM would not anonymise contact contact-1 of erased person ${PERSON} after ${String(MAX_SYNC_ATTEMPTS)} ` +
-        "attempts (FSM answered 500), and nothing will ask again. Anonymise it in FSM by hand, then record it " +
-        '(runbook, "Erasure within the day"). http://ops.localhost:4323/tasks',
-    ]);
-  });
-
-  // The Books customer FSM's own integration made for the client kept their name, mobile and addresses (PS-02).
-  it("keeps the Books customer FSM made for the contact, and the Books pass then erases it", async () => {
-    await eraseByMobile(MOBILE, NOW);
-    const fsm = createStubFsm({
-      ...EMPTY_FSM,
-      contacts: [
-        { id: "contact-1", name: "Rohit Malhotra", mobile: "+919810000001", email: null, booksCustomerId: "books-1" },
-      ],
-    });
-    const message = { id: "m1", body: { erase_person_id: PERSON, request_id: "sweeper" }, attempts: 1, ack: vi.fn() };
-    const batch = { queue: "mm-fsm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
-
-    await handleFsmSyncBatch(batch as unknown as MessageBatch, env, fakeDependencies({ fsm }), createLogger());
     const books = createStubBooks();
     const erased = await eraseBooksCustomers(
       env.DB,
@@ -179,21 +109,8 @@ describe("erasure reaches Phase 2's data", () => {
       NOW,
     );
 
-    expect(fsm.made.erased).toEqual(["contact-1"]);
     expect(erased).toBe(1);
     expect(books.made.erased).toEqual([{ customerId: "books-1", outcome: "deleted" }]);
-  });
-
-  it("leaves FSM alone where it is not connected", async () => {
-    await eraseByMobile(MOBILE, NOW);
-    const fsmQueue = fakeQueue();
-    await sweep(
-      { ...env, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fsmQueue },
-      fakeDependencies({ now: () => new Date(NOW.getTime() + 10 * 60_000) }),
-      createLogger(),
-      { budget: createCallBudget(Infinity) },
-    );
-    expect(fsmQueue.sent).toEqual([]);
   });
 });
 
@@ -367,16 +284,28 @@ async function everythingElseHeld(): Promise<void> {
 }
 
 describe("grievances", () => {
-  it("are raised by the client, alert ops without their words, and are answered by ops", async () => {
-    const deps = fakeDependencies();
-    const raised = await request(appFor("local", deps, {}, "client"), "/api/grievances", {
+  /** The signed-in client's concern, as their app's Send raises it. */
+  function raiseAs(client: ReturnType<typeof appFor>, text: string) {
+    return request(client, "/api/grievances", {
       method: "POST",
       headers: { Cookie: cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
-      body: JSON.stringify({ text: "My photographs were shown to someone else." }),
+      body: JSON.stringify({ text }),
     });
+  }
+
+  /** The concerns the signed-in client's profile lists. */
+  async function shownTo(client: ReturnType<typeof appFor>): Promise<unknown> {
+    const profile = await request(client, "/api/profile", { headers: { Cookie: cookie } });
+    return (await profile.json<{ grievances: unknown }>()).grievances;
+  }
+
+  it("are raised by the client, alert nobody at once, and are answered by ops", async () => {
+    const deps = fakeDependencies();
+    const raised = await raiseAs(appFor("local", deps, {}, "client"), "My photographs were shown to someone else.");
     expect(raised.status).toBe(201);
     const { id } = await raised.json<{ id: string }>();
-    expect(deps.alerts).toEqual([`A client raised grievance ${id}; answer it in the ops console.`]);
+    // The team chat hears of it in the hour's one message, not one message a concern.
+    expect(deps.alerts).toEqual([]);
 
     const ops = appFor("local", fakeDependencies(), {}, "ops");
     const open = await (await request(ops, "/api/grievances")).json();
@@ -406,6 +335,123 @@ describe("grievances", () => {
     expect((await resolve("again")).status).toBe(404);
   });
 
+  // PS-22: once the app reloaded, a client saw nothing of the concern they raised, nor ops' answer.
+  it("are listed on the client's profile, open and then with ops' answer", async () => {
+    const deps = fakeDependencies();
+    const client = appFor("local", deps, {}, "client");
+    const { id } = await (await raiseAs(client, "Who sees my photographs?")).json<{ id: string }>();
+    expect(await shownTo(client)).toEqual([
+      {
+        id,
+        text: "Who sees my photographs?",
+        state: "open",
+        raised_at: NOW.toISOString(),
+        response: null,
+        answered_at: null,
+      },
+    ]);
+
+    await request(appFor("local", deps, {}, "ops"), `/api/grievances/${id}/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify({ response: "Only your technician and our care team." }),
+    });
+    expect(await shownTo(client)).toEqual([
+      {
+        id,
+        text: "Who sees my photographs?",
+        state: "resolved",
+        raised_at: NOW.toISOString(),
+        response: "Only your technician and our care team.",
+        answered_at: NOW.toISOString(),
+      },
+    ]);
+  });
+
+  it("list the newest five: every open one, and those answered in the last 30 days", async () => {
+    const daysAgo = (days: number) => new Date(NOW.getTime() - days * 86_400_000).toISOString();
+    const raised = (id: string, createdDaysAgo: number, resolvedDaysAgo: number | null = null) =>
+      env.DB.prepare(
+        "INSERT INTO grievances (id, person_id, text, state, resolved_at, created_at) VALUES (?1, ?2, ?1, ?3, ?4, ?5)",
+      ).bind(
+        id,
+        PERSON,
+        resolvedDaysAgo === null ? "open" : "resolved",
+        resolvedDaysAgo === null ? null : daysAgo(resolvedDaysAgo),
+        daysAgo(createdDaysAgo),
+      );
+    const texts = async () => {
+      const shown = (await shownTo(appFor("local", fakeDependencies(), {}, "client"))) as { text: string }[];
+      return shown.map((grievance) => grievance.text);
+    };
+
+    await env.DB.batch([
+      raised("open-long-ago", 90),
+      raised("answered-long-ago", 45, 40),
+      raised("answered-lately", 12, 10),
+      raised("open-1", 1),
+      raised("open-2", 2),
+    ]);
+    expect(await texts()).toEqual(["open-1", "open-2", "answered-lately", "open-long-ago"]);
+
+    await env.DB.batch([raised("open-3", 3), raised("open-4", 4), raised("open-5", 5)]);
+    expect(await texts()).toEqual(["open-1", "open-2", "open-3", "open-4", "open-5"]);
+  });
+
+  // PS-65: one client could raise concerns without end, each a message in the team chat.
+  it("take five new ones a day from a client, where the same words still open are not a new one", async () => {
+    const client = appFor("local", fakeDependencies(), {}, "client");
+    for (const n of [1, 2, 3, 4, 5]) {
+      expect((await raiseAs(client, `Concern ${String(n)}`)).status).toBe(201);
+    }
+    const sixth = await raiseAs(client, "Concern 6");
+    expect(sixth.status).toBe(429);
+    expect((await sixth.json<{ error: { code: string } }>()).error.code).toBe("rate_limited");
+    // Sent again, an open concern is the one already raised, and costs nothing.
+    expect((await raiseAs(client, "Concern 1")).status).toBe(201);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS rows FROM grievances").first()).toEqual({ rows: 5 });
+
+    // India's next day is a new allowance.
+    const tomorrow = fakeDependencies({ now: () => new Date(NOW.getTime() + 86_400_000) });
+    expect((await raiseAs(appFor("local", tomorrow, {}, "client"), "Concern 6")).status).toBe(201);
+  });
+
+  it("are told to the team chat in one message an hour, without the client's words", async () => {
+    // NOW is 06:30 UTC, so its run tells of the hour from 05:00 to 06:00.
+    const at = (time: string) => `2026-09-21T${time}:00.000Z`;
+    const rows = [
+      { id: "in-the-hour", state: "open", createdAt: at("05:00") },
+      { id: "also-in-the-hour", state: "open", createdAt: at("05:59") },
+      { id: "answered-already", state: "resolved", createdAt: at("05:30") },
+      { id: "told-an-hour-ago", state: "open", createdAt: at("04:59") },
+      { id: "told-in-an-hour", state: "open", createdAt: at("06:10") },
+    ];
+    await env.DB.batch(
+      rows.map((row) =>
+        env.DB.prepare(
+          "INSERT INTO grievances (id, person_id, text, state, created_at) VALUES (?1, ?2, 'Private words', ?3, ?4)",
+        ).bind(row.id, PERSON, row.state, row.createdAt),
+      ),
+    );
+    const told: string[] = [];
+    const tell = (message: string) => {
+      told.push(message);
+      return Promise.resolve();
+    };
+    const queue = "https://ops.test/grievances";
+
+    expect(await tellOfNewGrievances(env.DB, tell, queue, NOW)).toBe(2);
+    expect(told).toEqual([`2 grievances were raised in the last hour. Answer them in Grievances: ${queue}`]);
+
+    // An hour on, the one raised since; and an hour after that, with nothing new, nobody is told.
+    expect(await tellOfNewGrievances(env.DB, tell, queue, new Date(NOW.getTime() + 3_600_000))).toBe(1);
+    expect(await tellOfNewGrievances(env.DB, tell, queue, new Date(NOW.getTime() + 7_200_000))).toBe(0);
+    expect(told).toEqual([
+      `2 grievances were raised in the last hour. Answer them in Grievances: ${queue}`,
+      `A client raised a grievance in the last hour. Answer it in Grievances: ${queue}`,
+    ]);
+  });
+
   it("are one grievance when the same words arrive twice at the same moment", async () => {
     const deps = fakeDependencies();
     const client = appFor("local", deps, {}, "client");
@@ -424,7 +470,6 @@ describe("grievances", () => {
     // grievance the other raised, so both taps name the same concern (ADR 0058).
     expect(ids[0]).toBe(ids[1]);
     expect(await env.DB.prepare("SELECT COUNT(*) AS rows FROM grievances").first()).toEqual({ rows: 1 });
-    expect(deps.alerts).toEqual([`A client raised grievance ${ids[0]}; answer it in the ops console.`]);
 
     // The same words again, once ops have answered, are a second concern and a second clock.
     const ops = appFor("local", fakeDependencies(), {}, "ops");
@@ -463,33 +508,22 @@ describe("ops deciding a deletion request", () => {
   }
 
   // The sweeper would find them only minutes later.
-  it("queues the CRM and the FSM contact itself, rather than waiting for the sweeper", async () => {
+  it("queues the CRM itself, rather than waiting for the sweeper", async () => {
     const id = await requested();
     const crm = fakeQueue();
-    const fsm = fakeQueue();
-    const answer = await decide(id, { decision: "delete", reason: null }, { CRM_QUEUE: crm, FSM_QUEUE: fsm });
+    const answer = await decide(id, { decision: "delete", reason: null }, { CRM_QUEUE: crm });
 
     expect(await answer.json()).toEqual({ state: "done" });
     expect(crm.sent).toMatchObject([{ erase_person_id: PERSON }]);
-    expect(fsm.sent).toMatchObject([{ erase_person_id: PERSON }]);
   });
 
-  it("queues neither when the request is rejected, since nobody has been erased", async () => {
+  it("queues nothing when the request is rejected, since nobody has been erased", async () => {
     const id = await requested();
     const crm = fakeQueue();
-    const fsm = fakeQueue();
-    const answer = await decide(
-      id,
-      { decision: "reject", reason: "Not the number's owner" },
-      {
-        CRM_QUEUE: crm,
-        FSM_QUEUE: fsm,
-      },
-    );
+    const answer = await decide(id, { decision: "reject", reason: "Not the number's owner" }, { CRM_QUEUE: crm });
 
     expect(await answer.json()).toEqual({ state: "rejected" });
     expect(crm.sent).toEqual([]);
-    expect(fsm.sent).toEqual([]);
   });
 });
 

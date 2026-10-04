@@ -4,7 +4,7 @@
 //   Check-in failed   how far away it was, and no way to close a no-show from there
 //   2 · Waiting       what is left of the wait, from the booked start at the earliest, and Close as no-show,
 //                     dim until it runs out
-//   He appears        the timer stops and the job starts
+//   Client's here     the timer stops and the job starts
 //
 // The stage's one action — I have arrived, then Start job — sits at the foot of
 // the screen where every screen keeps it. Close as no-show is never gold and
@@ -18,7 +18,6 @@
 // the tap. A no-show can close only once the API holds the check-in, since it
 // runs the wait on its own clock too (ADR 0065).
 
-import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -34,6 +33,7 @@ import { keepClosed, keptArrival } from "../store/jobs.ts";
 import { checkInRefusedAsEarly, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
 import { CardFrame } from "./CardFrame.tsx";
 import { firstName } from "./JobCard.tsx";
+import { receiptLine, type ReceiptLine } from "./receipt.ts";
 import styles from "./job.module.css";
 
 /** The phone's own fix, which the API measures against the address (src/policy/check-in.ts). */
@@ -79,12 +79,9 @@ function useBefore(at: number): boolean {
   return before;
 }
 
-/** Board B5's receipt: whether the day-before WhatsApp reached the client, or ops' three facts when none was sent. */
-function evidenceOf(job: Job): string {
-  const who = job.client === null ? "" : firstName(job.client.name);
-  if (job.reminder === null) return copy.waiting.evidence;
-  const delivered = job.reminder.delivered_at;
-  return delivered === null ? copy.waiting.notDelivered(who) : copy.waiting.delivered(who, clock(delivered));
+function evidenceOf(job: Job): ReceiptLine {
+  const who = job.client === null ? copy.waiting.theClient : firstName(job.client.name);
+  return receiptLine(job.reminder, who);
 }
 
 export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queued[]; card: ReactNode }) {
@@ -115,6 +112,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
   const now = useNow(here && wait.endsAt !== null);
   const left = wait.endsAt === null ? 0 : wait.endsAt - now;
   const mayClose = wait.confirmed && wait.endsAt !== null && left <= 0;
+  const receipt = evidenceOf(job);
   const waitBegun = wait.endsAt === null || wait.endsAt - job.no_show_wait_min * 60_000 <= now;
 
   const arrive = () =>
@@ -191,7 +189,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
       {!here && !failed && (
         <section className={styles.stage}>
           <p className={styles.stageLabel}>{copy.arrived.step}</p>
-          <p className={styles.stageBody}>{copy.arrived.body}</p>
+          <p className={styles.stageBody}>{copy.arrived.body(job.checkin_radius_m)}</p>
           {saysWhenItOpens && (
             <p className={styles.stageWarn} role="status">
               {copy.arrived.opensAt(clock(job.checkin_from))}
@@ -234,8 +232,8 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
             {waitLine(job, { begun: waitBegun, confirmed: wait.confirmed, over: mayClose })}
           </p>
           <p className={styles.evidence}>
-            <Icon className={styles.evidenceIcon} d={ICONS.tick} size={20} stroke={STROKE} />
-            <span>{evidenceOf(job)}</span>
+            <Icon className={styles.evidenceIcon} d={receipt.icon} size={20} stroke={STROKE} />
+            <span>{receipt.text}</span>
           </p>
           {refusedAsEarly(job.id) && (
             <p className={styles.stageWarn} role="alert">

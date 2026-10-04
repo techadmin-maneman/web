@@ -21,7 +21,7 @@ import { indiaInstant } from "../lib/india-time.ts";
 
 /**
  * How long a visit was planned to take, which its service time is read against:
- * its service's length, or its kind's. FSM books the visit for this long, so it
+ * its service's length, or its kind's. The visit is booked for this long, so it
  * is the "planned slot" the board's note means.
  */
 const plannedMinutes = (row: { type: VisitType; service_minutes: number | null }): number =>

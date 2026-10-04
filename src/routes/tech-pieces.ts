@@ -2,8 +2,8 @@
 //   GET /api/tech/pieces/lookup?code=MM-STD-4417-B
 //
 // "Scan the label code (for example MM-STD-4417-B) or pick from the client's
-// pieces in FSM." The lookup reads the mirror, so it works with no signal; a
-// code the mirror does not know is simply unknown, and the technician types the
+// pieces in FSM." The lookup reads our own pieces, so it works with no signal; a
+// code not among them is simply unknown, and the technician types the
 // details on the piece step instead.
 //
 // No client's name or number here: a label says which piece, not whose.

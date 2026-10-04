@@ -1,8 +1,9 @@
-// A person who only ever tried the try-on is "delivery only" in the CRM: they
-// agreed to the one WhatsApp copy of their result and to nothing else, so no
-// one chases them. When that person books, they become contactable, and their
-// CRM record must turn into a New lead that may be contacted (REQ-S2-04). A
-// regression here would leave every such booker "delivery only", never called.
+// A person whose CRM record is "delivery only" (a try-on's, made while try-ons
+// still reached the CRM) agreed to the one WhatsApp copy of their result and to
+// nothing else, so no one chases them. When that person books, they become
+// contactable, and their CRM record must turn into a New lead that may be
+// contacted (REQ-S2-04). A regression here would leave every such booker
+// "delivery only", never called.
 // NOW is Monday 21 September 2026, noon in India.
 
 import { env } from "cloudflare:workers";
@@ -73,7 +74,7 @@ async function book(): Promise<string> {
         consent: true,
       }),
     },
-    { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() },
+    { CRM_QUEUE: fakeQueue() },
   );
   expect(answer.status).toBe(201);
   const lead = await env.DB.prepare("SELECT id FROM leads WHERE person_id = ?1").bind(PERSON).first<string>("id");

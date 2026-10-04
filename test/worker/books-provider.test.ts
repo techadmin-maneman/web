@@ -455,51 +455,6 @@ describe("Books: invoices", () => {
     expect(new URL(calls[1]?.url ?? "").searchParams.get("accept")).toBe("pdf");
     expect(await books.invoicePdf("missing")).toBeNull();
   });
-
-  // A discount code comes off the visit's line before tax (docs/decisions/0108-discount-codes.md), every other line
-  // sent back as it was, since Books removes a line an update leaves out.
-  it("takes a discount off a draft's dearest line before tax, and answers the invoice as it now stands", async () => {
-    const draft = {
-      invoice_id: "inv-1",
-      invoice_number: "INV-000041",
-      date: "2026-09-24",
-      customer_id: "cust-1",
-      total: 2050,
-      status: "draft",
-      line_items: [
-        { line_item_id: "line-part", item_id: "item-base", rate: 50, quantity: 1 },
-        { line_item_id: "line-visit", item_id: "item-service", rate: 2000, quantity: 1, tax_id: "tax-0" },
-      ],
-    };
-    const { books, calls } = zohoBooks({
-      [ZOHO_TOKEN_URL]: () => tokenIssued(),
-      [`${BOOKS_API}/invoices/inv-1`]: (call) =>
-        call.method === "PUT" ? json({ invoice: { ...draft, total: 1850, balance: 1850 } }) : json({ invoice: draft }),
-    });
-    expect(await books.discountInvoice("inv-1", 20_000)).toMatchObject({
-      id: "inv-1",
-      total: 185_000,
-      status: "draft",
-    });
-    const written = calls.find((call) => call.method === "PUT");
-    expect(new URL(written?.url ?? "").searchParams.get("organization_id")).toBe("60088931635");
-    expect(JSON.parse(written?.body ?? "{}")).toEqual({
-      customer_id: "cust-1",
-      discount_type: "item_level",
-      is_discount_before_tax: true,
-      line_items: [
-        { line_item_id: "line-part", item_id: "item-base", rate: 50, quantity: 1 },
-        {
-          line_item_id: "line-visit",
-          item_id: "item-service",
-          rate: 2000,
-          quantity: 1,
-          tax_id: "tax-0",
-          discount: 200,
-        },
-      ],
-    });
-  });
 });
 
 describe("Books: payments, receipts and refunds", () => {
@@ -700,7 +655,7 @@ describe("the stand-ins", () => {
 
   it("the stub Books lists the items it was given and made, and fails or refuses a step once when asked", async () => {
     const given = { id: "stub-item-first-fit", name: "First fit", rate: 3_000_000, active: true, sac: null };
-    const books = createStubBooks({ draftTotal: 0, items: [given] });
+    const books = createStubBooks({ items: [given] });
     const made = await books.createItem({ name: "Service visit", rate: 200_000, sac: null });
     await books.updateItem(given.id, { name: "First fit", rate: 2_500_000, sac: "999721" });
     expect(await books.items()).toEqual([

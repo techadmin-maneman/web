@@ -6,7 +6,7 @@
 import type { RazorpaySettings } from "../config/settings.ts";
 import type { Logger } from "../log.ts";
 import { ProviderError } from "./provider-error.ts";
-import { createRazorpay } from "./razorpay.ts";
+import { createRazorpay, type RazorpayPayment, type RazorpayPaymentLink } from "./razorpay.ts";
 
 /** A refund, asked for under a receipt of ours that no other refund of the payment carries. */
 export interface RefundAsked {
@@ -33,8 +33,8 @@ export interface PaymentLinkRequest {
 export interface PaymentsProvider {
   /** An order for Checkout to pay; its notes come back on the payment. */
   createOrder(order: { amount: number; receipt: string; notes: Record<string, string> }): Promise<{ id: string }>;
-  /** The status of each payment made on an order, as Razorpay holds it now: "created" while one is still being made. */
-  orderPayments(orderId: string): Promise<readonly string[]>;
+  /** Each payment made on an order, as Razorpay holds it now: "created" while one is still being made. */
+  orderPayments(orderId: string): Promise<readonly RazorpayPayment[]>;
   /**
    * Gives a payment back, in full or part, to where it came from; answers the refund's ID, or null where a refund
    * under the same receipt was made before. Throws PaymentUnanswered where it cannot say whether it was made.
@@ -47,6 +47,10 @@ export interface PaymentsProvider {
   createPaymentLink(link: PaymentLinkRequest): Promise<MadeLink>;
   /** The link made under our reference, if there is one: what a try whose answer never came made. */
   findPaymentLink(reference: string): Promise<MadeLink | null>;
+  /** Razorpay texts a link it made to the customer again, by its ID. */
+  resendPaymentLink(linkId: string): Promise<void>;
+  /** A payment link as Razorpay holds it now: "paid" once paid, with the order its payment was made on. */
+  paymentLink(linkId: string): Promise<RazorpayPaymentLink>;
   /** Stops a link taking payment, and Razorpay's reminders of it. Refused for a link paid, expired or cancelled. */
   cancelPaymentLink(linkId: string): Promise<void>;
 }
@@ -82,6 +86,8 @@ export function createPaymentsProvider(
     refund: off,
     createPaymentLink: off,
     findPaymentLink: off,
+    resendPaymentLink: off,
+    paymentLink: off,
     cancelPaymentLink: off,
   };
 }
@@ -92,10 +98,14 @@ export interface StubPayments extends PaymentsProvider {
     readonly orders: { amount: number; receipt: string; notes: Record<string, string> }[];
     readonly refunds: { paymentId: string; amount: number }[];
     readonly links: PaymentLinkRequest[];
+    /** The links texted again, by Razorpay's ID. */
+    readonly resent: string[];
     readonly cancelledLinks: string[];
   };
-  /** The payments a test says were made on an order, by status; none on an order it names nothing for. */
-  readonly paymentsOn: Map<string, string[]>;
+  /** The payments a test says were made on an order; none on an order it names nothing for. */
+  readonly paymentsOn: Map<string, RazorpayPayment[]>;
+  /** How a test says Razorpay holds a link now, by the link's ID; a link the stub made is otherwise unpaid. */
+  readonly linksNow: Map<string, RazorpayPaymentLink>;
 }
 
 /**
@@ -108,14 +118,17 @@ export function createStubPayments(): StubPayments {
     orders: [] as { amount: number; receipt: string; notes: Record<string, string> }[],
     refunds: [] as { paymentId: string; amount: number }[],
     links: [] as PaymentLinkRequest[],
+    resent: [] as string[],
     cancelledLinks: [] as string[],
   };
   const receipts = new Set<string>();
   const linksByReference = new Map<string, MadeLink>();
-  const paymentsOn = new Map<string, string[]>();
+  const paymentsOn = new Map<string, RazorpayPayment[]>();
+  const linksNow = new Map<string, RazorpayPaymentLink>();
   return {
     made,
     paymentsOn,
+    linksNow,
     createOrder: (order) => {
       made.orders.push(order);
       return Promise.resolve({ id: `order_stub_${crypto.randomUUID()}` });
@@ -139,6 +152,19 @@ export function createStubPayments(): StubPayments {
       return Promise.resolve(madeLink);
     },
     findPaymentLink: (reference) => Promise.resolve(linksByReference.get(reference) ?? null),
+    resendPaymentLink: (linkId) => {
+      made.resent.push(linkId);
+      return Promise.resolve();
+    },
+    paymentLink: (linkId) => {
+      const told = linksNow.get(linkId);
+      if (told !== undefined) return Promise.resolve(told);
+      const madeUnder = [...linksByReference].find(([, link]) => link.id === linkId);
+      if (madeUnder === undefined) {
+        return Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "The id provided does not exist"));
+      }
+      return Promise.resolve({ id: linkId, status: "created", reference_id: madeUnder[0], order_id: null });
+    },
     cancelPaymentLink: (linkId) => {
       made.cancelledLinks.push(linkId);
       return Promise.resolve();

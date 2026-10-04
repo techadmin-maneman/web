@@ -1,4 +1,4 @@
-// A client's customer in Zoho Books, where no FSM sync makes it or keeps it up to date. Books keys it by the person's
+// A client's customer in Zoho Books, made and kept up to date by the Books pass. Books keys it by the person's
 // ID in its "MM person ID" field, so a write whose answer never came lands on the same customer. Never written for an
 // erased person: their customer still holds the ID, and a write would refill it.
 

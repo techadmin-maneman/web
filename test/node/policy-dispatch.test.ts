@@ -11,6 +11,7 @@ import {
   moveRefusal,
   RULES,
   slotsFor,
+  targetTime,
 } from "../../src/policy/dispatch.ts";
 import { unitsFor } from "../../src/policy/visit-length.ts";
 
@@ -18,9 +19,9 @@ import { unitsFor } from "../../src/policy/visit-length.ts";
 const day = (...windows: BookingWindow[]) => ({ windows: new Set(windows), onLeave: false });
 /** The same technician, away that day (ADR 0062). */
 const away = (...windows: BookingWindow[]) => ({ ...day(...windows), onLeave: true });
-/** Whether the visit's block has room in the window, as src/domain/scheduling.ts answers it. */
-const FITS = { fits: true };
-const NO_ROOM = { fits: false };
+/** Whether the visit's block has room in the window, as src/domain/scheduling.ts answers it, on a day ahead. */
+const FITS = { time: "ahead", fits: true, blackoutWithoutReason: false } as const;
+const NO_ROOM = { ...FITS, fits: false };
 
 describe("dispatch", () => {
   it(RULES[0], () => {
@@ -108,5 +109,32 @@ describe("dispatch", () => {
     // A window someone holds is still a clash, and a day off still leave, whatever the room.
     expect(moveRefusal(day("evening"), "evening", NO_ROOM)).toBe("clash");
     expect(moveRefusal(away(), "evening", NO_ROOM)).toBe("on_leave");
+  });
+
+  // BK-17, FLD-23: at 09:58 four visits moved to that morning all landed at 09:00, and a move to yesterday went through.
+  it("reads a day gone, and today's window once every start in it has passed, as no longer ahead", () => {
+    // At 12:00 the afternoon's first start (half-slot 2) is under way and its next (3) is still to come.
+    const noon = { date: "2026-10-02", firstUnitAhead: 3 };
+    expect(targetTime({ date: "2026-10-01", window: "evening" }, noon)).toBe("past_day");
+    expect(targetTime({ date: "2026-10-02", window: "morning" }, noon)).toBe("window_passed");
+    expect(targetTime({ date: "2026-10-02", window: "afternoon" }, noon)).toBe("ahead");
+    expect(targetTime({ date: "2026-10-03", window: "morning" }, noon)).toBe("ahead");
+    // After the day's last start, every window of today has passed.
+    expect(targetTime({ date: "2026-10-02", window: "evening" }, { ...noon, firstUnitAhead: UNITS_PER_DAY })).toBe(
+      "window_passed",
+    );
+  });
+
+  it("refuses a time already gone before anything else, whatever the technician's day holds", () => {
+    expect(moveRefusal(away("morning"), "morning", { ...NO_ROOM, time: "past_day" })).toBe("past_day");
+    expect(moveRefusal(day("morning"), "morning", { ...NO_ROOM, time: "window_passed" })).toBe("window_passed");
+  });
+
+  // Owner decision 16: a move onto a blacked-out day goes ahead with a warning and a typed reason.
+  it("refuses a blacked-out day only while no reason was given, and only once nothing else stands in the way", () => {
+    expect(moveRefusal(day(), "morning", { ...FITS, blackoutWithoutReason: true })).toBe("blackout");
+    expect(moveRefusal(day(), "morning", FITS)).toBeNull();
+    expect(moveRefusal(day("morning"), "morning", { ...FITS, blackoutWithoutReason: true })).toBe("clash");
+    expect(moveRefusal(day(), "evening", { ...NO_ROOM, blackoutWithoutReason: true })).toBe("does_not_fit");
   });
 });

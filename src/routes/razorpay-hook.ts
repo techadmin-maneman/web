@@ -22,7 +22,7 @@ import { afterResponse } from "../http/after-response.ts";
 import { bookHold } from "../http/book-hold.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { sha256Hex } from "../lib/hash.ts";
-import { cancelLinkPaidElsewhere, markLinkPaid, visitOfLink, type PaidVisit } from "../domain/payment-links.ts";
+import { cancelLinkPaidElsewhere, linkPaid } from "../domain/payment-links.ts";
 import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../domain/visit-booking.ts";
 import {
   RazorpayPaymentLinkSchema,
@@ -58,30 +58,6 @@ export const razorpayHookRoute = createRoute({
     ),
   },
 });
-
-/**
- * A one visit's payment link paid: the payment recorded as the visit's, by the link it paid, whatever notes it
- * carries, and the link marked paid where the close made one; a link ops made by hand has no row of ours. Answers the
- * visit, or null for a link that names no visit of ours.
- */
-async function linkPaid(
-  db: D1Database,
-  paid: { readonly link: RazorpayPaymentLink; readonly payment: RazorpayPayment },
-  hashSalt: string,
-  now: Date,
-): Promise<PaidVisit | null> {
-  const ours = await visitOfLink(db, { razorpayLinkId: paid.link.id, reference: paid.link.reference_id ?? null });
-  if (ours === null) return null;
-  const notes =
-    ours.personId === null
-      ? { appointment_id: ours.appointmentId }
-      : { appointment_id: ours.appointmentId, person_id: ours.personId };
-  await recordPayment(db, { ...paid.payment, notes }, "captured", hashSalt, now);
-  if (ours.linkId === null) return ours;
-  const paidAt = new Date(paid.payment.created_at * 1000).toISOString();
-  await markLinkPaid(db, ours.linkId, { razorpayPaymentId: paid.payment.id, paidAt }, now);
-  return ours;
-}
 
 /**
  * The link a client paid for a visit ops booked: the payment is recorded on the hold the link was for, which confirms
@@ -203,7 +179,7 @@ export function registerRazorpayHook(app: App): void {
       const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
       const status = paymentStatusOf(event, payment);
       if (status !== null) await recordPayment(db, payment, status, config.settings.ipHashSalt, now);
-      // Paid for a hold in the app: the booking is written now, or from FSM's queue (src/http/book-hold.ts).
+      // Paid for a hold in the app: the booking is written now (src/http/book-hold.ts).
       // Only the capture books it: order.paid says the same of the same payment, and the cron books a paid
       // hold that is still waiting (docs/decisions/0068-a-paid-hold-is-kept.md).
       const holdId = holdOfNotes(payment.notes);

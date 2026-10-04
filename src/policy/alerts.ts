@@ -18,7 +18,8 @@ export const crmErasureKey = (personId: string): string => `crm_erasure:${person
 /** A deletion request near the end of the days it must be decided in. */
 export const deletionWaitingKey = (requestId: string): string => `deletion_waiting:${requestId}`;
 
-const CUSTOMER_CARE_KINDS = [
+/** About the client themselves: their messages, contact and notes. */
+export const CUSTOMER_CARE_KINDS = [
   "message_failed",
   "messages_unsent",
   "crm_lead",
@@ -27,9 +28,6 @@ const CUSTOMER_CARE_KINDS = [
   "contact_sync",
   "deletion_waiting",
   "books_erasure",
-  "fsm_erasure",
-  "fsm_contact_update",
-  "client_note_fsm",
 ];
 
 const FINANCE_KINDS = [
@@ -57,6 +55,8 @@ const FINANCE_KINDS = [
   "books_refund_refused",
   "books_refund_failed",
   "razorpay_refund_unheard",
+  "razorpay_payment_unheard",
+  "razorpay_catch_up_not_booked",
 ];
 
 const OPERATIONS_KINDS = [
@@ -64,13 +64,7 @@ const OPERATIONS_KINDS = [
   "technician_code_refused",
   "hair_profile_from_older",
   "unbooked_hold",
-  "booking_held",
-  "booking_to_link",
-  "work_order_lookup_failed",
   "replaced_after_begun",
-  "replaced_not_cancelled",
-  "fsm_sync",
-  "job_event_pending",
 ];
 
 const DEPARTMENT_OF_KIND: ReadonlyMap<string, Department> = new Map([
@@ -90,10 +84,10 @@ const RETOLD_EVERY_6_HOURS = [
   "whatsapp_bridge",
   "login_codes_failing",
   "unbooked_hold",
-  "booking_held",
   "cancel_refund_failed",
   "no_show_refund_failed",
   "razorpay_refund_unheard",
+  "razorpay_catch_up_not_booked",
 ];
 
 /** How long an open alert goes untold before its next sighting tells the chat again. */

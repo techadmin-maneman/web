@@ -93,6 +93,21 @@
   color: var(--paper);
 }
 
+/* A consultation and fit in one visit: its price once fitted, as the consultation's Free line stands, then how. */
+.terms {
+  margin-top: var(--sp-18);
+  padding-top: var(--sp-18);
+  border-top: var(--hairline) solid var(--ink-rule);
+  font-size: var(--fs-16);
+  color: var(--paper);
+}
+
+.card .termsMore {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-14);
+  color: var(--ink-soft);
+}
+
 .actions {
   display: flex;
   gap: var(--sp-10);
@@ -184,6 +199,19 @@
 
 .creditsExpiry {
   margin-top: var(--sp-4);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+/* A one visit's payment owed, drawn as the prompt is: what for and how much, then the link or word of it. */
+.owedLine {
+  margin-top: var(--sp-8);
+  font-size: var(--fs-17);
+  line-height: var(--lh-150);
+}
+
+.owedWait {
+  margin-top: var(--sp-12);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }

@@ -1,4 +1,4 @@
-// A client's visits and photographs, read from the FSM mirror for the client
+// A client's visits and photographs, read for the client
 // app (docs/prompts/phase2-backend.md, "Read endpoints"). Only the signed-in
 // client's own rows are ever read; a visit or photograph of anyone else is
 // "not found".
@@ -12,6 +12,7 @@ import { namesMoreThanItsKind } from "../policy/services.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
 import { jobSheet } from "./job-sheet-settings.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
+import { oneVisitPrice, type OneVisitPrice } from "./one-visit-money.ts";
 import { priceOf } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
@@ -26,9 +27,9 @@ export type VisitWindowLabel = "morning" | "afternoon" | "evening";
 export const PHOTO_LINK_MS = 15 * MINUTE_MS;
 
 /**
- * Where a visit FSM has not closed stands for the client: still to come, under
+ * Where a visit not yet closed stands for the client: still to come, under
  * way, closed as done from the technician's phone, or otherwise over and waiting
- * for FSM to close it. A visit stays the client's until FSM closes it, so it
+ * to be closed. A visit stays the client's until it is closed, so it
  * never drops out of both lists.
  */
 export type VisitStage = "booked" | "in_progress" | "done" | "closing";
@@ -45,18 +46,20 @@ export interface VisitSummary {
   /** Its service's name in the console, where it names more than the kind: a first fit's hair system, say. */
   readonly service: string | null;
   readonly status: AppointmentStatus;
-  /** Null for a visit FSM has closed. */
+  /** Null for a closed visit. */
   readonly stage: VisitStage | null;
   /** Paid for ahead, or covered by a credit: board C1's "Prepaid". */
   readonly prepaid: boolean;
   readonly technician: { readonly name: string; readonly initials: string } | null;
   readonly place: string;
+  /** A consultation and fit in one visit not yet closed: what it costs once fitted. Null for any other visit. */
+  readonly one_visit: OneVisitPrice | null;
 }
 
 interface AppointmentRow {
   id: string;
   type: VisitType | null;
-  /** Its service's tier; null where the mirror knows none, which is the standard tier's. */
+  /** Its service's tier; null where it names none, which is the standard tier's. */
   tier: string | null;
   one_visit: OneVisitState | null;
   /** The name of the service its tier is; null for none. */
@@ -87,7 +90,7 @@ const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.wind
   t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
   ${visitBegun("a")} AS begun, ${landedOutcome("a")} AS landed_outcome`;
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
-/** The statuses of a visit FSM has not closed. */
+/** The statuses of a visit not yet closed. */
 const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
 const UPCOMING_STATUSES = `('scheduled', 'dispatched', 'in_progress')`;
 const PAST_STATUSES = `('completed', 'terminated')`;
@@ -97,7 +100,7 @@ const CANCELLED = `(a.status = 'cancelled' AND NOT EXISTS (SELECT 1 FROM visit_c
 
 /** What a visit's summary reads beyond its row: where it is, and the day's times its window is read by. */
 interface SummaryContext {
-  /** The client's saved address, else FSM's city and pincode. */
+  /** The client's saved address, else the visit's city and pincode. */
   readonly place: (row: AppointmentRow) => string;
   readonly schedule: SlotSchedule;
 }
@@ -112,8 +115,7 @@ async function contextOf(db: D1Database, personId: string): Promise<SummaryConte
 }
 
 /**
- * Our own records come before FSM's status, which can lag or never arrive: a visit the technician closed as done is
- * done; one he closed otherwise, or whose window has ended, is being closed; one he has begun is in progress.
+ * The technician's steps come before the visit's status, which follows them: a visit he closed as done is done; one he closed otherwise, or whose window has ended, is being closed; one he has begun is in progress.
  */
 function stageOf(row: AppointmentRow, now: Date): VisitStage | null {
   if (!NOT_CLOSED.includes(row.status)) return null;
@@ -124,7 +126,18 @@ function stageOf(row: AppointmentRow, now: Date): VisitStage | null {
   return "booked";
 }
 
-function summaryOf(row: AppointmentRow, context: SummaryContext, now: Date): VisitSummary {
+/** What a one visit not yet closed costs once fitted; null for any other visit. */
+async function oneVisitOf(db: D1Database, row: AppointmentRow): Promise<OneVisitPrice | null> {
+  if (row.one_visit !== "booked" || !NOT_CLOSED.includes(row.status)) return null;
+  return oneVisitPrice(db, row.id, indiaDate(new Date(row.window_start)));
+}
+
+async function summaryOf(
+  db: D1Database,
+  row: AppointmentRow,
+  context: SummaryContext,
+  now: Date,
+): Promise<VisitSummary> {
   return {
     id: row.id,
     date: indiaDate(new Date(row.window_start)),
@@ -142,11 +155,12 @@ function summaryOf(row: AppointmentRow, context: SummaryContext, now: Date): Vis
         ? null
         : { name: row.technician_name, initials: row.technician_initials },
     place: context.place(row),
+    one_visit: await oneVisitOf(db, row),
   };
 }
 
 /**
- * The client's next visit FSM has not closed, if any: the soonest still to come
+ * The client's next visit not yet closed, if any: the soonest still to come
  * or under way, and only if there is none of those, one that is over.
  */
 export async function nextVisit(db: D1Database, personId: string, now: Date): Promise<VisitSummary | null> {
@@ -161,7 +175,7 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
       .first<AppointmentRow>(),
     contextOf(db, personId),
   ]);
-  return row === null ? null : summaryOf(row, context, now);
+  return row === null ? null : summaryOf(db, row, context, now);
 }
 
 /** The three states the apps show a client in. */
@@ -210,8 +224,8 @@ export async function listVisits(
       .all<AppointmentRow>(),
   ]);
   return {
-    upcoming: upcoming.results.map((row) => summaryOf(row, context, now)),
-    past: past.results.map((row) => summaryOf(row, context, now)),
+    upcoming: await Promise.all(upcoming.results.map((row) => summaryOf(db, row, context, now))),
+    past: await Promise.all(past.results.map((row) => summaryOf(db, row, context, now))),
   };
 }
 
@@ -231,7 +245,7 @@ export interface PhotoSet {
 }
 
 export interface VisitDetail extends VisitSummary {
-  /** From FSM's actual start to end; null until the visit is done. */
+  /** From the visit's actual start to end; null until it is done. */
   readonly duration_minutes: number | null;
   readonly outcome: VisitOutcome | null;
   /** The checklist the technician ticked, in the job sheet's order; null when none was recorded. */
@@ -259,9 +273,8 @@ export type InvoiceHeld = "credit" | "checking";
 
 /**
  * A visit is billed when the price book charges for its service on the day it
- * happened. A free consultation totals nothing and FSM raises no invoice for
- * it (ADR 0055). A visit whose service is not one of ours is unpriced here and
- * counts as billed: FSM knows its total, we do not.
+ * happened. A free consultation totals nothing and has no invoice (ADR 0055). A
+ * visit whose service is unpriced here counts as billed: its invoice is ops'.
  */
 async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boolean> {
   if (row.status !== "completed") return false;
@@ -272,7 +285,7 @@ async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boo
 
 /**
  * Why a finished visit's invoice is held as a draft, as the invoice pass holds
- * it (src/domain/fsm-invoices.ts): never sent for a visit a credit paid for,
+ * it (src/domain/books-invoices.ts): never sent for a visit a credit paid for,
  * and one raised but not sent is being checked, its total not what the visit
  * was sold for or Books not sending it. Ops are told of either, and it waits on
  * their Tasks board as a draft invoice.
@@ -296,10 +309,9 @@ async function invoiceHeld(
 /**
  * What was done: the items of the job sheet's checklist that the technician
  * ticked, in the words ops gave them in the console, from the last checklist his
- * phone sent that FSM had not moved from under him; an item ops have since taken
- * off is still named, as FSM's summary names it (src/domain/job-sheet.ts). The
- * committed list (src/config/job-sheet.ts) stands until ops save one. A visit
- * closed in FSM's own screens has none.
+ * phone sent that was not superseded; an item ops have since taken off is still
+ * named. The committed list (src/config/job-sheet.ts) stands until ops save one.
+ * A visit closed with no checklist has none.
  */
 async function whatWasDone(db: D1Database, visitId: string, type: VisitType | null): Promise<string[] | null> {
   if (type === null) return null;
@@ -344,7 +356,7 @@ export async function visitDetail(
   const photos = await photoSets(db, [row.id], signingKey, now);
   const noShows = await noShowNotes(db, [row.id], now);
   return {
-    ...summaryOf(row, await contextOf(db, personId), now),
+    ...(await summaryOf(db, row, await contextOf(db, personId), now)),
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
     what_was_done: await whatWasDone(db, row.id, row.type),
@@ -356,7 +368,7 @@ export async function visitDetail(
   };
 }
 
-/** What FSM closed each of these visits as, for the visits it has closed. */
+/** What each of these visits was closed as, for the visits that are closed. */
 export async function visitOutcomes(
   db: D1Database,
   appointmentIds: readonly string[],

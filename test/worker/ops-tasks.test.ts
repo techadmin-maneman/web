@@ -10,7 +10,6 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
-import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { TASKS_SHOWN } from "../../src/routes/ops-tasks.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 import { enforce, listStaff, opsAs, person as staffPerson } from "./staff-fixtures.ts";
@@ -211,12 +210,6 @@ describe("GET /api/tasks", () => {
     )
       .bind(PERSON, NOW.toISOString())
       .run();
-    await env.DB.prepare(
-      `UPDATE people SET erased_at = '2026-09-20T06:00:00.000Z', fsm_contact_id = 'fsm-contact-4',
-         fsm_erasure_attempts = ?1 WHERE id = ?2`,
-    )
-      .bind(MAX_SYNC_ATTEMPTS, REFERRED)
-      .run();
     // A visit Rohit was left partly done on, and another client's job, with no address, on Chetan's day off.
     await person(OTHER, "Karan Bhatia", "+919810000003");
     await env.DB.batch([
@@ -258,9 +251,8 @@ describe("GET /api/tasks", () => {
       "erasure_request",
       "grievance",
       "draft_invoice",
-      "erasure_unfinished",
     ]);
-    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(body.groups.map((each) => each.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
   it("leaves out a group with nothing waiting, as the board draws none", async () => {
@@ -484,36 +476,6 @@ describe("GET /api/tasks", () => {
     ]);
   });
 
-  it("lists an erased client whose FSM contact the sweeper gave up on, until it is anonymised", async () => {
-    const erased = (attempts: number) =>
-      env.DB.prepare(
-        `UPDATE people SET erased_at = '2026-09-20T06:00:00.000Z', fsm_contact_id = 'fsm-contact-4',
-           fsm_erasure_attempts = ?1 WHERE id = ?2`,
-      )
-        .bind(attempts, PERSON)
-        .run();
-
-    // Still being asked: nothing for ops yet.
-    await erased(MAX_SYNC_ATTEMPTS - 1);
-    expect(groupNames(await tasks())).toEqual([]);
-
-    await erased(MAX_SYNC_ATTEMPTS);
-    expect(tasksIn(await tasks(), "erasure_unfinished")).toEqual([
-      {
-        id: PERSON,
-        // Erased: the record is gone, and only FSM's contact is left to name.
-        person: null,
-        detail: "fsm-contact-4",
-        since: "2026-09-20T06:00:00.000Z",
-        due: "2026-09-22T06:00:00.000Z",
-        owner: null,
-      },
-    ]);
-
-    await env.DB.prepare("UPDATE people SET fsm_erased_at = ?1").bind(NOW.toISOString()).run();
-    expect(groupNames(await tasks())).toEqual([]);
-  });
-
   // The brief: "ops need the full set because these drive the task queue". A visit left partly done made no task
   // at all (BIZ-21).
   describe("a visit left partly done", () => {
@@ -659,6 +621,28 @@ describe("GET /api/tasks", () => {
     await numberChange("awaiting_ops");
     await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), PERSON).run();
     expect(groupNames(await tasks())).toEqual([]);
+  });
+
+  // OIA-10 of the audit, 2 October 2026: a client's page showed nothing open for them while a task about them waited.
+  it("lists one client's tasks alone when asked for them, counted as theirs", async () => {
+    // Rohit's grant was held on the 18th, so it is overdue; his number change is not. Vikram's grievance is his own.
+    await heldGrant('["shared_address"]');
+    await numberChange("awaiting_ops");
+    await env.DB.prepare(
+      `INSERT INTO grievances (id, person_id, text, state, created_at)
+       VALUES (?1, ?2, 'Who can see my number?', 'open', '2026-09-20T06:00:00.000Z')`,
+    )
+      .bind(GRIEVANCE, REFERRED)
+      .run();
+
+    const rohits = await (await request(ops, `/api/tasks?person=${PERSON}`)).json<Body>();
+    expect(groupNames(rohits)).toEqual(["referral_review", "number_change"]);
+    expect(rohits.overdue).toBe(1);
+    expect(groupNames(await tasks())).toEqual(["referral_review", "number_change", "grievance"]);
+  });
+
+  it("refuses a client that is not named by their id", async () => {
+    expect((await request(ops, "/api/tasks?person=rohit")).status).toBe(400);
   });
 
   it("belongs to the ops surface alone", async () => {

@@ -2,8 +2,8 @@
 // each is and how long it has left. Nothing is decided here. A task is a row in a queue the
 // database already keeps — a consultation asked for, a held grant, an
 // undecided no-show, a disputed charge, a number change, an erasure, a grievance, a piece past its
-// replacement date, an invoice still a draft, an erasure FSM would not finish,
-// a moved visit whose client has not heard of it, a booking FSM refused, a visit left partly done, a
+// replacement date, an invoice still a draft, a moved visit whose client has not
+// heard of it, a visit left partly done, a
 // visit to come with no address, a job on its technician's day off, a client
 // past their next service with nothing booked, a first fit asked for and not
 // booked, a one visit's payment still owed — so it leaves the list when that row
@@ -13,8 +13,9 @@
 // Each task leads to where it is done: the client's page, and the row in the
 // section that decides it; a task the dispatch board settles opens its visit's
 // drawer there. A consultation asked for, a first fit to book and a replacement
-// due are booked from the row itself (BookFromTask.tsx), and the call about a move
-// is recorded there too (CallAboutMove.tsx). Each group's count is the whole
+// due are booked from the row itself (BookFromTask.tsx), a payment owed has its
+// link copied or texted again there (PaymentLinkActions.tsx), and the call about a
+// move is recorded there too (CallAboutMove.tsx). Each group's count is the whole
 // queue's, and a group longer than the board lists says so.
 //
 // The groups stand under the department that decides them, in the navigation's
@@ -43,15 +44,17 @@ import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { Left } from "../lib/Left.tsx";
 import { readTasks } from "../lib/waiting.ts";
-import { rowId, rowPath } from "../lib/target.ts";
-import { dispatchPath, type ClientTab } from "../route.ts";
+import { rowId } from "../lib/target.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
-import { DECIDED_IN } from "./decided.ts";
+import { owedLinkOf } from "./payment-link.ts";
+import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
+import { decidedAt, taskClientPath } from "./links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
 import { TaskActions } from "./TaskActions.tsx";
+import { untoldMoveOf } from "./untold-move.ts";
 import styles from "./tasks.module.css";
 
 type Group = TaskGroup["group"];
@@ -61,42 +64,6 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 /** The fraud rules, as board C1 letters them: a held grant is the same grant on both boards. */
 const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
 
-/** The tab of the client's page each group is about; the page opens on Pieces otherwise. */
-const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
-  untold_move: "visits",
-  // Booked in FSM, linked, or refunded from the Visits tab (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-  held_booking: "visits",
-  leave_conflict: "visits",
-  address_to_confirm: "visits",
-  consultation_request: "visits",
-  first_fit_to_book: "visits",
-  replacement_order: "pieces",
-  at_risk_client: "visits",
-  partial_visit: "visits",
-  no_show_decision: "visits",
-  no_show_dispute: "visits",
-  draft_invoice: "payments",
-  payment_owed: "payments",
-};
-
-/** The board opened on the week of the task's visit, with its drawer open; this week's board for a task with none. */
-function onTheBoard(task: Task): string {
-  if (task.visit === undefined) return dispatchPath({});
-  return dispatchPath({ from: indiaDate(task.visit.starts_at), visit: task.visit.id });
-}
-
-function decidedAt(group: Group, task: Task): string | null {
-  const where = DECIDED_IN[group];
-  if (where === undefined) return null;
-  if (where.page === "/dispatch") return onTheBoard(task);
-  return where.row === null ? where.page : rowPath(where.page, where.row, task.id);
-}
-
-function clientPath(group: Group, personId: string): string {
-  const tab = CLIENT_TAB[group];
-  return tab === undefined ? `/clients/${personId}` : `/clients/${personId}/${tab}`;
-}
-
 /** A window's name, as the dispatch board writes it, for the window a first fit was asked for in; null for either. */
 const fitWindow = (window: string | undefined): string | null =>
   window === undefined || window === "any" ? null : (dispatch.windows[window] ?? window);
@@ -104,27 +71,10 @@ const fitWindow = (window: string | undefined): string | null =>
 /** Whole weeks from one instant to another. */
 const weeksBetween = (from: string, to: Date): number => Math.floor((to.getTime() - Date.parse(from)) / WEEK_MS);
 
-/** Where a payment link still owed stands; a word the board does not know reads as not sent. */
-function linkOwed(word: string): "sent" | "unsent" | "closed" {
-  if (word === "sent" || word === "closed") return word;
-  return "unsent";
-}
-
 /** The second line: the one fact the group turns on. */
 function subOf(group: Group, task: Task, now: Date): string {
   const copy = tasks.subs;
-  if (group === "untold_move") {
-    // The start the visit moved to.
-    return task.detail === null
-      ? tasks.unknown
-      : copy.untold_move(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
-  }
-  if (group === "held_booking") {
-    // The visit's kind, its day and its window, as the booking held them.
-    const [type = "", day = "", when = ""] = task.detail?.split(" ") ?? [];
-    if (day === "") return tasks.unknown;
-    return copy.held_booking(dispatch.typeNames[type] ?? type, shortDate(day), dispatch.windows[when] ?? when);
-  }
+  if (group === "untold_move") return untoldMoveOf(task.detail);
   if (group === "leave_conflict") {
     // The job's start, then the technician who is away that day.
     const [start = "", ...technician] = task.detail?.split(" ") ?? [];
@@ -172,12 +122,10 @@ function subOf(group: Group, task: Task, now: Date): string {
   if (group === "no_show_dispute") return copy.no_show_dispute(disputedTook(task.detail));
   if (group === "draft_invoice") return copy.draft_invoice(shortDate(indiaDate(task.since)));
   if (group === "payment_owed") {
-    // Whether Razorpay sent the link or it closed unpaid, what it asks for in paise, and the product, by name.
-    const [link = "", amount = "", ...product] = task.detail?.split(" ") ?? [];
-    if (amount === "") return tasks.unknown;
-    return copy.payment_owed(product.join(" "), rupees(Number(amount)), linkOwed(link));
+    const link = owedLinkOf(task.detail);
+    if (link === null) return tasks.unknown;
+    return copy.payment_owed(link.product, rupees(link.amount), link.state);
   }
-  if (group === "erasure_unfinished") return copy.erasure_unfinished(task.detail ?? tasks.unknown);
   if (group === "grievance") return copy.grievance;
   return group === "number_change" ? copy.number_change : copy.erasure_request;
 }
@@ -190,13 +138,11 @@ function disputedTook(kept: string | null): string {
 
 /**
  * The first line of a task with no client to name: an erased client has no
- * name left, so the day they were erased heads an erasure FSM would not
- * finish, the visit heads a no-show, and a disputed charge says only that.
+ * name left, so the visit heads a no-show, and a disputed charge says only that.
  */
 function unnamedSubject(group: Group, task: Task): string {
   if (group === "no_show_dispute") return tasks.disputeErased;
-  const day = shortDate(indiaDate(task.since));
-  return group === "erasure_unfinished" ? tasks.erased(day) : tasks.visit(day);
+  return tasks.visit(shortDate(indiaDate(task.since)));
 }
 
 /** "priya.sharma@maneman.in" reads "Priya", as the board names an owner in ops by their first name. */
@@ -245,7 +191,7 @@ function Row({ group, task, now, acting, marked }: RowProps) {
         {task.person === null ? (
           <span className={styles.subject}>{subject}</span>
         ) : (
-          <OpsLink className={styles.subject} to={clientPath(group, task.person.id)}>
+          <OpsLink className={styles.subject} to={taskClientPath(group, task.person.id)}>
             {subject}
           </OpsLink>
         )}
@@ -260,6 +206,7 @@ function Row({ group, task, now, acting, marked }: RowProps) {
           </span>
         )}
         <BookFromTask group={group} task={task} subject={subject} onBooked={acting.onClosed} />
+        {group === "payment_owed" && <PaymentLinkActions task={task} subject={subject} />}
         <CallAboutMove group={group} task={task} subject={subject} onTold={acting.onClosed} />
         <TaskActions group={group} task={task} subject={subject} {...acting} />
       </div>

@@ -21,6 +21,7 @@ const ASSIGN = "/api/dispatch/assign";
 const TOLD = `/api/dispatch/moves/${MOVED.move_id}/told` as const;
 const READ_BOARD: Call = `GET ${BOARD_PATH}`;
 const READ_ROOM: Call = "GET /api/dispatch/room";
+const READ_VERSION: Call = "GET /api/dispatch/version";
 const MOVE_IT: Call = `POST ${MOVE}`;
 const ASSIGN_IT: Call = `POST ${ASSIGN}`;
 const TOLD_IT: Call = `POST ${TOLD}`;
@@ -80,6 +81,8 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
     "Faizan AliSohna Rd",
   ]);
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("Sec 65 · service");
+  // BK-17: each block says when it starts, not only its window.
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("9:00");
   await expect(page.getByRole("button", { name: "Sanjay B., Sat 20 Sep, morning" })).toContainText(
     "Sec 43 · first fit",
   );
@@ -177,7 +180,10 @@ test("opens a block's drawer with the client, the badge, and both ways to reach 
     "href",
     "https://wa.me/919810000001",
   );
-  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute("href", `/clients/${ROHIT.id}`);
+  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute(
+    "href",
+    `/clients/${ROHIT.id}/visits`,
+  );
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
@@ -212,7 +218,8 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await press(page, "Choose");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("Fri 19 Sep, morning → Sat 20 Sep, morning");
+  // BK-17: the exact start the move takes, not the window alone.
+  await expect(picker).toContainText("Fri 19 Sep, 9 am → Sat 20 Sep, 9 am");
   await expect(picker).toContainText("Rohit M. is messaged on WhatsApp with the new window.");
   // Nothing has gone out, and nothing can until a reason is chosen.
   expect(sent).toEqual([]);
@@ -221,7 +228,10 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await reason(page, "Zone rebalance");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toHaveText("Rohit M. moved. The client was sent the new window on WhatsApp.");
+  // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
+  await expect(page.getByRole("status")).toHaveText(
+    "Moved. We're sending Rohit M. the new window on WhatsApp; if it fails, a call task appears.",
+  );
   expect(sent).toEqual([
     {
       appointment_id: ROHIT_JOB?.appointment_id,
@@ -281,6 +291,40 @@ test("says a window has no room for the visit, rather than naming a clash", asyn
   );
 });
 
+// BK-17, FLD-23: a move lands only at a start still ahead, and the server names a window already over.
+test("says a window's starts have all passed, and keeps the job in hand", async ({ page }) => {
+  await open(page, { [MOVE_IT]: fails(409, "window_passed") });
+  await press(page, ROHIT_BLOCK);
+  await press(page, "Move this visit");
+  await press(page, TO_SANDEEP);
+  await reason(page, "Client asked to move it");
+  await press(page, "Move and notify");
+
+  await expect(page.getByRole("alert")).toHaveText(
+    "Too late for Sat 20 Sep, morning. Choose a later window. Nothing was moved.",
+  );
+  await expect(page.getByText("Moving Rohit M.")).toBeVisible();
+});
+
+// Owner decision 16: a move onto a blacked-out day goes ahead with a warning and a typed reason.
+test("asks why before a move onto a blacked-out day, and sends the reason with it", async ({ page }) => {
+  await open(page, { [READ_ROOM]: json({ ...ROOM, blackouts: ["2025-09-20"] }), [MOVE_IT]: json(MOVED) });
+  const sent = sentTo(page, MOVE);
+  await press(page, ROHIT_BLOCK);
+  await press(page, "Move this visit");
+  await press(page, TO_SANDEEP);
+
+  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
+  await expect(picker).toContainText("Sat 20 Sep is blacked out, so nothing is booked that day.");
+  await reason(page, "Client asked to move it");
+  await expect(picker.getByRole("button", { name: "Move and notify" })).toBeDisabled();
+  await picker.getByLabel("Why it goes ahead that day").fill("His only free day before he travels");
+  await press(page, "Move and notify");
+
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Rohit M. the new window on WhatsApp;");
+  expect(sent).toEqual([expect.objectContaining({ blackout_reason: "His only free day before he travels" })]);
+});
+
 test("assigns a tray job through the assign route, with no technician expected", async ({ page }) => {
   await open(page, { [ASSIGN_IT]: json(MOVED) });
   const assigned = sentTo(page, ASSIGN);
@@ -292,7 +336,7 @@ test("assigns a tray job through the assign route, with no technician expected",
   await page.getByRole("radio", { name: "Client asked to move it" }).check();
   await page.getByRole("button", { name: "Move", exact: true }).click();
 
-  await expect(page.getByRole("status")).toContainText("Vikram S. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Vikram S. the new window on WhatsApp;");
   expect(moved).toEqual([]);
   expect(assigned).toEqual([
     {
@@ -381,7 +425,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled();
 
   release();
-  await expect(page.getByRole("status")).toContainText("Rohit M. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Rohit M. the new window on WhatsApp;");
   expect(sent).toHaveLength(1);
 });
 
@@ -412,17 +456,24 @@ test("refuses a move made from a stale board, and says where the job is now", as
   await expect(page.getByText("Moving Rohit M.")).toBeHidden();
 });
 
-test("reads the board again when the tab comes back, without the loading state", async ({ page }) => {
+// PLAT-12: the board read itself in full on every focus and every minute; it now asks for its version first.
+test("reads the board again when the tab comes back to a board that has changed, without the loading state", async ({
+  page,
+}) => {
+  await page.clock.install();
   let reads = 0;
   await open(page, {
     [READ_BOARD]: (route: Route) => {
       reads += 1;
       return json(BOARD)(route);
     },
+    [READ_VERSION]: json({ version: BOARD.version + 1 }),
   });
   expect(reads).toBe(1);
 
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  // A look within half a minute of the last is skipped.
+  await page.clock.fastForward("00:31");
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   await expect.poll(() => reads).toBe(2);
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByText("Loading")).toHaveCount(0);
@@ -483,7 +534,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   await expect.poll(() => new URL(page.url()).search).toBe(kept);
 
   await page.getByRole("dialog").getByRole("link", { name: "Open client" }).click();
-  await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}/visits$`));
   await page.goBack();
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();

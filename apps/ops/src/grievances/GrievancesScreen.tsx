@@ -1,6 +1,6 @@
 // Grievances: what a client has said about the way we use their data, raised
 // from their own app and answered here (docs/decisions/0049-dpdp.md). The
-// alert ops receive says "answer it in the ops console"; this is that section.
+// hourly alert ops receive says "answer it in Grievances"; this is that section.
 //
 // The design draws no board for it (docs/fidelity-method.md), so it is built as
 // board C1's review queue is: the queue, a row for each, a decision on each row.
@@ -20,6 +20,7 @@ import { grievances } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
+import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./grievances.module.css";
 
@@ -52,7 +53,7 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
   return (
     <>
       <div className={styles.head}>
-        <OpsLink className={styles.name} to={`/clients/${each.person_id}`}>
+        <OpsLink className={styles.name} to={clientPath(each.person_id, "consents")}>
           {each.name}
         </OpsLink>
         <Left due={each.due} now={now} />

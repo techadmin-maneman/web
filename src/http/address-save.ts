@@ -2,8 +2,8 @@
 // client in the app, and by ops for a client who gives them it on the phone
 // (docs/decisions/0054-address-capture.md, 0092-task-owners.md). One path for
 // both, so an address ops record is saved as the client's own is: the building
-// geocoded once, within the day's ceiling, and the address sent on to FSM's
-// contact and the CRM.
+// geocoded once, within the day's ceiling, and the address sent on to the
+// client's Books customer and the CRM.
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
@@ -104,8 +104,8 @@ const sessionOrNew = (token: string | null | undefined): string =>
   token === null || token === undefined || token === "" ? crypto.randomUUID() : token;
 
 /**
- * Saves the address as the client's current one, and sends it on to FSM's contact
- * and the CRM. A chosen building is geocoded here, once, and its coordinate kept.
+ * Saves the address as the client's current one, and sends it on to their Books
+ * customer and the CRM. A chosen building is geocoded here, once, and its coordinate kept.
  * A typed address has no Place ID and saves no pin: the geofence then measures
  * nothing rather than measuring zero (ADR 0036's honest degradation).
  */

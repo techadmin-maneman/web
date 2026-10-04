@@ -1,17 +1,12 @@
 // Ops add, change, switch off and switch back on the technicians themselves (src/routes/ops-technicians.ts).
 // NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
-//
-// Until staging leaves FSM, FSM_PROVIDER picks whose record a technician is: on FSM's path a technician FSM made is
-// FSM's to change, and one ops added is ours; with FSM switched off every technician is ours.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createApp } from "../../src/app.ts";
-import type { FieldRecord } from "../../src/config/field-record.ts";
 import type { Surface } from "../../src/config/environments.ts";
 import type { App } from "../../src/http/context.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
-import { appFor, captureLogs, fakeDependencies, LOCAL_CONFIG, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 import type { TestDependencies } from "./helpers.ts";
 
 const IMRAN = "33333333-3333-4333-8333-333333333331";
@@ -29,10 +24,8 @@ const SAMEERS = "44444444-4444-4444-8444-444444444445";
 
 let deps: TestDependencies;
 
-function appIn(record: FieldRecord, surface: Surface): App {
-  if (record === "fsm") return appFor("local", deps, {}, surface);
-  const ours = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "none" as const } };
-  return createApp(ours, () => deps, surface);
+function appIn(surface: Surface): App {
+  return appFor("local", deps, {}, surface);
 }
 
 function send(app: App, method: string, path: string, body?: unknown, cookie = "") {
@@ -50,9 +43,9 @@ const one = (sql: string, ...values: unknown[]) =>
 
 async function visit(id: string, options: { start: string; technician?: string; status?: string }) {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
-       window_end, technician_id, service_city, service_pincode, fsm_modified_at, synced_at)
-     VALUES (?1, ?1, NULL, ?2, 'service', ?3, 'Scheduled', ?4, ?5, ?6, 'Gurgaon', '122018', ?7, ?7)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id,
+       service_city, service_pincode, synced_at)
+     VALUES (?1, ?1, ?2, 'service', ?3, ?4, ?5, ?6, 'Gurgaon', '122018', ?7)`,
   )
     .bind(
       id,
@@ -66,7 +59,7 @@ async function visit(id: string, options: { start: string; technician?: string; 
     .run();
 }
 
-/** The phone's check-in for a visit, landed: the visit has begun, whatever FSM's status says. */
+/** The phone's check-in for a visit, landed: the visit has begun, whatever its status says. */
 async function checkedIn(appointmentId: string) {
   await env.DB.prepare(
     `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
@@ -102,8 +95,8 @@ beforeEach(async () => {
   await env.DB.batch([
     env.DB.prepare(
       `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
-       VALUES (?1, 'resource-1', 'Imran Qureshi', 'IQ', 1, 'Sec 40–65', '+919810000009', ?3),
-              (?2, 'resource-2', 'Sameer Bhatt', 'SB', 1, 'Sec 1–39', '+919810000008', ?3)`,
+       VALUES (?1, ?1, 'Imran Qureshi', 'IQ', 1, 'Sec 40–65', '+919810000009', ?3),
+              (?2, ?2, 'Sameer Bhatt', 'SB', 1, 'Sec 1–39', '+919810000008', ?3)`,
     ).bind(IMRAN, SAMEER, AT),
     env.DB.prepare(
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
@@ -111,10 +104,10 @@ beforeEach(async () => {
   ]);
 });
 
-describe.each(["fsm", "ours"] as const)("adding a technician, with %s as the record", (record) => {
+describe("adding a technician", () => {
   let ops: App;
   beforeEach(() => {
-    ops = appIn(record, "ops");
+    ops = appIn("ops");
   });
 
   it("adds him under an ID of our own, and his number signs in at once", async () => {
@@ -138,7 +131,7 @@ describe.each(["fsm", "ours"] as const)("adding a technician, with %s as the rec
     const audit = await auditOf("technician.add");
     expect(audit.results).toEqual([{ subject_kind: "technician", subject_id: id, detail: null }]);
 
-    const tech = appIn(record, "tech");
+    const tech = appIn("tech");
     const verified = await signInBy(tech, "9810000007");
     expect(await verified.json()).toMatchObject({ verified: true, first_name: "Naveen" });
     const me = await send(tech, "GET", "/api/tech/me", undefined, cookieOf(verified));
@@ -191,7 +184,7 @@ describe.each(["fsm", "ours"] as const)("adding a technician, with %s as the rec
 
 describe("changing a technician", () => {
   it("changes his name, number and zone, and his initials with his name", async () => {
-    const ops = appIn("ours", "ops");
+    const ops = appIn("ops");
 
     const answer = await send(ops, "PATCH", `/api/technicians/${IMRAN}`, {
       name: "Imran Ali Qureshi",
@@ -213,7 +206,7 @@ describe("changing a technician", () => {
   });
 
   it("changes only what was sent", async () => {
-    const ops = appIn("ours", "ops");
+    const ops = appIn("ops");
 
     expect((await send(ops, "PATCH", `/api/technicians/${IMRAN}`, { zone: "Sec 1–39" })).status).toBe(200);
 
@@ -225,7 +218,7 @@ describe("changing a technician", () => {
   });
 
   it("refuses the number another active technician holds, and changes nothing", async () => {
-    const ops = appIn("ours", "ops");
+    const ops = appIn("ops");
 
     const answer = await send(ops, "PATCH", `/api/technicians/${IMRAN}`, { name: "Imran Ali", mobile: "9810000008" });
 
@@ -238,7 +231,7 @@ describe("changing a technician", () => {
   });
 
   it("sets his city, takes it away, and refuses a city that is not one of ours", async () => {
-    const ops = appIn("ours", "ops");
+    const ops = appIn("ops");
 
     const set = await send(ops, "PATCH", `/api/technicians/${IMRAN}`, { city: "Noida" });
     const cityOf = () => one("SELECT city, zone FROM technicians WHERE id = ?1", IMRAN);
@@ -259,7 +252,7 @@ describe("changing a technician", () => {
   });
 
   it("answers not found for a technician there is no record of, and refuses an empty change", async () => {
-    const ops = appIn("ours", "ops");
+    const ops = appIn("ops");
 
     const unknown = await send(ops, "PATCH", "/api/technicians/33333333-3333-4333-8333-333333333399", { zone: "X" });
     const empty = await send(ops, "PATCH", `/api/technicians/${IMRAN}`, {});
@@ -269,18 +262,6 @@ describe("changing a technician", () => {
   });
 
   // FSM's sync writes over a technician FSM made, so a change made here would not last the night.
-  it("on FSM's path, leaves a technician FSM made to FSM, and changes one ops added", async () => {
-    const ops = appIn("fsm", "ops");
-    const added = await send(ops, "POST", "/api/technicians", { name: "Naveen Rao", mobile: "9810000007" });
-    const { id } = await added.json<{ id: string }>();
-
-    const fsmMade = await send(ops, "PATCH", `/api/technicians/${IMRAN}`, { zone: "Sec 1–39" });
-    const ours = await send(ops, "PATCH", `/api/technicians/${id}`, { zone: "Sec 1–39" });
-
-    expect(fsmMade.status).toBe(409);
-    expect(await fsmMade.json()).toMatchObject({ error: { code: "managed_in_fsm" } });
-    expect(ours.status).toBe(200);
-  });
 });
 
 describe("switching a technician off", () => {
@@ -294,8 +275,8 @@ describe("switching a technician off", () => {
   });
 
   it("signs him out at once, and his phone hears that he was switched off, not that its session ran out", async () => {
-    const ops = appIn("ours", "ops");
-    const tech = appIn("ours", "tech");
+    const ops = appIn("ops");
+    const tech = appIn("tech");
     const cookie = await signedIn(IMRAN);
 
     const answer = await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
@@ -317,7 +298,7 @@ describe("switching a technician off", () => {
   });
 
   it("gives his visits still to come back as unassigned, and leaves begun, past and others' visits", async () => {
-    const ops = appIn("ours", "ops");
+    const ops = appIn("ops");
 
     const answer = await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
 
@@ -347,7 +328,7 @@ describe("switching a technician off", () => {
   });
 
   it("puts those visits in the dispatch board's tray, and takes his row off the board", async () => {
-    const ops = appIn("ours", "ops");
+    const ops = appIn("ops");
     await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
 
     const board = await (
@@ -362,7 +343,7 @@ describe("switching a technician off", () => {
   });
 
   it("answers the same, and changes nothing more, when he is switched off twice", async () => {
-    const ops = appIn("ours", "ops");
+    const ops = appIn("ops");
     await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
 
     const again = await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
@@ -373,29 +354,16 @@ describe("switching a technician off", () => {
   });
 
   it("answers not found for a technician there is no record of", async () => {
-    const ops = appIn("ours", "ops");
+    const ops = appIn("ops");
     const answer = await send(ops, "POST", "/api/technicians/33333333-3333-4333-8333-333333333399/deactivate");
     expect(answer.status).toBe(404);
-  });
-
-  it("on FSM's path, leaves a technician FSM made to FSM, and his visits with him", async () => {
-    const ops = appIn("fsm", "ops");
-
-    const answer = await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
-
-    expect(answer.status).toBe(409);
-    expect(await answer.json()).toMatchObject({ error: { code: "managed_in_fsm" } });
-    expect(await one("SELECT active FROM technicians WHERE id = ?1", IMRAN)).toEqual({ active: 1 });
-    expect(await one("SELECT technician_id FROM appointments WHERE id = ?1", NEXT_WEEK)).toEqual({
-      technician_id: IMRAN,
-    });
   });
 });
 
 describe("switching a technician back on", () => {
   it("lets him sign in again on his number", async () => {
-    const ops = appIn("ours", "ops");
-    const tech = appIn("ours", "tech");
+    const ops = appIn("ops");
+    const tech = appIn("tech");
     await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
 
     const answer = await send(ops, "POST", `/api/technicians/${IMRAN}/reactivate`);
@@ -407,7 +375,7 @@ describe("switching a technician back on", () => {
   });
 
   it("refuses while another active technician has his number", async () => {
-    const ops = appIn("ours", "ops");
+    const ops = appIn("ops");
     await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
     await send(ops, "POST", "/api/technicians", { name: "Naveen Rao", mobile: "9810000009" });
 
@@ -426,7 +394,6 @@ describe("the roster", () => {
     zone: string | null;
     city: string | null;
     mobile: string | null;
-    editable: boolean;
   }
   interface Roster {
     technicians: Technician[];
@@ -434,24 +401,23 @@ describe("the roster", () => {
     cities: string[];
   }
 
-  const roster = async (record: FieldRecord) =>
-    (await send(appIn(record, "ops"), "GET", "/api/technicians")).json<Roster>();
+  const roster = async () => (await send(appIn("ops"), "GET", "/api/technicians")).json<Roster>();
 
   it("lists the switched-off technicians apart, with each one's number", async () => {
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SAMEER).run();
 
-    const body = await roster("ours");
+    const body = await roster();
 
-    expect(body.technicians).toEqual([expect.objectContaining({ id: IMRAN, mobile: "+919810000009", editable: true })]);
+    expect(body.technicians).toEqual([expect.objectContaining({ id: IMRAN, mobile: "+919810000009" })]);
     expect(body.switched_off).toEqual([
-      { id: SAMEER, name: "Sameer Bhatt", zone: "Sec 1–39", city: null, mobile: "+919810000008", editable: true },
+      { id: SAMEER, name: "Sameer Bhatt", zone: "Sec 1–39", city: null, mobile: "+919810000008" },
     ]);
   });
 
   it("says each technician's city, and the cities one may be given", async () => {
     await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon' WHERE id = ?1").bind(IMRAN).run();
 
-    const body = await roster("ours");
+    const body = await roster();
 
     expect(body.technicians.map(({ id, city }) => ({ id, city }))).toEqual([
       { id: IMRAN, city: "Gurgaon" },
@@ -459,29 +425,14 @@ describe("the roster", () => {
     ]);
     expect(body.cities).toEqual(["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad", "Mumbai", "Bengaluru"]);
   });
-
-  it("on FSM's path, marks only the technicians ops added as theirs to change", async () => {
-    const ops = appIn("fsm", "ops");
-    const added = await send(ops, "POST", "/api/technicians", { name: "Naveen Rao", mobile: "9810000007" });
-    const { id } = await added.json<{ id: string }>();
-
-    const body = await roster("fsm");
-
-    expect(body.technicians.map(({ id: each, editable }) => ({ id: each, editable }))).toEqual([
-      { id: IMRAN, editable: false },
-      { id, editable: true },
-      { id: SAMEER, editable: false },
-    ]);
-  });
 });
 
 describe("the dispatch board", () => {
-  // A visit can still be on a technician who was switched off: one FSM's sync switched off, or one booked onto him
-  // a moment before. It is nobody's job, so it waits in the tray, saying whose it was.
+  // A visit can still be on a technician who was switched off: one booked onto him a moment before. It is nobody's job, so it waits in the tray, saying whose it was.
   it("puts a visit still on a switched-off technician in the tray, and lets ops give it to another", async () => {
     await visit(NEXT_WEEK, { start: "2026-09-22T04:30:00.000Z" });
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();
-    const ops = appIn("fsm", "ops");
+    const ops = appIn("ops");
 
     const board = await (
       await send(ops, "GET", "/api/dispatch?from=2026-09-21")

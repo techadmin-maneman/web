@@ -92,6 +92,8 @@ const SMALL_TABLES = new Set([
   "credit_expiry_cursor",
   // One row, what Phase 2's buckets hold (docs/decisions/0093-the-storage-meter.md).
   "storage_meter",
+  // One row, the dispatch board's version.
+  "board_version",
 ]);
 
 /** Statements that do read a whole table, each with why that is all right. */
@@ -310,7 +312,6 @@ describe("the cron's path, followed from cron.ts", () => {
     expect(CRON_PATH).toEqual(
       expect.arrayContaining([
         "src/scheduled/sweeper.ts",
-        "src/domain/fsm-catalogue.ts",
         "src/domain/ops-settings.ts",
         "src/domain/messages.ts",
         "src/domain/slot-times.ts",

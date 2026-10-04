@@ -468,7 +468,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The profile: name, number, address, consents, and any number change or deletion under way */
+        /** The profile: name, number, address, consents, any number change or deletion under way, and the latest concerns raised */
         get: {
             parameters: {
                 query?: never;
@@ -1429,6 +1429,8 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Payment links not yet paid, the oldest first: a one visit's, once the client is fitted. */
+                            owed: components["schemas"]["OwedPayment"][];
                             entries: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
                             /** @description Every change to the service-visit credits, newest first, which the app lists among the payments. */
                             credits: components["schemas"]["CreditLine"][];
@@ -2619,7 +2621,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Raise a grievance about how the client's data is handled. The same words, still open, are one */
+        /** Raise a grievance about how the client's data is handled. The same words, still open, are one; 5 new ones a day */
         post: {
             parameters: {
                 query?: never;
@@ -2653,6 +2655,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description rate_limited: 5 new grievances a day */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -2668,7 +2679,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "past_day" | "window_passed" | "blackout" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2676,7 +2687,7 @@ export interface components {
                 moved?: {
                     /** @description Their first name, and nothing else of theirs */
                     technician: string;
-                    /** @description When ops moved the job to them; null when it was moved in FSM itself */
+                    /** @description When ops moved the job to them; null where nothing recorded when */
                     at: string | null;
                 };
                 /**
@@ -2786,12 +2797,12 @@ export interface components {
                 place: string;
                 /** @description Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp. */
                 requested: boolean;
-                /** @description The consultation and the first fit in one visit. */
-                one_visit: boolean;
+                /** @description A consultation and fit in one visit asked for on /book: what it costs once fitted, after the code typed there. Null for a consultation alone. */
+                one_visit: components["schemas"]["OneVisitPrice"] | null;
             } | null;
-            /** @description The next visit that has not happened, from FSM: a consultation for a lead. */
+            /** @description The next visit that has not happened: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;
-            /** @description The soonest visit paid for, or booked free, that FSM does not have yet: neither booked nor refunded. It is on its way, or held after FSM refused it, and becomes a visit once FSM takes it (ADR 0095). */
+            /** @description The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is on its way, and becomes a visit once it is booked (ADR 0068). */
             being_booked: {
                 /** @enum {string} */
                 type: "consultation" | "first_fit" | "service" | "replacement";
@@ -2801,11 +2812,13 @@ export interface components {
                 window: "morning" | "afternoon" | "evening";
                 /** @description Paid for in money, rather than free or covered by a credit. */
                 paid: boolean;
-                /** @description A consultation and fit in one visit. */
-                one_visit: boolean;
+                /** @description A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code entered there. Null for any other visit. */
+                one_visit: components["schemas"]["OneVisitPrice"] | null;
                 /** @description Whether the client is told on WhatsApp once it is booked: always for a payment, whose receipt goes whatever their consent, else only with their consent to WhatsApp about visits. */
                 told: boolean;
             } | null;
+            /** @description The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed. */
+            payment_owed: components["schemas"]["OwedPayment"] | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
             /** @description Board B1's one prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies. */
@@ -2881,6 +2894,19 @@ export interface components {
                 } | null;
             };
             referral_reward: components["schemas"]["ReferralReward"];
+            /** @description The invite a client not yet fitted came with, while its free service visits (referral_reward's friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it lapsed. */
+            pending_invite: {
+                /** @description Who sent it, exactly where the invite's own page names them; null where it does not. */
+                referrer_first_name: string | null;
+            } | null;
+        };
+        OneVisitPrice: {
+            /** @description In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced. */
+            amount: number | null;
+            /** @description The hair systems differ in price, so the amount is where they start. */
+            from: boolean;
+            /** @description The discount code on the visit; null for none. */
+            code: string | null;
         };
         VisitSummary: {
             /** Format: uuid */
@@ -2902,18 +2928,35 @@ export interface components {
             service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
-            /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
+            /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
             stage: ("booked" | "in_progress" | "done" | "closing") | null;
             /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
-            /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
+            /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
+            /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
+            one_visit: components["schemas"]["OneVisitPrice"] | null;
         };
         /** @description Display name and initials only. */
         Technician: {
             name: string;
             initials: string;
+        };
+        OwedPayment: {
+            /** Format: uuid */
+            visit_id: string;
+            /**
+             * Format: date
+             * @description India's date of the visit.
+             */
+            date: string;
+            /** @description In paise, GST included, after any code: what the link asks for. */
+            amount: number;
+            /** @description The hair system fitted: "Mane Man Natural hair system". */
+            product: string;
+            /** @description The payment link Razorpay texted the client; null until it has made one. */
+            url: string | null;
         };
         Credits: {
             /** @description Service-visit credits left. */
@@ -2929,6 +2972,8 @@ export interface components {
             /** @description Its code within its kind, which booking it names. */
             tier: string;
             name: string;
+            /** @description The line ops wrote to read under its name; null for none. */
+            description: string | null;
             /** @description How long the visit is booked for. */
             minutes: number;
             price: components["schemas"]["Price"];
@@ -2990,6 +3035,19 @@ export interface components {
                 /** @description Ops' reason, which they write knowing the client reads it. */
                 reason: string | null;
             } | null;
+            /** @description The client's latest 5 concerns about their data, newest first: every one still open, and those answered within 30 days. */
+            grievances: {
+                /** Format: uuid */
+                id: string;
+                text: string;
+                /** @enum {string} */
+                state: "open" | "resolved";
+                /** Format: date-time */
+                raised_at: string;
+                /** @description Ops' answer, which they write knowing the client reads it; null while open. */
+                response: string | null;
+                answered_at: string | null;
+            }[];
         };
         Address: {
             line1: string;
@@ -3086,7 +3144,7 @@ export interface components {
             last_visit_on: string | null;
             /** @description In paise: every payment captured, less what has gone back. A credit adds nothing. */
             spend: number;
-            /** @description The month the piece now in wear falls due, and null when no piece is in wear. A month, not a day: FSM's install date is read again on every sync, so the day can move (ADR 0059). */
+            /** @description The month the piece now in wear falls due, and null when no piece is in wear. A month, not a day (ADR 0059). */
             replacement_due: {
                 month: string;
             } | null;
@@ -3111,18 +3169,20 @@ export interface components {
             service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
-            /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
+            /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
             stage: ("booked" | "in_progress" | "done" | "closing") | null;
             /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
-            /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
+            /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
+            /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
+            one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
-            /** @description Done, partly done, or a no-show: the client was not home. Null until FSM closes it. */
+            /** @description Done, partly done, or a no-show: the client was not home. Null until it is closed. */
             outcome: ("done" | "partial" | "no_show") | null;
-            /** @description The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was recorded, as for a visit closed in FSM's own screens. */
+            /** @description The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was recorded. */
             what_was_done: string[] | null;
             photos: components["schemas"]["PhotoSet"];
             /** @description The visit's invoice, for GET /api/documents/{id}, once Books has issued it. */
@@ -3144,7 +3204,7 @@ export interface components {
             angle: "front" | "top" | "left" | "right" | "hair";
             /** @description Lasts 15 minutes; only the signed-in client can open it. */
             url: string;
-            /** @description Its small copy, for a row of thumbnails, likewise; null for a photograph with none, such as one copied from FSM, which the row shows itself. */
+            /** @description Its small copy, for a row of thumbnails, likewise; null for a photograph with none, which the row shows itself. */
             thumbnail_url: string | null;
             width: number | null;
             height: number | null;
@@ -3532,6 +3592,8 @@ export interface components {
                 name: string;
                 initials: string;
             } | null;
+            /** @description The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it. */
+            change_notice_hours: number;
             /**
              * Format: date
              * @description The last day this visit may be booked on: later days are asked for up to it.
@@ -3550,6 +3612,8 @@ export interface components {
                     end: string;
                     /** @description Who would come: the regular technician, another, or nobody (full). */
                     with: ("regular" | "another") | null;
+                    /** @description Booked now, moving or cancelling it would already cost the client: it starts inside the notice, and its kind is charged there. */
+                    change_charged: boolean;
                 }[];
             }[];
         };

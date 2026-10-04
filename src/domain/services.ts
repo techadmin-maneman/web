@@ -5,13 +5,13 @@
 // is made (src/domain/scheduling.ts), so nothing already sold moves with a change here.
 //
 // Every change is written in one batch with its audit entry (ADR 0031): a change that is not recorded does not
-// happen. FSM's catalogue follows the services, by each one's own item (src/domain/fsm-catalogue.ts).
+// happen. Books' items follow the services, by each one's own item (src/domain/books-items.ts).
 
 import { withGst } from "../config/gst.ts";
 import { PRICE_TIER } from "../config/ops-settings.ts";
 import { VISIT_BLOCKS } from "../config/scheduling.ts";
 import { hasStandardService, STANDARD_TIER, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
-import { isOffered, retireRefusal, SERVICE_NAME, tierCodeOf } from "../policy/services.ts";
+import { isOffered, isServiceDescription, retireRefusal, SERVICE_NAME, tierCodeOf } from "../policy/services.ts";
 import { isServiceLength } from "../policy/visit-length.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import type { Price } from "./price-book.ts";
@@ -22,14 +22,14 @@ export interface Service {
   /** The code the price book prices it under; never changed. */
   readonly tier: string;
   readonly name: string;
-  /** How long FSM books it for, and the time the scheduler keeps (src/policy/visit-length.ts). */
+  /** The line clients read under its name as they choose; null until ops write one. */
+  readonly description: string | null;
+  /** How long it is booked for, and the time the scheduler keeps (src/policy/visit-length.ts). */
   readonly minutes: number;
   /** Its place among its kind's services. */
   readonly sort: number;
   /** India's date from which it is no longer offered; null while it is. */
   readonly retired_date: string | null;
-  /** Its item in FSM's catalogue, once found or made. */
-  readonly fsm_item_id: string | null;
   readonly updated_by: string;
   readonly updated_at: string;
 }
@@ -48,23 +48,17 @@ export interface PricedService extends Service {
 const inOrder = (a: Service, b: Service): number =>
   VISIT_TYPES.indexOf(a.kind) - VISIT_TYPES.indexOf(b.kind) || a.sort - b.sort || a.name.localeCompare(b.name);
 
+const COLUMNS = "kind, tier, name, description, minutes, sort, retired_date, updated_by, updated_at";
+
 /** Every service, offered or retired, in the order the console lists them. */
 export async function allServices(db: D1Database): Promise<Service[]> {
-  const { results } = await db
-    .prepare("SELECT kind, tier, name, minutes, sort, retired_date, fsm_item_id, updated_by, updated_at FROM services")
-    .all<Service>();
+  const { results } = await db.prepare(`SELECT ${COLUMNS} FROM services`).all<Service>();
   return results.sort(inOrder);
 }
 
 /** One service by its kind and tier; null for none. */
 export function serviceOf(db: D1Database, kind: VisitType, tier: string): Promise<Service | null> {
-  return db
-    .prepare(
-      `SELECT kind, tier, name, minutes, sort, retired_date, fsm_item_id, updated_by, updated_at FROM services
-       WHERE kind = ?1 AND tier = ?2`,
-    )
-    .bind(kind, tier)
-    .first<Service>();
+  return db.prepare(`SELECT ${COLUMNS} FROM services WHERE kind = ?1 AND tier = ?2`).bind(kind, tier).first<Service>();
 }
 
 /**
@@ -75,7 +69,7 @@ export function serviceOf(db: D1Database, kind: VisitType, tier: string): Promis
 export async function servicesOnDay(db: D1Database, on: string): Promise<ServiceOnDay[]> {
   const { results } = await db
     .prepare(
-      `SELECT s.kind, s.tier, s.name, s.minutes, s.sort, s.retired_date, s.fsm_item_id, s.updated_by, s.updated_at,
+      `SELECT s.kind, s.tier, s.name, s.description, s.minutes, s.sort, s.retired_date, s.updated_by, s.updated_at,
          (SELECT json_array(b.amount_ex_gst, b.gst_percent) FROM price_book b
            WHERE b.item = s.kind AND b.tier = s.tier AND b.valid_from <= ?1
            ORDER BY b.valid_from DESC LIMIT 1) AS price
@@ -149,7 +143,7 @@ export function offeredProducts(db: D1Database, on: string): Promise<PricedServi
 /**
  * The service a visit of this kind is offered to a client as (docs/decisions/0086-the-next-visit-is-offered.md): the
  * one their last visit of the kind was, while it is offered and priced on the day, else the kind's first offered in
- * the console's order. A visit the mirror knows no service of was the standard one. Null where the kind offers
+ * the console's order. A visit that names no service was the standard one. Null where the kind offers
  * nothing that day.
  */
 export async function serviceToOffer(
@@ -174,7 +168,10 @@ export async function serviceToOffer(
 
 /** Why a change to a service was refused: the box it names, where there is one. */
 export type ServiceRefusal =
-  | { readonly refused: "invalid"; readonly field: "name" | "tier" | "minutes" | "retired_date" | "order" }
+  | {
+      readonly refused: "invalid";
+      readonly field: "name" | "description" | "tier" | "minutes" | "retired_date" | "order";
+    }
   /** Another service already has the name, or this kind the code. */
   | { readonly refused: "taken"; readonly field: "name" | "tier" }
   /** Retiring it would leave its kind, one with a standard service, with nothing to book (src/policy/services.ts). */
@@ -294,9 +291,41 @@ export async function renameService(
   return (await serviceOf(db, kind, tier)) ?? { refused: "not_found" };
 }
 
+/** The line clients read under a service's name. An empty one clears it, so clients read the name alone. */
+export async function describeService(
+  db: D1Database,
+  input: ServiceWrite & { readonly kind: VisitType; readonly tier: string; readonly description: string },
+): Promise<Service | ServiceRefusal> {
+  const { kind, tier, actor, requestId, now } = input;
+  const line = input.description.trim();
+  const service = await serviceOf(db, kind, tier);
+  if (service === null) return { refused: "not_found" };
+  if (!isServiceDescription(line)) return { refused: "invalid", field: "description" };
+  const description = line === "" ? null : line;
+  if (description === service.description) return service;
+  await db.batch([
+    auditStatement(
+      db,
+      {
+        surface: "ops",
+        actor,
+        action: "service.describe",
+        subject: subjectOf(kind, tier),
+        requestId,
+        detail: { from: service.description, to: description },
+      },
+      now,
+    ),
+    db
+      .prepare("UPDATE services SET description = ?3, updated_by = ?4, updated_at = ?5 WHERE kind = ?1 AND tier = ?2")
+      .bind(kind, tier, description, actor.id, now.toISOString()),
+  ]);
+  return (await serviceOf(db, kind, tier)) ?? { refused: "not_found" };
+}
+
 /**
  * A service's new length, which visits booked from now on are held and booked for. A hold made before keeps the
- * length it was made with, and a visit already booked keeps at least the time FSM books it for.
+ * length it was made with, and a visit already booked keeps at least its booked window.
  */
 export async function setServiceLength(
   db: D1Database,
@@ -451,16 +480,4 @@ export async function restoreService(
       .bind(kind, tier, actor.id, now.toISOString()),
   ]);
   return (await serviceOf(db, kind, tier)) ?? { refused: "not_found" };
-}
-
-/**
- * Keeps the FSM item a service was found to be, by name, or was made as, so it is found by its ID from then on,
- * whatever either is renamed to. Not an ops change, so no audit entry: FSM's catalogue is what it records.
- */
-export async function keepFsmItem(db: D1Database, service: Service, fsmItemId: string): Promise<void> {
-  if (service.fsm_item_id === fsmItemId) return;
-  await db
-    .prepare("UPDATE services SET fsm_item_id = ?3 WHERE kind = ?1 AND tier = ?2")
-    .bind(service.kind, service.tier, fsmItemId)
-    .run();
 }

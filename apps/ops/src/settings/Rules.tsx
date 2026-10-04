@@ -245,7 +245,7 @@ function ChoiceField({
   );
 }
 
-/** The extra pair an open-keyed rule needs: a base FSM names, and its own cycle. */
+/** The extra pair an open-keyed rule needs: a base, and its own cycle. */
 function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string, text: string) => void }) {
   const [key, setKey] = useState("");
   const [text, setText] = useState("");

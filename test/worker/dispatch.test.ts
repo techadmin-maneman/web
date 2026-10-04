@@ -7,17 +7,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { recordUtilisation } from "../../src/domain/dispatch.ts";
-import { occupancy, type Day } from "../../src/domain/scheduling.ts";
-import { createCallBudget } from "../../src/lib/call-budget.ts";
-import { createLogger } from "../../src/log.ts";
-import { sweep } from "../../src/scheduled/sweeper.ts";
-import {
-  createStubFsm,
-  EMPTY_FSM,
-  type FsmAppointment,
-  type FsmProvider,
-  type StubFsm,
-} from "../../src/providers/fsm.ts";
+import { NO_VISITS_CONSENT } from "../../src/domain/visit-messages.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const ROHIT = "11111111-1111-4111-8111-111111111111";
@@ -44,25 +34,7 @@ const MINUTES = { consultation: 60, service: 90, replacement: 135, first_fit: 18
 type Kind = keyof typeof MINUTES;
 
 let ops: App;
-let fsm: StubFsm;
 let messageQueue: ReturnType<typeof fakeQueue>;
-
-const fsmAppointment = (id: string): FsmAppointment => ({
-  id,
-  name: `AP-${id}`,
-  status: "Scheduled",
-  workOrderId: `wo-${id}`,
-  contactId: "contact-1",
-  scheduledStart: null,
-  scheduledEnd: null,
-  actualStart: null,
-  actualEnd: null,
-  technicianIds: ["resource-1"],
-  serviceIds: [],
-  serviceCity: "Gurgaon",
-  servicePincode: "122018",
-  modifiedAt: "2026-09-21T12:00:00+05:30",
-});
 
 async function insertJob(
   id: string,
@@ -74,17 +46,16 @@ async function insertJob(
     status?: string;
     city?: string;
     pincode?: string;
+    /** A visit FSM never held, whose record is our own database. */
   },
 ): Promise<void> {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
-       window_end, technician_id, service_city, service_pincode, fsm_modified_at, synced_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?12)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id,
+       service_city, service_pincode, synced_at)
+     VALUES (?1, ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
   )
     .bind(
       id,
-      `ap-${id}`,
-      `wo-${id}`,
       options.person === undefined ? ROHIT : options.person,
       options.type,
       options.status ?? "scheduled",
@@ -100,23 +71,18 @@ async function insertJob(
 
 beforeEach(async () => {
   await markDatabase();
-  fsm = createStubFsm({
-    ...EMPTY_FSM,
-    appointments: [FIT, REPLACEMENT, A, B].map((id) => fsmAppointment(`ap-${id}`)),
-  });
   messageQueue = fakeQueue();
-  ops = appFor("local", fakeDependencies({ fsm }), {}, "ops");
+  ops = appFor("local", fakeDependencies(), {}, "ops");
 
   await env.DB.prepare(
     `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, updated_at)
-     VALUES (?1, 'resource-1', 'Imran Qureshi', 'IQ', 1, 'Sec 40–65', ?3),
-            (?2, 'resource-2', 'Sameer Bhatt', 'SB', 1, 'Sec 1–39', ?3)`,
+     VALUES (?1, ?1, 'Imran Qureshi', 'IQ', 1, 'Sec 40–65', ?3),
+            (?2, ?2, 'Sameer Bhatt', 'SB', 1, 'Sec 1–39', ?3)`,
   )
     .bind(IMRAN, SAMEER, NOW.toISOString())
     .run();
   await env.DB.prepare(
-    `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id)
-     VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra', 'contact-1')`,
+    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
   )
     .bind(ROHIT, NOW.toISOString())
     .run();
@@ -136,7 +102,7 @@ const opsPost = (path: string, body: unknown, app: App = ops) =>
     bindings(),
   );
 
-/** The job as the mirror has it now, which is what a board loaded now would show. */
+/** The job as it stands now, which is what a board loaded now would show. */
 const shown = (id: string) =>
   env.DB.prepare("SELECT technician_id, window_start FROM appointments WHERE id = ?1")
     .bind(id)
@@ -151,13 +117,6 @@ async function move(body: { appointment_id: string } & Record<string, unknown>, 
     app,
   );
 }
-
-const startOf = async (id: string) =>
-  (
-    await env.DB.prepare("SELECT window_start, technician_id FROM appointments WHERE id = ?1")
-      .bind(id)
-      .first<{ window_start: string; technician_id: string | null }>()
-  )?.window_start;
 
 describe("a change of technician alone", () => {
   // BIZ-18: a first fit at 12:00 given to a technician whose replacement runs from 10:30 to 12:45.
@@ -183,9 +142,7 @@ describe("a change of technician alone", () => {
       expect(answer.status).toBe(409);
       expect(await answer.json()).toMatchObject({ error: { code: "does_not_fit" } });
     }
-    expect(fsm.made.assigned).toEqual([]);
-    expect(fsm.made.rescheduled).toEqual([]);
-    expect(await startOf(FIT)).toBe(TUESDAY["12:00"]);
+    expect(await shown(FIT)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["12:00"] });
   });
 
   it("gives the visit to the other technician at the same time, and messages nobody", async () => {
@@ -201,10 +158,8 @@ describe("a change of technician alone", () => {
 
     expect(answer.status).toBe(200);
     expect(await answer.json()).toMatchObject({ client_notice: "unchanged" });
-    expect(fsm.made.assigned).toEqual([{ appointmentId: `ap-${FIT}`, technicianId: "resource-2" }]);
-    // The time does not move, so FSM is not asked to move it, and the client has nothing to be told.
-    expect(fsm.made.rescheduled).toEqual([]);
-    expect(await startOf(FIT)).toBe(TUESDAY["12:00"]);
+    // The time does not move, so the client has nothing to be told.
+    expect(await shown(FIT)).toEqual({ technician_id: SAMEER, window_start: TUESDAY["12:00"] });
     expect(messageQueue.sent).toEqual([]);
     const messages = await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first<{ n: number }>();
     expect(messages?.n).toBe(0);
@@ -226,7 +181,7 @@ describe("a visit with no room", () => {
 
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "does_not_fit" } });
-    expect(fsm.made.assigned).toEqual([]);
+    expect(await shown(FIT)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["12:00"] });
   });
 
   it("places a visit moved to another day wherever that window has room", async () => {
@@ -243,33 +198,10 @@ describe("a visit with no room", () => {
     });
 
     expect(answer.status).toBe(200);
-    expect(fsm.made.rescheduled).toEqual([
-      { appointmentId: `ap-${FIT}`, start: "2026-09-23T14:00:00+05:30", end: "2026-09-23T17:00:00+05:30" },
-    ]);
+    expect(await shown(FIT)).toEqual({ technician_id: SAMEER, window_start: "2026-09-23T08:30:00.000Z" });
+    expect((await claims()).results).toEqual([]);
   });
 });
-
-/** Ops' console, on an FSM that runs `during` before its first write, as a slow FSM leaves a move open. */
-function slowOps(during: () => Promise<void>): App {
-  let ran = false;
-  const once = async () => {
-    if (ran) return;
-    ran = true;
-    await during();
-  };
-  const slow: FsmProvider = {
-    ...fsm,
-    assignVisit: async (appointmentId, technicianId) => {
-      await once();
-      await fsm.assignVisit(appointmentId, technicianId);
-    },
-    rescheduleVisit: async (appointmentId, times) => {
-      await once();
-      await fsm.rescheduleVisit(appointmentId, times);
-    },
-  };
-  return appFor("local", fakeDependencies({ fsm: slow }), {}, "ops");
-}
 
 const claims = () =>
   env.DB.prepare("SELECT technician_id, date, claim, hold_id, move_id FROM slot_claims ORDER BY claim").all<{
@@ -320,105 +252,6 @@ describe("a move and the time it goes to", () => {
     await insertJob(B, { type: "service", start: TUESDAY["12:00"], technician: IMRAN });
   });
 
-  // BIZ-19: the check, FSM and the mirror were three steps with nothing holding the time between them.
-  it("claims the new time before FSM is written, and lets it go once FSM has it", async () => {
-    let during: Awaited<ReturnType<typeof claims>>["results"] = [];
-    const answer = await move(
-      toSameerWednesdayMorning(A),
-      slowOps(async () => {
-        during = (await claims()).results;
-      }),
-    );
-
-    expect(answer.status).toBe(200);
-    expect(during.map(({ technician_id, date, claim, hold_id }) => ({ technician_id, date, claim, hold_id }))).toEqual([
-      { technician_id: SAMEER, date: WEDNESDAY, claim: "unit:0", hold_id: null },
-      { technician_id: SAMEER, date: WEDNESDAY, claim: "unit:1", hold_id: null },
-      { technician_id: SAMEER, date: WEDNESDAY, claim: "window:morning", hold_id: null },
-    ]);
-    expect(during.every((claim) => claim.move_id !== null)).toBe(true);
-    expect((await claims()).results).toEqual([]);
-    expect(await shown(A)).toEqual({ technician_id: SAMEER, window_start: "2026-09-23T03:30:00.000Z" });
-  });
-
-  it("keeps that time from a client's booking while FSM is written", async () => {
-    let day: Day | undefined;
-    await move(
-      toSameerWednesdayMorning(A),
-      slowOps(async () => {
-        day = (await occupancy(env.DB, WEDNESDAY, WEDNESDAY, NOW))(SAMEER, WEDNESDAY);
-      }),
-    );
-
-    expect(day?.windows.has("morning")).toBe(true);
-    expect([...(day?.units ?? [])].sort()).toEqual([0, 1]);
-  });
-
-  it("refuses a second move onto that time while the first is still with FSM", async () => {
-    let second: Response | undefined;
-    const first = await move(
-      toSameerWednesdayMorning(A),
-      slowOps(async () => {
-        second = await move(toSameerWednesdayMorning(B));
-      }),
-    );
-
-    expect(first.status).toBe(200);
-    expect(second?.status).toBe(409);
-    expect(await second?.json()).toMatchObject({ error: { code: "clash" } });
-    expect(fsm.made.assigned).toEqual([{ appointmentId: `ap-${A}`, technicianId: "resource-2" }]);
-    expect(await shown(B)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["12:00"] });
-  });
-
-  it("answers a second move of the same job, made while the first is with FSM, as superseded", async () => {
-    let second: Response | undefined;
-    await move(
-      toSameerWednesdayMorning(A),
-      slowOps(async () => {
-        second = await move({ ...toSameerWednesdayMorning(A), date: "2026-09-24" });
-      }),
-    );
-
-    expect(second?.status).toBe(409);
-    expect(await second?.json()).toMatchObject({ error: { code: "superseded", fields: ["moving"] } });
-    expect(fsm.made.rescheduled).toHaveLength(1);
-  });
-
-  it("lets the time go when FSM refuses the move", async () => {
-    fsm.failNext("assignVisit", "FSM said 400");
-
-    const answer = await move(toSameerWednesdayMorning(A));
-
-    expect(answer.status).toBe(502);
-    expect((await claims()).results).toEqual([]);
-    expect(await shown(A)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["09:00"] });
-  });
-
-  // INT-25: the technician went through and the time did not, and ops were told nothing had moved.
-  it("reads the job again from FSM when FSM took the technician and not the time, and says so", async () => {
-    // FSM as it stands after the half: the job on Sameer, at its old time.
-    const halfway: FsmProvider = {
-      ...fsm,
-      appointment: (id) =>
-        Promise.resolve({
-          ...fsmAppointment(id),
-          technicianIds: ["resource-2"],
-          scheduledStart: "2026-09-22T09:00:00+05:30",
-          scheduledEnd: "2026-09-22T10:30:00+05:30",
-        }),
-    };
-    fsm.failNext("rescheduleVisit", "FSM said 400");
-    const app = appFor("local", fakeDependencies({ fsm: halfway }), {}, "ops");
-
-    const answer = await move(toSameerWednesdayMorning(A), app);
-
-    expect(answer.status).toBe(502);
-    expect(await answer.json()).toMatchObject({ error: { code: "fsm_partly" } });
-    expect(fsm.made.assigned).toHaveLength(1);
-    expect(await shown(A)).toEqual({ technician_id: SAMEER, window_start: TUESDAY["09:00"] });
-    expect((await claims()).results).toEqual([]);
-  });
-
   // ADR 0068: a paid hold keeps its time until it is booked or refunded, whatever else happens.
   it("never lets go of a paid hold's time, nor writes over it", async () => {
     const hold = await holdOnWednesday({ paid: true, expiresAt: minutesBeforeNow(60) });
@@ -438,72 +271,6 @@ describe("a move and the time it goes to", () => {
 
     expect(answer.status).toBe(200);
     expect(await holdState(hold)).toBe("released");
-  });
-
-  it("has the sweeper take back the time of a move that never finished, for the next client's hold", async () => {
-    const open = crypto.randomUUID();
-    await env.DB.batch([
-      env.DB.prepare(
-        `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
-           reason, actor, fsm_write_state, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'zone_rebalance', 'ops@example.test', 'pending', ?7, ?7)`,
-      ).bind(open, B, IMRAN, SAMEER, TUESDAY["12:00"], "2026-09-23T03:30:00.000Z", minutesBeforeNow(6)),
-      env.DB.prepare(
-        "INSERT INTO slot_claims (technician_id, date, claim, move_id) VALUES (?1, ?2, 'window:morning', ?3)",
-      ).bind(SAMEER, WEDNESDAY, open),
-    ]);
-    const queues = {
-      CRM_QUEUE: fakeQueue(),
-      RENDER_QUEUE: fakeQueue(),
-      MESSAGE_QUEUE: fakeQueue(),
-      FSM_QUEUE: fakeQueue(),
-    };
-
-    await sweep(
-      { DB: env.DB, UPLOADS: env.UPLOADS, RESULTS: env.RESULTS, CLIENT_PHOTOS: env.CLIENT_PHOTOS, ...queues },
-      fakeDependencies(),
-      createLogger(),
-      {
-        budget: createCallBudget(Infinity),
-      },
-    );
-
-    expect((await claims()).results).toEqual([]);
-    const closed = await env.DB.prepare("SELECT fsm_write_state FROM dispatch_moves WHERE id = ?1")
-      .bind(open)
-      .first<{ fsm_write_state: string }>();
-    expect(closed?.fsm_write_state).toBe("rejected");
-  });
-
-  it("takes back the time of a move that never finished, five minutes on, and not before", async () => {
-    const open = crypto.randomUUID();
-    await env.DB.batch([
-      env.DB.prepare(
-        `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
-           reason, actor, fsm_write_state, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'zone_rebalance', 'ops@example.test', 'pending', ?7, ?7)`,
-      ).bind(open, B, IMRAN, SAMEER, TUESDAY["12:00"], "2026-09-23T03:30:00.000Z", minutesBeforeNow(2)),
-      ...["unit:0", "unit:1", "window:morning"].map((claim) =>
-        env.DB.prepare("INSERT INTO slot_claims (technician_id, date, claim, move_id) VALUES (?1, ?2, ?3, ?4)").bind(
-          SAMEER,
-          WEDNESDAY,
-          claim,
-          open,
-        ),
-      ),
-    ]);
-
-    expect((await move(toSameerWednesdayMorning(A))).status).toBe(409);
-
-    await env.DB.prepare("UPDATE dispatch_moves SET created_at = ?1 WHERE id = ?2")
-      .bind(minutesBeforeNow(6), open)
-      .run();
-    expect((await move(toSameerWednesdayMorning(A))).status).toBe(200);
-    const abandoned = await env.DB.prepare("SELECT fsm_write_state, fsm_error FROM dispatch_moves WHERE id = ?1")
-      .bind(open)
-      .first<{ fsm_write_state: string; fsm_error: string }>();
-    expect(abandoned?.fsm_write_state).toBe("rejected");
-    expect(abandoned?.fsm_error).toContain("never finished");
   });
 });
 
@@ -526,8 +293,7 @@ describe("a move made from a board that has gone stale", () => {
     expect(await technician.json()).toMatchObject({ error: { code: "superseded", fields: ["technician"] } });
     expect(await time.json()).toMatchObject({ error: { code: "superseded", fields: ["time"] } });
     expect(await both.json()).toMatchObject({ error: { code: "superseded", fields: ["technician", "time"] } });
-    expect(fsm.made.assigned).toEqual([]);
-    expect(fsm.made.rescheduled).toEqual([]);
+    expect(await shown(A)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["09:00"] });
   });
 
   it("assigns a job from the tray only while it is still in the tray", async () => {
@@ -670,7 +436,7 @@ describe("telling the client of a move", () => {
       expect.objectContaining({
         id: moveId,
         person: { id: ROHIT, name: "Rohit Malhotra", mobile: "+919810000001" },
-        detail: "2026-09-23T03:30:00.000Z",
+        detail: "2026-09-23T03:30:00.000Z no_consent",
         visit: { id: A, starts_at: "2026-09-23T03:30:00.000Z" },
       }),
     ]);
@@ -694,9 +460,27 @@ describe("telling the client of a move", () => {
     const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
 
     // The consumer found the consent withdrawn by the time it sent.
-    await env.DB.prepare("UPDATE outbound_messages SET state = 'skipped'").run();
+    await env.DB.prepare("UPDATE outbound_messages SET state = 'skipped', last_error = ?1")
+      .bind(NO_VISITS_CONSENT)
+      .run();
 
-    expect((await untoldTasks()).map((task) => task.id)).toEqual([moveId]);
+    expect(await untoldTasks()).toEqual([
+      expect.objectContaining({ id: moveId, detail: "2026-09-23T03:30:00.000Z no_consent" }),
+    ]);
+  });
+
+  // BK-20: a WhatsApp that failed read as "not on WhatsApp", for a client who had agreed to it.
+  it("says the WhatsApp did not go, not that the client never agreed, where it failed", async () => {
+    await agreeToVisitMessages(true);
+    const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+
+    await env.DB.prepare("UPDATE outbound_messages SET state = 'failed', last_error = 'the bridge is down'").run();
+
+    expect(await untoldTasks()).toEqual([
+      expect.objectContaining({ id: moveId, detail: "2026-09-23T03:30:00.000Z not_sent" }),
+    ]);
+    const block = (await board("from=2026-09-22")).technicians[1]?.days[1]?.blocks[0];
+    expect(block?.untold).toEqual({ move_id: moveId, starts_at: "2026-09-23T03:30:00.000Z", reason: "not_sent" });
   });
 
   it("drops the task when a later move tells the client, or the visit has gone", async () => {
@@ -770,7 +554,7 @@ describe("what the board carries of each visit", () => {
   });
 
   // The move panel says the visit is inside its notice, which each booking keeps as it was sold
-  // (docs/decisions/0088-every-policy-in-the-console.md); a visit ops booked in FSM takes the notice in force.
+  // (docs/decisions/0088-every-policy-in-the-console.md); a visit no hold sold takes the notice in force.
   it("carries the notice each visit was sold under, or the one in force for a visit no hold sold", async () => {
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
     await insertJob(B, { type: "service", start: TUESDAY["12:00"], technician: IMRAN });
@@ -786,7 +570,7 @@ describe("what the board carries of each visit", () => {
     )
       .bind(NOW.toISOString())
       .run();
-    ops = appFor("local", fakeDependencies({ fsm }), {}, "ops");
+    ops = appFor("local", fakeDependencies(), {}, "ops");
 
     const blocks = (await board("from=2026-09-22")).technicians[0]?.days[0]?.blocks;
     expect(blocks?.map((block) => block.notice_hours)).toEqual([12, 48]);
@@ -846,7 +630,7 @@ describe("what the board carries of each visit", () => {
     const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
 
     const block = (await board("from=2026-09-22")).technicians[1]?.days[1]?.blocks[0];
-    expect(block?.untold).toEqual({ move_id: moveId, starts_at: "2026-09-23T03:30:00.000Z" });
+    expect(block?.untold).toEqual({ move_id: moveId, starts_at: "2026-09-23T03:30:00.000Z", reason: "no_consent" });
   });
 
   it("carries no client for one who has been erased", async () => {
@@ -868,7 +652,8 @@ describe("what the board carries of each visit", () => {
 
 interface RoomBody {
   appointment_id: string;
-  rooms: { technician_id: string; date: string; windows: string[] }[];
+  rooms: { technician_id: string; date: string; windows: string[]; starts: { window: string; starts_at: string }[] }[];
+  blackouts: string[];
 }
 
 const roomFor = (id: string, from: string) =>
@@ -904,6 +689,166 @@ describe("where a job in hand can go", () => {
   it("answers not found for a job no longer live", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN, status: "completed" });
     expect((await roomFor(FIT, "2026-09-22")).status).toBe(404);
+  });
+});
+
+/** Monday 21 September, today, in India, as UTC: each half-slot's start. NOW is 12:00. */
+const TODAY = {
+  date: "2026-09-21",
+  "09:00": "2026-09-21T03:30:00.000Z",
+  "12:00": "2026-09-21T06:30:00.000Z",
+  "13:00": "2026-09-21T07:30:00.000Z",
+  "16:00": "2026-09-21T10:30:00.000Z",
+} as const;
+
+const dispatchMoves = () =>
+  env.DB.prepare("SELECT appointment_id, now_start, blackout_reason FROM dispatch_moves").all<{
+    appointment_id: string;
+    now_start: string;
+    blackout_reason: string | null;
+  }>();
+
+// BK-17, FLD-23: at 09:58 four visits moved to that morning all landed at 09:00, at 10:02 one landed at 09:00 to
+// 10:00, and a move to yesterday answered 200. The technician and the client were told a time nobody could meet.
+describe("a move lands only at a start still ahead", () => {
+  beforeEach(async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+  });
+
+  it("takes today's window at its first start still to come, not one already under way", async () => {
+    const answer = await move({
+      appointment_id: A,
+      technician_id: SAMEER,
+      date: TODAY.date,
+      window: "afternoon",
+      reason: "client_asked",
+    });
+
+    expect(answer.status).toBe(200);
+    // 12:00 is now, so the afternoon's next start, 13:00, is where it lands.
+    expect(await shown(A)).toEqual({ technician_id: SAMEER, window_start: TODAY["13:00"] });
+  });
+
+  it("refuses today's window once every start in it has passed, and a day gone, writing nothing", async () => {
+    const morning = await move({ appointment_id: A, date: TODAY.date, window: "morning", reason: "client_asked" });
+    const yesterday = await move({ appointment_id: A, date: "2026-09-20", window: "evening", reason: "client_asked" });
+
+    expect(morning.status).toBe(409);
+    expect(await morning.json()).toMatchObject({ error: { code: "window_passed" } });
+    expect(yesterday.status).toBe(409);
+    expect(await yesterday.json()).toMatchObject({ error: { code: "past_day" } });
+    expect((await dispatchMoves()).results).toEqual([]);
+    expect(await shown(A)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["09:00"] });
+  });
+
+  it("moves a visit whose own start has come to the window's next start, and tells the client of it", async () => {
+    await insertJob(B, { type: "service", start: TODAY["12:00"], technician: IMRAN });
+
+    const answer = await move({ appointment_id: B, date: TODAY.date, window: "afternoon", reason: "running_over" });
+
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toMatchObject({ client_notice: "call" });
+    expect(await shown(B)).toEqual({ technician_id: IMRAN, window_start: TODAY["13:00"] });
+  });
+
+  it("gives a visit whose window has passed to another technician only at a later start", async () => {
+    await insertJob(B, { type: "service", start: TODAY["09:00"], technician: IMRAN });
+
+    const sameTime = await move({
+      appointment_id: B,
+      technician_id: SAMEER,
+      date: TODAY.date,
+      window: "morning",
+      reason: "technician_unavailable",
+    });
+
+    expect(sameTime.status).toBe(409);
+    expect(await sameTime.json()).toMatchObject({ error: { code: "window_passed" } });
+    expect(await shown(B)).toEqual({ technician_id: IMRAN, window_start: TODAY["09:00"] });
+  });
+
+  it("offers today only at starts still ahead, with the start each window would take, and no day gone", async () => {
+    const answer = await roomFor(A, "2026-09-20");
+    expect(answer.status).toBe(200);
+    const { rooms } = await answer.json<RoomBody>();
+    const roomOf = (technician: string, date: string) =>
+      rooms.find((room) => room.technician_id === technician && room.date === date);
+
+    expect(roomOf(SAMEER, "2026-09-20")).toBeUndefined();
+    expect(roomOf(SAMEER, TODAY.date)).toEqual({
+      technician_id: SAMEER,
+      date: TODAY.date,
+      windows: ["afternoon", "evening"],
+      starts: [
+        { window: "afternoon", starts_at: TODAY["13:00"] },
+        { window: "evening", starts_at: TODAY["16:00"] },
+      ],
+    });
+    // Imran's Tuesday morning is where it already is.
+    expect(roomOf(IMRAN, "2026-09-22")?.starts).toEqual([
+      { window: "afternoon", starts_at: TUESDAY["12:00"] },
+      { window: "evening", starts_at: "2026-09-22T10:30:00.000Z" },
+    ]);
+  });
+});
+
+// Owner decision 16: a move onto a blacked-out day is allowed, with a warning and a typed reason kept with the move.
+describe("a move onto a blacked-out day", () => {
+  const ontoWednesday = (id: string, extra: Record<string, unknown> = {}) =>
+    move({ appointment_id: id, date: WEDNESDAY, window: "morning", reason: "client_asked", ...extra });
+
+  beforeEach(async () => {
+    await env.DB.prepare("INSERT INTO visit_blackouts (date, reason) VALUES (?1, 'Dussehra')").bind(WEDNESDAY).run();
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+  });
+
+  it("is refused without a reason, and nothing is written", async () => {
+    const answer = await ontoWednesday(A);
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "blackout" } });
+    expect((await dispatchMoves()).results).toEqual([]);
+  });
+
+  it("refuses a reason of nothing but spaces", async () => {
+    const answer = await ontoWednesday(A, { blackout_reason: "   " });
+    expect(answer.status).toBe(400);
+  });
+
+  it("goes ahead with a reason, kept with the move", async () => {
+    const reason = "The client's only free day; Imran agreed to work it";
+
+    const answer = await ontoWednesday(A, { blackout_reason: reason });
+
+    expect(answer.status).toBe(200);
+    expect((await dispatchMoves()).results).toEqual([
+      expect.objectContaining({ appointment_id: A, blackout_reason: reason }),
+    ]);
+    expect(await shown(A)).toEqual({ technician_id: IMRAN, window_start: "2026-09-23T03:30:00.000Z" });
+  });
+
+  it("keeps no reason for a move onto any other day", async () => {
+    const answer = await move({
+      appointment_id: A,
+      date: "2026-09-24",
+      window: "morning",
+      reason: "client_asked",
+      blackout_reason: "Sent by habit",
+    });
+
+    expect(answer.status).toBe(200);
+    expect((await dispatchMoves()).results[0]?.blackout_reason).toBeNull();
+  });
+
+  it("is offered on the board, which is told the day is blacked out", async () => {
+    const { rooms, blackouts } = await (await roomFor(A, "2026-09-22")).json<RoomBody>();
+
+    expect(blackouts).toEqual([WEDNESDAY]);
+    expect(rooms.find((room) => room.technician_id === SAMEER && room.date === WEDNESDAY)?.windows).toEqual([
+      "morning",
+      "afternoon",
+      "evening",
+    ]);
   });
 });
 
@@ -962,5 +907,93 @@ describe("leave recorded over jobs already booked", () => {
     await opsPost(`/api/technicians/${SAMEER}/leave`, { from: WEDNESDAY, to: WEDNESDAY });
     await env.DB.prepare("UPDATE appointments SET technician_id = ?1 WHERE id = ?2").bind(IMRAN, A).run();
     expect(await tasksOf("leave_conflict")).toEqual([]);
+  });
+});
+
+// PLAT-12: the open board read itself in full every minute, hundreds of rows each time, and so spent D1's day of
+// reads at a few hundred clients. It now asks for this number every minute and reads itself only when it has moved.
+describe("the board's version", () => {
+  const version = async (): Promise<number> => {
+    const answer = await request(ops, "/api/dispatch/version");
+    expect(answer.status).toBe(200);
+    return (await answer.json<{ version: number }>()).version;
+  };
+  const write =
+    (sql: string, ...values: unknown[]) =>
+    async (): Promise<void> => {
+      await env.DB.prepare(sql)
+        .bind(...values)
+        .run();
+    };
+
+  it("is the one the board was read at, until something on it changes", async () => {
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+    const before = await version();
+
+    const board = await (await request(ops, "/api/dispatch")).json<{ version: number }>();
+
+    expect(board.version).toBe(before);
+    expect(await version()).toBe(before);
+  });
+
+  it("moves for a visit booked, moved or cancelled, leave, a technician changed and new slot times", async () => {
+    const changes: [string, () => Promise<unknown>][] = [
+      ["visit booked", () => insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN })],
+      ["visit moved", () => move({ appointment_id: FIT, technician_id: SAMEER, reason: "zone_rebalance" })],
+      ["leave given", () => opsPost(`/api/technicians/${SAMEER}/leave`, { from: WEDNESDAY, to: WEDNESDAY })],
+      [
+        "leave taken back",
+        write("UPDATE technician_leave SET cancelled_at = ?1, cancelled_by = 'ops'", NOW.toISOString()),
+      ],
+      ["technician renamed", write("UPDATE technicians SET name = 'Imran Q.' WHERE id = ?1", IMRAN)],
+      ["technician switched off", write("UPDATE technicians SET active = 0 WHERE id = ?1", IMRAN)],
+      [
+        "slot times set",
+        write(
+          `INSERT INTO slot_times (id, applies_from, unit_starts, day_end, set_by, set_at)
+           VALUES ('st-1', '2026-10-01', '["09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00"]', '19:00',
+             'ops', ?1)`,
+          NOW.toISOString(),
+        ),
+      ],
+      ["visit cancelled", write("UPDATE appointments SET status = 'cancelled' WHERE id = ?1", FIT)],
+    ];
+
+    const unmoved: string[] = [];
+    for (const [change, make] of changes) {
+      const before = await version();
+      await make();
+      if ((await version()) <= before) unmoved.push(change);
+    }
+
+    expect(unmoved).toEqual([]);
+  });
+
+  it("stays where it is when the sync or the invoice passes write what the board does not draw", async () => {
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+    const before = await version();
+
+    await env.DB.batch([
+      env.DB.prepare(
+        `UPDATE appointments SET synced_at = ?2, fsm_modified_at = ?2, invoice_checked_at = ?2, client_note = 'Gate 2',
+           status = status, technician_id = technician_id, window_start = window_start
+         WHERE id = ?1`,
+      ).bind(FIT, NOW.toISOString()),
+      env.DB.prepare("UPDATE technicians SET updated_at = ?2, name = name, active = active WHERE id = ?1").bind(
+        IMRAN,
+        NOW.toISOString(),
+      ),
+    ]);
+
+    expect(await version()).toBe(before);
+  });
+
+  it("is asked for without a line in the audit log, since it names nobody", async () => {
+    const entries = async () => (await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log").first<{ n: number }>())?.n;
+    const before = await entries();
+
+    await version();
+
+    expect(await entries()).toBe(before);
   });
 });

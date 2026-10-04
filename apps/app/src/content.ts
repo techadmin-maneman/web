@@ -41,6 +41,8 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
 };
 
 export const login = {
+  /** Under a limit on codes, on the number and the code screens. */
+  messageUs: "Message us on WhatsApp",
   mobile: {
     title: "Your mobile number",
     prefix: "+91",
@@ -132,10 +134,21 @@ export const VISIT_TYPES = {
   service: "Service visit",
   replacement: "Replacement piece",
 } as const;
-// PLACEHOLDER: a visit whose FSM service item is none of the four.
+// PLACEHOLDER: a visit of none of the four kinds.
 export const OTHER_VISIT = "Visit";
 // PLACEHOLDER: a consultation and fit in one visit, as the site and the technician's phone call it.
 export const ONE_VISIT = "Consultation and fit";
+
+/** How long a visit takes: "3 hours", "1 hour 30 minutes". */
+export function visitLength(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  const parts = [
+    hours === 0 ? "" : `${String(hours)} ${hours === 1 ? "hour" : "hours"}`,
+    rest === 0 ? "" : `${String(rest)} minutes`,
+  ];
+  return parts.filter((part) => part !== "").join(" ");
+}
 
 /** A price's GST, beneath the amount charged once GST applies: "Rs. 30,000 + Rs. 5,400 GST". */
 export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
@@ -177,7 +190,7 @@ const freeVisitsTile = {
   tonight: "tonight",
 };
 
-/** The booking sheet's words for a paid visit still being written to FSM, which Home repeats while it waits. */
+/** The booking sheet's words for a paid visit still being booked, which Home repeats while it waits. */
 const PAID_IN = "Your payment is in. We are booking your visit.";
 const TOLD_WHEN_BOOKED = "We will message you on WhatsApp when the visit is booked.";
 
@@ -220,11 +233,12 @@ export const home = {
     invoice: (what: string, date: string) => `The invoice for your ${what.toLowerCase()} on ${date} is ready.`,
     openInvoice: "Open the invoice",
   },
-  /** A visit FSM has not closed, once it has begun (LIFE-03). PLACEHOLDER: the design draws neither. */
+  /** A visit not yet closed, once it has begun (LIFE-03). PLACEHOLDER: the design draws neither. */
   stages: { in_progress: "Today · in progress", done: "Done · notes on the way", closing: "Wrapping up" },
   next: {
     label: "Your next visit",
-    length: (what: string, minutes: number) => `${what} · ${String(minutes)} minutes`,
+    /** "Service visit · 1 hour 30 minutes". */
+    length: (what: string, minutes: number) => `${what} · ${visitLength(minutes)}`,
     // PLACEHOLDER: the design draws no Home for a fitted client with nothing booked.
     none: "Nothing booked yet.",
     /** Board C1's button, which Home's card and Visits both show. */
@@ -246,8 +260,35 @@ export const home = {
     ],
   },
   /**
-   * A visit paid for, or booked free, that FSM does not have yet (docs/decisions/0095-a-booking-fsm-refuses-is-held.md):
-   * the booking sheet's own words for a booking being written. PLACEHOLDER: the free line, and the design draws none.
+   * PLACEHOLDER, every word: a consultation and fit in one visit, on its card and beneath it. No board draws it; the
+   * owner's words are owed. Its price is GST included, after any discount code.
+   */
+  oneVisit: {
+    label: "Your consultation and fit",
+    price: (amount: string) => `${amount}, only if you go ahead`,
+    /** The hair systems differ in price: what the least of them costs. */
+    from: (amount: string) => `From ${amount}, only if you go ahead`,
+    unpriced: "You pay only if you go ahead",
+    covered: (code: string) => `Nothing to pay: code ${code} covers it`,
+    code: (code: string) => `Code ${code} applied`,
+    paidBy: "Paid once fitted, by a link we text you",
+    expect: [
+      "Your scalp measured and your colour matched.",
+      "Choose your hair system, fitted there and then.",
+      "Go ahead and pay by the link we text you. Decide against it and pay nothing.",
+    ],
+  },
+  /** PLACEHOLDER: no board draws it. A one visit the client was fitted at and has not paid for yet. */
+  owed: {
+    label: "Payment owed",
+    line: (product: string, amount: string) => `${product} · ${amount}`,
+    pay: "Pay now",
+    newTab: "opens Razorpay in a new tab",
+    onItsWay: "Your payment link is on its way by text.",
+  },
+  /**
+   * A visit paid for, or booked free, that is not booked yet (docs/decisions/0068-a-paid-hold-is-kept.md): the booking
+   * sheet's own words for a booking being written. PLACEHOLDER: the free line, and the design draws none.
    */
   beingBooked: {
     paid: PAID_IN,
@@ -298,9 +339,7 @@ export const visits = {
    * one sentence about a replacement, "Your replacement piece is due in
    * March.", and that sentence is kept word for word.
    *
-   * A month and never a day: `syncPieces` works the date out afresh from FSM's
-   * install date on every sync, so a day shown here could move under the client
-   * who read it (ADR 0059). Nothing here is shown at all until there is
+   * A month and never a day (ADR 0059). Nothing here is shown at all until there is
    * something true to say.
    */
   record: {
@@ -309,7 +348,7 @@ export const visits = {
     /** Past its month, the same fact in the tense it is now true in. */
     overdue: (month: string) => `Your replacement piece was due in ${month}.`,
     rows: { firstFit: "First fit", services: "Service visits", replacements: "Replacements", spend: "Total paid" },
-    /** A client fitted before FSM held their visits has no first fit to name, which is not the same as none. */
+    /** A client fitted before their visits were recorded has no first fit to name, which is not the same as none. */
     noFirstFit: "Not on record",
     /** Beside the total, so a figure that includes tax is not read as one that does not. */
     gst: "GST included",
@@ -368,16 +407,8 @@ export const visits = {
 /** Booking in the app (boards C2 to C6), while self-serve booking is on. */
 export const booking = {
   step: (n: number, of: number) => `Step ${String(n)} of ${String(of)}`,
-  /** How long a visit takes, as the choice of visit and the pay step say it: "3 hours", "1 hour 30 minutes". */
-  length: (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const rest = minutes % 60;
-    const parts = [
-      hours === 0 ? "" : `${String(hours)} ${hours === 1 ? "hour" : "hours"}`,
-      rest === 0 ? "" : `${String(rest)} minutes`,
-    ];
-    return parts.filter((part) => part !== "").join(" ");
-  },
+  /** How long a visit takes, as the choice of visit and the pay step say it. */
+  length: visitLength,
   /**
    * PLACEHOLDER: no board draws it. With more than one service open to them, the client chooses first: every one
    * ops offer, a kind at a time, with how long it takes and what it costs (the owner's ruling of 27 September 2026,
@@ -411,6 +442,8 @@ export const booking = {
     title: "Pick a date",
     available: "Available",
     full: "Full",
+    // PLACEHOLDER: no board draws it. A day with a window already inside the notice is still sold, and marked.
+    within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue",
     // PLACEHOLDER: no board draws the day offered being full, nor the days past the first fortnight.
     offeredFull: (day: string) => `${day} is full. We have picked the next open day.`,
@@ -426,14 +459,32 @@ export const booking = {
     regularLine: (name: string) => `${name}, your regular technician, is free.`,
     // PLACEHOLDER: the design draws the window step with the regular technician free.
     anotherLine: (name: string) => `${name} is not free then. Another technician will come.`,
+    // PLACEHOLDER: a window already inside the notice, which no board draws.
+    within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue to payment",
+    // PLACEHOLDER: a visit that costs nothing has no payment to continue to.
+    continueFree: "Continue",
     // PLACEHOLDER
     taken: "That window has just gone. Pick another.",
   },
   pay: {
     title: "Pay and confirm",
+    // PLACEHOLDER: a visit that costs nothing to book, which no board draws.
+    titleFree: "Confirm",
     held: (time: string) => `Slot held ${time}`,
-    freeUntil: (when: string) => `Free to move until ${when}. After that it is charged.`,
+    // PLACEHOLDER: board C4 says "Free to move until"; cancelling is free until then too.
+    freeUntil: (when: string) => `Free to move or cancel until ${when}.`,
+    afterThat: " After that it is charged.",
+    /** PLACEHOLDER: no board draws it. A visit sold already inside its notice says what a change costs at once. */
+    insideNotice: {
+      /** Followed by the fee's GST split, where there is one, and a full stop. */
+      lateFee: (hours: number, amount: string) =>
+        `This visit is less than ${String(hours)} hours away: moving or cancelling it costs ${amount}`,
+      payment: (hours: number, amount: string) =>
+        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the ${amount} paid is not refunded.`,
+      credit: (hours: number) =>
+        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the free service visit is not returned.`,
+    },
     // PLACEHOLDER: a booking ops set to cost nothing when changed late (docs/decisions/0088-every-policy-in-the-console.md).
     freeAnyTime: "Free to move or cancel at any time.",
     pay: (amount: string) => `Pay ${amount}`,
@@ -588,6 +639,9 @@ export const change = {
     // PLACEHOLDER from here to the end of move: nothing paid, and the way to C8, which the design draws but does
     // not reach. A late fee's line is board C5's (booking.lateFee).
     freeNothingPaid: "Free to move.",
+    // What a move in place keeps, on its pay step.
+    carriesOver: (amount: string) => `Your ${amount} carries over.`,
+    creditCarriesOver: "Your free service visit carries over.",
     cancelInstead: "Cancel the visit instead",
     creditCharged: "Charged. The free service visit is not returned and the new visit is paid separately.",
   },
@@ -636,18 +690,38 @@ interface Reward {
 const serviceVisits = (count: number): string => (count === 1 ? "1 service visit" : `${String(count)} service visits`);
 
 /**
- * Board F1's promise, from the referrer's side. With both at 3 it is the board's; the words for unequal sides, for 0
- * and for a reward not known, which gives no count, are PLACEHOLDER, pending the owner's (docs/open-points.md, item 172).
+ * Board F1's promise, from the referrer's side, in the reward's one name. PLACEHOLDER: the words for unequal sides,
+ * for 0 and for a reward not known, which gives no count, pending the owner's (docs/open-points.md, item 172).
  */
 function promiseOf(reward: Reward | null): string {
   const fitted = "When a friend you refer is fitted,";
   if (reward === null) return `${fitted} we tell you.`;
   const { referrer_visits: mine, friend_visits: theirs } = reward;
   if (mine === 0 && theirs === 0) return `${fitted} we tell you.`;
-  if (mine === 0) return `${fitted} they get ${serviceVisits(theirs)} free.`;
-  if (theirs === mine) return `${fitted} you both get ${serviceVisits(mine)} free.`;
-  if (theirs === 0) return `${fitted} you get ${serviceVisits(mine)} free.`;
-  return `${fitted} you get ${serviceVisits(mine)} free, and your friend gets ${String(theirs)}.`;
+  if (mine === 0) return `${fitted} they get ${freeServiceVisits(theirs)}.`;
+  if (theirs === mine) return `${fitted} you both get ${freeServiceVisits(mine)}.`;
+  if (theirs === 0) return `${fitted} you get ${freeServiceVisits(mine)}.`;
+  return `${fitted} you get ${freeServiceVisits(mine)}, and your friend gets ${String(theirs)}.`;
+}
+
+/** The invite a client not yet fitted came with: who sent it, where the invite names them. */
+interface PendingInvite {
+  readonly referrer_first_name: string | null;
+}
+
+/**
+ * PLACEHOLDER: Refer for a client not yet fitted, which the board draws empty. Their own invite opens at their first
+ * fit; an invite they came with comes first, with the visits it gives them.
+ */
+function notYetFittedLines(reward: Reward | null, invite: PendingInvite | null): readonly [string, string] {
+  const theirs = reward?.friend_visits ?? 0;
+  if (invite === null || theirs === 0) return ["Your invite opens after your first fit.", promiseOf(reward)];
+  const whose = invite.referrer_first_name === null ? "Your friend's invite" : `${invite.referrer_first_name}'s invite`;
+  const arrive = theirs === 1 ? "arrives" : "arrive";
+  return [
+    `${whose}: your ${freeServiceVisits(theirs)} ${arrive} when you're fitted.`,
+    "Your own invite opens after your first fit.",
+  ];
 }
 
 /** Refer (boards F1 to F6): the invite, the card behind it, and who has been fitted. */
@@ -661,13 +735,15 @@ export const refer = {
     checking: "The free service visits from the invite you came with are being checked. We will message you.",
     refused: "We could not give the free service visits from the invite you came with. Message us to know why.",
   },
-  noOther: "No other discount applies.",
   share: "Share an invite",
   tracker: "See who has been fitted",
   card: {
     title: "Which card?",
-    what: "This is what he sees in the chat. No name on it, and no copy.",
+    // PLACEHOLDER: in place of the board's line, which said the card carries no name.
+    what: "Pick the picture your friend sees. Your name and message go with it, never on it.",
     mine: { name: "My before and after", note: "Your own photographs" },
+    // PLACEHOLDER: the board always offers their own card; it needs a before and an after from the first fit.
+    mineNotYet: "Your own before and after appears once your first-fit photographs are in.",
     house: { name: "A Mane Man example", note: "Our house sample" },
     next: "Continue to share",
   },
@@ -692,7 +768,8 @@ export const refer = {
       return `Home-fitted hair systems across Delhi NCR. ${serviceVisits(friend)} free when you're fitted.`;
     },
     domain: "maneman.in",
-    message: (link: string) => `Had my hair system fitted at home by these people. Worth a look — ${link}`,
+    // PLACEHOLDER: in place of the board's message.
+    message: (link: string) => `Got my hair system fitted at home by Mane Man. Worth a look: ${link}`,
     via: "Share via",
     whatsapp: "WhatsApp",
     other: "Other apps",
@@ -809,6 +886,14 @@ export const payments = {
     /** "AUDTEST: Rs. 1,000 off", before GST; the code alone where what it took off is not known. */
     fact: (code: string, off: string | null) => (off === null ? code : `${code}: ${off} off`),
   },
+  /** PLACEHOLDER: no board draws it. A one visit's payment still owed, above the payments made. */
+  owed: {
+    label: "To pay",
+    meta: (date: string) => `Fitted ${date}`,
+    pay: "Pay now",
+    newTab: "opens Razorpay in a new tab",
+    onItsWay: "Link on its way by text",
+  },
   /**
    * The free service visits among the payments (LIFE-14). Board E1 draws a visit one covered: "Service visit ·
    * 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". PLACEHOLDER: all of it, in the reward's
@@ -920,6 +1005,11 @@ export const empty = {
     title: "Payments",
     lines: ["Nothing to pay yet.", "Your consultation is free. Later payments appear here with their invoices."],
   },
+  // PLACEHOLDER: a consultation and fit in one visit, booked with nothing paid.
+  paymentsOneVisit: {
+    title: "Payments",
+    lines: ["Nothing to pay yet.", "You pay once fitted, by a link we text you."],
+  },
   // PLACEHOLDER: the design draws the empty list for a lead only.
   paymentsFitted: {
     title: "Payments",
@@ -927,10 +1017,7 @@ export const empty = {
   },
   refer: {
     title: "Refer",
-    lines: (reward: Reward | null): readonly [string, string] => [
-      "Nobody you have referred has been fitted yet.",
-      promiseOf(reward),
-    ],
+    lines: notYetFittedLines,
   },
 } as const;
 
@@ -941,8 +1028,8 @@ export const profile = {
   // PLACEHOLDER: the design draws the profile with an address already given, and no form.
   noAddress: "No address yet. Add it before you book.",
   addAddress: "Add your address and access notes",
-  // PLACEHOLDER: the design draws no landmark line (ADR 0054).
-  near: (landmark: string) => `Near ${landmark}`,
+  // PLACEHOLDER: the design draws no landmark; the client types it as they like, so it shows as typed.
+  landmark: "Landmark",
   // PLACEHOLDER: an address the client gave ops on the phone, which ops saved for them (ADR 0092).
   givenToOps: (date: string) =>
     `You gave us this address on the phone on ${date}. If anything is wrong, change it here.`,
@@ -1051,8 +1138,15 @@ export const profile = {
     send: "Send",
     cancel: "Not now",
     // Beside support's "Replies within a working day": the 30 days is the most a concern can take, not the usual.
-    sent: "Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest.",
+    sent: "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
     failed: "That did not go through. Please try again.",
+    limited: "You have reached today's limit. Send it tomorrow, or message us on WhatsApp.",
+    // PLACEHOLDER: the client's latest concerns, each with our answer once given.
+    concerns: "Your concerns",
+    concern: (date: string, status: string) => `Your concern of ${date} · ${status}`,
+    waiting: "Awaiting our reply",
+    answered: (date: string) => `Answered ${date}`,
+    answer: (response: string) => `Our answer: ${response}`,
   },
   deletion: {
     label: "Delete your account",

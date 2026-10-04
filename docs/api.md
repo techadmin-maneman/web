@@ -1233,28 +1233,6 @@ Evolution's delivery receipts (messages.update) for the WhatsApp messages we sen
 }
 ```
 
-### POST /api/hooks/fsm/{token}
-
-FSM's webhook: an appointment was created, edited or deleted
-
-**204**: Taken, or ignored. Either way FSM need not send it again
-
-**401**: unauthorized: the token is wrong
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**404**: not_found: FSM's webhook is not switched on (no FSM_WEBHOOK_TOKEN)
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
 ### POST /api/hooks/razorpay
 
 Razorpay's webhook: payments and refunds
@@ -1345,17 +1323,19 @@ Razorpay's webhook: payments and refunds
             "already_started",
             "piece_code",
             "technician_inactive",
-            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
-            "fsm_refused",
-            "fsm_partly",
+            "past_day",
+            "window_passed",
+            "blackout",
             "in_progress",
             "too_early_to_close",
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -1402,7 +1382,7 @@ Razorpay's webhook: payments and refunds
                   "type": "null"
                 }
               ],
-              "description": "When ops moved the job to them; null when it was moved in FSM itself"
+              "description": "When ops moved the job to them; null where nothing recorded when"
             }
           },
           "required": [
@@ -2292,7 +2272,7 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "photo-v3",
+      "example": "photo-v4",
       "description": "The photo notice shown: the current one, the only one recorded."
     },
     "turnstile_token": {
@@ -2453,7 +2433,7 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "gate-v3",
+      "example": "gate-v4",
       "description": "The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md)."
     },
     "attribution": {

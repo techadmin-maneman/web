@@ -352,7 +352,7 @@ const checkIn = (passed: boolean, distanceM: number) => (route: Route) =>
         ? {
             event_id: "fidelity",
             replayed: false,
-            fsm_write_state: "pending",
+            fsm_write_state: "written",
             progress: { ...NOTHING_DONE, checked_in_at: new Date(AT_912.getTime()).toISOString() },
           }
         : null,
@@ -441,7 +441,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     outcome: "done",
   };
   // The outcome lands, so the close-out is the one the board draws and not the sign-in an unanswered write would end in.
-  const landed = json({ event_id: "fidelity", replayed: false, fsm_write_state: "pending", progress: closedOut });
+  const landed = json({ event_id: "fidelity", replayed: false, fsm_write_state: "written", progress: closedOut });
   const done = await openApp(
     browser,
     `/jobs/${first.id}/outcome`,

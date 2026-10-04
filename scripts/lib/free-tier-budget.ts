@@ -39,7 +39,7 @@ export const HEADROOM = 0.8;
  * Nothing in Phase 2 has a ceiling in config yet, so its share is set aside here.
  */
 export const PHASE_2_ALLOWANCE = {
-  /** FSM webhook hints read back from the queue, and the Phase 2 messages. */
+  /** The Phase 2 messages, and the CRM's sync, read back from their queues. */
   queueOperationsPerDay: 2_000,
   /** Clients' photographs, which are never deleted, and referral cards: the storage meter's share. */
   r2StorageBytes: PHASE_2_SHARE_BYTES,
@@ -99,23 +99,34 @@ export const CRON_STATEMENTS_PER_RUN = 16;
 export const REQUEST_READ_SHARE = HEADROOM - CRON_READ_SHARE;
 
 /**
- * The console's two boards, open through the working day: the dispatch board reads itself again on a timer, the
- * Tasks board at most once a minute as pages open. Measured on staging on 2 October 2026 with 31 visits in the board's
- * week: a board load read 484 rows, about 66 and 13.5 for each visit, and a look at Tasks 364. A visit whose card has
- * everything on it (two answers on WhatsApp, an invite, a credit) reads 18.5. test/worker/cron-reads.test.ts holds
- * one load of each to the figures below.
+ * The console's two boards, open through the working day. The dispatch board asks for its version on a timer, reads
+ * itself again when the version has moved, and in full every so often; the Tasks board is read at most once a minute
+ * as pages open. Measured on staging on 2 October 2026 with 31 visits in the board's week: a board load read 484 rows,
+ * about 66 and 13.5 for each visit, and a look at Tasks 364. test/worker/cron-reads.test.ts holds one load of each,
+ * and one look at the version, to the figures below. A visit worked through, whose card has everything on it (two
+ * answers on each kind of message, an invite, a credit, every step of the technician's), reads 17.5.
  */
 export const CONSOLE_STAFF = 2;
 export const CONSOLE_HOURS_PER_DAY = 10;
 export const BOARD_ROWS_READ_FIXED = 70;
-export const BOARD_ROWS_READ_PER_VISIT = 20;
+export const BOARD_ROWS_READ_PER_VISIT = 18;
+export const BOARD_VERSION_ROWS_READ = 10;
+/**
+ * The times each visit moves the board's version, from its booking to its end: booked; checked in, started and
+ * finished; and moved or cancelled on about every other visit. What one request writes, a move and its visit say, is
+ * one change to a board that looks once a minute.
+ */
+export const BOARD_CHANGES_PER_VISIT = 5;
 export const TASKS_ROWS_READ_PER_LOOK = 400;
 /** What the apps, the site and the console's other pages read in a day: about 330,000 at 2,000 clients. */
 export const OTHER_REQUESTS_ROWS_READ_PER_DAY = 500_000;
 
 /** How often each board is read: its own timers, from the console's code. */
 export interface ConsoleCadence {
-  readonly boardRefreshMs: number;
+  /** How often the open dispatch board asks for its version. */
+  readonly boardPollMs: number;
+  /** How often it reads itself in full, whether the version has moved or not. */
+  readonly boardFullReadMs: number;
   readonly tasksFreshMs: number;
 }
 
@@ -124,12 +135,28 @@ export function readsPerWorkingDay(everyMs: number): number {
   return (CONSOLE_STAFF * CONSOLE_HOURS_PER_DAY * 60 * 60 * 1000) / everyMs;
 }
 
+/**
+ * How many times the staff's open dispatch boards read themselves in a working day: every board once for each change,
+ * as if each came in a minute of its own, and in full on its own timer; never more than once a look.
+ */
+export function boardReadsPerWorkingDay(visitsInWeek: number, cadence: ConsoleCadence): number {
+  const changes = (visitsInWeek / 7) * BOARD_CHANGES_PER_VISIT;
+  const fullReads = readsPerWorkingDay(cadence.boardFullReadMs);
+  const looks = readsPerWorkingDay(cadence.boardPollMs);
+  return Math.min(looks, CONSOLE_STAFF * changes + fullReads);
+}
+
+/** What the open dispatch boards read in a day, with `visitsInWeek` in the board's week. */
+export function boardRowsReadPerDay(visitsInWeek: number, cadence: ConsoleCadence): number {
+  const boardLoad = BOARD_ROWS_READ_FIXED + BOARD_ROWS_READ_PER_VISIT * visitsInWeek;
+  const looks = readsPerWorkingDay(cadence.boardPollMs) * BOARD_VERSION_ROWS_READ;
+  return looks + boardReadsPerWorkingDay(visitsInWeek, cadence) * boardLoad;
+}
+
 /** What the two boards read in a day, with `visitsInWeek` on the dispatch board. */
 export function consoleRowsReadPerDay(visitsInWeek: number, cadence: ConsoleCadence): number {
-  const boardLoad = BOARD_ROWS_READ_FIXED + BOARD_ROWS_READ_PER_VISIT * visitsInWeek;
-  const board = readsPerWorkingDay(cadence.boardRefreshMs) * boardLoad;
   const tasks = readsPerWorkingDay(cadence.tasksFreshMs) * TASKS_ROWS_READ_PER_LOOK;
-  return board + tasks;
+  return boardRowsReadPerDay(visitsInWeek, cadence) + tasks;
 }
 
 /**
@@ -138,17 +165,17 @@ export function consoleRowsReadPerDay(visitsInWeek: number, cadence: ConsoleCade
  * there); a route not named has OTHER_ROUTE_ROWS_READ, several times what the busiest of them read on 2 October 2026.
  */
 export const ROUTE_ROWS_READ: Readonly<Record<string, number>> = {
-  "/api/dispatch": 850,
+  "/api/dispatch": 2_914,
   "/api/tasks": TASKS_ROWS_READ_PER_LOOK,
 };
 export const OTHER_ROUTE_ROWS_READ = 300;
 
 /** The most visits the board's week can hold before the boards and the other requests pass the requests' share. */
 export function consoleRunwayVisits(cadence: ConsoleCadence): number {
-  const share = FREE_TIER.d1RowsReadPerDay * REQUEST_READ_SHARE;
-  const room = share - OTHER_REQUESTS_ROWS_READ_PER_DAY - consoleRowsReadPerDay(0, cadence);
-  const perVisit = readsPerWorkingDay(cadence.boardRefreshMs) * BOARD_ROWS_READ_PER_VISIT;
-  return Math.max(0, Math.floor(room / perVisit));
+  const room = FREE_TIER.d1RowsReadPerDay * REQUEST_READ_SHARE - OTHER_REQUESTS_ROWS_READ_PER_DAY;
+  let visits = 0;
+  while (consoleRowsReadPerDay(visits + 1, cadence) <= room) visits += 1;
+  return visits;
 }
 
 /** A visit's photographs: five before and five after, each re-encoded on the phone to about 250 KB. */
