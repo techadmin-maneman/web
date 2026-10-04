@@ -344,6 +344,8 @@ export const dispatch = {
     },
     /** PLACEHOLDER: the call's record did not go through. */
     toldFailed: "That was not recorded. Try again.",
+    /** A link asked for a visit this board does not hold. */
+    notOnBoard: "That visit is no longer on this board. It may have moved to another week, or been cancelled.",
   },
 } as const;
 
@@ -522,6 +524,9 @@ export const clients = {
     upcoming: "To come",
     past: "Done",
     columns: ["Date", "Time", "Visit", "Technician", "State", "Discount code"],
+    onBoard: "Show on board",
+    /** The link's whole name, since every row's says the same. */
+    onBoardLabel: (visit: string) => `Show on board: the visit of ${visit}`,
     /**
      * PLACEHOLDER: a discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md).
      * Entered or taken off only while the visit is not paid for or invoiced.
@@ -1405,8 +1410,22 @@ export const noShows = {
      */
     charge: "Charge",
     waive: "Waive",
-    /** PLACEHOLDER: a charge is asked about once more, since it cannot be taken back here. */
-    confirm: (name: string, day: string) => `Charge ${name} for the visit of ${day}? It cannot be undone here.`,
+    /**
+     * PLACEHOLDER: a charge is asked about once more, with what it keeps of what was paid and what it refunds, since it
+     * cannot be taken back here.
+     */
+    confirm: {
+      keepsAll: (paid: string) => `Keep ${paid} of the ${paid} paid?`,
+      keepsPart: (kept: string, paid: string, refund: string) =>
+        `Keep ${kept} of the ${paid} paid, and refund ${refund}?`,
+      keepsNone: (paid: string) => `Keep nothing, and refund the ${paid} paid?`,
+      keepsCredit: "Keep the free service visit it was booked with?",
+      nothingPaid: "Nothing was paid for this visit, so the charge keeps nothing. Record it?",
+      creditToo: "The free service visit it was booked with is kept too.",
+      who: (name: string, day: string) => `Charging ${name} for the visit of ${day} cannot be undone here.`,
+      working: "Working out what the charge keeps.",
+      failed: "We could not work out what the charge keeps. Go back, then try again.",
+    },
     // PLACEHOLDER: a visit that carries no date, as a charge asked about names it.
     noDay: "a day not recorded",
     confirmCharge: "Charge the visit",
@@ -1431,6 +1450,18 @@ export const noShows = {
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
+  },
+  /** PLACEHOLDER: the board draws no list of the day's rulings. Each case ruled on today, the latest first. */
+  decided: {
+    title: "Decided today",
+    charged: (kept: string) => `Charged · kept ${kept}`,
+    chargedCredit: "Charged · kept a free service visit",
+    chargedNothing: "Charged · kept nothing",
+    // A charge ruled before charges recorded what they kept.
+    chargedUnrecorded: "Charged",
+    waived: "Waived",
+    at: (ruling: string, time: string) => `${ruling} · ${time}`,
+    empty: "Nothing has been decided today.",
   },
   /**
    * Board D1's second card, a disputed charge, one card a dispute. The board
@@ -1464,6 +1495,8 @@ export const noShows = {
     refund: "Refund",
     uphold: "Uphold",
     ruling: "Ruling",
+    /** PLACEHOLDER: the board draws one card, with no panel around it. A panel needs a name to be read by. */
+    queueTitle: "Disputed charges",
     /** PLACEHOLDER: the board always draws one. */
     none: "No charge is disputed.",
     errors: {
@@ -1503,6 +1536,8 @@ export const tasks = {
     partial_visit: "Visit left partly done",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
+    // PLACEHOLDER: a group the board does not draw; board D1 letters the card "Disputed charge".
+    no_show_dispute: "Disputed charge",
     number_change: "Number change",
     erasure_request: "Erasure request",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0072-ops-clients-and-queues.md).
@@ -1517,6 +1552,8 @@ export const tasks = {
   visit: (date: string) => `Visit of ${date}`,
   /** PLACEHOLDER: an erased client has no name left to show, so the line says when they were erased. */
   erased: (date: string) => `Client erased ${date}`,
+  /** PLACEHOLDER: a disputed charge whose client has since been erased. */
+  disputeErased: "A client since erased",
   /** PLACEHOLDER: a queue whose row has lost the client it was about. */
   unknown: "Client unknown",
   /** The client's page, which the board draws no way to. */
@@ -1527,10 +1564,11 @@ export const tasks = {
    * decides nothing.
    */
   decide: {
-    untold_move: "Record the call in Dispatch",
+    untold_move: "Open it in Dispatch",
     leave_conflict: "Move it in Dispatch",
     referral_review: "Decide it in Referrals",
     no_show_decision: "Rule on it in Payments",
+    no_show_dispute: "Rule on it in Payments",
     number_change: "Decide it in Number changes",
     erasure_request: "Decide it in Deletion requests",
     grievance: "Answer it in Grievances",
@@ -1539,11 +1577,18 @@ export const tasks = {
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
   /** PLACEHOLDER: what a consultation asked for, a first fit to book and a replacement due are done with. */
   book: "Book a visit",
+  /** A move the client has not heard of, settled from its row. */
+  call: {
+    call: (mobile: string) => `Call ${mobile}`,
+    told: "Told by phone",
+    recording: "Recording…",
+    failed: "That was not recorded. Try again.",
+  },
   /** PLACEHOLDER: more were waiting than one look reads. */
   truncated: "More are waiting than one look reads, so a count here may be short.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
-    /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the dispatch board. */
+    /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the row. */
     untold_move: (when: string) => `Moved to ${when}; not on WhatsApp`,
     /**
      * PLACEHOLDER: "Service visit, Thu 24 Sep, afternoon; FSM refused it": booked or refunded from the client's
@@ -1598,6 +1643,9 @@ export const tasks = {
     /** PLACEHOLDER: a visit closed partial in FSM's own screen, with no reason from the technician. */
     noReason: "No reason recorded",
     no_show_decision: (technician: string) => `${technician} attended`,
+    /** PLACEHOLDER: "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
+    no_show_dispute: (took: string) => `Disputes the charge that kept ${took}`,
+    disputedCredit: "a free service visit",
     number_change: "Both numbers proven by code",
     erasure_request: "Asked for in the client's own app",
     // PLACEHOLDER: a concern about their data, which the app promises an answer to within 30 days.
@@ -1670,6 +1718,59 @@ export const tasks = {
     "also be closed here, with why.",
   /** PLACEHOLDER: the board draws twelve tasks and no empty list. */
   empty: "Nothing is waiting.",
+} as const;
+
+/**
+ * PLACEHOLDER: no board draws it. Tasks' "Needs a hand": the alerts ops were told of in the alert space, each until
+ * somebody puts right what it was about. A few words name each kind; its message says what happened and what to do.
+ */
+export const needsAHand = {
+  title: "Needs a hand",
+  kinds: {
+    message_failed: "A WhatsApp message did not go",
+    messages_unsent: "WhatsApp messages not sent within a day",
+    crm_lead: "A lead did not reach the CRM",
+    crm_erasure: "An erasure did not finish in the CRM",
+    crm_contact_update: "A CRM lead was not updated",
+    contact_sync: "A contact change did not go through",
+    deletion_waiting: "A deletion request is nearly due",
+    books_erasure: "An erasure did not finish in Books",
+    cancel_refund_failed: "A refund failed",
+    no_show_refund_failed: "A refund failed",
+    no_show_credit_not_back: "A visit credit did not come back",
+    payment_link: "A payment link was refused",
+    payment_link_failed: "A payment link did not go",
+    invoice_draft: "An invoice is still a draft",
+    invoice_unpriced: "A visit has no price to invoice",
+    invoice_refused: "Books refused an invoice",
+    invoice_failed: "An invoice did not reach Books",
+    books_unapplied: "A payment has nothing to set against",
+    razorpay_refund_unheard: "A refund came before its payment",
+    low_stock: "Stock is low",
+    technician_code_refused: "A technician was refused a login code",
+    whatsapp_bridge: "WhatsApp is disconnected",
+    login_codes_failing: "Login codes are failing",
+    cron_job: "A scheduled job keeps failing",
+  } as Readonly<Record<string, string>>,
+  /** Books refusing or failing on a customer, a payment, its application or a refund. */
+  books: "Books needs a look",
+  /** Any other kind. */
+  other: "Something needs a look",
+  /** "3 times since 21 Sep", or "Since 21 Sep" for one. */
+  seen: (times: number, since: string) => (times === 1 ? `Since ${since}` : `${String(times)} times since ${since}`),
+  open: "Open",
+  sendAgain: "Send again",
+  sending: "Sending…",
+  done: "Mark done",
+  closing: "Closing…",
+  /** Under a failed message: the bridge may not have answered in time, and the client may have it already. */
+  messageHint: "If it says delivery unconfirmed, check with the client first: it may have arrived.",
+  shown: (shown: number, count: number) => `The ${String(shown)} longest open of ${String(count)}.`,
+  errors: {
+    not_permitted: NOT_PERMITTED,
+    not_found: "This was closed meanwhile. Reload the page to see the list now.",
+    unknown: "That did not go through. Try again.",
+  } as Readonly<Record<string, string>>,
 } as const;
 
 /**
@@ -2027,16 +2128,13 @@ export const settings = {
   title: "Settings",
   sub: "A change takes effect within a minute. No release is needed.",
   /**
-   * PLACEHOLDER: no board draws the storage meter's line (docs/decisions/0093-the-storage-meter.md). Gigabytes as
+   * PLACEHOLDER: no board draws the storage meter's line, which Rules shows under The console. Gigabytes as
    * Cloudflare bills them, a thousand million bytes.
    */
   storage: (held: number, share: number) =>
-    `Photographs and referral cards hold ${(held / 1e9).toFixed(2)} GB in R2, ${String(Math.round((held / share) * 100))}% ` +
-    `of their ${String(share / 1e9)} GB share. Past it R2 bills, as the owner accepted; ops are told at 50%, 80% and 100%.`,
+    `Photos and referral cards: ${(held / 1e9).toFixed(2)} GB of ${String(share / 1e9)} GB`,
   /** PLACEHOLDER: no board draws this line either. Megabytes as Cloudflare counts them, a million bytes. */
-  database: (held: number, limit: number) =>
-    `The database holds ${(held / 1e6).toFixed(0)} MB, ${String(Math.round((held / limit) * 100))}% of the ` +
-    `${String(limit / 1e6)} MB the free plan allows. Past it every write fails; ops are told at 50%, 80% and 95%.`,
+  database: (held: number, limit: number) => `Database: ${(held / 1e6).toFixed(0)} MB of ${String(limit / 1e6)} MB`,
   // PLACEHOLDER: no board draws the tabs' names.
   tabs: {
     rules: "Rules",
@@ -2132,6 +2230,18 @@ export const settings = {
   },
   rules: {
     title: "Rules",
+    // PLACEHOLDER: no board draws the rules' sections, nor the links between them.
+    groups: {
+      moves: "Moves, cancels and no-shows",
+      booking: "Booking and payment",
+      field: "Visits in the field",
+      reminders: "Reminders and replacements",
+      referrals: "Referrals",
+      console: "The console",
+      other: "Other rules",
+    },
+    jump: "Rules by subject",
+    lateFees: "Late fees are set in Prices",
     allowed: (min: number, max: number, unit: string) => `${String(min)} to ${String(max)} ${unit}, a whole number`,
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
     committed: "Nobody has set this, so the standard figure stands.",
@@ -2215,17 +2325,22 @@ export const settings = {
       noFigure: "none",
       /** A base whose own figure is taken away takes the one for every other base. */
       otherBases: "the figure for every other base",
-      standard: "This puts the standard figures back.",
+      /** A box of a rule with many, named with its rule: "No-show wait · First fit". */
+      keyed: (rule: string, box: string) => `${rule} · ${box}`,
+      standard: (rule: string) => `This puts the standard figures back for ${rule}.`,
       send: "Save",
       back: "Change it",
     },
-    /** The rule's name, or one of its boxes, and what the API said of it. */
-    outside: (field: string) => `${field} is outside what this rule allows. Nothing was changed.`,
+    /**
+     * The rule's name, or one of its boxes, and what the API said of it. A section's Save sends its rules one by one,
+     * so a refusal speaks for its own rule only.
+     */
+    outside: (field: string) => `${field} is outside what this rule allows, so it was not saved.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request: "That figure is outside what this rule allows. Nothing was changed.",
+      invalid_request: "That figure is outside what this rule allows, so it was not saved.",
       offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Nothing was changed.",
+      unknown: "That did not go through, so this rule was not saved.",
     } as Readonly<Record<string, string>>,
   },
   /**
@@ -2252,6 +2367,9 @@ export const settings = {
       `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} still booked on these days. Move ${
         visits === 1 ? "it" : "them"
       } on the dispatch board.`,
+    show: "Show on board",
+    /** The link's whole name, since the list holds many and each link says the same. */
+    showLabel: (period: string) => `Show on board: ${period}`,
     remove: "Offer these days again",
     /** The button's whole name, since the list holds many and each button says the same. */
     removeLabel: (period: string) => `Offer ${period} again`,
@@ -2304,9 +2422,9 @@ export const settings = {
       late_fee_first_fit: "Late fee on a first fit",
       late_fee_replacement: "Late fee on a replacement",
     } as Readonly<Record<string, string>>,
-    lateFeeNote:
-      "Charged for moving or cancelling inside the notice set in Rules, where Rules charge the kind its late fee, " +
-      "whichever of its services it is.",
+    lateFeeNote: "Charged for a late move or cancel, where the rules charge this kind its late fee.",
+    /** The link to the rule that says when a late fee is charged. */
+    lateFeeRule: "Set when it applies",
     actions: {
       price: "Change price",
       correct: "Correct",

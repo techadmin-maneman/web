@@ -728,6 +728,7 @@ describe("GET /api/visits/:id and the photographs", () => {
       charge: { kept: 200000, credit_spent: false },
       dispute: null,
       disputable: true,
+      dispute_closed_at: null,
     });
   });
 

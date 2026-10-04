@@ -82,13 +82,20 @@ export async function keptJob(id: string): Promise<Job | null> {
  * kept before the hair profile carries none, and lists no step for it
  * (docs/decisions/0106-a-clients-hair-profile.md). One kept before a one
  * visit's discount code was on the card carries none, and the outcome step asks.
+ * One kept before a one visit's choice was on the card knows none, and runs the
+ * whole checklist.
  */
 function inTodaysShape(job: Job): Job {
-  const kept = job as Omit<Job, "partial_reasons" | "consumables" | "profile" | "discount_code"> & {
+  const kept = job as Omit<
+    Job,
+    "partial_reasons" | "consumables" | "profile" | "discount_code" | "checklist_if_declined" | "client_choice"
+  > & {
     readonly partial_reasons: readonly (Job["partial_reasons"][number] | string)[];
     readonly consumables?: Job["consumables"];
     readonly profile?: Job["profile"];
     readonly discount_code?: Job["discount_code"];
+    readonly checklist_if_declined?: Job["checklist_if_declined"];
+    readonly client_choice?: Job["client_choice"];
   };
   return {
     ...kept,
@@ -98,6 +105,8 @@ function inTodaysShape(job: Job): Job {
     consumables: kept.consumables ?? [],
     profile: kept.profile ?? null,
     discount_code: kept.discount_code ?? null,
+    checklist_if_declined: kept.checklist_if_declined ?? kept.checklist,
+    client_choice: kept.client_choice ?? null,
   };
 }
 

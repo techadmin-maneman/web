@@ -16,8 +16,10 @@
 // and after a move, without the loading state: the grid keeps its scroll, and
 // the keyboard goes back to the block that moved.
 //
-// A link may open the board on a week and a search ("?from=2026-10-12&find=Imran"),
-// as a technician's page does to show his days.
+// A link may open the board on a week, a city, a search and a visit
+// ("?from=2026-10-12&find=Imran&visit=…"), as Tasks, a client's visits, a
+// technician's leave and blackout days do; the visit's drawer opens. The address
+// keeps all four as ops change them (./address.ts).
 
 import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -40,12 +42,14 @@ import { Shell } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess, type Access } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { useAddressKeeps } from "./address.ts";
 import { BlockDrawer } from "./BlockDrawer.tsx";
 import styles from "./dispatch.module.css";
 import { Grid, type InHand } from "./Grid.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { dispatchAsked } from "../route.ts";
 import {
+  blockOn,
   changeOf,
   idOf,
   nameOf,
@@ -213,7 +217,7 @@ function ChangePanel({ changing, onClose }: { changing: Changing; onClose: (chan
 
 export function DispatchScreen() {
   const [asked] = useState(() => dispatchAsked(window.location.search));
-  const [query, setQuery] = useState<BoardQuery>({ from: asked.from, city: null });
+  const [query, setQuery] = useState<BoardQuery>({ from: asked.from, city: asked.city });
   const [find, setFind] = useState(asked.find);
   const [opened, setOpened] = useState<BlockJob | null>(null);
   const [move, setMove] = useState<Move | null>(null);
@@ -231,6 +235,33 @@ export function DispatchScreen() {
   const opener = useRef<HTMLElement | null>(null);
   const area = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
+  /** The visit a link asked for, until the first board read shows it. */
+  const askedVisit = useRef(asked.visit);
+
+  useAddressKeeps(query, find, opened === null ? null : idOf(opened));
+
+  /** Brings a visit into view: its block, with its drawer open, or its place in the tray; else says it is not here. */
+  const showVisit = useCallback((on: Board, visit: string) => {
+    const element = area.current?.querySelector<HTMLElement>(`[data-appointment="${visit}"]`) ?? null;
+    element?.scrollIntoView({ block: "center", inline: "nearest" });
+    // The keyboard goes to the visit first, so the browser gives it back there when the drawer closes.
+    element?.focus();
+    const job = blockOn(on, visit);
+    if (job !== null) {
+      opener.current = element;
+      setOpened(job);
+      return;
+    }
+    const inTray = on.unassigned.some((each) => each.appointment_id === visit);
+    if (!inTray) setNotice({ tone: "refusal", text: dispatch.landing.notOnBoard, call: null });
+  }, []);
+
+  useEffect(() => {
+    const visit = askedVisit.current;
+    if (board === null || visit === null) return;
+    askedVisit.current = null;
+    showVisit(board, visit);
+  }, [board, showVisit]);
 
   const restore = useCallback(() => {
     const from = opener.current;

@@ -1,7 +1,7 @@
 // Tasks (Ops Console, board D2): what ops still have to do, in groups, with whose
 // each is and how long it has left. Nothing is decided here. A task is a row in a queue the
 // database already keeps — a consultation asked for, a held grant, an
-// undecided no-show, a number change, an erasure, a grievance, a piece past its
+// undecided no-show, a disputed charge, a number change, an erasure, a grievance, a piece past its
 // replacement date, an invoice still a draft, an erasure FSM would not finish,
 // a moved visit whose client has not heard of it, a booking FSM refused, a visit left partly done, a
 // visit to come with no address, a job on its technician's day off, a client
@@ -11,14 +11,19 @@
 // they pay (src/policy/tasks.ts).
 //
 // Each task leads to where it is done: the client's page, and the row in the
-// section that decides it. A consultation asked for, a first fit to book and a
-// replacement due are booked from the row itself (BookFromTask.tsx). Each group's
-// count is the whole queue's, and a group longer than the board lists says so.
+// section that decides it; a task the dispatch board settles opens its visit's
+// drawer there. A consultation asked for, a first fit to book and a replacement
+// due are booked from the row itself (BookFromTask.tsx), and the call about a move
+// is recorded there too (CallAboutMove.tsx). Each group's count is the whole
+// queue's, and a group longer than the board lists says so.
 //
 // The board writes an owner in ops against every task, in its own column. Ops
 // take a task, give it to another member of staff or hand it back, and close a
 // visit left partly done without a follow-up, from the row (TaskActions.tsx;
 // docs/decisions/0092-task-owners.md).
+//
+// Above the tasks, "Needs a hand" lists the alerts ops were told of and not yet
+// put right (NeedsAHand.tsx).
 
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -32,10 +37,12 @@ import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { readTasks } from "../lib/waiting.ts";
 import { rowPath } from "../lib/target.ts";
-import type { ClientTab } from "../route.ts";
+import { dispatchPath, type ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
+import { CallAboutMove } from "./CallAboutMove.tsx";
 import { DECIDED_IN } from "./decided.ts";
+import { NeedsAHand } from "./NeedsAHand.tsx";
 import { TaskActions } from "./TaskActions.tsx";
 import styles from "./tasks.module.css";
 
@@ -59,13 +66,21 @@ const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   at_risk_client: "visits",
   partial_visit: "visits",
   no_show_decision: "visits",
+  no_show_dispute: "visits",
   draft_invoice: "payments",
   payment_owed: "payments",
 };
 
+/** The board opened on the week of the task's visit, with its drawer open; this week's board for a task with none. */
+function onTheBoard(task: Task): string {
+  if (task.visit === undefined) return dispatchPath({});
+  return dispatchPath({ from: indiaDate(task.visit.starts_at), visit: task.visit.id });
+}
+
 function decidedAt(group: Group, task: Task): string | null {
   const where = DECIDED_IN[group];
   if (where === undefined) return null;
+  if (where.page === "/dispatch") return onTheBoard(task);
   return where.row === null ? where.page : rowPath(where.page, where.row, task.id);
 }
 
@@ -140,6 +155,7 @@ function subOf(group: Group, task: Task, now: Date): string {
   }
   if (group === "referral_review") return SIGNALS[task.detail ?? ""] ?? copy.unknown;
   if (group === "no_show_decision") return task.detail === null ? copy.unknown : copy.no_show_decision(task.detail);
+  if (group === "no_show_dispute") return copy.no_show_dispute(disputedTook(task.detail));
   if (group === "draft_invoice") return copy.draft_invoice(shortDate(indiaDate(task.since)));
   if (group === "payment_owed") {
     // Whether Razorpay sent the link, what it asks for in paise, and the product, by name.
@@ -152,12 +168,19 @@ function subOf(group: Group, task: Task, now: Date): string {
   return group === "number_change" ? copy.number_change : copy.erasure_request;
 }
 
+/** What a disputed charge kept: its amount in paise, or, where it kept no money, the credit it spent. */
+function disputedTook(kept: string | null): string {
+  const amount = Number(kept ?? "0");
+  return amount > 0 ? rupees(amount) : tasks.subs.disputedCredit;
+}
+
 /**
  * The first line of a task with no client to name: an erased client has no
  * name left, so the day they were erased heads an erasure FSM would not
- * finish, and the visit heads a no-show.
+ * finish, the visit heads a no-show, and a disputed charge says only that.
  */
 function unnamedSubject(group: Group, task: Task): string {
+  if (group === "no_show_dispute") return tasks.disputeErased;
   const day = shortDate(indiaDate(task.since));
   return group === "erasure_unfinished" ? tasks.erased(day) : tasks.visit(day);
 }
@@ -221,6 +244,7 @@ function Row({ group, task, now, acting }: { group: Group; task: Task; now: Date
           </span>
         )}
         <BookFromTask group={group} task={task} subject={subject} onBooked={acting.onClosed} />
+        <CallAboutMove group={group} task={task} subject={subject} onTold={acting.onClosed} />
         <TaskActions group={group} task={task} subject={subject} {...acting} />
       </div>
       <span className={styles.owner}>
@@ -323,6 +347,7 @@ export function TasksScreen() {
   return (
     <Shell section="/tasks" title={tasks.title}>
       <div className={styles.column}>
+        <NeedsAHand />
         <Queue />
       </div>
     </Shell>

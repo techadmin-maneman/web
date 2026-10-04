@@ -48,8 +48,8 @@ export interface Working {
   readonly post: (path: string, body: unknown, eventId: string) => Promise<Response>;
   /** A write from the console. */
   readonly opsPost: (path: string, body?: unknown) => Promise<Response>;
-  /** Checks in, starts, and sends the steps before the one named. */
-  readonly workTo: (step: "checklist" | "consumables" | "outcome") => Promise<void>;
+  /** Checks in, starts, and sends the steps before the one named; a one visit's piece follows the before photos. */
+  readonly workTo: (step: "piece" | "checklist" | "consumables" | "outcome") => Promise<void>;
 }
 
 /** Imran, his phone signed in, and today's service visit to Rohit, ready to work, with any vendor a test gives. */
@@ -119,11 +119,11 @@ export async function working(type = "service", vendors: Partial<Dependencies> =
       bindings,
     );
 
-  const workTo = async (step: "checklist" | "consumables" | "outcome") => {
+  const workTo = async (step: "piece" | "checklist" | "consumables" | "outcome") => {
     await post(`/api/tech/jobs/${JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
     await post(`/api/tech/jobs/${JOB}/start`, undefined, "event-start-01");
     await post(`/api/tech/jobs/${JOB}/photos`, { phase: "before" }, "event-photos-01");
-    if (step === "checklist") return;
+    if (step === "piece" || step === "checklist") return;
     await post(`/api/tech/jobs/${JOB}/checklist`, { done: [] }, "event-checklist-01");
     if (step === "consumables") return;
     await post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
