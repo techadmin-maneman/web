@@ -1,7 +1,7 @@
-// What has not yet reached us, kept current: the screens re-read whenever the
-// outbox changes, so a send or a supersede shows without a reload.
+// What has not yet reached us, kept current: App reads the outbox whenever it
+// changes, once for every screen, so a send or a supersede shows without a reload.
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { events, frames, onChange, type Frame, type Queued } from "../store/outbox.ts";
 
 export interface Waiting {
@@ -24,7 +24,15 @@ export function signatureOf(waiting: Waiting): string {
   return `${events}|${String(waiting.frames.length)}`;
 }
 
+/** What the outbox holds, as App last read it (useOutboxSubscription). */
+export const OutboxContext = createContext<Waiting>(NOTHING);
+
 export function useOutbox(): Waiting {
+  return useContext(OutboxContext);
+}
+
+/** The one reader of the outbox, which App holds and passes to every screen through OutboxContext. */
+export function useOutboxSubscription(): Waiting {
   const [waiting, setWaiting] = useState<Waiting>(NOTHING);
 
   useEffect(() => {

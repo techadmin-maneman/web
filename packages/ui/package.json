@@ -23,6 +23,7 @@
     "./States": "./States.tsx",
     "./Table": "./Table.tsx",
     "./Tabs": "./Tabs.tsx",
+    "./useAsync": "./useAsync.ts",
     "./useLoad": "./useLoad.ts",
     "./useOneAtATime": "./useOneAtATime.ts",
     "./VisuallyHidden": "./VisuallyHidden.tsx"

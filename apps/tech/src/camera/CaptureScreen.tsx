@@ -96,10 +96,20 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
 
   // What is already taken counts: a capture interrupted resumes, and a refused set keeps what reached us.
   useEffect(() => {
-    void Promise.all([keptFrames(), queuedEvents()]).then(([held, queued]) => {
-      setTaken(anglesTaken(held, queued, id, phase));
-      setRefusedAngles(anglesRefused(held, id, phase));
-    });
+    let current = true;
+    Promise.all([keptFrames(), queuedEvents()]).then(
+      ([held, queued]) => {
+        if (!current) return;
+        setTaken(anglesTaken(held, queued, id, phase));
+        setRefusedAngles(anglesRefused(held, id, phase));
+      },
+      () => {
+        // A store that will not open holds nothing taken: the capture starts at the first angle.
+      },
+    );
+    return () => {
+      current = false;
+    };
   }, [id, phase]);
 
   const angle: Angle | undefined = ANGLES.find((each) => !taken.some((one) => one.angle === each));

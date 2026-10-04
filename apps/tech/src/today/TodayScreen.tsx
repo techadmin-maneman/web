@@ -11,6 +11,7 @@ import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { Mark } from "@maneman/ui/Mark";
 import { Link } from "@maneman/ui/router";
+import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useEffect, useState } from "react";
 import type { JobState, JobSummary } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
@@ -53,25 +54,14 @@ function stateOf(job: JobSummary, queued: readonly Queued[], heard: ReadonlyMap<
 const clientOf = (job: JobSummary, kept: ReadonlyMap<string, string>): string | undefined =>
   job.client_name ?? kept.get(job.id);
 
-/** Where each job the phone holds stood when last heard of, read again whenever the outbox changes. */
-function useHeard(watch: unknown): ReadonlyMap<string, JobState> {
-  const [heard, setHeard] = useState<ReadonlyMap<string, JobState>>(new Map());
-  useEffect(() => {
-    let current = true;
-    void keptStates().then(
-      (found) => {
-        if (current) setHeard(found);
-      },
-      () => {
-        // A store that will not open has nothing newer than the list; the rows go by it.
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [watch]);
-  return heard;
-}
+const NOTHING_HEARD: ReadonlyMap<string, JobState> = new Map();
+
+/**
+ * Where each job the phone holds stood when last heard of, read again whenever the outbox changes. A store that will
+ * not open has nothing newer than the list, and the rows go by it.
+ */
+const useHeard = (watch: unknown): ReadonlyMap<string, JobState> =>
+  valueOr(useAsync(keptStates, watch)[0], NOTHING_HEARD);
 
 export function TodayScreen() {
   const { me, offline, atRisk, signOut } = useSession();

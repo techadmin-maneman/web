@@ -20,9 +20,10 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
+import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { useEffect, useState, type ReactNode } from "react";
-import type { CheckIn, Job } from "../api.ts";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import type { Job } from "../api.ts";
 import { Confirm } from "../components/Confirm.tsx";
 import { notHome as copy, job as jobCopy } from "../content.ts";
 import { STROKE } from "../icons.ts";
@@ -85,20 +86,12 @@ function evidenceOf(job: Job): ReceiptLine {
 }
 
 export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queued[]; card: ReactNode }) {
-  const [arrival, setArrival] = useState<CheckIn | null>(null);
   const [noPosition, setNoPosition] = useState(false);
   const [asking, once] = useOneAtATime();
   const [confirming, setConfirming] = useState(false);
 
-  useEffect(() => {
-    let current = true;
-    void keptArrival(job.id).then((kept) => {
-      if (current) setArrival(kept);
-    });
-    return () => {
-      current = false;
-    };
-  }, [job.id, queued]);
+  const readArrival = useCallback(() => keptArrival(job.id), [job.id]);
+  const arrival = valueOr(useAsync(readArrival, queued)[0], null);
 
   // The card says so once it has caught up; until then the phone's own answer does.
   const here = checkedIn(job, queued) || arrival?.passed === true;

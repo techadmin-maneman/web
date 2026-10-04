@@ -47,3 +47,27 @@
 .open {
   display: inline-flex;
 }
+
+/*
+ * A phone with no room left, above whichever screen is showing: outlined like
+ * Today's caution about the queue, since it is the same kind of news.
+ */
+.full {
+  flex-shrink: 0;
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+  background: var(--ink-deep);
+}
+
+.fullTitle {
+  margin: 0;
+  font-size: var(--fs-17);
+  color: var(--paper);
+}
+
+.fullBody {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-160);
+  color: var(--ink-soft);
+}
