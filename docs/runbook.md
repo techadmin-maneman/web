@@ -285,7 +285,7 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 4. **Workflows.** Setup → Automation → Workflow Rules → Leads:
    - on create, when Lead Status is New: notify the assigned technician and ops;
    - on edit, when Contact Consent becomes true: assign an owner. This covers a try-on customer who later books; Zoho has no assignment rule on update.
-   - Nothing may fire for Lead Status "Try-on — delivery only". The sync also sends those with workflows switched off.
+   - Nothing may fire for Lead Status "Try-on — delivery only". The sync no longer sends a try-on to the CRM (ADR 0012, amended 4 October 2026), so only older records carry it.
 5. **API client.** The data centre is in the address you log in at: `crm.zoho.in` is India, `crm.zoho.com` the US, and so on. Use the matching API console, for example `https://api-console.zoho.in`. A Developer Edition org answers on `developer.zohoapis.<dc>`, not `www.zohoapis.<dc>`, even though the token reply names `www` (ADR 0012).
    1. **Add Client** → **Self Client** → **Create Now** → **OK**. The **Client Secret** tab shows the client ID and secret.
    2. **Generate Code** tab. Scope, exactly:
