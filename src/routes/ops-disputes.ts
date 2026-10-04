@@ -44,7 +44,10 @@ const DisputeSchema = z
     kept: z.number().int().openapi({ description: "In paise: what the charge kept of the visit's payment." }),
     credit_spent: z.boolean().openapi({ description: "Whether the charge spent the credit the visit used." }),
     window_start: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When the visit was booked for." }),
-    checked_in_at: z.iso.datetime(),
+    checked_in_at: z.iso.datetime().openapi({ description: "When he arrived, by his phone, held within bounds." }),
+    phone_checked_in_at: z.union([z.iso.datetime(), z.null()]).openapi({
+      description: "What the phone itself said, before the bounds; null when it said nothing.",
+    }),
     received_at: z.iso.datetime(),
     distance_m: z.union([z.number().int(), z.null()]),
     radius_m: z.number().int().openapi({ description: "The check-in radius in force when he checked in." }),

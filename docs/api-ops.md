@@ -11230,7 +11230,20 @@ Request body:
     },
     "checked_in_at": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "When he arrived, by his phone, held within bounds."
+    },
+    "phone_checked_in_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the phone itself said, before the bounds; null when it said nothing."
     },
     "received_at": {
       "type": "string",
@@ -11296,6 +11309,7 @@ Request body:
     "credit_spent",
     "window_start",
     "checked_in_at",
+    "phone_checked_in_at",
     "received_at",
     "distance_m",
     "radius_m",

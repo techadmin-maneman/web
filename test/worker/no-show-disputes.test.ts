@@ -251,6 +251,8 @@ describe("GET /api/no-shows/disputes", () => {
       reason: "I was home all morning; the bell is broken",
       kept: 400000,
       credit_spent: false,
+      checked_in_at: "2026-09-19T03:31:00.000Z",
+      phone_checked_in_at: null,
       distance_m: 240,
       radius_m: 200,
       message_state: "none",

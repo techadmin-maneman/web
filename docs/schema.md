@@ -807,7 +807,7 @@ Indexes:
 
 The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 
-Made by `0026_field_operations.sql`; changed by `0090_board_version.sql`.
+Made by `0026_field_operations.sql`; changed by `0090_board_version.sql`, `0101_job_event_phone_time.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -824,6 +824,7 @@ Made by `0026_field_operations.sql`; changed by `0090_board_version.sql`.
 | `fsm_error` | TEXT | yes |  |  |
 | `superseded` | INTEGER | no | `0` |  |
 | `updated_at` | TEXT | no |  |  |
+| `claimed_at` | TEXT | yes |  |  |
 
 Indexes:
 

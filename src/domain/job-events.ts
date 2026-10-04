@@ -81,6 +81,8 @@ export interface EventInput {
   readonly body: Record<string, unknown>;
   /** The phone's time for it, within bounds. */
   readonly occurredAt: Date;
+  /** What the phone itself said, before the bounds; null when it said nothing. */
+  readonly claimedAt: Date | null;
   /** The job's start as the phone holds it, when the phone says; a different one means ops moved it. */
   readonly expectedStart: Date | null;
   readonly now: Date;
@@ -320,8 +322,8 @@ function eventStatement(
     .prepare(
       `INSERT INTO job_events
          (id, appointment_id, event_id, technician_id, device_id, kind, body, occurred_at, received_at,
-          fsm_write_state, superseded, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?9)
+          fsm_write_state, superseded, updated_at, claimed_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?9, ?12)
        ON CONFLICT (appointment_id, event_id) DO NOTHING
        RETURNING ${EVENT_COLUMNS}`,
     )
@@ -337,5 +339,6 @@ function eventStatement(
       input.now.toISOString(),
       state,
       superseded ? 1 : 0,
+      input.claimedAt === null || Number.isNaN(input.claimedAt.getTime()) ? null : input.claimedAt.toISOString(),
     );
 }
