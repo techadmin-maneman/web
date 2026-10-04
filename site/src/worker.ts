@@ -31,12 +31,11 @@
 import { inviteDescription, invitePageTitle, inviteTitle } from "./content/referral.ts";
 import type { Invite, PublishedPrices, ReferralReward } from "./lib/api.ts";
 import { partOf } from "./lib/byte-range.ts";
-import { cardPath, HOUSE_CARD, isInvite } from "./lib/invite.ts";
+import { cardPath, HOUSE_CARD, INVITE_PATH, isInvite } from "./lib/invite.ts";
 import { fillPrices, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "./lib/prices.ts";
 import { isReferralReward } from "./lib/reward.ts";
 import { PRICES_SHOWN } from "./lib/flags.ts";
 import { faqPage, jsonLd, localBusiness } from "./lib/structured-data.ts";
-import { INVITE_PATH } from "../../src/config/invite-codes.ts";
 
 export interface SiteEnv {
   readonly ASSETS: Fetcher;

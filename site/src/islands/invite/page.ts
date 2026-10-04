@@ -6,7 +6,7 @@ import type { Invite, PublishedPrices, ReferralReward } from "../../lib/api.ts";
 import { isInvite } from "../../lib/invite.ts";
 import { hairSystemsIn, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "../../lib/prices.ts";
 import { isReferralReward } from "../../lib/reward.ts";
-import { INVITE_PATH } from "../../../../src/config/invite-codes.ts";
+import { INVITE_PATH } from "../../lib/invite.ts";
 
 /**
  * The code in the address: /r/ABC123. Empty where the page is opened without one, and while
