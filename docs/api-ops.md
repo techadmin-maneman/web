@@ -1555,6 +1555,11 @@ The figures of the referrers in the caller's cities, the busiest first, 50 at a 
           "code": {
             "type": "string"
           },
+          "person_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Whose code it is: the client page to open."
+          },
           "name": {
             "type": "string"
           },
@@ -1577,6 +1582,7 @@ The figures of the referrers in the caller's cities, the busiest first, 50 at a 
         },
         "required": [
           "code",
+          "person_id",
           "name",
           "opens",
           "consultations",
@@ -11092,11 +11098,15 @@ Request body:
             },
             "name": {
               "type": "string"
+            },
+            "mobile": {
+              "type": "string"
             }
           },
           "required": [
             "id",
-            "name"
+            "name",
+            "mobile"
           ],
           "additionalProperties": false
         },
@@ -11104,7 +11114,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Whose visit it was; null once they have been erased."
+      "description": "Whose visit it was, and the number to reach them on; null once they have been erased."
     },
     "reason": {
       "anyOf": [

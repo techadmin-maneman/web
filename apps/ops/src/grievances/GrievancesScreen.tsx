@@ -15,6 +15,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Grievance } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
+import { Reach } from "../components/Reach.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { grievances } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -59,6 +60,7 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
         <Left due={each.due} now={now} />
       </div>
       <p className={styles.who}>{copy.raised(phoneWords(each.mobile), longDate(each.raised_at))}</p>
+      <Reach name={each.name} mobile={each.mobile} />
       {/* The client's own words, kept apart from ours so nobody answers a paraphrase. */}
       <blockquote className={styles.words}>{each.text}</blockquote>
       {mayAnswer && (

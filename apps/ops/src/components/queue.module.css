@@ -47,3 +47,23 @@
   line-height: var(--lh-160);
   color: var(--text-muted);
 }
+
+/* A row's WhatsApp and call links, side by side under its first line. */
+.reach {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-16);
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-14);
+}
+
+.reachLink {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.reachLink:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}

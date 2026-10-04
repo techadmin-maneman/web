@@ -209,6 +209,7 @@ describe("a grant of Growth in one city", () => {
       referrers: [
         {
           code: DELHI_CODE,
+          person_id: REFERRER_IN_DELHI.id,
           name: REFERRER_IN_DELHI.name,
           opens: 0,
           consultations: 2,

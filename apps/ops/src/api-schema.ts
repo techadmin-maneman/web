@@ -2014,6 +2014,11 @@ export interface paths {
                         "application/json": {
                             referrers: {
                                 code: string;
+                                /**
+                                 * Format: uuid
+                                 * @description Whose code it is: the client page to open.
+                                 */
+                                person_id: string;
                                 name: string;
                                 opens: number;
                                 consultations: number;
@@ -8141,11 +8146,12 @@ export interface components {
             case_id: string;
             /** Format: uuid */
             appointment_id: string;
-            /** @description Whose visit it was; null once they have been erased. */
+            /** @description Whose visit it was, and the number to reach them on; null once they have been erased. */
             person: {
                 /** Format: uuid */
                 id: string;
                 name: string;
+                mobile: string;
             } | null;
             /** @description Why the client says the charge is wrong, in their words; null once erased. */
             reason: string | null;
