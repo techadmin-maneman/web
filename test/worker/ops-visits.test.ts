@@ -5,15 +5,13 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { FieldRecord } from "../../src/config/field-record.ts";
-import { confirmBooking, startBooking } from "../../src/domain/bookings.ts";
+import { startBooking } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
 import { makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
 import { holdSlot } from "../../src/domain/scheduling.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
-import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments, type PaymentsProvider, type StubPayments } from "../../src/providers/payments.ts";
 import { ProviderError } from "../../src/providers/provider-error.ts";
 import {
@@ -21,11 +19,9 @@ import {
   captureLogs,
   fakeDependencies,
   fakeQueue,
-  fsmSwitchedOff,
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
-  PROVIDERS_FOR,
   request,
   savedAddress,
 } from "./helpers.ts";
@@ -39,27 +35,15 @@ const WEDNESDAY = "2026-09-23";
 /** The first reference of NOW's year, which the first link ops send takes before any payment. */
 const FIRST_REFERENCE = "MM-2026-0001";
 
-/** FSM's catalogue, with the service visit's item, for the bookings FSM's path writes there. */
-const fsm = () =>
-  createStubFsm({ ...EMPTY_FSM, items: [{ id: "item-service", name: "Service visit", type: "Service", price: null }] });
-
 let payments: StubPayments;
-let queue: ReturnType<typeof fakeQueue>;
 
-/** The queues a booking writes to, kept rather than delivered. */
-const bindings = () => ({ FSM_QUEUE: queue, MESSAGE_QUEUE: fakeQueue() });
+/** The queue a booking's messages go on, kept rather than delivered. */
+const bindings = () => ({ MESSAGE_QUEUE: fakeQueue() });
 
-/** The ops console, on FSM's path unless it is our own database that holds the record of field work. */
-const opsApp = (vendors: { payments?: PaymentsProvider; record?: FieldRecord } = {}) => {
-  const record = vendors.record ?? "fsm";
-  const deps = fakeDependencies({
-    payments: vendors.payments ?? payments,
-    ...(record === "ours" ? { fsm: fsmSwitchedOff() } : {}),
-  });
-  return appFor("local", deps, {}, "ops", PROVIDERS_FOR[record]);
-};
+const opsApp = (vendors: { payments?: PaymentsProvider } = {}) =>
+  appFor("local", fakeDependencies({ payments: vendors.payments ?? payments }), {}, "ops");
 
-const book = (body: object, vendors: { payments?: PaymentsProvider; record?: FieldRecord } = {}) =>
+const book = (body: object, vendors: { payments?: PaymentsProvider } = {}) =>
   request(
     opsApp(vendors),
     "/api/visits",
@@ -75,18 +59,17 @@ async function technician(id: string, name: string, initials: string) {
   await env.DB.prepare(
     "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES (?1, ?2, ?3, ?4, 1, ?5)",
   )
-    .bind(id, `fsm-${id}`, name, initials, NOW.toISOString())
+    .bind(id, id, name, initials, NOW.toISOString())
     .run();
 }
 
 async function visit(personId: string | null, type: string, status: string, startsAt: string, technicianId: string) {
   const id = crypto.randomUUID();
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
-       fsm_modified_at, synced_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?5, ?6, ?6, ?7, ?8, ?8)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+     VALUES (?1, ?1, ?2, ?3, ?4, ?5, ?5, ?6, ?7)`,
   )
-    .bind(id, `fsm-${id}`, personId, type, status, startsAt, technicianId, NOW.toISOString())
+    .bind(id, personId, type, status, startsAt, technicianId, NOW.toISOString())
     .run();
   return id;
 }
@@ -153,7 +136,6 @@ beforeEach(async () => {
   captureLogs();
   await markDatabase();
   payments = createStubPayments();
-  queue = fakeQueue();
   await technician(IMRAN, "Imran Qureshi", "IQ");
   await technician(SANDEEP, "Sandeep Rawat", "SR");
   await env.DB.batch([
@@ -169,15 +151,15 @@ beforeEach(async () => {
 });
 
 describe("POST /api/visits: what is booked at once", () => {
-  it("books a free consultation at once: the hold confirmed and on its way to be booked, and audited", async () => {
+  it("books a free consultation at once, and audits it", async () => {
     await rohit();
     const answer = await book({ client: ROHIT, kind: "consultation", date: WEDNESDAY, window: "morning" });
     expect(answer.status).toBe(201);
     const body = await answer.json<{ hold_id: string } & Record<string, unknown>>();
     expect(body).toMatchObject({
-      outcome: "being_booked",
+      outcome: "booked",
       pays: "nothing",
-      visit_id: null,
+      visit_id: expect.any(String) as string,
       link: null,
       date: WEDNESDAY,
       window: "morning",
@@ -185,9 +167,8 @@ describe("POST /api/visits: what is booked at once", () => {
       price: { amount: 0 },
     });
     const hold = await holdOf(body.hold_id);
-    expect(hold).toMatchObject({ state: "held", type: "consultation", pay_by_link: 0 });
+    expect(hold).toMatchObject({ state: "booked", type: "consultation", pay_by_link: 0 });
     expect(hold?.confirmed_at).toBe(NOW.toISOString());
-    expect(queue.sent).toEqual([{ hold_id: body.hold_id, request_id: expect.any(String) as string }]);
 
     const audit = await env.DB.prepare("SELECT subject_id, detail FROM audit_log WHERE action = 'visit.book'").first<{
       subject_id: string;
@@ -253,7 +234,7 @@ describe("POST /api/visits: what is booked at once", () => {
     });
     expect(answer.status).toBe(201);
     const body = await answer.json<{ hold_id: string } & Record<string, unknown>>();
-    expect(body).toMatchObject({ outcome: "being_booked", pays: "nothing", price: { amount: 0 } });
+    expect(body).toMatchObject({ outcome: "booked", pays: "nothing", price: { amount: 0 } });
     expect(await holdOf(body.hold_id)).toMatchObject({
       one_visit: 1,
       amount: 0,
@@ -289,7 +270,7 @@ describe("POST /api/visits: what is booked at once", () => {
     const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" });
     expect(answer.status).toBe(201);
     const body = await answer.json<{ hold_id: string } & Record<string, unknown>>();
-    expect(body).toMatchObject({ outcome: "being_booked", pays: "credit", link: null });
+    expect(body).toMatchObject({ outcome: "booked", pays: "credit", link: null });
     expect(await holdOf(body.hold_id)).toMatchObject({ use_credit: 1, confirmed_at: NOW.toISOString() });
     expect(payments.made.links).toEqual([]);
   });
@@ -339,7 +320,6 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
       expires_at: "2026-09-22T06:30:00.000Z",
     });
     expect(hold?.payment_link_id).toMatch(/^plink_stub_/);
-    expect(queue.sent).toEqual([]);
     expect(payments.made.orders).toEqual([]);
   });
 
@@ -511,11 +491,10 @@ describe("POST /api/visits: what is refused", () => {
 describe("a payment link for a visit ops booked, paid", () => {
   const SECRET = "a-razorpay-webhook-secret-for-tests";
 
-  async function deliver(event: object, eventId: string, record: FieldRecord = "fsm") {
+  async function deliver(event: object, eventId: string) {
     const body = JSON.stringify(event);
     const settings = { razorpay: { keyId: "rzp_test_abc", keySecret: "key-secret", webhookSecret: SECRET } };
-    const deps = fakeDependencies({ payments, ...(record === "ours" ? { fsm: fsmSwitchedOff() } : {}) });
-    const app = appFor("local", deps, { ...LOCAL_SETTINGS, ...settings }, "public", PROVIDERS_FOR[record]);
+    const app = appFor("local", fakeDependencies({ payments }), { ...LOCAL_SETTINGS, ...settings }, "public");
     return request(
       app,
       "/api/hooks/razorpay",
@@ -565,15 +544,15 @@ describe("a payment link for a visit ops booked, paid", () => {
     };
   }
 
-  async function sentLink(record: FieldRecord = "fsm"): Promise<SentLink> {
+  async function sentLink(): Promise<SentLink> {
     await rohit("fitted");
-    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" }, { record });
+    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" });
     const { hold_id: holdId } = await answer.json<{ hold_id: string }>();
     const hold = await holdOf(holdId);
     return { holdId, linkId: hold?.payment_link_id ?? "", reference: hold?.reference ?? "" };
   }
 
-  it("records the payment on the hold, confirms it from Razorpay's time, and sends it to be booked", async () => {
+  it("records the payment on the hold, and confirms it from Razorpay's time", async () => {
     const sent = await sentLink();
     const { holdId } = sent;
     const paidAt = new Date(NOW.getTime() + 60 * 60_000);
@@ -595,10 +574,6 @@ describe("a payment link for a visit ops booked, paid", () => {
       razorpay_order_id: "order_link_1",
       confirmed_at: paidAt.toISOString(),
     });
-    expect(queue.sent).toContainEqual({ hold_id: holdId, request_id: expect.any(String) as string });
-
-    const booked = await confirmBooking(env.DB, fsm(), payments, holdId, paidAt, { labelAsTest: false });
-    expect(booked).toBe("booked");
     expect(payments.made.refunds).toEqual([]);
   });
 
@@ -609,8 +584,7 @@ describe("a payment link for a visit ops booked, paid", () => {
     await env.DB.prepare("UPDATE slot_holds SET state = 'released' WHERE id = ?1").bind(holdId).run();
     await deliver(linkPaid(sent, lapsed), "evt-2");
 
-    const given = await confirmBooking(env.DB, fsm(), payments, holdId, lapsed, { labelAsTest: false });
-    expect(given).toBe("refunded");
+    expect(await holdOf(holdId)).toMatchObject({ state: "released" });
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_link_1", amount: SERVICE_PRICE }]);
   });
 
@@ -625,25 +599,22 @@ describe("a payment link for a visit ops booked, paid", () => {
     const groups = async () => (await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS)).tasks.map((task) => task.group);
     expect(await groups()).toContain("replacement_order");
 
-    const answer = await book(
-      { client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "morning" },
-      { record: "ours" },
-    );
+    const answer = await book({ client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "morning" });
     const { hold_id: holdId, price } = await answer.json<{ hold_id: string; price: { amount: number } }>();
     expect(await groups()).toContain("replacement_order");
 
     const hold = await holdOf(holdId);
     const sent = { holdId, linkId: hold?.payment_link_id ?? "", reference: hold?.reference ?? "" };
     const paidAt = new Date(NOW.getTime() + 60 * 60_000);
-    await deliver(linkPaid(sent, paidAt, price.amount), "evt-4", "ours");
+    await deliver(linkPaid(sent, paidAt, price.amount), "evt-4");
     expect(await groups()).not.toContain("replacement_order");
   });
 
-  it("books the visit in the webhook's own request where our own database holds the record", async () => {
-    const sent = await sentLink("ours");
+  it("books the visit in the webhook's own request", async () => {
+    const sent = await sentLink();
     const { holdId } = sent;
     const paidAt = new Date(NOW.getTime() + 60 * 60_000);
-    await deliver(linkPaid(sent, paidAt), "evt-3", "ours");
+    await deliver(linkPaid(sent, paidAt), "evt-3");
 
     const booked = await env.DB.prepare(
       `SELECT a.status, a.type, p.razorpay_payment_id FROM slot_holds h JOIN appointments a ON a.id = h.appointment_id
@@ -652,21 +623,20 @@ describe("a payment link for a visit ops booked, paid", () => {
       .bind(holdId)
       .first();
     expect(booked).toEqual({ status: "scheduled", type: "service", razorpay_payment_id: "pay_link_1" });
-    expect(queue.sent).toEqual([]);
   });
 
   // Razorpay sends payment.captured for a link's payment too, often before payment_link.paid.
   it("books once and refunds nothing when the payment's capture arrives before the link's paid event", async () => {
-    const sent = await sentLink("ours");
+    const sent = await sentLink();
     const { holdId } = sent;
     const paidAt = new Date(NOW.getTime() + 60 * 60_000);
     const paid = linkPaid(sent, paidAt);
     const captured = { entity: "event", event: "payment.captured", payload: { payment: paid.payload.payment } };
 
-    expect((await deliver(captured, "evt-5", "ours")).status).toBe(200);
+    expect((await deliver(captured, "evt-5")).status).toBe(200);
     expect(await holdOf(holdId)).toMatchObject({ state: "held", confirmed_at: null });
 
-    expect((await deliver(paid, "evt-6", "ours")).status).toBe(200);
+    expect((await deliver(paid, "evt-6")).status).toBe(200);
     const visits = await env.DB.prepare(
       `SELECT a.id FROM slot_holds h JOIN appointments a ON a.id = h.appointment_id
        JOIN payments p ON p.appointment_id = a.id WHERE h.id = ?1 AND h.state = 'booked'`,
@@ -697,9 +667,7 @@ describe("a payment link for a visit ops booked, paid", () => {
   });
 });
 
-describe("POST /api/visits, where our own database holds the record of field work", () => {
-  const ours = { record: "ours" as const };
-
+describe("POST /api/visits: the visit written in the request", () => {
   it("writes a free consultation in the request, with the window the client asked for, and its task goes", async () => {
     await rohit();
     await env.DB.prepare(
@@ -711,24 +679,21 @@ describe("POST /api/visits, where our own database holds the record of field wor
     const waiting = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(waiting.tasks.map((task) => task.group)).toContain("consultation_request");
 
-    const answer = await book({ client: ROHIT, kind: "consultation", date: WEDNESDAY, window: "morning" }, ours);
+    const answer = await book({ client: ROHIT, kind: "consultation", date: WEDNESDAY, window: "morning" });
     expect(answer.status).toBe(201);
     const body = await answer.json<{ visit_id: string; outcome: string }>();
     expect(body.outcome).toBe("booked");
     const booked = await env.DB.prepare(
-      "SELECT fsm_id, fsm_work_order_id, status, type, asked_window, asked_checked_at FROM appointments WHERE id = ?1",
+      "SELECT status, type, asked_window, asked_checked_at FROM appointments WHERE id = ?1",
     )
       .bind(body.visit_id)
       .first();
     expect(booked).toEqual({
-      fsm_id: body.visit_id,
-      fsm_work_order_id: null,
       status: "scheduled",
       type: "consultation",
       asked_window: "afternoon",
       asked_checked_at: NOW.toISOString(),
     });
-    expect(queue.sent).toEqual([]);
     const after = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(after.tasks.map((task) => task.group)).not.toContain("consultation_request");
   });
@@ -737,7 +702,6 @@ describe("POST /api/visits, where our own database holds the record of field wor
     await rohit();
     const answer = await book(
       { client: ROHIT, kind: "first_fit", tier: NATURAL.tier, one_visit: true, date: WEDNESDAY, window: "morning" },
-      ours,
     );
     const body = await answer.json<{ visit_id: string; outcome: string }>();
     expect(body.outcome).toBe("booked");
@@ -750,7 +714,7 @@ describe("POST /api/visits, where our own database holds the record of field wor
   it("writes a service visit on a credit in the request, the credit spent on it", async () => {
     await rohit("fitted");
     await grantCredits(env.DB, { personId: ROHIT, visits: 1, source: "ops", sourceId: "goodwill", now: NOW }).run();
-    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" }, ours);
+    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" });
     const body = await answer.json<{ visit_id: string; outcome: string; pays: string }>();
     expect(body).toMatchObject({ outcome: "booked", pays: "credit" });
     expect((await creditBalance(env.DB, ROHIT, NOW)).visits).toBe(0);
@@ -758,7 +722,7 @@ describe("POST /api/visits, where our own database holds the record of field wor
 
   it("books nothing for a paid visit until its link is paid", async () => {
     await rohit("fitted");
-    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" }, ours);
+    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" });
     const body = await answer.json<{ hold_id: string; outcome: string }>();
     expect(body.outcome).toBe("awaiting_payment");
     expect(

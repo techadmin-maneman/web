@@ -131,7 +131,7 @@ async function piecesLabelled(
   return results;
 }
 
-/** A piece fitted on a visit. Its own ID is its FSM ID (docs/schema.md). */
+/** A piece fitted on a visit. */
 export interface FittedPiece {
   readonly personId: string;
   readonly appointmentId: string;

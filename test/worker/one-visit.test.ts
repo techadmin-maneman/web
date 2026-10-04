@@ -6,24 +6,15 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
-import { raiseInvoices } from "../../src/domain/fsm-invoices.ts";
-import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
-import { summaryOf } from "../../src/domain/job-sheet.ts";
 import { recordPayment } from "../../src/domain/payments.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
-import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
-import { createStubBooks } from "../../src/providers/books.ts";
-import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments, type PaymentsProvider, type StubPayments } from "../../src/providers/payments.ts";
 import { ProviderError } from "../../src/providers/provider-error.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
-import { termsOfVisit } from "../../src/domain/visit-changes.ts";
-import { ONE_VISIT_TERMS } from "../../src/policy/one-visit.ts";
 import {
   appFor,
   captureLogs,
@@ -301,7 +292,7 @@ describe("closing a one visit the client was fitted at", () => {
 });
 
 describe("closing a one visit the client decided against", () => {
-  it("makes it a consultation, with nothing charged, sent or invoiced, and the mirror keeps it so", async () => {
+  it("makes it a consultation, with nothing charged or sent", async () => {
     const payments = createStubPayments();
     const job = await oneVisit({ payments });
     expect((await toThePiece(job, { declined: true })).status).toBe(202);
@@ -310,67 +301,6 @@ describe("closing a one visit the client decided against", () => {
     expect(await visitRow()).toEqual({ type: "consultation", tier: "standard", one_visit: "declined" });
     expect(payments.made.links).toEqual([]);
     expect(await linkRow()).toBeNull();
-
-    // FSM completes it on the first fit's item, which is all it knows of the visit.
-    const fsm = createStubFsm({
-      ...EMPTY_FSM,
-      items: [{ id: "item-fit", name: "First fit", type: "Service", price: 3_000_000 }],
-      appointments: [
-        {
-          id: "ap-today",
-          name: "AP-1",
-          status: "Completed",
-          workOrderId: "wo-ap-today",
-          contactId: "contact-1",
-          scheduledStart: "2026-09-21T13:00:00+05:30",
-          scheduledEnd: "2026-09-21T16:00:00+05:30",
-          actualStart: "2026-09-21T13:05:00+05:30",
-          actualEnd: "2026-09-21T15:40:00+05:30",
-          technicianIds: ["resource-1"],
-          serviceIds: ["item-fit"],
-          serviceCity: "Gurgaon",
-          servicePincode: "122018",
-          modifiedAt: "2026-09-21T15:41:00+05:30",
-        },
-      ],
-    });
-    await syncAppointment(env.DB, fsm, "ap-today", NOW);
-    expect(await visitRow()).toEqual({ type: "consultation", tier: "standard", one_visit: "declined" });
-
-    const alertOnce = createAlertOnce({
-      db: env.DB,
-      alert: () => Promise.resolve(),
-      now: () => NOW,
-      environment: "local",
-      log: createLogger(),
-    });
-    const resolveAlert = createResolveAlert({ db: env.DB, now: () => NOW });
-    const books = createStubBooks();
-    await raiseInvoices(
-      env.DB,
-      { fsm, books, alertOnce, resolveAlert },
-      NOW,
-      createLogger(),
-      createCallBudget(Infinity),
-    );
-    expect(fsm.made.invoiced).toEqual([]);
-  });
-
-  it("says so in FSM's summary of the visit", async () => {
-    const job = await oneVisit();
-    await toThePiece(job, { declined: true });
-    await closeAsDone(job);
-    const visit = {
-      id: JOB,
-      fsmId: "ap-today",
-      type: "consultation" as const,
-      oneVisit: true,
-      personId: PERSON,
-      fsmContactId: "contact-1",
-    };
-    const summary = await summaryOf(env.DB, visit, { labelAsTest: false });
-    expect(summary.startsWith("Consultation and fit · ")).toBe(true);
-    expect(summary).toContain("No piece: the client decided against the fit");
   });
 });
 
@@ -522,10 +452,9 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 0 });
   });
 
-  it("leaves the client nothing to cancel or move, though FSM still has the visit dispatched", async () => {
+  it("leaves the client nothing to cancel or move once it is closed and paid", async () => {
     const linkId = await fittedAndClosed(createStubPayments());
     await deliver(linkPaid({ id: linkId, reference_id: JOB }), "evt-1");
-    await env.DB.prepare("UPDATE appointments SET status = 'dispatched' WHERE id = ?1").bind(JOB).run();
 
     const client = appFor("local", fakeDependencies(), {}, "client");
     const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
@@ -539,78 +468,7 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     expect(cancel.status).toBe(409);
     expect(await cancel.json()).toMatchObject({ error: { code: "not_changeable" } });
     expect((await ask("reschedule", {})).status).toBe(409);
-    const me = await (await request(client, "/api/me", { headers: { Cookie: cookie } })).json();
-    expect(me).toMatchObject({ next_visit: { id: JOB, stage: "done" } });
-  });
-});
-
-// While self-serve booking is off, a one visit is a request ops book in FSM by hand (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
-describe("a one visit ops book by hand while booking is off", () => {
-  const BY_HAND = "ap-by-hand";
-
-  /** FSM's first fit for the client, as ops booked it: on the first fit's item, for three hours, tomorrow. */
-  const fsmWithTheFit = () =>
-    createStubFsm({
-      ...EMPTY_FSM,
-      items: [{ id: "item-fit", name: "First fit", type: "Service", price: 3_000_000 }],
-      appointments: [
-        {
-          id: BY_HAND,
-          name: "AP-9",
-          status: "Scheduled",
-          workOrderId: "wo-by-hand",
-          contactId: "contact-1",
-          scheduledStart: "2026-09-22T09:00:00+05:30",
-          scheduledEnd: "2026-09-22T12:00:00+05:30",
-          actualStart: null,
-          actualEnd: null,
-          technicianIds: ["resource-1"],
-          serviceIds: ["item-fit"],
-          serviceCity: "Gurgaon",
-          servicePincode: "122018",
-          modifiedAt: "2026-09-21T12:00:00+05:30",
-        },
-      ],
-    });
-
-  const asked = (oneVisit: number) =>
-    env.DB.prepare(
-      `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at, one_visit)
-       VALUES (?1, ?2, '122018', '2026-09-22', 'morning', ?3, ?4)`,
-    )
-      .bind(crypto.randomUUID(), PERSON, NOW.toISOString(), oneVisit)
-      .run();
-
-  const handBooked = () =>
-    env.DB.prepare("SELECT id, one_visit FROM appointments WHERE fsm_id = ?1")
-      .bind(BY_HAND)
-      .first<{ id: string; one_visit: string | null }>();
-
-  it("is marked as one visit when the mirror first sees it, sold to cost nothing, and its request leaves the board", async () => {
-    await working("service");
-    await asked(1);
-    await syncAppointment(env.DB, fsmWithTheFit(), BY_HAND, NOW);
-
-    const visit = await handBooked();
-    expect(visit?.one_visit).toBe("booked");
-    const booked = await env.DB.prepare("SELECT booked FROM consultation_requests").first();
-    expect(booked).toEqual({ booked: 1 });
-    const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
-    expect(tasks.filter((task) => task.group === "consultation_request")).toEqual([]);
-
-    const inForce = { noticeHours: 24, lateCharge: "late_fee", noShowCharge: "late_fee" } as const;
-    const sold = await termsOfVisit(
-      env.DB,
-      { id: visit?.id ?? "", type: "first_fit", start: new Date("2026-09-22T03:30:00.000Z") },
-      inForce,
-    );
-    expect(sold).toEqual({ terms: ONE_VISIT_TERMS, lateFee: null });
-  });
-
-  it("leaves a first fit alone for a client who asked for the consultation alone", async () => {
-    await working("service");
-    await asked(0);
-    await syncAppointment(env.DB, fsmWithTheFit(), BY_HAND, NOW);
-    expect((await handBooked())?.one_visit).toBeNull();
+    const visits = await (await request(client, "/api/visits", { headers: { Cookie: cookie } })).json();
+    expect(visits).toMatchObject({ upcoming: [], past: [{ id: JOB, status: "completed" }] });
   });
 });
