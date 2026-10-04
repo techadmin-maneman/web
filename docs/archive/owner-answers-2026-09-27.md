@@ -25,7 +25,7 @@ A ruling of ADR 0025's register is written "ruling N", so that its number is nev
 
 - **20. A client is a customer in the CRM, not a lead.** Answered: FSM's CRM Contact is the customer record, and the Lead is marked. Follows: at a client's first completed first fit the CRM sync sets the Lead's status to "Client", so nobody works them as an enquiry; the service history goes on the Contact once item 21's token exists.
 - **21. The CRM token cannot reach Contacts.** Answered: the owner mints the Self Client with `ZohoCRM.modules.contacts.ALL` (runbook, step 8). Follows: the Contacts write and the Contacts erasure ship in one change.
-- **30. The licence for our own apps.** Answered: "I have received it. Close this point." Follows: settled; Zoho's written answer is to be filed with `docs/decisions/fsm-licensing.md`.
+- **30. The licence for our own apps.** Answered: "I have received it. Close this point." Follows: settled; Zoho's written answer is to be filed with `docs/archive/fsm-licensing.md`.
 - **32. One Zoho token budget for every proof.** Answered: a separate token. Follows: scripts and proofs run on their own Self Client refresh token, so they can never spend the Worker's ten access tokens in ten minutes.
 - **33. Converting a Request by API.** Answered: we link it. Follows: every booking's work order is created with its `Request`, so FSM moves the Request on by itself (ADR 0064).
 - **34. The CRM's referral fields.** Answered: set them up. Follows: `scripts/setup-crm.ts` on the org, proved with `scripts/check-zoho-setup.ts`, then `CRM_ORG_HAS_REFERRAL_FIELDS` goes on.

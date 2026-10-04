@@ -1,6 +1,6 @@
 // Dead code in mm-api (npm run check:dead): a file nothing imports, or an export nothing uses, not even its own
 // file. The Worker's entries are src/index.ts and the OpenAPI generator; scripts and tests reach into src too.
-// test/node/policy-quotes.test.ts loads every src/policy module by name, so each is an entry of its own.
+// Each src/policy module is an entry of its own: its RULES, the brief's words, may be read by its tests alone.
 // The apps, the site and the packages are not checked here.
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",

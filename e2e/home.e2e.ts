@@ -1,4 +1,4 @@
-// The home page and the chrome every page shares (docs/feature-inventory.md, items 1–21).
+// The home page and the chrome every page shares (docs/archive/feature-inventory.md, items 1–21).
 
 import type { Page } from "@playwright/test";
 import { expect, test, visit } from "./support.ts";

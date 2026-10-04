@@ -30,7 +30,7 @@ And, around it: a timeout after FSM took a work order made a second one on the r
 - Only `payment.captured` queues a booking. `order.paid` says the same of the same payment, and records it only.
 - A consumer takes the hold's lease (`booking_until`, five minutes) before it writes to FSM. Another finds it taken, answers `being_booked`, and tries again later, which never counts toward giving up.
 - A visit is two creates: the work order, then its appointment on the work order's service line. Each ID is kept on the hold the moment FSM gives it, and a retry reuses it.
-- The work order's summary ends "(booking _hold ID_)". A retry after a try that reached FSM and never heard back (`fsm_tried_at`) looks for it among FSM's latest work orders before making another. A work order made on an earlier try has its appointment looked for among FSM's latest appointments, the read the reconciliation already makes; FSM refuses a second appointment on one service line anyway (`docs/decisions/fsm-trial.md`).
+- The work order's summary ends "(booking _hold ID_)". A retry after a try that reached FSM and never heard back (`fsm_tried_at`) looks for it among FSM's latest work orders before making another. A work order made on an earlier try has its appointment looked for among FSM's latest appointments, the read the reconciliation already makes; FSM refuses a second appointment on one service line anyway (`docs/archive/fsm-trial.md`).
 - A lead's Request carries "(lead _lead ID_)" and is looked for the same way (`leads.fsm_request_tried_at`). A contact is looked for by mobile number before one is added, which also finds one ops added by hand.
 - A look FSM cannot answer is logged and the record made as before. For a work order, ops are also told to look for a second one.
 

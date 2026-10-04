@@ -484,7 +484,7 @@ describe("POST /api/no-shows/:id/decision", () => {
 
 /**
  * The owner ruled on 27 September 2026 that a no-show costs, to begin with, what a late cancellation of the same
- * visit costs, set in the console apart from it (docs/owner-answers-2026-09-27.md, item 60); a booking keeps the
+ * visit costs, set in the console apart from it (docs/archive/owner-answers-2026-09-27.md, item 60); a booking keeps the
  * charge it was sold under (docs/decisions/0088-every-policy-in-the-console.md).
  */
 describe("what charging a no-show costs the client", () => {

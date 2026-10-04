@@ -747,7 +747,7 @@ describe("moving a visit", () => {
 
 /**
  * The owner ruled on 27 September 2026 that the client keeps the free change after a move by ops: their notice counts
- * from the visit's time before ops moved it (docs/owner-answers-2026-09-27.md, item 71;
+ * from the visit's time before ops moved it (docs/archive/owner-answers-2026-09-27.md, item 71;
  * docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
  */
 describe("a visit ops moved", () => {

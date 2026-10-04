@@ -3,7 +3,7 @@
 // NOW is Monday 21 September 2026, 12 noon in India. Nothing here is a real person, number or address.
 //
 // "The client disputes a charge in the app, and ops rule Refund or Uphold in the console with a reason, and the
-// client is told." (docs/owner-answers-2026-09-27.md, item 60)
+// client is told." (docs/archive/owner-answers-2026-09-27.md, item 60)
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";

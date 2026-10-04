@@ -8,7 +8,7 @@
 
 ADR 0068 kept a paid hold's time however long FSM took, but not past FSM's fifth refusal running. The queue tries a write again after 30 seconds, then 1, 2 and 4 minutes, so the fifth refusal came about eight minutes after the first, and it cancelled what FSM held for the booking, refunded the client and told ops what happened to the money. A short outage at Zoho, such as the token exhaustion of item 32, refunded every client who paid during it and lost them their slots; the P2-M2 proof did exactly that to three bookings (`docs/verification.md`).
 
-The owner ruled on 27 September 2026: "hold it and alert ops". After the fifth refusal the slot and the payment are kept and ops are alerted once; the queue keeps trying hourly for 24 hours; ops book it in FSM or refund it from the console (`docs/owner-answers-2026-09-27.md`).
+The owner ruled on 27 September 2026: "hold it and alert ops". After the fifth refusal the slot and the payment are kept and ops are alerted once; the queue keeps trying hourly for 24 hours; ops book it in FSM or refund it from the console (`docs/archive/owner-answers-2026-09-27.md`).
 
 ## Decision
 

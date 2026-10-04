@@ -1,6 +1,6 @@
 # Mane Man web
 
-Mane Man fits hair systems at the client's home and services them every month. This repository is its web platform: the public site, with a try-on and booking; the client's app; the ops console; and the technician's app. It runs on Cloudflare's free plan, with Zoho (CRM, FSM and Books), Razorpay, WhatsApp, Google Maps and AILabTools behind it.
+Mane Man fits hair systems at the client's home and services them every month. This repository is its web platform: the public site, with a try-on and booking; the client's app; the ops console; and the technician's app. It runs on Cloudflare's free plan, with Zoho (CRM and Books), Razorpay, WhatsApp, Google Maps and AILabTools behind it.
 
 **Where it stands.** Staging runs all of it, on logged placeholders where the owner's inputs are still owed (ADR 0025, item 27). Production runs the Phase 1 API and a placeholder page until the owner's go-ahead; what is owed before then is `docs/open-points.md`. The briefs are in `docs/prompts/`, word for word, and every decision since is an ADR in `docs/decisions/`. ADR 0025 is the register of the owner's rulings and of where the build departs from a brief.
 
@@ -18,10 +18,10 @@ Five Cloudflare Workers make up each environment, in one account and one zone, `
 
 ```
 a request to maneman.in, app.maneman.in, ops.maneman.in or tech.maneman.in
-  /api/*          ──►  mm-api  ──►  D1 (the database), R2 (files), four queues, the cron
+  /api/*          ──►  mm-api  ──►  D1 (the database), R2 (files), three queues, the cron
   anything else   ──►  the host's own front end: mm-site, mm-app, mm-ops or mm-tech
 
-mm-api  ──►  Zoho CRM, FSM and Books, Razorpay, Evolution (WhatsApp), Google Maps, AILabTools
+mm-api  ──►  Zoho CRM and Books, Razorpay, Evolution (WhatsApp), Google Maps, AILabTools
 ```
 
 Staging's hosts are `staging.maneman.in`, `app-staging.maneman.in`, `ops-staging.maneman.in` and `tech-staging.maneman.in`, all behind Cloudflare Access.
@@ -29,11 +29,11 @@ Staging's hosts are `staging.maneman.in`, `app-staging.maneman.in`, `ops-staging
 What to know before changing anything:
 
 - **Each app calls the API on its own host.** mm-api tells the four surfaces apart by the host a request comes on, and answers each with its own routes (ADR 0026). So the client app's routes answer only on the client app's host.
-- **D1 first, the vendors after.** A request writes D1 and answers; the queues carry the work to Zoho, WhatsApp and AILabTools; and the cron's sweeper puts back on a queue whatever went quiet. D1 is where every retry starts from.
-- **FSM is the record of field work, and Razorpay of money.** D1 keeps a mirror of each, read afresh from the vendor, never written as the truth (ADRs 0032 and 0044).
+- **D1 first, the vendors after.** A request writes D1 and answers; the queues and the cron carry the work to Zoho, WhatsApp and AILabTools; and the cron's sweeper puts back on a queue whatever went quiet. D1 is where every retry starts from.
+- **D1 is the record of bookings, visits, technicians and pieces; Razorpay is the record of money.** D1 keeps a mirror of Razorpay's payments, read afresh from Razorpay and never written as the truth (ADR 0044). Zoho Books is written from D1: a customer by the five-minute Books pass, and an invoice from our own figures (ADR 0110).
 - **Every vendor is behind an adapter** in `src/providers/`, with a stub. Locally every one is a stub, and nothing leaves the machine. Production refuses to start with a stub.
 - **The free plan is a rule, not a hope** (ADR 0009). Daily ceilings keep R2 from billing, a test proves them, and a Worker may hold 64 vars and secrets at most.
-- **Business rules live once, in `src/policy/`,** each quoting its brief, with a test that quotes it too.
+- **Business rules live once, in `src/policy/`,** most quoting their brief's own words (`RULES`), which their tests name.
 - **zod is the contract.** Each route declares its request and answer in zod; `npm run openapi` writes the OpenAPI documents, the API reference and each front end's types from them.
 
 ## Words
@@ -43,13 +43,13 @@ The few that come up everywhere. `docs/glossary.md` has the rest, and says which
 | Word            | Means                                                                                                                |
 | --------------- | -------------------------------------------------------------------------------------------------------------------- |
 | **surface**     | One of the four sites mm-api answers: public, client, ops and tech (`ENABLED_SURFACES`, ADR 0026)                    |
-| **the mirror**  | D1's copy of FSM's appointments, the `appointments` table, kept current by FSM's webhook and a reconciliation        |
-| **hold**        | Ten minutes on a technician's time while a client pays; once paid, kept until it is booked in FSM or refunded        |
-| **job event**   | A technician's step (arrived, started, photographs, the outcome), sent from his phone's outbox and passed on to FSM  |
+| **appointment** | A visit booked: the `appointments` table, D1's own record of field work since FSM went (ADR 0110)                    |
+| **hold**        | Ten minutes on a technician's time while a client pays; once paid, the visit is booked in the same request           |
+| **job event**   | A technician's step (arrived, started, photographs, the outcome), sent from his phone's outbox and landed in D1      |
 | **the sweeper** | The cron job that puts back on a queue what went quiet, and deletes what has outlived its use                        |
 | **alert**       | A failure that needs a person: kept in the `alerts` table, told once to the alert space, closed when it is put right |
 | **PLACEHOLDER** | Copy or material still owed by the owner. Staging shows it; a production build refuses it                            |
-| **price book**  | Ops' prices, each from the day it applies, which the site, the apps and FSM's catalogue all follow (ADR 0073)        |
+| **price book**  | Ops' prices, each from the day it applies, which the site, the apps and Books' items all follow (ADR 0073)           |
 
 ## Working locally
 
@@ -62,7 +62,7 @@ npm run db:seed:local   # clients, visits and a technician to sign in as
 npm run dev:all         # mm-api, the public site and the three apps; every login code is 246810
 ```
 
-`docs/getting-started.md` has the rest: the host each app is opened on (each needs its own, such as `http://app.localhost:4322`), the commands that stand in for the cron, Razorpay and FSM, and moving a port. `npm run dev` runs mm-api alone on `:8787`. Locally every provider is a stub, FSM is off, and Turnstile uses Cloudflare's test keys: send `"turnstile_token": "XXXX.DUMMY.TOKEN.XXXX"`.
+`docs/getting-started.md` has the rest: the host each app is opened on (each needs its own, such as `http://app.localhost:4322`), the commands that stand in for the cron, Razorpay and a technician's phone, and moving a port. `npm run dev` runs mm-api alone on `:8787`. Locally every provider is a stub, and Turnstile uses Cloudflare's test keys: send `"turnstile_token": "XXXX.DUMMY.TOKEN.XXXX"`.
 
 ## Checks
 
@@ -95,13 +95,13 @@ src/                  mm-api
   index.ts            the Worker: requests by host, the queue consumers, the cron
   app.ts              one app per surface, and the routes each answers
   config/             environments, settings, limits, booking choices, notices, presets, message texts
-  policy/             the business rules, each quoting its brief, with a test that quotes it
-  domain/             what the rules act on: bookings, visits, payments, the FSM mirror, alerts; no HTTP here
+  policy/             the business rules, most quoting their brief's words, which their tests name
+  domain/             what the rules act on: bookings, visits, payments, invoices, alerts; no HTTP here
   http/               what a request carries: its types, sessions, Access and the ops audit, idempotency
   lib/                small helpers: India's time, durations, hashes, signed tokens, the cron's call budget
   providers/          each vendor behind an interface, with its stub
-  queues/             the queue consumers: crm-sync, fsm-sync, messaging, render
-  scheduled/          the cron's jobs: the sweeper, the FSM reconciliation, the WhatsApp bridge check, referrals
+  queues/             the queue consumers: crm-sync, messaging, render
+  scheduled/          the cron's jobs: the sweeper, the Razorpay catch-up, the WhatsApp bridge check, referrals, retention
   routes/             one module per route or group of routes, zod schemas included
   guard.ts            the startup guard and the database-identity check
   log.ts              the only logger; it redacts personal data
@@ -119,30 +119,20 @@ e2e/                  the browser tests: the site at its root, then app/, ops/ a
 scripts/              build, dev, seed, checks, release, smoke, Zoho set-up, imports
 design/               the owner's designs: the site, the Phase 2 boards, the brand kit
 data/                 the AILabTools style catalogue, the pincodes, a sample referral log
-ops/runner/           the self-hosted CI runner's image
-docs/                 below
+ops/runner/           the self-hosted CI runner's image, retired: CI runs on GitHub's runners (docs/runbook.md)
+docs/                 indexed by docs/README.md
 ```
 
 ## Documents
 
-| Document                                                        | What it is                                                                                                                                            |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/getting-started.md`                                       | The whole system on your laptop                                                                                                                       |
-| `docs/front-ends.md`                                            | The four front ends: how each is built, run, tested and deployed, and what they share                                                                 |
-| `docs/frontend.md`                                              | The public site in detail: its content, prices, notices, analytics and going live                                                                     |
-| `docs/runbook.md`                                               | Provisioning, incidents, alerts, restoring D1, rolling back                                                                                           |
-| `docs/decisions/`                                               | The ADRs, indexed in `docs/decisions/README.md` (`npm run adr-index`); 0025 is the register of the owner's rulings and the departures from the briefs |
-| `docs/open-points.md`                                           | What is still owed before production, and what staging uses meanwhile                                                                                 |
-| `docs/prompts/`                                                 | The briefs, word for word                                                                                                                             |
-| `docs/glossary.md`                                              | Which word means what                                                                                                                                 |
-| `docs/migrations.md`                                            | How to write a migration D1 will take, and the contract steps waiting                                                                                 |
-| `docs/schema.md`                                                | Every table in D1, its columns, keys and indexes, and what it holds; written from the migrations by `npm run schema`                                  |
-| `docs/api.md`, `api-client.md`, `api-ops.md`, `api-tech.md`     | The API reference, one per surface, generated with `docs/openapi*.json`                                                                               |
-| `docs/verification.md`                                          | Each milestone's definition of done, with its evidence                                                                                                |
-| `docs/feature-inventory.md`, `docs/feature-inventory-phase2.md` | Every feature the front-end briefs list, and where it stands                                                                                          |
-| `docs/fidelity-method.md`, `docs/fidelity/`                     | How each screen is compared with its design, and the pairs                                                                                            |
-| `docs/phase2-inputs.md`                                         | What Phase 2 needed from the vendors and the owner, and how to get it                                                                                 |
-| `docs/tech-field-test.md`, `docs/technician-test-setup.md`      | The technician app's field test, and signing in to it on your own phone                                                                               |
-| `docs/address-capture-scope.md`                                 | How addresses are taken, and what taking one on a map needed                                                                                          |
-| `docs/turnstile.md`                                             | The Turnstile site keys                                                                                                                               |
-| `docs/reference/`                                               | The AILabTools API notes, verbatim                                                                                                                    |
+`docs/README.md` finds every document, by what you are here to do: start, change, operate or look something up. The ways in most people need:
+
+| Document                  | What it is                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| `docs/walkthrough.md`     | The whole platform as its users meet it: a booking, a visit, a payment, a referral, an alert |
+| `docs/getting-started.md` | The whole system on your laptop                                                              |
+| `docs/front-ends.md`      | The four front ends: how each is built, run, tested and deployed, and what they share        |
+| `docs/runbook.md`         | Provisioning, incidents, alerts, restoring D1, rolling back                                  |
+| `docs/go-live.md`         | What takes each release to production, in the owner's order                                  |
+| `docs/open-points.md`     | What is still owed before production, and what staging uses meanwhile                        |
+| `docs/decisions/`         | The ADRs, indexed in `docs/decisions/README.md`; 0025 is the register of the owner's rulings |

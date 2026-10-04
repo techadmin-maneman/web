@@ -31,7 +31,7 @@ Five Cloudflare Workers make up each environment: `mm-api` answers every `/api/*
 
 **Staging and production.** Staging (`staging.maneman.in` and its three siblings, all behind Cloudflare Access) runs everything on test money and the owner's real Zoho org. Production runs the Phase 1 API and a placeholder page until the owner's go-ahead; `docs/go-live.md` is the order in which it is switched on, the site first and the apps later.
 
-**The console is the source of truth.** The owner ruled on 27 September 2026 that every price, service and policy is an ops update, not a tech update (ADR 0025, items 66 and 67). What the console already holds is listed under "What changes without a release"; what is still code is `docs/implementation-plan-2026-09-27.md`, C1.
+**The console is the source of truth.** The owner ruled on 27 September 2026 that every price, service and policy is an ops update, not a tech update (ADR 0025, items 66 and 67). What the console already holds is listed under "What changes without a release"; what is still code is `docs/archive/implementation-plan-2026-09-27.md`, C1.
 
 ## Who uses what
 
@@ -164,7 +164,7 @@ Every step is saved on the phone first and sent in order when there is signal, s
 
 ## What changes without a release
 
-Ops change these in the console, and each is in force within a minute: services and their names, lengths, order and retirement; prices, each from the day it applies, so nothing already sold moves; the rules; the next visit's days; the service area; the job sheet; the consumables and each service's expected use; and stock. Everything else is code and needs a release. The owner has ruled that every policy should move into the console: the move and cancel terms, the no-show charges, the reminder's hour and the rest are listed in `docs/open-points.md`, item 12, and `docs/implementation-plan-2026-09-27.md`, C1.
+Ops change these in the console, and each is in force within a minute: services and their names, lengths, order and retirement; prices, each from the day it applies, so nothing already sold moves; the rules; the next visit's days; the service area; the job sheet; the consumables and each service's expected use; and stock. Everything else is code and needs a release. The owner has ruled that every policy should move into the console: the move and cancel terms, the no-show charges, the reminder's hour and the rest are listed in `docs/open-points.md`, item 12, and `docs/archive/implementation-plan-2026-09-27.md`, C1.
 
 ## Behind the scenes
 
@@ -184,5 +184,5 @@ Ops change these in the console, and each is in force within a minute: services 
 | Prices from the price book                | `docs/decisions/0073-prices-from-the-price-book.md`                 |
 | What ops may set in the console           | `docs/decisions/0061-ops-editable-inputs.md`                        |
 | A paid hold is kept                       | `docs/decisions/0068-a-paid-hold-is-kept.md`                        |
-| The owner's rulings, and every open point | ADR 0025; `docs/open-points.md`; `docs/owner-answers-2026-09-27.md` |
+| The owner's rulings, and every open point | ADR 0025; `docs/open-points.md`; `docs/archive/owner-answers-2026-09-27.md` |
 | Going live                                | `docs/go-live.md`; `docs/runbook.md`                                |

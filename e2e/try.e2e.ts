@@ -1,4 +1,4 @@
-// The try-on's screens, opened directly with ?state= (docs/feature-inventory.md,
+// The try-on's screens, opened directly with ?state= (docs/archive/feature-inventory.md,
 // items 22–30). These make no API calls; try-flow.e2e.ts runs the flow on a
 // mocked API, and try-api.e2e.ts on the local one. The look goes to WhatsApp
 // only (ADR 0104): there is no processing or result screen, and the gate comes

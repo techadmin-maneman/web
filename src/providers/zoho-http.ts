@@ -4,7 +4,7 @@
 //
 // The access token lasts an hour and is kept in D1 (`zoho_access_tokens`), so
 // every invocation uses the same one. Zoho mints at most 10 per 10 minutes per
-// refresh token (docs/decisions/fsm-trial.md), and staging and production share
+// refresh token (docs/archive/fsm-trial.md), and staging and production share
 // the CRM's (ADR 0050), so a token is asked for sparingly:
 //   - only when the one held is out of date, or Zoho says it is invalid; a 401
 //     for anything else, such as a scope Zoho will not grant, is not answered

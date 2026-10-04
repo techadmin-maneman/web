@@ -1,6 +1,6 @@
 # NCR pincodes
 
-`ncr-pincodes.csv` lists the 198 pincodes of the five cities Phase 1 serves: Delhi 103, Gurgaon 29, Noida 26, Ghaziabad 25 and Faridabad 15. It is the starting point for the service area (`docs/phase2-inputs.md`, section 7), which P2-M3's `serviceable_pincodes` table is loaded from.
+`ncr-pincodes.csv` lists the 198 pincodes of the five cities Phase 1 serves: Delhi 103, Gurgaon 29, Noida 26, Ghaziabad 25 and Faridabad 15. It is the starting point for the service area (`docs/archive/phase2-inputs.md`, section 7), which P2-M3's `serviceable_pincodes` table is loaded from.
 
 ## The columns
 

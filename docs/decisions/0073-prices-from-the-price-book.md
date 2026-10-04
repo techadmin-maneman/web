@@ -51,7 +51,7 @@ The words "free consultation" are copy, not a price. A consultation the book doe
 
 **Who switches it on, and where.** The owner, **in production only**, once production's price book holds the owner's prices and production connects FSM (its `FSM_PROVIDER` is `"none"` today). Staging's stays off. Until the owner switches it on, a price change is set in FSM by hand, and the comparison names each item to set.
 
-**Not tried on the org.** The write is `PUT /fsm/v1/Products/{id}` with `Unit_Price`: the trial deletes an item at `/Products/{id}`, not `/Service_And_Parts/{id}`, and `scripts/setup-fsm.ts` creates one with `Unit_Price` (docs/decisions/fsm-trial.md). The list's `Unit_Price` is the field that script wrote, and the audit's read of 24 September 2026 found each figure it had written. The write is listed in open point 25; the first push after the switch proves it, and the next comparison reads it back.
+**Not tried on the org.** The write is `PUT /fsm/v1/Products/{id}` with `Unit_Price`: the trial deletes an item at `/Products/{id}`, not `/Service_And_Parts/{id}`, and `scripts/setup-fsm.ts` creates one with `Unit_Price` (docs/archive/fsm-trial.md). The list's `Unit_Price` is the field that script wrote, and the audit's read of 24 September 2026 found each figure it had written. The write is listed in open point 25; the first push after the switch proves it, and the next comparison reads it back.
 
 ## Consequences
 

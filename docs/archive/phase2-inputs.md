@@ -37,7 +37,7 @@ Production still runs on the Zoho CRM Developer Edition org (ADR 0020). FSM and 
 
 ### 2. The FSM trial findings
 
-`docs/decisions/fsm-trial.md` lists ten questions. Zoho's documentation answers most of them. The rest need a real trial org, and I can test those myself if you give me API access to the trial (section 3).
+`docs/archive/fsm-trial.md` lists ten questions. Zoho's documentation answers most of them. The rest need a real trial org, and I can test those myself if you give me API access to the trial (section 3).
 
 **Already answered from the documentation:**
 
@@ -291,4 +291,4 @@ Ask counsel to approve:
 
 ## Worth starting now for P2-M4
 
-Ask Zoho, in writing, the licensing question in `docs/decisions/fsm-licensing.md`: may our own apps drive FSM through its API, and do technicians working only in our apps need seats? The research found users are not charged (pricing is per appointment), but the terms of use still need Zoho's written answer.
+Ask Zoho, in writing, the licensing question in `docs/archive/fsm-licensing.md`: may our own apps drive FSM through its API, and do technicians working only in our apps need seats? The research found users are not charged (pricing is per appointment), but the terms of use still need Zoho's written answer.

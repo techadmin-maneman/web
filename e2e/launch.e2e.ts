@@ -1,6 +1,6 @@
 // F4's launch checks: the JavaScript budget on the home page, what search
 // engines and shared links read, and the security headers each page is served
-// with (docs/feature-inventory.md, "Launch").
+// with (docs/archive/feature-inventory.md, "Launch").
 
 import { gzipSync } from "node:zlib";
 import sharp from "sharp";

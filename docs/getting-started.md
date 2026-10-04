@@ -41,7 +41,7 @@ Locally nothing happens by itself that, on staging, another system does. Each ha
 
 `close:local` calls `POST /api/dev/appointments/:id/close`, which exists only where `DEV_ROUTES=on`. `dev:all` sets it; the startup guard refuses it anywhere but locally, so it can never be reached on a deployed Worker.
 
-Locally FSM is off (`FSM_PROVIDER` is `none`): our own database is the record of field work, as it will be on staging once it leaves FSM.
+Our own database is the record of bookings, visits, technicians and pieces, locally as everywhere (ADR 0110).
 
 ## The story, end to end
 

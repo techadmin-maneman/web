@@ -2,7 +2,7 @@
 
 - Status: superseded by [0110](0110-field-work-without-fsm.md) on 4 October 2026: the client's note is kept on the visit in our own database; FSM's work order is not written. Was: accepted, on the owner's ruling of 27 September 2026 (`docs/open-points.md`, item 64)
 - Date: 2026-10-01
-- Amends [0074](0074-hand-offs-and-messages.md), which kept the note out of FSM until a note had been tried on the org; the calls are the trial of 30 September 2026 (`docs/decisions/fsm-trial.md`, "Text FSM keeps"); the text is kept as [0098](0098-the-door-in-fsms-address.md) keeps a street
+- Amends [0074](0074-hand-offs-and-messages.md), which kept the note out of FSM until a note had been tried on the org; the calls are the trial of 30 September 2026 (`docs/archive/fsm-trial.md`, "Text FSM keeps"); the text is kept as [0098](0098-the-door-in-fsms-address.md) keeps a street
 
 ## Context
 

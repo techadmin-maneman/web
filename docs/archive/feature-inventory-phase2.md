@@ -1,6 +1,6 @@
 # Feature inventory, Phase 2
 
-Every item in the Phase 2 front-end prompt's five inventories — the client app, the referral card and landing, the technician app, the dispatch board and pieces tab, and the internal views — with its evidence. As in Phase 1 (`docs/feature-inventory.md`), the evidence is a browser test in `e2e/`, or a fidelity pair against the matching board (`docs/fidelity-method.md`).
+Every item in the Phase 2 front-end prompt's five inventories — the client app, the referral card and landing, the technician app, the dispatch board and pieces tab, and the internal views — with its evidence. As in Phase 1 (`docs/archive/feature-inventory.md`), the evidence is a browser test in `e2e/`, or a fidelity pair against the matching board (`docs/fidelity-method.md`).
 
 ✅ means done, with the step that did it. ⏳ means not yet, with the step that will.
 

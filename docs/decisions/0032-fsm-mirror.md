@@ -9,7 +9,7 @@ The Phase 2 backend prompt makes Zoho FSM the system of record for field work: c
 
 Two things set the constraints:
 
-- **The trial.** `docs/decisions/fsm-trial.md` records how the real org's API behaves:
+- **The trial.** `docs/archive/fsm-trial.md` records how the real org's API behaves:
   - an empty list answers 204;
   - a reschedule needs its own endpoint;
   - webhooks are unsigned;

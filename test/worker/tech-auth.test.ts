@@ -337,7 +337,7 @@ describe("a signed-in phone", () => {
 });
 
 describe("two technicians on one number", () => {
-  // The owner signs in on their own technician row from 27 September 2026 (docs/owner-answers-2026-09-27.md). A test
+  // The owner signs in on their own technician row from 27 September 2026 (docs/archive/owner-answers-2026-09-27.md). A test
   // row left behind on the same number must not take the sign-in, whichever was written first.
   it("prefers the technician's own row to one written by hand on the same number", async () => {
     await env.DB.batch([

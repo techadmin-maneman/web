@@ -7,7 +7,7 @@
 
 The prompt: photographs are "captured in our app, stored in `mm-{env}-client-photos`", and "also attached to the FSM job sheet, so FSM stays the complete record, if the trial confirmed an attachment API".
 
-The trial confirmed it (`docs/decisions/fsm-trial.md`, question 5): a file goes to `POST /fsm/v1/files`, then onto a record's Attachments, and comes back byte for byte.
+The trial confirmed it (`docs/archive/fsm-trial.md`, question 5): a file goes to `POST /fsm/v1/files`, then onto a record's Attachments, and comes back byte for byte.
 
 Until now the only photographs we held came the other way: the mirror exported them out of FSM, where technicians took them in FSM's own app, reading each file's phase and angle from its name (`before-front.jpg`). Both paths must fill one set, or a client's timeline would double up during the two-week parallel run the rollout plans.
 

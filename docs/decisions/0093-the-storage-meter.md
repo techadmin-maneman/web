@@ -1,6 +1,6 @@
 # 0093. The storage meter, the photograph upload limit, and thumbnails made on the phone
 
-- Status: accepted, on the owner's rulings of 27 September 2026 (`docs/owner-answers-2026-09-27.md`: items 66 and 151). Departs from [0039](0039-phase-2-budget.md), which planned to refuse uploads when the share filled, and from [0009](0009-stay-inside-cloudflare-free-tier.md)'s "the card on the account is never charged", for R2 storage alone
+- Status: accepted, on the owner's rulings of 27 September 2026 (`docs/archive/owner-answers-2026-09-27.md`: items 66 and 151). Departs from [0039](0039-phase-2-budget.md), which planned to refuse uploads when the share filled, and from [0009](0009-stay-inside-cloudflare-free-tier.md)'s "the card on the account is never charged", for R2 storage alone
 - Date: 2026-09-28
 - Amends [0028](0028-photographs-from-the-app.md), [0039](0039-phase-2-budget.md) and [0084](0084-a-clients-try-on-is-kept.md); follows [0067](0067-alerts-and-silent-failures.md)
 

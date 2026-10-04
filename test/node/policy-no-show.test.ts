@@ -89,7 +89,7 @@ describe("no-show", () => {
   });
 
   // BIZ-28: the rule says what a charge keeps and nothing of what a waiver gives back, which the owner ruled
-  // on 27 September 2026: "Refund and credit back" (docs/owner-answers-2026-09-27.md).
+  // on 27 September 2026: "Refund and credit back" (docs/archive/owner-answers-2026-09-27.md).
   it("gives back the payment and the credit on a waiver, as the owner ruled", () => {
     expect(WAIVER_GIVES_BACK).toEqual({ payment: "refunded", credit: "returned" });
   });

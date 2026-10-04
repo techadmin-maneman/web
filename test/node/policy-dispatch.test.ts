@@ -78,7 +78,7 @@ describe("dispatch", () => {
     ]);
   });
 
-  // The owner ruled that a client keeps the free change after a move by ops (docs/owner-answers-2026-09-27.md, item
+  // The owner ruled that a client keeps the free change after a move by ops (docs/archive/owner-answers-2026-09-27.md, item
   // 71). A move the client asked for is at a time they chose, as a move in the app is.
   it("leaves the client counting from the time before a move ops make, unless the client asked for it", () => {
     expect(MOVE_REASONS.filter((reason) => !keepsTheClientsNotice(reason))).toEqual(["client_asked"]);

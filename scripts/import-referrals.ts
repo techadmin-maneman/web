@@ -1,5 +1,5 @@
 // Back-fills the referrals ops logged before January into the ledger and attributions
-// (docs/decisions/0048-referrals.md, docs/phase2-inputs.md, section 9). Safe to run again: a person, a code and
+// (docs/decisions/0048-referrals.md, docs/archive/phase2-inputs.md, section 9). Safe to run again: a person, a code and
 // a grant are each written once.
 //
 //   node scripts/import-referrals.ts local --file data/referrals/sample-referrals.csv

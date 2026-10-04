@@ -2,7 +2,7 @@
 
 - Status: accepted; amended 27 September 2026 by [0085](0085-services-ops-can-edit.md), whose services the visit offered now names, and 28 September 2026 by the plan's piece C27, whose summary of each client's last visits the Tasks board's two groups now read, and by [0092](0092-task-owners.md), whose flag, kept from that summary, has First fit to book read only the requests of clients not fitted since their consultation; its site form's first fit to follow superseded 1 October 2026 by [0105](0105-a-consultation-and-fit-in-one-visit.md): the form books the consultation alone, or the consultation and fit in one visit, and writes no request for a fit, so First fit to book lists only the requests written before
 - Date: 2026-09-27
-- Amends [0051](0051-booking-from-the-site.md), whose form booked a consultation alone, [0045](0045-self-serve-booking.md), whose horizon was the strip's fortnight, [0061](0061-ops-editable-inputs.md), whose register gains its sixth input and a key's own bounds, and [0071](0071-what-ops-see-before-a-setting-changes.md), whose check before a change now stands before a rule is set as well as a price; follows [0047](0047-visit-messages.md) for the reminder, [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md) for the request, [0072](0072-ops-clients-and-queues.md) and [0074](0074-hand-offs-and-messages.md) for the Tasks board, and [0079](0079-an-address-before-a-slot.md); records the owner's rulings of 27 September 2026, ADR 0025's items 68, 69 and 70, and their answers on booking and to open points 46, 61 and 70 (`docs/owner-answers-2026-09-27.md`)
+- Amends [0051](0051-booking-from-the-site.md), whose form booked a consultation alone, [0045](0045-self-serve-booking.md), whose horizon was the strip's fortnight, [0061](0061-ops-editable-inputs.md), whose register gains its sixth input and a key's own bounds, and [0071](0071-what-ops-see-before-a-setting-changes.md), whose check before a change now stands before a rule is set as well as a price; follows [0047](0047-visit-messages.md) for the reminder, [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md) for the request, [0072](0072-ops-clients-and-queues.md) and [0074](0074-hand-offs-and-messages.md) for the Tasks board, and [0079](0079-an-address-before-a-slot.md); records the owner's rulings of 27 September 2026, ADR 0025's items 68, 69 and 70, and their answers on booking and to open points 46, 61 and 70 (`docs/archive/owner-answers-2026-09-27.md`)
 
 ## Context
 
@@ -115,7 +115,7 @@ ADR 0061's register held ten inputs at most, for its read budget, and five were 
 
 ### Where the rules are written
 
-The rules are `src/policy/next-visit.ts`, `src/policy/home-prompt.ts` and the second rule of `src/policy/site-booking.ts`, each quoting the owner. Some of those words are recorded only in `docs/owner-answers-2026-09-27.md`, which ADR 0025 names as the record of the answers, so `test/node/policy-quotes.test.ts` now reads that file as a source beside the prompt and the register.
+The rules are `src/policy/next-visit.ts`, `src/policy/home-prompt.ts` and the second rule of `src/policy/site-booking.ts`, each quoting the owner. Some of those words are recorded only in `docs/archive/owner-answers-2026-09-27.md`, which ADR 0025 names as the record of the answers, so `test/node/policy-quotes.test.ts` now reads that file as a source beside the prompt and the register.
 
 ## Consequences
 
