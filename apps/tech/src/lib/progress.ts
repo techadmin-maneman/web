@@ -6,10 +6,13 @@
 // A write the API stopped (superseded or refused) has not happened, so only
 // what is still waiting to be sent counts beside what landed.
 
-import type { CheckIn, Job, Step } from "../api.ts";
+import type { CheckIn, Job, JobState, JobSummary, Step } from "../api.ts";
 import type { Queued } from "../store/outbox.ts";
 import type { InJobStep } from "../route.ts";
 import { STEP_PATHS } from "../route.ts";
+
+/** What the day's list and the card both carry of a job: enough to say whether it began and how it closed. */
+type Tracked = Pick<JobSummary, "id" | "progress">;
 
 const IN_JOB = new Set<string>(Object.keys(STEP_PATHS));
 
@@ -35,7 +38,9 @@ export function nextStep(job: Job, queued: readonly Queued[]): InJobStep | null 
   return stepsOf(job).find((step) => !sent.has(step)) ?? null;
 }
 
-export const started = (job: Job, queued: readonly Queued[]): boolean => done(job, queued).has("start");
+export const started = (job: Tracked, queued: readonly Queued[]): boolean =>
+  job.progress.started_at !== null ||
+  queued.some((event) => event.job_id === job.id && event.kind === "start" && event.state === "waiting");
 export const checkedIn = (job: Job, queued: readonly Queued[]): boolean => done(job, queued).has("check_in");
 
 export type Outcome = "done" | "partial" | "no_show";
@@ -44,7 +49,7 @@ const OUTCOMES: ReadonlySet<string> = new Set<Outcome>(["done", "partial", "no_s
 const isOutcome = (value: unknown): value is Outcome => typeof value === "string" && OUTCOMES.has(value);
 
 /** How the job closed: the outcome that landed, else one still on its way from the phone. */
-export function outcomeOf(job: Job, queued: readonly Queued[]): Outcome | null {
+export function outcomeOf(job: Tracked, queued: readonly Queued[]): Outcome | null {
   if (isOutcome(job.progress.outcome)) return job.progress.outcome;
   for (const event of queued) {
     if (event.job_id !== job.id || event.state !== "waiting") continue;
@@ -55,7 +60,26 @@ export function outcomeOf(job: Job, queued: readonly Queued[]): Outcome | null {
   return null;
 }
 
-export const closed = (job: Job, queued: readonly Queued[]): boolean => outcomeOf(job, queued) !== null;
+export const closed = (job: Tracked, queued: readonly Queued[]): boolean => outcomeOf(job, queued) !== null;
+
+/** Where a row of the day's list stands once its job has begun. */
+export type RowState = "closed" | "in_progress";
+
+/**
+ * Where a row of the day's list stands, read as its card reads it: the phone's writes still on their way, then what
+ * landed, then the visit's status. What landed is the list's word, or a write's answer `heard` since, whichever knows
+ * more.
+ */
+export function rowState(job: JobSummary, queued: readonly Queued[], heard: JobState | undefined): RowState | null {
+  const landed = {
+    started_at: job.progress.started_at ?? heard?.started_at ?? null,
+    outcome: job.progress.outcome ?? heard?.outcome ?? null,
+  };
+  const known = { id: job.id, progress: landed };
+  if (closed(known, queued) || job.status === "completed" || job.status === "terminated") return "closed";
+  if (started(known, queued) || job.status === "in_progress") return "in_progress";
+  return null;
+}
 
 /** Whether ops changed this job under the phone: a write of its came back superseded. */
 export const changedUnder = (jobId: string, queued: readonly Queued[]): boolean =>
