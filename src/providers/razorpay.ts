@@ -10,6 +10,7 @@
 //        (https://razorpay.com/docs/api/refunds/create-normal/)
 //   POST https://api.razorpay.com/v1/payment_links            { id, short_url }
 //   GET  https://api.razorpay.com/v1/payment_links?reference_id=  { payment_links: [{ id, short_url }] }
+//   POST https://api.razorpay.com/v1/payment_links/{id}/cancel     { id, status: "cancelled" }
 //
 // A payment link is texted to the client by Razorpay itself, so it needs no template of ours and no secret beyond the
 // keys (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
@@ -183,6 +184,9 @@ export function createRazorpay(
       const path = `/payment_links?reference_id=${encodeURIComponent(reference)}`;
       const [found] = (await call("find_payment_link", path, null, LinksFound)).payment_links;
       return found === undefined ? null : { id: found.id, shortUrl: found.short_url };
+    },
+    cancelPaymentLink: async (linkId) => {
+      await call("cancel_payment_link", `/payment_links/${encodeURIComponent(linkId)}/cancel`, {}, Created);
     },
   };
 }

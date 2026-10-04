@@ -1,14 +1,21 @@
 // Lets the production canary serve for a while, then judges it on real
 // visitors' requests (scripts/lib/soak.ts): on its errors against the old
-// version's, and on what each route read from D1. Exits 1 when either fails,
-// so the release rolls back.
+// version's, on what each route read from D1, and on how long Home and a job's
+// card took. Exits 1 when any fails, so the release rolls back.
 //
 //   node scripts/soak.ts --worker mm-api --env production --seconds 300 --new <version-id> --old <version-id>
 
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 import { accountIdFor } from "./lib/cloudflare-api.ts";
-import { judgeRouteReads, judgeSoak, readInvocations, readRouteReads, type InvocationQuery } from "./lib/soak.ts";
+import {
+  judgeRouteLatency,
+  judgeRouteReads,
+  judgeSoak,
+  readInvocations,
+  readRouteReads,
+  type InvocationQuery,
+} from "./lib/soak.ts";
 
 const { values } = parseArgs({
   options: {
@@ -58,21 +65,24 @@ async function erroredFarMore(): Promise<boolean> {
   return false;
 }
 
-/** Whether a route of the new version read more from D1 than its ceiling; false when Workers Logs could not be read. */
-async function readTooMuch(): Promise<boolean> {
+/**
+ * Whether a route of the new version read more from D1 than its ceiling, or took longer than its budget; false when
+ * Workers Logs could not be read.
+ */
+async function routesFailed(): Promise<boolean> {
   const reading = await readRouteReads({ ...served, version: newVersion });
   if ("unreadable" in reading) {
     console.log(`::notice::The soak could not read what each route read from D1 (${reading.unreadable}).`);
     return false;
   }
-  const verdict = judgeRouteReads(reading.byRoute);
-  if (verdict.outcome === "failed") {
-    console.log(`::error::The canary read too much from D1: ${verdict.detail}`);
-    return true;
-  }
-  console.log(`D1 reads ${verdict.outcome}: ${verdict.detail}`);
-  return false;
+  const reads = judgeRouteReads(reading.byRoute);
+  const latency = judgeRouteLatency(reading.byRoute);
+  if (reads.outcome === "failed") console.log(`::error::The canary read too much from D1: ${reads.detail}`);
+  else console.log(`D1 reads ${reads.outcome}: ${reads.detail}`);
+  if (latency.outcome === "failed") console.log(`::error::The canary was too slow: ${latency.detail}`);
+  else console.log(`latency ${latency.outcome}: ${latency.detail}`);
+  return reads.outcome === "failed" || latency.outcome === "failed";
 }
 
-const failed = [await erroredFarMore(), await readTooMuch()].includes(true);
+const failed = [await erroredFarMore(), await routesFailed()].includes(true);
 if (failed) process.exit(1);

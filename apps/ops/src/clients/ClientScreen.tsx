@@ -1,8 +1,8 @@
 // One client's page (Ops Console, board B1's frame, with B2 and B3): who they
-// are and the ways to reach them, then their visits, pieces, payments,
-// consents, photographs or history. The board draws eight tabs; the six built
-// are the ones the ops routes answer, and what the head is narrowed to is
-// written down in docs/fidelity-method.md.
+// are, the ways to reach them and who invited them, then their visits, pieces,
+// payments, consents, photographs or history. The board draws eight tabs; the
+// six built are the ones the ops routes answer, and what the head is narrowed
+// to is written down in docs/fidelity-method.md.
 //
 // The record is read once for the page. Visits, Payments and History are drawn
 // from it, so moving between them costs no request. The photographs' opening
@@ -45,7 +45,21 @@ const creditsOf = (credits: Credits) =>
     ? clients.unknown
     : clients.creditLine(credits.visits, credits.earliest_expiry === null ? null : longDate(credits.earliest_expiry));
 
-function Head({ record, credits }: { record: ClientRecord; credits: Credits }) {
+/** Who invited the client, a way to their page, and the invite's code: "Vikram Sethi (VSAB23)". */
+function InvitedBy({ invite }: { invite: ClientInvite }) {
+  const code = clients.meta.inviteCode(invite.code);
+  if (invite.referrer === null) return `${clients.invite.erased} ${code}`;
+  return (
+    <>
+      <OpsLink className={styles.metaLink} to={`/clients/${invite.referrer.id}`}>
+        {invite.referrer.name}
+      </OpsLink>{" "}
+      {code}
+    </>
+  );
+}
+
+function Head({ record, credits, invite }: { record: ClientRecord; credits: Credits; invite: ClientInvite | null }) {
   const mobile = phoneWords(record.mobile);
   const meta = [
     { key: clients.meta.state, value: clients.states[record.state] },
@@ -91,6 +105,14 @@ function Head({ record, credits }: { record: ClientRecord; credits: Credits }) {
             </a>
           </dd>
         </div>
+        {invite !== null && (
+          <div className={styles.metaItem}>
+            <dt className={styles.metaKey}>{clients.meta.invitedBy}</dt>
+            <dd className={styles.metaValue}>
+              <InvitedBy invite={invite} />
+            </dd>
+          </div>
+        )}
       </dl>
     </div>
   );
@@ -132,6 +154,8 @@ function Tab({
       <Payments
         clientId={clientId}
         payments={record.payments}
+        links={record.payment_links}
+        invoices={record.invoices}
         credits={credits}
         onCredits={onCredits}
         invite={attached?.invite ?? record.invite}
@@ -181,7 +205,11 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
         ),
         loaded: (record) => (
           <div className={styles.client}>
-            <Head record={record} credits={adjusted?.credits ?? record.credits} />
+            <Head
+              record={record}
+              credits={adjusted?.credits ?? record.credits}
+              invite={attached?.invite ?? record.invite}
+            />
             <Tabs className={styles.tabs} label={record.name}>
               {clients.tabs.map((each) => (
                 <OpsLink

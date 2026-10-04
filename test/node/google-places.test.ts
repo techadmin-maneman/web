@@ -7,12 +7,25 @@
 // not on a geocode. Both are easy to get subtly wrong and neither shows up as a
 // bug — only as a bill — so they are pinned here.
 
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
+import { createLogger } from "../../src/log.ts";
 import { createGeocodeProvider } from "../../src/providers/geocode.ts";
 import { createStubGeocodeFetch, STUB_API_KEY } from "../../src/providers/google-places-stub.ts";
 import { createGooglePlaces } from "../../src/providers/google-places.ts";
 
 const SESSION = "11111111-2222-3333-4444-555555555555";
+
+const log = createLogger();
+let printed: MockInstance[];
+beforeEach(() => {
+  printed = [vi.spyOn(console, "log"), vi.spyOn(console, "warn")].map((spy) =>
+    spy.mockClear().mockImplementation(() => undefined),
+  );
+});
+
+/** Each line the provider logged, kept off the test's output. */
+const loggedLines = (): Record<string, unknown>[] =>
+  printed.flatMap((spy) => spy.mock.calls.map((call) => JSON.parse(String(call[0])) as Record<string, unknown>));
 
 /** The stub, wrapped so each call is recorded. */
 function watched() {
@@ -27,7 +40,7 @@ function watched() {
     });
     return stub(input, init);
   };
-  return { calls, provider: createGooglePlaces(STUB_API_KEY, { fetch }) };
+  return { calls, provider: createGooglePlaces(STUB_API_KEY, { fetch, log }) };
 }
 
 describe("suggestions", () => {
@@ -89,17 +102,38 @@ describe("suggestions", () => {
           { status: 403, headers: { "Content-Type": "application/json" } },
         ),
       );
-    const answer = await createGooglePlaces(STUB_API_KEY, { fetch }).suggest("Vatika City", SESSION);
+    const answer = await createGooglePlaces(STUB_API_KEY, { fetch, log }).suggest("Vatika City", SESSION);
     expect(answer.ok).toBe(false);
     if (answer.ok) return;
     expect(answer.reason).toBe("refused");
     expect(answer.detail).toBe("autocomplete 403: PERMISSION_DENIED, Places API (New) has not been used before");
+    expect(loggedLines()).toContainEqual(
+      expect.objectContaining({ event: "vendor_call", step: "autocomplete", status: 403, code: "PERMISSION_DENIED" }),
+    );
   });
 
   it("an empty result is an answer, not a failure", async () => {
     const { provider } = watched();
     const answer = await provider.suggest("mm-stub:none", SESSION);
     expect(answer).toEqual({ ok: true, suggestions: [] });
+  });
+});
+
+// PLAT-44: during the Google key's refusal the logs held no line per call, so its cause had to be found from outside.
+describe("the log", () => {
+  it("has a line for each call to Google, by step, with its status and time, and never the key", async () => {
+    const { provider } = watched();
+    await provider.suggest("Sunrise", SESSION);
+    await provider.resolve("stub-place-mayfield", SESSION);
+
+    const calls = loggedLines().filter((line) => line.event === "vendor_call");
+    expect(calls.map(({ vendor, step, status }) => ({ vendor, step, status }))).toEqual([
+      { vendor: "google", step: "autocomplete", status: 200 },
+      { vendor: "google", step: "close_session", status: 200 },
+      { vendor: "google", step: "geocode", status: 200 },
+    ]);
+    expect(calls.every((line) => typeof line.duration_ms === "number")).toBe(true);
+    expect(JSON.stringify(calls)).not.toContain(STUB_API_KEY);
   });
 });
 
@@ -154,13 +188,14 @@ describe("resolving a place", () => {
         new URL(new Request(input, init).url).hostname === "maps.googleapis.com"
           ? Promise.resolve(Response.json({ status, error_message: message, results: [] }))
           : createStubGeocodeFetch()(input, init),
+      log,
     });
     const answer = await provider.resolve("stub-place-mayfield", SESSION);
     expect(answer).toEqual({ ok: false, reason: "refused", detail: `geocoding said ${status}: ${message}` });
   });
 
   it("answers the stub's refused key as Google does: a 200 that says REQUEST_DENIED", async () => {
-    const provider = createGooglePlaces("not-the-stub-key", { fetch: createStubGeocodeFetch() });
+    const provider = createGooglePlaces("not-the-stub-key", { fetch: createStubGeocodeFetch(), log });
     const answer = await provider.resolve("stub-place-mayfield", SESSION);
     expect(answer).toMatchObject({ ok: false, reason: "refused" });
     if (answer.ok) return;
@@ -168,7 +203,7 @@ describe("resolving a place", () => {
   });
 
   it("never lets the API key into a detail, because geocoding takes it in the URL", async () => {
-    const provider = createGooglePlaces("a-very-secret-key", { fetch: createStubGeocodeFetch() });
+    const provider = createGooglePlaces("a-very-secret-key", { fetch: createStubGeocodeFetch(), log });
     const answer = await provider.resolve("stub-place-mayfield", SESSION);
     expect(answer.ok).toBe(false);
     if (answer.ok) return;
@@ -178,17 +213,17 @@ describe("resolving a place", () => {
 
 describe("choosing the implementation", () => {
   it("answers nothing where no provider is configured, rather than failing", async () => {
-    const provider = createGeocodeProvider("none", null, { fetch });
+    const provider = createGeocodeProvider("none", null, { fetch, log });
     expect(await provider.suggest("Sunrise", SESSION)).toMatchObject({ ok: false, reason: "unavailable" });
   });
 
   it("falls back to no provider when google is named without a key", async () => {
-    const provider = createGeocodeProvider("google", null, { fetch });
+    const provider = createGeocodeProvider("google", null, { fetch, log });
     expect(await provider.suggest("Sunrise", SESSION)).toMatchObject({ ok: false, reason: "unavailable" });
   });
 
   it("uses the stub, which needs no network, when the provider is stub", async () => {
-    const provider = createGeocodeProvider("stub", null, { fetch });
+    const provider = createGeocodeProvider("stub", null, { fetch, log });
     expect(await provider.suggest("Sunrise", SESSION)).toMatchObject({ ok: true });
   });
 });

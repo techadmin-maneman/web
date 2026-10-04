@@ -35,6 +35,7 @@ export async function checkTurnstile(c: Context<AppEnv>, token: string, visitor:
     token,
     ip: visitor.ip,
     fetch: c.var.deps.fetch,
+    log: c.var.log,
   });
   if (verdict.result === "unavailable") await countUnavailable(c, verdict.detail);
   else await c.var.deps.resolveAlert(TURNSTILE_UNAVAILABLE);

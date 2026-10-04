@@ -49,6 +49,10 @@ function stateOf(job: JobSummary, queued: readonly Queued[], heard: ReadonlyMap<
   return state === null ? null : ROW_STATES[state];
 }
 
+/** The client's name from the day's list, else from the card the phone kept, for a day kept before the list had names. */
+const clientOf = (job: JobSummary, kept: ReadonlyMap<string, string>): string | undefined =>
+  job.client_name ?? kept.get(job.id);
+
 /** Where each job the phone holds stood when last heard of, read again whenever the outbox changes. */
 function useHeard(watch: unknown): ReadonlyMap<string, JobState> {
   const [heard, setHeard] = useState<ReadonlyMap<string, JobState>>(new Map());
@@ -96,8 +100,7 @@ export function TodayScreen() {
   const [cards, setCards] = useState(0);
   const names = useNames(cards);
 
-  // Fresh from the API: keep each card too, so a basement opens them (board A2),
-  // and so the rows can name the client the day's list does not carry.
+  // Fresh from the API: keep each card too, so a basement opens them (board A2).
   useEffect(() => {
     if (day.state === "loaded" && !day.fromPhone) {
       void keepCards(day.value).then(() => {
@@ -215,7 +218,7 @@ export function TodayScreen() {
         <ul className={styles.list}>
           {jobs.map((job) => (
             <li key={job.id}>
-              <JobRow job={job} client={names.get(job.id)} state={stateOf(job, waiting.events, heard)} />
+              <JobRow job={job} client={clientOf(job, names)} state={stateOf(job, waiting.events, heard)} />
             </li>
           ))}
         </ul>
@@ -238,7 +241,7 @@ export function TodayScreen() {
             <ul className={styles.list}>
               {tomorrowJobs.map((job) => (
                 <li key={job.id}>
-                  <JobRow job={job} client={names.get(job.id)} state={stateOf(job, waiting.events, heard)} />
+                  <JobRow job={job} client={clientOf(job, names)} state={stateOf(job, waiting.events, heard)} />
                 </li>
               ))}
             </ul>

@@ -3,11 +3,14 @@
 // queue in it, staging's and production's together.
 
 import { z } from "zod";
-import { failureReason } from "../log.ts";
+import { failureReason, type Logger } from "../log.ts";
 import type { Allowance } from "../policy/daily-allowances.ts";
+import { parseAnswer, vendorAnswerOf } from "./vendor-answer.ts";
+import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
 
 const GRAPHQL_URL = "https://api.cloudflare.com/client/v4/graphql";
 const TIMEOUT_MS = 10_000;
+const STEP = "daily_usage";
 
 const QUERY = `query DailyUsage($accountTag: string!, $date: Date!) {
   viewer {
@@ -55,35 +58,42 @@ export interface UsageQuery {
   /** The UTC day, "2026-10-02": the day the allowances count. */
   readonly date: string;
   readonly fetch: typeof fetch;
+  readonly log: Logger;
 }
 
 function total(figures: readonly number[]): number {
   return figures.reduce((sum, figure) => sum + figure, 0);
 }
 
-async function askAnalytics(query: UsageQuery): Promise<Response> {
-  return query.fetch(GRAPHQL_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${query.token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ query: QUERY, variables: { accountTag: query.accountId, date: query.date } }),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
+async function askAnalytics(query: UsageQuery): Promise<Response | VendorUnreachable> {
+  return vendorFetch(
+    { fetch: query.fetch, log: query.log },
+    { vendor: "cloudflare-analytics", step: STEP, timeoutMs: TIMEOUT_MS },
+    GRAPHQL_URL,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${query.token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ query: QUERY, variables: { accountTag: query.accountId, date: query.date } }),
+    },
+  );
 }
 
 export async function readDailyUsage(query: UsageQuery): Promise<UsageReading> {
-  let response: Response;
-  try {
-    response = await askAnalytics(query);
-  } catch (error) {
-    return { unreadable: `analytics did not answer: ${failureReason(error)}` };
+  const response = await askAnalytics(query);
+  if (response instanceof VendorUnreachable) {
+    return { unreadable: `analytics did not answer: ${failureReason(response)}` };
   }
   if (!response.ok) return { unreadable: `analytics answered HTTP ${String(response.status)}` };
 
-  const parsed = Answer.safeParse(await response.json().catch(() => null));
-  if (!parsed.success) return { unreadable: "analytics answered in a shape this code does not know" };
-  const refusal = parsed.data.errors?.[0]?.message;
+  let answer: z.infer<typeof Answer>;
+  try {
+    answer = parseAnswer(Answer, await vendorAnswerOf("Cloudflare analytics", STEP, response));
+  } catch (error) {
+    return { unreadable: failureReason(error) };
+  }
+  const refusal = answer.errors?.[0]?.message;
   if (refusal !== undefined) return { unreadable: `analytics refused: ${refusal.slice(0, 300)}` };
-  const account = parsed.data.data?.viewer.accounts[0];
+  const account = answer.data?.viewer.accounts[0];
   if (account === undefined) return { unreadable: "analytics answered for no account" };
 
   const d1 = account.d1AnalyticsAdaptiveGroups;

@@ -12,8 +12,19 @@ import { placement } from "../../src/domain/scheduling.ts";
 import { unitsFor } from "../../src/policy/visit-length.ts";
 import { DEFAULT_SLOT_TIMES, unitAt, windowAt } from "../../src/policy/slot-times.ts";
 import { openSession } from "../../src/domain/sessions.ts";
-import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
+import {
+  appFor,
+  d1TripsOf,
+  fakeDependencies,
+  LOCAL_SETTINGS,
+  markDatabase,
+  NOW,
+  request,
+  savedAddress,
+} from "./helpers.ts";
 
+/** The most round trips to D1 a hold may wait on in turn. It waited on 17 when each read waited for the one before. */
+const HOLD_TRIPS = 9;
 const IMRAN = "t1";
 const SANDEEP = "t2";
 
@@ -227,6 +238,15 @@ describe("POST /api/holds", () => {
       pay_by: "2026-09-21T06:42:00.000Z",
       state: "held",
     });
+  });
+
+  // PLAT-15: each D1 read is a round trip to the database's region, so the hold's reads that need nothing from each
+  // other go together.
+  it("waits on few round trips to D1", async () => {
+    const rohit = await client();
+    const answer = await hold(rohit, TUESDAY_AFTERNOON);
+    expect(answer.status).toBe(201);
+    expect(d1TripsOf(answer)).toBeLessThanOrEqual(HOLD_TRIPS);
   });
 
   it("gives the next client another technician, and the one after that nobody", async () => {
