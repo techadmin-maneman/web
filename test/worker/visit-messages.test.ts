@@ -234,13 +234,19 @@ describe("what a visit message says", () => {
   it("tells of no arrival, and no no-show's ruling, on a check-in before the earliest check-in", async () => {
     await consent(true);
     await visit();
+    // A check-in that passed, as the job event it landed as.
     const checkIn = async (id: string, at: string) =>
-      env.DB.prepare(
-        `INSERT INTO checkins (id, appointment_id, technician_id, at, radius_m, passed, created_at)
-         VALUES (?1, ?2, 't1', ?3, 200, 1, ?3)`,
-      )
-        .bind(id, VISIT, at)
-        .run();
+      env.DB.batch([
+        env.DB.prepare(
+          `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+             fsm_write_state, superseded, updated_at)
+           VALUES (?1, ?2, ?1, 't1', 'check_in', '{}', ?3, ?3, 'written', 0, ?3)`,
+        ).bind(`event-${id}`, VISIT, at),
+        env.DB.prepare(
+          `INSERT INTO checkins (id, appointment_id, technician_id, job_event_id, at, radius_m, passed, created_at)
+           VALUES (?1, ?2, 't1', ?3, ?4, 200, 1, ?4)`,
+        ).bind(id, VISIT, `event-${id}`, at),
+      ]);
 
     // Two hours before Thursday's noon visit: an hour earlier than a technician may check in.
     await checkIn("ci-early", "2026-09-24T04:30:00.000Z");
