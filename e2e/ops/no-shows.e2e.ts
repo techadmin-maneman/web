@@ -500,7 +500,7 @@ test("shows no amount in the queue, and says what a charge costs and a waiver gi
   await expect(page.getByRole("region", { name: QUEUE }).getByText("Rs.")).toBeHidden();
   // BIZ-28: the owner ruled on 27 September 2026 that a waiver refunds the payment and returns the credit.
   await expect(
-    page.getByText(/a no-show costs, and gives back the rest\. Waiving records the decision, refunds what the visit/),
+    page.getByText(/a no-show costs and refunds the rest; waiving refunds the payment and returns its credit\./),
   ).toBeVisible();
 });
 
@@ -522,11 +522,11 @@ test("brings the case a task named into view, and gives it the keyboard", async 
 // What a waiver gives back is ops' to set (docs/decisions/0088-every-policy-in-the-console.md).
 test("says beneath the queue what waiving gives back, as ops set it", async ({ page }) => {
   await open(page);
-  await expect(page.getByText("refunds what the visit was paid with and returns its credit")).toBeVisible();
+  await expect(page.getByText("refunds the payment and returns its credit")).toBeVisible();
   const kept = { ...NO_SHOWS, waiver: { payment: "kept", credit: "spent" } };
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(kept) });
   await page.goto("/no-shows");
-  await expect(page.getByText("keeps what the visit was paid with and leaves its credit spent")).toBeVisible();
+  await expect(page.getByText("keeps the payment and leaves its credit spent")).toBeVisible();
 });
 
 test("says nothing is waiting when the queue is empty", async ({ page }) => {

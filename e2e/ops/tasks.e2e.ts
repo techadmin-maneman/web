@@ -484,7 +484,7 @@ test("counts a group whole when it lists only its longest waits, and says when i
   // The group's whole count, and so its department's.
   await expect(list(page).getByText("73", { exact: true })).toHaveCount(2);
   await expect(page.getByText("The 2 longest waits of 73.")).toBeVisible();
-  await expect(page.getByText("More are waiting than one look reads, so a count here may be short.")).toBeVisible();
+  await expect(page.getByText("More are waiting than this page shows, so its counts may be low.")).toBeVisible();
 });
 
 test("says a task leaves when its own row is decided, and that only a visit left partly done closes here", async ({
@@ -533,19 +533,21 @@ test("gives a task to another member of staff who has signed in, and says so whe
     "PUT /api/tasks/{group}/{id}/owner": json({ owner: "anil@maneman.in" }),
   });
   const deepak = row(page, "Deepak Rao");
-  await deepak.getByRole("button", { name: "Give it to… · Deepak Rao" }).click();
-  const whom = deepak.getByLabel("Give it to · Deepak Rao");
+  await deepak.getByRole("button", { name: "Assign… · Deepak Rao" }).click();
+  const whom = deepak.getByLabel("Assign to · Deepak Rao");
   await expect(whom).toBeFocused();
   await whom.selectOption("anil@maneman.in");
   const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
-  await deepak.getByRole("button", { name: "Give it", exact: true }).click();
+  await deepak.getByRole("button", { name: "Assign", exact: true }).click();
   await expect(deepak).toContainText("Anil");
-  await expect(deepak.getByRole("button", { name: "Give it to… · Deepak Rao" })).toBeFocused();
+  await expect(deepak.getByRole("button", { name: "Assign… · Deepak Rao" })).toBeFocused();
 
   await answer(page, { "PUT /api/tasks/{group}/{id}/owner": fails(404, "not_found") });
   await row(page, "Sanjay Bhatia").getByRole("button", { name: "Take it · Sanjay Bhatia" }).click();
-  await expect(row(page, "Sanjay Bhatia").getByRole("alert")).toContainText("This task has left the list meanwhile");
+  await expect(row(page, "Sanjay Bhatia").getByRole("alert")).toContainText(
+    "Someone has dealt with this task already.",
+  );
 });
 
 // A visit left partly done may be closed without a follow-up, with why, as the owner ruled (open point 62).

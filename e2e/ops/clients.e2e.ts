@@ -847,7 +847,7 @@ test("attaches an invite to a client who came with none, with why, and shows it 
   await attach.click();
   expect((await sent).postDataJSON()).toEqual({ code: "rm4k7p", reason: "Told us Rohit sent him" });
 
-  await expect(invite.getByRole("status")).toHaveText("Attached. The CRM is sent it too.");
+  await expect(invite.getByRole("status")).toHaveText("Attached, and sent to the CRM.");
   // The head names who sent it as the API answered, without the record being read again.
   await expect(invitedBy(page)).toHaveText("Rohit Malhotra (RM4K7P)");
   await expect(invite).toContainText("What it earnsGiven when this client is fitted");
