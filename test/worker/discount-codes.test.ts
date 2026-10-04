@@ -116,7 +116,7 @@ describe("Settings · Discount codes", () => {
 
   it("refuses what a code cannot be, naming the box", async () => {
     for (const [body, field] of [
-      [{ ...TEN_OFF, code: "WEDDING25" }, "code"],
+      [{ ...TEN_OFF, code: "WEDDING-25" }, "code"],
       [{ ...TEN_OFF, count: 2 }, "count"],
       [{ ...TEN_OFF, value: 101 }, "value"],
       [{ ...TEN_OFF, kind: "amount", value: 50_050 }, "value"],
@@ -159,12 +159,18 @@ describe("Settings · Discount codes", () => {
     await post(`/api/visits/${VISIT}/discount-code/remove`);
     const again = await post(`/api/visits/${VISIT}/discount-code`, { code: "TENPC" });
     expect(again.status).toBe(422);
+    // Ops switched it off, so they are told so, where a client is told only that it does not apply.
+    expect(await again.json()).toMatchObject({ error: { code: "code_off" } });
   });
 
-  it("finds one code by its text, however old", async () => {
+  // MON-53: "SPR" found nothing while SPRTEST was there.
+  it("finds the codes that begin with what is typed, however old", async () => {
     await make();
     await make({ code: "FVEPC", value: 5 });
+    await make({ code: "FVEPZ", value: 5 });
     expect((await listed("?code=fvepc")).map((code) => code.code)).toEqual(["FVEPC"]);
+    expect((await listed("?code=fve")).map((code) => code.code).sort()).toEqual(["FVEPC", "FVEPZ"]);
+    expect(await listed("?code=pc")).toEqual([]);
   });
 });
 

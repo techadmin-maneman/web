@@ -57,12 +57,14 @@ export const GENERATED_LENGTH = 8;
 /** How long a code ops type may be. */
 export const CODE_LENGTH = { min: 4, max: 16 } as const;
 
-const CODE_TEXT = new RegExp(`^[${CODE_ALPHABET}]{${String(CODE_LENGTH.min)},${String(CODE_LENGTH.max)}}$`);
+// A code ops type may use every letter and digit (the owner, 2 Oct 2026: "typed codes may contain I, L, O"); only a
+// generated one keeps to the alphabet above, since nobody chose its letters.
+const CODE_TEXT = new RegExp(`^[A-Z0-9]{${String(CODE_LENGTH.min)},${String(CODE_LENGTH.max)}}$`);
 
 /** A code as it is kept and compared (RULES[2]): in capitals, with no spaces around it. */
 export const normalisedCode = (text: string): string => text.trim().toUpperCase();
 
-/** Whether text, normalised, can be a code: four to sixteen of the alphabet's characters. */
+/** Whether text, normalised, can be a code ops type: four to sixteen letters and digits. */
 export const isCodeText = (text: string): boolean => CODE_TEXT.test(normalisedCode(text));
 
 /** What a code takes off a price before GST (RULES[0]): never more than the price, so never below zero. */

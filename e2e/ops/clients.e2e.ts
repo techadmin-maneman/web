@@ -594,10 +594,11 @@ test("enters a discount code on a visit not yet paid for, says when one does not
   let applies = false;
   await openClient(page, `/clients/${CLIENT.id}/visits`, {
     [READ_RECORD]: json(open),
-    [entered]: (route) =>
-      applies
-        ? json({ code: "WEDDNG25", amount_off: 50_000, given_by: "ops" })(route)
-        : fails(422, "code_not_applicable")(route),
+    [entered]: (route) => {
+      if (applies) return json({ code: "WEDDNG25", amount_off: 50_000, given_by: "ops" })(route);
+      const typed = (route.request().postDataJSON() as { code: string }).code;
+      return fails(422, typed === "RPLC2K" ? "code_off" : "code_not_applicable")(route);
+    },
     [removed]: empty(),
   });
   const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
@@ -605,6 +606,10 @@ test("enters a discount code on a visit not yet paid for, says when one does not
   await row.getByLabel("Discount code").fill("wrong1");
   await row.getByRole("button", { name: "Apply" }).click();
   await expect(row.getByRole("alert")).toHaveText("That code does not apply to this visit.");
+  // MON-53: one ops switched off said only that it did not apply.
+  await row.getByLabel("Discount code").fill("RPLC2K");
+  await row.getByRole("button", { name: "Apply" }).click();
+  await expect(row.getByRole("alert")).toHaveText("That code is switched off.");
 
   applies = true;
   await row.getByLabel("Discount code").fill("weddng25");

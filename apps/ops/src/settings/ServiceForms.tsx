@@ -121,20 +121,23 @@ function Refused({ failed }: { failed: { code: string; fields: readonly string[]
 }
 
 /** A box with its label above and its hint beneath, the hint read with it. */
+/** A box with its label and hint. A box whose value cannot be sent says why in the hint's place. */
 function Box(props: {
   readonly id: string;
   readonly label: string;
   readonly hint: string;
+  readonly error?: string | null;
   readonly children: (describedBy: string) => ReactNode;
 }) {
+  const error = props.error ?? null;
   return (
     <div className={styles.field}>
       <label className={styles.fieldLabel} htmlFor={props.id}>
         {props.label}
       </label>
       {props.children(`${props.id}-hint`)}
-      <p className={styles.hint} id={`${props.id}-hint`}>
-        {props.hint}
+      <p className={error === null ? styles.hint : styles.fieldError} id={`${props.id}-hint`}>
+        {error ?? props.hint}
       </p>
     </div>
   );
@@ -191,7 +194,9 @@ export function PriceForm(props: {
       ? { ok: true, prices: answer.body.prices, said: copy.done.price }
       : { ok: false, code: answer.code, fields: answer.fields };
   }, props.onDone);
-  const ready = rupeesTyped.trim() !== "" && gst.trim() !== "" && from !== "";
+  // A day typed before tomorrow, which the date picker's min alone does not stop.
+  const tooSoon = from !== "" && from < firstDay;
+  const ready = rupeesTyped.trim() !== "" && gst.trim() !== "" && from !== "" && !tooSoon;
   const was = correcting ?? inForce;
   const sameDay = target.prices.some(
     (price) => price.valid_from === change.valid_from && price.valid_from !== correcting?.valid_from,
@@ -249,7 +254,7 @@ export function PriceForm(props: {
             </div>
           )}
         </Box>
-        <Box id={`price-from-${key}`} label={form.from} hint={form.fromHint}>
+        <Box id={`price-from-${key}`} label={form.from} hint={form.fromHint} error={tooSoon ? form.fromTooSoon : null}>
           {(hint) => (
             <input
               className={styles.date}
@@ -258,6 +263,7 @@ export function PriceForm(props: {
               min={firstDay}
               value={from}
               aria-describedby={hint}
+              aria-invalid={tooSoon}
               onChange={(event) => {
                 setFrom(event.target.value);
                 steps.edit();

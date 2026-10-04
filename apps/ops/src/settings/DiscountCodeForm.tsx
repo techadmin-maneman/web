@@ -11,6 +11,7 @@ import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState, type ReactNode } from "react";
+import { isCodeText } from "../../../../src/policy/discount-codes.ts";
 import { api, type DiscountCodesNew } from "../api.ts";
 import { settings } from "../content.ts";
 import { CheckPanel } from "./CheckPanel.tsx";
@@ -84,10 +85,16 @@ function requestOf(draft: Draft): DiscountCodesNew {
   };
 }
 
+/** A typed code that cannot be one, said beside its box before anything is checked; null while it can. */
+const codeError = (draft: Draft): string | null =>
+  draft.how === "typed" && draft.code.trim() !== "" && !isCodeText(draft.code)
+    ? (copy.errors.code ?? copy.codeHint)
+    : null;
+
 /** Whether every box the code needs is filled in: the rest the API checks, and names the box it refuses. */
 function isReady(draft: Draft): boolean {
   const named = draft.how === "typed" ? draft.code.trim() !== "" : draft.count.trim() !== "";
-  return named && draft.value.trim() !== "" && draft.covers.length > 0;
+  return named && codeError(draft) === null && draft.value.trim() !== "" && draft.covers.length > 0;
 }
 
 /** The check's first line: the code typed, or how many are generated. */
@@ -122,14 +129,22 @@ type Step =
   | { readonly step: "made"; readonly codes: readonly string[] }
   | { readonly step: "failed"; readonly failure: Failure };
 
-function Field(props: { id: string; label: string; hint?: string; children: ReactNode }) {
+/** The id of a box's hint, which the box is described by. */
+const hintOf = (id: string) => `${id}-hint`;
+
+function Field(props: { id: string; label: string; hint?: string; error?: string | null; children: ReactNode }) {
+  const error = props.error ?? null;
   return (
     <div className={styles.field}>
       <label className={styles.fieldLabel} htmlFor={props.id}>
         {props.label}
       </label>
       {props.children}
-      {props.hint !== undefined && <p className={styles.hint}>{props.hint}</p>}
+      {props.hint !== undefined && (
+        <p className={error === null ? styles.hint : styles.fieldError} id={hintOf(props.id)}>
+          {error ?? props.hint}
+        </p>
+      )}
     </div>
   );
 }
@@ -202,12 +217,14 @@ export function DiscountCodeForm({ today, most, onMade }: { today: string; most:
           </select>
         </Field>
         {draft.how === "typed" ? (
-          <Field id="code-text" label={copy.code} hint={copy.codeHint}>
+          <Field id="code-text" label={copy.code} hint={copy.codeHint} error={codeError(draft)}>
             <input
               id="code-text"
               className={styles.text}
               type="text"
               autoCapitalize="characters"
+              aria-describedby={hintOf("code-text")}
+              aria-invalid={codeError(draft) !== null}
               maxLength={16}
               value={draft.code}
               onChange={(event) => {
@@ -221,6 +238,7 @@ export function DiscountCodeForm({ today, most, onMade }: { today: string; most:
               id="code-count"
               className={styles.number}
               type="number"
+              aria-describedby={hintOf("code-count")}
               min={1}
               max={most}
               value={draft.count}
@@ -249,7 +267,7 @@ export function DiscountCodeForm({ today, most, onMade }: { today: string; most:
         <Field id="code-value" label={draft.kind === "percent" ? copy.value : copy.rupeesOff}>
           <input
             id="code-value"
-            className={draft.kind === "percent" ? styles.number : styles.amount}
+            className={draft.kind === "percent" ? styles.number : `${styles.number ?? ""} ${styles.amount ?? ""}`}
             type="number"
             min={1}
             max={draft.kind === "percent" ? 100 : undefined}
@@ -263,8 +281,9 @@ export function DiscountCodeForm({ today, most, onMade }: { today: string; most:
           <Field id="code-cap" label={copy.cap} hint={copy.capHint}>
             <input
               id="code-cap"
-              className={styles.amount}
+              className={`${styles.number ?? ""} ${styles.amount ?? ""}`}
               type="number"
+              aria-describedby={hintOf("code-cap")}
               min={1}
               value={draft.cap}
               onChange={(event) => {
@@ -298,6 +317,7 @@ export function DiscountCodeForm({ today, most, onMade }: { today: string; most:
             id="code-expires"
             className={styles.date}
             type="date"
+            aria-describedby={hintOf("code-expires")}
             min={today}
             value={draft.expiresOn}
             onChange={(event) => {
@@ -311,6 +331,7 @@ export function DiscountCodeForm({ today, most, onMade }: { today: string; most:
               id="code-uses"
               className={styles.number}
               type="number"
+              aria-describedby={hintOf("code-uses")}
               min={1}
               value={draft.maxUses}
               onChange={(event) => {

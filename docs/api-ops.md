@@ -4315,7 +4315,7 @@ Request body:
 }
 ```
 
-**422**: code_not_applicable: the code does not apply to this visit
+**422**: code_not_applicable: the code does not apply to this visit; code_off: it is switched off
 
 ```json
 {
@@ -4614,6 +4614,7 @@ Request body:
             "not_disputable",
             "dispute_window_closed",
             "code_not_applicable",
+            "code_off",
             "already_discounted",
             "price_settled",
             "code_exists",
@@ -7843,6 +7844,7 @@ Request body:
             "not_disputable",
             "dispute_window_closed",
             "code_not_applicable",
+            "code_off",
             "already_discounted",
             "price_settled",
             "code_exists",
@@ -14893,7 +14895,7 @@ Request body:
     "code": {
       "type": "string",
       "maxLength": 40,
-      "description": "A code ops typed, 4 to 16 letters and digits, none of I, L, O, 0 or 1; left out, each code is generated."
+      "description": "A code ops typed, 4 to 16 letters and digits; left out, each code is generated, of letters and digits that cannot be read as each other."
     },
     "count": {
       "type": "integer",

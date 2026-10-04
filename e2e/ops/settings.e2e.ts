@@ -494,6 +494,19 @@ test.describe("the services and their prices", () => {
     await expect(page.getByRole("button", { name: "Check the change" })).toBeEnabled();
   });
 
+  // OIA-25: a day typed before tomorrow reached the check, and was refused only when sent.
+  test("refuses a day before tomorrow beside the box, before anything is checked", async ({ page }) => {
+    await open(page, "/prices");
+    await page.getByRole("button", { name: "Change the price of Service visit" }).click();
+    const from = page.getByLabel("Applies from");
+    await from.fill("2027-09-21");
+    await expect(from).toHaveAttribute("aria-invalid", "true");
+    await expect(from).toHaveAccessibleDescription(
+      "Choose tomorrow or a later day. A price never changes what is sold today.",
+    );
+    await expect(page.getByRole("button", { name: "Check the change" })).toBeDisabled();
+  });
+
   test("says a price applies from tomorrow at the earliest when the API refuses the date", async ({ page }) => {
     await open(page, "/prices", {
       "POST /api/prices": fails(400, "invalid_request", ["valid_from"]),
@@ -1007,9 +1020,24 @@ test.describe("the discount codes", () => {
     await form.getByLabel("Service visits").check();
     await form.getByRole("button", { name: "Check" }).click();
     await page.getByRole("button", { name: "Make them" }).click();
-    await expect(page.getByRole("alert")).toHaveText(
-      "A code is 4 to 16 letters and figures, none of them I, L, O, 0 or 1.",
-    );
+    await expect(page.getByRole("alert")).toHaveText("A code is 4 to 16 letters and figures, with no spaces or signs.");
+  });
+
+  // MON-53: AUDITTEST reached "Make these codes?" before the API refused it.
+  test("says beside the box when a typed code cannot be one, before anything is checked", async ({ page }) => {
+    await open(page, "/discount-codes");
+    const form = page.getByRole("form", { name: "Make codes" });
+    const code = form.getByLabel("Code", { exact: true });
+    await code.fill("WEDDING-25");
+    await form.getByLabel("Per cent").fill("10");
+    await form.getByLabel("Service visits").check();
+    await expect(code).toHaveAttribute("aria-invalid", "true");
+    await expect(code).toHaveAccessibleDescription("A code is 4 to 16 letters and figures, with no spaces or signs.");
+    await expect(form.getByRole("button", { name: "Check" })).toBeDisabled();
+    // Ordinary words are codes: the owner allowed I, L and O in a code ops type.
+    await code.fill("WEDDING25");
+    await expect(code).toHaveAttribute("aria-invalid", "false");
+    await expect(form.getByRole("button", { name: "Check" })).toBeEnabled();
   });
 
   test("switches a code off only once ops have read what it leaves on record", async ({ page }) => {
