@@ -58,7 +58,6 @@ import { CONSENT_PURPOSES, CONSENT_SOURCES } from "../policy/consents.ts";
 import type { FsmRetry } from "../policy/held-bookings.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { paymentEntries } from "../domain/client-payments.ts";
-import { latestProposal } from "../domain/proposed-visits.ts";
 import { EntrySchema } from "./client-payments.ts";
 import { ClientInviteSchema } from "./ops-client-referral.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
@@ -716,7 +715,7 @@ export function registerOpsClients(app: App): void {
       return c.json(await erasedRecord(db, { id, erasedAt: person.erased_at }, now, retry), 200);
     }
 
-    const [address, credits, visits, fitted, payments, links, invoices, history, proposal, invite, held, refunded] =
+    const [address, credits, visits, fitted, payments, links, invoices, history, invite, held, refunded] =
       await Promise.all([
         currentAddress(db, id),
         creditBalance(db, id, now),
@@ -726,8 +725,6 @@ export function registerOpsClients(app: App): void {
         paymentLinksOf(db, id, now),
         visitInvoicesOf(db, id),
         clientHistory(db, id),
-        // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.
-        latestProposal(db, id),
         clientInviteOf(db, id),
         heldBookingsOf(db, id, now, retry),
         autoRefundsOf(db, id),
@@ -738,7 +735,8 @@ export function registerOpsClients(app: App): void {
         id: person.id,
         name: person.name,
         mobile: person.mobile_e164,
-        state: clientStateOf(fitted, visits.upcoming.length > 0 || proposal !== null),
+        // Booked only while a visit is to come: a booking the site's form left that booked nothing is not one.
+        state: clientStateOf(fitted, visits.upcoming.length > 0),
         known_since: person.created_at,
         address: address === null ? null : clientAddressOf(address),
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,

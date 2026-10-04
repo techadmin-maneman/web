@@ -13585,6 +13585,19 @@
     "/api/tasks": {
       "get": {
         "summary": "What ops still have to do, by group, the longest wait first",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "One client's tasks alone, for their page; every count is then theirs."
+            },
+            "required": false,
+            "description": "One client's tasks alone, for their page; every count is then theirs.",
+            "name": "person",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "The groups with something in them, of the caller's own departments and cities once the Staff list is enforced",
@@ -13592,6 +13605,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Tasks"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: person is not a client's id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

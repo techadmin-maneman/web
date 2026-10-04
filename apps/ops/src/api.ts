@@ -346,6 +346,8 @@ export const api = {
     client.post("/api/clients/{id}/hair-profile", { path: { id }, body: correction }),
   /** Every queue ops still have to work through, and whose each task is. A task leaves when its row is decided. */
   tasks: () => client.get("/api/tasks"),
+  /** What waits on ops for one client alone, for the head of their page. */
+  clientTasks: (person: string) => client.get("/api/tasks", { query: { person } }),
   /** A task made a member of staff's, by their Access e-mail, or nobody's with null (ADR 0092). */
   setTaskOwner: (group: TaskGroup["group"], id: string, owner: string | null) =>
     client.put("/api/tasks/{group}/{id}/owner", { path: { group, id }, body: { owner } }),

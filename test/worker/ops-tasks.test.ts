@@ -661,6 +661,28 @@ describe("GET /api/tasks", () => {
     expect(groupNames(await tasks())).toEqual([]);
   });
 
+  // OIA-10 of the audit, 2 October 2026: a client's page showed nothing open for them while a task about them waited.
+  it("lists one client's tasks alone when asked for them, counted as theirs", async () => {
+    // Rohit's grant was held on the 18th, so it is overdue; his number change is not. Vikram's grievance is his own.
+    await heldGrant('["shared_address"]');
+    await numberChange("awaiting_ops");
+    await env.DB.prepare(
+      `INSERT INTO grievances (id, person_id, text, state, created_at)
+       VALUES (?1, ?2, 'Who can see my number?', 'open', '2026-09-20T06:00:00.000Z')`,
+    )
+      .bind(GRIEVANCE, REFERRED)
+      .run();
+
+    const rohits = await (await request(ops, `/api/tasks?person=${PERSON}`)).json<Body>();
+    expect(groupNames(rohits)).toEqual(["referral_review", "number_change"]);
+    expect(rohits.overdue).toBe(1);
+    expect(groupNames(await tasks())).toEqual(["referral_review", "number_change", "grievance"]);
+  });
+
+  it("refuses a client that is not named by their id", async () => {
+    expect((await request(ops, "/api/tasks?person=rohit")).status).toBe(400);
+  });
+
   it("belongs to the ops surface alone", async () => {
     const client = appFor("local", fakeDependencies(), {}, "client");
     expect((await request(client, "/api/tasks")).status).toBe(404);
