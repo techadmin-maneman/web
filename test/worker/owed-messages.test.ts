@@ -90,7 +90,7 @@ describe("the arrival notice (BIZ-22)", () => {
     await visit();
     await consent("whatsapp_visits", true);
     const sent = await send(await queued("arrival_notice", "appointment", VISIT));
-    expect(sent.text).toBe("Hello Karan, Imran has arrived for your service visit.");
+    expect(sent.text).toBe("Hi Karan, Imran is at your door for your service visit.");
   });
 
   it("still goes once the visit is under way, which the check-in itself may have moved it to", async () => {
@@ -167,13 +167,12 @@ describe("the no-show ruling (LIFE-07)", () => {
     return queued("no_show_decided", "appointment", VISIT);
   }
 
-  const MISSED =
-    "Hello Karan, we came for your service visit on Mon 21 Sep and waited 15 minutes, but nobody was home.";
+  const MISSED = "Hi Karan, Imran waited 15 minutes for your service visit on Mon 21 Sep but couldn't reach you.";
 
   // The no-show's charge is set apart from a late cancel's (docs/decisions/0088-every-policy-in-the-console.md), so the
   // texts no longer say "As with a late cancel": each says what the charge was, and that the client may dispute it in
   // the app (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
-  const DISPUTE = "If you were home, you can dispute it in the Mane Man app.";
+  const DISPUTE = "If you were home, dispute it in the Mane Man app.";
 
   /** The charge as the ruling recorded it, in paise. */
   const recorded = (charge: string, kept: number, refund: number) =>
@@ -192,11 +191,11 @@ describe("the no-show ruling (LIFE-07)", () => {
 
   // A ruling that gives the credit back finds its grant expired or clawed back since, and nothing comes back: the
   // message says what the ledger holds, not what the ruling meant to give (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
-  const CREDIT_GONE = "the free service visit it used is no longer valid, so it cannot come back.";
+  const CREDIT_GONE = "the free service visit it used has expired, so we can't return it.";
 
   it("says a charge ruled before charges were recorded kept what was paid", async () => {
     expect((await send(await ruled("charged", "payment"))).text).toBe(
-      `${MISSED} The Rs. 2,000 you paid for it is kept as the no-show charge. ${DISPUTE}`,
+      `${MISSED} We've kept the Rs. 2,000 you paid as the no-show charge. ${DISPUTE}`,
     );
   });
 
@@ -204,7 +203,7 @@ describe("the no-show ruling (LIFE-07)", () => {
     const message = await ruled("charged", "credit");
     await recorded("visit", 0, 0);
     expect((await send(message)).text).toBe(
-      `${MISSED} The free service visit it used is spent as the no-show charge. ${DISPUTE}`,
+      `${MISSED} The free service visit it used counts as the no-show charge. ${DISPUTE}`,
     );
   });
 
@@ -212,8 +211,8 @@ describe("the no-show ruling (LIFE-07)", () => {
     const message = await ruled("charged", "payment");
     await recorded("late_fee", 50000, 150000);
     expect((await send(message)).text).toBe(
-      `${MISSED} Rs. 500 of what you paid is kept as the no-show charge, and Rs. 1,500 is on its way back to your ` +
-        "UPI, in 5 to 7 working days. If you were home, you can dispute the charge in the Mane Man app.",
+      `${MISSED} We've kept Rs. 500 as the no-show charge and refunded Rs. 1,500 to your UPI (5 to 7 working days). ` +
+        DISPUTE,
     );
   });
 
@@ -221,7 +220,7 @@ describe("the no-show ruling (LIFE-07)", () => {
     const message = await ruled("charged", "payment");
     await recorded("visit", 200000, 0);
     expect((await send(message)).text).toBe(
-      `${MISSED} The Rs. 2,000 you paid for it is kept as the no-show charge. ${DISPUTE}`,
+      `${MISSED} We've kept the Rs. 2,000 you paid as the no-show charge. ${DISPUTE}`,
     );
   });
 
@@ -229,7 +228,7 @@ describe("the no-show ruling (LIFE-07)", () => {
     const message = await ruled("charged", "payment");
     await recorded("nothing", 0, 200000);
     expect((await send(message)).text).toBe(
-      `${MISSED} We are not charging you for it: Rs. 2,000 is on its way back to your UPI, in 5 to 7 working days.`,
+      `${MISSED} There's no charge: we've refunded Rs. 2,000 to your UPI (5 to 7 working days).`,
     );
   });
 
@@ -237,51 +236,41 @@ describe("the no-show ruling (LIFE-07)", () => {
     const message = await ruled("charged", "credit");
     await recorded("nothing", 0, 0);
     await creditRestored();
-    expect((await send(message)).text).toBe(
-      `${MISSED} We are not charging you for it, and your free service visit is back.`,
-    );
+    expect((await send(message)).text).toBe(`${MISSED} There's no charge, and your free service visit is back.`);
   });
 
   it("says the credit cannot come back, where a charge of nothing found nothing to give it back to", async () => {
     const message = await ruled("charged", "credit");
     await recorded("nothing", 0, 0);
-    expect((await send(message)).text).toBe(`${MISSED} We are not charging you for it, but ${CREDIT_GONE}`);
+    expect((await send(message)).text).toBe(`${MISSED} There's no charge, but ${CREDIT_GONE}`);
   });
 
   it("says only that nobody was home, of a visit nothing was paid for", async () => {
-    expect((await send(await ruled("charged", "nothing"))).text).toBe(
-      `${MISSED} You can book again in the Mane Man app.`,
-    );
+    expect((await send(await ruled("charged", "nothing"))).text).toBe(`${MISSED} Book a new time in the Mane Man app.`);
   });
 
   // A waiver gives back what the visit took, as the owner ruled on 27 September 2026 (BIZ-28).
   it("says a waiver charges nothing, and that the payment is on its way back", async () => {
     expect((await send(await ruled("waived", "payment"))).text).toBe(
-      `${MISSED} We are not charging you for it: Rs. 2,000 is on its way back to your UPI, in 5 to 7 working days.`,
+      `${MISSED} There's no charge: we've refunded Rs. 2,000 to your UPI (5 to 7 working days).`,
     );
   });
 
   it("says a waiver of a credit visit gives the credit back", async () => {
     const message = await ruled("waived", "credit");
     await creditRestored();
-    expect((await send(message)).text).toBe(
-      `${MISSED} We are not charging you for it, and your free service visit is back.`,
-    );
+    expect((await send(message)).text).toBe(`${MISSED} There's no charge, and your free service visit is back.`);
   });
 
   it("says the credit cannot come back, where a waiver found nothing to give it back to", async () => {
-    expect((await send(await ruled("waived", "credit"))).text).toBe(
-      `${MISSED} We are not charging you for it, but ${CREDIT_GONE}`,
-    );
+    expect((await send(await ruled("waived", "credit"))).text).toBe(`${MISSED} There's no charge, but ${CREDIT_GONE}`);
   });
 
   // What a waiver gives back is ops' to set, and each ruling keeps what it gave (docs/decisions/0088-every-policy-in-the-console.md).
   it("says a waiver kept the payment and the credit where the ruling kept them", async () => {
     const payment = await ruled("waived", "payment");
     await env.DB.prepare("UPDATE no_show_cases SET waiver_payment = 'kept', waiver_credit = 'spent'").run();
-    expect((await send(payment)).text).toBe(
-      `${MISSED} We are not charging you for it. Message us about the Rs. 2,000 you paid for it.`,
-    );
+    expect((await send(payment)).text).toBe(`${MISSED} There's no charge. Message us about the Rs. 2,000 you paid.`);
   });
 
   it("says a waiver of a credit visit kept the credit where the ruling kept it", async () => {
@@ -292,7 +281,7 @@ describe("the no-show ruling (LIFE-07)", () => {
 
   it("says a waiver of a visit nothing was paid for charges nothing", async () => {
     expect((await send(await ruled("waived", "nothing"))).text).toBe(
-      `${MISSED} We are not charging you for it. You can book again in the Mane Man app.`,
+      `${MISSED} There's no charge. Book a new time in the Mane Man app.`,
     );
   });
 
@@ -311,8 +300,7 @@ describe("the no-show ruling (LIFE-07)", () => {
   // The client disputes the charge in the app, ops rule Refund or Uphold, "and the client is told"
   // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). Never ops' reason.
   describe("the ruling on a disputed charge", () => {
-    const LOOKED_AT =
-      "Hello Karan, we have looked at your dispute of the no-show charge for your service visit on Mon 21 Sep";
+    const LOOKED_AT = "Hi Karan, we've reviewed your dispute about your service visit on Mon 21 Sep";
 
     async function disputed(paid: "payment" | "credit", ruling: "refunded" | "upheld" | null) {
       await ruled("charged", paid);
@@ -329,27 +317,25 @@ describe("the no-show ruling (LIFE-07)", () => {
 
     it("says a refund is on its way back", async () => {
       expect((await send(await disputed("payment", "refunded"))).text).toBe(
-        `${LOOKED_AT}, and we are refunding it: Rs. 2,000 is on its way back to your UPI, in 5 to 7 working days.`,
+        `${LOOKED_AT} and refunded Rs. 2,000 to your UPI (5 to 7 working days).`,
       );
     });
 
     it("says the credit is back, where the charge spent it", async () => {
       const message = await disputed("credit", "refunded");
       await creditRestored();
-      expect((await send(message)).text).toBe(
-        `${LOOKED_AT}, and we are refunding it: your free service visit is back.`,
-      );
+      expect((await send(message)).text).toBe(`${LOOKED_AT} and returned your free service visit.`);
     });
 
     it("says the credit cannot come back, where the refund found nothing to give it back to", async () => {
       expect((await send(await disputed("credit", "refunded"))).text).toBe(
-        `${LOOKED_AT}, and we agree the charge should not stand, but ${CREDIT_GONE}`,
+        `${LOOKED_AT}, and the charge shouldn't stand. The free service visit it used has expired, so we can't return it.`,
       );
     });
 
     it("says the charge stands, and never why", async () => {
       const text = (await send(await disputed("payment", "upheld"))).text;
-      expect(text).toBe(`${LOOKED_AT}. The charge stands. Message us if you would like to know why.`);
+      expect(text).toBe(`${LOOKED_AT}. The charge stands. Message us if you'd like to know why.`);
       expect(text).not.toContain("bell");
     });
 
@@ -383,25 +369,25 @@ describe("the waitlist confirmation (REQ-03)", () => {
   it("names the area, and promises word of the launch to one who asked for it", async () => {
     const sent = await send(await listed(true));
     expect(sent.text).toBe(
-      "Hello Karan, you are on our list for Bandra. We will message you on WhatsApp when we come there.",
+      "Hi Karan, you're on our list for Bandra. We'll WhatsApp you as soon as we start coming there.",
     );
   });
 
   // CP-25 of the audit, 2 October 2026: "you are on our list for 400050", a bare pincode.
   it("names the pincode as one until ops name the area", async () => {
     const sent = await send(await listed(false, false));
-    expect(sent.text).toBe("Hello Karan, you are on our list for pincode 400050. We do not come there yet.");
+    expect(sent.text).toBe("Hi Karan, you're on our list for pincode 400050. We don't cover it yet.");
   });
 
   it("promises nothing more to one who did not ask to be told of the launch", async () => {
     const sent = await send(await listed(false));
-    expect(sent.text).toBe("Hello Karan, you are on our list for Bandra. We do not come there yet.");
+    expect(sent.text).toBe("Hi Karan, you're on our list for Bandra. We don't cover it yet.");
   });
 
   it("promises nothing more once the launch alert was switched off", async () => {
     const message = await listed(true);
     await consent("whatsapp_launches", false, PERSON, "2026-09-21T06:31:00.000Z");
-    expect((await send(message)).text).toBe("Hello Karan, you are on our list for Bandra. We do not come there yet.");
+    expect((await send(message)).text).toBe("Hi Karan, you're on our list for Bandra. We don't cover it yet.");
   });
 
   it("is not sent once the consent to be contacted about the request was withdrawn", async () => {

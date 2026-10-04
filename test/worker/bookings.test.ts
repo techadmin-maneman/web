@@ -375,3 +375,23 @@ describe("Razorpay's capture of a hold's payment", () => {
     expect(await visitOf(holdId)).toMatchObject({ type: "service", status: "scheduled" });
   });
 });
+
+// CP-27: a booking a free service visit was to pay for told the client only that nothing was booked.
+describe("the message a booking given back sends", () => {
+  it("tells a client whose free service visit was to pay that it is still theirs", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+           amount_ex_gst, gst_percent, state, use_credit, expires_at, created_at, updated_at)
+         VALUES ('hold-credit', ?1, 'service', '2026-09-22', 'morning', 't1', 0, 0, 0, 0, 'released', 1, ?2, ?2, ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+         VALUES ('c-visits', ?1, 'whatsapp_visits', 'whatsapp-visits-v1', 1, ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+    ]);
+    expect(await composeBookingRefunded(env.DB, "hold-credit", PERSON)).toMatchObject({
+      template: "booking_not_made_credit_v1",
+    });
+  });
+});

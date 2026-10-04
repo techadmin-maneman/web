@@ -170,7 +170,7 @@ test("adds a pincode the service area does not hold, then marks it live in the s
 
   const panel = page.getByRole("region", { name: "Mark 560001 live" });
   await expect(panel).toContainText("This messages 2 people");
-  await expect(panel).toContainText("we now come to MG Road");
+  await expect(panel).toContainText("Mane Man now comes to MG Road");
   await panel.getByRole("button", { name: "Send to 2" }).click();
   await expect(panel.getByRole("status")).toHaveText("Launched. 2 on their way.");
 });

@@ -71,7 +71,12 @@ describe("messaging: sending a result", () => {
     expect(await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1")).toEqual({});
 
     expect(sent).toHaveLength(1);
-    expect(sent[0]).toMatchObject({ to: "+919810000001", template: "tryon_result_v1", params: ["Arjun Mehta"] });
+    // Greeted by first name, with where to book the consultation that shows the look for real.
+    expect(sent[0]).toMatchObject({
+      to: "+919810000001",
+      template: "tryon_result_v1",
+      params: ["Arjun", "http://localhost:4321/book"],
+    });
     const link = new URL(sent[0]?.mediaUrl ?? "");
     // The site answers /api/* on its own origin, locally at :4321 as the browser tests serve it (LIFE-17).
     expect(link.origin).toBe("http://localhost:4321");
@@ -322,7 +327,7 @@ describe("Evolution API", () => {
     const result = await evolution.send({
       to: "+919810000001",
       template: "tryon_result_v1",
-      params: ["Arjun"],
+      params: ["Arjun", "https://maneman.in/book"],
       mediaUrl: "https://x.test/r.png",
     });
 
@@ -332,7 +337,7 @@ describe("Evolution API", () => {
       number: "919810000001",
       mediatype: "image",
       mimetype: "image/png",
-      caption: expect.stringMatching(/^Hello Arjun, here is your Mane Man try-on\./) as string,
+      caption: expect.stringMatching(/^Hi Arjun, here's your new look from Mane Man\./) as string,
       media: "https://x.test/r.png",
       fileName: "mane-man.png",
     });
@@ -341,9 +346,13 @@ describe("Evolution API", () => {
   it("sends plain text when there is no image, and refuses an unknown template without calling out", async () => {
     const http = fakeFetch({ [SEND_TEXT]: () => json({ key: { id: "T1" } }) });
     const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
-    expect(await evolution.send({ to: "+919810000001", template: "tryon_result_v1", params: ["Arjun"] })).toMatchObject(
-      { ok: true },
-    );
+    expect(
+      await evolution.send({
+        to: "+919810000001",
+        template: "tryon_result_v1",
+        params: ["Arjun", "https://maneman.in/book"],
+      }),
+    ).toMatchObject({ ok: true });
     expect(await evolution.send({ to: "+919810000001", template: "nope", params: ["Arjun"] })).toMatchObject({
       ok: false,
       transient: false,
@@ -361,7 +370,7 @@ describe("Evolution API", () => {
       stopLink: "https://maneman.in/stop#token",
     });
     const { text } = JSON.parse(http.calls[0]?.body ?? "{}") as { text: string };
-    expect(text).toMatch(/^Hello Arjun, we now come to Sector 65\./);
+    expect(text).toMatch(/^Hi Arjun, Mane Man now comes to Sector 65\./);
     expect(text).toMatch(/\n\nStop these messages: https:\/\/maneman\.in\/stop#token$/);
   });
 
@@ -369,7 +378,7 @@ describe("Evolution API", () => {
     evolution.send({
       to: "+919810000001",
       template: "tryon_result_v1",
-      params: ["A"],
+      params: ["A", "https://maneman.in/book"],
       mediaUrl: "https://x.test/r.png",
     });
 
@@ -409,7 +418,7 @@ describe("Evolution API", () => {
       await evolution.send({
         to: "+919810000001",
         template: "tryon_result_v1",
-        params: ["A"],
+        params: ["A", "https://maneman.in/book"],
         mediaUrl: "https://x.test/r.png",
       }),
     ).toEqual({
@@ -430,7 +439,7 @@ describe("Evolution API", () => {
       await evolution.send({
         to: "+919810000001",
         template: "tryon_result_v1",
-        params: ["A"],
+        params: ["A", "https://maneman.in/book"],
         mediaUrl: "https://x.test/r.png",
       }),
     ).toEqual({

@@ -87,8 +87,7 @@ describe("a consultation still to happen", () => {
     await consentToVisitMessages();
     await consultationToCome();
     expect((await send("consultation_exists")).text).toBe(
-      "Hello Karan, this number was just used to book on our site. Your consultation is already booked for " +
-        "Wed 23 Sep, 9 am to 12 pm, so we have not booked another. You can see or move it in the Mane Man app.",
+      "Hi Karan, this number was just used to book on our site. Your consultation is already booked for Wed 23 Sep, 9 am to 12 pm, so we haven't booked another. See or move it in the Mane Man app.",
     );
   });
 
@@ -135,8 +134,7 @@ describe("a client past consultations", () => {
     await consentToVisitMessages();
     await fitted();
     expect((await send("book_in_app")).text).toBe(
-      "Hello Karan, this number was just used to book on our site. As a Mane Man client, you book your next visit " +
-        "in the Mane Man app. Sign in with this number.",
+      "Hi Karan, this number was just used to book on our site. As a Mane Man client, you book in the Mane Man app. Sign in with this number.",
     );
   });
 
@@ -157,8 +155,7 @@ describe("an address already on the account", () => {
       .run();
     const { text } = await send("address_on_account");
     expect(text).toBe(
-      "Hello Karan, we will come to the address already on your account, not the one typed on our site. You can " +
-        "change it in the Mane Man app.",
+      "Hi Karan, we'll come to the address on your account, not the one typed on our site. Change it in the Mane Man app.",
     );
     expect(text).not.toContain("House 12");
   });
@@ -184,9 +181,7 @@ describe("an address on the account in a pincode we do not come to", () => {
   it("is why nothing was booked, which the number is told with its pincode alone", async () => {
     const { text } = await send("address_not_served");
     expect(text).toBe(
-      "Hello Karan, this number was just used to book on our site. The address on your account is at pincode " +
-        "400050, which we do not cover yet, so nothing was booked. If you have moved, change your address in the " +
-        "Mane Man app and book there.",
+      "Hi Karan, this number was just used to book on our site. The address on your account is at pincode 400050, which we don't cover yet, so nothing was booked. If you've moved, change your address in the Mane Man app and book there.",
     );
     expect(text).not.toContain("House 12");
   });

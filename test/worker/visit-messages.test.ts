@@ -114,8 +114,7 @@ describe("what a visit message says", () => {
     await visit();
     await paid();
     expect(await text("payment_receipt")).toBe(
-      "Hello Rohit, your service visit is booked for Thu 24 Sep, 12 to 4 pm, with Imran. Paid Rs. 2,000, " +
-        "reference MM-2026-0841. The receipt is in the app.",
+      "Hi Rohit, your service visit is booked for Thu 24 Sep, 12 to 4 pm, with Imran. We've received Rs. 2,000 (ref MM-2026-0841). Your receipt is in the app.",
     );
   });
 
@@ -123,13 +122,13 @@ describe("what a visit message says", () => {
     await consent(true);
     await visit("consultation", "2026-09-24T03:30:00.000Z");
     expect(await text("consultation_confirmation")).toBe(
-      "Hello Rohit, your free consultation is booked for Thu 24 Sep, 9 am to 12 pm. We will see you then.",
+      "Hi Rohit, your free consultation is booked for Thu 24 Sep, 9 am to 12 pm. Your technician comes to you. To change it, open the Mane Man app.",
     );
     expect(await text("visit_reminder")).toBe(
-      "Hello Rohit, a reminder that your consultation is tomorrow, Thu 24 Sep, 9 am to 12 pm, with Imran.",
+      "Hi Rohit, see you tomorrow: your consultation is Thu 24 Sep, 9 am to 12 pm, with Imran. Need to move it? Open the Mane Man app.",
     );
     expect(await text("reschedule_confirmation")).toBe(
-      "Hello Rohit, your consultation is now on Thu 24 Sep, 9 am to 12 pm, with Imran.",
+      "Hi Rohit, your consultation is now on Thu 24 Sep, 9 am to 12 pm, with Imran.",
     );
   });
 
@@ -145,11 +144,10 @@ describe("what a visit message says", () => {
       .bind(VISIT, PERSON, THURSDAY_NOON, PAYMENT, NOW.toISOString())
       .run();
     expect(await text("cancel_confirmation")).toBe(
-      "Hello Rohit, your service visit on Thu 24 Sep is cancelled. Rs. 2,000 is on its way back to your UPI, " +
-        "in 5 to 7 working days.",
+      "Hi Rohit, we've cancelled your service visit on Thu 24 Sep and refunded Rs. 2,000 to your UPI (5 to 7 working days).",
     );
     await env.DB.prepare("UPDATE visit_changes SET refund_amount = 0").run();
-    expect(await text("cancel_confirmation")).toBe("Hello Rohit, your service visit on Thu 24 Sep is cancelled.");
+    expect(await text("cancel_confirmation")).toBe("Hi Rohit, we've cancelled your service visit on Thu 24 Sep.");
   });
 
   // The cancel sheet says "Cancel inside 24 hours and the credit is gone"; the confirmation said only that the visit
@@ -183,7 +181,7 @@ describe("what a visit message says", () => {
         .bind(PERSON, VISIT, NOW.toISOString())
         .run();
       expect(await text("cancel_confirmation")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. Your free service visit is back.",
+        "Hi Rohit, we've cancelled your service visit on Thu 24 Sep. Your free service visit is back.",
       );
     });
 
@@ -191,8 +189,7 @@ describe("what a visit message says", () => {
     it("says the credit is gone, when it was cancelled inside the notice", async () => {
       await cancelledOnCredit("late");
       expect(await text("cancel_confirmation")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was too close to the visit, so the free " +
-          "service visit it used is gone.",
+        "Hi Rohit, we've cancelled your service visit on Thu 24 Sep. As it was cancelled late, the free service visit it used can't be returned.",
       );
     });
 
@@ -201,8 +198,7 @@ describe("what a visit message says", () => {
       await cancelledOnCredit("late");
       await env.DB.prepare("UPDATE visit_changes SET cancelled_by = 'ops@localhost', ops_terms = 'free'").run();
       expect(await text("visit_cancelled")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. The free service visit it used has expired, so " +
-          "it cannot come back.",
+        "Hi Rohit, we've cancelled your service visit on Thu 24 Sep. The free service visit it used has expired, so we can't return it.",
       );
     });
 
@@ -210,8 +206,7 @@ describe("what a visit message says", () => {
       await cancelledOnCredit("late");
       await env.DB.prepare("UPDATE visit_changes SET cancelled_by = 'ops@localhost', ops_terms = 'client'").run();
       expect(await text("visit_cancelled")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was too close to the visit, so the free " +
-          "service visit it used is gone.",
+        "Hi Rohit, we've cancelled your service visit on Thu 24 Sep. As it was cancelled late, the free service visit it used can't be returned.",
       );
     });
   });
@@ -220,11 +215,15 @@ describe("what a visit message says", () => {
   it("sends a receipt without the client's consent to WhatsApp about visits, and nothing else", async () => {
     await visit();
     await paid();
-    expect(await text("payment_receipt")).toContain("Paid Rs. 2,000, reference MM-2026-0841.");
+    expect(await text("payment_receipt")).toContain(
+      "Hi Rohit, your service visit is booked for Thu 24 Sep, 12 to 4 pm, with Imran. We've received Rs. 2,000 (ref MM-2026-0841). Your receipt is in the app.",
+    );
     expect(await text("visit_reminder")).toEqual({ skip: "no consent to WhatsApp about visits" });
     await consent(true, "2026-09-20T06:30:00.000Z");
     await consent(false);
-    expect(await text("payment_receipt")).toContain("Paid Rs. 2,000, reference MM-2026-0841.");
+    expect(await text("payment_receipt")).toContain(
+      "Hi Rohit, your service visit is booked for Thu 24 Sep, 12 to 4 pm, with Imran. We've received Rs. 2,000 (ref MM-2026-0841). Your receipt is in the app.",
+    );
     expect(await text("reschedule_confirmation")).toEqual({ skip: "no consent to WhatsApp about visits" });
   });
 
@@ -238,7 +237,9 @@ describe("what a visit message says", () => {
     )
       .bind(VISIT, PERSON, THURSDAY_NOON, PAYMENT, NOW.toISOString())
       .run();
-    expect(await text("cancel_confirmation")).toContain("Rs. 2,000 is on its way back to your UPI");
+    expect(await text("cancel_confirmation")).toContain(
+      "Hi Rohit, we've cancelled your service visit on Thu 24 Sep and refunded Rs. 2,000 to your UPI (5 to 7 working days).",
+    );
     await env.DB.prepare("UPDATE visit_changes SET refund_amount = 0").run();
     expect(await text("cancel_confirmation")).toEqual({ skip: "no consent to WhatsApp about visits" });
   });
@@ -368,7 +369,7 @@ describe("sending a visit message", () => {
       expect(await stateOf(stale)).toEqual({ state: "skipped", last_error: REMINDER_DAY_MOVED });
       const sent = await sendAt(tuesdayEvening, fresh ?? "");
       expect(sent.map((message) => renderMessage(message.template, message.params))).toEqual([
-        "Hello Rohit, a reminder that your consultation is tomorrow, Wed 23 Sep, 12 to 4 pm, with Imran.",
+        "Hi Rohit, see you tomorrow: your consultation is Wed 23 Sep, 12 to 4 pm, with Imran. Need to move it? Open the Mane Man app.",
       ]);
     });
 
@@ -379,7 +380,7 @@ describe("sending a visit message", () => {
       await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-22T03:30:00.000Z'").run();
       const sent = await sendAt(mondayEvening, reminder);
       expect(sent.map((message) => renderMessage(message.template, message.params))).toEqual([
-        "Hello Rohit, a reminder that your consultation is tomorrow, Tue 22 Sep, 9 am to 12 pm, with Imran.",
+        "Hi Rohit, see you tomorrow: your consultation is Tue 22 Sep, 9 am to 12 pm, with Imran. Need to move it? Open the Mane Man app.",
       ]);
     });
   });
@@ -400,7 +401,7 @@ describe("sending a visit message", () => {
     const deps = fakeDependencies({ messaging: provider });
     for (const move of moves) await sendMessage(env.DB, config(), deps, log, move.id);
     expect(sent.map((message) => renderMessage(message.template, message.params))).toEqual([
-      "Hello Rohit, your service visit is now on Thu 24 Sep, 12 to 4 pm, with Imran.",
+      "Hi Rohit, your service visit is now on Thu 24 Sep, 12 to 4 pm, with Imran.",
     ]);
     const { results } = await env.DB.prepare(
       "SELECT state, last_error FROM outbound_messages ORDER BY created_at",
