@@ -88,6 +88,7 @@ const card = (id: string, date: string) =>
       outcome: null,
     },
     no_show_wait_min: 15,
+    checkin_from: `${date}T03:00:00.000Z`,
     pieces: [],
     last_visit: null,
     reminder: null,

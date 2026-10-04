@@ -1370,6 +1370,9 @@ export const noShows = {
     waitedBoth: (minutes: number, withUs: number, closed: string) =>
       `${String(minutes)} min by the phone, ${String(withUs)} since it reached us · closed ${closed}`,
     notClosed: "Not closed",
+    // PLACEHOLDER: the board draws no case closed before the booked start's wait had run.
+    closedEarly:
+      "Closed too early: the wait ran from a check-in before the booked start. Waive it, or say in your note why you charge.",
     /**
      * Board D1's field beneath the evidence, "Your note · required", which the
      * board draws on the dispute. A ruling needs its reason either way, and the
