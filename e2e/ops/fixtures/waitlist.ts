@@ -1,4 +1,4 @@
-// Board C3: the areas people wait for, and a launch's preview and confirmation.
+// Board C3: the areas people wait for, a launch's preview and confirmation, and a pincode added to the service area.
 
 import type { OpsReply } from "../answer.ts";
 
@@ -39,7 +39,32 @@ export const AREAS = {
     },
   ],
   more: false,
+  cities: ["Gurgaon", "Delhi", "Mumbai", "Bengaluru"],
 } satisfies OpsReply<"/api/waitlist">;
+
+/** A pincode people wait in that the service area does not hold: it has no area and no city until it is added. */
+export const UNHELD = {
+  pincode: "560001",
+  area: null,
+  city: null,
+  served: false,
+  launched_at: null,
+  waiting: 3,
+  oldest: "2027-04-02T06:00:00.000Z",
+  referred: 0,
+  alerts: 2,
+} satisfies OpsReply<"/api/waitlist">["areas"][number];
+
+/** That pincode, once added. */
+export const ADDED = {
+  pincode: "560001",
+  area: "MG Road",
+  city: "Bengaluru",
+  served: false,
+  launch_on: null,
+  waiting: 3,
+  to_alert: 2,
+} satisfies OpsReply<"/api/pincodes", "post", 201>;
 
 export const PREVIEW = { pincode: "400050", waiting: 117, alerts: 84, launched: false } satisfies OpsReply<
   "/api/pincodes/{pin}/launch",

@@ -180,10 +180,11 @@
   display: block;
   font-size: var(--fs-17);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: var(--paper);
 }
 
-.slots {
+.length {
   display: block;
   margin-top: var(--sp-3);
   font-size: var(--fs-14);
@@ -195,9 +196,11 @@
   min-width: 0;
 }
 
+/* On a narrow phone the badge drops beneath the type whole, rather than each breaking into a ragged column. */
 .kind {
   display: flex;
-  gap: var(--sp-9);
+  flex-wrap: wrap;
+  gap: var(--sp-3) var(--sp-9);
   align-items: center;
 }
 
@@ -220,6 +223,7 @@
 
 .badge {
   font-size: var(--fs-14);
+  white-space: nowrap;
   color: var(--ink-muted);
 }
 

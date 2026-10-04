@@ -1,4 +1,4 @@
-// One job on the day's list (board A1): time and slots down the left, then the
+// One job on the day's list (board A1): time and length down the left, then the
 // type, the badge, the client and the sector, and where the job stands once it
 // has begun. No amount, anywhere. The client is named from the day before the
 // visit, when the job unlocks.
@@ -10,7 +10,7 @@ import type { JobSummary } from "../api.ts";
 import { badges, job as copy } from "../content.ts";
 import { STROKE } from "../icons.ts";
 import { kindName } from "../lib/kind.ts";
-import { clockShort, where } from "../lib/when.ts";
+import { clock, where } from "../lib/when.ts";
 import styles from "./today.module.css";
 
 export function JobRow({
@@ -26,8 +26,8 @@ export function JobRow({
   return (
     <Link className={styles.row} to={`/jobs/${job.id}`}>
       <span className={styles.when}>
-        <span className={styles.time}>{clockShort(job.starts_at)}</span>
-        {job.slots !== null && <span className={styles.slots}>{copy.slots(job.slots)}</span>}
+        <span className={styles.time}>{clock(job.starts_at)}</span>
+        {job.minutes !== null && <span className={styles.length}>{copy.minutes(job.minutes)}</span>}
       </span>
       <span className={styles.what}>
         <span className={styles.kind}>
