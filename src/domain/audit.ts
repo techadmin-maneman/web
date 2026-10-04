@@ -107,6 +107,7 @@ export const AUDIT_ACTIONS = [
   "visit.book",
   "visit.cancel",
   "visit.close",
+  "visit.checkin_waive",
   // Ops correcting a client's hair profile, which keeps every version (docs/decisions/0106-a-clients-hair-profile.md).
   // The entry names the client and the version, never a word of the profile.
   "hair_profile.correct",

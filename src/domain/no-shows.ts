@@ -76,6 +76,8 @@ export interface NoShowCase {
   readonly minutes_late: number | null;
   /** Null when there was nothing to measure against. */
   readonly distance_m: number | null;
+  /** Ops let him check in past the geofence: who, and why; null when his check-in passed on its own. */
+  readonly let_in: { readonly by: string; readonly reason: string | null } | null;
   /** The check-in radius in force when he checked in, which the check-in keeps. */
   readonly radius_m: number;
   readonly message_state: MessageState;
@@ -100,6 +102,8 @@ interface CaseRow {
   claimed_at: string | null;
   received_at: string;
   distance_m: number | null;
+  waived_by: string | null;
+  waived_reason: string | null;
   radius_m: number;
   message_id: string | null;
   message_status: string | null;
@@ -330,6 +334,7 @@ export async function listNoShowCases(
     .prepare(
       `SELECT n.id, n.appointment_id, pe.id AS person_id, pe.name AS person_name,
          c.at AS checked_in_at, n.wait_started_at, c.claimed_at, c.created_at AS received_at, c.distance_m, c.radius_m,
+         c.waived_by, a.checkin_waived_reason AS waived_reason,
          n.message_id, o.state AS message_status, o.last_error AS message_error,
          COALESCE(n.message_delivered_at, o.delivered_at) AS message_delivered_at,
          n.wait_ends_at, n.closed_at, n.created_at, n.decision, n.decided_at,
@@ -359,6 +364,7 @@ export async function listNoShowCases(
     window_end: row.window_end,
     minutes_late: row.window_start === null ? null : minutesBetween(row.window_start, row.checked_in_at),
     distance_m: row.distance_m,
+    let_in: row.waived_by === null ? null : { by: row.waived_by, reason: row.waived_reason },
     radius_m: row.radius_m,
     message_state: messageStateOf(caseMessage(row)),
     message_delivered_at: row.message_delivered_at,

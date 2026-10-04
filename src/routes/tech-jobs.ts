@@ -864,12 +864,18 @@ export function registerTechJobs(app: App): void {
     if (answered !== null) return c.json(refusalOf(c, refusedOf(c, write, answered)), 409);
 
     const device = { lat: body.lat, lng: body.lng };
-    const measured = await measureArrival(c.env.DB, { personId: job.personId, device, radiusM: inputs.checkinRadiusM });
+    const measured = await measureArrival(c.env.DB, {
+      appointmentId: job.id,
+      personId: job.personId,
+      device,
+      radiusM: inputs.checkinRadiusM,
+    });
     c.var.log.info("technician_checked_in", {
       appointment_id: job.id,
       passed: measured.passed,
       distance_m: measured.distanceM,
       radius_m: measured.radiusM,
+      waived: measured.waivedBy !== null,
     });
     const arrival: ArrivalInput = {
       appointmentId: job.id,

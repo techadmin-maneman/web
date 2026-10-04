@@ -526,6 +526,70 @@ Request body:
 }
 ```
 
+### POST /api/visits/{id}/let-in
+
+Let the visit's technician check in wherever his phone puts him, with why: a pin far from the door
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/LetIn"
+}
+```
+
+**200**: His next check-in lands
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "let_in": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "let_in"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: no reason
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such visit in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_changeable: he has checked in already, or the visit is closed or cancelled
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/referral
 
 Attach an invite to a client who booked away from its page, with the reason
@@ -7584,6 +7648,25 @@ Request body:
 }
 ```
 
+### LetIn
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "Why, as ops write it: kept with the visit, and shown with the no-show's evidence."
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### AlreadyInvited
 
 ```json
@@ -10124,6 +10207,37 @@ Request body:
       ],
       "description": "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured."
     },
+    "let_in": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "by",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Ops let him check in past the geofence for this visit: who, and why. Null when his check-in passed on its own."
+    },
     "radius_m": {
       "type": "integer",
       "description": "The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since."
@@ -10213,6 +10327,7 @@ Request body:
     "window_end",
     "minutes_late",
     "distance_m",
+    "let_in",
     "radius_m",
     "message_state",
     "message_delivered_at",

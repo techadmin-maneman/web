@@ -1173,6 +1173,10 @@ WHERE appointment_id = '<visit id>' ORDER BY received_at;
 
 ---
 
+### A technician at the door who cannot check in
+
+His phone says how far it puts him from the address, and refuses beyond the check-in radius (Settings · Rules). Where he is at the door and still refused, the address's pin is usually the building's or the society's gate. Open the visit on the dispatch board, press **Let him check in**, and say why: his next tap lands, for that visit only. The distance is still recorded, and a no-show's evidence shows that ops let him in, and why. Correct the address's pin on the client's page for next time.
+
 ## Someone says a screen failed
 
 The console and the technician app show a **Ref** under a page that did not load, and under a technician's step the API refused: the first eight characters of the call's request ID, and "Copy" copies the whole ID. Every line mm-api logged of that call carries it as `request_id`. In Workers Logs (the `mm-api` Worker → Logs), filter on `request_id` starting with the Ref, or equal to the copied ID. A change in the console that failed shows no Ref: every console call is in `audit_log` under the person, with its `request_id`.

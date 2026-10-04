@@ -872,6 +872,88 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/{id}/let-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Let the visit's technician check in wherever his phone puts him, with why: a pin far from the door */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["LetIn"];
+                };
+            };
+            responses: {
+                /** @description His next check-in lands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            let_in: true;
+                        };
+                    };
+                };
+                /** @description invalid_request: no reason */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such visit in the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_changeable: he has checked in already, or the visit is closed or cancelled */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/referral": {
         parameters: {
             query?: never;
@@ -7271,6 +7353,10 @@ export interface components {
             /** @description Why it is closed by hand, and, for a visit partly done, why: kept with the visit. */
             reason: string;
         };
+        LetIn: {
+            /** @description Why, as ops write it: kept with the visit, and shown with the no-show's evidence. */
+            reason: string;
+        };
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
@@ -7815,6 +7901,11 @@ export interface components {
             minutes_late: number | null;
             /** @description Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured. */
             distance_m: number | null;
+            /** @description Ops let him check in past the geofence for this visit: who, and why. Null when his check-in passed on its own. */
+            let_in: {
+                by: string;
+                reason: string | null;
+            } | null;
             /** @description The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since. */
             radius_m: number;
             /**
