@@ -13,6 +13,7 @@ export const RULES = [
   "A record one of our own scripts made is messaged only if its number is on the allowlist, whatever the message's class.",
   "On staging, a test record signs in with the known code in STAGING_TEST_RECORD_CODE, and skips the limits per address.",
   "A test record's name is shown without its mark, as a real person's name would be.",
+  "Razorpay texts a payment link, and its reminders, only to a number on the allowlist. Production has no allowlist, so every client is texted.",
 ] as const;
 
 /** The names our own scripts and fixtures give an invented client or technician, never a real one's. */

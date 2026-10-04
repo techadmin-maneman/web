@@ -21,7 +21,7 @@ import { home, ONE_VISIT, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.t
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { hasBegun, stageText } from "../home/VisitCard.tsx";
 import { CHEVRON } from "../icons.ts";
-import { bookingName, technicianOf, visitName } from "../lib/visit.ts";
+import { bookingName, technicianOf, visitTitle } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
@@ -46,7 +46,7 @@ function UpcomingCard({ date, parts, prepaid }: { date: string; parts: readonly 
 /** A visit FSM has, which opens its own page; the window, or where one that has begun stands. */
 function Upcoming({ visit }: { visit: VisitSummary }) {
   const when = stageText(visit) ?? WINDOW_HOURS[visit.window_label];
-  const parts = [visitName(visit.type), when, ...technicianOf(visit)];
+  const parts = [visitTitle(visit), when, ...technicianOf(visit)];
   return (
     <li>
       <AppLink className={styles.card} to={`/visits/${visit.id}`}>
@@ -135,7 +135,7 @@ function Record({ history }: { history: Visits["history"] }) {
 /** A past visit's line: what it was and who did it, or that it was cancelled. */
 function pastLine(visit: VisitSummary): string {
   const after = visit.status === "cancelled" ? [visits.cancelled] : technicianOf(visit);
-  return [visitName(visit.type), ...after].join(" · ");
+  return [visitTitle(visit), ...after].join(" · ");
 }
 
 function Fact({ label, value, note }: { label: string; value: string; note?: string }) {

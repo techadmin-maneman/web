@@ -140,22 +140,23 @@ describe("Razorpay: payment links", () => {
     description: "Mane Man Natural hair system · fitted Mon 21 Sep",
     customer: { name: "Rohit Malhotra", contact: "+919810000001" },
     notes: { appointment_id: "visit-1", person_id: "person-1" },
+    closesAt: new Date("2026-10-06T08:00:00.000Z"),
+    notify: true,
   };
 
   /** What the link was made with. */
-  async function linkMade(): Promise<Record<string, unknown>> {
+  async function linkMade(link = LINK): Promise<Record<string, unknown>> {
     const { payments, calls } = razorpay({
       [`${API}/payment_links`]: () =>
         json({ id: "plink_9", short_url: "https://rzp.io/i/abc", status: "created", reference_id: "MM-2026-0841" }),
     });
-    expect(await payments.createPaymentLink(LINK)).toEqual({ id: "plink_9", shortUrl: "https://rzp.io/i/abc" });
+    expect(await payments.createPaymentLink(link)).toEqual({ id: "plink_9", shortUrl: "https://rzp.io/i/abc" });
     expect(calls[0]?.headers.get("Authorization")).toBe(`Basic ${btoa("rzp_test_abc:key-secret")}`);
     return JSON.parse(calls[0]?.body ?? "") as Record<string, unknown>;
   }
 
   it("makes a link for the whole amount, under our reference, which Razorpay texts the client and reminds them of", async () => {
     const made = await linkMade();
-    expect(made).not.toHaveProperty("expire_by");
     expect(made).toMatchObject({
       amount: 4500000,
       currency: "INR",
@@ -177,12 +178,16 @@ describe("Razorpay: payment links", () => {
     });
   });
 
-  it("closes a link at the moment asked, in Unix seconds, where one is asked", async () => {
-    const { payments, calls } = razorpay({
-      [`${API}/payment_links`]: () => json({ id: "plink_9", short_url: "https://rzp.io/i/abc" }),
-    });
-    await payments.createPaymentLink({ ...LINK, closesAt: new Date("2026-09-22T06:30:00.000Z") });
-    expect(JSON.parse(calls[0]?.body ?? "")).toMatchObject({ expire_by: 1790058600 });
+  // MON-45, PS-47: no link ever closed.
+  it("closes every link at the moment asked, in Unix seconds", async () => {
+    const made = await linkMade({ ...LINK, closesAt: new Date("2026-09-22T06:30:00.000Z") });
+    expect(made).toMatchObject({ expire_by: 1790058600 });
+  });
+
+  // MON-45, PS-46: every link was texted, and reminded of, whoever the number belonged to.
+  it("texts neither the link nor reminders of it where asked not to", async () => {
+    const made = await linkMade({ ...LINK, notify: false });
+    expect(made).toMatchObject({ notify: { sms: false, email: false }, reminder_enable: false });
   });
 
   it("names Razorpay's refusal as a refusal, so ops are told rather than the close sent again", async () => {
@@ -241,6 +246,8 @@ describe("payments where none is connected", () => {
         description: "d",
         customer: { name: "", contact: "" },
         notes: {},
+        closesAt: new Date("2026-10-06T08:00:00.000Z"),
+        notify: true,
       }),
     ).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     await expect(none.findPaymentLink("visit-1")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
