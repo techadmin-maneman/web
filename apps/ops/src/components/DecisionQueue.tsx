@@ -4,7 +4,8 @@
 // decision on that row, and a note beneath (FEO-28).
 //
 // A decided row leaves the queue at once; the count follows it, and so does
-// the keyboard, to the heading, rather than to the top of the page. A row the
+// the keyboard, to the heading, rather than to the top of the page, where a
+// queue may say what the decision did. A row the
 // address names -- a task on the Tasks board links to it -- is scrolled to,
 // focused and marked, as the board marks a selection.
 
@@ -20,6 +21,7 @@ export function DecisionQueue<T extends { readonly id: string }>({
   rowKind,
   empty,
   note,
+  done = null,
   children,
 }: {
   readonly titleId: string;
@@ -30,6 +32,8 @@ export function DecisionQueue<T extends { readonly id: string }>({
   /** Said when nothing waits. */
   readonly empty: string;
   readonly note?: ReactNode;
+  /** What the last decision did, said above the rows once it is made. */
+  readonly done?: string | null;
   /** A row's content and its decision; `decided` takes the row out of the queue. */
   readonly children: (item: T, decided: () => void) => ReactNode;
 }) {
@@ -57,6 +61,11 @@ export function DecisionQueue<T extends { readonly id: string }>({
 
   return (
     <Panel titleId={titleId} title={title} count={waiting.length} headingRef={heading}>
+      {done !== null && (
+        <p className={styles.done} role="status">
+          {done}
+        </p>
+      )}
       {waiting.length === 0 ? <p className={styles.empty}>{empty}</p> : rows}
       {note !== undefined && <p className={styles.note}>{note}</p>}
     </Panel>

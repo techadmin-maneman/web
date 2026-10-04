@@ -224,7 +224,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The client's record: who they are, their address, their visits, their money, their history and their invite */
+        /** The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits, their money and any booking still held for them */
         get: {
             parameters: {
                 query?: never;
@@ -242,10 +242,10 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ClientRecord"];
+                        "application/json": components["schemas"]["ClientRecord"] | components["schemas"]["ErasedClientRecord"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
+                /** @description not_found: no such client, or the client is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1953,7 +1953,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Open grievances in the caller's cities, oldest first */
+        /** Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's */
         get: {
             parameters: {
                 query?: never;
@@ -7185,6 +7185,26 @@ export interface components {
             reason: "lapsed" | "not_movable";
             /** Format: date-time */
             refunded_at: string;
+        };
+        /** @description What is kept of a client once erased: their visits, their money and any booking still held for them. Nothing names them. */
+        ErasedClientRecord: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            erased_at: string;
+            /** @description Upcoming soonest first; past newest first. No discount code may be entered or taken off: price_open is false. */
+            visits: {
+                upcoming: components["schemas"]["ClientVisit"][];
+                past: components["schemas"]["ClientVisit"][];
+            };
+            /** @description Payments and refunds as one list, newest first. */
+            payments: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
+            /** @description Every payment link, newest first. */
+            payment_links: components["schemas"]["ClientPaymentLink"][];
+            /** @description Each finished visit sold for a price, with its invoice; the latest visit first. */
+            invoices: components["schemas"]["ClientInvoice"][];
+            /** @description Bookings FSM refused, waiting for a try or for ops; the soonest visit first. */
+            held_bookings: components["schemas"]["HeldBooking"][];
         };
         ClientPhotos: {
             visits: {

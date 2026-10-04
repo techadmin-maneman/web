@@ -12,6 +12,9 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
 /** PLACEHOLDER: the API refused a call the person's access does not reach. */
 export const NOT_PERMITTED = "Your access doesn't include this. Ask an admin.";
 
+/** PLACEHOLDER: shown wherever a number would be, for a client erased since, whose number is gone. */
+export const ERASED_MOBILE = "Erased client";
+
 /** The five departments, as the navigation heads its sections and the Staff page names a grant. */
 const DEPARTMENT_NAMES = {
   operations: "Operations",
@@ -1161,6 +1164,15 @@ export const clients = {
         "minutes. Tell them it is done, in the chat they asked in.",
       back: "Find another client",
     },
+    /** PLACEHOLDER: the page of a client erased since, which keeps only their visits and money. */
+    record: {
+      title: "Erased client",
+      /** Whose visit the panels that cancel or close one name. */
+      whose: "the erased client",
+      on: (date: string) =>
+        `Erased on ${date}. Their name, number, address and photographs are gone; their visits and payments stay on ` +
+        "record.",
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "They were erased already. Reload to see.",
@@ -2177,7 +2189,7 @@ export const deletions = {
         "Every photograph of them, their visits' and their try-ons', the files as well as the records",
         "Their referral card, so an invite they sent shows the house card from now on",
         "Their saved addresses, and any number change under way",
-        "Their name, number and e-mail on the record, and the words of any grievance",
+        "Their name, number and e-mail on the record, and the words of any grievance; one still open is closed",
         "Their sessions, so their phone is signed out at once",
       ],
     },
@@ -2203,6 +2215,11 @@ export const deletions = {
       cancel: "Leave it waiting",
     },
     rejecting: "Rejecting",
+    /** PLACEHOLDER: above the queue once a decision is made. */
+    done: {
+      delete: "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within the hour.",
+      reject: "Request rejected. The client is told why on WhatsApp.",
+    },
     empty: "No deletion request is waiting.",
     note: (days: number) =>
       `Each request is processed within ${String(days)} days of being made. ` +

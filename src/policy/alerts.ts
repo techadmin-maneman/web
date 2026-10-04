@@ -18,7 +18,8 @@ export const crmErasureKey = (personId: string): string => `crm_erasure:${person
 /** A deletion request near the end of the days it must be decided in. */
 export const deletionWaitingKey = (requestId: string): string => `deletion_waiting:${requestId}`;
 
-const CUSTOMER_CARE_KINDS = [
+/** About the client themselves: their messages, contact and notes. */
+export const CUSTOMER_CARE_KINDS = [
   "message_failed",
   "messages_unsent",
   "crm_lead",

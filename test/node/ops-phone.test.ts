@@ -14,4 +14,9 @@ describe("a mobile number on the console", () => {
     expect(phoneWords("+447700900123")).toBe("+447700900123");
     expect(phoneWords("9557267803")).toBe("9557267803");
   });
+
+  // CP-35 of the audit, 2 October 2026: an erased client's grievance showed "erased:18f5c2c9-…" as their number.
+  it("never shows the mark an erasure leaves in place of the number", () => {
+    expect(phoneWords("erased:18f5c2c9-0000-4000-8000-000000000001")).toBe("Erased client");
+  });
 });
