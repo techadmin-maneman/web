@@ -7,6 +7,7 @@
 // Every change is written in one batch with its audit entry (ADR 0031): a change that is not recorded does not
 // happen. Books' items follow the services, by each one's own item (src/domain/books-items.ts).
 
+import { failedUniqueOn } from "../lib/d1-errors.ts";
 import { withGst } from "../config/gst.ts";
 import { PRICE_TIER } from "../config/ops-settings.ts";
 import { VISIT_BLOCKS } from "../config/scheduling.ts";
@@ -198,8 +199,7 @@ async function nameTaken(db: D1Database, name: string, except: { kind: VisitType
 }
 
 /** Whether a write failed on the services table's own keys: the name, or the kind and tier. */
-const failedUnique = (error: unknown): boolean =>
-  error instanceof Error && error.message.includes("UNIQUE constraint failed: services.");
+const failedUnique = (error: unknown): boolean => failedUniqueOn(error, "services");
 
 /**
  * Adds a service to a kind, last in its order. Its code is the one given, or one made from its name; its length the

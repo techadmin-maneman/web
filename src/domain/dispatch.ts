@@ -21,6 +21,7 @@
 // at the new time. Nor is a visit whose client has paid for a move, or booked
 // one free, that waits to be booked: ops are told it is being moved.
 
+import { failedNotNullOn, failedUniqueOn } from "../lib/d1-errors.ts";
 import { BOOKING_WINDOWS, SLOTS_PER_DAY, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
@@ -881,14 +882,6 @@ const claimOf = (db: D1Database, move: PlannedMove, claim: string): D1PreparedSt
   db
     .prepare("INSERT INTO slot_claims (technician_id, date, claim, move_id) VALUES (?1, ?2, ?3, ?4)")
     .bind(move.technicianId, move.date, claim, move.id);
-
-/** Whether a write failed on one of this table's unique keys, as SQLite words it: "UNIQUE constraint failed: t.c". */
-const failedUniqueOn = (error: unknown, table: string): boolean =>
-  error instanceof Error && error.message.includes(`UNIQUE constraint failed: ${table}.`);
-
-/** Whether a write failed on this column's NOT NULL, as SQLite words it: "NOT NULL constraint failed: t.c". */
-const failedNotNullOn = (error: unknown, column: string): boolean =>
-  error instanceof Error && error.message.includes(`NOT NULL constraint failed: ${column}`);
 
 const releasingClaims = (db: D1Database, moveId: string): D1PreparedStatement =>
   db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId);

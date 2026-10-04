@@ -99,6 +99,21 @@ export default defineConfig(
     },
   },
   {
+    // An error's message is read in one place, src/lib/d1-errors.ts: matching its words anywhere else read every
+    // UNIQUE failure as a lost window (CQ-31).
+    files: ["src/**/*.ts"],
+    ignores: ["src/lib/d1-errors.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='includes'][callee.object.property.name='message']",
+          message: "Read an error's message through src/lib/d1-errors.ts.",
+        },
+      ],
+    },
+  },
+  {
     // The logger is the only place src/ may write to the console.
     files: ["src/log.ts", "scripts/**/*.ts", "site/astro.config.ts"],
     rules: { "no-console": "off" },
