@@ -94,7 +94,7 @@ Work through this on **today's** job. It is a service visit, so it has five step
 
   **`https://tech-staging.maneman.in/jobs/ce586246-3666-4371-aef8-4badd4375fc2`**
 
-  Instead of the client's name the card says **Service**, and where the address would be it says **Not yet** and **The address and the client's card open the day before.**, with **Sector 45** underneath. There is no address on that screen because the API did not send one, not because the screen is hiding it.
+  Instead of the client's name the card says **Service**, and where the address would be it says **Not yet** and when it opens, such as **Opens at 6 pm on Sat 26 Sep.**, with **Sector 45** underneath. There is no address on that screen because the API did not send one, not because the screen is hiding it.
 
 - **No signal.** Turn on aeroplane mode, close the app completely and open it again. You should still see the day's jobs and be able to open the card, with **No signal · working offline** across the top. Turn signal back on and the photographs finish uploading by themselves.
 

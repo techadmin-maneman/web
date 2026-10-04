@@ -1,13 +1,13 @@
 // The cron (wrangler.jsonc "triggers"): a run every minute, each running only the jobs due in that minute. The free
 // plan stops a run past 10 ms of CPU, and one run of every job took 30 to 60 ms, so the jobs take turns: CRON_JOBS
-// gives each how often it runs (`every`) and in which minute of that period (`at`), a few to each minute
+// gives each how often it runs (`every`) and in which minute of that period (`at`), at most three to a minute
 // (docs/decisions/0009-stay-inside-cloudflare-free-tier.md, "the cron's CPU time").
 //
 // A job that throws is logged as `cron_job_failed` and the next one runs anyway, so one failing job never stops the
 // others. Each job's failed runs in a row are counted in `cron_jobs`, and a job that fails three in a row alerts
 // (docs/decisions/0067-alerts-and-silent-failures.md). Each run is noted as it starts and as it finishes, so a run
-// Cloudflare stopped part-way is told by the next (src/domain/cron-runs.ts), and each ends with a ping to an outside
-// monitor (src/providers/heartbeat.ts).
+// Cloudflare stopped part-way is told by the next (src/domain/cron-runs.ts), and an outside monitor is pinged every
+// five minutes, and at once when something is wrong (src/providers/heartbeat.ts).
 //
 // The jobs of a run share one budget of outside calls, so that together they stay under the free plan's 50 fetch
 // subrequests (src/lib/call-budget.ts). Their calls to D1, R2 and the queues are a separate allowance of 1,000 a run,
@@ -61,6 +61,7 @@ import {
   requeueMessages,
   requeueTryons,
 } from "./sweeper.ts";
+import { CRON_CALLS, type Timing } from "./schedule.ts";
 import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
 
 export interface CronContext {
@@ -82,17 +83,9 @@ export type CronRun = Omit<CronContext, "budget" | "inputs"> & {
    * meters env.DB itself, and what its dependencies read (an alert raised or closed) goes uncounted.
    */
   readonly meter?: MeteredDatabase;
+  /** The outside calls the run may make (callsFor); CRON_CALLS when not given. */
+  readonly calls?: number;
 };
-
-/** The trigger in wrangler.jsonc: a run every minute. */
-export const EVERY_MINUTE = "* * * * *";
-
-/**
- * Outside calls one run may make. The free plan allows 50 fetch subrequests an
- * invocation; the other ten are for what no job can plan: a Zoho token
- * refresh, the alerts the run sends, and its heartbeat (src/providers/heartbeat.ts).
- */
-export const CRON_CALLS = 40;
 
 /** A run starts no outside call after this, so it ends before the next minute's run starts. */
 export const CRON_CALLS_FOR_MS = 30_000;
@@ -107,15 +100,10 @@ const ALERT_AFTER_FAILED_RUNS = 3;
  */
 type Needs = "nothing" | "fsm" | "fsm_record" | "books" | "books_without_fsm" | "messaging";
 
-/** How often a job runs, in minutes. Each divides an hour, so a job runs in the same minutes every hour. */
-export type Every = 5 | 15 | 60;
-
-export interface CronJob {
+/** A job, and when it runs (src/scheduled/schedule.ts). */
+export interface CronJob extends Timing {
   readonly name: string;
   readonly needs: Needs;
-  readonly every: Every;
-  /** The minute of each period it runs in, from 0: `every: 15, at: 2` runs at :02, :17, :32 and :47. */
-  readonly at: number;
   readonly run: (context: CronContext) => Promise<unknown>;
 }
 
@@ -141,21 +129,6 @@ function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
     case "messaging":
       return config.settings.messaging.enabled;
   }
-}
-
-/** Whether the job runs in the minute of the hour given. */
-export function isDueAt(job: CronJob, minute: number): boolean {
-  return minute % job.every === job.at;
-}
-
-/**
- * The jobs for a run: those due in the minute Cloudflare scheduled it for. A run on any other schedule runs every job:
- * `npm run tick`, and the five-minute trigger until an operator attaches this one (docs/decisions/0010).
- */
-export function jobsDue(jobs: readonly CronJob[], cron: string, scheduledTime: number): readonly CronJob[] {
-  if (cron !== EVERY_MINUTE) return jobs;
-  const minute = new Date(scheduledTime).getUTCMinutes();
-  return jobs.filter((job) => isDueAt(job, minute));
 }
 
 async function queueMessages(queue: Queue, ids: readonly string[], requestId: string): Promise<void> {
@@ -345,69 +318,69 @@ async function ailabCreditsJob(context: CronContext): Promise<void> {
 }
 
 /**
- * Every job, and when it runs. Each minute of the five holds a light share of the five-minute jobs, each fifteen-minute
- * job has a minute to itself among those, and each hourly job a quiet minute of the hour; test/worker/cron.test.ts
- * holds every minute to a budget of D1 calls. A run's jobs run in this order.
+ * Every job, and when it runs (src/scheduled/schedule.ts). No minute holds more than three jobs; a job that calls a
+ * vendor every time it runs (CALLS_EVERY_RUN) shares its minute with one job at most; and the FSM mirror's repair, the
+ * costliest, has its minute alone. Minutes by their place in the five: 0 FSM, 1 the WhatsApp bridge, 2 the try-ons and
+ * the heartbeat, 3 the holds and Books, 4 the hourly jobs. A run's jobs run in this order.
  */
 export const CRON_JOBS: readonly CronJob[] = [
   // Every five minutes. The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md) reads a page of FSM's
-  // appointments, the most any job does, so it has its minute alone.
+  // appointments.
   { name: "fsm_reconcile", needs: "fsm_record", every: 5, at: 0, run: reconcileJob },
   // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
   { name: "whatsapp_bridge", needs: "nothing", every: 5, at: 1, run: whatsAppBridgeJob },
-  // A one visit's payment link its close could not have Razorpay make (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
-  { name: "payment_links", needs: "nothing", every: 5, at: 1, run: paymentLinksJob },
   { name: "requeue_tryons", needs: "nothing", every: 5, at: 2, run: requeueTryons },
-  { name: "requeue_job_events", needs: "nothing", every: 5, at: 2, run: jobEventsJob },
+  // A one visit's payment link its close could not have Razorpay make (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+  { name: "payment_links", needs: "nothing", every: 5, at: 2, run: paymentLinksJob },
   // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md), and
   // one FSM refused five times running, tried every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
   { name: "unbooked_holds", needs: "nothing", every: 5, at: 3, run: unbookedHoldsJob },
-  { name: "release_unfinished_moves", needs: "nothing", every: 5, at: 3, run: letUnfinishedMovesGo },
   { name: "requeue_messages", needs: "nothing", every: 5, at: 4, run: requeueMessages },
-  { name: "requeue_leads", needs: "nothing", every: 5, at: 4, run: requeueLeads },
 
   // Every fifteen minutes.
-  { name: "referrals", needs: "nothing", every: 15, at: 1, run: referralsJob },
-  { name: "delete_photos", needs: "nothing", every: 15, at: 2, run: deletePhotos },
+  { name: "visit_reminders", needs: "messaging", every: 15, at: 1, run: remindersJob },
+  { name: "requeue_job_events", needs: "nothing", every: 15, at: 2, run: jobEventsJob },
   // A finished job's invoice (ADRs 0055 and 0056), before the Books pass, which sets a client's advance against the
   // invoice once it is issued.
   { name: "invoices", needs: "books", every: 15, at: 3, run: invoicesJob },
-  { name: "expire_tryons", needs: "nothing", every: 15, at: 4, run: expireTryOns },
-  { name: "books_sync", needs: "books", every: 15, at: 6, run: booksJob },
-  { name: "kept_looks", needs: "nothing", every: 15, at: 7, run: letKeptLooksGo },
-  // Free service visits running out: a month, then a week, before their last day.
-  { name: "credit_reminders", needs: "messaging", every: 15, at: 7, run: creditRemindersJob },
-  { name: "visit_reminders", needs: "messaging", every: 15, at: 8, run: remindersJob },
-  // What the client asked for, beside what the board offers them (ADR 0063).
-  { name: "asked_windows", needs: "nothing", every: 15, at: 9, run: askedWindowsJob },
-  // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
-  { name: "next_service_reminders", needs: "messaging", every: 15, at: 11, run: nextServiceRemindersJob },
+  { name: "referrals", needs: "nothing", every: 15, at: 6, run: referralsJob },
+  { name: "release_unfinished_moves", needs: "nothing", every: 15, at: 7, run: letUnfinishedMovesGo },
+  { name: "books_sync", needs: "books", every: 15, at: 8, run: booksJob },
+  { name: "delete_photos", needs: "nothing", every: 15, at: 11, run: deletePhotos },
+  { name: "requeue_leads", needs: "nothing", every: 15, at: 12, run: requeueLeads },
   // A cancel, the client's or ops', whose refund its request could not settle, asked for again under its receipt.
-  { name: "cancel_refunds", needs: "nothing", every: 15, at: 12, run: cancelRefundsJob },
-  // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
-  { name: "erased_files", needs: "nothing", every: 15, at: 12, run: erasedFilesJob },
-  { name: "requeue_crm_erasures", needs: "nothing", every: 15, at: 13, run: requeueCrmErasures },
-  { name: "requeue_fsm_erasures", needs: "fsm", every: 15, at: 13, run: requeueFsmErasures },
-  // An erased client's customer in Books, deleted, or blanked where an invoice names it.
-  { name: "books_erasures", needs: "books", every: 15, at: 14, run: booksErasuresJob },
+  { name: "cancel_refunds", needs: "nothing", every: 15, at: 13, run: cancelRefundsJob },
 
   // Every hour. Without FSM, the Books item each service is invoiced on, before the invoices that need one; its check
   // still does nothing after the hour's first five minutes (src/domain/books-items.ts), so it runs in one of them.
   { name: "books_items", needs: "books_without_fsm", every: 60, at: 4, run: booksItemsJob },
+  { name: "expire_tryons", needs: "nothing", every: 60, at: 9, run: expireTryOns },
   { name: "ailab_credits", needs: "nothing", every: 60, at: 14, run: ailabCreditsJob },
+  { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
+  { name: "requeue_fsm_erasures", needs: "fsm", every: 60, at: 19, run: requeueFsmErasures },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
-  { name: "housekeeping", needs: "nothing", every: 60, at: 26, run: housekeep },
+  { name: "housekeeping", needs: "nothing", every: 60, at: 28, run: housekeep },
+  // What the client asked for, beside what the board offers them (ADR 0063).
+  { name: "asked_windows", needs: "nothing", every: 60, at: 29, run: askedWindowsJob },
+  // An erased client's customer in Books, deleted, or blanked where an invoice names it.
+  { name: "books_erasures", needs: "books", every: 60, at: 29, run: booksErasuresJob },
+  // What the account has used today of the free plan's daily allowances, told at 70%.
+  { name: "daily_allowances", needs: "nothing", every: 60, at: 34, run: dailyAllowancesJob },
   // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093), and
   // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", every: 60, at: 39, run: storageMeterJob },
-  // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts). Once a day it reads the day's
-  // board, so it shares a minute with jobs that make no outside call.
-  { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 47, run: utilisationJob },
-  // What the account has used today of the free plan's daily allowances, told at 70%.
-  { name: "daily_allowances", needs: "nothing", every: 60, at: 54, run: dailyAllowancesJob },
+  // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
+  { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
+  // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
+  { name: "next_service_reminders", needs: "messaging", every: 60, at: 44, run: nextServiceRemindersJob },
+  // Free service visits running out: a month, then a week, before their last day.
+  { name: "credit_reminders", needs: "messaging", every: 60, at: 49, run: creditRemindersJob },
   // FSM's catalogue against the price book, which it prices invoices by (docs/decisions/0073-prices-from-the-price-book.md),
   // and against ops' consumables, which it holds as parts (docs/decisions/0087-consumables-and-stock.md).
-  { name: "fsm_catalogue", needs: "fsm", every: 60, at: 56, run: catalogueJob },
+  { name: "fsm_catalogue", needs: "fsm", every: 60, at: 54, run: catalogueJob },
+  // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
+  { name: "erased_files", needs: "nothing", every: 60, at: 59, run: erasedFilesJob },
+  { name: "requeue_crm_erasures", needs: "nothing", every: 60, at: 59, run: requeueCrmErasures },
 ];
 
 /**
@@ -442,7 +415,7 @@ async function runJobs(jobs: readonly CronJob[], given: CronRun): Promise<RunRes
   const { run, meter } = metered(given);
   const startedAt = run.deps.now();
   const { cutShortAt, failing } = await recordStart(run, startedAt.toISOString());
-  const budget = createCallBudget(CRON_CALLS, {
+  const budget = createCallBudget(run.calls ?? CRON_CALLS, {
     until: startedAt.getTime() + CRON_CALLS_FOR_MS,
     now: () => run.deps.now().getTime(),
   });
@@ -464,7 +437,7 @@ async function runJobs(jobs: readonly CronJob[], given: CronRun): Promise<RunRes
     }
     rowsReadByJob[job.name] = usageSince(before, meter.usage()).rowsRead;
   }
-  if (budget.ranOut()) run.log.warn("cron_calls_spent", { calls: CRON_CALLS });
+  if (budget.ranOut()) run.log.warn("cron_calls_spent", { calls: run.calls ?? CRON_CALLS });
   await recordFinish(run, startedAt.toISOString(), failedJobs(outcomes).length);
   run.log.info("cron_run", {
     failed_jobs: failedJobs(outcomes),
@@ -482,23 +455,29 @@ function metered(run: CronRun): { run: CronRun; meter: MeteredDatabase } {
 
 /**
  * A whole scheduled run: the jobs, then the heartbeat that tells the outside monitor the cron is running. It pings
- * /fail when a job failed, or when the run before never finished, saying so.
+ * /fail when a job failed, or when the run before never finished, saying so; with nothing wrong, it pings only when
+ * `pingWhenWell` (pingsWhenWell, src/scheduled/schedule.ts).
  */
-export async function runCron(jobs: readonly CronJob[], run: CronRun): Promise<void> {
+export async function runCron(jobs: readonly CronJob[], run: CronRun, pingWhenWell = true): Promise<void> {
   const { outcomes, cutShortAt } = await runJobs(jobs, run);
   const notFinished = cutShortAt === null ? [] : [`the run started at ${cutShortAt} never finished`];
+  const wrong = [...notFinished, ...failedJobs(outcomes)];
+  if (wrong.length === 0 && !pingWhenWell) return;
   const heartbeat = { url: run.config.settings.heartbeatUrl, fetch: run.deps.fetch, log: run.log };
-  await pingHeartbeat(heartbeat, [...notFinished, ...failedJobs(outcomes)]);
+  await pingHeartbeat(heartbeat, wrong);
 }
 
 function failedJobs(outcomes: readonly CronOutcome[]): string[] {
   return outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.job);
 }
 
-/** Keeping the run record must never stop the jobs, so a failure to is only logged. */
+/**
+ * Keeping the run record must never stop the jobs, so a failure to is only logged. The alert providers are made only
+ * if a run was cut short: making them on every run cost each one CPU time.
+ */
 async function recordStart({ env, deps, log }: CronRun, startedAt: string): Promise<RunStart> {
   try {
-    return await startRun({ db: env.DB, alertOnce: deps.alertOnce }, startedAt);
+    return await startRun({ db: env.DB, alertOnce: (alert) => deps.alertOnce(alert) }, startedAt);
   } catch (error) {
     log.error("cron_run_not_recorded", { error });
     return { cutShortAt: null, failing: new Set() };
@@ -508,7 +487,7 @@ async function recordStart({ env, deps, log }: CronRun, startedAt: string): Prom
 async function recordFinish({ env, deps, log }: CronRun, startedAt: string, failedJobCount: number): Promise<void> {
   const run = { startedAt, completedAt: deps.now().toISOString(), failedJobs: failedJobCount };
   try {
-    await finishRun({ db: env.DB, resolveAlert: deps.resolveAlert }, run);
+    await finishRun({ db: env.DB, resolveAlert: (key) => deps.resolveAlert(key) }, run);
   } catch (error) {
     log.error("cron_run_not_recorded", { error });
   }
