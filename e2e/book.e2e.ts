@@ -311,10 +311,10 @@ test("says a wrong code under its box, and what a right one takes off once booke
   });
   await bookOneVisitWithCode(page, "wrong1");
   const box = page.getByLabel("Discount code (optional)");
-  const refusal = "That discount code does not apply. Check it, or leave it out to book without it.";
+  const refusal = "That discount code doesn’t apply. Check it, or leave it out to book without it.";
   await expect(box).toHaveAttribute("aria-invalid", "true");
   await expect(box).toBeFocused();
-  await expect(box).toHaveAccessibleDescription(/^That discount code does not apply\./);
+  await expect(box).toHaveAccessibleDescription(/^That discount code doesn’t apply\./);
   await expect(page.getByText(refusal)).toHaveCount(1);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -335,7 +335,7 @@ test("says when the code sent could not be applied, and that the booking stands 
   await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true, discount_code: null } } });
   await bookOneVisitWithCode(page, "weddng25");
   await expect(page.getByText("Booking received")).toBeVisible();
-  await expect(page.getByText("We could not apply code WEDDNG25. Your booking stands without it.")).toBeVisible();
+  await expect(page.getByText("We couldn’t apply code WEDDNG25. Your booking stands without it.")).toBeVisible();
 });
 
 test("says what a percentage code takes off, up to its cap", async ({ page }) => {
@@ -390,10 +390,10 @@ test("a booking without the address is stopped at the form, each part it needs m
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Please give the flat or house number.")).toBeVisible();
-  await expect(page.getByText("Please give the building or society.")).toBeVisible();
-  await expect(page.getByText("Please give the sector or area.")).toBeVisible();
-  await expect(page.getByText("Please give the city.")).toBeVisible();
+  await expect(page.getByText("Enter the flat or house number.")).toBeVisible();
+  await expect(page.getByText("Enter the building or society.")).toBeVisible();
+  await expect(page.getByText("Enter the sector or area.")).toBeVisible();
+  await expect(page.getByText("Enter the city.")).toBeVisible();
   await expect(page.getByLabel("Flat or house number")).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByLabel("Building or society")).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByLabel("Street (optional)")).toHaveAttribute("aria-invalid", "false");
@@ -682,11 +682,11 @@ test("an empty submit shows each error, announced, brings the first into view, a
   await page.getByRole("button", { name: "Check" }).click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Please tell us your name.")).toBeVisible();
+  await expect(page.getByText("Enter your name.")).toBeVisible();
   await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
-  await expect(page.getByText("Please give the building or society.")).toBeVisible();
-  await expect(page.getByText("Please give the sector or area.")).toBeVisible();
+  await expect(page.getByText("Enter the building or society.")).toBeVisible();
+  await expect(page.getByText("Enter the sector or area.")).toBeVisible();
   const flat = page.getByLabel("Flat or house number");
   await expect(flat).toBeFocused();
   await expect(flat).toBeInViewport();
