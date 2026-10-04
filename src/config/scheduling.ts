@@ -38,7 +38,7 @@ export const WINDOW_SLOT_MAP: Readonly<Record<BookingWindow, readonly number[]>>
 
 /**
  * Each visit type's block, in half-slots (consultation and service one slot,
- * replacement one and a half, first fit two), and how long FSM books it for.
+ * replacement one and a half, first fit two), and how long it is booked for.
  * The owner kept the design's four lengths on 24 September 2026, the service's
  * 90 minutes among them (docs/open-points.md, "Visit lengths").
  */
@@ -87,11 +87,3 @@ export const PAYMENT_HOLD_KEYS = ["countdown", "grace"] as const;
 export type PaymentHold = Readonly<Record<(typeof PAYMENT_HOLD_KEYS)[number], number>>;
 
 export const PAYMENT_HOLD: PaymentHold = { countdown: HOLD_SECONDS / 60, grace: PAYMENT_GRACE_SECONDS / 60 };
-
-/**
- * How long a move on the dispatch board holds the time it is moving a job to
- * while FSM is written. A move still open after this never finished, and the
- * next move or the sweeper lets its time go
- * (docs/decisions/0069-dispatch-under-concurrency.md).
- */
-export const MOVE_CLAIM_SECONDS = 300;

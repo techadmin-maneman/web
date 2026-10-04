@@ -1,7 +1,7 @@
 // Booking a visit in the app (boards C2 to C6), while self-serve booking is on
 // (docs/decisions/0045-self-serve-booking.md). A sheet rises: the date, the
 // window, then paying through Razorpay Checkout. Paid, the sheet waits while
-// Razorpay's webhook confirms and the visit is booked in FSM, polling the hold.
+// Razorpay's webhook confirms and the visit is booked, polling the hold.
 // Closed before Checkout was opened on it, the hold is let go; after, a payment
 // may still land on its order, and the API lets it go once its grace ends.
 // Moving a visit (board C7) takes the same steps, with its own technician and

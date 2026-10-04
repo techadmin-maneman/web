@@ -11,7 +11,6 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
-import { fieldRecord } from "../config/field-record.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { cancelVisit, changeableVisit, changeTerms, termsInForce, type ChangeTerms } from "../domain/visit-changes.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -195,11 +194,7 @@ export function registerClientChanges(app: App): void {
     try {
       const notify = (messageId: string) =>
         c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
-      outcome = await cancelVisit(c.env.DB, { ...deps, notify }, terms, now, {
-        labelAsTest: c.var.config.environment !== "production",
-        log,
-        record: fieldRecord(c.var.config.providers),
-      });
+      outcome = await cancelVisit(c.env.DB, { ...deps, notify }, terms, now, { log });
     } catch (error) {
       log.error("cancel_failed", { appointment_id: visit.id, error });
       return c.json(errorBody("unavailable", requestId), 503);

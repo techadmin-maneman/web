@@ -114,31 +114,6 @@ const Invoice = z.object({
   reference_number: z.string().nullish(),
 });
 
-/** A draft with its lines, as a discount is written onto it: each line is sent back, or Books removes it. */
-const InvoiceWithLines = Invoice.extend({
-  customer_id: z.string(),
-  line_items: z
-    .array(
-      z.looseObject({
-        line_item_id: z.string(),
-        rate: z.number(),
-        quantity: z.number(),
-        discount: z.union([z.number(), z.string()]).optional(),
-      }),
-    )
-    .min(1),
-});
-
-type BooksLine = z.infer<typeof InvoiceWithLines>["line_items"][number];
-
-/** The visit's line, which a discount comes off: the dearest, since a visit's work order bills its service first. */
-const visitLine = (lines: readonly BooksLine[]): BooksLine | undefined =>
-  lines.reduce<BooksLine | undefined>(
-    (dearest, line) =>
-      dearest === undefined || line.rate * line.quantity > dearest.rate * dearest.quantity ? line : dearest,
-    undefined,
-  );
-
 const Recorded = z.object({ payment: z.object({ payment_id: z.string() }) });
 const Refunded = z.object({ payment_refund: z.object({ payment_refund_id: z.string() }) });
 
@@ -179,7 +154,7 @@ async function orNull<T>(work: () => Promise<T>): Promise<T | null> {
   }
 }
 
-type Documents = Pick<BooksProvider, "invoice" | "issueInvoice" | "discountInvoice" | "invoicePdf">;
+type Documents = Pick<BooksProvider, "invoice" | "issueInvoice" | "invoicePdf">;
 
 function documentCalls({ request, org }: BooksApi): Documents {
   const path = (id: string, extra = "") => `/books/v3/invoices/${encodeURIComponent(id)}?${org}${extra}`;
@@ -196,26 +171,6 @@ function documentCalls({ request, org }: BooksApi): Documents {
         method: "POST",
         body: {},
       });
-    },
-
-    async discountInvoice(id, amountOff) {
-      const read = await (await request("invoice", path(id))).json<{ invoice?: unknown }>();
-      const draft = InvoiceWithLines.parse(read.invoice);
-      const discounted = visitLine(draft.line_items);
-      const body = {
-        customer_id: draft.customer_id,
-        discount_type: "item_level",
-        is_discount_before_tax: true,
-        line_items: draft.line_items.map((line) =>
-          line === discounted ? { ...line, discount: rupees(amountOff) } : line,
-        ),
-      };
-      const written = await (
-        await request("discount_invoice", path(id), { method: "PUT", body })
-      ).json<{
-        invoice?: unknown;
-      }>();
-      return booksInvoiceOf(Invoice.parse(written.invoice));
     },
 
     invoicePdf: (id) =>

@@ -35,8 +35,7 @@
     "producers": [
       { "binding": "RENDER_QUEUE", "queue": "mm-render-local" },
       { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-local" },
-      { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" },
-      { "binding": "FSM_QUEUE", "queue": "mm-fsm-sync-local" }
+      { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" }
     ],
     // crm-sync asks for one batch at a time; Queues does not guarantee it (docs/decisions/0012-zoho-sync.md).
     "consumers": [
@@ -61,14 +60,6 @@
         "max_batch_timeout": 5,
         "max_retries": 5,
         "max_concurrency": 1
-      },
-      // FSM hints: each names an appointment to read afresh (docs/decisions/0032-fsm-mirror.md).
-      {
-        "queue": "mm-fsm-sync-local",
-        "max_batch_size": 10,
-        "max_batch_timeout": 5,
-        "max_retries": 5,
-        "max_concurrency": 1
       }
     ]
   },
@@ -83,11 +74,8 @@
     // The stub needs no audience.
     "ACCESS_OPS_AUD": "",
     "SMS_PROVIDER": "stub",
-    // Zoho FSM is off: our own database is the record of field work. The Books stub reaches nothing.
-    "FSM_PROVIDER": "none",
+    // The Books stub reaches nothing.
     "BOOKS_PROVIDER": "stub",
-    "ZOHO_FSM_ACCOUNTS_HOST": "",
-    "ZOHO_FSM_API_HOST": "",
     "ZOHO_BOOKS_ACCOUNTS_HOST": "",
     "ZOHO_BOOKS_API_HOST": "",
     "ZOHO_BOOKS_ORG_ID": "",
@@ -149,8 +137,7 @@
         "producers": [
           { "binding": "RENDER_QUEUE", "queue": "mm-render-staging" },
           { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-staging" },
-          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-staging" },
-          { "binding": "FSM_QUEUE", "queue": "mm-fsm-sync-staging" }
+          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-staging" }
         ],
         "consumers": [
           {
@@ -174,14 +161,6 @@
             "max_batch_timeout": 5,
             "max_retries": 5,
             "max_concurrency": 1
-          },
-          // FSM hints: each names an appointment to read afresh (docs/decisions/0032-fsm-mirror.md).
-          {
-            "queue": "mm-fsm-sync-staging",
-            "max_batch_size": 10,
-            "max_batch_timeout": 5,
-            "max_retries": 5,
-            "max_concurrency": 1
           }
         ]
       },
@@ -196,13 +175,9 @@
         // The ops-staging Access application's audience tag.
         "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",
         "SMS_PROVIDER": "none",
-        // Zoho FSM is off: our own database is the record of field work (docs/runbook.md, "Switching staging off FSM").
         // Books is in the real org (ADR 0025, item 26). Secrets ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN: the
-        // org's one Self Client, with a refresh token of Books' own. FSM's secrets may stay set; nothing reads them.
-        "FSM_PROVIDER": "none",
+        // org's one Self Client, with a refresh token of Books' own.
         "BOOKS_PROVIDER": "zoho",
-        "ZOHO_FSM_ACCOUNTS_HOST": "accounts.zoho.in",
-        "ZOHO_FSM_API_HOST": "www.zohoapis.in",
         "ZOHO_BOOKS_ACCOUNTS_HOST": "accounts.zoho.in",
         "ZOHO_BOOKS_API_HOST": "www.zohoapis.in",
         "ZOHO_BOOKS_ORG_ID": "60088931635",
@@ -259,8 +234,7 @@
         "producers": [
           { "binding": "RENDER_QUEUE", "queue": "mm-render-prod" },
           { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-prod" },
-          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-prod" },
-          { "binding": "FSM_QUEUE", "queue": "mm-fsm-sync-prod" }
+          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-prod" }
         ],
         "consumers": [
           {
@@ -284,14 +258,6 @@
             "max_batch_timeout": 5,
             "max_retries": 5,
             "max_concurrency": 1
-          },
-          // FSM hints: each names an appointment to read afresh (docs/decisions/0032-fsm-mirror.md).
-          {
-            "queue": "mm-fsm-sync-prod",
-            "max_batch_size": 10,
-            "max_batch_timeout": 5,
-            "max_retries": 5,
-            "max_concurrency": 1
           }
         ]
       },
@@ -306,11 +272,8 @@
         // The ops Access application's audience tag; unused until ops is switched on in production.
         "ACCESS_OPS_AUD": "aeb0323bfcacdaac2935265df92982ac031e2175fa6b111878d11dabd6de3773",
         "SMS_PROVIDER": "none",
-        // Zoho FSM and Books stay off until Phase 2's release (docs/open-points.md).
-        "FSM_PROVIDER": "none",
+        // Zoho Books stays off until Phase 2's release (docs/open-points.md).
         "BOOKS_PROVIDER": "none",
-        "ZOHO_FSM_ACCOUNTS_HOST": "",
-        "ZOHO_FSM_API_HOST": "",
         "ZOHO_BOOKS_ACCOUNTS_HOST": "",
         "ZOHO_BOOKS_API_HOST": "",
         "ZOHO_BOOKS_ORG_ID": "",

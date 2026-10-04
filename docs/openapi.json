@@ -71,12 +71,9 @@
                   "already_started",
                   "piece_code",
                   "technician_inactive",
-                  "managed_in_fsm",
                   "clash",
                   "on_leave",
                   "does_not_fit",
-                  "fsm_refused",
-                  "fsm_partly",
                   "in_progress",
                   "too_early_to_close",
                   "already_closed",
@@ -127,7 +124,7 @@
                         "type": "null"
                       }
                     ],
-                    "description": "When ops moved the job to them; null when it was moved in FSM itself"
+                    "description": "When ops moved the job to them; null where nothing recorded when"
                   }
                 },
                 "required": [
@@ -2900,46 +2897,6 @@
           },
           "404": {
             "description": "not_found: receipts are not switched on (no EVOLUTION_WEBHOOK_TOKEN)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/hooks/fsm/{token}": {
-      "post": {
-        "summary": "FSM's webhook: an appointment was created, edited or deleted",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "token",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Taken, or ignored. Either way FSM need not send it again"
-          },
-          "401": {
-            "description": "unauthorized: the token is wrong",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not_found: FSM's webhook is not switched on (no FSM_WEBHOOK_TOKEN)",
             "content": {
               "application/json": {
                 "schema": {

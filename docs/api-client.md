@@ -1733,12 +1733,9 @@ Request body:
             "already_started",
             "piece_code",
             "technician_inactive",
-            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
-            "fsm_refused",
-            "fsm_partly",
             "in_progress",
             "too_early_to_close",
             "already_closed",
@@ -1789,7 +1786,7 @@ Request body:
                   "type": "null"
                 }
               ],
-              "description": "When ops moved the job to them; null when it was moved in FSM itself"
+              "description": "When ops moved the job to them; null where nothing recorded when"
             }
           },
           "required": [
@@ -2171,7 +2168,7 @@ Request body:
         "place"
       ],
       "additionalProperties": false,
-      "description": "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit."
+      "description": "A booking's proposed consultation, before it is a visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the person has a visit."
     },
     "next_visit": {
       "anyOf": [
@@ -2182,7 +2179,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The next visit that has not happened, from FSM: a consultation for a lead."
+      "description": "The next visit that has not happened: a consultation for a lead."
     },
     "being_booked": {
       "anyOf": [
@@ -2232,7 +2229,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The soonest visit paid for, or booked free, that FSM does not have yet: neither booked nor refunded. It is on its way, or held after FSM refused it, and becomes a visit once FSM takes it (ADR 0095)."
+      "description": "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is on its way, and becomes a visit once it is booked (ADR 0068)."
     },
     "credits": {
       "anyOf": [
@@ -2602,7 +2599,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -2620,7 +2617,7 @@ Request body:
     },
     "place": {
       "type": "string",
-      "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+      "description": "The saved address's area, city and pincode, else the visit's city and pincode."
     }
   },
   "required": [
@@ -3474,7 +3471,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The month the piece now in wear falls due, and null when no piece is in wear. A month, not a day: FSM's install date is read again on every sync, so the day can move (ADR 0059)."
+      "description": "The month the piece now in wear falls due, and null when no piece is in wear. A month, not a day (ADR 0059)."
     }
   },
   "required": [
@@ -3568,7 +3565,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -3586,7 +3583,7 @@ Request body:
     },
     "place": {
       "type": "string",
-      "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+      "description": "The saved address's area, city and pincode, else the visit's city and pincode."
     },
     "duration_minutes": {
       "anyOf": [
@@ -3613,7 +3610,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Done, partly done, or a no-show: the client was not home. Null until FSM closes it."
+      "description": "Done, partly done, or a no-show: the client was not home. Null until it is closed."
     },
     "what_was_done": {
       "anyOf": [
@@ -3627,7 +3624,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was recorded, as for a visit closed in FSM's own screens."
+      "description": "The job sheet's checklist items the technician ticked, in the sheet's order; null when no checklist was recorded."
     },
     "photos": {
       "$ref": "#/components/schemas/PhotoSet"
@@ -3758,7 +3755,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Its small copy, for a row of thumbnails, likewise; null for a photograph with none, such as one copied from FSM, which the row shows itself."
+      "description": "Its small copy, for a row of thumbnails, likewise; null for a photograph with none, which the row shows itself."
     },
     "width": {
       "anyOf": [

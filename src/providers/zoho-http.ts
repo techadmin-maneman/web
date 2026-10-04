@@ -1,5 +1,5 @@
 // One requester for every Zoho client (docs/decisions/0070-vendor-correctness.md):
-// the CRM, FSM and Books each on a client of its own. Each request is
+// the CRM and Books each on a client of its own. Each request is
 // timed and logged by step, and a failed one becomes a ZohoError.
 //
 // The access token lasts an hour and is kept in D1 (`zoho_access_tokens`), so
@@ -317,7 +317,7 @@ interface ZohoErrorBody {
 export function zohoErrorFrom(status: number, json: unknown): ZohoError {
   const body = json as (ZohoErrorBody & { data?: ZohoErrorBody[] }) | null;
   const detail = Array.isArray(body?.data) ? (body.data[0] ?? body) : body;
-  // Books' codes are numbers, CRM's and FSM's words.
+  // Books' codes are numbers, the CRM's words.
   const code =
     typeof detail?.code === "string" || typeof detail?.code === "number" ? String(detail.code) : "HTTP_ERROR";
   const message = typeof detail?.message === "string" ? detail.message : "request failed";

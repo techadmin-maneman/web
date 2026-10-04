@@ -1,5 +1,4 @@
-// The technician's day, read from the FSM mirror (src/policy/job-visibility.ts,
-// docs/decisions/0032-fsm-mirror.md).
+// The technician's day (src/policy/job-visibility.ts).
 //
 // "Today's jobs in order; tomorrow collapsed. Jobs further out show only time,
 // type and sector. The address, access notes and client card unlock the day
@@ -131,7 +130,7 @@ export interface LastVisit {
 }
 
 export interface JobDetail extends JobSummary {
-  /** Null while the job is locked, whatever the mirror holds. */
+  /** Null while the job is locked. */
   readonly address: JobAddress | null;
   readonly access_notes: string | null;
   readonly client: JobClient | null;
@@ -181,7 +180,7 @@ interface JobRow {
   window_start: string;
   window_end: string | null;
   type: VisitType | null;
-  /** The visit's service within its kind; null where the mirror knows none. */
+  /** The visit's service within its kind; null where it names none. */
   tier: string | null;
   one_visit: OneVisitState | null;
   status: AppointmentStatus;
@@ -215,7 +214,7 @@ interface JobRow {
 }
 
 // `free`: the price book's row for the visit's own service, its kind and its tier (the standard tier's where the
-// mirror knows no other), on the visit's day in India charges nothing, as it does a consultation.
+// visit names no other), on the visit's day in India charges nothing, as it does a consultation.
 const SELECT_JOB = `
   SELECT a.id, a.window_start, a.window_end, a.type, a.tier, a.one_visit, a.status, a.person_id, a.service_city,
     a.client_note,

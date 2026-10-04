@@ -32,7 +32,7 @@ const ChargeSchema = z
     kind: z.enum(["late_cancellation", "no_show"]),
     person: z
       .union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()])
-      .openapi({ description: "Null for a visit FSM never matched to one of our people." }),
+      .openapi({ description: "Null for a visit with no client of ours." }),
     amount: z.union([paise("What was kept."), z.null()]).openapi({
       description: "Null on a no-show charged before a charge recorded what it kept (migration 0059).",
     }),

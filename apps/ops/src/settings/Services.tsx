@@ -295,7 +295,6 @@ function ServiceBlock(props: {
       <p className={styles.facts}>
         {[
           copy.facts(service.minutes, service.tier),
-          service.fsm_item_id === null ? copy.fsm.notYet : copy.fsm.linked,
           standing(service, today),
         ].join(" · ")}
       </p>

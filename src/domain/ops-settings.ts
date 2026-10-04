@@ -23,7 +23,6 @@ import {
 } from "../config/ops-settings.ts";
 import type { Cycles } from "../config/pieces.ts";
 import type { PaymentHold } from "../config/scheduling.ts";
-import type { FsmRetry } from "../policy/held-bookings.ts";
 import type { NextVisitDays } from "../policy/next-visit.ts";
 import type { Charges } from "../policy/moving-a-visit.ts";
 import type { Waiver, Waits } from "../policy/no-show.ts";
@@ -54,7 +53,6 @@ export interface OpsInputs {
   readonly pieceCycleDays: Cycles;
   readonly nextVisitDays: NextVisitDays;
   readonly paymentHold: PaymentHold;
-  readonly fsmRetry: FsmRetry;
   readonly technicianWork: TechnicianWorkFigures;
   readonly referralReward: ReferralReward;
 }
@@ -96,7 +94,6 @@ function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInput
     pieceCycleDays: values.piece_cycle_days as Cycles,
     nextVisitDays: values.booking_days as NextVisitDays,
     paymentHold: values.payment_hold as PaymentHold,
-    fsmRetry: values.fsm_retry as FsmRetry,
     technicianWork: values.technician_work as TechnicianWorkFigures,
     referralReward: values.referral_reward as ReferralReward,
   };
@@ -125,12 +122,15 @@ const parsedOrNull = (json: string): unknown => {
 
 /**
  * A key the register has added to a closed set since the row was saved, such
- * as a new task group, takes its committed figure; the keys ops set keep theirs.
+ * as a new task group, takes its committed figure, and one it has dropped since
+ * is let go; the keys ops set keep theirs.
  */
 function withKeysAddedSince(setting: OpsSetting, stored: unknown): unknown {
   if (setting.keys === null || setting.keys === "open" || typeof setting.fallback !== "object") return stored;
   if (typeof stored !== "object" || stored === null || Array.isArray(stored)) return stored;
-  return { ...setting.fallback, ...stored };
+  const keys: readonly string[] = setting.keys;
+  const stillKeys = Object.entries(stored).filter(([key]) => keys.includes(key));
+  return { ...setting.fallback, ...Object.fromEntries(stillKeys) };
 }
 
 /** The inputs a snapshot holds: its JSON object of each name with its value, the committed figure for the rest. */

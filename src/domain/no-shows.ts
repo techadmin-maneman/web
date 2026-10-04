@@ -329,7 +329,7 @@ export async function listNoShowCases(
   }));
 }
 
-/** The terms in force, which a visit ops booked in FSM, and no hold sold, is charged under. */
+/** The terms in force, which a visit no hold sold is charged under. */
 export type TermsInputs = Pick<OpsInputs, "changeNoticeHours" | "lateChangeCharges" | "noShowCharges">;
 
 interface OpenCase {
@@ -351,8 +351,8 @@ interface NoShowCharge {
 }
 
 /**
- * What charging this visit costs: the no-show charge its booking was sold under, kept on its hold, or for a visit ops
- * booked in FSM the one in force (docs/decisions/0088-every-policy-in-the-console.md). A visit of no kind we sell
+ * What charging this visit costs: the no-show charge its booking was sold under, kept on its hold, or for a visit no
+ * hold sold the one in force (docs/decisions/0088-every-policy-in-the-console.md). A visit of no kind we sell
  * keeps what it took, as every charge did before a charge was priced.
  */
 async function chargeOf(db: D1Database, visit: OpenCase, inForce: TermsInputs): Promise<NoShowCharge> {

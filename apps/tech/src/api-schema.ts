@@ -114,7 +114,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send a login code on WhatsApp. The answer is the same whether or not FSM lists the number */
+        /** Send a login code on WhatsApp. The answer is the same whether or not the number is a technician's */
         post: {
             parameters: {
                 query?: never;
@@ -128,7 +128,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description A code is on its way, if FSM lists this number */
+                /** @description A code is on its way, if the number is a technician's */
                 202: {
                     headers: {
                         [name: string]: unknown;
@@ -544,7 +544,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day */
+                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -623,7 +623,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day */
+                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -885,7 +885,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The phase's five photographs are in; attach them to FSM */
+        /** The phase's five photographs are in */
         post: {
             parameters: {
                 query?: never;
@@ -942,7 +942,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1025,7 +1025,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1108,7 +1108,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1191,7 +1191,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again */
+                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1274,7 +1274,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1357,7 +1357,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1436,7 +1436,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home */
+                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first; already_started: the job was started, so the client was home */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1613,7 +1613,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1621,7 +1621,7 @@ export interface components {
                 moved?: {
                     /** @description Their first name, and nothing else of theirs */
                     technician: string;
-                    /** @description When ops moved the job to them; null when it was moved in FSM itself */
+                    /** @description When ops moved the job to them; null where nothing recorded when */
                     at: string | null;
                 };
             };
@@ -1993,7 +1993,10 @@ export interface components {
             event_id: string;
             /** @description True when this write had already landed. */
             replayed: boolean;
-            /** @enum {string} */
+            /**
+             * @description Kept for phones that read it: "written" once the step has landed, which it has.
+             * @enum {string}
+             */
             fsm_write_state: "pending" | "written" | "rejected";
             progress: components["schemas"]["TechnicianJobProgress"];
         };
@@ -2065,7 +2068,7 @@ export interface components {
             /** @enum {boolean} */
             declined: true;
         };
-        /** @description Kept in our records alone: nothing of it goes to FSM. */
+        /** @description Kept in our records alone. */
         TechnicianProfileRecorded: {
             event_id: string;
             /** @description True when this write had already landed. */

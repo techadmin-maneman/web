@@ -6,10 +6,9 @@
 //   POST /api/dispatch/move          move a job, with a reason from the design's list
 //   POST /api/dispatch/moves/:id/told   ops called a client who had not heard of a move
 //
-// Both writes run the clash check before anything reaches FSM, write to FSM,
-// then the mirror, then message the client with his new window; where our own
-// database holds the record of field work, all of it is one write there. A
-// visit the technician has begun is not moved, unless he has only checked in
+// Both writes run the clash check, then move the visit and message the client
+// with his new window, in one batch. A visit the technician has begun is not
+// moved, unless he has only checked in
 // and ops choose to clear his check-in. "The client's payment carries over and
 // he is never charged for a move ops make", so no amount appears anywhere
 // below.
@@ -18,7 +17,6 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { fieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import type { AuditEntry } from "../domain/audit.ts";
@@ -70,7 +68,7 @@ const BlockSchema = z
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
     notice_hours: z.number().int().openapi({
       description:
-        "The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does.",
+        "The notice the visit was sold under, in hours, or the one in force for a visit no hold sold: a change of the client's own inside it costs them, one ops make never does.",
     }),
     untold: z.union([z.object({ move_id: z.uuid(), starts_at: z.iso.datetime() }).strict(), z.null()]).openapi({
       description:
@@ -136,7 +134,7 @@ const BoardSchema = z
       )
       .openapi({
         description:
-          "Leave ops recorded, clipped to this week. Not from FSM: its availability answers free time, not leave.",
+          "Leave ops recorded, clipped to this week.",
       }),
   })
   .strict()
@@ -206,7 +204,7 @@ const boardRoute = createRoute({
 const assignRoute = createRoute({
   method: "post",
   path: "/api/dispatch/assign",
-  summary: "Put a job on a technician, with a reason. The clash check runs before any write to FSM",
+  summary: "Put a job on a technician, with a reason. The clash check runs before anything is written",
   request: { body: { required: true, ...json(AssignRequestSchema) } },
   responses: {
     200: { description: "Assigned", ...json(MovedSchema) },
@@ -215,9 +213,6 @@ const assignRoute = createRoute({
     404: errorResponse("not_found: no such live job"),
     409: errorResponse(
       "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
-    ),
-    502: errorResponse(
-      "fsm_refused: FSM would not take it; nothing moved. fsm_partly: FSM took the technician and not the time; the job is read again from FSM",
     ),
   },
 });
@@ -235,7 +230,6 @@ const moveRoute = createRoute({
     409: errorResponse(
       "clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is",
     ),
-    502: errorResponse("fsm_refused; fsm_partly: FSM took the technician and not the time"),
   },
 });
 
@@ -343,7 +337,7 @@ function checkInClearedBy(c: Context<AppEnv>, request: MoveRequest): AuditEntry 
 
 /** Assigning and moving are the same write; only what ops change differs. */
 async function write(c: Context<AppEnv>, request: MoveRequest) {
-  const { requestId, deps, config, log } = c.var;
+  const { requestId, deps, log } = c.var;
   const staff = staffOf(c);
 
   const input: MoveInput = {
@@ -359,11 +353,8 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   const outcome = await moveJob(
     c.env.DB,
     {
-      fsm: deps.fsm,
-      labelAsTest: config.environment !== "production",
       notify: (messageId) =>
         c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
-      record: fieldRecord(config.providers),
     },
     input,
     deps.now(),
@@ -377,14 +368,6 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   }
   if (outcome.kind === "no_technician") return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
   if (outcome.kind === "refused") return c.json(errorBody(outcome.reason, requestId), 409);
-  if (outcome.kind === "fsm_refused" || outcome.kind === "fsm_partly") {
-    log.warn("dispatch_move_refused_by_fsm", {
-      appointment_id: input.appointmentId,
-      move_id: outcome.moveId,
-      partly: outcome.kind === "fsm_partly",
-    });
-    return c.json(errorBody(outcome.kind, requestId), 502);
-  }
   log.info("dispatch_moved", { appointment_id: input.appointmentId, move_id: outcome.moveId, reason: input.reason });
   return c.json({ move_id: outcome.moveId, client_notice: outcome.clientNotice }, 200);
 }

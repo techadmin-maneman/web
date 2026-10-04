@@ -1,15 +1,15 @@
 // GET /api/me: the client app's Home card (docs/prompts/phase2-backend.md,
 // "Read endpoints"). A client is fitted once a first fit or a later visit is
-// done (the FSM mirror, docs/decisions/0032-fsm-mirror.md); a lead has a
-// consultation, from the mirror or from their booking on the site before FSM
-// has it; else nothing is booked. The next visit comes from the mirror, and
+// done; a lead has a consultation, booked, or from their booking on the site
+// while it is not yet a visit; else nothing is booked. The next visit comes
+// from the visits, and
 // the credit tile, board B1's one prompt and the invoice line beneath it (src/domain/home-prompt.ts).
 // What the client may book now is every service offered of each kind open to
 // them, for the booking sheet to offer (docs/decisions/0085-services-ops-can-edit.md).
 //
-// A visit paid for, or booked free, that FSM does not have yet is said to be on
-// its way, neither booked nor refunded, while FSM is written or while it waits
-// after FSM refused it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+// A visit paid for, or booked free, that is not booked yet, its request having
+// failed part-way, is said to be on its way, neither booked nor refunded, until
+// the cron books it (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
 // With nothing booked, it says what the app offers next, which the booking
 // sheet opens pre-filled with: the first fit once the consultation is done, or
@@ -29,7 +29,7 @@ import { nextVisitFacts } from "../domain/next-visit.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { offeredServices } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
-import { hasFsmVisit, latestProposal, windowAskedFor } from "../domain/proposed-visits.ts";
+import { hasVisit, latestProposal, windowAskedFor } from "../domain/proposed-visits.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -68,11 +68,11 @@ export const MeSchema = z
       .nullable()
       .openapi({
         description:
-          "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit.",
+          "A booking's proposed consultation, before it is a visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the person has a visit.",
       }),
     next_visit: z
       .union([VisitSummarySchema, z.null()])
-      .openapi({ description: "The next visit that has not happened, from FSM: a consultation for a lead." }),
+      .openapi({ description: "The next visit that has not happened: a consultation for a lead." }),
     being_booked: z
       .union([
         z
@@ -88,8 +88,8 @@ export const MeSchema = z
       ])
       .openapi({
         description:
-          "The soonest visit paid for, or booked free, that FSM does not have yet: neither booked nor refunded. It " +
-          "is on its way, or held after FSM refused it, and becomes a visit once FSM takes it (ADR 0095).",
+          "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is " +
+          "on its way, and becomes a visit once it is booked (ADR 0068).",
       }),
     credits: z
       .union([CreditsSchema, z.null()])
@@ -259,8 +259,8 @@ export function registerClientMe(app: App): void {
     const credits = await spendableCredits(db, session.subjectId, now);
     const fitted = await isFitted(db, session.subjectId);
     const booking = await latestProposal(db, session.subjectId);
-    // A booking's proposal stands only until FSM has any visit for the person.
-    const proposal = (await hasFsmVisit(db, session.subjectId)) ? null : booking;
+    // A booking's proposal stands only until the person has any visit.
+    const proposal = (await hasVisit(db, session.subjectId)) ? null : booking;
     const window = proposal === null ? null : await windowAskedFor(db, session.subjectId, proposal);
     if (proposal !== null && window === null) {
       c.var.log.warn("consultation_window_unknown", { person_id: session.subjectId });
@@ -278,7 +278,7 @@ export function registerClientMe(app: App): void {
     }));
     const { nextVisitDays: days, referralReward } = await opsInputs(c);
     const facts = await nextVisitFacts(db, session.subjectId, now, days);
-    // A booking's consultation, not yet in FSM, is booked as much as a visit FSM has.
+    // A booking's consultation, not yet a visit, is booked as much as a visit is.
     const booked = facts.booked || upcoming !== null || proposal !== null;
     const offer = booked ? null : facts.offer;
     const { prompt, invoice } = await homePrompts(db, session.subjectId, { booked, offer }, now, days);

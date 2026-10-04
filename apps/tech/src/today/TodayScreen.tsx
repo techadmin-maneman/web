@@ -39,9 +39,9 @@ import styles from "./today.module.css";
 type Leaving = "asking" | "going" | "stayed" | null;
 
 /**
- * Where a row's job stands: closed out on this phone or in FSM, or begun. The
- * phone's own word comes first, since FSM hears of a close-out only once it
- * has gone up.
+ * Where a row's job stands: closed out on this phone or on the server, or
+ * begun. The phone's own word comes first, since the server hears of a
+ * close-out only once it has gone up.
  */
 function stateOf(job: JobSummary, queued: readonly Queued[], closedHere: ReadonlySet<string>): string | null {
   if (closedHere.has(job.id) || job.status === "completed" || job.status === "terminated") {

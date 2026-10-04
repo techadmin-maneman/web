@@ -1,10 +1,8 @@
 // The technician's photographs (docs/decisions/0028-photographs-from-the-app.md).
 //
-// "Captured in our app, stored in mm-{env}-client-photos. Also attached to the
-// FSM job sheet, so FSM stays the complete record." The bytes come through this
-// API, never straight to R2, and land in the same bucket under the same prefix
-// as the ones the mirror exports from FSM: one visit's photographs are one set
-// however they were taken.
+// "Captured in our app, stored in mm-{env}-client-photos." The bytes come
+// through this API, never straight to R2, and one visit's photographs are one
+// set under the visit's prefix.
 //
 // The link the app uploads to is a signed path on this host, good for fifteen
 // minutes and for one phase and angle. Each angle's latest upload is the
@@ -16,12 +14,10 @@
 // is a take, which its answer names; the phone PUTs the small copy to the same
 // link's /small with that take, and it is kept beside that take alone. A
 // photograph taken again, in either app, forgets the one before's, so a row
-// never shows another take's copy. A photograph with none, such as one copied
-// from FSM, is shown itself.
+// never shows another take's copy. A photograph with none is shown itself.
 
 import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
-import type { FsmProvider } from "../providers/fsm.ts";
 import { deleteCounted, putCounted } from "./storage-meter.ts";
 import type { Angle, Phase } from "./visit-photos.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
@@ -32,8 +28,7 @@ export const PHOTO_UPLOAD_LINK_TTL_MS = 15 * MINUTE_MS;
  * A photograph from the technician's phone, at most. The app sends about 250 KB, and when a frame will not come down
  * to that it sends the smallest it tried, 900 px on its long side at its lowest quality, well under 1 MB even from a
  * phone that ignores the quality it is asked for. Twice that leaves room for such a phone, and keeps a broken build
- * or a misused link from spending R2 at 12 MB a time, as the limit once allowed (docs/decisions/0093). A photograph
- * copied from FSM keeps FSM's size and does not come through here (src/domain/visit-photos.ts).
+ * or a misused link from spending R2 at 12 MB a time, as the limit once allowed (docs/decisions/0093).
  */
 export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 /**
@@ -152,7 +147,7 @@ export type StoredThumbnail = "stored" | "held_already" | "no_photograph" | "not
 
 /**
  * Keeps a take's small copy beside it. The take must still be the slot's photograph: a small copy is never held
- * without its own, and never beside a newer take, from the phone or from FSM.
+ * without its own, and never beside a newer take.
  */
 export async function storeThumbnail(
   db: D1Database,
@@ -194,47 +189,4 @@ export async function anglesHeld(db: D1Database, appointmentId: string, phase: P
     .bind(appointmentId, phase)
     .all<{ angle: Angle }>();
   return results.map((row) => row.angle);
-}
-
-/**
- * Attaches to FSM every photograph of a phase that is not there yet, so FSM
- * holds the complete record. The file name carries the phase and angle, which
- * is what the mirror's own export reads back, so a photograph attached here is
- * never exported again as a new one.
- *
- * An attach whose answer never reached us left the file in FSM: a retry finds
- * it by its name and size and keeps its ID, rather than attaching it twice. A
- * photograph taken again at the same angle has other bytes, and is attached.
- */
-export async function attachPhotosToFsm(
-  db: D1Database,
-  bucket: R2Bucket,
-  fsm: FsmProvider,
-  job: { id: string; fsmId: string },
-  phase: Phase,
-): Promise<number> {
-  const { results } = await db
-    .prepare(
-      `SELECT p.id, p.angle, p.r2_key, p.content_type FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id
-       WHERE s.appointment_id = ?1 AND s.phase = ?2 AND p.fsm_attachment_id IS NULL`,
-    )
-    .bind(job.id, phase)
-    .all<{ id: string; angle: Angle; r2_key: string; content_type: string }>();
-
-  if (results.length === 0) return 0;
-  const inFsm = await fsm.attachments(job.fsmId);
-
-  let attached = 0;
-  for (const photo of results) {
-    const object = await bucket.get(photo.r2_key);
-    if (object === null) continue;
-    const bytes = new Uint8Array(await object.arrayBuffer());
-    const name = `${phase}-${photo.angle}.${photo.content_type === "image/png" ? "png" : "jpg"}`;
-    const found = inFsm.find((file) => file.name === name && file.size === bytes.byteLength);
-    const attachmentId =
-      found?.id ?? (await fsm.attachToAppointment(job.fsmId, { name, bytes, contentType: photo.content_type }));
-    await db.prepare("UPDATE photos SET fsm_attachment_id = ?2 WHERE id = ?1").bind(photo.id, attachmentId).run();
-    attached += 1;
-  }
-  return attached;
 }

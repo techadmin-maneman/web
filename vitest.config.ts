@@ -33,7 +33,6 @@ export default defineConfig({
         branches: 80,
         "src/providers/**": { lines: 90, branches: 85 },
         "src/providers/razorpay.ts": { lines: 95, branches: 95 },
-        "src/providers/fsm-zoho.ts": { lines: 95, branches: 90 },
         "src/domain/payments.ts": { lines: 90, branches: 90 },
         // What the deploy and check scripts share. A release's recovery from a lost reply first runs in an incident.
         "scripts/lib/**": { lines: 85, branches: 70 },
@@ -57,7 +56,6 @@ export default defineConfig({
                 RENDER_QUEUE: { queueName: "mm-render-unconsumed" },
                 CRM_QUEUE: { queueName: "mm-crm-sync-unconsumed" },
                 MESSAGE_QUEUE: { queueName: "mm-messaging-unconsumed" },
-                FSM_QUEUE: { queueName: "mm-fsm-sync-unconsumed" },
               },
               // The local secrets the Worker needs to start; the same values as .dev.vars.example.
               bindings: {

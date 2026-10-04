@@ -76,16 +76,11 @@ export const ERROR_CODES = [
   "piece_code",
   // Ops switched the technician off: the phone sets his unsent work aside rather than wiping it.
   "technician_inactive",
-  // A technician FSM lists is changed in FSM, while FSM is the record of field work.
-  "managed_in_fsm",
   // Dispatch (docs/decisions/0034-clash-check.md): the technician already holds a job in that
-  // window, is away that day (ADR 0062), the window is free but the visit has no room in it,
-  // or FSM would not take the move, or took only its new technician.
+  // window, is away that day (ADR 0062), or the window is free but the visit has no room in it.
   "clash",
   "on_leave",
   "does_not_fit",
-  "fsm_refused",
-  "fsm_partly",
   // The technician has begun the visit, so a move would leave his work on another day or with another technician.
   "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
@@ -142,7 +137,7 @@ export const ErrorResponseSchema = z
           .object({
             technician: z.string().openapi({ description: "Their first name, and nothing else of theirs" }),
             at: z.union([z.iso.datetime(), z.null()]).openapi({
-              description: "When ops moved the job to them; null when it was moved in FSM itself",
+              description: "When ops moved the job to them; null where nothing recorded when",
             }),
           })
           .strict()

@@ -14,11 +14,9 @@
 // kept by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
 
 import { BOOKS_ITEM_PUSH } from "../config/environments.ts";
-import { fieldRecord } from "../config/field-record.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
-import { resolveAskedWindows } from "../domain/asked-windows.ts";
-import { bookUnbookedHolds, requeueUnbookedHolds } from "../domain/bookings.ts";
+import { bookUnbookedHolds } from "../domain/bookings.ts";
 import { eraseBooksCustomers } from "../domain/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books-invoices.ts";
 import { checkBooksItems } from "../domain/books-items.ts";
@@ -26,11 +24,8 @@ import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
 import { settleOwedRefunds } from "../domain/cancel-refunds.ts";
 import { finishRun, startRun, type RunStart } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
-import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
-import { raiseInvoices } from "../domain/fsm-invoices.ts";
-import { anyHeldBooking, retryHeldBookings } from "../domain/held-bookings.ts";
 import { queueCreditReminders } from "../domain/credit-reminders.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { sendUnsentLinks } from "../domain/payment-links.ts";
@@ -44,19 +39,14 @@ import { scrubString, type Logger } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { checkDailyAllowances } from "./daily-allowances.ts";
-import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
 import {
   checkAilabCredits,
   deletePhotos,
   expireTryOns,
-  giveUpOnFsmSteps,
   housekeep,
   letKeptLooksGo,
-  letUnfinishedMovesGo,
   requeueCrmErasures,
-  requeueFsmErasures,
-  requeueJobEvents,
   requeueLeads,
   requeueMessages,
   requeueTryons,
@@ -100,12 +90,8 @@ export const CRON_CALLS_FOR_MS = 30_000;
 /** One failed run is a blip; three in a row is not. */
 const ALERT_AFTER_FAILED_RUNS = 3;
 
-/**
- * What a job needs switched on in this environment before it runs. "fsm_record" is the real FSM: the stub remembers
- * no appointment, so a job that trusts FSM's word on what exists would take it that every visit had been deleted.
- * "books_without_fsm" is Books where D1, not FSM, is the record of field work (src/config/field-record.ts).
- */
-type Needs = "nothing" | "fsm" | "fsm_record" | "books" | "books_without_fsm" | "messaging";
+/** What a job needs switched on in this environment before it runs. */
+type Needs = "nothing" | "books" | "messaging";
 
 /** How often a job runs, in minutes. Each divides an hour, so a job runs in the same minutes every hour. */
 export type Every = 5 | 15 | 60;
@@ -125,19 +111,11 @@ export interface CronOutcome {
 }
 
 function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
-  const fsm = config.providers.FSM_PROVIDER !== "none";
-  const books = config.providers.BOOKS_PROVIDER !== "none";
   switch (needs) {
     case "nothing":
       return true;
-    case "fsm":
-      return fsm;
-    case "fsm_record":
-      return config.providers.FSM_PROVIDER === "zoho";
     case "books":
-      return books;
-    case "books_without_fsm":
-      return books && fieldRecord(config.providers) === "ours";
+      return config.providers.BOOKS_PROVIDER !== "none";
     case "messaging":
       return config.settings.messaging.enabled;
   }
@@ -165,33 +143,11 @@ async function queueMessages(queue: Queue, ids: readonly string[], requestId: st
   );
 }
 
-/**
- * Holds paid for, or booked free, and neither booked nor refunded: one the queue lost goes back on it half an hour on,
- * and one FSM has refused five times running as often and for as long as ops set. Where our own database holds the
- * record, each is booked here instead.
- */
-async function unbookedHoldsJob(context: CronContext): Promise<void> {
-  if (fieldRecord(context.config.providers) === "ours") {
-    await bookUnbookedHoldsJob(context);
-    return;
-  }
-  const { env, deps, log, budget, inputs } = context;
-  const now = deps.now();
-  const requeued = await requeueUnbookedHolds(
-    env.DB,
-    { queue: env.FSM_QUEUE, alertOnce: deps.alertOnce, budget, log },
-    now,
-  );
-  if (requeued > 0) log.warn("unbooked_holds_requeued", { count: requeued });
-  if (!(await anyHeldBooking(env.DB))) return;
-  const retried = await retryHeldBookings(env.DB, { queue: env.FSM_QUEUE, log }, now, (await inputs()).fsmRetry);
-  if (retried > 0) log.info("held_bookings_retried", { count: retried });
-}
-
-async function bookUnbookedHoldsJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+/** Holds paid for, or booked free, whose request failed before they were booked: booked here half an hour on. */
+async function unbookedHoldsJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const notify = (messageId: string) =>
     env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: "unbooked-holds" } satisfies MessagingMessage);
-  const pass = { ...deps, notify, labelAsTest: config.environment !== "production", budget, log };
+  const pass = { ...deps, notify, budget, log };
   const booked = await bookUnbookedHolds(env.DB, pass, deps.now());
   if (booked > 0) log.warn("unbooked_holds_booked", { count: booked });
 }
@@ -209,19 +165,6 @@ async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
 async function booksErasuresJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const erased = await eraseBooksCustomers(env.DB, { ...deps, log, budget }, deps.now());
   if (erased > 0) log.info("books_customers_erased", { count: erased });
-}
-
-async function reconcileJob({ env, deps, log, budget }: CronContext): Promise<void> {
-  await reconcileFsm(env, deps, log, budget);
-}
-
-async function catalogueJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
-  const checked = await checkCatalogue(
-    env.DB,
-    { fsm: deps.fsm, queue: env.FSM_QUEUE, alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert, log },
-    { push: config.settings.fsmCataloguePush, now: deps.now(), budget },
-  );
-  if (checked !== null && checked.differs.length > 0) log.warn("fsm_catalogue_differs", { ...checked });
 }
 
 async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
@@ -282,13 +225,9 @@ async function paymentLinksJob({ env, deps, log, budget }: CronContext): Promise
   if (sent > 0) log.info("payment_links_sent", { count: sent });
 }
 
-/** FSM raises the invoice on its path; without it, we raise it in Books. */
 async function invoicesJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const options = { labelAsTest: config.environment !== "production", gst: booksGst(config) };
-  const done =
-    fieldRecord(config.providers) === "ours"
-      ? await raiseBooksInvoices(env.DB, deps, options, deps.now(), log, budget)
-      : await raiseInvoices(env.DB, deps, deps.now(), log, budget);
+  const done = await raiseBooksInvoices(env.DB, deps, options, deps.now(), log, budget);
   if (done.raised + done.issued > 0) log.info("invoices_raised", done);
 }
 
@@ -302,20 +241,11 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
   if (checked !== null && checked.differs.length > 0) log.warn("books_items_differ", { ...checked });
 }
 
-async function askedWindowsJob({ env, deps, log }: CronContext): Promise<void> {
-  const done = await resolveAskedWindows(env.DB, deps.now());
-  if (done.resolved > 0) log.info("asked_windows_resolved", done);
-}
-
-/**
- * The refund account Books' own settings name, whether what the pass records is labelled as a test, and whether it
- * makes each client's customer itself, as it does without FSM.
- */
+/** The refund account Books' own settings name, and whether what the pass records is labelled as a test. */
 export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
   return {
     refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
     labelAsTest: config.environment !== "production",
-    fieldRecord: fieldRecord(config.providers),
     gst: booksGst(config),
   };
 }
@@ -331,15 +261,6 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
   if (written > 0) log.info("books_synced", done);
 }
 
-/** A technician's steps still waiting for FSM: sent there again on its path, given up on once it is switched off. */
-async function jobEventsJob(context: CronContext): Promise<void> {
-  if (fieldRecord(context.config.providers) === "ours") {
-    await giveUpOnFsmSteps(context);
-    return;
-  }
-  await requeueJobEvents(context);
-}
-
 async function ailabCreditsJob(context: CronContext): Promise<void> {
   await checkAilabCredits(context, context.config.settings.tryon.creditFloor);
 }
@@ -350,19 +271,13 @@ async function ailabCreditsJob(context: CronContext): Promise<void> {
  * holds every minute to a budget of D1 calls. A run's jobs run in this order.
  */
 export const CRON_JOBS: readonly CronJob[] = [
-  // Every five minutes. The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md) reads a page of FSM's
-  // appointments, the most any job does, so it has its minute alone.
-  { name: "fsm_reconcile", needs: "fsm_record", every: 5, at: 0, run: reconcileJob },
-  // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
+  // Every five minutes. Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
   { name: "whatsapp_bridge", needs: "nothing", every: 5, at: 1, run: whatsAppBridgeJob },
   // A one visit's payment link its close could not have Razorpay make (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
   { name: "payment_links", needs: "nothing", every: 5, at: 1, run: paymentLinksJob },
   { name: "requeue_tryons", needs: "nothing", every: 5, at: 2, run: requeueTryons },
-  { name: "requeue_job_events", needs: "nothing", every: 5, at: 2, run: jobEventsJob },
-  // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md), and
-  // one FSM refused five times running, tried every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+  // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md).
   { name: "unbooked_holds", needs: "nothing", every: 5, at: 3, run: unbookedHoldsJob },
-  { name: "release_unfinished_moves", needs: "nothing", every: 5, at: 3, run: letUnfinishedMovesGo },
   { name: "requeue_messages", needs: "nothing", every: 5, at: 4, run: requeueMessages },
   { name: "requeue_leads", needs: "nothing", every: 5, at: 4, run: requeueLeads },
 
@@ -378,8 +293,6 @@ export const CRON_JOBS: readonly CronJob[] = [
   // Free service visits running out: a month, then a week, before their last day.
   { name: "credit_reminders", needs: "messaging", every: 15, at: 7, run: creditRemindersJob },
   { name: "visit_reminders", needs: "messaging", every: 15, at: 8, run: remindersJob },
-  // What the client asked for, beside what the board offers them (ADR 0063).
-  { name: "asked_windows", needs: "nothing", every: 15, at: 9, run: askedWindowsJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
   { name: "next_service_reminders", needs: "messaging", every: 15, at: 11, run: nextServiceRemindersJob },
   // A cancel, the client's or ops', whose refund its request could not settle, asked for again under its receipt.
@@ -387,13 +300,12 @@ export const CRON_JOBS: readonly CronJob[] = [
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", every: 15, at: 12, run: erasedFilesJob },
   { name: "requeue_crm_erasures", needs: "nothing", every: 15, at: 13, run: requeueCrmErasures },
-  { name: "requeue_fsm_erasures", needs: "fsm", every: 15, at: 13, run: requeueFsmErasures },
   // An erased client's customer in Books, deleted, or blanked where an invoice names it.
   { name: "books_erasures", needs: "books", every: 15, at: 14, run: booksErasuresJob },
 
-  // Every hour. Without FSM, the Books item each service is invoiced on, before the invoices that need one; its check
-  // still does nothing after the hour's first five minutes (src/domain/books-items.ts), so it runs in one of them.
-  { name: "books_items", needs: "books_without_fsm", every: 60, at: 4, run: booksItemsJob },
+  // Every hour. The Books item each service is invoiced on, before the invoices that need one; its check still does
+  // nothing after the hour's first five minutes (src/domain/books-items.ts), so it runs in one of them.
+  { name: "books_items", needs: "books", every: 60, at: 4, run: booksItemsJob },
   { name: "ailab_credits", needs: "nothing", every: 60, at: 14, run: ailabCreditsJob },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
   { name: "housekeeping", needs: "nothing", every: 60, at: 26, run: housekeep },
@@ -405,9 +317,6 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 47, run: utilisationJob },
   // What the account has used today of the free plan's daily allowances, told at 70%.
   { name: "daily_allowances", needs: "nothing", every: 60, at: 54, run: dailyAllowancesJob },
-  // FSM's catalogue against the price book, which it prices invoices by (docs/decisions/0073-prices-from-the-price-book.md),
-  // and against ops' consumables, which it holds as parts (docs/decisions/0087-consumables-and-stock.md).
-  { name: "fsm_catalogue", needs: "fsm", every: 60, at: 56, run: catalogueJob },
 ];
 
 /**

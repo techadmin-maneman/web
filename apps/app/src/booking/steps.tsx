@@ -657,7 +657,7 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
   );
 }
 
-/** Waiting for Razorpay's confirmation and FSM, or what came of it when it was not a booking. */
+/** Waiting for Razorpay's confirmation and the booking, or what came of it when it was not a booking. */
 export function WaitStep({ text, onClose }: { text: string; onClose?: () => void }) {
   return (
     <div role="status">

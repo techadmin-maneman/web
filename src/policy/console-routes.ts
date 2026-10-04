@@ -41,9 +41,6 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/tasks": inOwnDepartments("view"),
   "PUT /api/tasks/{group}/{id}/owner": inOwnDepartments("act"),
   "POST /api/tasks/{group}/{id}/close": need("operations", "act"),
-  "POST /api/held-bookings/{id}/retry": need("operations", "act"),
-  "POST /api/held-bookings/{id}/stop": need("operations", "act"),
-  "POST /api/held-bookings/{id}/link": need("operations", "act"),
   "GET /api/visits/availability": need("operations", "view"),
   "POST /api/visits": need("operations", "act"),
   // Free to the client unless ops apply the client's own terms, as an ops move is free: everyday work, not a waiver.
@@ -94,7 +91,6 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/no-shows/{id}/decision": need("finance", "act"),
   "GET /api/no-shows/disputes": need("finance", "view"),
   "POST /api/no-shows/disputes/{id}/ruling": need("finance", "act"),
-  "POST /api/held-bookings/{id}/refund": need("finance", "manage"),
   "POST /api/clients/{id}/credits": need("finance", "manage"),
   "GET /api/discount-codes": need("finance", "view"),
   "POST /api/discount-codes": need("finance", "manage"),
@@ -156,7 +152,6 @@ export const REFUNDING_A_DISPUTE: RouteNeed = need("finance", "manage");
 /** The department that decides each group of tasks: its people see the group on Tasks, and Act may take a task of it. */
 export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   untold_move: "operations",
-  held_booking: "operations",
   leave_conflict: "operations",
   address_to_confirm: "customer_care",
   consultation_request: "customer_care",
@@ -171,7 +166,6 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   grievance: "customer_care",
   draft_invoice: "finance",
   payment_owed: "finance",
-  erasure_unfinished: "customer_care",
 };
 
 /** What seeing a group of tasks, or taking a task of it, asks. */

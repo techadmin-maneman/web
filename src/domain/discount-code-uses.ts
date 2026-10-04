@@ -231,7 +231,7 @@ async function visitOf(db: D1Database, visitId: string): Promise<VisitRow | null
     .first<VisitRow>();
 }
 
-/** A visit FSM has cancelled or ended unfinished takes no code: nothing will be sold at it. */
+/** A visit cancelled or ended unfinished takes no code: nothing will be sold at it. */
 const TAKES_A_CODE = new Set(["scheduled", "dispatched", "in_progress", "completed"]);
 
 /** A visit's code, entered on it or on the hold that booked it. */

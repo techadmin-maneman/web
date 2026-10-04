@@ -183,7 +183,7 @@ const enterRoute = createRoute({
     404: errorResponse("not_found"),
     409: errorResponse(
       "already_discounted: the visit carries a code; price_settled: it is paid for, its payment link is made, it is " +
-        "invoiced, or FSM has cancelled it",
+        "invoiced, or it is cancelled",
     ),
     422: errorResponse("code_not_applicable: the code does not apply to this visit"),
   },

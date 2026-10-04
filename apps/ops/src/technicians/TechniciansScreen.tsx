@@ -10,7 +10,7 @@
 // (./TechnicianForms.tsx); those switched off are listed beneath the table.
 // Revoking a phone ends its session and makes it drop its cached jobs, so it
 // asks before it sends (src/domain/technicians.ts). Leave is recorded here
-// because FSM has nowhere to keep it (ADR 0062). It is not a note: the days it
+// (ADR 0062). It is not a note: the days it
 // covers are refused to self-serve booking and to the dispatch board alike,
 // which is why the form says so before it is sent.
 

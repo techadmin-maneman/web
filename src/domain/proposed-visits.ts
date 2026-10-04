@@ -1,4 +1,4 @@
-// A consultation a form booked, which stands for the visit until FSM has one (docs/decisions/0051-booking-from-the-site.md):
+// A consultation a form booked, which stands for the visit until one is booked (docs/decisions/0051-booking-from-the-site.md):
 // the latest lead with a date, and the window it asked for. The Home card shows it (GET /api/me), and both the Home
 // card and the console count it towards a client being a lead.
 
@@ -24,8 +24,8 @@ export function latestProposal(db: D1Database, personId: string): Promise<Propos
     .first<ProposedBooking>();
 }
 
-/** Whether FSM has any visit of the person's yet: a form's proposal stands only until it does. */
-export async function hasFsmVisit(db: D1Database, personId: string): Promise<boolean> {
+/** Whether the person has any visit yet: a form's proposal stands only until they do. */
+export async function hasVisit(db: D1Database, personId: string): Promise<boolean> {
   const visit = await db
     .prepare("SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL LIMIT 1")
     .bind(personId)

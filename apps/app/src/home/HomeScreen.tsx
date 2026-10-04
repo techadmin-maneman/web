@@ -1,8 +1,8 @@
-// Home (boards B1 and B2): "One card, one prompt, nothing else." The next visit from FSM: a consultation as B2
-// draws it, with what to expect, and any other visit as B1 draws it, with its technician (VisitCard.tsx). A
-// booking's consultation, not yet in FSM, shows as B2. A visit FSM has not closed stays here until it is, so Home
-// never says nothing is booked, nor offers the booking again, while one is under way. Nor while a visit paid for, or
-// booked free, waits for FSM to take it: Home says it is being booked, and that the payment is in (ADR 0095).
+// Home (boards B1 and B2): "One card, one prompt, nothing else." The next visit: a consultation as B2 draws it,
+// with what to expect, and any other visit as B1 draws it, with its technician (VisitCard.tsx). A booking's
+// consultation, not yet a visit, shows as B2. A visit not yet closed stays here until it is, so Home never says
+// nothing is booked, nor offers the booking again, while one is under way. Nor while a visit paid for, or booked
+// free, waits to be booked: Home says it is being booked, and that the payment is in (ADR 0068).
 //
 // Beneath the card, B1's credit tile while there is a balance, its one prompt, and an invoice just issued as a line
 // beneath that (src/domain/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
@@ -83,9 +83,9 @@ function Consultation(props: {
   /** The window, or where a consultation that has begun stands. */
   when: string;
   place: string;
-  /** Null for a booking's consultation, not yet in FSM: ops move it. */
+  /** Null for a booking's consultation, not yet a visit: ops move it. */
   changing: ChangingVisit | null;
-  /** Null for a booking's consultation, not yet in FSM: a note goes to ops on WhatsApp. */
+  /** Null for a booking's consultation, not yet a visit: a note goes to ops on WhatsApp. */
   noting: NotingVisit | null;
   begun?: boolean;
 }) {
@@ -132,7 +132,7 @@ function WhatToExpect() {
   );
 }
 
-/** A visit paid for, or booked free, that FSM does not have yet: never said to be booked, nor its money gone. */
+/** A visit paid for, or booked free, that is not booked yet: never said to be booked, nor its money gone. */
 function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) {
   const copy = home.beingBooked;
   return (

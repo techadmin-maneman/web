@@ -199,7 +199,7 @@ export function registerRazorpayHook(app: App): void {
       const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
       const status = paymentStatusOf(event, payment);
       if (status !== null) await recordPayment(db, payment, status, config.settings.ipHashSalt, now);
-      // Paid for a hold in the app: the booking is written now, or from FSM's queue (src/http/book-hold.ts).
+      // Paid for a hold in the app: the booking is written now (src/http/book-hold.ts).
       // Only the capture books it: order.paid says the same of the same payment, and the cron books a paid
       // hold that is still waiting (docs/decisions/0068-a-paid-hold-is-kept.md).
       const holdId = holdOfNotes(payment.notes);

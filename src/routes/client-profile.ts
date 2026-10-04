@@ -79,7 +79,7 @@ export const AddressSchema = z
   .openapi("Address");
 
 /**
- * The flat or house number, which every address given from now on must carry, so FSM's work order names the door
+ * The flat or house number, which every address given from now on must carry, so the technician finds the door
  * (the owner's ruling of 27 September 2026, docs/open-points.md, items 45 and 150). An address saved before holds
  * none and still reads.
  */

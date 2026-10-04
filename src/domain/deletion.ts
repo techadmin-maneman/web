@@ -113,7 +113,6 @@ export async function decideDeletion(
     staff: string;
     reason: string | null;
     audit: AuditEntry;
-    fsmConnected: boolean;
     requestId: string;
     now: Date;
     log: Logger;
@@ -153,7 +152,6 @@ export async function decideDeletion(
   const erased = await eraseAndQueue(env, personId, {
     audit: options.audit,
     alongside: [decided],
-    fsmConnected: options.fsmConnected,
     requestId: options.requestId,
     now: options.now,
     log: options.log,

@@ -17,7 +17,6 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { fieldRecord } from "../config/field-record.ts";
 import { isActiveCity } from "../domain/cities.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import type { AuditAction, AuditEntry } from "../domain/audit.ts";
@@ -27,7 +26,6 @@ import {
   deactivateTechnician,
   reactivateTechnician,
   rosterTechnician,
-  type RosterTechnician,
 } from "../domain/technician-roster.ts";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
@@ -35,7 +33,6 @@ import { technicianWork, type TechnicianWork } from "../domain/technician-work.t
 import { opsInputs } from "../http/ops-inputs.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { runsOver } from "../policy/technician-work.ts";
-import { isOursToChange } from "../policy/technician-roster.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
@@ -60,7 +57,7 @@ const TechnicianWorkSchema = z
     }),
     skill: z.null().openapi({
       description:
-        'The board\'s "First fit" or "Service". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59).',
+        'The board\'s "First fit" or "Service". Nothing records what a technician is trained for, so this is always null (docs/open-points.md, item 59).',
     }),
   })
   .strict()
@@ -157,8 +154,6 @@ const ReturnedVisitsSchema = z
 
 const technicianPath = { params: z.object({ id: z.uuid() }) };
 
-const notOurs = "managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record";
-
 const MANAGE_ONLY = "access_required, or not_permitted: changing a technician asks Operations MANAGE";
 
 const addRoute = createRoute({
@@ -184,7 +179,7 @@ const changeRoute = createRoute({
     400: errorResponse("invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities"),
     403: errorResponse(MANAGE_ONLY),
     404: errorResponse("not_found: no such technician"),
-    409: errorResponse(`number_in_use: another active technician signs in with that number; ${notOurs}`),
+    409: errorResponse("number_in_use: another active technician signs in with that number"),
   },
 });
 
@@ -197,7 +192,6 @@ const deactivateRoute = createRoute({
     200: { description: "Switched off", ...json(ReturnedVisitsSchema) },
     403: errorResponse(MANAGE_ONLY),
     404: errorResponse("not_found: no such technician"),
-    409: errorResponse(notOurs),
   },
 });
 
@@ -210,7 +204,7 @@ const reactivateRoute = createRoute({
     200: { description: "Switched on", ...json(z.object({ active: z.literal(true) }).strict()) },
     403: errorResponse(MANAGE_ONLY),
     404: errorResponse("not_found: no such technician"),
-    409: errorResponse(`number_in_use: another active technician signs in with his number now; ${notOurs}`),
+    409: errorResponse("number_in_use: another active technician signs in with his number now"),
   },
 });
 
@@ -226,21 +220,6 @@ function auditOf(c: Context<AppEnv>, action: AuditAction, id: string, detail?: A
   };
 }
 
-type Found =
-  | { readonly kind: "found"; readonly technician: RosterTechnician }
-  | { readonly kind: "refused"; readonly code: "not_found" | "managed_in_fsm" };
-
-/** The technician the path names, if there is one and he is ops' to change. */
-async function technicianToChange(c: Context<AppEnv>, id: string): Promise<Found> {
-  const technician = await rosterTechnician(c.env.DB, id);
-  if (technician === null) return { kind: "refused", code: "not_found" };
-  if (!isOursToChange(fieldRecord(c.var.config.providers), technician.handWritten)) {
-    return { kind: "refused", code: "managed_in_fsm" };
-  }
-  return { kind: "found", technician };
-}
-
-const statusOf = (code: "not_found" | "managed_in_fsm"): 404 | 409 => (code === "not_found" ? 404 : 409);
 
 /** The fields a change names, in a fixed order, for its audit entry: never their values. */
 const CHANGEABLE = ["name", "mobile", "zone", "city"] as const;
@@ -278,12 +257,12 @@ export function registerOpsTechnicians(app: App): void {
       return c.json(errorBody("invalid_request", c.var.requestId, ["city"]), 400);
     }
 
-    const found = await technicianToChange(c, id);
-    if (found.kind === "refused") return c.json(errorBody(found.code, c.var.requestId), statusOf(found.code));
+    const technician = await rosterTechnician(c.env.DB, id);
+    if (technician === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const fields = CHANGEABLE.filter((field) => change[field] !== undefined).join(",");
     const changed = await changeTechnician(
       c.env.DB,
-      found.technician,
+      technician,
       { name: change.name, mobileE164, zone: change.zone, city: change.city },
       auditOf(c, "technician.change", id, { fields }),
       c.var.deps.now(),
@@ -294,9 +273,9 @@ export function registerOpsTechnicians(app: App): void {
 
   app.openapi(deactivateRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const found = await technicianToChange(c, id);
-    if (found.kind === "refused") return c.json(errorBody(found.code, c.var.requestId), statusOf(found.code));
-    if (!found.technician.active) return c.json({ visits: [] }, 200);
+    const technician = await rosterTechnician(c.env.DB, id);
+    if (technician === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!technician.active) return c.json({ visits: [] }, 200);
 
     const visits = await deactivateTechnician(c.env.DB, id, auditOf(c, "technician.deactivate", id), c.var.deps.now());
     c.var.log.info("technician_deactivated", { technician_id: id, visits_unassigned: visits.length });
@@ -305,13 +284,13 @@ export function registerOpsTechnicians(app: App): void {
 
   app.openapi(reactivateRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const found = await technicianToChange(c, id);
-    if (found.kind === "refused") return c.json(errorBody(found.code, c.var.requestId), statusOf(found.code));
-    if (found.technician.active) return c.json({ active: true as const }, 200);
+    const technician = await rosterTechnician(c.env.DB, id);
+    if (technician === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (technician.active) return c.json({ active: true as const }, 200);
 
     const reactivated = await reactivateTechnician(
       c.env.DB,
-      found.technician,
+      technician,
       auditOf(c, "technician.reactivate", id),
       c.var.deps.now(),
     );

@@ -18,7 +18,7 @@ export const RULES = [
 export const isOffered = (retiredDate: string | null, on: string): boolean => retiredDate === null || on < retiredDate;
 
 /**
- * A service's name, as clients, ops and FSM's catalogue read it: a letter or a digit first, so a spreadsheet opening
+ * A service's name, as clients, ops and Books' items read it: a letter or a digit first, so a spreadsheet opening
  * an exported list never reads it as a formula, then letters in any script, digits, spaces and . , ' ( ) & - + /,
  * up to 60.
  */

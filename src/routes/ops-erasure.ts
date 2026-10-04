@@ -5,7 +5,6 @@
 // settle both by hand today (docs/decisions/0066-erasure-all-or-nothing.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { fieldRecord } from "../config/field-record.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import type { AuditEntry } from "../domain/audit.ts";
 import {
@@ -82,7 +81,7 @@ const ErasedSchema = z
 export const erasureRoute = createRoute({
   method: "post",
   path: "/api/clients/{id}/erasure",
-  summary: "Erase a client now: their photographs and details. The CRM, FSM and Books follow within minutes",
+  summary: "Erase a client now: their photographs and details. The CRM and Books follow within minutes",
   request: {
     params: z.object({ id: z.uuid() }),
     body: { required: true, ...json(ErasureSchema) },
@@ -142,7 +141,6 @@ export function registerOpsErasure(app: App): void {
     };
     const summary = await eraseAndQueue(c.env, id, {
       audit,
-      fsmConnected: fieldRecord(c.var.config.providers) === "fsm",
       requestId,
       now: c.var.deps.now(),
       log,

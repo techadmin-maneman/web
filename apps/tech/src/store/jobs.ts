@@ -120,7 +120,7 @@ export async function forgetStartAtCheckIn(jobId: string): Promise<void> {
   await remove("jobs", startAtCheckInKey(jobId));
 }
 
-/** Every job the technician closed out on this phone, so the day's list can say so before FSM does. */
+/** Every job the technician closed out on this phone, so the day's list can say so before the server does. */
 export async function keptClosedJobs(): Promise<Set<string>> {
   const kept = await all<Kept>("jobs");
   return new Set(kept.flatMap((record) => (record.kind === "closed" ? [record.job_id] : [])));

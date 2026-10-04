@@ -1,9 +1,8 @@
 // Stock of consumables, in each technician's kit and the central store
 // (docs/decisions/0087-consumables-and-stock.md). The owner ruled on 27
-// September 2026 that stock is kept in our own ledger: FSM counts stock only
-// through Zoho Inventory, which deducts only when an invoice is sent, so a free
-// consultation or a credit visit would never deduct anything. The brief's line
-// for the tables FSM has no place for is the rule it follows.
+// September 2026 that stock is kept in our own ledger, which deducts what a job
+// used whether or not an invoice is sent: a free consultation or a credit visit
+// deducts too. The brief's line below is the rule it follows.
 //
 // What a place holds is the sum of its rows in stock_movements, never a figure
 // anyone sets, so a count or a correction is a row of its own and the ledger

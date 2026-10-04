@@ -180,8 +180,8 @@ export const stopped: Readonly<Record<string, string>> = {
 /**
  * The prompt's words for a job given to another technician, "Ops moved this job
  * to Sandeep at 10:40": their first name, and when, as the API said (open
- * point 92). A move made on another day names the day, and one made in FSM
- * itself has no time.
+ * point 92). A move made on another day names the day, and one with no time
+ * recorded has none.
  */
 function movedTo(moved: Moved, now: Date): string {
   // PLACEHOLDER: the prompt's example has a time on the day; the line without one, and the one with a day, are ours.

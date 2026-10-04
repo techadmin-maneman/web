@@ -365,7 +365,7 @@ async function run(): Promise<Replayed> {
     // No signal, or none usable: everything still waiting stays waiting.
     if (answer.code === "offline") return { sent, superseded, refused, stopped: "offline" };
     if (answer.status === 401) return { sent, superseded, refused, stopped: "signed-out" };
-    // FSM changed underneath the phone, or a step arrived before the one ahead of
+    // The job changed underneath the phone, or a step arrived before the one ahead of
     // it, or the job is no longer this technician's at all.
     if (answer.code === SUPERSEDED || answer.code === OUT_OF_ORDER || answer.status === 404) {
       await markStopped(event, "superseded", answer.code, answer.fields, answer.moved);

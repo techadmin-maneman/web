@@ -69,7 +69,7 @@ Request body:
 
 ### POST /api/tech/auth/otp
 
-Send a login code on WhatsApp. The answer is the same whether or not FSM lists the number
+Send a login code on WhatsApp. The answer is the same whether or not the number is a technician's
 
 Request body:
 
@@ -79,7 +79,7 @@ Request body:
 }
 ```
 
-**202**: A code is on its way, if FSM lists this number
+**202**: A code is on its way, if the number is a technician's
 
 ```json
 {
@@ -295,7 +295,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day
 
 ```json
 {
@@ -339,7 +339,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day
 
 ```json
 {
@@ -491,7 +491,7 @@ The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB 
 
 ### POST /api/tech/jobs/{id}/photos
 
-The phase's five photographs are in; attach them to FSM
+The phase's five photographs are in
 
 Request body:
 
@@ -533,7 +533,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first
 
 ```json
 {
@@ -585,7 +585,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first
 
 ```json
 {
@@ -637,7 +637,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first
 
 ```json
 {
@@ -689,7 +689,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again
 
 ```json
 {
@@ -741,7 +741,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first
 
 ```json
 {
@@ -793,7 +793,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first
 
 ```json
 {
@@ -837,7 +837,7 @@ Close the job as a no-show, once the wait has run
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_started: the job was started, so the client was home
 
 ```json
 {
@@ -1000,12 +1000,9 @@ Request body:
             "already_started",
             "piece_code",
             "technician_inactive",
-            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
-            "fsm_refused",
-            "fsm_partly",
             "in_progress",
             "too_early_to_close",
             "already_closed",
@@ -1056,7 +1053,7 @@ Request body:
                   "type": "null"
                 }
               ],
-              "description": "When ops moved the job to them; null when it was moved in FSM itself"
+              "description": "When ops moved the job to them; null where nothing recorded when"
             }
           },
           "required": [
@@ -2957,7 +2954,8 @@ Request body:
         "pending",
         "written",
         "rejected"
-      ]
+      ],
+      "description": "Kept for phones that read it: \"written\" once the step has landed, which it has."
     },
     "progress": {
       "$ref": "#/components/schemas/TechnicianJobProgress"
@@ -3331,7 +3329,7 @@ Request body:
     "progress"
   ],
   "additionalProperties": false,
-  "description": "Kept in our records alone: nothing of it goes to FSM."
+  "description": "Kept in our records alone."
 }
 ```
 

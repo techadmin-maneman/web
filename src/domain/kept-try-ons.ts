@@ -35,7 +35,7 @@ export async function hasBooked(db: D1Database, personId: string): Promise<boole
   return row?.booked === 1;
 }
 
-/** Whether a photograph of the person's first fit is stored, from the technician's app or from FSM. */
+/** Whether a photograph of the person's first fit is stored. */
 export async function firstFitPhotographed(db: D1Database, personId: string): Promise<boolean> {
   const row = await db
     .prepare(

@@ -71,12 +71,9 @@
                   "already_started",
                   "piece_code",
                   "technician_inactive",
-                  "managed_in_fsm",
                   "clash",
                   "on_leave",
                   "does_not_fit",
-                  "fsm_refused",
-                  "fsm_partly",
                   "in_progress",
                   "too_early_to_close",
                   "already_closed",
@@ -127,7 +124,7 @@
                         "type": "null"
                       }
                     ],
-                    "description": "When ops moved the job to them; null when it was moved in FSM itself"
+                    "description": "When ops moved the job to them; null where nothing recorded when"
                   }
                 },
                 "required": [
@@ -1923,7 +1920,8 @@
               "pending",
               "written",
               "rejected"
-            ]
+            ],
+            "description": "Kept for phones that read it: \"written\" once the step has landed, which it has."
           },
           "progress": {
             "$ref": "#/components/schemas/TechnicianJobProgress"
@@ -2242,7 +2240,7 @@
           "progress"
         ],
         "additionalProperties": false,
-        "description": "Kept in our records alone: nothing of it goes to FSM."
+        "description": "Kept in our records alone."
       },
       "TechnicianProfileRequest": {
         "type": "object",
@@ -2480,7 +2478,7 @@
     },
     "/api/tech/auth/otp": {
       "post": {
-        "summary": "Send a login code on WhatsApp. The answer is the same whether or not FSM lists the number",
+        "summary": "Send a login code on WhatsApp. The answer is the same whether or not the number is a technician's",
         "requestBody": {
           "required": true,
           "content": {
@@ -2493,7 +2491,7 @@
         },
         "responses": {
           "202": {
-            "description": "A code is on its way, if FSM lists this number",
+            "description": "A code is on its way, if the number is a technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -2856,7 +2854,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+            "description": "superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day",
             "content": {
               "application/json": {
                 "schema": {
@@ -2946,7 +2944,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+            "description": "superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day",
             "content": {
               "application/json": {
                 "schema": {
@@ -3190,7 +3188,7 @@
     },
     "/api/tech/jobs/{id}/photos": {
       "post": {
-        "summary": "The phase's five photographs are in; attach them to FSM",
+        "summary": "The phase's five photographs are in",
         "parameters": [
           {
             "schema": {
@@ -3276,7 +3274,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: the job changed under the phone; out_of_order: send the step before this one first",
             "content": {
               "application/json": {
                 "schema": {
@@ -3376,7 +3374,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: the job changed under the phone; out_of_order: send the step before this one first",
             "content": {
               "application/json": {
                 "schema": {
@@ -3476,7 +3474,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: the job changed under the phone; out_of_order: send the step before this one first",
             "content": {
               "application/json": {
                 "schema": {
@@ -3576,7 +3574,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again",
+            "description": "superseded: the job changed under the phone; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again",
             "content": {
               "application/json": {
                 "schema": {
@@ -3676,7 +3674,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: the job changed under the phone; out_of_order: send the step before this one first",
             "content": {
               "application/json": {
                 "schema": {
@@ -3776,7 +3774,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: the job changed under the phone; out_of_order: send the step before this one first",
             "content": {
               "application/json": {
                 "schema": {
@@ -3866,7 +3864,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
+            "description": "superseded: the job changed under the phone; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
             "content": {
               "application/json": {
                 "schema": {

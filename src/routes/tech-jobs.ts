@@ -9,7 +9,7 @@
 //   POST /api/tech/jobs/:id/photos/upload-url    a link to PUT one photograph to
 //   PUT  /api/tech/photos/:token                 the photograph itself
 //   PUT  /api/tech/photos/:token/small           its small copy, for the client app's rows
-//   POST /api/tech/jobs/:id/photos               the set is complete: attach it to FSM, where FSM holds the record
+//   POST /api/tech/jobs/:id/photos               the set is complete
 //   POST /api/tech/jobs/:id/checklist            the service checklist
 //   POST /api/tech/jobs/:id/consumables          what was used, with quantities
 //   POST /api/tech/jobs/:id/piece                the piece fitted, or the one that failed; on a one visit, the
@@ -37,14 +37,13 @@
 //
 // A consultation and a one visit also take the client's hair profile, just
 // before the after photographs. It is not a job event: it lands in its own
-// table, never reaches FSM, and the job's order leaves it out, so it needs only
+// table, and the job's order leaves it out, so it needs only
 // the start (docs/decisions/0106-a-clients-hair-profile.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { CONSUMABLE_BOUNDS } from "../config/consumables.ts";
-import { fieldRecord, recordOfVisit } from "../config/field-record.ts";
 import { isPieceCode } from "../config/pieces.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
@@ -59,10 +58,9 @@ import {
   whatChanged,
   type Landing,
   type MovedTo,
-  type StepRecord,
   type Superseding,
 } from "../domain/job-events.ts";
-import { jobRecordOf, type LandingStep } from "../domain/job-record.ts";
+import { jobRecordOf } from "../domain/job-record.ts";
 import { pieceLabelTaken, pieceStepOf, type PieceField } from "../domain/pieces.ts";
 import { checklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
 import { recordJobUse } from "../domain/job-use.ts";
@@ -93,7 +91,6 @@ import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import { noShowWaitEnds } from "../policy/no-show.ts";
 import { boundedPhoneTime } from "../policy/phone-clock.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { arrivalNotice } from "../domain/visit-messages.ts";
 import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "./hair-profile-schemas.ts";
@@ -319,7 +316,9 @@ const AcceptedSchema = z
   .object({
     event_id: z.string(),
     replayed: z.boolean().openapi({ description: "True when this write had already landed." }),
-    fsm_write_state: z.enum(["pending", "written", "rejected"]),
+    fsm_write_state: z.enum(["pending", "written", "rejected"]).openapi({
+      description: "Kept for phones that read it: \"written\" once the step has landed, which it has.",
+    }),
     progress: ProgressSchema,
   })
   .strict()
@@ -479,7 +478,7 @@ const ProfileRecordedSchema = z
     progress: ProgressSchema,
   })
   .strict()
-  .openapi("TechnicianProfileRecorded", { description: "Kept in our records alone: nothing of it goes to FSM." });
+  .openapi("TechnicianProfileRecorded", { description: "Kept in our records alone." });
 
 /** A step that landed, or had landed before. */
 const RECORDED = { description: "Recorded", ...json(AcceptedSchema) };
@@ -489,12 +488,12 @@ const STEP_REFUSALS = {
   400: errorResponse("invalid_request: see error.fields"),
   401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
   404: errorResponse("not_found: no such job"),
-  409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+  409: errorResponse("superseded: the job changed under the phone; out_of_order: send the step before this one first"),
 };
 
 /** A check-in's or a start's conflict, which may also be on the wrong day. */
 const DAY_CONFLICT = errorResponse(
-  "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+  "superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day",
 );
 
 const jobsRoute = createRoute({
@@ -623,7 +622,7 @@ const smallUploadRoute = createRoute({
 const photosRoute = createRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/photos",
-  summary: "The phase's five photographs are in; attach them to FSM",
+  summary: "The phase's five photographs are in",
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(PhotosRequestSchema) } },
   responses: {
     202: RECORDED,
@@ -662,7 +661,7 @@ const pieceRoute = createRoute({
     202: RECORDED,
     ...STEP_REFUSALS,
     409: errorResponse(
-      "superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already " +
+      "superseded: the job changed under the phone; out_of_order: send the step before this one first; piece_code: a label already " +
         "on record, as another client's piece or this client's from an earlier visit, or a piece that came off that " +
         "is another client's. error.fields names piece_code or old_piece, to correct and send again",
     ),
@@ -706,7 +705,7 @@ const noShowRoute = createRoute({
     200: { description: "Closed, with the case ops will rule on", ...json(NoShowSchema) },
     ...STEP_REFUSALS,
     409: errorResponse(
-      "superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
+      "superseded: the job changed under the phone; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
     ),
     425: errorResponse("too_early_to_close: the wait has not run out"),
   },
@@ -1072,7 +1071,7 @@ const namedJob = (c: Ctx, id: string): Promise<WorkableJob | null> => workableJo
 type StepBody = Record<string, unknown> | { invalid: string[] } | { labelTaken: PieceField };
 
 /**
- * One in-job step: check it, land it once, and record it: in FSM by its queue, or in our own database with the event.
+ * One in-job step: check it, land it once, and record what it does with the event.
  * What a step keeps of its own, `landed` does once it has landed, first time
  * or replayed, and must do the same however often it is called.
  */
@@ -1214,27 +1213,8 @@ async function tellOfArrival(c: Ctx, input: { personId: string; appointmentId: s
   }
 }
 
-/** Where the step is recorded: by FSM's queue for a visit FSM holds, else in our own database, with the event. */
-async function recordedIn(c: Ctx, job: WorkableJob, step: LandingStep): Promise<StepRecord> {
-  if (recordOfVisit(fieldRecord(c.var.config.providers), job) === "fsm") return { holder: "fsm" };
-  return { holder: "ours", statements: await jobRecordOf(c.env.DB, step) };
-}
-
 /**
- * A landed event's FSM write. One the queue refuses stays pending, and the sweeper sends it on once its grace has
- * passed (src/scheduled/sweeper.ts); the event has landed either way.
- */
-async function queueFsmWrite(c: Ctx, jobEventId: string): Promise<void> {
-  try {
-    await c.env.FSM_QUEUE.send({ job_event_id: jobEventId, request_id: c.var.requestId } satisfies FsmSyncMessage);
-  } catch (error) {
-    c.var.log.warn("fsm_enqueue_failed", { job_event_id: jobEventId, error });
-  }
-}
-
-/**
- * Records one event, and the step's work: on FSM's queue, or in our own database with the event. Its time is the
- * phone's, within bounds: the check-in passes its own, and any other write's comes from its event ID.
+ * Records one event, and the step's work, in one batch. Its time is the phone's, within bounds: the check-in passes its own, and any other write's comes from its event ID.
  */
 async function land(
   c: Ctx,
@@ -1262,7 +1242,7 @@ async function land(
     occurredAt,
     expectedStart: heldStart === undefined ? null : new Date(heldStart),
     now,
-    recordedIn: await recordedIn(c, job, step),
+    records: await jobRecordOf(c.env.DB, step),
   });
   if (landing.kind === "superseded") {
     c.var.log.info("job_event_superseded", { appointment_id: job.id, kind, changed: landing.changed });
@@ -1271,14 +1251,12 @@ async function land(
   if (landing.kind === "out_of_order") return { ok: false, code: "out_of_order", fields: [landing.needs] };
   if (landing.kind === "not_today" || landing.kind === "already_started") return { ok: false, code: landing.kind };
 
-  // A replay landed nothing new, so nothing new goes to FSM either; nor does a step our own database recorded.
-  if (!landing.replayed && landing.event.fsmWriteState === "pending") await queueFsmWrite(c, landing.event.id);
   return {
     ok: true,
     accepted: {
       event_id: landing.event.eventId,
       replayed: landing.replayed,
-      fsm_write_state: landing.event.fsmWriteState,
+      fsm_write_state: landing.event.writeState,
       progress: await progressOf(c.env.DB, job, noShowWaitMin),
     },
   };

@@ -38,7 +38,6 @@ import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
 import { composeCreditsExpiring } from "../domain/credit-reminders.ts";
 import { composeDeletionRejected } from "../domain/deletion.ts";
-import { composeBookingRefunded } from "../domain/held-bookings.ts";
 import { composeNextServiceReminder } from "../domain/next-visit.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
@@ -216,7 +215,6 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
     const days = (await readOpsInputs(db, now)).nextVisitDays;
     return composeNextServiceReminder(db, row.subject_id, row.person_id, days);
   }
-  if (row.kind === "booking_refunded") return composeBookingRefunded(db, row.subject_id, row.person_id);
   if (row.kind === "friend_fitted") return composeFriendFitted(db, row.subject_id, row.person_id);
   if (row.kind === "friend_credited") return composeFriendCredited(db, row.subject_id, row.person_id);
   if (row.kind === "referral_rejected") return composeReferralRejected(db, row.subject_id, row.person_id);

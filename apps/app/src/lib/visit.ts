@@ -24,7 +24,7 @@ export type InvoiceState = "open" | "free" | "credit" | "checking" | "generating
 /**
  * What a finished visit can say of its invoice (ADR 0056): here to open, never coming because the visit was free,
  * held back (ADR 0070) because a credit paid for the visit or because it is being checked, still generating, or
- * late. Nothing at all for a visit FSM did not complete, which is billed by hand if at all.
+ * late. Nothing at all for a visit not completed, which is billed by hand if at all.
  */
 export function invoiceState(visit: VisitDetail, now: number): InvoiceState {
   if (visit.status !== "completed") return "none";

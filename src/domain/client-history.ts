@@ -10,7 +10,7 @@
 //
 // A visit done is a completed appointment with a window, which is what
 // `isFitted` and the client's own list of past visits already mean by one
-// (src/domain/client-visits.ts). A visit FSM terminated did not happen and is
+// (src/domain/client-visits.ts). A visit terminated did not happen and is
 // counted nowhere.
 
 import { indiaDate } from "../lib/india-time.ts";
@@ -20,9 +20,8 @@ export interface ReplacementDue {
   /** YYYY-MM-DD, as the piece's row holds it: the date ops order a piece against. */
   readonly on: string;
   /**
-   * YYYY-MM, and all the client is ever told. `syncPieces` recomputes the day
-   * from FSM's install date on every sync, so a date shown to a client can move
-   * under them; the month it falls in is the most we can promise (ADR 0059).
+   * YYYY-MM, and all the client is ever told: the month a fit falls in is the
+   * most we promise (ADR 0059).
    */
   readonly month: string;
   readonly piece_code: string;
@@ -35,7 +34,7 @@ export interface ClientHistory {
   readonly replacements: number;
   /**
    * India's date of the first fit, and null when none is recorded: a client
-   * whose earlier visits FSM never held is fitted with no fit on record, and a
+   * fitted before their visits were recorded here has no fit on record, and a
    * date would have to be invented for them.
    */
   readonly first_fit_on: string | null;

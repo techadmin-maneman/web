@@ -94,13 +94,7 @@ export const AUDIT_ACTIONS = [
   "task.hand_back",
   "task.close",
   "address.given_to_ops",
-  // A booking FSM would not take, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): FSM tried again
-  // at ops' asking and taking it, the visit ops booked in FSM by hand linked to it, its refund, its hourly tries
-  // stopped so ops book it in FSM by hand, and a link that let it go instead, its payment having gone back.
-  "booking.retry",
-  "booking.link",
-  "booking.refund",
-  "booking.stop",
+  // A hold ops made and let go, since its booking could not go ahead.
   "booking.give_back",
   // A visit ops booked for a client from the console: its slot held, and booked at once or sent a payment link. One
   // they cancelled for the client, and one they closed by hand whose technician's phone was lost.

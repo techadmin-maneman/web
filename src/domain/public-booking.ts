@@ -9,7 +9,7 @@
 //
 // Each booking leaves three records:
 //
-//   the slot,  held for the person and written to FSM from the fsm-sync queue;
+//   the slot,  held for the person and booked as their visit;
 //   the lead,  so the CRM funnel sees every booking, as it did in Phase 1;
 //   the person, the consent they gave, under the notice they were shown, and
 //              the address the visit is at, which is theirs from then on,
@@ -118,7 +118,7 @@ export interface FormRequest {
   readonly checkPerson: (mobile: string, turnstileToken: string, name: string) => Promise<Checked>;
   /** Whether the WhatsApp code `codeId` proved this number (src/policy/number-proof.ts). */
   readonly provedNumber: (codeId: string | null, mobileE164: string) => Promise<boolean>;
-  /** Sends a person's first address on to their FSM contact and CRM lead, as saving it in the app does. */
+  /** Sends a person's first address on to their Books customer and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
   /** Sends a hold the form booked free to be booked (src/http/book-hold.ts). */
   readonly bookHold: (holdId: string) => Promise<void>;
@@ -288,8 +288,8 @@ async function queueMessage(form: FormRequest, messageId: string): Promise<void>
 /**
  * What ops have to act on while self-serve booking is off: the day and window the
  * person asked for, which no slot is held for, and whether it is the consultation
- * and fit in one visit. It leaves the console's task queue when their visit is in
- * FSM (src/domain/tasks.ts). Asked again for the same day and window, the plan
+ * and fit in one visit. It leaves the console's task queue when their visit is
+ * booked (src/domain/tasks.ts). Asked again for the same day and window, the plan
  * asked last stands.
  */
 function requestStatement(
@@ -399,7 +399,7 @@ export interface ConsultationRequest {
 export interface Booked {
   readonly ok: true;
   /**
-   * "booked" holds the slot and tells FSM. "requested" is the day and window the
+   * "booked" holds the slot and books it. "requested" is the day and window the
    * person asked for while self-serve booking is off, which ops confirm on
    * WhatsApp (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
    */
@@ -525,7 +525,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   // may have taken a moment before.
   const codeStands = code !== null && (holdId === null || (await codeOnHold(db, holdId)) !== null);
   const standingCode = codeStands ? { code: code.code, terms: code.terms } : null;
-  // Someone we knew may be in FSM and the CRM already, with no address. Someone new is added to both with this
+  // Someone we knew may be in Books and the CRM already, with no address. Someone new is added to both with this
   // one, by the booking and its lead.
   if (knownId !== null && address === "saved") await form.syncContact(person.id);
   if (addressNotice !== null) await queueMessage(form, addressNotice.id);

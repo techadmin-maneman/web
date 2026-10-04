@@ -3,9 +3,9 @@
 //
 // The code is the client's: same table, same ten minutes, same five wrong
 // attempts (docs/decisions/0030-one-time-codes.md). What differs is the
-// subject. A technician is recognised only if FSM lists him as an active field
-// technician, so the number is looked up in the mirror of FSM's service
-// resources and nowhere else, and his session is bound to one phone.
+// subject. A technician is recognised only while ops have him switched on, so
+// the number is looked up among the technicians and nowhere else, and his
+// session is bound to one phone.
 
 import { sha256Hex } from "../lib/hash.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
@@ -19,9 +19,8 @@ export interface FieldTechnician {
 }
 
 /**
- * The active field technician this number belongs to, as FSM lists him. Where a row written by hand into staging
- * holds the same number as one FSM lists, FSM's comes first: the owner signs in on their own FSM user from 27
- * September 2026, and a test row left behind on that number must not take the sign-in (migration 0046).
+ * The active technician this number belongs to. Two active technicians never share a number now; where an older row
+ * written by hand into staging still does, the other comes first (migration 0046).
  */
 export async function findFieldTechnician(db: D1Database, mobileE164: string): Promise<FieldTechnician | null> {
   const row = await db
@@ -55,7 +54,7 @@ export interface TechnicianDevice {
   readonly revokedAt: string | null;
 }
 
-/** A session's phone, and whether FSM still lists its technician as active. */
+/** A session's phone, and whether its technician is still switched on. */
 export interface SessionDevice extends TechnicianDevice {
   readonly technicianActive: boolean;
 }

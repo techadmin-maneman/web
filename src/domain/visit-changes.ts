@@ -2,8 +2,8 @@
 // them from the console.
 //
 // The terms come from src/policy/moving-a-visit.ts and are shown before the
-// client, or ops, confirm. A cancel is done here: FSM first where FSM holds the visit,
-// then the mirror, then the refund. A refund the request could not settle is
+// client, or ops, confirm. A cancel is done here, in one batch, then the refund.
+// A refund the request could not settle is
 // asked for again by the cron's cancel_refunds job. A move is a hold like any
 // booking: its price is what the move costs now, and confirmBooking moves the
 // visit once that is paid (or at once, when free).
@@ -17,7 +17,6 @@
 // move a visit, the notice counts from its time before they moved it
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 
-import type { FieldRecord } from "../config/field-record.ts";
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
@@ -42,7 +41,6 @@ import {
 } from "../policy/moving-a-visit.ts";
 import { NO_SHOW_CHARGES } from "../policy/no-show.ts";
 import { ONE_VISIT_TERMS } from "../policy/one-visit.ts";
-import type { FsmProvider } from "../providers/fsm.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { refundAtOnce, type Canceller, type OwedRefund, type RefundDeps } from "./cancel-refunds.ts";
 import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
@@ -51,14 +49,14 @@ import { lateFeeOn, priceOf, type Price } from "./price-book.ts";
 import { bookedMinutes } from "./scheduling.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { visitBegun } from "./visit-begun.ts";
-import { visitMessage, visitMessageOnChange } from "./visit-messages.ts";
+import { visitMessageOnChange } from "./visit-messages.ts";
 import { STEPS } from "./visit-status.ts";
 
 export interface ChangeableVisit {
   readonly id: string;
   readonly personId: string;
   readonly type: VisitType;
-  /** Its service's tier: the standard tier's where the mirror knows no other. */
+  /** Its service's tier: the standard tier's where it names no other. */
   readonly tier: string;
   /** How long it is, which a move keeps (src/policy/visit-length.ts). */
   readonly minutes: number;
@@ -66,14 +64,10 @@ export interface ChangeableVisit {
   /** When it started before ops moved it, while it stands where they put it; null otherwise. */
   readonly startBeforeMove: Date | null;
   readonly technicianId: string | null;
-  readonly fsmId: string;
-  /** Null for a visit booked without FSM. */
-  readonly fsmWorkOrderId: string | null;
 }
 
 /**
- * The client's visit, if they may still change it: ahead, not begun by FSM's status or by our own records, of one of
- * our types, and, where FSM holds it, with its work order.
+ * The client's visit, if they may still change it: ahead, not begun, and of one of our types.
  */
 export async function changeableVisit(
   db: D1Database,
@@ -84,11 +78,10 @@ export async function changeableVisit(
   const row = await db
     .prepare(
       `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.window_end, a.start_before_move, a.technician_id,
-         a.fsm_id, a.fsm_work_order_id, s.minutes AS service_minutes
+         s.minutes AS service_minutes
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
-         AND a.type IS NOT NULL AND a.window_start > ?3 AND (a.fsm_work_order_id IS NOT NULL OR a.fsm_id = a.id)
-         AND NOT ${visitBegun("a")}`,
+         AND a.type IS NOT NULL AND a.window_start > ?3 AND NOT ${visitBegun("a")}`,
     )
     .bind(visitId, personId, now.toISOString())
     .first<{
@@ -100,8 +93,6 @@ export async function changeableVisit(
       window_end: string | null;
       start_before_move: string | null;
       technician_id: string | null;
-      fsm_id: string;
-      fsm_work_order_id: string | null;
       service_minutes: number | null;
     }>();
   if (row === null) return null;
@@ -114,8 +105,6 @@ export async function changeableVisit(
     start: new Date(row.window_start),
     startBeforeMove: row.start_before_move === null ? null : new Date(row.start_before_move),
     technicianId: row.technician_id,
-    fsmId: row.fsm_id,
-    fsmWorkOrderId: row.fsm_work_order_id,
   };
 }
 
@@ -183,7 +172,7 @@ export interface ChangeTerms {
   /** Whether the notice counts from the visit's time before ops moved it, which is later than its own. */
   readonly noticeFromBeforeMove: boolean;
   /**
-   * The terms the visit is changed under: those it was sold under, or, for a visit ops booked in FSM, those in force.
+   * The terms the visit is changed under: those it was sold under, or, for a visit no hold sold, those in force.
    * A move in place carries them, and the late fee below, to the visit's new time.
    */
   readonly sold: SoldTerms;
@@ -229,8 +218,8 @@ interface Sold {
 type SoldVisit = Pick<ChangeableVisit, "id" | "type" | "start">;
 
 /**
- * What the visit was sold under, kept on the hold that booked it: its late fee and its terms. Null for a visit ops
- * booked in FSM, which no hold sold. A term the hold kept no figure for is the committed one.
+ * What the visit was sold under, kept on the hold that booked it: its late fee and its terms. Null for a visit no hold
+ * sold. A term the hold kept no figure for is the committed one.
  */
 async function soldWith(db: D1Database, visit: SoldVisit): Promise<Sold | null> {
   const held = await db
@@ -267,7 +256,7 @@ async function soldWith(db: D1Database, visit: SoldVisit): Promise<Sold | null> 
   };
 }
 
-/** Whether the visit is a consultation and fit in one visit, as ops book one in FSM while booking is off. */
+/** Whether the visit is a consultation and fit in one visit. */
 async function isOneVisit(db: D1Database, visitId: string): Promise<boolean> {
   const row = await db
     .prepare("SELECT 1 FROM appointments WHERE id = ?1 AND one_visit IS NOT NULL")
@@ -277,8 +266,8 @@ async function isOneVisit(db: D1Database, visitId: string): Promise<boolean> {
 }
 
 /**
- * The terms the visit was sold under and its late fee, from the hold that booked it; for a visit ops booked in FSM,
- * which no hold sold, the terms in force (`inForce`) and its kind's late fee on its day, or, for a one visit, what
+ * The terms the visit was sold under and its late fee, from the hold that booked it; for a visit no hold sold, the
+ * terms in force (`inForce`) and its kind's late fee on its day, or, for a one visit, what
  * every one visit is sold under (src/policy/one-visit.ts). A client's change is judged by them, and so is a
  * no-show's charge (src/domain/no-shows.ts).
  */
@@ -322,8 +311,8 @@ async function creditOf(
 }
 
 /**
- * The terms of changing the visit now, under the terms it was booked under, or, for a visit ops booked in FSM, those
- * in force (`inForce`). The notice counts from the visit's time before ops moved it, where that is later. `on` is the
+ * The terms of changing the visit now, under the terms it was booked under, or, for a visit no hold sold, those in
+ * force (`inForce`). The notice counts from the visit's time before ops moved it, where that is later. `on` is the
  * day a new visit would be priced on, for a charged move: the first day one can be booked, unless the client has
  * picked one.
  */
@@ -397,17 +386,7 @@ export type Cancelled =
     }
   | { readonly kind: "not_changeable" };
 
-/** The cancel's notice as the note FSM keeps says it: "more than 24 hours ahead", or "inside 24 hours". */
-function noticeWords(terms: ChangeTerms): string {
-  const hours = `${String(terms.noticeHours)} hours`;
-  if (terms.notice === "late") return `inside ${hours}`;
-  return terms.noticeFromBeforeMove
-    ? `more than ${hours} before the time ops moved it from`
-    : `more than ${hours} ahead`;
-}
-
 interface CancelDeps extends RefundDeps {
-  readonly fsm: FsmProvider;
   /** Queues the cancel's confirmation to the client. */
   readonly notify?: (messageId: string) => Promise<unknown>;
 }
@@ -427,9 +406,8 @@ function refundOwed(terms: ChangeTerms, change: CancelOf): OwedRefund | null {
 }
 
 /**
- * Cancels the visit on the terms given, then refunds what the terms give back. Where FSM holds the record, FSM cancels
- * its work order, and so its appointment, before the mirror is changed; otherwise the visit is cancelled in our own
- * database alone. The change is claimed first, so it happens once, and never once the visit has begun. Once the visit
+ * Cancels the visit on the terms given, then refunds what the terms give back. The change is claimed in the cancel's
+ * batch, so it happens once, and never once the visit has begun. Once the visit
  * is cancelled it stays cancelled, whatever fails after: a refund Razorpay refuses is left to ops, who are alerted,
  * and one the request could not settle is left to the cron's cancel_refunds job.
  */
@@ -441,11 +419,7 @@ export async function cancelVisit(
   options: CancelOptions,
 ): Promise<Cancelled> {
   const change: CancelOf = { changeId: crypto.randomUUID(), ops: options.ops ?? null };
-  const workOrderId = options.record === "fsm" ? terms.visit.fsmWorkOrderId : null;
-  const messageId =
-    workOrderId === null
-      ? await cancelInOurDatabase(db, terms, change, now)
-      : await cancelInFsm(db, deps.fsm, terms, { ...change, workOrderId }, now, options.labelAsTest);
+  const messageId = await writeCancel(db, terms, change, now);
   if (messageId === null) return { kind: "not_changeable" };
   const owed = refundOwed(terms, change);
   const settled = owed === null || (await refundAtOnce(db, deps, owed, now, options.log));
@@ -463,9 +437,7 @@ async function tellClient(deps: CancelDeps, messageId: string, log: Logger): Pro
 }
 
 interface CancelOptions {
-  readonly labelAsTest: boolean;
   readonly log: Logger;
-  readonly record: FieldRecord;
   /** Set when ops cancel the visit in the console; left out for the client's own cancel. */
   readonly ops?: OpsCancel;
 }
@@ -545,11 +517,11 @@ function restoredCredit(db: D1Database, terms: ChangeTerms, change: CancelOf, no
 }
 
 /**
- * The cancel in our own database, in one batch: the change claimed, the visit cancelled, the client's message, any
+ * The cancel, in one batch: the change claimed, the visit cancelled, the client's message, any
  * credit given back and ops' audit entry, each written only if the claim was. The message's ID, or null when the visit
  * could not be cancelled.
  */
-async function cancelInOurDatabase(
+async function writeCancel(
   db: D1Database,
   terms: ChangeTerms,
   change: CancelOf,
@@ -576,50 +548,4 @@ async function cancelInOurDatabase(
     ...auditedCancel(db, change, now),
   ]);
   return claimed?.meta.changes === 1 ? message.id : null;
-}
-
-/**
- * The cancel in FSM, then in the mirror. The claim is let go again if FSM fails or will not cancel the work order. The
- * message's ID, or null when the visit could not be cancelled.
- */
-async function cancelInFsm(
-  db: D1Database,
-  fsm: FsmProvider,
-  terms: ChangeTerms,
-  change: CancelOf & { readonly workOrderId: string },
-  now: Date,
-  labelAsTest: boolean,
-): Promise<string | null> {
-  const { visit } = terms;
-  const claimed = await claimCancel(db, terms, change, now).run();
-  if (claimed.meta.changes !== 1) return null;
-
-  const where = change.ops === null ? "the client in the app" : "ops in the console";
-  const note = `${labelAsTest ? "Staging test: " : ""}Cancelled by ${where}, ${noticeWords(terms)}.`;
-  let done: boolean;
-  try {
-    done = await fsm.cancelVisit(change.workOrderId, note);
-  } catch (error) {
-    await db.prepare("DELETE FROM visit_changes WHERE id = ?1").bind(change.changeId).run();
-    throw error;
-  }
-  if (!done) {
-    await db.prepare("DELETE FROM visit_changes WHERE id = ?1").bind(change.changeId).run();
-    return null;
-  }
-  const message = visitMessage(db, {
-    personId: visit.personId,
-    appointmentId: visit.id,
-    kind: messageKindOf(change),
-    now,
-  });
-  await db.batch([
-    db
-      .prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = ?1 WHERE id = ?2")
-      .bind(now.toISOString(), visit.id),
-    message.statement,
-    ...restoredCredit(db, terms, change, now),
-    ...auditedCancel(db, change, now),
-  ]);
-  return message.id;
 }

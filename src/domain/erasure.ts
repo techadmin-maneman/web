@@ -9,7 +9,7 @@
 // so all of it happens or none of it does. Then their files are deleted from
 // R2, each before the row that names it. If that fails part-way, the person is
 // erased all the same and the cron's erased_files job deletes what is left. The
-// CRM and FSM are told at once, by their queues; Books by the cron's own pass
+// CRM is told at once, by its queue; Books by the cron's own pass
 // (src/domain/books-erasure.ts).
 //
 // Nothing is erased while the person has a visit still to happen or a payment
@@ -24,7 +24,6 @@ import type { VisitType } from "../config/visit-types.ts";
 import type { Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
-import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { recordConsent } from "./consents.ts";
 import { blankProfiles } from "./hair-profiles.ts";
@@ -63,15 +62,13 @@ export interface ErasureBlockers {
 }
 
 export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS" | "REFERRAL_CARDS">;
-export type ErasureQueueEnv = ErasureEnv & Pick<Env, "CRM_QUEUE" | "FSM_QUEUE">;
+export type ErasureQueueEnv = ErasureEnv & Pick<Env, "CRM_QUEUE">;
 
 export interface EraseOptions {
   /** Who erased them, written in the erasure's batch. */
   readonly audit: AuditEntry;
   /** More of the caller's statements for the batch, as a deletion request's decision. */
   readonly alongside?: readonly D1PreparedStatement[];
-  /** Whether FSM holds the record of field work, so the person's FSM contact is anonymised too. */
-  readonly fsmConnected: boolean;
   readonly requestId: string;
   readonly now: Date;
   readonly log: Logger;
@@ -177,8 +174,8 @@ export async function erasePerson(
 
 /**
  * The one way a person is erased. Who erased them, and any deletion request of theirs still open, go in the
- * erasure's batch; the CRM's and FSM's blanking is queued at once rather than left to the sweeper. Null when they are
- * already erased.
+ * erasure's batch; the CRM's blanking is queued at once rather than left to the sweeper. Null when they are already
+ * erased.
  */
 export async function eraseAndQueue(
   env: ErasureQueueEnv,
@@ -213,12 +210,11 @@ function closeOpenRequests(db: D1Database, personId: string, decidedBy: string, 
     .bind(personId, now.toISOString(), decidedBy);
 }
 
-/** Both consumers do nothing for a person already done, so the sweeper finding them as well costs nothing. */
+/** The consumer does nothing for a person already done, so the sweeper finding them as well costs nothing. */
 async function queueOutsideErasure(env: ErasureQueueEnv, personId: string, options: EraseOptions): Promise<void> {
   const message = { erase_person_id: personId, request_id: options.requestId };
   try {
     await env.CRM_QUEUE.send(message satisfies CrmSyncMessage);
-    if (options.fsmConnected) await env.FSM_QUEUE.send(message satisfies FsmSyncMessage);
   } catch (error) {
     options.log.warn("erasure_enqueue_failed", { person_id: personId, error }); // the sweeper sends it on
   }

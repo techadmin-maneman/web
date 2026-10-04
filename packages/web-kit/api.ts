@@ -97,7 +97,7 @@ export type LocalCode = "offline" | "unknown";
 /** The technician a job went to, by first name, and when ops moved it there (docs/open-points.md, item 92). */
 export interface Moved {
   readonly technician: string;
-  /** Null when it was moved in FSM itself. */
+  /** Null where nothing recorded when. */
   readonly at: string | null;
 }
 

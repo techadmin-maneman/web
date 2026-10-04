@@ -1,4 +1,4 @@
-// The invoice for a finished visit, raised in Books from our own figures where FSM does not raise it.
+// The invoice for a finished visit, raised in Books from our own figures.
 //
 // One line on the visit's Books item: the price book's GST-inclusive price on the day, less any discount code before
 // tax, under the appointment's ID as its reference, by which a later pass finds it. Books works out the total. The
@@ -267,7 +267,7 @@ async function keepInvoice(pass: Pass, appointmentId: string, invoiceId: string)
 }
 
 // ---------------------------------------------------------------------------
-// What the visit was sold for, which FSM's invoice pass reads too
+// What the visit was sold for
 // ---------------------------------------------------------------------------
 
 /**

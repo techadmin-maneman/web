@@ -1,9 +1,8 @@
 // The consumables ops keep in the console, and what each service is expected to
 // use (docs/decisions/0087-consumables-and-stock.md). The owner ruled on 27
 // September 2026 that both are set in the console, that the technician app
-// reads them with the job, and that the consumables reach FSM's catalogue as
-// parts; and that a job's use is internal: kept in our records and on FSM's
-// summary, never as a line of the work order, so a client's invoice is as it was.
+// reads them with the job, and that a job's use is internal: kept in our
+// records, never as a line of the client's invoice.
 //
 // A consumable is named by a code made from its first name and never changed,
 // so a rename, a phone's queued step and the stock ledger all keep to it.
@@ -24,9 +23,6 @@ export interface Consumable {
   readonly reorderCentral: number | null;
   /** The day in India it is no longer offered from; null while it is. */
   readonly retiredDate: string | null;
-  readonly fsmItemId: string | null;
-  readonly fsmName: string | null;
-  readonly fsmCheckedAt: string | null;
 }
 
 interface ConsumableRow {
@@ -37,13 +33,9 @@ interface ConsumableRow {
   reorder_kit: number | null;
   reorder_central: number | null;
   retired_date: string | null;
-  fsm_item_id: string | null;
-  fsm_name: string | null;
-  fsm_checked_at: string | null;
 }
 
-const COLUMNS =
-  "code, name, unit, unit_cost, reorder_kit, reorder_central, retired_date, fsm_item_id, fsm_name, fsm_checked_at";
+const COLUMNS = "code, name, unit, unit_cost, reorder_kit, reorder_central, retired_date";
 
 const consumableOf = (row: ConsumableRow): Consumable => ({
   code: row.code,
@@ -53,9 +45,6 @@ const consumableOf = (row: ConsumableRow): Consumable => ({
   reorderKit: row.reorder_kit,
   reorderCentral: row.reorder_central,
   retiredDate: row.retired_date,
-  fsmItemId: row.fsm_item_id,
-  fsmName: row.fsm_name,
-  fsmCheckedAt: row.fsm_checked_at,
 });
 
 /** Every consumable, retired ones too, by name. */
@@ -74,18 +63,6 @@ async function consumableCoded(db: D1Database, code: string): Promise<Consumable
 /** Whether the technician app offers it on a day in India: not retired, or retired from a later day. */
 export const isOffered = (consumable: Consumable, today: string): boolean =>
   consumable.retiredDate === null || consumable.retiredDate > today;
-
-/**
- * Where it stands in FSM's catalogue, as the hourly check last read it
- * (src/domain/fsm-catalogue.ts): a Part by our name; a Part still under
- * another name, as after ops rename one; none by our name; or not read yet.
- */
-export type FsmLink = "linked" | "renamed" | "missing" | "unchecked";
-
-export function fsmLinkOf(consumable: Consumable): FsmLink {
-  if (consumable.fsmItemId !== null) return consumable.fsmName === consumable.name ? "linked" : "renamed";
-  return consumable.fsmCheckedAt === null ? "unchecked" : "missing";
-}
 
 /** A new consumable's code, from its name: "Tape strips" is tape_strips, a second tape_strips_2. */
 function codeFor(name: string, taken: ReadonlySet<string>): string {
@@ -170,8 +147,7 @@ export interface ConsumableChange {
 
 /**
  * Renames it, or changes its unit, its cost or its levels, with the audit
- * entry naming each before and after. A rename reaches FSM's Part with the
- * hourly check, once the push is on; until then the check says the two differ.
+ * entry naming each before and after.
  */
 export async function changeConsumable(
   db: D1Database,
@@ -296,8 +272,8 @@ export async function servicesForUse(db: D1Database): Promise<UsageService[]> {
 }
 
 /**
- * The service a job was sold as: its visit's own (appointments.tier), from the hold that booked it or its FSM item;
- * its kind's standard one where the mirror knows no other (docs/decisions/0085-services-ops-can-edit.md).
+ * The service a job was sold as: its visit's own (appointments.tier), from the hold that booked it; its kind's
+ * standard one where the visit names no other (docs/decisions/0085-services-ops-can-edit.md).
  */
 export async function serviceOfJob(
   db: D1Database,

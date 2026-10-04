@@ -1,11 +1,10 @@
 // Settings, Consumables (docs/decisions/0087-consumables-and-stock.md): what a
-// technician may record using on a job, what one costs us, the levels a kit and
-// the central store are low at, and where each stands in FSM's catalogue; and
-// beneath, what each service is expected to use, which the technician's
-// steppers start at.
+// technician may record using on a job, what one costs us, and the levels a kit
+// and the central store are low at; and beneath, what each service is expected
+// to use, which the technician's steppers start at.
 //
-// The owner ruled on 27 September 2026 that the list is ops', that it reaches
-// FSM's catalogue as parts, and that a job's use is ours alone: no client's
+// The owner ruled on 27 September 2026 that the list is ops', and that a job's
+// use is ours alone: no client's
 // invoice carries a consumable, so what one costs is only ever read here. Each
 // change shows its old figure beside the new before it is sent (ADR 0071).
 
@@ -42,19 +41,6 @@ function useMayDo(): MayDo {
   };
 }
 
-function fsmWords(consumable: Consumable): string {
-  switch (consumable.fsm.state) {
-    case "linked":
-      return copy.fsm.linked;
-    case "renamed":
-      return copy.fsm.renamed(consumable.fsm.name ?? "");
-    case "missing":
-      return copy.fsm.missing;
-    case "unchecked":
-      return copy.fsm.unchecked;
-  }
-}
-
 function stateWords(consumable: Consumable): string {
   if (consumable.retired_from === null) return copy.states.offered;
   const from = longDate(consumable.retired_from);
@@ -71,7 +57,6 @@ function Row({ consumable, may, onDo }: { consumable: Consumable; may: MayDo; on
       </th>
       <td className={styles.figure}>{rupees(consumable.unit_cost)}</td>
       <td>{copy.levels(consumable.reorder_kit, consumable.reorder_central)}</td>
-      <td className={consumable.fsm.state === "linked" ? undefined : own.quiet}>{fsmWords(consumable)}</td>
       <td className={own.actions}>
         <span className={consumable.offered ? undefined : own.quiet}>{stateWords(consumable)}</span>
         {may.change && (
@@ -186,7 +171,6 @@ export function Consumables() {
           </h2>
         </div>
         <p className={styles.note}>{copy.note}</p>
-        <p className={styles.note}>{current.fsm_push ? copy.fsmNote.on : copy.fsmNote.off}</p>
         {current.consumables.length === 0 ? (
           <p className={styles.note}>{copy.none}</p>
         ) : (

@@ -21,8 +21,8 @@ export interface EligiblePerson {
 
 /**
  * "Open to any person with a booked consultation or any later appointment."
- * Until the FSM mirror arrives (P2-M2), a booked consultation is a Phase 1
- * booking with a proposed visit date (ADR 0025, item 16).
+ * A booked consultation is a visit, or a Phase 1 booking with a proposed visit
+ * date (ADR 0025, item 16).
  */
 export async function findEligiblePerson(db: D1Database, mobileE164: string): Promise<EligiblePerson | null> {
   const row = await db

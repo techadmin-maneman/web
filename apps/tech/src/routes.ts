@@ -49,7 +49,7 @@ export const EVENT_ID_HEADER = "X-Client-Event-Id";
 /** The job's start as the phone held it: a job ops moved to another time answers `409 superseded`, field `time`. */
 export const JOB_STARTS_AT_HEADER = "X-Job-Starts-At";
 
-/** FSM changed the job underneath the phone. The job stops and the technician is told what changed. */
+/** The job changed underneath the phone. The job stops and the technician is told what changed. */
 export const SUPERSEDED = "superseded";
 
 /** A step reached us before the one ahead of it. The queue is ordered, so this is a fault worth showing. */

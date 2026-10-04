@@ -6,7 +6,7 @@
 // is a queue the database already keeps: a consultation asked for, a held grant,
 // an undecided no-show, a number change waiting for ops, an erasure asked for, a
 // grievance not yet answered, a piece past its replacement date, an invoice
-// still a draft, an erasure FSM would not finish. A task is those rows read at
+// still a draft. A task is those rows read at
 // the moment ops look, so it cannot go stale, be closed twice or be left open
 // by mistake. Closing a task means doing the thing: the row leaves the queue on
 // its own.
@@ -16,12 +16,11 @@
 // owner ruled; queues the board does not draw do have one. What is built and
 // what is not is open point 61 of docs/open-points.md.
 //
-// The last two groups are ours, not the prompt's (docs/decisions/0067-alerts-and-silent-failures.md):
+// A draft invoice is ours, not the prompt's (docs/decisions/0067-alerts-and-silent-failures.md):
 // a finished visit whose invoice is still a draft in Books, which the client
 // cannot open until somebody sends it, including one held back because it does
 // not total what the visit was sold for, or a credit paid for the visit
-// (docs/decisions/0070-vendor-correctness.md); and an erased client whose FSM contact
-// the sweeper could not anonymise, which somebody must do by hand.
+// (docs/decisions/0070-vendor-correctness.md).
 //
 // So is the first (docs/decisions/0069-dispatch-under-concurrency.md): a visit
 // ops moved to another day or window whose client has not heard of it, having
@@ -46,10 +45,6 @@
 // So is a consultation and fit in one visit whose client was fitted and has not paid the link closing it sent
 // them, or that could not be sent (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): the owner ruled
 // that it is paid for at the visit, so one unpaid after it is owed, and ops follow it up.
-//
-// So is a booking FSM refused five times running (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): the
-// owner ruled that it is held, not refunded, and waits for ops to book it in FSM or refund it. It waits from the
-// fifth refusal, however the hourly tries go, and falls due by its visit's day at the latest.
 //
 // A visit left partly done is the prompt's own (BIZ-21): "Partial reasons. …
 // ops need the full set because these drive the task queue." It waits with the
@@ -83,7 +78,6 @@ export const RULES = [
 /** The queues a task is read from, in the order the console lists them. */
 export const TASK_GROUPS = [
   "untold_move",
-  "held_booking",
   "leave_conflict",
   "address_to_confirm",
   "consultation_request",
@@ -98,7 +92,6 @@ export const TASK_GROUPS = [
   "grievance",
   "draft_invoice",
   "payment_owed",
-  "erasure_unfinished",
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
 
@@ -114,8 +107,6 @@ export type Slas = Readonly<Record<TaskGroup, number>>;
 export const TASK_SLA_HOURS: Slas = {
   // A client who does not know his visit moved will not be home for it: a call the same day.
   untold_move: 4,
-  // A client has paid for a visit FSM does not have: the day's hourly tries, then ops.
-  held_booking: 24,
   // These two are never later than the visit itself (src/domain/tasks.ts).
   leave_conflict: 48,
   address_to_confirm: 48,
@@ -133,7 +124,6 @@ export const TASK_SLA_HOURS: Slas = {
   grievance: 30 * 24,
   draft_invoice: 48,
   payment_owed: 48,
-  erasure_unfinished: 48,
 };
 
 /**

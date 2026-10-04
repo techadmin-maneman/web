@@ -21,7 +21,6 @@ import {
   type NextVisitDays,
 } from "../policy/next-visit.ts";
 import { dueAt, type Slas, type TaskGroup } from "../policy/tasks.ts";
-import { MAX_SYNC_ATTEMPTS } from "../queues/crm-sync.ts";
 
 export interface Task {
   readonly id: string;
@@ -32,7 +31,7 @@ export interface Task {
    * The one fact the group turns on: the start a visit moved to, the day and
    * window asked for (and the first fit asked for with them, or the one visit),
    * the piece's label, the fraud rule met, the technician who attended, the
-   * invoice in Books, the contact in FSM, the last visit and the day its next
+   * invoice in Books, the last visit and the day its next
    * service fell due, the consultation and the window a first fit was asked
    * for in, a payment link's state, amount and product.
    */
@@ -88,18 +87,17 @@ const FIRST_FIT_EPISODE = "s.consulted_start";
  * Every queue, in three statements sent together. D1 takes at most five arms in one
  * compound SELECT, so the queues are split between statements; a batch is still
  * one round trip. A person who has been erased is left out everywhere: their
- * record is gone, and a task about them could not be done. Two things still
- * wait without them: a no-show, which still needs a ruling, and an erasure FSM
- * would not finish, which names FSM's contact and not the person.
+ * record is gone, and a task about them could not be done. A no-show still
+ * waits without them, since it still needs a ruling.
  *
  * The first statement is the one that needs today's date, as `?1`: a move is
- * still to be told of while its visit is today or later. The second
- * needs the attempts after which the sweeper stops asking FSM, as `?1`. The third
- * holds the visits whose booking or closing left ops something to do, and needs
- * the moment ops look, as `?1`, and what the next visit's days make of it (`?3`
- * to `?7`, below). The fourth holds the bookings FSM refused and the one
- * visits' payments still owed, and needs nothing but READ_CAP. Each takes READ_CAP as `?2`, which bounds what one look at the
- * board can cost. The first three hold five arms each; the fourth has room.
+ * still to be told of while its visit is today or later. The third holds the
+ * visits whose booking or closing left ops something to do, and needs the
+ * moment ops look, as `?1`, and what the next visit's days make of it (`?3` to
+ * `?7`, below). The second, and the fourth, which holds the one visits'
+ * payments still owed, need nothing but READ_CAP. Each takes READ_CAP as `?2`,
+ * which bounds what one look at the board can cost. The first and the third
+ * hold five arms each; the second and the fourth have room.
  *
  * A consultation asked for is read only while the client has no consultation
  * booked or done, `booked`, which the database keeps as their consultations are
@@ -169,11 +167,6 @@ const OUTSTANDING = [
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL
      AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL
-  UNION ALL
-  SELECT 'erasure_unfinished', p.id, NULL, NULL, p.fsm_contact_id, p.erased_at, NULL, ''
-    FROM people p
-   WHERE p.erased_at IS NOT NULL AND p.fsm_contact_id IS NOT NULL AND p.fsm_erased_at IS NULL
-     AND p.fsm_erasure_attempts >= ?1
 `),
 
   // A job still booked on a day its technician is away: leave moves nothing, so ops move it (OPS-07). It waits from
@@ -261,24 +254,14 @@ const OUTSTANDING = [
        SELECT 1 FROM slot_holds h WHERE h.person_id = r.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
 `),
 
-  // A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). It
-  // names the visit's kind, day and window, waits from the fifth refusal, and falls due by the start of its visit's day
-  // in India. It goes once a try books it, ops link the visit they booked in FSM, or ops refund it.
-  //
   // A one visit's payment link still unpaid (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): whether
   // Razorpay sent it, what it asks for in paise, and the product, by name. It waits from the close that asked for it,
   // and goes once Razorpay's webhook says it is paid. The index on the links still unpaid reads only those.
   withOwners(`
-  SELECT 'held_booking' AS "group", h.id AS id, h.person_id AS person_id, pe.name AS person_name,
-         h.type || ' ' || h.date || ' ' || h.window_label AS detail, h.fsm_held_at AS since,
-         strftime('%Y-%m-%dT%H:%M:%fZ', h.date, '-330 minutes') AS due_by, '' AS episode
-    FROM slot_holds h JOIN people pe ON pe.id = h.person_id
-   WHERE h.state = 'held' AND h.confirmed_at IS NOT NULL AND h.fsm_held_at IS NOT NULL AND pe.erased_at IS NULL
-  UNION ALL
-  SELECT 'payment_owed', l.id, a.person_id, pe.name,
+  SELECT 'payment_owed' AS "group", l.id AS id, a.person_id AS person_id, pe.name AS person_name,
          CASE WHEN l.sent_at IS NULL THEN 'unsent' ELSE 'sent' END || ' ' || l.amount || ' '
-           || COALESCE(s.name, l.tier),
-         l.created_at, NULL, ''
+           || COALESCE(s.name, l.tier) AS detail,
+         l.created_at AS since, NULL AS due_by, '' AS episode
     FROM payment_links l JOIN appointments a ON a.id = l.appointment_id JOIN people pe ON pe.id = a.person_id
     LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = l.tier
    WHERE l.paid_at IS NULL AND pe.erased_at IS NULL
@@ -346,7 +329,8 @@ export async function outstandingTasks(
   const toBookBefore = indiaInstant(addDays(firstFitToBookIfConsultedBy(today, days), 1), "00:00").toISOString();
   const answers = await db.batch<Row>([
     db.prepare(OUTSTANDING[0]).bind(today, READ_CAP),
-    db.prepare(OUTSTANDING[1]).bind(MAX_SYNC_ATTEMPTS, READ_CAP),
+    // Its one number is READ_CAP, which every statement takes as ?2.
+    db.prepare(OUTSTANDING[1]).bind(null, READ_CAP),
     db
       .prepare(OUTSTANDING[2])
       .bind(

@@ -5,7 +5,7 @@
 // the lead time ops set and in the window the site's request asked for; once a first fit, a service or a replacement
 // is done, the next service on its due day and in the last visit's window, or the replacement on the piece's own due
 // day where the piece in wear falls due first. A visit whose due day has passed is offered for tomorrow, and the app
-// says the day it was due. Nothing is offered while a visit is booked, or paid for and on its way to FSM.
+// says the day it was due. Nothing is offered while a visit is booked, or paid for and still to be booked.
 //
 // The reminder: one WhatsApp a last visit, from `reminder_before_due` days before its next service falls due until
 // the day it does, while nothing is booked. The cron's pass writes it from the evening's reminder hour; the
@@ -38,7 +38,7 @@ import { NO_VISITS_CONSENT, remindersFrom, type Composed } from "./visit-message
 /** A visit a next service follows: a first fit, a service or a replacement, done. Migration 0048 indexes these. */
 const DONE = "a.status = 'completed' AND a.type IN ('first_fit', 'service', 'replacement') AND a.deleted_at IS NULL";
 
-/** A visit of the client's still to happen, or one paid for and on its way to FSM (ADR 0068). */
+/** A visit of the client's still to happen, or one paid for and still to be booked (ADR 0068). */
 const BOOKED = `(EXISTS (SELECT 1 FROM appointments b WHERE b.person_id = ?1 AND b.deleted_at IS NULL
       AND b.status IN ('scheduled', 'dispatched', 'in_progress'))
     OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = ?1 AND h.state = 'held' AND h.confirmed_at IS NOT NULL))`;
@@ -68,7 +68,7 @@ export interface NextOffer {
 
 /** What a client's next visit turns on, read in one statement. */
 export interface NextVisitFacts {
-  /** A visit is booked, or paid for and on its way to FSM. */
+  /** A visit is booked, or paid for and still to be booked. */
   readonly booked: boolean;
   readonly offer: NextOffer | null;
 }
@@ -178,7 +178,7 @@ export async function bookableDays(
 
 /**
  * Something booked since the done visit `a`: a later visit that is not cancelled, any visit still to happen, or one
- * paid for and on its way to FSM.
+ * paid for and still to be booked.
  */
 const BOOKED_SINCE = `(EXISTS (SELECT 1 FROM appointments later WHERE later.person_id = a.person_id
       AND later.deleted_at IS NULL AND (later.status IN ('scheduled', 'dispatched', 'in_progress')

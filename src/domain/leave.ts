@@ -1,12 +1,9 @@
 // A technician's leave, recorded by ops in the console (ADR 0062).
 //
-// FSM cannot hold this for us: its availability calls answer free time, not why
-// time is not free, and its Time_Off module takes a type whose list lives in
-// FSM's Setup screens, which the API does not reach. So leave is ours, and it
-// is read by the same clash check that reads slot_claims
+// Leave is read by the same clash check that reads slot_claims
 // (docs/decisions/0034-clash-check.md), which is what makes a job on a day off
 // refused rather than merely discouraged: booking never offers the day, and
-// dispatch answers "on_leave" before anything is written to FSM.
+// dispatch answers "on_leave" before anything is written.
 //
 // Leave recorded over jobs already booked moves none of them: ops are told
 // which, the board marks them, and each waits on the Tasks board until it is

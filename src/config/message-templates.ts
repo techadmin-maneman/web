@@ -99,15 +99,6 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, you have {{2}} free to book by {{3}}. A visit booked by then is covered, even one on a later date. Book in the Mane Man app.",
   visit_cancelled_refund_v1:
     "Hello {{1}}, your {{2}} on {{3}} is cancelled. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
-  // A booking FSM would not take, which ops refunded or let go, with a visit's params.
-  booking_refunded_v1:
-    "Hello {{1}}, we could not book your {{2}} on {{3}}. {{6}} is on its way back to your {{8}}, in 5 to 7 working days. You can book another time in the Mane Man app.",
-  booking_not_made_v1:
-    "Hello {{1}}, we could not book your {{2}} on {{3}}. You can book another time in the Mane Man app.",
-  // The same, for a booking that moved a visit, which stays as it was: {{3}} is the day it was to move to.
-  move_refunded_v1:
-    "Hello {{1}}, we could not move your {{2}} to {{3}}, so it stays as it was booked. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
-  move_not_made_v1: "Hello {{1}}, we could not move your {{2}} to {{3}}, so it stays as it was booked.",
   // To a number our site's booking form was just sent for, since the page tells every number the same thing
   // (src/domain/site-notices.ts). PLACEHOLDER COPY, pending the owner's wording: {{1}} the first name, and for a
   // consultation still to happen {{2}} the visit, {{3}} its day and {{4}} its window.
@@ -206,7 +197,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   arrival_notice: "automatic", // the technician's own action, not the client's
   no_show_decided: "automatic", // ops ruled on it
   no_show_dispute_ruled: "automatic", // ops ruled on the client's dispute
-  booking_refunded: "automatic", // ops refunded a booking that could not be made
+  booking_refunded: "automatic", // no longer written: a booking ops refunded once it could not be made
   next_service_reminder: "automatic", // scheduled
   friend_fitted: "automatic", // to the referrer, for the friend's action
   friend_credited: "automatic", // to the friend, for the job ops closed

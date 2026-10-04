@@ -28,14 +28,12 @@ import { listCities } from "../domain/cities.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
 import { afterRuling } from "../domain/after-a-ruling.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
-import { piecesOf, syncPieces } from "../domain/pieces.ts";
+import { piecesOf } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { permits, withinRouteReach } from "../http/staff-access.ts";
 import { WAIVING_A_NO_SHOW } from "../policy/console-routes.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { roster, type RosterTechnician } from "../domain/technician-roster.ts";
-import { fieldRecord } from "../config/field-record.ts";
-import { isOursToChange } from "../policy/technician-roster.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -134,11 +132,6 @@ const LeaveSchema = z
 const MOBILE = z
   .union([z.string(), z.null()])
   .openapi({ description: "The number he signs in with, +91 and ten digits; null where none is recorded." });
-const EDITABLE = z.boolean().openapi({
-  description:
-    "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; " +
-    "one ops added is theirs.",
-});
 const CITY = z
   .union([z.string(), z.null()])
   .openapi({ description: "The city he works in, which staff access by place reads; null for none." });
@@ -154,7 +147,6 @@ const TechniciansSchema = z
           zone: z.union([z.string(), z.null()]),
           city: CITY,
           mobile: MOBILE,
-          editable: EDITABLE,
           devices: z.array(
             z
               .object({
@@ -180,7 +172,6 @@ const TechniciansSchema = z
             zone: z.union([z.string(), z.null()]),
             city: CITY,
             mobile: MOBILE,
-            editable: EDITABLE,
           })
           .strict(),
       )
@@ -355,25 +346,11 @@ export function registerOpsField(app: App): void {
 
   app.openapi(piecesRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const client = await c.env.DB.prepare("SELECT id, fsm_contact_id FROM people WHERE id = ?1 AND erased_at IS NULL")
+    const client = await c.env.DB.prepare("SELECT id FROM people WHERE id = ?1 AND erased_at IS NULL")
       .bind(id)
-      .first<{ id: string; fsm_contact_id: string | null }>();
+      .first<{ id: string }>();
     if (client === null || !(await withinRouteReach(c, "client", id))) {
       return c.json(errorBody("not_found", c.var.requestId), 404);
-    }
-
-    // FSM is the record, so the copy is read afresh before it is shown.
-    if (client.fsm_contact_id !== null && c.var.config.providers.FSM_PROVIDER !== "none") {
-      await syncPieces(
-        c.env.DB,
-        c.var.deps.fsm,
-        { personId: id, fsmContactId: client.fsm_contact_id },
-        c.var.deps.now(),
-        (await opsInputs(c)).pieceCycleDays,
-      ).catch((error: unknown) => {
-        c.var.log.warn("pieces_sync_failed", { person_id: id, error });
-        return 0;
-      });
     }
     const pieces = await piecesOf(c.env.DB, id);
     return c.json(
@@ -400,14 +377,12 @@ export function registerOpsField(app: App): void {
       leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
       listCities(c.env.DB),
     ]);
-    const record = fieldRecord(c.var.config.providers);
     const summaryOf = (technician: RosterTechnician) => ({
       id: technician.id,
       name: technician.name,
       zone: technician.zone,
       city: technician.city,
       mobile: technician.mobile,
-      editable: isOursToChange(record, technician.handWritten),
     });
     const technicians = everyone
       .filter((technician) => technician.active)

@@ -2,8 +2,8 @@
 // each is and how long it has left. Nothing is decided here. A task is a row in a queue the
 // database already keeps — a consultation asked for, a held grant, an
 // undecided no-show, a number change, an erasure, a grievance, a piece past its
-// replacement date, an invoice still a draft, an erasure FSM would not finish,
-// a moved visit whose client has not heard of it, a booking FSM refused, a visit left partly done, a
+// replacement date, an invoice still a draft, a moved visit whose client has not
+// heard of it, a visit left partly done, a
 // visit to come with no address, a job on its technician's day off, a client
 // past their next service with nothing booked, a first fit asked for and not
 // booked, a one visit's payment still owed — so it leaves the list when that row
@@ -49,8 +49,6 @@ const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
 /** The tab of the client's page each group is about; the page opens on Pieces otherwise. */
 const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   untold_move: "visits",
-  // Booked in FSM, linked, or refunded from the Visits tab (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-  held_booking: "visits",
   leave_conflict: "visits",
   address_to_confirm: "visits",
   consultation_request: "visits",
@@ -89,12 +87,6 @@ function subOf(group: Group, task: Task, now: Date): string {
     return task.detail === null
       ? tasks.unknown
       : copy.untold_move(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
-  }
-  if (group === "held_booking") {
-    // The visit's kind, its day and its window, as the booking held them.
-    const [type = "", day = "", when = ""] = task.detail?.split(" ") ?? [];
-    if (day === "") return tasks.unknown;
-    return copy.held_booking(dispatch.typeNames[type] ?? type, shortDate(day), dispatch.windows[when] ?? when);
   }
   if (group === "leave_conflict") {
     // The job's start, then the technician who is away that day.
@@ -147,19 +139,13 @@ function subOf(group: Group, task: Task, now: Date): string {
     if (amount === "") return tasks.unknown;
     return copy.payment_owed(product.join(" "), rupees(Number(amount)), sent === "sent");
   }
-  if (group === "erasure_unfinished") return copy.erasure_unfinished(task.detail ?? tasks.unknown);
   if (group === "grievance") return copy.grievance;
   return group === "number_change" ? copy.number_change : copy.erasure_request;
 }
 
-/**
- * The first line of a task with no client to name: an erased client has no
- * name left, so the day they were erased heads an erasure FSM would not
- * finish, and the visit heads a no-show.
- */
-function unnamedSubject(group: Group, task: Task): string {
-  const day = shortDate(indiaDate(task.since));
-  return group === "erasure_unfinished" ? tasks.erased(day) : tasks.visit(day);
+/** The first line of a task with no client to name: an erased client has no name left, so the visit heads a no-show. */
+function unnamedSubject(task: Task): string {
+  return tasks.visit(shortDate(indiaDate(task.since)));
 }
 
 /** "priya.sharma@maneman.in" reads "Priya", as the board names an owner in ops by their first name. */
@@ -195,7 +181,7 @@ function Row({ group, task, now, acting }: { group: Group; task: Task; now: Date
   const days = daysUntil(task.due, now);
   const overdue = days < 0;
   const sla = slaText(days);
-  const subject = task.person?.name ?? unnamedSubject(group, task);
+  const subject = task.person?.name ?? unnamedSubject(task);
   const where = decidedAt(group, task);
   const action = tasks.decide[group];
   const { owner } = acting;
