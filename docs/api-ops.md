@@ -2209,6 +2209,66 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 }
 ```
 
+### GET /api/no-shows/{id}/charge
+
+What charging an undecided no-show would keep of the visit's payment, and refund
+
+**200**: What a charge would do
+
+```json
+{
+  "$ref": "#/components/schemas/NoShowChargePreview"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such case in the caller's cities, or it was ruled on already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/no-shows/decided
+
+The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling
+
+**200**: The day's rulings
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "cases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/NoShowDecided"
+      }
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/no-shows/disputes
 
 Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence
@@ -2389,6 +2449,78 @@ Request body:
 ```
 
 **404**: not_found: no such task on the board now in the caller's cities; a follow-up may be booked, or it is closed already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/alerts
+
+The open alerts ops have been told of, the longest open first
+
+**200**: Of the caller's own departments once the Staff list is enforced
+
+```json
+{
+  "$ref": "#/components/schemas/OpenAlerts"
+}
+```
+
+**403**: access_required, or not_permitted: no View in any department
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/alerts/{id}/resolve
+
+Mark an alert done: what it was about is put right
+
+**204**: Closed, under the member of staff who closed it
+
+**403**: not_permitted: it asks Act in the department the alert's kind belongs to, and Manage for a CRM erasure
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such open alert; it may be closed already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/alerts/{id}/send-again
+
+Send again the message, lead or CRM erasure an alert gave up on, and close the alert
+
+**204**: Sent again, and the alert closed: a new alert follows if it fails again
+
+**400**: invalid_request: this kind of alert has nothing to send again
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: not_permitted: it asks Act in the department the alert's kind belongs to
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such open alert; it may be closed already
 
 ```json
 {
@@ -5731,6 +5863,18 @@ Request body:
     "disputable": {
       "type": "boolean",
       "description": "Whether the client may dispute the charge now: one that took something, not disputed yet."
+    },
+    "dispute_closed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
     }
   },
   "required": [
@@ -5738,7 +5882,8 @@ Request body:
     "waited_minutes",
     "charge",
     "dispute",
-    "disputable"
+    "disputable",
+    "dispute_closed_at"
   ],
   "additionalProperties": false
 }
@@ -10745,6 +10890,131 @@ Request body:
 }
 ```
 
+### NoShowChargePreview
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "paid": {
+      "type": "integer",
+      "description": "In paise: what was paid for the visit and not refunded."
+    },
+    "kept": {
+      "type": "integer",
+      "description": "In paise: what charging keeps of it. The rest is refunded."
+    },
+    "credit_kept": {
+      "type": "boolean",
+      "description": "Whether charging keeps the credit the visit was paid with."
+    }
+  },
+  "required": [
+    "paid",
+    "kept",
+    "credit_kept"
+  ],
+  "additionalProperties": false,
+  "description": "What charging the case would do, worked out as charging does."
+}
+```
+
+### NoShowDecided
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Whose visit it was; null once they have been erased."
+    },
+    "visit_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "charged",
+        "waived"
+      ]
+    },
+    "decided_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "charge": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kept": {
+              "type": "integer",
+              "description": "In paise: what the charge kept of the visit's payment."
+            },
+            "credit_spent": {
+              "type": "boolean",
+              "description": "Whether the charge spent the credit the visit used."
+            }
+          },
+          "required": [
+            "kept",
+            "credit_spent"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What a charge took; null for a waiver, and for a charge ruled before it was recorded."
+    }
+  },
+  "required": [
+    "id",
+    "person",
+    "visit_date",
+    "decision",
+    "decided_at",
+    "charge"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### NoShowDispute
 
 ```json
@@ -10806,7 +11076,7 @@ Request body:
     "due": {
       "type": "string",
       "format": "date-time",
-      "description": "When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at."
+      "description": "When ops should have ruled: the Tasks board's allowance for a disputed charge, from raised_at."
     },
     "kept": {
       "type": "integer",
@@ -10966,6 +11236,7 @@ Request body:
               "partial_visit",
               "referral_review",
               "no_show_decision",
+              "no_show_dispute",
               "number_change",
               "erasure_request",
               "grievance",
@@ -11033,6 +11304,10 @@ Request body:
             },
             "name": {
               "type": "string"
+            },
+            "mobile": {
+              "type": "string",
+              "description": "On a move the client has not heard of, their mobile, for the call. Left out elsewhere."
             }
           },
           "required": [
@@ -11046,6 +11321,25 @@ Request body:
         }
       ],
       "description": "Null for an erased client, whose record is gone."
+    },
+    "visit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "starts_at"
+      ],
+      "additionalProperties": false,
+      "description": "The visit to come the dispatch board settles the task on, so the task can open it there: a move the client has not heard of, and a job on its technician's day off. Left out for every other group."
     },
     "detail": {
       "anyOf": [
@@ -11163,6 +11457,93 @@ Request body:
   },
   "required": [
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpenAlerts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "integer",
+      "description": "How many are open, all of them."
+    },
+    "alerts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/OpenAlert"
+      },
+      "description": "The longest open first, at most 50."
+    }
+  },
+  "required": [
+    "count",
+    "alerts"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpenAlert
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kind": {
+      "type": "string",
+      "description": "What went wrong: the alert's key up to its first colon, \"crm_lead\"."
+    },
+    "message": {
+      "type": "string",
+      "description": "What happened and what to do, with IDs only, as the chat was told."
+    },
+    "link": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where in the console to act on it, as a path: \"/clients/<personId>\"."
+    },
+    "count": {
+      "type": "integer",
+      "description": "How many times it has happened."
+    },
+    "told_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When ops were first told."
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "send_again": {
+      "type": "boolean",
+      "description": "Its work can be sent again from here: a message, a lead to the CRM, or an erasure there."
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "message",
+    "link",
+    "count",
+    "told_at",
+    "last_seen_at",
+    "send_again"
   ],
   "additionalProperties": false
 }

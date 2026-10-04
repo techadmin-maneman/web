@@ -23,6 +23,7 @@ import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 
 const CLIENT = "22000000-0000-4000-8000-000000000001";
 const TECHNICIAN = "88000000-0000-4000-8000-000000000001";
+const VISIT = "99000000-0000-4000-8000-000000000001";
 
 const namesIn = (department: string) =>
   SECTIONS.filter((section) => section.department === department).map((section) => SECTION_NAMES[section.page]);
@@ -99,13 +100,28 @@ describe("the ops console's routes", () => {
   });
 
   it("links to the dispatch board on a week and a search, and reads them back", () => {
+    const nothing = { from: null, city: null, find: "", visit: null };
     expect(dispatchPath({})).toBe("/dispatch");
+    expect(dispatchPath(nothing)).toBe("/dispatch");
     expect(dispatchPath({ find: "Imran Qureshi" })).toBe("/dispatch?find=Imran+Qureshi");
     const both = dispatchPath({ from: "2027-10-04", find: "Imran Qureshi" });
     expect(both).toBe("/dispatch?from=2027-10-04&find=Imran+Qureshi");
-    expect(dispatchAsked(both.slice(both.indexOf("?")))).toEqual({ from: "2027-10-04", find: "Imran Qureshi" });
-    expect(dispatchAsked("")).toEqual({ from: null, find: "" });
-    expect(dispatchAsked("?from=next-week")).toEqual({ from: null, find: "" });
+    expect(dispatchAsked(both.slice(both.indexOf("?")))).toEqual({
+      ...nothing,
+      from: "2027-10-04",
+      find: "Imran Qureshi",
+    });
+    expect(dispatchAsked("")).toEqual(nothing);
+    expect(dispatchAsked("?from=next-week")).toEqual(nothing);
+  });
+
+  // OIA-03, BK-21: the board kept its week and city out of the address, and no link could open a visit on it.
+  it("links to the dispatch board on a city and a visit as well, and reads every part back", () => {
+    const asked = { from: "2027-10-04", city: "Gurgaon", find: "Rohit", visit: VISIT };
+    const path = dispatchPath(asked);
+    expect(path).toBe(`/dispatch?from=2027-10-04&city=Gurgaon&find=Rohit&visit=${VISIT}`);
+    expect(dispatchAsked(path.slice(path.indexOf("?")))).toEqual(asked);
+    expect(dispatchAsked("?visit=not-a-visit&city=%20")).toEqual({ from: null, city: null, find: "", visit: null });
   });
 
   it("opens the pages that moved at their old addresses, and moves the address to the new one", () => {

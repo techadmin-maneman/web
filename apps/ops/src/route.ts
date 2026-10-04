@@ -153,28 +153,52 @@ export const areasPath = (tab: AreaTab): string => (tab === "waiting" ? "/areas"
 export const technicianPath = (technicianId: string, tab: TechnicianTab = TECHNICIAN_TABS[0]): string =>
   tab === TECHNICIAN_TABS[0] ? `/technicians/${technicianId}` : `/technicians/${technicianId}/${tab}`;
 
-/** What a link to the dispatch board asks it to open on: the week from a day, and a search narrowing its rows. */
-interface DispatchAsked {
+/**
+ * What a link to the dispatch board asks it to open on: the week from a day, a city, a search narrowing its rows,
+ * and a visit whose drawer opens. Null, or an empty search, for this week, every city, every row and no drawer.
+ */
+export interface DispatchAsked {
   readonly from: string | null;
+  readonly city: string | null;
   readonly find: string;
+  readonly visit: string | null;
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-/** The dispatch board opened on the week from `from`, showing the rows that answer to `find`. */
-export function dispatchPath(asked: { readonly from?: string; readonly find?: string }): string {
+/** The dispatch board opened as asked; whatever is left out is the board's own first view of it. */
+export function dispatchPath(asked: Partial<DispatchAsked>): string {
   const query = new URLSearchParams();
-  if (asked.from !== undefined) query.set("from", asked.from);
-  if (asked.find !== undefined) query.set("find", asked.find);
+  const parts = [
+    ["from", asked.from],
+    ["city", asked.city],
+    ["find", asked.find],
+    ["visit", asked.visit],
+  ] as const;
+  for (const [name, value] of parts) {
+    if (value !== undefined && value !== null && value !== "") query.set(name, value);
+  }
   const search = query.toString();
   return search === "" ? "/dispatch" : `/dispatch?${search}`;
 }
 
-/** What the address's query asks the dispatch board for: "?from=2026-10-12&find=Imran". */
+/** The query's value, where it is there and has the form asked for. */
+function valueOf(query: URLSearchParams, name: string, form: RegExp): string | null {
+  const value = query.get(name);
+  return value !== null && form.test(value) ? value : null;
+}
+
+/** What the address's query asks the dispatch board for: "?from=2026-10-12&city=Gurgaon&find=Imran&visit=…". */
 export function dispatchAsked(search: string): DispatchAsked {
   const query = new URLSearchParams(search);
-  const from = query.get("from");
-  return { from: from !== null && ISO_DATE.test(from) ? from : null, find: query.get("find") ?? "" };
+  const city = query.get("city")?.trim() ?? "";
+  return {
+    from: valueOf(query, "from", ISO_DATE),
+    city: city === "" ? null : city,
+    find: query.get("find") ?? "",
+    visit: valueOf(query, "visit", UUID),
+  };
 }
 
 /** The section a page belongs to. */

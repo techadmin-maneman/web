@@ -30,6 +30,12 @@ describe("tasks", () => {
     expect(TASK_GROUPS).toContain("no_show_decision");
   });
 
+  // A disputed charge once waited on No-shows alone, with no row, count or link on the Tasks board (OIA-07).
+  it("queues a client's dispute of a no-show's charge, with two days to rule on it", () => {
+    expect(TASK_GROUPS).toContain("no_show_dispute");
+    expect(TASK_SLA_HOURS.no_show_dispute).toBe(48);
+  });
+
   it(RULES[2], () => {
     // One rule, two queues: a number change ops confirm, and an erasure they decide.
     expect(TASK_GROUPS).toContain("number_change");
