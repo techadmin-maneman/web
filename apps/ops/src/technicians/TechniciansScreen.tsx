@@ -12,7 +12,7 @@
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { fullDate, indiaDate, listDate } from "@maneman/web-kit/dates";
+import { addDays, fullDate, indiaDate, listDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import {
   api,
@@ -31,8 +31,7 @@ import { AddTechnician } from "./TechnicianForms.tsx";
 import styles from "./technicians.module.css";
 
 /** The route's period ends the day after the last one counted; the note names that last day. */
-const lastDay = (exclusiveEnd: string) =>
-  new Date(Date.parse(`${exclusiveEnd}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+const lastDay = (exclusiveEnd: string) => addDays(exclusiveEnd, -1);
 
 /**
  * How long the technician's visits took, on average. A technician the phone

@@ -11,7 +11,8 @@
 
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
-import { listDate } from "@maneman/web-kit/dates";
+import { listDate, yearInIndia } from "@maneman/web-kit/dates";
+import { apiNow } from "../lib/clock.ts";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type CreditLine, type Entry, type Me, type OwedPayment } from "../api.ts";
 import { empty, payments } from "../content.ts";
@@ -145,7 +146,7 @@ function emptyLines(me: Me): readonly [string, string] {
 export function PaymentsScreen() {
   const { me } = useSession();
   const [loaded, retry] = useLoad(api.payments);
-  const thisYear = new Date().getFullYear();
+  const thisYear = yearInIndia(apiNow());
   if (loaded.state === "loading") {
     return (
       <Shell header={{ kind: "tab", title: payments.title }} tab="/payments">

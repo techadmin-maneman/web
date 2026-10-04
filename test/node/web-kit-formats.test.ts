@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  addDays,
+  dayMonth,
   fullDate,
   indiaClock,
   indiaDate,
@@ -7,9 +9,13 @@ import {
   listDate,
   listMonth,
   longDate,
+  minutesBetween,
+  monthInIndia,
   shortDate,
   shortMonth,
+  todayInIndia,
   weekdayDate,
+  yearInIndia,
 } from "../../packages/web-kit/dates.ts";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -60,6 +66,31 @@ describe("web-kit dates", () => {
   ])("reads the instant %s as India's date %s and clock %s", (instant, date, clock) => {
     expect(indiaDate(instant)).toBe(date);
     expect(indiaClock(instant)).toBe(clock);
+  });
+
+  it("moves a calendar date by whole days, across a month's end and a year's", () => {
+    expect(addDays("2025-09-29", 7)).toBe("2025-10-06");
+    expect(addDays("2025-12-29", 7)).toBe("2026-01-05");
+    expect(addDays("2025-10-06", -7)).toBe("2025-09-29");
+    expect(addDays("2026-10-31", 1)).toBe("2026-11-01");
+  });
+
+  // Half past midnight on New Year's Day in India is still the old year on a phone set to London.
+  it("reads today, this month and this year in India, whatever zone the phone is set to", () => {
+    const newYear = Date.parse("2026-12-31T19:00:00Z");
+    expect(todayInIndia(newYear)).toBe("2027-01-01");
+    expect(monthInIndia(newYear)).toBe("2027-01");
+    expect(yearInIndia(newYear)).toBe(2027);
+  });
+
+  it("counts whole minutes from one instant to another", () => {
+    expect(minutesBetween("2026-09-22T03:30:00Z", "2026-09-22T05:38:00Z")).toBe(128);
+    expect(minutesBetween("2026-09-22T05:38:00Z", "2026-09-22T03:30:00Z")).toBe(-128);
+  });
+
+  it("writes a day and its month, as the boards date a visit in a list", () => {
+    expect(dayMonth("2026-08-22")).toBe("22 Aug");
+    expect(dayMonth("2026-11-04")).toBe("4 Nov");
   });
 
   it("turns India's date and clock into the instant they are, as a calendar file needs", () => {

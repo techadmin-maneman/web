@@ -12,7 +12,7 @@
 
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaDate, listDate, monthInIndia, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { documentUrl, type Me, type OneVisitPrice } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
@@ -23,7 +23,7 @@ import { apiNow } from "../lib/clock.ts";
 import { bookingName, oneVisitOf, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
-import { monthNow, nextVisitWords, replacementLine } from "./next-visit-words.ts";
+import { nextVisitWords, replacementLine } from "./next-visit-words.ts";
 import {
   Actions,
   changingOf,
@@ -282,7 +282,7 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
 
 /** The next visit, booked on its day and window; beside a service, the replacement once that may be booked. */
 function NextVisitPrompt({ prompt }: { prompt: PromptOf<"next_visit"> }) {
-  const words = nextVisitWords(prompt, monthNow(new Date()));
+  const words = nextVisitWords(prompt, monthInIndia(apiNow()));
   return (
     <div className={styles.prompt}>
       <p className={styles.promptLine}>{words.line}</p>
@@ -313,7 +313,7 @@ function NextVisitPrompt({ prompt }: { prompt: PromptOf<"next_visit"> }) {
 
 /** The month the piece in wear falls due, never a day of it, once that month may be booked. */
 function ReplacementPrompt({ prompt }: { prompt: PromptOf<"replacement_due"> }) {
-  const thisMonth = monthNow(new Date());
+  const thisMonth = monthInIndia(apiNow());
   return (
     <div className={styles.prompt}>
       <p className={styles.promptLine}>{replacementLine(prompt.month, thisMonth)}</p>

@@ -4,12 +4,11 @@
 // GST included: a GST box that opened at nought once made an 18% item GST-free without anyone seeing it.
 
 import { Button } from "@maneman/ui/Button";
-import { longDate } from "@maneman/web-kit/dates";
+import { addDays, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { settings } from "../content.ts";
-import { addDays } from "../dispatch/job.ts";
 import { CODE, codeOf } from "./code.ts";
 import styles from "./settings.module.css";
 

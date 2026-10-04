@@ -26,6 +26,7 @@
 // not while Checkout is open: it waits for Checkout's answer.
 
 import { Sheet } from "@maneman/ui/Sheet";
+import { addDays } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
@@ -46,7 +47,7 @@ import { focusIfLost } from "../lib/arrival.ts";
 import { apiNow } from "../lib/clock.ts";
 import { loadCheckout, pay, type Paid } from "./checkout.ts";
 import { undecidedOf } from "./consents.ts";
-import { dayAfter, firstOpenFrom, hasLaterDays, openWindow, withDays } from "./days.ts";
+import { firstOpenFrom, hasLaterDays, openWindow, withDays } from "./days.ts";
 import {
   AddressStep,
   ConfirmedStep,
@@ -117,10 +118,6 @@ export interface Offered {
 /** How many days before the day offered the strip starts, so a week either side of it is in view. */
 const OFFER_WEEK = 7;
 
-/** India's day `days` before `date`, both YYYY-MM-DD. */
-const daysBefore = (date: string, days: number) =>
-  new Date(Date.parse(`${date}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
-
 /** Asking for the days after those shown: not yet, under way, or failed. */
 type LaterAsk = "idle" | "busy" | "failed";
 
@@ -151,7 +148,7 @@ export function BookingSheet({
   const movingId = moving?.visit_id;
   const offeredDate = offer?.date;
   const offeredWindow = offer?.window;
-  const firstDay = from ?? (offeredDate === undefined ? undefined : daysBefore(offeredDate, OFFER_WEEK));
+  const firstDay = from ?? (offeredDate === undefined ? undefined : addDays(offeredDate, -OFFER_WEEK));
   const dialog = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState<Step>({ kind: "loading" });
   // A new visit with more than one service open to it is picked first; anything else books the one there is.
@@ -265,7 +262,7 @@ export function BookingSheet({
     const lastShown = availability?.days.at(-1)?.date;
     if (wanted === null || lastShown === undefined) return;
     setLaterAsk("busy");
-    const answer = await api.availability(wanted, movingId, dayAfter(lastShown));
+    const answer = await api.availability(wanted, movingId, addDays(lastShown, 1));
     if (!answer.ok) {
       setLaterAsk("failed");
       return;

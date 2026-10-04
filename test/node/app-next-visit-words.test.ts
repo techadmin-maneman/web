@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { Me } from "../../apps/app/src/api.ts";
-import { monthNow, nextVisitWords } from "../../apps/app/src/home/next-visit-words.ts";
+import { nextVisitWords } from "../../apps/app/src/home/next-visit-words.ts";
 
 type NextVisitPrompt = Extract<NonNullable<Me["prompt"]>, { kind: "next_visit" }>;
 
@@ -47,9 +47,5 @@ describe("Home's prompt for the next visit", () => {
       line: "Your replacement is due in October.",
       book: "Book it for then",
     });
-  });
-
-  it("reads the phone's month as YYYY-MM", () => {
-    expect(monthNow(new Date(2026, 8, 30))).toBe("2026-09");
   });
 });

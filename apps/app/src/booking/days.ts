@@ -28,10 +28,6 @@ export function openWindow(day: Day | undefined, window: BookingWindow | null | 
   return day?.windows.find((each) => each.window === window && each.with !== null)?.window ?? null;
 }
 
-/** The day after `date`, both YYYY-MM-DD. */
-export const dayAfter = (date: string): string =>
-  new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
-
 /** Whether days after the last shown may still be booked. */
 export function hasLaterDays(availability: Availability): boolean {
   const lastShown = availability.days.at(-1)?.date;

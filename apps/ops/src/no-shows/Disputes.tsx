@@ -6,7 +6,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
-import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, indiaDate, minutesBetween, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type DisputeRuling, type NoShowDispute } from "../api.ts";
@@ -24,7 +24,6 @@ import styles from "./no-shows.module.css";
 const copy = noShows.dispute;
 
 /** Whole minutes from one instant to another. */
-const minutesBetween = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 60_000);
 
 /** "Vikram Sethi disputes the charge", his name opening his visits. */
 function Title({ person }: { person: NoShowDispute["person"] }) {

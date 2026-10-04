@@ -2,24 +2,15 @@
 // counts board B5 and board B4 show: what is left of the wait, and how long the
 // job took.
 
-import { fullDate, indiaClock, indiaDate } from "@maneman/web-kit/dates";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { addDays, indiaClock, todayInIndia as indiaToday } from "@maneman/web-kit/dates";
 
 /** Today's calendar date in India, YYYY-MM-DD: the day the app asks the backend for. */
-export function todayInIndia(now: Date = new Date()): string {
-  return indiaDate(now.toISOString());
-}
+export const todayInIndia = (now: Date = new Date()): string => indiaToday(now.getTime());
 
-export function dayAfter(isoDate: string): string {
-  return new Date(new Date(`${isoDate}T00:00:00Z`).getTime() + DAY_MS).toISOString().slice(0, 10);
-}
+export const dayAfter = (isoDate: string): string => addDays(isoDate, 1);
 
 /** "22 Aug", as board A3 dates the last visit. */
-export function dayMonth(isoDate: string): string {
-  const written = fullDate(isoDate);
-  return written.slice(0, written.lastIndexOf(" "));
-}
+export { dayMonth } from "@maneman/web-kit/dates";
 
 /** "9:30 am", "4 pm": every time the app writes, the head of Today, a job's row and its card alike. */
 export const clock = indiaClock;

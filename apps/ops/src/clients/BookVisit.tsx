@@ -7,7 +7,7 @@ import { Dialog } from "@maneman/ui/Dialog";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { addDays, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import {
@@ -19,7 +19,6 @@ import {
   type VisitType,
 } from "../api.ts";
 import { clients, dispatch } from "../content.ts";
-import { addDays } from "../dispatch/job.ts";
 import styles from "./book.module.css";
 
 const copy = clients.visits.book;

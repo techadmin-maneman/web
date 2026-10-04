@@ -8,7 +8,7 @@
 
 import { Table } from "@maneman/ui/Table";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
-import { indiaDate, listDate } from "@maneman/web-kit/dates";
+import { indiaDate, listDate, yearInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Area, type Launch, type ServedPincode } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
@@ -228,7 +228,7 @@ export function Waiting() {
   const [adding, setAdding] = useState<Area | null>(null);
   /** An error code from asking what a launch would send, before there is a panel to hold it. */
   const [refused, setRefused] = useState<string | null>(null);
-  const thisYear = new Date().getFullYear();
+  const thisYear = yearInIndia(Date.now());
   const today = indiaDate(new Date().toISOString());
   const [launchOn, setLaunchOn] = useState(today);
   const access = useAccess();

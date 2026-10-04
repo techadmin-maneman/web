@@ -7,7 +7,7 @@
 import type { Board, BoardQuery } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
-import { addDays } from "./job.ts";
+import { addDays } from "@maneman/web-kit/dates";
 
 interface Props {
   /** The board on screen; null while the first one loads. */
