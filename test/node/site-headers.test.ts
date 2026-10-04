@@ -11,6 +11,7 @@ import {
   inlineCode,
   pagePath,
   robotsFile,
+  securityTxt,
   sitemapFile,
 } from "../../site/src/lib/static-files.ts";
 
@@ -96,6 +97,16 @@ describe("the headers file", () => {
     expect(headersFile("staging", "x")).toContain("X-Robots-Tag: noindex, nofollow");
     expect(robotsFile("staging")).toBe("User-agent: *\nDisallow: /\n");
     expect(robotsFile("production")).toContain("Sitemap: https://maneman.in/sitemap.xml");
+  });
+});
+
+// PLAT-64: a security researcher found no contact (RFC 9116).
+describe("security.txt", () => {
+  it("names the site's published contact, and lapses a year after the build that wrote it", () => {
+    const built = new Date("2026-10-05T00:00:00.000Z");
+    expect(securityTxt(built)).toBe(
+      "Contact: https://wa.me/919007973247\nExpires: 2027-10-05T00:00:00.000Z\nPreferred-Languages: en\n",
+    );
   });
 });
 

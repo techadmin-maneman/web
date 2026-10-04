@@ -40,19 +40,19 @@ Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` se
 
 The three apps are laid out alike:
 
-| Where                                 | What                                                                                                              |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `index.html`, `src/main.tsx`          | The page and its entry                                                                                            |
-| `src/App.tsx`                         | What shows, by session and by path                                                                                |
-| `src/route.ts`                        | Every page by path; the router itself is `@maneman/ui/router`                                                     |
-| `src/api.ts`, `src/api-schema.ts`     | The calls, and the types `npm run openapi` writes                                                                 |
-| `src/content.ts`                      | Every word the app shows. A line the owner has not given yet is marked `PLACEHOLDER`                              |
-| `src/<screen>/`                       | A folder per screen or tab: its components and its CSS module                                                     |
-| `src/states/`, `src/styles/`          | Loading, failure and not-found; the app's own global styles                                                       |
-| `headers.ts`                          | The app's content security policy and permissions, which the build writes into `_headers`                         |
-| `vite.config.ts`                      | The build, one per environment into `dist/<env>`, and the dev server's `/api` proxy                               |
-| `wrangler.jsonc`                      | The Worker: static assets, every path that is not a file answered with the app, and its route in each environment |
-| `sw/`, with `pwa.ts` or `sw-build.ts` | The service worker and what makes the app installable (client and technician apps)                                |
+| Where                             | What                                                                                                              |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `index.html`, `src/main.tsx`      | The page and its entry                                                                                            |
+| `src/App.tsx`                     | What shows, by session and by path                                                                                |
+| `src/route.ts`                    | Every page by path; the router itself is `@maneman/ui/router`                                                     |
+| `src/api.ts`, `src/api-schema.ts` | The calls, and the types `npm run openapi` writes                                                                 |
+| `src/content.ts`                  | Every word the app shows. A line the owner has not given yet is marked `PLACEHOLDER`                              |
+| `src/<screen>/`                   | A folder per screen or tab: its components and its CSS module                                                     |
+| `src/states/`, `src/styles/`      | Loading, failure and not-found; the app's own global styles                                                       |
+| `headers.ts`                      | The app's content security policy and permissions, which the build writes into `_headers`                         |
+| `vite.config.ts`                  | The build, one per environment into `dist/<env>`, and the dev server's `/api` proxy                               |
+| `wrangler.jsonc`                  | The Worker: static assets, every path that is not a file answered with the app, and its route in each environment |
+| `sw/`, with `pwa.ts`              | The service worker, and the app's identity on a home screen (client and technician apps)                          |
 
 A screen that chooses between several things says so in a function that returns early, not in nested ternaries; ESLint holds `apps/`, `packages/` and `site/src/` to it.
 
@@ -61,7 +61,7 @@ A screen that chooses between several things says so in a function that returns 
 What a client does after booking: Home, Visits, Photos, Payments, Refer and Profile (ADR 0043). Only a person with a consultation booked, or a visit since, can sign in (`src/policy/login.ts`).
 
 - **Booking and paying.** A visit is held for ten minutes while the client pays through Razorpay's Checkout, whose hosts the app's policy allows (`apps/app/headers.ts`). The booking is written to FSM from mm-api's queue once Razorpay's webhook says the money came (ADR 0068). Where `SELF_SERVE_BOOKING` is off, the API answers `ops_assisted` and the app says booking goes through ops.
-- **Installable, and open offline.** `apps/app/pwa.ts` draws the manifest and icons from the brand kit; `apps/app/sw/sw.ts` keeps the app's files and the last Home it was sent, which Home shows offline (board B3).
+- **Installable, and open offline.** `packages/web-kit/pwa.ts` draws the manifest and icons from the brand kit, with the app's names in `apps/app/pwa.ts`; `apps/app/sw/sw.ts` keeps the app's files and the last Home it was sent, which Home shows offline (board B3).
 - **Its budget.** A build over 150 KB of gzipped JavaScript fails (`scripts/lib/spa-build.ts`), and Lighthouse holds its first screen to the budgets in `scripts/lighthouse.ts`.
 
 ## The ops console
@@ -76,7 +76,7 @@ What a technician needs at a client's door, in a basement, with gloves on (ADR 0
 - **An outbox.** Every step goes into IndexedDB (`mm-tech`, `apps/tech/src/store/`) and is sent one at a time, oldest first, whenever the phone has signal. "Waiting to reach us" (`/waiting`) shows what is still on the phone. Signing out, or ops revoking the phone, wipes the database whole.
 - **One phone per session.** The phone enrols itself when he signs in, and ops can revoke it from the console (ADR 0052).
 - **Photographs that never touch the gallery,** taken through `getUserMedia` into a canvas and re-encoded to 250 KB or less (`apps/tech/src/camera/`).
-- **Any phone, iPhones included.** On an iPhone the store is kept only when the app is on the home screen, so the app is installable (`apps/tech/sw-build.ts`), and says so when the phone has not promised to keep its store.
+- **Any phone, iPhones included.** On an iPhone the store is kept only when the app is on the home screen, so the app is installable (`apps/tech/pwa.ts`), and says so when the phone has not promised to keep its store.
 
 `docs/tech-field-test.md` is what only a real phone can prove, and `docs/technician-test-setup.md` is how to sign in on your own.
 

@@ -15,6 +15,7 @@
     "./whatsapp": "./whatsapp.ts",
     "./small-jpeg": "./small-jpeg.ts",
     "./turnstile": "./turnstile.ts",
-    "./names": "./names.ts"
+    "./names": "./names.ts",
+    "./pwa": "./pwa.ts"
   }
 }

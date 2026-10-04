@@ -15,7 +15,7 @@ const SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
 const PATIENCE_MS = 15_000;
 /** How long Checkout has to close itself at its timeout before the sheet takes it as closed. */
 const CLOSING_MS = 10_000;
-/** The brand mark on ink, the home-screen icon the build draws (apps/app/pwa.ts), at the head of Checkout. */
+/** The brand mark on ink, the home-screen icon the build draws (packages/web-kit/pwa.ts), at the head of Checkout. */
 const BRAND_MARK = "/icon-512.png";
 
 interface RazorpayWindow {

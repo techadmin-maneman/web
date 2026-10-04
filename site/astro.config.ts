@@ -8,7 +8,7 @@
 // consent notice is unapproved (docs/frontend.md). Afterwards it removes every
 // built asset no page names, so the placeholders staging shows never ship.
 
-import { readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import preact from "@astrojs/preact";
 import { defineConfig } from "astro/config";
 import { ANALYTICS_IDS } from "./src/lib/analytics-ids.ts";
@@ -21,6 +21,7 @@ import {
   inlineCode,
   pagePath,
   robotsFile,
+  securityTxt,
   sitemapFile,
   unreferencedAssets,
 } from "./src/lib/static-files.ts";
@@ -65,6 +66,8 @@ export default defineConfig({
           const paths = pages.map(pagePath).filter((path) => path !== null);
           await writeFile(new URL("_headers", dir), headersFile(environment, csp));
           await writeFile(new URL("robots.txt", dir), robotsFile(environment));
+          await mkdir(new URL(".well-known/", dir), { recursive: true });
+          await writeFile(new URL(".well-known/security.txt", dir), securityTxt(new Date()));
           await writeFile(new URL("sitemap.xml", dir), sitemapFile(paths.sort()));
           if (environment === "production") await removeUnreferencedAssets(dir);
         },
