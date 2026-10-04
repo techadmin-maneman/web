@@ -15,7 +15,7 @@ import { afterRuling } from "../domain/after-a-ruling.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import { permits } from "../http/staff-access.ts";
+import { permitsOn, routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { REFUNDING_A_DISPUTE } from "../policy/console-routes.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { DISPUTE_RULINGS } from "../policy/no-show.ts";
@@ -66,7 +66,7 @@ const RulingRequestSchema = z
 const disputesRoute = createRoute({
   method: "get",
   path: "/api/no-shows/disputes",
-  summary: "Disputed no-show charges still to rule on, oldest first, each with its evidence",
+  summary: "Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence",
   responses: {
     200: { description: "The disputes", ...json(z.object({ disputes: z.array(DisputeSchema) }).strict()) },
     403: errorResponse("access_required"),
@@ -81,14 +81,15 @@ const rulingRoute = createRoute({
   responses: {
     200: { description: "Recorded", ...json(z.object({ ruled: z.boolean() }).strict()) },
     400: errorResponse("invalid_request: a ruling needs a reason"),
-    403: errorResponse("access_required, or not_permitted: refunding asks Finance MANAGE"),
-    404: errorResponse("not_found: no such dispute, or it was ruled on already"),
+    403: errorResponse("access_required, or not_permitted: refunding asks Finance MANAGE in the dispute's city"),
+    404: errorResponse("not_found: no such dispute in the caller's cities, or it was ruled on already"),
   },
 });
 
 export function registerOpsDisputes(app: App): void {
   app.openapi(disputesRoute, async (c) => {
-    const [disputes, inputs] = await Promise.all([openDisputes(c.env.DB, LIMIT), opsInputs(c)]);
+    const reached = await routeReach(c);
+    const [disputes, inputs] = await Promise.all([openDisputes(c.env.DB, LIMIT, reached), opsInputs(c)]);
     const due = (raisedAt: string) => dueAt(new Date(raisedAt), "no_show_decision", inputs.taskSlaHours).toISOString();
     return c.json({ disputes: disputes.map((each) => ({ ...each, due: due(each.raised_at) })) }, 200);
   });
@@ -100,7 +101,8 @@ export function registerOpsDisputes(app: App): void {
     if (needsReason("no_show_dispute", ruling) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
-    if (ruling === "refunded" && !(await permits(c, REFUNDING_A_DISPUTE))) {
+    if (!(await withinRouteReach(c, "dispute", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (ruling === "refunded" && !(await permitsOn(c, REFUNDING_A_DISPUTE, "dispute", id))) {
       return c.json(errorBody("not_permitted", c.var.requestId), 403);
     }
 

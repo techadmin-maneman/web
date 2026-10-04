@@ -74,7 +74,7 @@ describe("what each ops route asks of its caller", () => {
   });
 
   it("gives the price book to Finance, while changing a service stays Admin's", () => {
-    expect(ROUTE_NEEDS["GET /api/services"]).toEqual({ department: "finance", level: "view" });
+    expect(ROUTE_NEEDS["GET /api/services"]).toEqual({ department: "finance", level: "view", ownPlaces: true });
     expect(ROUTE_NEEDS["POST /api/services"]).toEqual({ department: "admin", level: "manage" });
   });
 });
@@ -99,15 +99,40 @@ describe("the routes a caller's calls go ahead on", () => {
   });
 
   it("are, once enforced, only those a city's grant reaches: the ones that keep to the caller's places", () => {
-    const tasks = ["GET /api/tasks", "PUT /api/tasks/{group}/{id}/owner"];
-    const alerts = ["GET /api/alerts", "POST /api/alerts/{id}/resolve", "POST /api/alerts/{id}/send-again"];
-    expect(routesOpenTo(financeInDelhi, true, NO_ZONES)).toEqual([...SIGNED_IN_ROUTES, ...tasks, ...alerts]);
     expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([
       ...SIGNED_IN_ROUTES,
       "GET /api/tasks",
       "GET /api/alerts",
       "GET /api/staff",
     ]);
+  });
+
+  it("are, for Finance in one city, its cities' money and the codes and prices every place reads", () => {
+    const routes = routesOpenTo(financeInDelhi, true, NO_ZONES);
+
+    expect(routes).toEqual(
+      expect.arrayContaining([
+        "GET /api/tasks",
+        "PUT /api/tasks/{group}/{id}/owner",
+        "GET /api/alerts",
+        "POST /api/alerts/{id}/resolve",
+        "POST /api/alerts/{id}/send-again",
+        "GET /api/payments",
+        "GET /api/no-shows",
+        "POST /api/no-shows/{id}/decision",
+        "GET /api/no-shows/disputes",
+        "POST /api/no-shows/disputes/{id}/ruling",
+        "POST /api/clients/{id}/credits",
+        "POST /api/visits/{id}/discount-code",
+        "POST /api/visits/{id}/discount-code/remove",
+        "GET /api/discount-codes",
+        "GET /api/prices",
+        "GET /api/services",
+      ]),
+    );
+    expect(routes).not.toContain("POST /api/held-bookings/{id}/refund");
+    expect(routes).not.toContain("POST /api/discount-codes");
+    expect(routes).not.toContain("POST /api/prices");
   });
 
   it("are, for Customer Care in one city, every Customer Care route up to the level granted", () => {

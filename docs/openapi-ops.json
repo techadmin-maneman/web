@@ -9777,7 +9777,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such client, or one who has been erased",
+            "description": "not_found: no such client in the caller's cities, or one who has been erased",
             "content": {
               "application/json": {
                 "schema": {
@@ -12010,7 +12010,7 @@
     },
     "/api/no-shows": {
       "get": {
-        "summary": "No-show cases: undecided first, each with its three facts",
+        "summary": "No-show cases in the caller's cities: undecided first, each with its three facts",
         "parameters": [
           {
             "schema": {
@@ -12107,7 +12107,7 @@
             }
           },
           "403": {
-            "description": "access_required, or not_permitted: waiving asks Finance MANAGE",
+            "description": "access_required, or not_permitted: waiving asks Finance MANAGE in the case's city",
             "content": {
               "application/json": {
                 "schema": {
@@ -12117,7 +12117,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such case, or it was ruled on already",
+            "description": "not_found: no such case in the caller's cities, or it was ruled on already",
             "content": {
               "application/json": {
                 "schema": {
@@ -12463,7 +12463,7 @@
     },
     "/api/no-shows/disputes": {
       "get": {
-        "summary": "Disputed no-show charges still to rule on, oldest first, each with its evidence",
+        "summary": "Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence",
         "responses": {
           "200": {
             "description": "The disputes",
@@ -12555,7 +12555,7 @@
             }
           },
           "403": {
-            "description": "access_required, or not_permitted: refunding asks Finance MANAGE",
+            "description": "access_required, or not_permitted: refunding asks Finance MANAGE in the dispute's city",
             "content": {
               "application/json": {
                 "schema": {
@@ -12565,7 +12565,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such dispute, or it was ruled on already",
+            "description": "not_found: no such dispute in the caller's cities, or it was ruled on already",
             "content": {
               "application/json": {
                 "schema": {
@@ -12892,7 +12892,7 @@
     },
     "/api/payments": {
       "get": {
-        "summary": "A day's money: what was collected, what went back, and each charge kept or ruled on",
+        "summary": "A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on",
         "parameters": [
           {
             "schema": {
@@ -15322,7 +15322,7 @@
             }
           },
           "404": {
-            "description": "not_found",
+            "description": "not_found: no such visit in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -15385,7 +15385,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such visit, or it carries no code",
+            "description": "not_found: no such visit in the caller's cities, or it carries no code",
             "content": {
               "application/json": {
                 "schema": {

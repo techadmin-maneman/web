@@ -524,7 +524,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2553,7 +2553,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** No-show cases: undecided first, each with its three facts */
+        /** No-show cases in the caller's cities: undecided first, each with its three facts */
         get: {
             parameters: {
                 query?: {
@@ -2638,7 +2638,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required, or not_permitted: waiving asks Finance MANAGE */
+                /** @description access_required, or not_permitted: waiving asks Finance MANAGE in the case's city */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2647,7 +2647,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such case, or it was ruled on already */
+                /** @description not_found: no such case in the caller's cities, or it was ruled on already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3011,7 +3011,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Disputed no-show charges still to rule on, oldest first, each with its evidence */
+        /** Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence */
         get: {
             parameters: {
                 query?: never;
@@ -3096,7 +3096,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required, or not_permitted: refunding asks Finance MANAGE */
+                /** @description access_required, or not_permitted: refunding asks Finance MANAGE in the dispute's city */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3105,7 +3105,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such dispute, or it was ruled on already */
+                /** @description not_found: no such dispute in the caller's cities, or it was ruled on already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3474,7 +3474,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A day's money: what was collected, what went back, and each charge kept or ruled on */
+        /** A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on */
         get: {
             parameters: {
                 query?: {
@@ -6035,7 +6035,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found */
+                /** @description not_found: no such visit in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -6108,7 +6108,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such visit, or it carries no code */
+                /** @description not_found: no such visit in the caller's cities, or it carries no code */
                 404: {
                     headers: {
                         [name: string]: unknown;

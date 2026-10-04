@@ -266,7 +266,7 @@ Triggers: `audit_log_append_only_delete`, `audit_log_append_only_update`.
 
 Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 
-Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance.sql`, `0037_cron_indexes.sql`, `0057_consent_sources_and_checkin_coordinates.sql`.
+Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance.sql`, `0037_cron_indexes.sql`, `0057_consent_sources_and_checkin_coordinates.sql`, `0085_checkin_job_event.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -283,11 +283,13 @@ Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance
 | `distance_m` | INTEGER | yes |  |  |
 | `lat` | REAL | yes |  |  |
 | `lng` | REAL | yes |  |  |
+| `job_event_id` | TEXT | yes |  | → `job_events.id` |
 
 Indexes:
 
 - `checkins_by_address`: on (`address_id`), where `address_id IS NOT NULL`
 - `checkins_by_appointment`: on (`appointment_id`, `at`)
+- `checkins_one_per_job_event`: unique on (`job_event_id`), where `job_event_id IS NOT NULL`
 
 ## checklist_items
 
