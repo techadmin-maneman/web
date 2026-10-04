@@ -49,7 +49,6 @@
   --ops-figure: 76px; /* a column of figures, right aligned */
   --ops-panel: 484px; /* a panel the boards draw on its own, such as the launch confirmation */
   --ops-list: 1200px; /* a list page on a desktop: the main width, short of rows too wide to scan (UX-23) */
-  --ops-wide: 660px; /* a panel drawn wide, as board C1's review queue: Settings, whose tables carry six columns */
   --ops-area: 200px; /* an area's name, and a tier's, as ops type them */
   --ops-amount: 120px; /* a price in whole rupees, up to ten lakh, beside the box's own arrows */
   --ops-date: 150px; /* a date box that shows the whole year beside the picker's button (VIS-21) */
