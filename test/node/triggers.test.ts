@@ -100,13 +100,6 @@ const STAGING_ON_4_OCTOBER = ok([
     max_concurrency: 1,
     retry_delay: 0,
   }),
-  liveQueue("mm-fsm-sync-staging", {
-    batch_size: 10,
-    max_retries: 5,
-    max_wait_time_ms: 5000,
-    max_concurrency: 1,
-    retry_delay: 0,
-  }),
   liveQueue("mm-messaging-staging", {
     batch_size: 5,
     max_retries: 5,
