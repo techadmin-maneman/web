@@ -9,5 +9,6 @@ runs:
       with:
         node-version-file: .nvmrc
         cache: ${{ runner.environment == 'github-hosted' && 'npm' || '' }}
-    - run: npm ci
+    # No dependency runs its own install script: only esbuild and workerd need theirs, to fetch their binaries.
+    - run: npm ci --ignore-scripts && npm rebuild esbuild workerd
       shell: bash

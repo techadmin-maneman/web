@@ -13,7 +13,8 @@
 // made; its effect comes only with ops' decision, which is audited in turn
 // (src/routes/ops-profile.ts).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { clientRoute } from "../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { addressChangeRefusal } from "../domain/address-change.ts";
 import { auditStatementIfWritten, type AuditEntry } from "../domain/audit.ts";
@@ -30,7 +31,7 @@ import { switchNotice } from "../config/notices.ts";
 import { recordConsent } from "../domain/consents.ts";
 import { consentsOf, currentAddress, liveContact, maskedMobile, type Address } from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
-import { clientOf, requireClientSession } from "../http/client-session.ts";
+import { clientOf } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
@@ -213,7 +214,7 @@ export function addressOf(body: z.infer<typeof AddressSchema>): Address {
 
 const signedIn = { 401: errorResponse("session_required") };
 
-export const profileRoute = createRoute({
+export const profileRoute = clientRoute({
   method: "get",
   path: "/api/profile",
   summary:
@@ -223,7 +224,7 @@ export const profileRoute = createRoute({
 
 // A POST, not a GET: each answer spends from Google's budget, and a GET goes with the cookie from any
 // page that links to it. A POST is held to the app's own Origin, as every write is.
-export const addressSuggestionsRoute = createRoute({
+export const addressSuggestionsRoute = clientRoute({
   method: "post",
   path: "/api/address/suggestions",
   summary: "Buildings matching what the client has typed, for the address form",
@@ -254,7 +255,7 @@ export const addressSuggestionsRoute = createRoute({
   },
 });
 
-export const addressRoute = createRoute({
+export const addressRoute = clientRoute({
   method: "patch",
   path: "/api/profile/address",
   summary: "Replace the address visits go to, with its access notes",
@@ -279,7 +280,7 @@ const ConsentSwitchSchema = z
   .strict()
   .openapi("ConsentSwitch");
 
-export const consentRoute = createRoute({
+export const consentRoute = clientRoute({
   method: "patch",
   path: "/api/consents/{purpose}",
   summary: "Switch one consent on or off. Each switch is kept, with its date; a repeat is not a switch",
@@ -297,7 +298,7 @@ export const consentRoute = createRoute({
   },
 });
 
-export const numberChangeRoute = createRoute({
+export const numberChangeRoute = clientRoute({
   method: "post",
   path: "/api/number-change",
   summary: "Start a number change: a code goes to both numbers. Starting again withdraws the last one",
@@ -324,14 +325,14 @@ export const numberChangeRoute = createRoute({
   },
 });
 
-export const numberChangeWithdrawRoute = createRoute({
+export const numberChangeWithdrawRoute = clientRoute({
   method: "delete",
   path: "/api/number-change",
   summary: "Withdraw the number change under way, before ops decide it. With none under way, nothing happens",
   responses: { 204: { description: "Withdrawn, or there was none" }, ...signedIn },
 });
 
-export const numberChangeVerifyRoute = createRoute({
+export const numberChangeVerifyRoute = clientRoute({
   method: "post",
   path: "/api/number-change/verify",
   summary: "One number's code. With both numbers proven, the change waits for ops to confirm",
@@ -356,7 +357,7 @@ export const numberChangeVerifyRoute = createRoute({
   },
 });
 
-export const deletionRoute = createRoute({
+export const deletionRoute = clientRoute({
   method: "post",
   path: "/api/deletion-request",
   summary: "Ask for the account to be deleted. Ops process it; asking twice makes one request",
@@ -391,19 +392,6 @@ function grievanceBody(grievance: ShownGrievance) {
 }
 
 export function registerClientProfile(app: App): void {
-  for (const path of [
-    "/api/profile",
-    "/api/profile/*",
-    // Suggestions cost money, so only a signed-in client may ask for them.
-    "/api/address/suggestions",
-    "/api/consents/*",
-    "/api/number-change",
-    "/api/number-change/*",
-    "/api/deletion-request",
-  ]) {
-    app.use(path, requireClientSession);
-  }
-
   /** The signed-in client, as an audit actor. */
   const audit = (personId: string, requestId: string, entry: Pick<AuditEntry, "action" | "subject" | "detail">) => ({
     surface: "client" as const,

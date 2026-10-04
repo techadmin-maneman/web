@@ -728,7 +728,17 @@ ADR 0039 gives the photographs and the cards 4 GB. At 250 KB a photograph and 32
 
 **The storage meter** (ADR 0093) is a running figure of what this environment's `client-photos` and `referral-cards` hold. It tells ops once at 50%, 80% and 100% of the share (the alerts `r2_share:50`, `r2_share:80` and `r2_share:100`), and Settings › Rules shows it under The console. **Past the share R2 bills, as the owner accepted** (open point 151): nothing is refused. Past the runaway ceiling, 20 GB, the technician app's uploads answer `503 busy` and wait on the phones, and ops are told (`r2_runaway_ceiling`): something is writing far more than the business makes. Find it before anything else. The usage notifications above, at 5 GB for the account, stay as the backstop.
 
-Each environment's meter counts its own buckets against the whole share, which staging and production share. Staging holds little, but read both on the dashboard before trusting one.
+R2's free storage is the account's, so each environment's meter is read against its own part of the share (`SHARE_BYTES`, `src/policy/storage-share.ts`): staging a tenth, 400 MB, for its few test visits (2.7 MB on 4 October 2026), and production the rest, 3.6 GB. Together they stay inside the 4 GB.
+
+What production's part holds, and what passing it costs, at about 2.8 MB a visit (ten photographs and their thumbnails), before try-on copies and cards:
+
+| Visits photographed a month | Production's 3.6 GB is full after | Each month after, R2 bills about            |
+| --------------------------- | --------------------------------- | ------------------------------------------- |
+| 100                         | about 13 months                   | $0.004 more than the month before (0.28 GB) |
+| 300                         | about 4 months                    | $0.013 more than the month before (0.85 GB) |
+| 1,000                       | about 6 weeks                     | $0.042 more than the month before (2.8 GB)  |
+
+At $0.015 a GB-month, a year past the share at 300 visits a month adds about 10 GB, under $0.20 a month. The runaway ceiling, 20 GB, is there for a fault, not for growth.
 
 ```sql
 SELECT ROUND(bytes / 1e9, 2) AS gb, told_percent FROM storage_meter;

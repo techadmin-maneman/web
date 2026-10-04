@@ -6,6 +6,8 @@
 // never refused. What is refused is a runaway, far past anything the business
 // makes. src/domain/storage-meter.ts keeps the figure these are read against.
 
+import type { EnvironmentName } from "../config/environments.ts";
+
 export const RULES = [
   "pay for R2 beyond the free tier when it fills",
   "warns ops at 50% and 80% of the share, and R2's paid storage is accepted as the share fills",
@@ -13,6 +15,16 @@ export const RULES = [
 
 /** Phase 2's share of R2's free 10 GB, in decimal bytes, as Cloudflare bills them (ADR 0039). */
 export const PHASE_2_SHARE_BYTES = 4e9;
+
+/**
+ * Each environment's part of the share. R2's free storage is the account's, staging's and production's together, so
+ * each meter is read against its own part: staging, which holds a few test visits, a tenth; production the rest.
+ */
+export const SHARE_BYTES: Readonly<Record<EnvironmentName, number>> = {
+  local: 0.4e9,
+  staging: 0.4e9,
+  production: 3.6e9,
+};
 
 /** Ops are told once as the figure reaches each, the last when the share is full. */
 export const TOLD_AT_PERCENT = [50, 80, 100] as const;
@@ -25,9 +37,9 @@ export type Mark = (typeof TOLD_AT_PERCENT)[number];
  */
 export const RUNAWAY_CEILING_BYTES = 20e9;
 
-/** The highest mark the figure has reached, or null below the first. */
-export function markReached(heldBytes: number): Mark | null {
-  const percent = (heldBytes / PHASE_2_SHARE_BYTES) * 100;
+/** The highest mark the figure has reached of `shareBytes`, or null below the first. */
+export function markReached(heldBytes: number, shareBytes: number): Mark | null {
+  const percent = (heldBytes / shareBytes) * 100;
   const reached = TOLD_AT_PERCENT.filter((mark) => percent >= mark);
   return reached.at(-1) ?? null;
 }

@@ -16,13 +16,8 @@
 // Beside it, the database's own size against D1's limit (src/policy/database-size.ts).
 
 import { DATABASE_LIMIT_BYTES, databaseMarkReached } from "../policy/database-size.ts";
-import {
-  hasRoom,
-  markReached,
-  PHASE_2_SHARE_BYTES,
-  RUNAWAY_CEILING_BYTES,
-  type Mark,
-} from "../policy/storage-share.ts";
+import type { EnvironmentName } from "../config/environments.ts";
+import { hasRoom, markReached, RUNAWAY_CEILING_BYTES, SHARE_BYTES, type Mark } from "../policy/storage-share.ts";
 import type { AlertOnce } from "./alerts.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
@@ -147,9 +142,10 @@ const STORAGE_LINK = "/settings#console";
  * Tells ops of the highest mark the figure has passed since they were last told, once. Each mark is told once for
  * good: should the figure fall back and pass it again, it is not told again (the runbook says how to reset it).
  */
-export async function tellOfStorage(db: D1Database, alertOnce: AlertOnce): Promise<void> {
+export async function tellOfStorage(db: D1Database, alertOnce: AlertOnce, environment: EnvironmentName): Promise<void> {
   const meter = await readMeter(db);
-  const mark = markReached(meter.bytes);
+  const share = SHARE_BYTES[environment];
+  const mark = markReached(meter.bytes, share);
   if (mark === null || mark <= meter.toldPercent) return;
   const claimed = await db
     .prepare("UPDATE storage_meter SET told_percent = ?1 WHERE id = 1 AND told_percent < ?1 RETURNING id")
@@ -160,7 +156,7 @@ export async function tellOfStorage(db: D1Database, alertOnce: AlertOnce): Promi
     key: `r2_share:${String(mark)}`,
     message:
       `Photos and referral cards use ${gigabytes(meter.bytes)} GB, ${OF_THE_SHARE[mark]} their ` +
-      `${String(PHASE_2_SHARE_BYTES / 1e9)} GB of free storage. Uploads go on past it, on paid storage, as the owner ruled.`,
+      `${String(share / 1e9)} GB of free storage. Uploads go on past it, on paid storage, as the owner ruled.`,
     link: STORAGE_LINK,
   });
 }
