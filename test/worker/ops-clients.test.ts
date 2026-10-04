@@ -175,6 +175,42 @@ describe("GET /api/clients/{id}", () => {
     });
   });
 
+  // MON-14: a refund the booking made by itself showed nowhere in the console.
+  it("lists a booking that refunded its payment by itself, and why, and none that ops refunded", async () => {
+    await record();
+    const refundedAt = "2026-09-21T06:43:00.000Z";
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
+         gst_percent, state, expires_at, created_at, updated_at, razorpay_order_id, refunded_at, auto_refund_reason)
+       VALUES ('hold-lapsed', ?1, 'service', '2026-09-22', 'afternoon', 't1', 6, 236000, 200000, 18, 'released', ?2, ?2,
+         ?3, 'order_late', ?3, 'lapsed'),
+              ('hold-by-ops', ?1, 'service', '2026-09-23', 'morning', 't1', 0, 236000, 200000, 18, 'released', ?2, ?2,
+         ?3, NULL, ?3, NULL)`,
+    )
+      .bind(PERSON, "2026-09-21T06:30:00.000Z", refundedAt)
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, method, status,
+         created_at, updated_at)
+       VALUES ('pay-late', ?1, 'order_late', 'pay_late', 236000, 'INR', 'upi', 'refunded', ?2, ?2)`,
+    )
+      .bind(PERSON, "2026-09-21T06:43:00.000Z")
+      .run();
+
+    const body = await (await request(ops, `/api/clients/${PERSON}`)).json<{ auto_refunds: unknown }>();
+    expect(body.auto_refunds).toEqual([
+      {
+        hold_id: "hold-lapsed",
+        type: "service",
+        service: "Service visit",
+        date: "2026-09-22",
+        amount: 236000,
+        reason: "lapsed",
+        refunded_at: refundedAt,
+      },
+    ]);
+  });
+
   it("reads nothing booked and no address for a client with only a record", async () => {
     const body = await (await request(ops, `/api/clients/${PERSON}`)).json();
     expect(body).toMatchObject({
