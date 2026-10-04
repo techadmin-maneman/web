@@ -1,7 +1,7 @@
 // The services clients book, and every price each has had and is to have (docs/decisions/0085-services-ops-can-edit.md,
 // 0061-ops-editable-inputs.md). A kind of visit is code; the services within it are ops', and each is added, renamed,
-// described, timed, priced, ordered and retired from a day here. A price is a row from the day it applies, so an invoice already
-// issued keeps the figure it was issued under, and the row in force and the spent ones stay.
+// described, timed, priced, ordered and retired from a day here. A price is a row from the day it applies, so an
+// invoice already issued keeps the figure it was issued under, and the row in force and the spent ones stay.
 //
 // Each service shows all three states at once -- in force, still to come, and, folded away, what it cost before --
 // because a price set for next month is a decision somebody has to see and be able to take back or correct before it
