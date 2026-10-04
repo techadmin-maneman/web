@@ -311,9 +311,8 @@ function DepartmentSection({ section, children }: { section: TaskSection; childr
 function OverdueCount({ count, onJump }: { count: number; onJump: (() => void) | null }) {
   if (onJump === null) return <span className={styles.overdue}>{tasks.overdue(count)}</span>;
   return (
-    <button type="button" className={styles.overdueJump} onClick={onJump}>
+    <button type="button" className={styles.overdueJump} aria-label={tasks.overdueJump(count)} onClick={onJump}>
       {tasks.overdue(count)}
-      <VisuallyHidden>{`, ${tasks.overdueJump}`}</VisuallyHidden>
     </button>
   );
 }

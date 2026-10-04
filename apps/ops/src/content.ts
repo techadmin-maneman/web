@@ -1456,8 +1456,8 @@ export const tasks = {
   title: "Tasks",
   /** The head's count, in oxblood, as the board writes "4 overdue". */
   overdue: (count: number) => `${String(count)} overdue`,
-  /** PLACEHOLDER: what the head's count does, said after it to a screen reader. */
-  overdueJump: "go to the first",
+  /** PLACEHOLDER: the head's count as a screen reader names it, with what it does. */
+  overdueJump: (count: number) => `${String(count)} overdue, go to the first`,
   /** Each department's section, named as the navigation names it. */
   departments: DEPARTMENT_NAMES,
   /** Each group, lettered in small caps as the board letters its own two. */
