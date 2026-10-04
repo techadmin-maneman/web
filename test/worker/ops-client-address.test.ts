@@ -31,7 +31,7 @@ const GIVEN = {
 };
 
 let ops: App;
-let queues: { CRM_QUEUE: ReturnType<typeof fakeQueue>; FSM_QUEUE: ReturnType<typeof fakeQueue> };
+let queues: { CRM_QUEUE: ReturnType<typeof fakeQueue> };
 
 const post = (app: App, path: string, body: unknown) =>
   request(app, path, { method: "POST", headers: ORIGIN, body: JSON.stringify(body) }, queues);
@@ -49,7 +49,7 @@ beforeEach(async () => {
   captureLogs();
   await markDatabase();
   ops = appFor("local", fakeDependencies(), {}, "ops");
-  queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
+  queues = { CRM_QUEUE: fakeQueue() };
   await env.DB.prepare(
     "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, '2026-08-01T06:00:00.000Z', '+919810000001', 'Rohit Malhotra')",
   )
@@ -89,9 +89,12 @@ describe("POST /api/clients/{id}/address", () => {
     ]);
   });
 
-  it("sends it on to FSM's contact and the CRM, as the client's own save does", async () => {
+  it("sends it on to the CRM and marks the client's Books customer, as the client's own save does", async () => {
     await save(GIVEN);
-    expect(queues.FSM_QUEUE.sent).toEqual([expect.objectContaining({ update_contact_person_id: PERSON })]);
+    const changed = await env.DB.prepare("SELECT books_details_changed_at FROM people WHERE id = ?1")
+      .bind(PERSON)
+      .first();
+    expect(changed).toEqual({ books_details_changed_at: NOW.toISOString() });
     expect(queues.CRM_QUEUE.sent).toEqual([expect.objectContaining({ update_person_id: PERSON })]);
   });
 
@@ -149,7 +152,7 @@ describe("POST /api/clients/{id}/address", () => {
     expect(answer.status).toBe(403);
     expect(await answer.json()).toMatchObject({ error: { code: "access_required" } });
     expect(await current()).toBeNull();
-    expect(queues.FSM_QUEUE.sent).toEqual([]);
+    expect(queues.CRM_QUEUE.sent).toEqual([]);
   });
 
   it("answers 404 for a client we do not have, or one erased", async () => {
@@ -161,10 +164,10 @@ describe("POST /api/clients/{id}/address", () => {
   // A visit to come with no address waits on the Tasks board; ops confirm it with the client on the phone.
   it("takes the visit's Address to confirm off the Tasks board", async () => {
     await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
-         fsm_modified_at, synced_at, first_seen_at)
-       VALUES (?1, 'fsm-1', ?2, 'consultation', '2026-09-23T04:30:00.000Z', '2026-09-23T05:30:00.000Z', 'scheduled',
-         'Scheduled', ?3, ?3, ?3)`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, synced_at,
+         first_seen_at)
+       VALUES (?1, ?1, ?2, 'consultation', '2026-09-23T04:30:00.000Z', '2026-09-23T05:30:00.000Z', 'scheduled', ?3,
+         ?3)`,
     )
       .bind(VISIT, PERSON, NOW.toISOString())
       .run();

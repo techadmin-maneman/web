@@ -122,9 +122,9 @@ describe("the error codes", () => {
       "hold_expired",
       "ops_assisted",
     ]);
-    expect(codesNamedIn("fsm_refused: nothing moved. fsm_partly: FSM took the technician")).toEqual([
-      "fsm_refused",
-      "fsm_partly",
+    expect(codesNamedIn("superseded: the board is out of date. not_changeable: the visit has begun")).toEqual([
+      "superseded",
+      "not_changeable",
     ]);
     expect(codesNamedIn("too_early, or rate_limited")).toEqual(["too_early", "rate_limited"]);
     expect(codesNamedIn("not_found: none made, taken down, or erased")).toEqual(["not_found"]);
