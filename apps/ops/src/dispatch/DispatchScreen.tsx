@@ -23,7 +23,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   api,
   type Answer,
@@ -323,24 +323,29 @@ export function DispatchScreen() {
     else moved.focus();
   }, []);
 
-  /** Asks where the job would land in the week on screen, so the board offers only those windows. */
-  const askRooms = useCallback(
-    (job: Job) => {
-      setRooms({ state: "checking" });
-      if (board === null) {
-        setRooms({ state: "unknown" });
-        return;
-      }
-      void api.room(idOf(job), board.from).then((answer) => {
-        if (!answer.ok) {
-          setRooms({ state: "unknown" });
-          return;
-        }
-        setRooms({ state: "known", rooms: answer.body.rooms, blackouts: answer.body.blackouts });
-      });
-    },
-    [board],
-  );
+  // Where the job in hand would land in the week on screen, so the board offers only those windows. It is asked
+  // again for each week the board turns to with the job still in hand, and after a refusal; an answer that comes
+  // back once another job is in hand, or another week is on screen, is dropped.
+  const [roomsAsked, askRooms] = useReducer((asked: number) => asked + 1, 0);
+  const inHandId = move === null ? null : idOf(move.job);
+  const weekFrom = board?.from ?? null;
+  useEffect(() => {
+    if (inHandId === null) return undefined;
+    setRooms({ state: "checking" });
+    if (weekFrom === null) return undefined;
+    let current = true;
+    void api.room(inHandId, weekFrom).then((answer) => {
+      if (!current) return;
+      setRooms(
+        answer.ok
+          ? { state: "known", rooms: answer.body.rooms, blackouts: answer.body.blackouts }
+          : { state: "unknown" },
+      );
+    });
+    return () => {
+      current = false;
+    };
+  }, [inHandId, weekFrom, roomsAsked]);
 
   const open = useCallback((job: Job, from: HTMLElement) => {
     opener.current = from;
@@ -348,16 +353,13 @@ export function DispatchScreen() {
     setOpened(job);
   }, []);
 
-  const take = useCallback(
-    (job: Job, from: HTMLElement | null, clearingCheckIn = false) => {
-      opener.current = from;
-      setOpened(null);
-      setNotice(null);
-      setMove({ job, to: null, sending: false, clearingCheckIn });
-      askRooms(job);
-    },
-    [askRooms],
-  );
+  const take = useCallback((job: Job, from: HTMLElement | null, clearingCheckIn = false) => {
+    opener.current = from;
+    setOpened(null);
+    setNotice(null);
+    setMove({ job, to: null, sending: false, clearingCheckIn });
+    askRooms();
+  }, []);
 
   /** A job taken up, with no window chosen for it yet. */
   const choosing = move?.to === null;
@@ -457,9 +459,9 @@ export function DispatchScreen() {
       // Nothing was written: the job stays in hand, and the board asks again where it fits.
       setMove({ ...move, to: null, sending: false });
       setNotice({ tone: "refusal", text: refusalOf(job, to, answer.code), call: null });
-      askRooms(job);
+      askRooms();
     },
-    [move, refresh, focusBlock, askRooms],
+    [move, refresh, focusBlock],
   );
 
   // Escape lets go of the move in hand when no panel is open; an open panel closes itself.

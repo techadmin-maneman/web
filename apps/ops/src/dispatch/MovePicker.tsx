@@ -7,6 +7,9 @@
 // make, including inside 24 hours" (src/policy/dispatch.ts), so no amount is
 // shown here, and inside the notice the visit was sold under the panel says so
 // in the board's own words, with that notice where the board writes 24 hours.
+// "Their payment carries over" follows only a visit that was paid for, in
+// money or credit: a free consultation, or one paid once the client is fitted,
+// has nothing to carry.
 //
 // The board's line promises a WhatsApp message. One goes only to a client who
 // agreed to WhatsApp about his visits, so for any other the panel says to call
@@ -42,9 +45,12 @@ function noticeOf(job: Job, to: Target, landsAt: string | null): { readonly line
   const copy = dispatch.move;
   const person = personOf(job);
   if (!changesTime(job, to, landsAt)) return { line: copy.sameTime(nameOf(job)), messaged: false };
-  if (person === null) return { line: copy.noClient, messaged: false };
-  if (person.whatsapp_visits) return { line: copy.note(nameOf(job)), messaged: true };
-  return { line: copy.call(person.name, phoneWords(person.mobile)), messaged: false };
+  const badge = job.kind === "block" ? job.block.badge : job.job.badge;
+  const paid = badge === "prepaid" || badge === "credit";
+  const withPayment = (line: string) => (paid ? `${line} ${copy.carries}` : line);
+  if (person === null) return { line: withPayment(copy.noClient), messaged: false };
+  if (person.whatsapp_visits) return { line: withPayment(copy.note(nameOf(job))), messaged: true };
+  return { line: withPayment(copy.call(person.name, phoneWords(person.mobile))), messaged: false };
 }
 
 /** "Move and notify" only where a message will go. */
