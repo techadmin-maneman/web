@@ -26,7 +26,7 @@ import {
   type ChangeTerms,
   type OpsCancel,
 } from "../domain/visit-changes.ts";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -198,7 +198,7 @@ function visitAudit(
 ) {
   return {
     surface: "ops",
-    actor: staffOf(c),
+    actor: actorOf(c),
     action,
     subject: { kind: "appointment", id: visitId },
     requestId: c.var.requestId,
@@ -217,7 +217,7 @@ export function registerOpsVisitChanges(app: App): void {
     if (!(await withinRouteReach(c, "visit", visitId))) return c.json(errorBody("not_found", requestId), 404);
     const waived = await waiveCheckIn(c.env.DB, {
       appointmentId: visitId,
-      by: staffOf(c).id,
+      by: actorOf(c).id,
       reason,
       audit: visitAudit(c, "visit.checkin_waive", visitId, undefined),
       now: deps.now(),
@@ -236,7 +236,7 @@ function opsCancelOf(c: Context<AppEnv>, terms: ChangeTerms, onClientTerms: bool
   const choice = onClientTerms ? "client" : "free";
   const detail = { terms: choice, refund: applied.cancel.refund, kept: applied.cancel.kept };
   const ops: OpsCancel = {
-    staff: staffOf(c).id,
+    staff: actorOf(c).id,
     reason,
     terms: choice,
     audit: visitAudit(c, "visit.cancel", terms.visit.id, detail),
@@ -292,7 +292,7 @@ async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.
     outcome: asked.outcome,
     startedAt: asked.started_at,
     endedAt: asked.ended_at,
-    byHand: { by: staffOf(c).id, reason: asked.reason },
+    byHand: { by: actorOf(c).id, reason: asked.reason },
     audit: visitAudit(c, "visit.close", visitId, { outcome: asked.outcome }),
   };
   const linkDeps = { ...deps, log, messagingSettings: c.var.config.settings.messaging };

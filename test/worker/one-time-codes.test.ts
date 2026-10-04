@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { checkCode, createChallenge, type ChallengeHolder } from "../../src/domain/one-time-codes.ts";
+import { checkLoginCode, createChallenge, type ChallengeHolder } from "../../src/domain/one-time-codes.ts";
 import { markDatabase, NOW } from "./helpers.ts";
 
 const PERSON = "66666666-6666-4666-8666-666666666666";
@@ -28,7 +28,7 @@ function challengeFor(holder: ChallengeHolder, holderId: string | null) {
 }
 
 function check(challengeId: string, holder: ChallengeHolder) {
-  return checkCode(env.DB, { challengeId, code: CODE, pepper: PEPPER, now: NOW, purpose: "login", holder });
+  return checkLoginCode(env.DB, { challengeId, code: CODE, pepper: PEPPER, now: NOW, purpose: "login", holder });
 }
 
 describe("createChallenge", () => {

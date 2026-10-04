@@ -16,7 +16,7 @@ import {
   type ErasureBlockers,
   type ErasureSummary,
 } from "../domain/erasure.ts";
-import { memberOfStaffOf } from "../http/audit.ts";
+import { staffMemberOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -152,7 +152,7 @@ export function registerOpsErasure(app: App): void {
     const { id } = c.req.valid("param");
     const override = c.req.valid("json").override_open_bookings === true;
     const { requestId, log } = c.var;
-    const staff = memberOfStaffOf(c);
+    const staff = staffMemberOf(c);
     if (staff === null) return c.json(errorBody("access_required", requestId), 403);
     const erasable = (await stillToErase(c.env.DB, id)) && (await withinRouteReach(c, "client", id));
     if (!erasable) return c.json(errorBody("not_found", requestId), 404);

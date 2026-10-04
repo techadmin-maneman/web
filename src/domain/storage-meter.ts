@@ -196,7 +196,7 @@ export async function tellOfDatabaseSize(db: D1Database, alertOnce: AlertOnce, h
  * Whether `incomingBytes` more may be stored. Refused only past the runaway ceiling, and each refusal is told to ops,
  * then counted (ADR 0067).
  */
-export async function roomFor(db: D1Database, alertOnce: AlertOnce, incomingBytes: number): Promise<boolean> {
+export async function hasStorageRoom(db: D1Database, alertOnce: AlertOnce, incomingBytes: number): Promise<boolean> {
   const { bytes } = await readMeter(db);
   if (hasRoom(bytes, incomingBytes)) return true;
   await alertOnce({

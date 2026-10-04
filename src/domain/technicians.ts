@@ -9,7 +9,7 @@
 
 import { sha256Hex } from "../lib/hash.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { checkCode } from "./one-time-codes.ts";
+import { checkLoginCode } from "./one-time-codes.ts";
 import { newSessionToken, SESSION_TTL_MS } from "./sessions.ts";
 
 export interface FieldTechnician {
@@ -42,7 +42,7 @@ export async function verifyTechnicianCode(
   db: D1Database,
   options: { challengeId: string; code: string; pepper: string; now: Date },
 ): Promise<TechnicianVerification> {
-  const checked = await checkCode(db, { ...options, purpose: "login", holder: "technician" });
+  const checked = await checkLoginCode(db, { ...options, purpose: "login", holder: "technician" });
   return checked.outcome === "verified" ? { outcome: "verified", technicianId: checked.holderId } : checked;
 }
 

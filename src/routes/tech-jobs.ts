@@ -79,7 +79,7 @@ import { pieceLabelTaken, pieceStepOf, type PieceField } from "../domain/pieces.
 import { checklistOf, declinedChecklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
 import { recordJobUse } from "../domain/job-use.ts";
 import { tellOfLowStock } from "../domain/stock.ts";
-import { roomFor } from "../domain/storage-meter.ts";
+import { hasStorageRoom } from "../domain/storage-meter.ts";
 import { noShowReadiness, openNoShowCase } from "../domain/no-shows.ts";
 import { closeOneVisit } from "../domain/one-visit.ts";
 import { offeredProducts } from "../domain/services.ts";
@@ -905,7 +905,7 @@ export function registerTechJobs(app: App): void {
 
     const bytes = await cappedBody(c.req.raw, MAX_PHOTO_BYTES);
     if (bytes === null || bytes.byteLength === 0) return c.json(errorBody("photo_invalid_file", requestId), 422);
-    if (!(await roomFor(c.env.DB, deps.alertOnce, bytes.byteLength))) {
+    if (!(await hasStorageRoom(c.env.DB, deps.alertOnce, bytes.byteLength))) {
       return c.json(errorBody("busy", requestId), 503);
     }
     const stored = await storeTechnicianPhoto(c.env.DB, c.env.CLIENT_PHOTOS, slot, bytes, now, now);
@@ -922,7 +922,7 @@ export function registerTechJobs(app: App): void {
 
     const bytes = await cappedBody(c.req.raw, MAX_THUMBNAIL_BYTES);
     if (bytes === null) return c.json(errorBody("photo_invalid_file", requestId), 422);
-    if (!(await roomFor(c.env.DB, deps.alertOnce, bytes.byteLength))) {
+    if (!(await hasStorageRoom(c.env.DB, deps.alertOnce, bytes.byteLength))) {
       return c.json(errorBody("busy", requestId), 503);
     }
     const stored = await storeThumbnail(c.env.DB, c.env.CLIENT_PHOTOS, slot, c.req.valid("query").take, bytes);

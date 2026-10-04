@@ -8,7 +8,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS, UNITS_PER_DAY } from "../config/scheduling.ts";
 import { earliestChange, loadSlotSchedule, setSlotTimes } from "../domain/slot-times.ts";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -131,7 +131,7 @@ export function registerOpsSlotTimes(app: App): void {
 
   app.openapi(setSlotTimesRoute, async (c) => {
     const body = c.req.valid("json");
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const set = await setSlotTimes(c.env.DB, {
       times: { unitStarts: body.unit_starts, dayEnd: body.day_end },
       appliesFrom: body.applies_from,

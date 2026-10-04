@@ -19,7 +19,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
@@ -30,7 +30,7 @@ import {
   dispatchBoard,
   moveJob,
   recordToldByPhone,
-  roomFor,
+  dispatchRoomFor,
   type MoveInput,
 } from "../domain/dispatch.ts";
 import { isWithin, techniciansWithin } from "../domain/places.ts";
@@ -366,7 +366,7 @@ export function registerOpsDispatch(app: App): void {
     const { appointment_id: appointmentId, from } = c.req.valid("query");
     if (!(await withinRouteReach(c, "visit", appointmentId)))
       return c.json(errorBody("not_found", c.var.requestId), 404);
-    const room = await roomFor(c.env.DB, { appointmentId, from: from ?? indiaDate(now) }, now);
+    const room = await dispatchRoomFor(c.env.DB, { appointmentId, from: from ?? indiaDate(now) }, now);
     if (room === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const technicians = await techniciansWithin(c.env.DB, await routeReach(c));
     const reached = room.rooms.filter((each) => isWithin(technicians, each.technician_id));
@@ -380,7 +380,7 @@ export function registerOpsDispatch(app: App): void {
     const { requestId, deps } = c.var;
     const { id } = c.req.valid("param");
     if (!(await withinRouteReach(c, "move", id))) return c.json(errorBody("not_found", requestId), 404);
-    const actor = staffOf(c);
+    const actor = actorOf(c);
     const recorded = await recordToldByPhone(c.env.DB, {
       moveId: id,
       actor: actor.id,
@@ -412,7 +412,7 @@ function checkInClearedBy(c: Context<AppEnv>, request: MoveRequest): AuditEntry 
   if (request.clear_check_in !== true) return null;
   return {
     surface: "ops",
-    actor: staffOf(c),
+    actor: actorOf(c),
     action: "dispatch.check_in_cleared",
     subject: { kind: "appointment", id: request.appointment_id },
     requestId: c.var.requestId,
@@ -422,7 +422,7 @@ function checkInClearedBy(c: Context<AppEnv>, request: MoveRequest): AuditEntry 
 /** Assigning and moving are the same write; only what ops change differs. */
 async function write(c: Context<AppEnv>, request: MoveRequest) {
   const { requestId, deps, log } = c.var;
-  const staff = staffOf(c);
+  const staff = actorOf(c);
   if (!(await withinRouteReach(c, "visit", request.appointment_id))) {
     return c.json(errorBody("not_found", requestId), 404);
   }

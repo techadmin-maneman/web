@@ -8,7 +8,7 @@
 // (src/domain/blackouts.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import {
   addBlackouts,
@@ -117,7 +117,7 @@ export function registerOpsBlackouts(app: App): void {
     const { from, to, reason } = c.req.valid("json");
     const refused = additionRefusal({ from, to }, today);
     if (refused !== null) return c.json(errorBody("invalid_request", c.var.requestId, [refused]), 400);
-    await addBlackouts(c.env.DB, { from, to, reason, actor: staffOf(c), requestId: c.var.requestId, now });
+    await addBlackouts(c.env.DB, { from, to, reason, actor: actorOf(c), requestId: c.var.requestId, now });
     return c.json(await list(c.env.DB, today), 200);
   });
 
@@ -127,7 +127,7 @@ export function registerOpsBlackouts(app: App): void {
     const { from, to } = c.req.valid("json");
     const refused = periodRefusal({ from, to }, today);
     if (refused !== null) return c.json(errorBody("invalid_request", c.var.requestId, [refused]), 400);
-    const removed = await removeBlackouts(c.env.DB, { from, to, actor: staffOf(c), requestId: c.var.requestId, now });
+    const removed = await removeBlackouts(c.env.DB, { from, to, actor: actorOf(c), requestId: c.var.requestId, now });
     if (removed === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
     return c.json(await list(c.env.DB, today), 200);
   });

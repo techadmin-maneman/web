@@ -34,7 +34,7 @@ import {
   type Sale,
   type VisitAsked,
 } from "../domain/visit-booking.ts";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import { bookHold } from "../http/book-hold.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -210,7 +210,7 @@ async function letGo(c: Context<AppEnv>, holdId: string, reason: string): Promis
   const now = c.var.deps.now();
   const entry = {
     surface: "ops",
-    actor: staffOf(c),
+    actor: actorOf(c),
     action: "booking.give_back",
     subject: { kind: "hold", id: holdId },
     requestId: c.var.requestId,
@@ -349,7 +349,7 @@ export function registerOpsVisits(app: App): void {
     const closesAt = sale.pays === "link" ? await linkClosesAt(db, asked, now) : null;
     if (sale.pays === "link" && closesAt === null) return c.json(errorBody("not_bookable", c.var.requestId), 422);
 
-    const by = { actor: staffOf(c), requestId: c.var.requestId };
+    const by = { actor: actorOf(c), requestId: c.var.requestId };
     const graceSeconds = inputs.paymentHold.grace * 60;
     const hold = await holdForSale(db, asked, sale, { closesAt, graceSeconds, by }, now);
     if (hold === null) return c.json(errorBody("taken", c.var.requestId), 409);

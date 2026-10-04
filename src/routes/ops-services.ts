@@ -32,7 +32,7 @@ import {
   setServiceLength,
   type ServiceRefusal,
 } from "../domain/services.ts";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -283,7 +283,7 @@ function refusalBody(c: Context<AppEnv>, refusal: ServiceRefusal) {
 /** A write's answer that is a refusal rather than the service, or services, it wrote. */
 const isRefusal = (result: object): result is ServiceRefusal => "refused" in result;
 
-const writeOf = (c: Context<AppEnv>) => ({ actor: staffOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
+const writeOf = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 export function registerOpsServices(app: App): void {
   app.openapi(servicesRoute, async (c) => c.json(await servicesBody(c), 200));
