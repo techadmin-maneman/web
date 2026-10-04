@@ -1,4 +1,4 @@
--- Migration number: 0089
+-- Migration number: 0090
 -- A number that goes up whenever something the dispatch board draws changes: a visit booked, moved, started,
 -- cancelled or taken off; a move written, or its client told; leave recorded or taken back; a technician added,
 -- renamed or switched off; the day's slot times set. The open board asks for it every minute and reads itself again
