@@ -6,7 +6,10 @@
 // "books_refund_refused:<refundId>". Raising it again only counts it. The chat
 // hears of it the first time, and again when it has happened 10, 100 and 1,000
 // times as often, so a failure that keeps happening does not read as one that
-// happened once. Resolving it closes it; if it happens after that, it is new.
+// happened once. Once told, it waits on the Tasks board's "Needs a hand" until
+// it is resolved, by the code that sees it put right or by ops there
+// (src/domain/needs-a-hand.ts). Resolving it closes it; if it happens after
+// that, it is new.
 //
 // A message carries IDs, never a name, number or address. The chat post also
 // scrubs numbers and e-mail addresses, as a last defence (src/providers/alerts.ts).
@@ -48,7 +51,7 @@ export function createAlertOnce(deps: {
     const text = link === undefined ? message : `${message} ${OPS_ORIGIN[environment]}${link}`;
     let count: number;
     try {
-      count = await countSighting(db, { key, message, link: link ?? null }, now());
+      count = await countSighting(db, { key, message, link: link ?? null, after }, now());
     } catch (error) {
       // With nothing kept there is no knowing whether ops were told already, so they are told.
       log.error("alert_not_stored", { key, error });
@@ -64,12 +67,13 @@ export function createAlertOnce(deps: {
 
 export function createResolveAlert(deps: { db: D1Database; now: () => Date }): ResolveAlert {
   return async (key) => {
-    await deps.db
-      .prepare("UPDATE alerts SET resolved_at = ?2 WHERE key = ?1 AND resolved_at IS NULL")
-      .bind(key, deps.now().toISOString())
-      .run();
+    await resolveAlertStatement(deps.db, key, deps.now()).run();
   };
 }
+
+/** Resolves the key's open alert, in the batch that puts right what it was about. */
+export const resolveAlertStatement = (db: D1Database, key: string, now: Date): D1PreparedStatement =>
+  db.prepare("UPDATE alerts SET resolved_at = ?2 WHERE key = ?1 AND resolved_at IS NULL").bind(key, now.toISOString());
 
 /** Whether an alert is open under this key: raised, and not yet resolved. */
 export async function isAlertOpen(db: D1Database, key: string): Promise<boolean> {
@@ -77,21 +81,25 @@ export async function isAlertOpen(db: D1Database, key: string): Promise<boolean>
   return row !== null;
 }
 
-/** Opens the key's alert, or counts one more sighting of the open one; how many there have been. */
+/**
+ * Opens the key's alert, or counts one more sighting of the open one; how many there have been. Its `after`-th
+ * sighting is when it is told, and from then on it waits on the Tasks board's "Needs a hand".
+ */
 async function countSighting(
   db: D1Database,
-  alert: { key: string; message: string; link: string | null },
+  alert: { key: string; message: string; link: string | null; after: number },
   now: Date,
 ): Promise<number> {
   const row = await db
     .prepare(
-      `INSERT INTO alerts (id, key, message, link, count, first_seen_at, last_seen_at)
-       VALUES (?1, ?2, ?3, ?4, 1, ?5, ?5)
+      `INSERT INTO alerts (id, key, message, link, count, first_seen_at, last_seen_at, told_at)
+       VALUES (?1, ?2, ?3, ?4, 1, ?5, ?5, iif(?6 <= 1, ?5, NULL))
        ON CONFLICT (key) WHERE resolved_at IS NULL DO UPDATE SET
-         count = count + 1, message = excluded.message, link = excluded.link, last_seen_at = excluded.last_seen_at
+         count = count + 1, message = excluded.message, link = excluded.link, last_seen_at = excluded.last_seen_at,
+         told_at = COALESCE(told_at, iif(count + 1 >= ?6, excluded.last_seen_at, NULL))
        RETURNING count`,
     )
-    .bind(crypto.randomUUID(), alert.key, alert.message, alert.link, now.toISOString())
+    .bind(crypto.randomUUID(), alert.key, alert.message, alert.link, now.toISOString(), alert.after)
     .first<{ count: number }>();
   return row?.count ?? 1;
 }

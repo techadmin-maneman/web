@@ -17,6 +17,7 @@ export const DECIDED_IN: Partial<Record<Group, { readonly page: SectionPath; rea
   leave_conflict: { page: "/dispatch", row: null },
   referral_review: { page: "/referrals", row: "held" },
   no_show_decision: { page: "/no-shows", row: "case" },
+  no_show_dispute: { page: "/no-shows", row: "dispute" },
   number_change: { page: "/number-changes", row: "change" },
   erasure_request: { page: "/deletion-requests", row: "request" },
   grievance: { page: "/grievances", row: "grievance" },

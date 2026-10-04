@@ -3053,6 +3053,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/no-shows/{id}/charge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What charging an undecided no-show would keep of the visit's payment, and refund */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What a charge would do */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NoShowChargePreview"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such case in the caller's cities, or it was ruled on already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/no-shows/decided": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day's rulings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            cases: components["schemas"]["NoShowDecided"][];
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/no-shows/disputes": {
         parameters: {
             query?: never;
@@ -3230,7 +3333,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
+                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                     id: string;
                 };
                 cookie?: never;
@@ -3338,6 +3441,168 @@ export interface paths {
                     };
                 };
                 /** @description not_found: no such task on the board now in the caller's cities; a follow-up may be booked, or it is closed already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The open alerts ops have been told of, the longest open first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Of the caller's own departments once the Staff list is enforced */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpenAlerts"];
+                    };
+                };
+                /** @description access_required, or not_permitted: no View in any department */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark an alert done: what it was about is put right */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Closed, under the member of staff who closed it */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description not_permitted: it asks Act in the department the alert's kind belongs to, and Manage for a CRM erasure */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such open alert; it may be closed already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts/{id}/send-again": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send again the message, lead or CRM erasure an alert gave up on, and close the alert */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Sent again, and the alert closed: a new alert follows if it fails again */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: this kind of alert has nothing to send again */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_permitted: it asks Act in the department the alert's kind belongs to */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such open alert; it may be closed already */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -6596,6 +6861,8 @@ export interface components {
             dispute: ("open" | "refunded" | "upheld") | null;
             /** @description Whether the client may dispute the charge now: one that took something, not disputed yet. */
             disputable: boolean;
+            /** @description When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise. */
+            dispute_closed_at: string | null;
         };
         RefundEntry: {
             /**
@@ -7754,6 +8021,37 @@ export interface components {
             /** @description Why, in ops' words. Never a medical detail. */
             note?: string;
         };
+        /** @description What charging the case would do, worked out as charging does. */
+        NoShowChargePreview: {
+            /** @description In paise: what was paid for the visit and not refunded. */
+            paid: number;
+            /** @description In paise: what charging keeps of it. The rest is refunded. */
+            kept: number;
+            /** @description Whether charging keeps the credit the visit was paid with. */
+            credit_kept: boolean;
+        };
+        NoShowDecided: {
+            /** Format: uuid */
+            id: string;
+            /** @description Whose visit it was; null once they have been erased. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            visit_date: string | null;
+            /** @enum {string} */
+            decision: "charged" | "waived";
+            /** Format: date-time */
+            decided_at: string;
+            /** @description What a charge took; null for a waiver, and for a charge ruled before it was recorded. */
+            charge: {
+                /** @description In paise: what the charge kept of the visit's payment. */
+                kept: number;
+                /** @description Whether the charge spent the credit the visit used. */
+                credit_spent: boolean;
+            } | null;
+        };
         /** @description A disputed charge, with the evidence its no-show was ruled on. */
         NoShowDispute: {
             /** Format: uuid */
@@ -7774,7 +8072,7 @@ export interface components {
             raised_at: string;
             /**
              * Format: date-time
-             * @description When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at.
+             * @description When ops should have ruled: the Tasks board's allowance for a disputed charge, from raised_at.
              */
             due: string;
             /** @description In paise: what the charge kept of the visit's payment. */
@@ -7809,7 +8107,7 @@ export interface components {
             staff: string[];
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
+                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -7856,6 +8154,33 @@ export interface components {
         TaskClosing: {
             /** @description Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased. */
             reason: string;
+        };
+        OpenAlerts: {
+            /** @description How many are open, all of them. */
+            count: number;
+            /** @description The longest open first, at most 50. */
+            alerts: components["schemas"]["OpenAlert"][];
+        };
+        OpenAlert: {
+            /** Format: uuid */
+            id: string;
+            /** @description What went wrong: the alert's key up to its first colon, "crm_lead". */
+            kind: string;
+            /** @description What happened and what to do, with IDs only, as the chat was told. */
+            message: string;
+            /** @description Where in the console to act on it, as a path: "/clients/<personId>". */
+            link: string | null;
+            /** @description How many times it has happened. */
+            count: number;
+            /**
+             * Format: date-time
+             * @description When ops were first told.
+             */
+            told_at: string;
+            /** Format: date-time */
+            last_seen_at: string;
+            /** @description Its work can be sent again from here: a message, a lead to the CRM, or an erasure there. */
+            send_again: boolean;
         };
         /** @description Derived at read time from the payments themselves; no total is kept. */
         OpsDayMoney: {

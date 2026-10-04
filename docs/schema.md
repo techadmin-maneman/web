@@ -162,7 +162,7 @@ Indexes:
 
 One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 
-Made by `0038_alerts.sql`.
+Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -174,10 +174,12 @@ Made by `0038_alerts.sql`.
 | `first_seen_at` | TEXT | no |  |  |
 | `last_seen_at` | TEXT | no |  |  |
 | `resolved_at` | TEXT | yes |  |  |
+| `told_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `alerts_open_by_key`: unique on (`key`), where `resolved_at IS NULL`
+- `alerts_open_told`: on (`told_at`), where `resolved_at IS NULL AND told_at IS NOT NULL`
 
 ## appointments
 
@@ -620,7 +622,7 @@ Indexes:
 
 Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 
-Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0087_dispatch_move_blackout_reason.sql`.
+Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0088_dispatch_move_blackout_reason.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
