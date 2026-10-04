@@ -162,6 +162,10 @@ jobs:
           node scripts/check-wrangler-config.ts
           --api test/fixtures/wrangler/broken-staging-inherits-bindings.jsonc
           --expect-problem "env.staging: queues.producers is not redeclared"
+      # A warning, never a failure: past 800 lines a person wrote, one review cannot hold it (CONTRIBUTING.md).
+      - name: The pull request is small enough to review
+        if: github.event_name == 'pull_request'
+        run: node scripts/check-pr-size.ts "origin/${{ github.base_ref }}"
       - name: Migrations are forward-only and applied ones are unchanged
         env:
           BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}

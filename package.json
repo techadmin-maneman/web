@@ -13,7 +13,7 @@
   "scripts": {
     "gen": "npm run types && npm run openapi && npm run schema && npm run adr-index",
     "texts:export": "node scripts/export-texts.ts",
-    "dev": "node scripts/ensure-dev-vars.ts && npm run db:local && wrangler dev --env=\"\" --port 8787 --inspector-port 9230 --test-scheduled",
+    "dev": "node scripts/dev-api.ts",
     "dev:all": "node scripts/dev-all.ts",
     "dev:site": "node scripts/build-site.ts --dev",
     "db:local": "wrangler d1 migrations apply DB --local && node scripts/mark-database.ts local",
