@@ -33,7 +33,7 @@ export function prefillOf(group: Group, detail: string | null): Prefill | null {
   const parts = detail?.split(" ") ?? [];
   if (group === "consultation_request") return consultationAsked(parts);
   if (group === "first_fit_to_book") {
-    // The consultation's start, then the window the fit was asked for in.
+    // The consultation's start, then the window the fit is offered in.
     const fitIn = parts[1];
     return { choice: "first_fit", ...(isWindow(fitIn) ? { window: fitIn } : {}) };
   }

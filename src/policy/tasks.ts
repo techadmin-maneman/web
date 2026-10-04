@@ -61,8 +61,8 @@
 // At-risk client is the board's own group, built as the owner ruled on 27
 // September 2026 (docs/decisions/0086-the-next-visit-is-offered.md): a fitted
 // client with nothing booked, days past the day their next service fell due
-// (src/policy/next-visit.ts). First fit to book is ours: a first fit asked for
-// on the site's form, still not booked days after the consultation. Both go as
+// (src/policy/next-visit.ts). First fit to book is ours: a client consulted and
+// not fitted since, with nothing booked days after the consultation. Both go as
 // soon as a later visit is booked, as a visit left partly done does.
 //
 // Two things about a task are kept, both as the owner ruled on 27 September

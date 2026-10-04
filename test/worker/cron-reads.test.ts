@@ -318,8 +318,8 @@ async function rowsReadBy(call: () => Promise<Response>): Promise<number> {
 // Their At-risk client and First fit to book read a summary of each client's last visits, kept as each visit closes,
 // and the Stock page a balance for each place, kept with each movement: never the history behind either
 // (docs/decisions/0086-the-next-visit-is-offered.md, 0087-consumables-and-stock.md; plan piece C27). Consultation
-// request and First fit to book read only the requests that can still be a task, by flags kept as the visits behind
-// them are written (docs/decisions/0092-task-owners.md).
+// request reads only the requests that can still be a task, by a flag kept as the visits behind them are written
+// (docs/decisions/0092-task-owners.md), and First fit to book only the clients not fitted since their consultation.
 describe("a look at the Tasks board or the Stock page", () => {
   const ops = appFor("local", fakeDependencies(), {}, "ops");
   const CLIENTS = 30;
@@ -335,17 +335,14 @@ describe("a look at the Tasks board or the Stock page", () => {
   const KIT = "'44444444-4444-4444-8444-' || printf('%012d', 1 + i % 2)";
 
   /**
-   * The clients numbered 1 to CLIENTS, each consulted after asking for a first fit on the site's form, and every
-   * other one with a service booked; the technicians who come; and five people more, consulted then and never
-   * fitted, each a First fit to book.
+   * The clients numbered 1 to CLIENTS, each consulted, and every other one with a service booked; the technicians
+   * who come; and five people more, consulted then and never fitted, each a First fit to book.
    */
   const CLIENTS_SQL = [
     `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
      SELECT ${TECHNICIAN}, 'fsm-t-' || i, 'Technician ' || i, 'T' || i, 1, '${AGO}' FROM n WHERE i <= 2`,
     `INSERT INTO people (id, created_at, mobile_e164, name)
      SELECT 'q-' || i, '${AGO}', '+9171' || printf('%08d', i), 'Client ' || i FROM n`,
-    `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at)
-     SELECT 'ff-' || i, 'q-' || i, NULL, '${AGO}' FROM n`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
        fsm_modified_at, synced_at)
      SELECT 'c-' || i, 'fsm-c-' || i, 'q-' || i, 'consultation', '${CONSULTED}', '${CONSULTED}', 'completed',
@@ -357,8 +354,6 @@ describe("a look at the Tasks board or the Stock page", () => {
        'scheduled', 'Scheduled', '${AGO}', '${AGO}' FROM n WHERE i % 2 = 0`,
     `INSERT INTO people (id, created_at, mobile_e164, name)
      SELECT 'r-' || i, '${AGO}', '+9172' || printf('%08d', i), 'Lead ' || i FROM n WHERE i <= 5`,
-    `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at)
-     SELECT 'fr-' || i, 'r-' || i, 'morning', '${AGO}' FROM n WHERE i <= 5`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
        fsm_modified_at, synced_at)
      SELECT 'rc-' || i, 'fsm-rc-' || i, 'r-' || i, 'consultation', '${CONSULTED}', '${CONSULTED}', 'completed',
@@ -445,16 +440,14 @@ describe("a look at the Tasks board or the Stock page", () => {
   });
 
   /**
-   * The leads numbered ?1 to ?2, each of whom asked on the site's form for a consultation and a first fit, had the
-   * consultation, and was fitted after it: nothing any of them asked for is still a task.
+   * The leads numbered ?1 to ?2, each of whom asked on the site's form for a consultation, had it, and was fitted
+   * after it: nothing about any of them is still a task.
    */
   const ANSWERED_LEADS_SQL = [
     `INSERT INTO people (id, created_at, mobile_e164, name)
      SELECT 'lead-' || i, '${AGO}', '+9173' || printf('%08d', i), 'Lead ' || i FROM n`,
     `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
      SELECT 'cr-' || i, 'lead-' || i, '122018', date('${CONSULTED}'), 'morning', '${CONSULTED}' FROM n`,
-    `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at)
-     SELECT 'lead-ff-' || i, 'lead-' || i, 'morning', '${CONSULTED}' FROM n`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
        fsm_modified_at, synced_at)
      SELECT 'lead-c-' || i, 'fsm-lead-c-' || i, 'lead-' || i, 'consultation', '${CONSULTED}', '${CONSULTED}',

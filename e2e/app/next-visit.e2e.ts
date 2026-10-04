@@ -164,9 +164,7 @@ test("Home offers the replacement where the piece falls due first, and a page sa
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
 });
 
-test("Home offers the first fit once the consultation is done, in the window the site's request asked for", async ({
-  page,
-}) => {
+test("Home offers the first fit once the consultation is done, in the consultation's window", async ({ page }) => {
   const { firstFit } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, firstFit.mobile);

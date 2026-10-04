@@ -1633,13 +1633,13 @@ export const tasks = {
      */
     withFirstFit: (when: string | null) => (when === null ? "+ first fit" : `+ first fit, ${when.toLowerCase()}`),
     /**
-     * PLACEHOLDER: "Consultation Thu 10 Sep; first fit asked for in the morning". Nothing is booked since the
-     * consultation, and the task goes when the client books.
+     * PLACEHOLDER: "Consultation Thu 10 Sep, morning · not fitted". The window is the consultation's, which the fit
+     * is booked in from the row; none where a fit cannot start in it. The task goes when the client books.
      */
     first_fit_to_book: (consulted: string, when: string | null) =>
       when === null
-        ? `Consultation ${consulted}; first fit asked for`
-        : `Consultation ${consulted}; first fit asked for in the ${when.toLowerCase()}`,
+        ? `Consultation ${consulted} · not fitted`
+        : `Consultation ${consulted}, ${when.toLowerCase()} · not fitted`,
     /**
      * "9 weeks since the last visit · due Sat 19 Sep", as board D2 writes "9 weeks since service": the day the next
      * service fell due, from the cadence ops set. The task goes when the client books.

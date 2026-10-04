@@ -68,7 +68,6 @@ export const windowsFor = (type: VisitType): BookingWindow[] => windowsFitting(V
 
 /** The windows a first fit can start in (windowsFor), which a request for one may name. */
 export const FIRST_FIT_WINDOWS = ["morning", "afternoon"] as const;
-export type FirstFitWindow = (typeof FIRST_FIT_WINDOWS)[number];
 
 /** How long a held slot waits for payment (board C4's countdown from 10:00). */
 export const HOLD_SECONDS = 600;

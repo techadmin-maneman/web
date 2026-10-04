@@ -11267,7 +11267,7 @@ Request body:
     "id": {
       "type": "string",
       "format": "uuid",
-      "description": "The queued row's own id, so the task can be reached where it is decided."
+      "description": "The queued row's own id, so the task can be reached where it is decided; for a first fit to book, the client's."
     },
     "person": {
       "anyOf": [
@@ -11326,7 +11326,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted."
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window the fit is offered in, the consultation's (\"any\" where a fit cannot start in it)."
     },
     "since": {
       "type": "string",
