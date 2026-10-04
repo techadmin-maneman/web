@@ -5,6 +5,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  DEPENDENCIES_LABEL,
   HOLD_LABEL,
   mergeVerdict,
   REVIEWED_LABEL,
@@ -146,5 +147,18 @@ describe("a push after a review", () => {
   // A later run of ci cancels an earlier one, which must never cancel the label coming off.
   it("is a workflow of its own, with no concurrency group to be cancelled by", () => {
     expect(workflow).not.toContain("concurrency");
+  });
+});
+
+// A dependency update runs code nobody here wrote, as soon as it is installed and deployed.
+describe("a dependency update", () => {
+  const bump = { ...PULL, labels: [DEPENDENCIES_LABEL], files: ["package.json", "package-lock.json"] };
+
+  it("waits for the reviewed label, however small", () => {
+    expect(mergeVerdict(bump, FULL)).toEqual({
+      merge: false,
+      reason: `it updates dependencies and waits for the ${REVIEWED_LABEL} label`,
+    });
+    expect(mergeVerdict({ ...bump, labels: [DEPENDENCIES_LABEL, REVIEWED_LABEL] }, FULL)).toEqual({ merge: true });
   });
 });
