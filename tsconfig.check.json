@@ -1,0 +1,18 @@
+{
+  // Every TypeScript project in the repository, checked together by `npm run typecheck` (tsc -b): each is checked
+  // once, and on the next run only the projects whose files changed are checked again (*.tsbuildinfo, git-ignored).
+  // A new tsconfig goes here too.
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.json" },
+    { "path": "./tsconfig.node.json" },
+    { "path": "./tsconfig.browser.json" },
+    { "path": "./apps/app/tsconfig.json" },
+    { "path": "./apps/app/sw/tsconfig.json" },
+    { "path": "./apps/ops/tsconfig.json" },
+    { "path": "./apps/tech/tsconfig.json" },
+    { "path": "./apps/tech/sw/tsconfig.json" },
+    { "path": "./packages/ui/tsconfig.json" },
+    { "path": "./site/tsconfig.worker.json" }
+  ]
+}
