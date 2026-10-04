@@ -125,7 +125,7 @@ export const dispatch = {
    * holds the two together.
    */
   windowHours: {
-    morning: "9 am to 12",
+    morning: "9 am to 12 pm",
     afternoon: "12 to 4 pm",
     evening: "4 to 8 pm",
   } as Readonly<Record<string, string>>,
@@ -240,7 +240,7 @@ export const dispatch = {
       in_progress: "In progress",
       completed: "Done",
       cancelled: "Cancelled",
-      terminated: "Terminated",
+      terminated: "Not done",
       other: "Other",
     } as Readonly<Record<string, string>>,
     /** PLACEHOLDER: the State row once the technician's phone says he has begun. */
@@ -250,7 +250,7 @@ export const dispatch = {
       closed: "Closed by the technician",
     } as Readonly<Record<string, string>>,
     /** PLACEHOLDER: a visit the technician has started or closed has no move. */
-    stays: "Under way, so it stays where it is.",
+    stays: "In progress, so it stays where it is.",
     /** PLACEHOLDER: the warning before ops move a visit the technician has checked in at. */
     checkedIn: (technician: string) =>
       `${technician} has checked in. Moving it clears the check-in, so they check in again at the new time.`,
@@ -783,7 +783,7 @@ export const clients = {
         unknown: "That did not go through. Nothing was closed.",
       } as Readonly<Record<string, string>>,
     },
-    /** "9 am to 12", as the dispatch drawer writes a window. */
+    /** "9 am to 12 pm", as the dispatch drawer writes a window. */
     time: (from: string, to: string) => `${from} to ${to}`,
     types: {
       consultation: "Consultation",
@@ -796,9 +796,9 @@ export const clients = {
     /** A visit to come, by where it stands, and one done, by how it was closed. */
     stages: {
       booked: "Booked",
-      in_progress: "Under way",
+      in_progress: "In progress",
       done: "Done",
-      closing: "Being closed",
+      closing: "Closing",
     },
     // PLACEHOLDER: "Not home" is ours; the board draws Done and Partial.
     outcomes: { done: "Done", partial: "Partial", no_show: "Not home" },
@@ -821,12 +821,14 @@ export const clients = {
     lateFee: "Late fee",
     refund: "Refund",
     paymentStates: {
-      authorized: "Authorised",
+      authorized: "Processing",
       captured: "Paid",
       refunded: "Refunded",
-      partially_refunded: "Part refunded",
+      partially_refunded: "Partly refunded",
     } as Readonly<Record<string, string>>,
-    refundStates: { created: "Processing", processed: "Back", failed: "Failed" } as Readonly<Record<string, string>>,
+    refundStates: { created: "Processing", processed: "Refunded", failed: "Failed" } as Readonly<
+      Record<string, string>
+    >,
     reference: (reference: string) => `Ref ${reference}`,
     // PLACEHOLDER: a discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
     /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
@@ -1092,8 +1094,8 @@ export const clients = {
      * with the client's latest one, which belongs beside their consents.
      */
     deletion: {
-      requested: (date: string) => `Erasure requested ${date}. It is not decided here.`,
-      rejected: (date: string) => `Erasure requested ${date} and refused.`,
+      requested: (date: string) => `Deletion requested ${date}. It is not decided here.`,
+      rejected: (date: string) => `Deletion requested ${date} and refused.`,
     },
   },
   /**
@@ -1452,7 +1454,7 @@ export const noShows = {
       whatsapp: "WhatsApp",
       waited: "Waited",
     },
-    /** "Sat 19 Sep, 9 am to 12". */
+    /** "Sat 19 Sep, 9 am to 12 pm". */
     booked: (date: string, from: string, to: string) => `${date}, ${from} to ${to}`,
     /** PLACEHOLDER: "2:08 pm · 5 h 8 m after the booked start", or before it, or at it. */
     checkIn: (time: string, offset: string) => `${time} · ${offset}`,
@@ -1659,7 +1661,7 @@ export const tasks = {
     // PLACEHOLDER: a group the board does not draw; board D1 letters the card "Disputed charge".
     no_show_dispute: "Disputed charge",
     number_change: "Number change",
-    erasure_request: "Erasure request",
+    erasure_request: "Deletion request",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0072-ops-clients-and-queues.md).
     grievance: "Grievance",
     // PLACEHOLDER: two groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
@@ -2241,7 +2243,7 @@ export const deletions = {
 export const numberChanges = {
   title: "Number changes",
   queue: {
-    title: "Waiting for ops",
+    title: "Waiting for a decision",
     /** The number they had, and the one they are moving to. */
     move: (from: string, to: string) => `${from} → ${to}`,
     requested: (date: string) => `Requested ${date}`,

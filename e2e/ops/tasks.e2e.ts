@@ -43,7 +43,7 @@ test("stands each group under its department, in the navigation's order, side by
   await expect(groupNames(page)).toHaveText([
     "Replacement order",
     "Number change",
-    "Erasure request",
+    "Deletion request",
     "No-show decision",
     "Referral review",
   ]);

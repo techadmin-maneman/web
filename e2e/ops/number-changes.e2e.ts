@@ -21,7 +21,7 @@ async function open(page: Page, decision = json({ state: "confirmed" }), path = 
   await expect(page.getByRole("heading", { level: 1, name: "Number changes" })).toBeVisible();
 }
 
-const queue = (page: Page) => page.getByRole("region", { name: "Waiting for ops" });
+const queue = (page: Page) => page.getByRole("region", { name: "Waiting for a decision" });
 
 test("shows both numbers, the day it was asked for, and that each was proven", async ({ page }) => {
   await open(page);
@@ -100,7 +100,7 @@ test("moves the keyboard into the reason as it opens, and to the heading once de
   await expect(reason).toBeFocused();
   await reason.fill("The client says they did not ask.");
   await page.getByRole("button", { name: "Reject the change" }).click();
-  await expect(page.getByRole("heading", { name: "Waiting for ops" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Waiting for a decision" })).toBeFocused();
 });
 
 // The Tasks board links a number change to its row here (OPS-05).
