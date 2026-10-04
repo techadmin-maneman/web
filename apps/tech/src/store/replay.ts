@@ -11,13 +11,21 @@
 //   - A `409 superseded` stops that job and keeps what changed, so the screen
 //     says which field moved under the phone and never a generic error, and
 //     for a job given to another technician, whom and when.
+//   - A check-in or no-show the API refused as early is kept as early, so the
+//     card can say so after a reload. It stops nothing and is not unsent work.
 
 import type { Moved } from "@maneman/web-kit/api";
 import type { EventKind } from "../routes.ts";
 
 export type { EventKind };
 
-export type EventState = "waiting" | "superseded" | "refused";
+export type EventState = "waiting" | "superseded" | "refused" | "early";
+
+/** The states that stop a job's queue until the technician deals with it. */
+type Stopping = "superseded" | "refused";
+
+const stops = (event: Queued): event is Queued & { readonly state: Stopping } =>
+  event.state === "superseded" || event.state === "refused";
 
 export interface Queued {
   /** The outbox's own key, counting up: the order the phone queued them in. */
@@ -47,7 +55,7 @@ const inOrder = (queue: readonly Queued[]): Queued[] => [...queue].sort((a, b) =
 
 /** The jobs whose queue has stopped: nothing more of theirs is sent until the technician deals with it. */
 export function stoppedJobs(queue: readonly Queued[]): ReadonlySet<string> {
-  return new Set(queue.filter((event) => event.state !== "waiting").map((event) => event.job_id));
+  return new Set(queue.filter(stops).map((event) => event.job_id));
 }
 
 /** Every event that may go now, oldest first, with each stopped job's events left out. */
@@ -68,7 +76,7 @@ export interface JobAccount {
   /** Set when the job's queue stopped: the write it stopped at, the API's code, and the fields behind it. */
   readonly stopped: {
     readonly kind: EventKind;
-    readonly state: Exclude<EventState, "waiting">;
+    readonly state: Stopping;
     readonly note: string | null;
     readonly fields: readonly string[];
     readonly moved: Moved | null;
@@ -86,8 +94,9 @@ export function account(queue: readonly Queued[]): JobAccount[] {
   const accounts = new Map<string, { waiting: number; stopped: JobAccount["stopped"] }>();
   for (const event of inOrder(queue)) {
     const held = accounts.get(event.job_id) ?? { waiting: 0, stopped: null };
+    if (event.state === "early") continue;
     if (event.state === "waiting") held.waiting += 1;
-    else {
+    else if (stops(event)) {
       held.stopped ??= {
         kind: event.kind,
         state: event.state,
@@ -102,3 +111,14 @@ export function account(queue: readonly Queued[]): JobAccount[] {
   }
   return [...accounts].map(([job_id, held]) => ({ job_id, ...held }));
 }
+
+const refusedEarly = (queue: readonly Queued[], jobId: string, kind: EventKind): boolean =>
+  queue.some((event) => event.job_id === jobId && event.kind === kind && event.state === "early");
+
+/** Whether the job's last no-show was refused as before the wait ran out, so the card says so and stays. */
+export const refusedAsEarly = (queue: readonly Queued[], jobId: string): boolean =>
+  refusedEarly(queue, jobId, "no_show");
+
+/** Whether the job's last check-in was refused as before the earliest check-in, so the card says when it opens. */
+export const checkInRefusedAsEarly = (queue: readonly Queued[], jobId: string): boolean =>
+  refusedEarly(queue, jobId, "check_in");

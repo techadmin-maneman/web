@@ -14,16 +14,10 @@
 // when the phone will not promise, the technician is told rather than left to
 // find out (apps/tech/src/today/TodayScreen.tsx).
 
-import { get, put } from "./db.ts";
+import { deviceRecord, put } from "./db.ts";
 
 /** Not answered yet, granted, refused, or a browser too old to be asked (and so no promise either). */
 export type Keeping = "asking" | "granted" | "refused" | "unknown";
-
-interface Kept {
-  readonly key: "keeping";
-  /** Only ever "granted": see below. */
-  readonly keeping: "granted";
-}
 
 /**
  * Asks the phone, and remembers only a yes. A refusal is asked again on the
@@ -34,10 +28,10 @@ interface Kept {
  * installed from are two stores, and one's answer says nothing about the other.
  */
 export async function askToKeep(): Promise<Keeping> {
-  if ((await get<Kept>("device", "keeping")) !== null) return "granted";
+  if ((await deviceRecord("keeping")) !== null) return "granted";
 
   const keeping = await ask();
-  if (keeping === "granted") await put("device", { key: "keeping", keeping } satisfies Kept);
+  if (keeping === "granted") await put("device", { key: "keeping", keeping });
   return keeping;
 }
 

@@ -4,23 +4,16 @@
 
 import { reportClientError } from "@maneman/web-kit/client-errors";
 import { DEVICE_REVOKED, TECHNICIAN_INACTIVE } from "../api.ts";
-import { clear, DAY_CACHE, get, put, remove, wipe } from "./db.ts";
+import { clear, DAY_CACHE, deviceRecord, put, remove, wipe } from "./db.ts";
 import { keptMe } from "./device.ts";
-import { dropCards } from "./jobs.ts";
+import { dropCards, dropJobs } from "./jobs.ts";
 import { unsentJobs } from "./outbox.ts";
 
 const KEPT_FOR_MS = 7 * 24 * 60 * 60 * 1000;
 
-interface SetAside {
-  readonly key: "set_aside";
-  readonly technician_id: string;
-  /** When he was switched off, in milliseconds; the seven days run from here. */
-  readonly at: number;
-}
+const setAside = () => deviceRecord("set_aside");
 
-const setAside = () => get<SetAside>("device", "set_aside");
-
-const stillKept = (aside: SetAside, now: number) => now - aside.at < KEPT_FOR_MS;
+const stillKept = (aside: { readonly at: number }, now: number) => now - aside.at < KEPT_FOR_MS;
 
 /**
  * What the phone keeps once its session has ended: the work set aside for a switched-off technician, for seven
@@ -51,7 +44,7 @@ async function keepsWork(code: string | null, now: number): Promise<boolean> {
   const technicianId = (await keptMe())?.id;
   if (technicianId === undefined) return false;
   if ((await unsentJobs()).size === 0) return false;
-  await put("device", { key: "set_aside", technician_id: technicianId, at: now } satisfies SetAside);
+  await put("device", { key: "set_aside", technician_id: technicianId, at: now });
   return true;
 }
 
@@ -69,7 +62,7 @@ export async function settleSetAside(technicianId: string, now: number = Date.no
   if (aside.technician_id !== technicianId || !stillKept(aside, now)) {
     await clear("outbox");
     await clear("frames");
-    await clear("jobs");
+    await dropJobs();
   }
   await remove("device", "set_aside");
 }

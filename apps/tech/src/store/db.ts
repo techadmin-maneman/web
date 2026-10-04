@@ -3,43 +3,31 @@
 // roll"), and it is wiped whole when the session ends or ops revoke the device. A technician ops switch off keeps
 // the work he has not sent for a while (./set-aside.ts).
 //
-//   device   the device's own ID and label, made once at enrolment
-//   jobs     today's and tomorrow's jobs and cards, so the app opens in a basement
-//   outbox   the writes that have not reached us, in the order they were queued
-//   frames   photograph frames, held until the API confirms the upload
+//   device    the device's own ID and label, made once at enrolment, and who is signed in
+//   days      today's and tomorrow's lists, so the app opens in a basement
+//   cards     the clients' cards of those days' jobs
+//   arrivals  what each check-in measured
+//   closures  when each job was closed out on the phone
+//   starts    each job's start as its card showed it at check-in
+//   outbox    the writes that have not reached us, in the order they were queued
+//   frames    photograph frames, held until the API confirms the upload
+//
+// What each holds is ./records.ts, and how the database reaches each version ./upgrades.ts.
+
+import type { DeviceRecord, Records } from "./records.ts";
+import { RECORD_VERSION, STEP_INDEX, UPGRADES } from "./upgrades.ts";
+
+export { RECORD_VERSION, STEP_INDEX };
 
 export const DATABASE = "mm-tech";
 
 /** The one cache the service worker keeps an API answer in, wiped with the database. */
 export const DAY_CACHE = "mm-tech-day";
 
-export const STORES = ["device", "jobs", "outbox", "frames"] as const;
-export type StoreName = (typeof STORES)[number];
+export const STORES = ["device", "days", "cards", "arrivals", "closures", "starts", "outbox", "frames"] as const;
+export type StoreName = (typeof STORES)[number] & keyof Records;
 
-/**
- * How the database reaches each version, one step at a time. A phone opens it
- * at whatever version it last had and runs every step it missed, in order, and
- * none twice. A new step goes at the end, and an old one is never edited: some
- * phone somewhere has not run it yet.
- */
-const UPGRADES: readonly ((db: IDBDatabase) => void)[] = [
-  // Version 1: the four stores. The outbox's key counts up, so reading it in key order is the order the phone queued them in.
-  (db) => {
-    db.createObjectStore("device", { keyPath: "key" });
-    db.createObjectStore("jobs", { keyPath: "id" });
-    db.createObjectStore("outbox", { keyPath: "seq", autoIncrement: true }).createIndex("job", "job_id");
-    db.createObjectStore("frames", { keyPath: "id" });
-  },
-];
 const VERSION = UPGRADES.length;
-
-/**
- * The shape of every record written now, stamped on it as `v`. A build that
- * changes a record's shape raises it, so the step it adds to UPGRADES can tell
- * the records it must move from the ones already moved. A record from before
- * the stamp has none, and is version 1.
- */
-export const RECORD_VERSION = 1;
 
 /** A write the phone had no room for. The screens say so plainly, rather than that the camera failed. */
 export class StorageFull extends Error {
@@ -78,7 +66,9 @@ function connect(): Promise<IDBDatabase> {
   return new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DATABASE, VERSION);
     request.onupgradeneeded = (event) => {
-      for (const step of UPGRADES.slice(event.oldVersion)) step(request.result);
+      const upgrade = request.transaction;
+      if (upgrade === null) return;
+      for (const step of UPGRADES.slice(event.oldVersion)) step(request.result, upgrade);
     };
     request.onsuccess = () => {
       const db = request.result;
@@ -113,13 +103,36 @@ async function store(name: StoreName, mode: IDBTransactionMode): Promise<IDBObje
   return (await open()).transaction(name, mode).objectStore(name);
 }
 
-export async function all<T>(name: StoreName): Promise<T[]> {
-  return settle((await store(name, "readonly")).getAll() as IDBRequest<T[]>);
+// What a store answers is what this app put in it, in today's shape (./upgrades.ts): the one place it is taken on trust.
+
+export async function all<S extends StoreName>(name: S): Promise<Records[S][]> {
+  return settle((await store(name, "readonly")).getAll() as IDBRequest<Records[S][]>);
 }
 
-export async function get<T>(name: StoreName, key: IDBValidKey): Promise<T | null> {
-  const found = await settle((await store(name, "readonly")).get(key) as IDBRequest<T | undefined>);
+export async function get<S extends StoreName>(name: S, key: IDBValidKey): Promise<Records[S] | null> {
+  const found = await settle((await store(name, "readonly")).get(key) as IDBRequest<Records[S] | undefined>);
   return found ?? null;
+}
+
+/** The first value an index holds under a key. */
+export async function firstIn<S extends StoreName>(
+  name: S,
+  index: string,
+  key: IDBValidKey,
+): Promise<Records[S] | null> {
+  const found = await settle(
+    (await store(name, "readonly")).index(index).get(key) as IDBRequest<Records[S] | undefined>,
+  );
+  return found ?? null;
+}
+
+/** The device store's record under one of its keys. */
+export async function deviceRecord<K extends DeviceRecord["key"]>(
+  key: K,
+): Promise<Extract<DeviceRecord, { readonly key: K }> | null> {
+  const found = await get("device", key);
+  const isIt = (record: DeviceRecord): record is Extract<DeviceRecord, { readonly key: K }> => record.key === key;
+  return found !== null && isIt(found) ? found : null;
 }
 
 /** The stores whose last write failed for want of room. The phone is full while any is here. */
@@ -148,10 +161,10 @@ function roomIn(name: StoreName, found: boolean): void {
 const isNoRoom = (error: unknown) => error instanceof DOMException && error.name === "QuotaExceededError";
 
 /** One write, settled once it commits. A write the phone has no room for fails as StorageFull. */
-async function write<T>(name: StoreName, act: (target: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+async function write<T>(name: StoreName, act: (target: IDBObjectStore) => Promise<T>): Promise<T> {
   const transaction = (await open()).transaction(name, "readwrite");
   try {
-    const [result] = await Promise.all([settle(act(transaction.objectStore(name))), committed(transaction)]);
+    const [result] = await Promise.all([act(transaction.objectStore(name)), committed(transaction)]);
     roomIn(name, true);
     return result;
   } catch (error) {
@@ -163,22 +176,52 @@ async function write<T>(name: StoreName, act: (target: IDBObjectStore) => IDBReq
 
 const stamped = (value: object) => ({ ...value, v: RECORD_VERSION });
 
-export async function put(name: StoreName, value: object): Promise<void> {
-  await write(name, (target) => target.put(stamped(value)));
+export async function put<S extends StoreName>(name: S, value: Records[S]): Promise<void> {
+  await write(name, (target) => settle(target.put(stamped(value))));
 }
 
-/** Adds a value the store keys itself, and answers with the key it was given. */
-export async function add(name: StoreName, value: object): Promise<number> {
-  return Number(await write(name, (target) => target.add(stamped(value))));
+/**
+ * Adds a value the store keys itself, unless the index already holds one under `key`: both in one transaction, so two
+ * screens adding the same thing at once keep one. Answers the key of the value kept, and whether it is the new one.
+ */
+export async function addUnless(
+  name: "outbox",
+  index: string,
+  key: IDBValidKey,
+  value: object,
+): Promise<{ readonly key: number; readonly added: boolean }> {
+  return write(
+    name,
+    (target) =>
+      new Promise((resolve, reject) => {
+        const failed = (request: IDBRequest) => () => {
+          reject(request.error ?? new Error("the phone's store refused the request"));
+        };
+        const found = target.index(index).getKey(key);
+        found.onerror = failed(found);
+        // The add is asked for in the lookup's own callback, while the transaction is certainly still open.
+        found.onsuccess = () => {
+          if (found.result !== undefined) {
+            resolve({ key: Number(found.result), added: false });
+            return;
+          }
+          const added = target.add(stamped(value));
+          added.onerror = failed(added);
+          added.onsuccess = () => {
+            resolve({ key: Number(added.result), added: true });
+          };
+        };
+      }),
+  );
 }
 
 export async function remove(name: StoreName, key: IDBValidKey): Promise<void> {
-  await write(name, (target) => target.delete(key));
+  await write(name, (target) => settle(target.delete(key)));
 }
 
 /** Everything one store holds, gone; the other stores keep theirs. */
 export async function clear(name: StoreName): Promise<void> {
-  await write(name, (target) => target.clear());
+  await write(name, (target) => settle(target.clear()));
 }
 
 /**

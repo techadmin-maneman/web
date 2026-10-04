@@ -66,6 +66,13 @@ describe("what the outbox sends, and in what order", () => {
   it("has nothing to send when the queue is empty", () => {
     expect(nextToSend([])).toBeNull();
   });
+
+  it("is held back by nothing a step refused as early leaves, and does not send that step again", () => {
+    const queue = [event(1, "a", { kind: "no_show", state: "early", note: "too_early_to_close" }), event(2, "a")];
+    expect(stoppedJobs(queue)).toEqual(new Set());
+    expect(sendable(queue).map((held) => held.seq)).toEqual([2]);
+    expect(account(queue)).toEqual([{ job_id: "a", waiting: 1, stopped: null }]);
+  });
 });
 
 describe("the account of what has not reached us", () => {

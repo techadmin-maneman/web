@@ -165,7 +165,7 @@ test("keeps a switched-off technician's unsent step, and sends it once he is bac
   await expect(page.getByText(/Work not yet sent stays on this phone for 7 days/)).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
   // What the check-in measured, and the start it saw, stay with the work; the clients' cards go.
-  const withTheWork = (key: string) => key.startsWith("arrival:") || key.startsWith("start_at_check_in:");
+  const withTheWork = (key: string) => key.startsWith("arrivals:") || key.startsWith("starts:");
   expect((await keptOnPhone(page)).filter((key) => !withTheWork(key))).toEqual([]);
 
   fake.switchedOff = false;
