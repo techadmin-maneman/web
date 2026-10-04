@@ -20,3 +20,6 @@ private/
 
 # Worktrees a background agent works in; never part of the repository.
 .claude/worktrees/
+
+# What tsc -b keeps between runs (npm run typecheck).
+*.tsbuildinfo

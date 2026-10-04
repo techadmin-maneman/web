@@ -21,7 +21,7 @@
     "tick": "node scripts/local.ts tick",
     "pay:local": "node scripts/local.ts pay",
     "close:local": "node scripts/local.ts close",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.browser.json && tsc --noEmit -p apps/app/tsconfig.json && tsc --noEmit -p apps/app/sw/tsconfig.json && tsc --noEmit -p apps/ops/tsconfig.json && tsc --noEmit -p apps/tech/tsconfig.json && tsc --noEmit -p apps/tech/sw/tsconfig.json && tsc --noEmit -p packages/ui/tsconfig.json && tsc --noEmit -p site/tsconfig.worker.json && npm run check:site",
+    "typecheck": "tsc -b tsconfig.check.json && npm run check:site",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
