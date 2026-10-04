@@ -1,49 +1,36 @@
-// Staging's records in the owner's real Zoho org (docs/open-points.md, items 19 and 155): which of FSM's and
-// Books' records staging wrote, and the order a reviewed list of them is deleted in. scripts/staging-records.ts reads
-// the org and deletes; this decides, and reaches nothing.
+// Staging's records in the owner's real Zoho org (docs/open-points.md, items 19 and 155): which of Books' records
+// staging wrote, and the order a reviewed list of them is deleted in. scripts/staging-records.ts reads the org and
+// deletes; this decides, and reaches nothing.
 //
-// Staging marks what it writes in two ways. A summary, a note or a description starts with "Staging test: "
-// (src/domain/bookings.ts, src/domain/books-sync.ts). A person our scripts invent is named "Staging test" or
-// "Load test" (src/policy/staging-test-records.ts), and FSM gives Books a contact of the same name.
+// Staging marks what it writes in two ways. A note or a description starts with "Staging test: "
+// (src/domain/books-sync.ts). A person our scripts invent is named "Staging test" or "Load test"
+// (src/policy/staging-test-records.ts), and their Books customer and CRM lead carry the same name.
 
 import { isStagingTestRecord } from "../../src/policy/staging-test-records.ts";
 
-/**
- * Where a record is, and its module there, in the order a list is deleted in: what points at a record goes first.
- * FSM's invoices are not among them: FSM's API deletes no invoice (tried 1 October 2026, `INVALID_MODULE`), so they
- * are listed for ops to delete in FSM's own screen.
- */
-export const DELETE_ORDER = [
-  "books/refunds",
-  "books/customerpayments",
-  "fsm/Service_Appointments",
-  "books/invoices",
-  "fsm/Work_Orders",
-  "fsm/Requests",
-  "fsm/Contacts",
-  "books/contacts",
-] as const;
+/** Each Books module a record is in, in the order a list is deleted in: what points at a record goes first. */
+export const DELETE_ORDER = ["books/refunds", "books/customerpayments", "books/invoices", "books/contacts"] as const;
 
 export type RecordKind = (typeof DELETE_ORDER)[number];
 
 export interface StagingRecord {
   readonly kind: RecordKind;
   readonly id: string;
-  /** What the owner reads to know it: its summary, name or description. */
+  /** What the owner reads to know it: its name or description. */
   readonly name: string;
   /** A Books refund's payment, which its path names. */
   readonly parentId?: string;
 }
 
-/** What staging writes before a summary, a note or a description, and what the load test would. */
+/** What staging writes before a note or a description, and what the load test would. */
 const LABELS = ["Staging test: ", "Load test: "] as const;
 
-/** Whether this summary, note or description is one staging wrote. */
+/** Whether this note or description is one staging wrote. */
 export function isStagingLabelled(text: string | null | undefined): boolean {
   return LABELS.some((label) => (text ?? "").startsWith(label));
 }
 
-/** Whether a name or summary is staging's by either mark. */
+/** Whether a name or description is staging's by either mark. */
 export function isStagingMarked(text: string | null | undefined): boolean {
   return isStagingLabelled(text) || isStagingTestRecord(text ?? "");
 }

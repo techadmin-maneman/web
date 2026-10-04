@@ -14,7 +14,6 @@ import {
 describe("staging's marks", () => {
   it("are the label before a summary or description, and the names our scripts give", () => {
     for (const marked of [
-      "Staging test: Consultation for Staging test",
       "Staging test: Razorpay payment pay_1",
       "Load test: Consultation",
       "Staging test",
@@ -38,42 +37,24 @@ describe("staging's marks", () => {
 describe("a reviewed list", () => {
   const record = (kind: StagingRecord["kind"], id: string): StagingRecord => ({ kind, id, name: "Staging test" });
   const reviewed = [
-    record("books/contacts", "b-contact"),
-    record("fsm/Contacts", "f-contact"),
-    record("fsm/Service_Appointments", "appointment"),
+    record("books/contacts", "contact"),
+    record("books/invoices", "invoice"),
     record("books/customerpayments", "payment"),
-    record("fsm/Work_Orders", "work-order"),
     record("books/refunds", "refund"),
   ];
 
   it("is deleted with whatever points at a record before it", () => {
-    expect(toDelete(reviewed, reviewed).map((each) => each.id)).toEqual([
-      "refund",
-      "payment",
-      "appointment",
-      "work-order",
-      "f-contact",
-      "b-contact",
-    ]);
-    expect(DELETE_ORDER.indexOf("fsm/Contacts")).toBeGreaterThan(DELETE_ORDER.indexOf("fsm/Requests"));
+    expect(toDelete(reviewed, reviewed).map((each) => each.id)).toEqual(["refund", "payment", "invoice", "contact"]);
+    expect(DELETE_ORDER.indexOf("books/contacts")).toBe(DELETE_ORDER.length - 1);
   });
 
   it("deletes only what the org still holds and marks, and nothing the owner took out", () => {
-    const foundNow = [
-      record("fsm/Contacts", "f-contact"),
-      record("fsm/Work_Orders", "work-order"),
-      record("fsm/Contacts", "kept"),
-    ];
-    expect(toDelete(reviewed, foundNow).map((each) => each.id)).toEqual(["work-order", "f-contact"]);
-    expect(leftAlone(reviewed, foundNow).map((each) => each.id)).toEqual([
-      "b-contact",
-      "appointment",
-      "payment",
-      "refund",
-    ]);
+    const foundNow = [record("books/contacts", "contact"), record("books/invoices", "invoice"), record("books/contacts", "kept")];
+    expect(toDelete(reviewed, foundNow).map((each) => each.id)).toEqual(["invoice", "contact"]);
+    expect(leftAlone(reviewed, foundNow).map((each) => each.id)).toEqual(["payment", "refund"]);
   });
 
   it("matches a record by where it is as well as its ID", () => {
-    expect(toDelete([record("books/contacts", "same")], [record("fsm/Contacts", "same")])).toEqual([]);
+    expect(toDelete([record("books/contacts", "same")], [record("books/invoices", "same")])).toEqual([]);
   });
 });
