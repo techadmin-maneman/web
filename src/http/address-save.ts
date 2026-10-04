@@ -31,10 +31,12 @@ async function withinGeocodeCeiling(c: Context<AppEnv>, now: Date): Promise<bool
   return false;
 }
 
+const GOOGLE_REFUSED = "google_refused";
+
 /**
  * A lookup that failed is logged. One Google refused is ops' to put right — the
  * key, its APIs or its quota — and until then no address gets a pin, so they
- * are told, once a day while it lasts, in Google's own words.
+ * are told, in Google's own words. The alert closes at the next lookup Google answers.
  */
 async function lookupFailed(
   c: Context<AppEnv>,
@@ -44,7 +46,7 @@ async function lookupFailed(
   c.var.log.warn(event, { reason: failure.reason, detail: failure.detail });
   if (failure.reason !== "refused") return;
   await c.var.deps.alertOnce({
-    key: `google_refused:${indiaDate(c.var.deps.now())}`,
+    key: GOOGLE_REFUSED,
     message:
       `Google refused the address search (${failure.detail}). Clients can still type an address, but none gets ` +
       "a pin. Check the key, its APIs and its quotas (runbook, section 13).",
@@ -86,6 +88,7 @@ export async function suggestBuildings(
     await lookupFailed(c, "address_suggest_failed", answer);
     return { ok: false, code: "unavailable" };
   }
+  await c.var.deps.resolveAlert(GOOGLE_REFUSED);
   return {
     ok: true,
     suggestions: answer.suggestions.map((one) => ({
@@ -121,8 +124,12 @@ export async function saveClientAddress(
   let pin: AddressPin | null = null;
   if (address.placeId !== null && (await withinGeocodeCeiling(c, now))) {
     const resolved = await c.var.deps.geocode.resolve(address.placeId, sessionOrNew(sessionToken));
-    if (resolved.ok) pin = { lat: resolved.place.lat, lng: resolved.place.lng, source: "google_geocoding" };
-    else await lookupFailed(c, "address_resolve_failed", resolved);
+    if (resolved.ok) {
+      pin = { lat: resolved.place.lat, lng: resolved.place.lng, source: "google_geocoding" };
+      await c.var.deps.resolveAlert(GOOGLE_REFUSED);
+    } else {
+      await lookupFailed(c, "address_resolve_failed", resolved);
+    }
   }
 
   await saveAddress(c.env.DB, { personId, address, pin, now, givenToOps });

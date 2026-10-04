@@ -1,17 +1,17 @@
 /*
- * Board D2's list, on the panel the board draws it on and at its width: a head
- * with the count of what has run over in oxblood, then each group on its own
- * shaded band with its count, then the tasks under it, each in the board's three
- * columns: what it is, whose it is, and when it is due. The actions on a task,
- * which the board does not draw, sit under its lines as the way to where it is
- * decided does (docs/decisions/0092-task-owners.md).
+ * The Tasks board: a head with the count of what has run over in oxblood, then
+ * a section for each department, its groups side by side where the page is wide
+ * enough. Each group is board D2's panel: its name on a shaded band with its
+ * count, then the tasks under it, each in the board's three columns: what it is,
+ * whose it is, and when it is due. The actions on a task, which the board does
+ * not draw, sit under its lines as the way to where it is decided does
+ * (docs/decisions/0092-task-owners.md).
  */
 
-.column {
+.board {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-20);
-  max-width: var(--ops-panel);
+  gap: var(--sp-24);
 }
 
 .panel {
@@ -39,17 +39,78 @@
   color: var(--error-on-paper);
 }
 
+/* The same figure where a task past its day is listed: it takes the keyboard to the first. */
+.overdueJump {
+  min-height: var(--sp-24);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+  text-decoration: underline;
+  text-underline-offset: var(--sp-4);
+  cursor: pointer;
+}
+
+.overdueJump:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
 .empty {
   margin: 0;
-  padding: var(--sp-16) var(--sp-20);
   font-size: var(--fs-15);
   color: var(--text-muted);
+}
+
+/* ---- The board, by department --------------------------------------------- */
+
+.queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+}
+
+.queueHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: var(--sp-10);
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+.department {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+}
+
+.departmentHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-10);
+}
+
+.departmentName {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-18);
+}
+
+/* As many of the board's panels side by side as the page holds at their own width: two on a desk's screen. */
+.groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--ops-panel)), 1fr));
+  align-items: start;
+  gap: var(--sp-16);
 }
 
 /* ---- One group ------------------------------------------------------------ */
 
 .group {
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-line);
 }
 
 .groupHead {
@@ -76,6 +137,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The rest of a group's longest waits, and back to its first few. */
+.fold {
+  display: block;
+  min-height: var(--sp-24);
+  margin: var(--sp-8) var(--sp-20) var(--sp-12);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: var(--sp-4);
+  cursor: pointer;
+}
+
+.fold:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
 /* ---- One task ------------------------------------------------------------- */
 
 .tasks {
@@ -84,12 +167,34 @@
   list-style: none;
 }
 
-.task {
+.task,
+.marked {
   display: grid;
   grid-template-columns: 1fr var(--ops-task-owner) var(--ops-task-due);
   align-items: center;
   gap: var(--sp-12);
   min-height: var(--ops-row);
+  padding: var(--sp-12) var(--sp-20);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+/* The row the head's overdue count went to, marked as a row a task's link lands on is. */
+.marked {
+  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
+}
+
+.task:focus-visible,
+.marked:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+/* An alert on "Needs a hand" (NeedsAHand.tsx): what went wrong, then how often and since when. */
+.alert {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: var(--sp-12);
   padding: var(--sp-12) var(--sp-20);
   border-top: var(--hairline) solid var(--paper-line);
 }
@@ -149,12 +254,29 @@ a.subject:focus-visible {
   overflow-wrap: anywhere;
 }
 
+/* How long it has left, in words: "2 days left", "3 days overdue". */
+.due {
+  text-align: right;
+}
+
 /* ---- What ops do with a task (TaskActions.tsx) ---------------------------- */
 
-.acts {
+.acts,
+.ownerActs {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-3) var(--sp-14);
+}
+
+/*
+ * Taking a task, giving it and closing it show on the row the pointer is over or the keyboard is in, so a long list
+ * does not repeat them on every row. A screen without hover shows them always.
+ */
+@media (hover: hover) {
+  .task:not(:hover, :focus-within) .ownerActs,
+  .marked:not(:hover, :focus-within) .ownerActs {
+    opacity: 0;
+  }
 }
 
 /* Drawn as the way to where a task is decided is: quiet, underlined words, on a target 24 px tall (WCAG 2.5.8). */
@@ -223,14 +345,8 @@ a.subject:focus-visible {
   text-align: right;
 }
 
-/* Past its day, in oxblood, as the board marks one. */
-.late {
-  color: var(--error-on-paper);
-}
-
 .note {
   margin: 0;
-  padding: var(--sp-14) var(--sp-20);
   font-size: var(--fs-14);
   line-height: var(--lh-160);
   color: var(--text-muted);

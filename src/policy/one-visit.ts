@@ -8,13 +8,24 @@
 // consultation, with nothing charged.
 
 import { FIRST_FIT_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
+import { DAY_MS } from "../lib/durations.ts";
 import { FREE_CHANGE_NOTICE_HOURS, type SoldTerms } from "./moving-a-visit.ts";
 
 export const RULES = [
   "Clients can choose one vs. two visits. If they choose consultation, the technician can measure and explain the product with the fit coming in later. If they choose consultation + fit, the technician can fit them their chosen product during the first visit itself",
   "once the client has agreed and been fitted, the technician sends a Razorpay payment link, and nothing is paid if the client decides against it.",
   "a one-visit booking holds no payment, so no no-show charge and no late fee apply to it, and moving or cancelling it is free.",
+  "The payment link takes payment for 14 days. After that, ops send a new one from Razorpay's dashboard with the visit's ID as its reference.",
 ] as const;
+
+/** How long a one visit's payment link takes payment, from when Razorpay makes it (RULES[3]). */
+const PAYMENT_LINK_OPEN_DAYS = 14;
+
+/** When a payment link Razorpay makes at this moment stops taking payment. */
+export const paymentLinkClosesAt = (madeAt: Date): Date => new Date(madeAt.getTime() + PAYMENT_LINK_OPEN_DAYS * DAY_MS);
+
+/** The latest a link can have been sent and be closed by `now`. */
+export const closedIfSentBy = (now: Date): Date => new Date(now.getTime() - PAYMENT_LINK_OPEN_DAYS * DAY_MS);
 
 /** What the site's form books: the consultation alone, or the consultation and the fit in one visit. */
 export const PLANS = ["consultation", "one_visit"] as const;

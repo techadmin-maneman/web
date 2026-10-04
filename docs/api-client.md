@@ -2611,6 +2611,17 @@ Request body:
         }
       ]
     },
+    "service": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -2667,6 +2678,7 @@ Request body:
     "ends_at",
     "length_minutes",
     "type",
+    "service",
     "status",
     "stage",
     "prepaid",
@@ -3577,6 +3589,17 @@ Request body:
         }
       ]
     },
+    "service": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -3719,6 +3742,7 @@ Request body:
     "ends_at",
     "length_minutes",
     "type",
+    "service",
     "status",
     "stage",
     "prepaid",
@@ -3892,6 +3916,18 @@ Request body:
     "disputable": {
       "type": "boolean",
       "description": "Whether the client may dispute the charge now: one that took something, not disputed yet."
+    },
+    "dispute_closed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
     }
   },
   "required": [
@@ -3899,7 +3935,8 @@ Request body:
     "waited_minutes",
     "charge",
     "dispute",
-    "disputable"
+    "disputable",
+    "dispute_closed_at"
   ],
   "additionalProperties": false
 }

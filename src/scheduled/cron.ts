@@ -204,7 +204,7 @@ async function catalogueJob({ env, deps, config, log, budget }: CronContext): Pr
 }
 
 async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
-  await alertAgedDeletions(env.DB, deps.now(), deps.alert);
+  await alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
 }
 
 /** R2's share and the database fill over months, so an hourly look is enough. */
@@ -256,8 +256,9 @@ async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Prom
   if (reminders.length > 0) log.info("credit_reminders_queued", { count: reminders.length });
 }
 
-async function paymentLinksJob({ env, deps, log, budget }: CronContext): Promise<void> {
-  const sent = await sendUnsentLinks(env.DB, { ...deps, log }, deps.now(), budget);
+async function paymentLinksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const linkDeps = { ...deps, log, messagingSettings: config.settings.messaging };
+  const sent = await sendUnsentLinks(env.DB, linkDeps, deps.now(), budget);
   if (sent > 0) log.info("payment_links_sent", { count: sent });
 }
 

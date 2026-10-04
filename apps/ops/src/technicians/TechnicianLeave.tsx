@@ -1,7 +1,7 @@
 // A technician's Leave tab: his leave still to end, each period with the jobs still booked on its days, and the form
 // that records more. Its days are refused to self-serve booking and to the dispatch board alike, which is why the
 // form says so before it is sent. Leave moves none of the jobs already booked: each waits on the Tasks board until
-// ops move it, and "Show on board" opens the board on that job's week with his row in view.
+// ops move it, and "Show on board" opens the board on that job's week, with his row in view and the job's drawer open.
 
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
@@ -31,7 +31,7 @@ function StrandedJob({ job, technician }: { job: JobOnLeave; technician: Technic
   const words = copy.stranded;
   const when = `${shortDate(indiaDate(job.starts_at))}, ${indiaClock(job.starts_at)}`;
   const client = job.client ?? words.noClient;
-  const onBoard = dispatchPath({ from: indiaDate(job.starts_at), find: technician.name });
+  const onBoard = dispatchPath({ from: indiaDate(job.starts_at), find: technician.name, visit: job.appointment_id });
   return (
     <li className={styles.jobRow}>
       <span>{words.job(when, client)}</span>
