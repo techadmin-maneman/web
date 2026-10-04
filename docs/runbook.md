@@ -1134,19 +1134,29 @@ Production has never used FSM. Staging leaves it in the order below, once every 
 
 ## Razorpay
 
-Razorpay is the record of money. We learn of each payment and refund only from its webhook (ADR 0044): nothing reads them from Razorpay afterwards. Production has it switched off today (`PAYMENTS_PROVIDER` is `none`).
+Razorpay is the record of money. We learn of each payment and refund from its webhook (ADR 0044). Where the webhook misses a payment, the cron's `razorpay_catch_up` job reads it from Razorpay (below). Production has payments switched off today (`PAYMENTS_PROVIDER` is `none`).
 
 ### Razorpay's webhook is not arriving
 
-Symptoms: clients pay, their booking sheet never confirms, and the hold runs out; Razorpay's dashboard shows the payments captured, and D1 has not heard of them.
+Symptoms: the alert "Payment … reached us only when we asked Razorpay" (key `razorpay_payment_unheard:<payment ID>`), or `razorpay_payment_unheard` in Workers Logs. Clients who pay wait longer than they should for their booking to confirm.
+
+The cron's `razorpay_catch_up` job, every quarter hour, asks Razorpay about each payment the webhook may have missed:
+
+- a hold paid at Checkout and never confirmed, from a quarter hour after its grace ended until three days after it ran out;
+- a hold ops sent a payment link for, from an hour after it was made until three days after it ran out;
+- a one visit's payment link, from an hour after it was sent until a week after it was made.
+
+Each is asked about at most once an hour; holds and links take turns while the run's calls last, so a long list waits a few runs. A payment found is recorded as the webhook would have recorded it, and its hold is booked, or refunded in full if Razorpay made the payment after the hold and its grace ran out (ADR 0068). Ops get one alert per payment. Close it once the cause below is put right. "Booking … is paid for, but could not be booked or refunded" (key `razorpay_catch_up_not_booked:<hold ID>`) is a found payment that needs ops: book the visit for the client from the console, or refund the payment once in Razorpay's dashboard.
+
+To see how far the webhook is behind:
 
 ```sql
 SELECT event, COUNT(*) AS events, MAX(received_at) AS last FROM razorpay_events GROUP BY event;
-SELECT id, person_id, razorpay_order_id, created_at FROM slot_holds
+SELECT id, person_id, razorpay_order_id, payment_checked_at FROM slot_holds
 WHERE razorpay_order_id IS NOT NULL AND confirmed_at IS NULL AND created_at > '<since, ISO>' ORDER BY created_at;
 ```
 
-The second lists the holds whose Checkout opened and whose payment we never heard of. Look each order ID up in Razorpay's dashboard to see whether it was paid.
+The second lists the holds whose Checkout opened and whose payment we have not heard of, and when the cron last asked Razorpay about each.
 
 The cause, from Workers Logs:
 
@@ -1155,9 +1165,9 @@ The cause, from Workers Logs:
 - nothing at all: Razorpay is not calling. The webhook is disabled (Razorpay disables one that has failed for 24 hours, and e-mails the account), its URL is wrong, it is set up in the other mode from the keys (test or live), or, on staging, Access is stopping `/api/hooks/` (step 12, point 3);
 - `razorpay_hook_refund_early`, answered 409: a refund came before its payment, in an event that does not carry the payment. Razorpay sends it again; nothing is wrong.
 
-Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068).
+Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068). A payment the cron recorded first is not recorded again when its webhook arrives.
 
-For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
+A payment older than the cron looks (a hold three days past, a one visit's link a week old) is not found by it: look it up in Razorpay's dashboard, and refund it there, then ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
 
 ### A payment link
 

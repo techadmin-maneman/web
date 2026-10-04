@@ -107,20 +107,30 @@ describe("Razorpay: orders and refunds", () => {
     await expect(payments.createOrder({ amount: 1, receipt: "r", notes: {} })).rejects.toThrow();
   });
 
-  it("answers the status of each payment on an order, by a GET that sends no body", async () => {
+  it("answers each payment on an order, as the mirror reads it, by a GET that sends no body", async () => {
+    const made = { entity: "payment", amount: 200000, currency: "INR", order_id: "order_9", created_at: 1790058600 };
     const { payments, calls } = razorpay({
       [`${API}/orders/order_9/payments`]: () =>
         json({
           entity: "collection",
           count: 2,
           items: [
-            { id: "pay_1", entity: "payment", amount: 200000, status: "failed", order_id: "order_9" },
-            { id: "pay_2", entity: "payment", amount: 200000, status: "created", order_id: "order_9" },
+            { ...made, id: "pay_1", status: "failed", captured: false },
+            { ...made, id: "pay_2", status: "captured", captured: true, method: "upi", notes: { hold_id: "hold-1" } },
           ],
         }),
     });
 
-    expect(await payments.orderPayments("order_9")).toEqual(["failed", "created"]);
+    const [failed, captured] = await payments.orderPayments("order_9");
+    expect(failed).toMatchObject({ id: "pay_1", status: "failed" });
+    expect(captured).toMatchObject({
+      id: "pay_2",
+      status: "captured",
+      amount: 200000,
+      order_id: "order_9",
+      notes: { hold_id: "hold-1" },
+      created_at: 1790058600,
+    });
     expect(calls[0]?.method).toBe("GET");
     expect(calls[0]?.body).toBe("");
   });
@@ -217,6 +227,28 @@ describe("Razorpay: payment links", () => {
     await expect(payments.createPaymentLink(LINK)).rejects.toThrow();
   });
 
+  it("reads a link by its ID, by a GET: how it stands, our reference, and the order its payment was made on", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/payment_links/plink_9`]: () =>
+        json({
+          id: "plink_9",
+          status: "paid",
+          reference_id: "MM-2026-0841",
+          order_id: "order_7",
+          amount_paid: 4500000,
+          payments: [{ payment_id: "pay_7", status: "captured" }],
+        }),
+    });
+
+    expect(await payments.paymentLink("plink_9")).toEqual({
+      id: "plink_9",
+      status: "paid",
+      reference_id: "MM-2026-0841",
+      order_id: "order_7",
+    });
+    expect(calls[0]?.method).toBe("GET");
+  });
+
   it("cancels a link by its ID in the path, and names Razorpay's refusal of one already paid", async () => {
     const { payments, calls } = razorpay({
       [`${API}/payment_links/plink_9/cancel`]: () => json({ id: "plink_9", status: "cancelled" }),
@@ -253,6 +285,7 @@ describe("payments where none is connected", () => {
     await expect(none.findPaymentLink("visit-1")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     await expect(none.cancelPaymentLink("plink_9")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     await expect(none.orderPayments("order_9")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
+    await expect(none.paymentLink("plink_9")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     expect(calls).toEqual([]);
   });
 });

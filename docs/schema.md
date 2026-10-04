@@ -1109,7 +1109,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 
-Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`.
+Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`, `0091_razorpay_catch_up.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1130,6 +1130,7 @@ Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`.
 | `reference` | TEXT | yes |  |  |
 | `reference_year` | INTEGER | yes |  |  |
 | `reference_number` | INTEGER | yes |  |  |
+| `payment_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1498,7 +1499,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`, `0091_razorpay_catch_up.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1549,6 +1550,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `reference_year` | INTEGER | yes |  |  |
 | `reference_number` | INTEGER | yes |  |  |
 | `auto_refund_reason` | TEXT | yes |  |  |
+| `payment_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1560,6 +1562,7 @@ Indexes:
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
 - `slot_holds_reference`: unique on (`reference`)
 - `slot_holds_reference_number`: unique on (`reference_year`, `reference_number`)
+- `slot_holds_unconfirmed`: on (`expires_at`), where `confirmed_at IS NULL`
 - A `UNIQUE` constraint: unique on (`razorpay_order_id`)
 
 ## slot_times
