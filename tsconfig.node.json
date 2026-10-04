@@ -30,6 +30,8 @@
   // technician app's store tests, which run in Node on a fake IndexedDB but
   // import code written against the DOM.
   "exclude": [
+    // A service worker's own code, checked with its WebWorker types by apps/*/sw/tsconfig.json.
+    "packages/web-kit/sw-shell.ts",
     "test/node/app-api.test.ts",
     "test/node/app-booking-days.test.ts",
     "test/node/app-late-change.test.ts",

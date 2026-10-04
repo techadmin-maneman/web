@@ -13,58 +13,25 @@
 // up or coming down. The app deletes the day cache when the session ends or ops
 // revoke the phone (apps/tech/src/store/db.ts).
 //
-// The build writes in MM_PRECACHE and MM_VERSION (packages/web-kit/pwa.ts).
+// The shell is kept as both apps' workers keep it (packages/web-kit/sw-shell.ts). The build writes in MM_PRECACHE
+// and MM_VERSION (packages/web-kit/pwa.ts).
 
+import { marked, serveTheShell } from "../../../packages/web-kit/sw-shell.ts";
 import { answerFor } from "./requests.ts";
 
 declare const self: ServiceWorkerGlobalScope;
 declare const MM_PRECACHE: readonly string[];
 declare const MM_VERSION: string;
 
-const SHELL_PREFIX = "mm-tech-shell-";
-const SHELL = `${SHELL_PREFIX}${MM_VERSION}`;
 /** Named the same in apps/tech/src/store/db.ts, which deletes it at sign-out and on revocation. */
 const DAY = "mm-tech-day";
-/** Marks a day answered from the cache, so the app knows it is working offline (apps/tech/src/api.ts). */
-const SERVED_FROM = "Mm-Served-From";
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    (async () => {
-      const cache = await caches.open(SHELL);
-      await cache.addAll(MM_PRECACHE);
-      await self.skipWaiting();
-    })(),
-  );
-});
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    (async () => {
-      for (const name of await caches.keys()) {
-        if (name.startsWith(SHELL_PREFIX) && name !== SHELL) await caches.delete(name);
-      }
-      await self.clients.claim();
-    })(),
-  );
-});
-
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-  switch (answerFor(request, self.location.origin)) {
-    case "shell":
-      event.respondWith(page(request));
-      return;
-    case "file":
-      event.respondWith(file(request));
-      return;
-    case "day":
-      event.respondWith(day(request, new URL(request.url)));
-      return;
-    case null:
-      return;
-  }
-});
+serveTheShell(
+  self,
+  { prefix: "mm-tech-shell-", version: MM_VERSION, files: MM_PRECACHE },
+  (request) => answerFor(request, self.location.origin),
+  (event) => day(event.request, new URL(event.request.url)),
+);
 
 /** India is five and a half hours ahead of UTC, all year, and a working day is India's. */
 export function todayInIndia(now: number): string {
@@ -88,10 +55,7 @@ async function day(request: Request, url: URL): Promise<Response> {
     response = await fetch(request);
   } catch {
     const kept = await caches.match(url.href, { cacheName: DAY });
-    if (kept === undefined) return Response.error();
-    const headers = new Headers(kept.headers);
-    headers.set(SERVED_FROM, "cache");
-    return new Response(kept.body, { status: kept.status, headers });
+    return kept === undefined ? Response.error() : marked(kept);
   }
   if (response.status === 200 && isToday(url)) {
     const cache = await caches.open(DAY);
@@ -99,21 +63,4 @@ async function day(request: Request, url: URL): Promise<Response> {
     await cache.put(url.href, response.clone());
   }
   return response;
-}
-
-/**
- * Any page is the app itself (the Worker answers every path with it), and it
- * comes from the kept copy first, without waiting on the network. A weak signal
- * that never answers would otherwise hold the app closed for as long as the
- * browser waits. A new build still arrives: the browser checks for a new sw.js
- * each time the app opens, the new worker keeps its own shell and drops this
- * one, and the next open is the new app.
- */
-async function page(request: Request): Promise<Response> {
-  return (await caches.match("/", { cacheName: SHELL })) ?? fetch(request);
-}
-
-/** The app's scripts, styles, fonts and icons: hashed or fixed, so the kept copy is the right one. */
-async function file(request: Request): Promise<Response> {
-  return (await caches.match(request, { cacheName: SHELL })) ?? fetch(request);
 }

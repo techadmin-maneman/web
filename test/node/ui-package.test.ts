@@ -74,14 +74,35 @@ describe.each(APPS)("%s", (app) => {
   });
 });
 
-// A service worker is registered as a classic script, which cannot import: built with a shared module, it would load
-// the app's chunk with an import statement and fail to install. So it takes nothing from the packages.
+// A service worker is registered as a classic script, which cannot import: built with a module the app's own pages
+// import too, it would load the app's chunk with an import statement and fail to install. So it takes nothing from the
+// packages but the workers' own kit, which imports nothing and which nothing but a worker imports, so it is bundled into
+// each sw.js whole.
+const WORKER_KIT = ["packages/web-kit/sw-shell.ts", "packages/web-kit/sw-requests.ts"];
+const importsOf = (path: string) =>
+  [...read(path).matchAll(/^import [^;]*? from "([^"]+)";/gms)].map((match) => match[1] ?? "");
+
 describe.each(["apps/app", "apps/tech"])("%s's service worker", (app) => {
-  it("imports only its own files", () => {
+  it("imports only its own files and the workers' kit", () => {
     const imports = filesUnder(`${app}/sw`)
       .filter((path) => path.endsWith(".ts"))
-      .flatMap((path) => [...read(path).matchAll(/^import [^;]*? from "([^"]+)";/gms)].map((match) => match[1] ?? ""));
-    expect(imports.filter((from) => !from.startsWith("./"))).toEqual([]);
+      .flatMap(importsOf);
+    const kit = WORKER_KIT.map((file) => `../../../${file}`);
+    expect(imports.filter((from) => !from.startsWith("./") && !kit.includes(from))).toEqual([]);
+  });
+});
+
+describe("the workers' kit", () => {
+  it("imports nothing", () => {
+    for (const file of WORKER_KIT) expect(importsOf(file), file).toEqual([]);
+  });
+
+  it("is imported by a service worker alone", () => {
+    const source = ["apps", "packages", "site/src"]
+      .flatMap(filesUnder)
+      .filter((path) => /\.(ts|tsx)$/.test(path) && !/\/(node_modules|dist)\//.test(path));
+    const importers = source.filter((path) => importsOf(path).some((from) => /\/sw-(shell|requests)\.ts$/.test(from)));
+    expect(importers.filter((path) => !/^apps\/(app|tech)\/sw\//.test(path))).toEqual([]);
   });
 });
 
