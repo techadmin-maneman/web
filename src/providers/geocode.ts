@@ -8,6 +8,7 @@
 
 import { createGooglePlaces } from "./google-places.ts";
 import { createStubGeocodeFetch, STUB_API_KEY } from "./google-places-stub.ts";
+import type { VendorFetchDependencies } from "./vendor-fetch.ts";
 
 /** One line of the suggestion list. */
 export interface Suggestion {
@@ -76,9 +77,9 @@ function createNoGeocode(): GeocodeProvider {
 export function createGeocodeProvider(
   provider: string | undefined,
   apiKey: string | null,
-  deps: { fetch: typeof fetch },
+  deps: VendorFetchDependencies,
 ): GeocodeProvider {
   if (provider === "google" && apiKey !== null) return createGooglePlaces(apiKey, deps);
-  if (provider === "stub") return createGooglePlaces(STUB_API_KEY, { fetch: createStubGeocodeFetch() });
+  if (provider === "stub") return createGooglePlaces(STUB_API_KEY, { fetch: createStubGeocodeFetch(), log: deps.log });
   return createNoGeocode();
 }

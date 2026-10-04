@@ -276,8 +276,8 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
     fetch: fakeFetch({ [TURNSTILE_URL]: turnstilePasses }).fetch,
     now,
     crm: createStubCrm(createLogger()),
-    image: createImageProvider(null, { fetch, now }),
-    geocode: createGeocodeProvider("stub", null, { fetch }),
+    image: createImageProvider(null, { fetch, now, log: createLogger() }),
+    geocode: createGeocodeProvider("stub", null, { fetch, log: createLogger() }),
     messaging: createStubMessaging(createLogger()),
     alert,
     alertOnce: createAlertOnce({ db: env.DB, alert, now, environment: "local", log: createLogger() }),
@@ -288,7 +288,7 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
       return Promise.resolve();
     },
     leadNotices,
-    access: createAccessVerifier(null, { fetch, now }),
+    access: createAccessVerifier(null, { fetch, now, log: createLogger() }),
     codes: {
       smsAvailable: true,
       send: (channel, to, code) => {

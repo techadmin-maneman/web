@@ -918,11 +918,11 @@ SELECT sync_state, COUNT(*) AS leads, MAX(sync_attempts) AS most_attempts FROM l
 SELECT id, sync_attempts, last_sync_error, created_at FROM leads WHERE sync_state = 'failed' ORDER BY created_at;
 ```
 
-`last_sync_error` holds Zoho's status and code, such as `Zoho 401 invalid_code: …`, and never the lead's details. A timeout names the step that was slow: `Zoho 0 TIMEOUT: token got no answer within 20 s`.
+`last_sync_error` holds Zoho's status and code, such as `Zoho 401 invalid_code: …`, and never the lead's details. A timeout names the step that was slow: `Zoho CRM 0 TIMEOUT: token got no answer within 20 s`.
 
 ### Syncs are slow
 
-Workers Logs (dashboard → Workers → the `mm-api` Worker → Logs) has one `zoho_call` line per request to Zoho, with the `step` (token, search, insert, update or note), `status`, `duration_ms` and `lead_id`. `crm_synced` and `crm_sync_failed` carry the whole sync's `duration_ms`. The time not spent in `zoho_call` lines went to D1.
+Workers Logs (dashboard → Workers → the `mm-api` Worker → Logs) has one `vendor_call` line per request to a vendor, with the `vendor` (`zoho-crm` here), the `step` (token, search, insert, update or note), `status`, `duration_ms` and `lead_id`; a failed answer adds the vendor's `code`, and one that never came has `status` 0 and a `reason`. Every other vendor's calls are logged the same way, so filtering on `vendor` (`evolution`, `google`, `ailabtools`, `zoho-books`, …) shows each call to it. `crm_synced` and `crm_sync_failed` carry the whole sync's `duration_ms`. The time not spent in `vendor_call` lines went to D1.
 
 ### Zoho is down
 
