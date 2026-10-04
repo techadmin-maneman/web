@@ -1,5 +1,5 @@
 // The hair profile's form (./Profile.tsx), kept apart from the screen so its rules can be read and tested on their
-// own (test/node/tech-profile-form.test.ts): the ranges the API takes a figure in, a figure as typed read as one, the
+// own (test/node/dom/tech-profile-form.test.ts): the ranges the API takes a figure in, a figure as typed read as one, the
 // remedies a client can say together, and the body the step sends
 // (docs/decisions/0106-a-clients-hair-profile.md).
 

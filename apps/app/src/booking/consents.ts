@@ -1,7 +1,7 @@
 // The photograph consents booking a visit also gives (docs/decisions/0080-consents-given-by-booking.md): which
 // the pay step asks for, and the lines it shows. Once the booking is confirmed, the API records each the client has
 // never decided on, on the notice holding exactly these lines (src/config/notices.ts), which
-// test/node/app-consent-lines.test.ts holds them to.
+// test/node/dom/app-consent-lines.test.ts holds them to.
 
 import type { BookingConsent, Profile } from "../api.ts";
 import { booking, profile } from "../content.ts";

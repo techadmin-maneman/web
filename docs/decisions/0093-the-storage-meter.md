@@ -109,7 +109,7 @@ Past the runway, R2 bills on the owner's ruling; the runway is now when ops are 
   - `test/worker/visit-photos.test.ts`: FSM's size, and a retake from FSM.
   - `test/worker/ops-storage.test.ts`: the console's figure.
   - `test/worker/cron.test.ts`: the job.
-  - `test/node/tech-outbox-replay.test.ts`: the pair in the outbox.
+  - `test/node/dom/tech-outbox-replay.test.ts`: the pair in the outbox.
   - `e2e/tech/camera.e2e.ts`: the capture and the upload of both.
   - `e2e/app/fitted.e2e.ts`: a row's thumbnail and its fallback.
   - `e2e/ops/settings.e2e.ts`: the line in Settings.
