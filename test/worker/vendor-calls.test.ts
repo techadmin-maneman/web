@@ -132,7 +132,14 @@ describe("AILabTools", () => {
 describe("Turnstile", () => {
   it("logs the check of a visitor's token, and never the token or the secret", async () => {
     const http = fakeFetch({ [TURNSTILE_URL]: () => json({ success: true }) });
-    await verifyTurnstile({ secret: "turnstile-secret", token: "visitor-token", ip: null, fetch: http.fetch, log });
+    await verifyTurnstile({
+      secret: "turnstile-secret",
+      token: "visitor-token",
+      ip: null,
+      hosts: null,
+      fetch: http.fetch,
+      log,
+    });
     expect(vendorCalls()).toEqual([{ vendor: "turnstile", step: "siteverify", status: 200 }]);
     expect(JSON.stringify(logs.lines())).not.toMatch(/turnstile-secret|visitor-token/);
   });

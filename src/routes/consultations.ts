@@ -49,6 +49,7 @@ import { PLANS, type Plan } from "../policy/one-visit.ts";
 import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
+import { PersonNameSchema } from "../http/openapi.ts";
 import { formRequest } from "../http/public-form.ts";
 import { addressOf, AddressSchema, RequiredFlatSchema } from "./client-profile.ts";
 
@@ -73,7 +74,7 @@ const AttributionSchema = z
   .optional();
 
 const Person = {
-  name: z.string().trim().min(1).max(80),
+  name: PersonNameSchema,
   mobile: z.string().max(20),
   pincode: PincodeSchema,
   loss_extent: z.enum(LOSS_EXTENTS).optional().openapi({

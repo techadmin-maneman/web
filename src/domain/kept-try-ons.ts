@@ -103,7 +103,8 @@ export async function keepOrLetGo(env: KeepEnv, tryOns: readonly ExpiringTryOn[]
 
 /**
  * A look on its last day. A client's try-on is kept: its copy stays, and unless their first fit is photographed
- * already its look is moved to the client-photos bucket. Whether it was kept.
+ * already its look is moved to the client-photos bucket. One whose look is gone is let go, so a later one can be kept.
+ * Whether it was kept.
  */
 async function keepOnItsDay(env: KeepEnv, tryOn: ExpiringTryOn, now: Date): Promise<boolean> {
   const { person_id: personId, expires_at: lastDay } = tryOn;
@@ -138,7 +139,10 @@ async function keepOnItsDay(env: KeepEnv, tryOn: ExpiringTryOn, now: Date): Prom
   if (await firstFitPhotographed(db, personId)) return true;
 
   const look = tryOn.result_key === null ? null : await env.RESULTS.get(tryOn.result_key);
-  if (look === null) return true;
+  if (look === null) {
+    await db.prepare("UPDATE tryon_jobs SET kept_at = NULL WHERE id = ?1").bind(tryOn.id).run();
+    return false;
+  }
   const type: ImageType = look.httpMetadata?.contentType === "image/png" ? "image/png" : "image/jpeg";
   const key = keptLookKey(tryOn.id, type);
   await putCounted(db, env.CLIENT_PHOTOS, key, await look.arrayBuffer(), type);

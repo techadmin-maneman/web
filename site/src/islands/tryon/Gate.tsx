@@ -1,5 +1,6 @@
 import { ICONS } from "@maneman/brand/icons";
 import { formatMobileField } from "@maneman/web-kit/mobile";
+import { MOST_NAME_LENGTH } from "@maneman/web-kit/names";
 import { gateCopy, numberCode as numberCodeWords, tryOn, type Notice } from "../../content/site.ts";
 import { Icon } from "../Drawings.tsx";
 import { NumberCodeField, type CodeFieldClasses } from "../NumberCodeField.tsx";
@@ -80,7 +81,7 @@ export function Gate(props: {
               value={props.name}
               placeholder={tryOn.gate.namePlaceholder}
               autocomplete="name"
-              maxLength={60}
+              maxLength={MOST_NAME_LENGTH}
               aria-required="true"
               aria-invalid={nameBad}
               aria-describedby={nameBad ? "gate-name-error" : undefined}

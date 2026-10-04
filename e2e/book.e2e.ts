@@ -682,7 +682,7 @@ test("an empty submit shows each error, announced, brings the first into view, a
   await page.getByRole("button", { name: "Check" }).click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Enter your name.")).toBeVisible();
+  await expect(page.getByText("Enter your name, in letters.")).toBeVisible();
   await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
   await expect(page.getByText("Enter the building or society.")).toBeVisible();
@@ -710,6 +710,23 @@ test("a number that is not a mobile is marked at its field, focused, and not sen
   await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
   await expect(mobile).toBeFocused();
   await expect(page.getByText(/fields marked above/)).toHaveCount(0);
+  expect(requests).toHaveLength(0);
+});
+
+// PS-57: our WhatsApp messages greet people by this name, so a link typed as one is never sent.
+test("a name that is not letters is marked at its field, focused, and not sent", async ({ page }) => {
+  const requests = await mockApi(page);
+  await openForm(page);
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Win at example.com");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  const name = page.getByLabel("Name");
+  await expect(name).toHaveAttribute("aria-invalid", "true");
+  await expect(name).toHaveAccessibleDescription("Enter your name, in letters.");
+  await expect(name).toBeFocused();
   expect(requests).toHaveLength(0);
 });
 

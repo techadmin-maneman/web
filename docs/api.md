@@ -186,7 +186,8 @@ Request body:
     "name": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 80
+      "maxLength": 60,
+      "description": "Letters, spaces, dots, apostrophes and hyphens, starting with a letter."
     },
     "mobile": {
       "type": "string",
@@ -382,7 +383,8 @@ Request body:
     "name": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 80
+      "maxLength": 60,
+      "description": "Letters, spaces, dots, apostrophes and hyphens, starting with a letter."
     },
     "mobile": {
       "type": "string",
@@ -598,7 +600,8 @@ Request body:
     "name": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 80
+      "maxLength": 60,
+      "description": "Letters, spaces, dots, apostrophes and hyphens, starting with a letter."
     },
     "mobile": {
       "type": "string",
@@ -736,7 +739,8 @@ Request body:
     "name": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 80
+      "maxLength": 60,
+      "description": "Letters, spaces, dots, apostrophes and hyphens, starting with a letter."
     },
     "mobile": {
       "type": "string",
@@ -1618,8 +1622,8 @@ Razorpay's webhook: payments and refunds
     "name": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 80,
-      "description": "The name typed beside the number."
+      "maxLength": 60,
+      "description": "Letters, spaces, dots, apostrophes and hyphens, starting with a letter."
     },
     "turnstile_token": {
       "type": "string",
@@ -2410,7 +2414,8 @@ Razorpay's webhook: payments and refunds
     "name": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 60
+      "maxLength": 60,
+      "description": "Letters, spaces, dots, apostrophes and hyphens, starting with a letter."
     },
     "mobile": {
       "type": "string",

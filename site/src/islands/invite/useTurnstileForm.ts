@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { mobileDigits } from "@maneman/web-kit/mobile";
+import { isPersonName } from "@maneman/web-kit/names";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { referral } from "../../content/referral.ts";
 import type { Answer, ErrorCode } from "../../lib/api.ts";
@@ -28,7 +29,7 @@ export function mobileToSend(fields: PersonFields): string {
 /** The person's fields that cannot be sent as they stand. */
 function personProblems(fields: PersonFields): PersonField[] {
   const problems: PersonField[] = [];
-  if (fields.name.trim() === "") problems.push("name");
+  if (!isPersonName(fields.name)) problems.push("name");
   if (mobileDigits(fields.mobile) === null) problems.push("mobile");
   if (!fields.consent) problems.push("consent");
   return problems;

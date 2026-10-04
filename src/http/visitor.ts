@@ -3,6 +3,7 @@
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
+import { TURNSTILE_HOSTS } from "../config/environments.ts";
 import { countOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { TURNSTILE_TEST_TOKEN, verifyTurnstile, type TurnstileResult } from "../providers/turnstile.ts";
@@ -27,12 +28,13 @@ export async function visitorOf(c: Context<AppEnv>): Promise<Visitor> {
  * and every real token is checked with the real secret, everywhere.
  */
 export async function checkTurnstile(c: Context<AppEnv>, token: string, visitor: Visitor): Promise<TurnstileResult> {
-  const { settings } = c.var.config;
+  const { settings, environment } = c.var.config;
   if (settings.acceptTurnstileTestToken && token === TURNSTILE_TEST_TOKEN) return "passed";
   const verdict = await verifyTurnstile({
     secret: settings.turnstileSecret,
     token,
     ip: visitor.ip,
+    hosts: environment === "local" ? null : TURNSTILE_HOSTS[environment],
     fetch: c.var.deps.fetch,
     log: c.var.log,
   });

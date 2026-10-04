@@ -408,7 +408,7 @@ test("the form will not send without the address, a name, a number and the agree
   await page.getByRole("button", { name: "Check" }).click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Enter your name.")).toBeVisible();
+  await expect(page.getByText("Enter your name, in letters.")).toBeVisible();
   await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
   await expect(page.getByText("Enter the building or society.")).toBeVisible();

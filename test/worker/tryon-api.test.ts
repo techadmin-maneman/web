@@ -498,9 +498,7 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     // Claimed, but its render never asked for: no look yet.
     expect((await browser.claim(await browser.uploaded())).status).toBe(201);
 
-    await env.DB.prepare("UPDATE tryon_jobs SET submit_started_at = claimed_at, state = 'ready' WHERE id = ?")
-      .bind(made)
-      .run();
+    await setState(made, "queued");
     const refused = await browser.claim(await browser.uploaded());
     expect(refused.status).toBe(403);
     expect(await refused.json()).toMatchObject({ error: { code: "look_limit_reached" } });
@@ -597,6 +595,24 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     const other = await browser.generate(jobId, { preset: "light-natural-short" });
     expect(other.status).toBe(403);
     expect(await other.json()).toMatchObject({ error: { code: "look_limit_reached" } });
+  });
+
+  // PS-58: the claim checks the number, but jobs claimed before any is asked for must not each make a look.
+  it("makes one look for a number that claimed several jobs before asking for any", async () => {
+    const browser = visitor({ tryon: { claimMobileDailyLimit: 10, generateIpHourlyLimit: 10 } });
+    const first = await browser.claimed();
+    const second = await browser.claimed();
+
+    expect((await browser.generate(first)).status).toBe(202);
+    const refused = await browser.generate(second);
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toMatchObject({ error: { code: "look_limit_reached" } });
+    expect(await jobRow(second)).toMatchObject({ state: "awaiting_upload" });
+    expect(browser.queues.RENDER_QUEUE.sent).toHaveLength(1);
+
+    // Its render failed, so the number may have its look from the other.
+    await setState(first, "failed");
+    expect((await browser.generate(second)).status).toBe(202);
   });
 
   it("trips the render ceiling at 3: the fourth answers 503 busy, fails its job and alerts once", async () => {

@@ -5698,8 +5698,8 @@
               }
             }
           },
-          "503": {
-            "description": "busy: today's result-read ceiling is reached",
+          "429": {
+            "description": "rate_limited: this client's try-on images for today",
             "content": {
               "application/json": {
                 "schema": {

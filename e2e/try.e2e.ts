@@ -174,7 +174,7 @@ test.describe("gate", () => {
     await expect(page.getByLabel("Name")).toHaveAttribute("aria-required", "true");
     await expect(page.getByLabel("Mobile")).toHaveAttribute("aria-required", "true");
     await page.getByRole("button", { name: "Send my look" }).click();
-    await expect(page.getByText("Tell us what to call you.")).toBeVisible();
+    await expect(page.getByText("Tell us what to call you, in letters.")).toBeVisible();
     await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
     await expect(page.getByLabel("Name")).toBeFocused();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
@@ -185,7 +185,7 @@ test.describe("gate", () => {
     await open(page, "gate");
     await page.getByLabel("Mobile").fill("98100");
     await page.getByRole("button", { name: "Send my look" }).click();
-    await expect(page.getByText("Tell us what to call you.")).toBeVisible();
+    await expect(page.getByText("Tell us what to call you, in letters.")).toBeVisible();
     await expect(page.getByLabel("Name")).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByLabel("Name")).toBeFocused();
     await page.getByLabel("Name").fill("Test Visitor");

@@ -5,6 +5,7 @@ import { createApp } from "../../src/app.ts";
 import type { App } from "../../src/http/context.ts";
 import {
   EXPECTED_DATABASE_NAME,
+  SURFACE_HOSTS,
   type EnvironmentName,
   type Providers,
   type Surface,
@@ -236,7 +237,8 @@ export function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
-export const turnstilePasses: Handler = () => json({ success: true });
+/** Cloudflare passing a token solved on staging's site: a test runs as local, which checks no page, or as staging. */
+export const turnstilePasses: Handler = () => json({ success: true, hostname: SURFACE_HOSTS.staging.public });
 
 // ---------------------------------------------------------------------------
 // App and dependencies

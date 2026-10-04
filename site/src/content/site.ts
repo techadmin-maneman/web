@@ -1001,7 +1001,7 @@ export const tryOn = {
     frame: "For your WhatsApp only",
     name: "Name",
     namePlaceholder: "Your name",
-    nameError: "Tell us what to call you.",
+    nameError: "Tell us what to call you, in letters.",
     mobile: "Mobile",
     mobilePlaceholder: "98100 00000",
     mobileError: "Enter a valid 10-digit mobile number.",

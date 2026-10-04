@@ -29,5 +29,9 @@ Locally the Worker uses Cloudflare's always-pass test secret (`.dev.vars.example
 which accepts the dummy token `XXXX.DUMMY.TOKEN.XXXX`. Production refuses to
 start with a test secret.
 
+A token Cloudflare passes is still refused if it was solved on a page not listed for the
+environment (`TURNSTILE_HOSTS`, `src/config/environments.ts`; staging also takes `app-staging.maneman.in`).
+The Worker logs `turnstile_wrong_host` with the hostname. A local run checks no hostname.
+
 Both widgets are in managed mode, in the Cloudflare account that holds
 `maneman.in`: dashboard → Turnstile.

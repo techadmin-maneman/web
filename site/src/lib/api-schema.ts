@@ -309,6 +309,7 @@ export interface paths {
             requestBody?: {
                 content: {
                     "application/json": {
+                        /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
                         name: string;
                         mobile: string;
                         /** @description A six-digit Indian pincode. */
@@ -452,6 +453,7 @@ export interface paths {
             requestBody?: {
                 content: {
                     "application/json": {
+                        /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
                         name: string;
                         mobile: string;
                         /** @description A six-digit Indian pincode. */
@@ -725,6 +727,7 @@ export interface paths {
             requestBody?: {
                 content: {
                     "application/json": {
+                        /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
                         name: string;
                         mobile: string;
                         turnstile_token: string;
@@ -851,6 +854,7 @@ export interface paths {
             requestBody?: {
                 content: {
                     "application/json": {
+                        /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
                         name: string;
                         mobile: string;
                         turnstile_token: string;
@@ -1824,7 +1828,7 @@ export interface components {
         };
         NumberCodeRequest: {
             mobile: string;
-            /** @description The name typed beside the number. */
+            /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
             name: string;
             turnstile_token: string;
         };
@@ -2028,6 +2032,7 @@ export interface components {
         ClaimRequest: {
             /** Format: uuid */
             job_id: string;
+            /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
             name: string;
             /** @example 98100 00000 */
             mobile: string;

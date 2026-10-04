@@ -807,7 +807,7 @@ A try-on's photograph or look, through a link that lasts 15 minutes
 }
 ```
 
-**503**: busy: today's result-read ceiling is reached
+**429**: rate_limited: this client's try-on images for today
 
 ```json
 {

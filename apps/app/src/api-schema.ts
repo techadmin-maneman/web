@@ -1307,8 +1307,8 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description busy: today's result-read ceiling is reached */
-                503: {
+                /** @description rate_limited: this client's try-on images for today */
+                429: {
                     headers: {
                         [name: string]: unknown;
                     };

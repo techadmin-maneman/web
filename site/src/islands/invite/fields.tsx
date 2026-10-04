@@ -3,6 +3,7 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { formatMobileField } from "@maneman/web-kit/mobile";
+import { MOST_NAME_LENGTH } from "@maneman/web-kit/names";
 import type { LossExtent } from "../../../../src/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { booking, stageOptions } from "../../content/site.ts";
@@ -69,9 +70,6 @@ export function ExtentFieldset(props: { extent: LossExtent | null; onChange: (ex
   );
 }
 
-/** The API's longest name. */
-const NAME_MAX = 80;
-
 export function PersonFieldset(props: {
   fields: PersonFields;
   /** The fields to mark as wrong. */
@@ -98,7 +96,7 @@ export function PersonFieldset(props: {
             value={fields.name}
             placeholder={referral.form.namePlaceholder}
             autocomplete="name"
-            maxLength={NAME_MAX}
+            maxLength={MOST_NAME_LENGTH}
             aria-required="true"
             aria-invalid={nameBad}
             aria-describedby={nameBad ? `${idPrefix}-name-error` : undefined}

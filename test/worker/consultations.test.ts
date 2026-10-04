@@ -198,6 +198,26 @@ describe("POST /api/consultation", () => {
     }
   });
 
+  // PS-57: our WhatsApp messages greet people by this name, so it is never a link or a number.
+  it("refuses a name that is not letters, naming it, and books nothing", async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    const body = {
+      ...VISITOR,
+      pincode: "122018",
+      date: "2026-09-23",
+      window: "morning",
+      consent: true,
+      address: ADDRESS,
+    };
+
+    for (const name of ["Win at example.com", "https://x.co", "Asha 2"]) {
+      const answer = await request(site(), "/api/consultation", post({ ...body, name }));
+      expect(answer.status).toBe(400);
+      expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["name"] } });
+    }
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM people").first()).toEqual({ n: 0 });
+  });
+
   // Ops fix the hour on WhatsApp while the flag is off, so the day the visitor
   // asked for is recorded for them instead of being refused
   // (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
