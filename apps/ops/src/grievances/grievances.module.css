@@ -9,7 +9,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-20);
-  max-width: var(--ops-panel);
+  max-width: var(--ops-list);
 }
 
 /* ---- One grievance --------------------------------------------------------- */
@@ -45,6 +45,7 @@
  * against a paraphrase is an answer to the wrong thing.
  */
 .words {
+  max-width: var(--measure-column);
   margin: var(--sp-12) 0 0;
   padding: var(--sp-12) 0;
   border-top: var(--hairline) solid var(--paper-line);
@@ -57,6 +58,7 @@
 /* ---- The answer ------------------------------------------------------------ */
 
 .answer {
+  max-width: var(--measure-column);
   margin-top: var(--sp-14);
 }
 

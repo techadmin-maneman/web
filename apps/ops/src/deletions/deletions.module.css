@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-20);
-  max-width: var(--ops-panel);
+  max-width: var(--ops-list);
 }
 
 /* ---- One request ----------------------------------------------------------- */
@@ -44,6 +44,7 @@
 /* ---- The confirmation ------------------------------------------------------ */
 
 .confirm {
+  max-width: var(--measure-column);
   margin-top: var(--sp-14);
   padding: var(--sp-14) var(--sp-16);
   border: var(--hairline) solid var(--error-on-paper);
@@ -95,6 +96,7 @@
 /* ---- The reason a rejection carries ---------------------------------------- */
 
 .reason {
+  max-width: var(--measure-column);
   margin-top: var(--sp-14);
 }
 

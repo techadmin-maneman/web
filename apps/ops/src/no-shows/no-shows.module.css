@@ -8,11 +8,13 @@
  * Every amount is lining and tabular, so a column of rupees reads as a column.
  */
 
+/* The board's cards side by side on a desktop, as D1 draws the disputed charge beside the day's money. */
 .column {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--ops-panel)), 1fr));
+  align-items: start;
   gap: var(--sp-20);
-  max-width: var(--ops-panel);
+  max-width: var(--ops-list);
 }
 
 .panel {
