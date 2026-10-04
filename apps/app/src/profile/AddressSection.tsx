@@ -5,21 +5,12 @@
 
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
+import { addressLine, given } from "@maneman/web-kit/address";
 import type { Address } from "../api.ts";
 import { profile } from "../content.ts";
 import { focusIfLost } from "../lib/arrival.ts";
-import { AddressForm, given } from "./AddressForm.tsx";
+import { AddressForm } from "./AddressForm.tsx";
 import styles from "./profile.module.css";
-
-/**
- * The address on one line, narrowest part first, as an envelope is written. An
- * address saved before the flat and building fields existed holds nulls in all
- * of them and reads exactly as it did.
- */
-function written(address: Address): string {
-  const parts = [address.flat, address.floor, address.tower, address.building, address.line1, address.line2];
-  return [...new Set(parts.filter(given))].concat(address.locality).join(", ");
-}
 
 export function AddressSection({
   address,
@@ -65,9 +56,7 @@ export function AddressSection({
             <p className={styles.muted}>{copy.noAddress}</p>
           ) : (
             <>
-              <p className={styles.address}>
-                {written(address)}, {address.city} {address.pincode}
-              </p>
+              <p className={styles.address}>{addressLine(address)}</p>
               {given(address.landmark) && (
                 <dl className={styles.landmark}>
                   <dt className={styles.formLabel}>{copy.landmark}</dt>

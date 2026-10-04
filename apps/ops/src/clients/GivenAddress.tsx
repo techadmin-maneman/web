@@ -11,6 +11,7 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useId, useRef, useState } from "react";
+import { given, missingParts } from "@maneman/web-kit/address";
 import { api, type AddressGiven, type ClientRecord, type Suggestion } from "../api.ts";
 import { clients, NOT_PERMITTED } from "../content.ts";
 import styles from "./address.module.css";
@@ -40,22 +41,8 @@ const EMPTY: Draft = {
   place_id: null,
 };
 
-const given = (part: string | null | undefined): part is string =>
-  part !== null && part !== undefined && part.trim() !== "";
-
 /** A part left blank is none, as the API holds it. */
 const orNull = (part: string | null | undefined): string | null => (given(part) ? part.trim() : null);
-
-/** The fields an address is not one without, left out, as the app's form checks them. */
-function missing(draft: Draft): Part[] {
-  const left: Part[] = [];
-  if (!given(draft.flat)) left.push("flat");
-  if (draft.line1.trim() === "") left.push("line1");
-  if (draft.locality.trim() === "") left.push("locality");
-  if (draft.city.trim() === "") left.push("city");
-  if (!/^\d{6}$/.test(draft.pincode.trim())) left.push("pincode");
-  return left;
-}
 
 /** The building search: a combobox whose list is described through aria-activedescendant, as the app's is. */
 function BuildingSearch({
@@ -226,7 +213,7 @@ export function GivenAddressForm({
     once(async () => {
       // A building chosen from the search is the address's first line, as the app's form makes it.
       const sent: Draft = given(draft.building) ? { ...draft, line1: draft.building } : draft;
-      const left = missing(sent);
+      const left = missingParts(sent);
       setInvalid(left);
       if (left.length > 0) {
         setProblem(copy.invalid);

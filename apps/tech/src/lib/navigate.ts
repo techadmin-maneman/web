@@ -13,23 +13,10 @@
 
 // The schema rather than ./api.ts, so the rule can be read and tested in Node
 // without the fetch client coming with it (test/node/tech-navigate.test.ts).
+import { given } from "@maneman/web-kit/address";
 import type { components } from "../api-schema.ts";
 
 type Address = NonNullable<components["schemas"]["TechnicianJobDetail"]["address"]>;
-
-/** A part the client filled in. */
-const given = (part: string | null): part is string => part !== null && part.trim() !== "";
-
-/**
- * The address on one line, narrowest part first, as the client app writes it
- * (apps/app/src/profile/AddressSection.tsx): the flat, the floor, the tower and
- * the building, then the street, the area and the city. A building chosen from
- * the search is also the first line, and is written once.
- */
-export function addressLine(parts: Address): string {
-  const house = [parts.flat, parts.floor, parts.tower, parts.building, parts.line1, parts.line2].filter(given);
-  return [...new Set(house), parts.locality, `${parts.city} ${parts.pincode}`].filter(given).join(", ");
-}
 
 /** What a map is asked for when there is no pin: the building and the area. A flat number only confuses it. */
 function placeOf(parts: Address): string {

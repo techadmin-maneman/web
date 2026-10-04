@@ -37,7 +37,6 @@ import { CLOCK } from "../icons.ts";
 import { apiNow } from "../lib/clock.ts";
 import { priceFigures } from "../lib/money.ts";
 import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
-import { firstName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { AddressForm } from "../profile/AddressForm.tsx";
 import { CodeBox } from "./CodeBox.tsx";
@@ -46,6 +45,7 @@ import { dayInsideNotice, isFull, offeredFullLine, windowContinue, windowNote, t
 import { atStake, insideNotice, type AtStake } from "./late-change.ts";
 import { NoteSheet } from "./NoteSheet.tsx";
 import styles from "./booking.module.css";
+import { firstNameOf } from "../../../../src/lib/names.ts";
 
 /** The id every step's heading carries, which names the sheet (BookingSheet.tsx). */
 export const TITLE_ID = "booking-title";
@@ -369,7 +369,7 @@ export function WindowStep(props: {
   onNext: () => void;
 }) {
   const copy = booking.window;
-  const regularName = props.regular === null ? null : firstName(props.regular.name);
+  const regularName = props.regular === null ? null : firstNameOf(props.regular.name);
   const chosen = props.day.windows.find((each) => each.window === props.chosen);
 
   return (
@@ -555,7 +555,7 @@ export function PayStep(props: {
   const { hold, moving } = props;
   const copy = booking.pay;
   const left = useHoldLeft(hold);
-  const technician = firstName(hold.technician.name);
+  const technician = firstNameOf(hold.technician.name);
   const covered = hold.credit !== null;
   const free = paysNothing(hold);
   // A move in place keeps the visit as it was booked: only its new time, and what the move costs, are shown.
@@ -703,7 +703,7 @@ function Settled({ hold }: { hold: Hold }) {
 export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boolean; onDone: () => void }) {
   const { hold, moved, reminded, onDone } = props;
   const copy = booking.confirmed;
-  const technician = firstName(hold.technician.name);
+  const technician = firstNameOf(hold.technician.name);
   const when = `${weekdayDate(hold.date)}, ${WINDOW_HOURS[hold.window]}`;
   return (
     <div className={styles.confirmed} role="status">

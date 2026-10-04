@@ -14,18 +14,19 @@
 
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import { addressLine } from "@maneman/web-kit/address";
 import type { HairProfile, Job } from "../api.ts";
 import { job as copy, profile as profileCopy } from "../content.ts";
 import { PIN, STROKE } from "../icons.ts";
-import { addressLine, callLink, wayTo } from "../lib/navigate.ts";
+import { callLink, wayTo } from "../lib/navigate.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import { paidFor, profileNamesAnother } from "./paid-for.ts";
 import styles from "./job.module.css";
+import { firstNameOf } from "../../../../src/lib/names.ts";
 
 type Piece = NonNullable<Job["pieces"]>[number];
 
 /** "Rohit M." → "Rohit", as the board writes the name on the door. */
-export const firstName = (name: string): string => name.trim().split(/\s+/)[0] ?? name;
 
 /** The piece on the client's head: the newest fitted one that has not failed. */
 const onTheHead = (pieces: readonly Piece[]): Piece | null =>
@@ -168,7 +169,7 @@ export function JobCard({ job }: { job: Job }) {
         )}
         {job.access_notes !== null && <p className={styles.access}>{job.access_notes}</p>}
         {client !== null && clientNote !== null && (
-          <p className={styles.access}>{copy.clientNote(firstName(client.name), clientNote)}</p>
+          <p className={styles.access}>{copy.clientNote(firstNameOf(client.name), clientNote)}</p>
         )}
         {/* A new tab, so a technician who has taken the route back still has the app open behind it. */}
         <a className={styles.navigate} href={wayTo(job.address)} target="_blank" rel="noopener noreferrer">
@@ -178,7 +179,7 @@ export function JobCard({ job }: { job: Job }) {
         {client !== null && (
           <div className={styles.reach}>
             <a className={styles.reachLink} href={callLink(client.mobile)}>
-              {copy.call(firstName(client.name))}
+              {copy.call(firstNameOf(client.name))}
             </a>
             <a
               className={styles.reachLink}
@@ -186,7 +187,7 @@ export function JobCard({ job }: { job: Job }) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {copy.whatsApp(firstName(client.name))}
+              {copy.whatsApp(firstNameOf(client.name))}
             </a>
           </div>
         )}

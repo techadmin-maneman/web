@@ -12,8 +12,9 @@ import { OpsLink } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { clientPath } from "../route.ts";
 import styles from "./dispatch.module.css";
-import { firstNameOf, nameOf } from "./job.ts";
+import { nameOf } from "./job.ts";
 import { askedWord, offeredWord } from "./Tray.tsx";
+import { firstNameOf } from "../../../../src/lib/names.ts";
 
 interface Props {
   readonly each: Unassigned;
@@ -77,7 +78,7 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
                 <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d={ICONS.whatsapp} />
                 </svg>
-                {copy.whatsapp(firstNameOf(person))}
+                {copy.whatsapp(firstNameOf(person.name))}
               </ButtonLink>
               <OpsLink
                 className={buttonLook({ variant: "outline", size: "small" })}

@@ -32,9 +32,9 @@ import { go, stepPath } from "../route.ts";
 import { keepClosed, keptArrival } from "../store/jobs.ts";
 import { checkInRefusedAsEarly, events, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
 import { CardFrame } from "./CardFrame.tsx";
-import { firstName } from "./JobCard.tsx";
 import { receiptLine, type ReceiptLine } from "./receipt.ts";
 import styles from "./job.module.css";
+import { firstNameOf } from "../../../../src/lib/names.ts";
 
 /** The phone's own fix, which the API measures against the address (src/policy/check-in.ts). */
 function position(): Promise<GeolocationPosition> {
@@ -80,7 +80,7 @@ function useBefore(at: number): boolean {
 }
 
 function evidenceOf(job: Job): ReceiptLine {
-  const who = job.client === null ? copy.waiting.theClient : firstName(job.client.name);
+  const who = job.client === null ? copy.waiting.theClient : firstNameOf(job.client.name);
   return receiptLine(job.reminder, who);
 }
 
@@ -258,7 +258,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
         <section className={styles.stage}>
           <p className={styles.stageLabel}>{copy.appears.title}</p>
           {job.client !== null && (
-            <p className={styles.failedLine}>{copy.appears.atTheDoor(firstName(job.client.name))}</p>
+            <p className={styles.failedLine}>{copy.appears.atTheDoor(firstNameOf(job.client.name))}</p>
           )}
           <p className={styles.stageNote}>{copy.appears.body}</p>
         </section>

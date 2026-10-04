@@ -38,7 +38,7 @@ import { clearTechnicianCookie, setTechnicianCookie, technicianOf } from "../htt
 import { visitorOf } from "../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { newLoginCode } from "../policy/one-time-code.ts";
-import { isStagingTestName } from "../policy/staging-test-records.ts";
+import { isStagingTestName } from "../config/test-names.ts";
 
 /** Why an active technician was refused a code, and what he can do, in ops' words. */
 function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings): string {

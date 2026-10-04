@@ -13,6 +13,7 @@ import { Table } from "@maneman/ui/Table";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
+import { addressLine } from "@maneman/web-kit/address";
 import type { AutoRefund, ClientRecord, ClientVisit } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
@@ -43,16 +44,9 @@ function whatOf(visit: ClientVisit): string {
   return copy.what(kind, visit.service);
 }
 
-/** The address on one line, narrowest part first, as the client app writes it. */
-function written(address: SavedAddress): string {
-  const parts = [address.flat, address.floor, address.tower, address.building, address.line1, address.line2];
-  const given = parts.filter((part): part is string => part !== null && part !== "");
-  return [...new Set(given), `${address.locality}, ${address.city} ${address.pincode}`].join(", ");
-}
-
 function AddressRows({ address }: { address: SavedAddress }) {
   const rows = [
-    { key: copy.address, value: written(address) },
+    { key: copy.address, value: addressLine(address) },
     ...(address.landmark === null ? [] : [{ key: copy.landmark, value: address.landmark }]),
     ...(address.access_notes === null ? [] : [{ key: copy.access, value: address.access_notes }]),
     ...(address.given_to_ops === null

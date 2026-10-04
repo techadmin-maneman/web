@@ -16,11 +16,12 @@ import type { OneVisitPrice, VisitSummary } from "../api.ts";
 import { home, messages, note, windowText } from "../content.ts";
 import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { NoteSheet } from "../booking/NoteSheet.tsx";
-import { firstName, oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
+import { oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { oneVisitLines } from "./one-visit-words.ts";
 import styles from "./home.module.css";
+import { firstNameOf } from "../../../../src/lib/names.ts";
 
 /** A visit the client may move or cancel in the app, while self-serve booking is on. */
 export function changingOf(visit: VisitSummary, what: string): ChangingVisit | null {
@@ -36,7 +37,7 @@ export function changingOf(visit: VisitSummary, what: string): ChangingVisit | n
 /** A visit, which a note can be kept on, and its technician's first name. */
 export const notingOf = (visit: VisitSummary): NotingVisit => ({
   visitId: visit.id,
-  technician: visit.technician === null ? null : firstName(visit.technician.name),
+  technician: visit.technician === null ? null : firstNameOf(visit.technician.name),
   note: visit.client_note,
 });
 
@@ -216,7 +217,7 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
           </span>
         )}
         <div>
-          {visit.technician !== null && <p className={styles.who}>{firstName(visit.technician.name)}</p>}
+          {visit.technician !== null && <p className={styles.who}>{firstNameOf(visit.technician.name)}</p>}
           <p className={styles.length}>
             {home.next.length(oneVisit === null ? visitTitle(visit) : what, visit.length_minutes)}
           </p>

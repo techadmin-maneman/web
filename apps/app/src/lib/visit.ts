@@ -2,6 +2,7 @@
 
 import type { Me, OneVisitPrice, VisitDetail, VisitSummary } from "../api.ts";
 import { ONE_VISIT, OTHER_VISIT, VISIT_TYPES } from "../content.ts";
+import { firstNameOf } from "../../../../src/lib/names.ts";
 
 export const visitName = (type: VisitSummary["type"]) => (type === null ? OTHER_VISIT : VISIT_TYPES[type]);
 
@@ -27,11 +28,10 @@ export const bookingName = (booking: NonNullable<Me["being_booked"]>) =>
 export const summaryName = (visit: VisitSummary) => (oneVisitOf(visit) === null ? visitName(visit.type) : ONE_VISIT);
 
 /** "Imran Qureshi" → "Imran": the name Home and the lists use; the visit's detail gives it in full. */
-export const firstName = (name: string) => name.split(" ")[0] ?? name;
 
 /** The technician's first name, as none or one, to join into a line: "Service visit · Imran". */
 export const technicianOf = (visit: VisitSummary): string[] =>
-  visit.technician === null ? [] : [firstName(visit.technician.name)];
+  visit.technician === null ? [] : [firstNameOf(visit.technician.name)];
 
 /** A day after the visit, "usually ready within the hour" is no longer true of its invoice. */
 const INVOICE_LATE_MS = 24 * 60 * 60 * 1000;
