@@ -60,7 +60,7 @@
 .reachLink {
   color: var(--ink);
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: var(--sp-4);
 }
 
 .reachLink:focus-visible {
