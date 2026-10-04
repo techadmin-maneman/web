@@ -17,6 +17,7 @@ import {
   NOW,
   request,
   savedAddress,
+  deliverRazorpay,
 } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -67,14 +68,6 @@ async function tappedToPay(consents: string[] = BOTH): Promise<Ordered> {
 }
 
 /** The webhook's app, which books a paid visit in its request. */
-function webhookApp(now: Date) {
-  const settings = {
-    ...LOCAL_SETTINGS,
-    razorpay: { keyId: "rzp_test_consents", keySecret: "s", webhookSecret: WEBHOOK_SECRET },
-  };
-  return appFor("local", fakeDependencies({ now: () => now }), settings, "public");
-}
-
 /** Razorpay's signed webhook: the payment for the order, made at `paidAt`, reaching us a minute later. */
 async function paid(ordered: Ordered, paidAt: Date, event = "payment.captured") {
   const payment = {
@@ -87,20 +80,14 @@ async function paid(ordered: Ordered, paidAt: Date, event = "payment.captured") 
     notes: { hold_id: ordered.holdId, person_id: PERSON },
     created_at: Math.floor(paidAt.getTime() / 1000),
   };
-  const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment } } });
-  const answer = await request(
-    webhookApp(new Date(paidAt.getTime() + 60_000)),
-    "/api/hooks/razorpay",
+  const answer = await deliverRazorpay(
+    { entity: "event", event, payload: { payment: { entity: payment } } },
     {
-      method: "POST",
-      body,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Razorpay-Signature": await saltedHash(WEBHOOK_SECRET, body),
-        "X-Razorpay-Event-Id": `evt_${event}_${ordered.holdId}`,
-      },
+      eventId: `evt_${event}_${ordered.holdId}`,
+      deps: fakeDependencies({ now: () => new Date(paidAt.getTime() + 60_000) }),
+      settings: { razorpay: { keyId: "rzp_test_consents", keySecret: "s", webhookSecret: WEBHOOK_SECRET } },
+      bindings: { MESSAGE_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
     },
-    { MESSAGE_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
   );
   expect(answer.status).toBe(200);
 }

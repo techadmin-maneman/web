@@ -8,18 +8,17 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { autoRefundsOf, composeBookingRefunded } from "../../src/domain/auto-refunds.ts";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
-import { saltedHash } from "../../src/lib/hash.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import {
   appFor,
   fakeDependencies,
   fakeQueue,
   leaseRefused,
-  LOCAL_SETTINGS,
   markDatabase,
   NOW,
   request,
   savedAddress,
+  deliverRazorpay,
 } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -329,16 +328,11 @@ describe("booking a service ops added", () => {
 
 describe("Razorpay's capture of a hold's payment", () => {
   it("books the visit in the webhook's own request", async () => {
-    const secret = "a-razorpay-webhook-secret-for-tests";
     const client = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(client);
     const started = await post(client, "/api/bookings", { hold_id: holdId });
     const { checkout } = await started.json<{ checkout: { order_id: string } }>();
-    const app = appFor("local", fakeDependencies(), {
-      ...LOCAL_SETTINGS,
-      razorpay: { keyId: "rzp_test_abc", keySecret: "s", webhookSecret: secret },
-    });
-    const body = JSON.stringify({
+    const event = {
       entity: "event",
       event: "payment.captured",
       payload: {
@@ -356,21 +350,8 @@ describe("Razorpay's capture of a hold's payment", () => {
           },
         },
       },
-    });
-    const answer = await request(
-      app,
-      "/api/hooks/razorpay",
-      {
-        method: "POST",
-        body,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Razorpay-Signature": await saltedHash(secret, body),
-          "X-Razorpay-Event-Id": "evt_9",
-        },
-      },
-      { MESSAGE_QUEUE: fakeQueue() },
-    );
+    };
+    const answer = await deliverRazorpay(event, { eventId: "evt_9", bindings: { MESSAGE_QUEUE: fakeQueue() } });
     expect(answer.status).toBe(200);
     expect(await visitOf(holdId)).toMatchObject({ type: "service", status: "scheduled" });
   });

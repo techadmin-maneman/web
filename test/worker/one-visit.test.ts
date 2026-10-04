@@ -11,7 +11,6 @@ import { recordPayment } from "../../src/domain/payments.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
-import { saltedHash } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { createStubPayments, type PaymentsProvider, type StubPayments } from "../../src/providers/payments.ts";
@@ -29,6 +28,7 @@ import {
   markDatabase,
   NOW,
   request,
+  deliverRazorpay,
 } from "./helpers.ts";
 import { JOB, PERSON, working, type Working } from "./job-fixtures.ts";
 
@@ -402,22 +402,8 @@ describe("closing a one visit the client decided against", () => {
 });
 
 describe("Razorpay's word that a one visit's link is paid", () => {
-  const SECRET = "a-razorpay-webhook-secret-for-tests";
-
-  async function deliver(event: object, eventId: string, deps = fakeDependencies()) {
-    const body = JSON.stringify(event);
-    const settings = { razorpay: { keyId: "rzp_test_abc", keySecret: "key-secret", webhookSecret: SECRET } };
-    const app = appFor("local", deps, { ...LOCAL_SETTINGS, ...settings });
-    return request(app, "/api/hooks/razorpay", {
-      method: "POST",
-      body,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Razorpay-Signature": await saltedHash(SECRET, body),
-        "X-Razorpay-Event-Id": eventId,
-      },
-    });
-  }
+  const deliver = (event: object, eventId: string, deps = fakeDependencies()) =>
+    deliverRazorpay(event, { eventId, deps });
 
   /** Razorpay's payment_link.paid, for the link made for the visit or one ops made by hand with its reference. */
   function linkPaid(link: { id: string; reference_id: string | null }) {

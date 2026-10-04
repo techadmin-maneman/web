@@ -10,7 +10,6 @@ import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
 import { makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
 import { holdSlot } from "../../src/domain/scheduling.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
-import { saltedHash } from "../../src/lib/hash.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { createStubPayments, type PaymentsProvider, type StubPayments } from "../../src/providers/payments.ts";
 import { ProviderError } from "../../src/providers/provider-error.ts";
@@ -24,6 +23,7 @@ import {
   NOW,
   request,
   savedAddress,
+  deliverRazorpay,
 } from "./helpers.ts";
 
 const IMRAN = "t1";
@@ -510,27 +510,8 @@ describe("POST /api/visits: what is refused", () => {
 });
 
 describe("a payment link for a visit ops booked, paid", () => {
-  const SECRET = "a-razorpay-webhook-secret-for-tests";
-
-  async function deliver(event: object, eventId: string) {
-    const body = JSON.stringify(event);
-    const settings = { razorpay: { keyId: "rzp_test_abc", keySecret: "key-secret", webhookSecret: SECRET } };
-    const app = appFor("local", fakeDependencies({ payments }), { ...LOCAL_SETTINGS, ...settings }, "public");
-    return request(
-      app,
-      "/api/hooks/razorpay",
-      {
-        method: "POST",
-        body,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Razorpay-Signature": await saltedHash(SECRET, body),
-          "X-Razorpay-Event-Id": eventId,
-        },
-      },
-      bindings(),
-    );
-  }
+  const deliver = (event: object, eventId: string) =>
+    deliverRazorpay(event, { eventId, deps: fakeDependencies({ payments }), bindings: bindings() });
 
   /** A link ops sent: the hold it waits on, Razorpay's ID for it, and its reference. */
   interface SentLink {

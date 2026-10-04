@@ -18,7 +18,6 @@ import {
   type OpsCancel,
 } from "../../src/domain/visit-changes.ts";
 import { readOpsInputs } from "../../src/domain/ops-settings.ts";
-import { saltedHash } from "../../src/lib/hash.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubPayments, PaymentUnanswered, type PaymentsProvider } from "../../src/providers/payments.ts";
@@ -32,12 +31,12 @@ import {
   fakeDependencies,
   fakeQueue,
   LOCAL_CONFIG,
-  LOCAL_SETTINGS,
   markDatabase,
   NOW,
   request,
   savedAddress,
   type TestDependencies,
+  deliverRazorpay,
 } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -85,22 +84,14 @@ function call(
 
 /** Razorpay's signed webhook for a payment. */
 async function webhook(event: string, eventId: string, payment: object, deps: TestDependencies = fakeDependencies()) {
-  const settings = { ...LOCAL_SETTINGS, razorpay: { keyId: "rzp_test_ours", keySecret: "s", webhookSecret: SECRET } };
-  const app = appFor("local", deps, settings, "public");
-  const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment } } });
-  const answer = await request(
-    app,
-    "/api/hooks/razorpay",
+  const answer = await deliverRazorpay(
+    { entity: "event", event, payload: { payment: { entity: payment } } },
     {
-      method: "POST",
-      body,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Razorpay-Signature": await saltedHash(SECRET, body),
-        "X-Razorpay-Event-Id": eventId,
-      },
+      eventId,
+      deps,
+      settings: { razorpay: { keyId: "rzp_test_ours", keySecret: "s", webhookSecret: SECRET } },
+      bindings: bindings(),
     },
-    bindings(),
   );
   return answer.status;
 }
@@ -1070,6 +1061,30 @@ describe("money owed back on a hold", () => {
     const tasks = (await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS)).tasks;
     expect(tasks.filter((task) => task.group === "payment_to_refund")).toMatchObject([
       { person: { id: PERSON }, detail: "let_go 200000 pay_late" },
+    ]);
+  });
+
+  // A refund Razorpay never answered may have been made, so ops are asked to look before they refund it.
+  it("tells ops to check Razorpay first for a late payment whose refund went unanswered", async () => {
+    await fittedClient();
+    const ordered = await heldAndOrdered();
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM slot_claims WHERE hold_id = ?1").bind(ordered.holdId),
+      env.DB.prepare("UPDATE slot_holds SET state = 'released', updated_at = ?2 WHERE id = ?1").bind(
+        ordered.holdId,
+        at(11 * 60).toISOString(),
+      ),
+    ]);
+    const silent: PaymentsProvider = {
+      ...createStubPayments(),
+      refund: () => Promise.reject(new PaymentUnanswered("refund", new Error("The operation timed out."))),
+    };
+    const deps = fakeDependencies({ payments: silent });
+
+    await webhook("payment.captured", "evt_late", payment("pay_late", ordered, at(13 * 60)), deps);
+
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("and Razorpay did not say whether it refunded it. Check Razorpay's dashboard"),
     ]);
   });
 
