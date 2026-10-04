@@ -868,7 +868,9 @@ async function moveOvertaken(
   (options.log ?? createLogger()).warn("move_overtaken", { hold_id: hold.id });
   const told = refundedMessage(db, { personId: hold.person_id, holdId: hold.id, now });
   const alongside = [told.statement, ...(options.alongside ?? [])];
-  await giveBack(db, payments, hold.id, now, "the visit's technician or time changed", alongside);
+  await giveBack(db, payments, hold.id, now, AUTO_REFUND_NOTES.not_movable, alongside, [
+    autoRefundMarked(db, hold.id, "not_movable"),
+  ]);
   await options.notify?.(told.id);
   return hold.amount > 0 ? "refunded" : "lapsed";
 }
@@ -1053,6 +1055,10 @@ const AUTO_REFUND_NOTES: Readonly<Record<AutoRefundReason, string>> = {
   not_movable: "the visit could no longer be moved",
 };
 
+/** Marks a hold as refunded by the booking itself, which ops read on the client's Visits tab. */
+const autoRefundMarked = (db: D1Database, holdId: string, reason: AutoRefundReason): D1PreparedStatement =>
+  db.prepare("UPDATE slot_holds SET auto_refund_reason = ?2 WHERE id = ?1").bind(holdId, reason);
+
 /**
  * Lets go a hold the booking could not keep: one paid after it lapsed, or a move whose visit has begun. A payment
  * refunded here is marked as refunded by the booking itself, and the client is told, both in the batch that lets the
@@ -1067,9 +1073,8 @@ async function giveBackUnkept(
   options: ConfirmOptions,
 ): Promise<GivenBack> {
   const message = refundedMessage(db, { personId: hold.person_id, holdId: hold.id, now });
-  const marked = db.prepare("UPDATE slot_holds SET auto_refund_reason = ?2 WHERE id = ?1").bind(hold.id, reason);
   const given = await giveBack(db, payments, hold.id, now, AUTO_REFUND_NOTES[reason], options.alongside, [
-    marked,
+    autoRefundMarked(db, hold.id, reason),
     message.statement,
   ]);
   if (given.kind === "refunded") await tellOfRefund(message.id, options);

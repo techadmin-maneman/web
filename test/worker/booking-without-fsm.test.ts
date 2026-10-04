@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { autoRefundsOf } from "../../src/domain/auto-refunds.ts";
 import { bookUnbookedHolds, confirmBooking } from "../../src/domain/bookings.ts";
 import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { resolveAskedWindows } from "../../src/domain/asked-windows.ts";
@@ -596,6 +597,7 @@ describe("a client's move in place, when ops change the visit before it is booke
     expect(await holdRow(holdId)).toEqual({ state: "released", appointment_id: null });
     expect((await changes()).results).toEqual([]);
     expect((await messagesOf(PERSON)).results).toEqual([{ kind: "booking_refunded", subject_id: holdId }]);
+    expect(await autoRefundsOf(env.DB, PERSON)).toMatchObject([{ holdId, amount: 400000, reason: "not_movable" }]);
   });
 
   it("gives a free move back and tells the client when the technician is away on the new day", async () => {
