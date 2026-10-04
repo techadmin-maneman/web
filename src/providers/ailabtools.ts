@@ -13,7 +13,9 @@ import { z } from "zod";
 import type { Endpoint, Preset } from "../config/presets.ts";
 import { MAX_RESULT_BYTES } from "../config/tryon.ts";
 import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
+import type { Logger } from "../log.ts";
 import type { DownloadResult, ImageProvider, PollResult, ProviderColor, RenderFailure, SubmitResult } from "./image.ts";
+import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
 
 export const API_BASE_URL = "https://www.ailabapi.com";
 export const ENDPOINT_PATHS: Readonly<Record<Endpoint, string>> = {
@@ -58,8 +60,15 @@ const ResultData = z.object({
 const Pool = z.object({ balance: z.coerce.number().catch(0) });
 const Credits = z.object({ data: z.union([z.array(Pool), Pool.transform((pool) => [pool])]).optional() });
 
-export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeof fetch }): ImageProvider {
-  const { apiKey, fetch } = options;
+/** AILabTools' own code in an answer, for the log. */
+function errorCodeOf(body: unknown): string | null {
+  const code = ApiBody.safeParse(body).data?.error_code;
+  return code === undefined ? null : String(code);
+}
+
+export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeof fetch; log: Logger }): ImageProvider {
+  const { apiKey } = options;
+  const http = { fetch: options.fetch, log: options.log };
   const scrub = (text: string): string => text.split(apiKey).join("***REDACTED***");
   const authorised = { "ailabapi-api-key": apiKey };
 
@@ -77,12 +86,38 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
     return { ...classify(status, body), detail };
   };
 
-  const unreachable = (error: unknown, context: string): RenderFailure => ({
+  const unreachable = (error: VendorUnreachable): RenderFailure => ({
     code: "render_failed",
     transient: true,
     alert: false,
-    detail: scrub(`${context}: ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`),
+    detail: error.message,
   });
+
+  /** One try at a result: its bytes, a result no retry will make usable, or why this try failed. */
+  async function downloadOnce(url: string): Promise<DownloadResult> {
+    // No API key: it must never reach whatever host serves the results (7.10).
+    const call = { vendor: "ailabtools", step: "download", timeoutMs: DOWNLOAD_TIMEOUT_MS } as const;
+    const response = await vendorFetch(http, call, url);
+    if (response instanceof VendorUnreachable) return stalled(response.reason);
+    if (!response.ok) return stalled(`HTTP ${String(response.status)}`);
+
+    // A result declared too large is refused before a byte of it is read.
+    const declared = Number(response.headers.get("Content-Length") ?? "0");
+    if (declared > MAX_RESULT_BYTES) {
+      await response.body?.cancel();
+      return unusable(`result is ${String(declared)} bytes`);
+    }
+    let bytes: Uint8Array;
+    try {
+      bytes = new Uint8Array(await response.arrayBuffer());
+    } catch (error) {
+      return stalled(error instanceof Error ? error.name : "error");
+    }
+    if (bytes.byteLength > MAX_RESULT_BYTES) return unusable(`result is ${String(bytes.byteLength)} bytes`);
+    const info = inspectImage(bytes);
+    if (info === null) return unusable("result is not a JPEG or PNG");
+    return { ok: true, bytes, contentType: info.type };
+  }
 
   return {
     async submit(image, preset, color, endpoint): Promise<SubmitResult> {
@@ -94,17 +129,13 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
         };
       }
 
-      let response: Response;
-      try {
-        response = await fetch(`${API_BASE_URL}${ENDPOINT_PATHS[endpoint]}`, {
-          method: "POST",
-          headers: authorised,
-          body: submitForm(image, info.type, preset, color, endpoint),
-          signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS),
-        });
-      } catch (error) {
-        return { ok: false, failure: unreachable(error, "submit") };
-      }
+      const response = await vendorFetch(
+        http,
+        { vendor: "ailabtools", step: "submit", timeoutMs: SUBMIT_TIMEOUT_MS, codeOf: errorCodeOf },
+        `${API_BASE_URL}${ENDPOINT_PATHS[endpoint]}`,
+        { method: "POST", headers: authorised, body: submitForm(image, info.type, preset, color, endpoint) },
+      );
+      if (response instanceof VendorUnreachable) return { ok: false, failure: unreachable(response) };
 
       const body = await readBody(response);
       const taskId = body?.task_id ?? "";
@@ -113,15 +144,13 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
     },
 
     async poll(taskId, endpoint): Promise<PollResult> {
-      let response: Response;
-      try {
-        response = await fetch(`${API_BASE_URL}${POLL_PATH}?task_id=${encodeURIComponent(taskId)}`, {
-          headers: authorised,
-          signal: AbortSignal.timeout(POLL_TIMEOUT_MS),
-        });
-      } catch (error) {
-        return { state: "failed", failure: unreachable(error, "poll") };
-      }
+      const response = await vendorFetch(
+        http,
+        { vendor: "ailabtools", step: "poll", timeoutMs: POLL_TIMEOUT_MS, codeOf: errorCodeOf },
+        `${API_BASE_URL}${POLL_PATH}?task_id=${encodeURIComponent(taskId)}`,
+        { headers: authorised },
+      );
+      if (response instanceof VendorUnreachable) return { state: "failed", failure: unreachable(response) };
 
       const body = await readBody(response);
       if (!response.ok || !isSuccess(body)) return { state: "failed", failure: failure(response.status, body, "poll") };
@@ -142,27 +171,9 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
 
       let last = "";
       for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
-        try {
-          // No API key: it must never reach whatever host serves the results (7.10).
-          const response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
-          if (!response.ok) {
-            last = `HTTP ${String(response.status)}`;
-            continue;
-          }
-          // A result declared too large is refused before a byte of it is read.
-          const declared = Number(response.headers.get("Content-Length") ?? "0");
-          if (declared > MAX_RESULT_BYTES) {
-            await response.body?.cancel();
-            return unusable(`result is ${String(declared)} bytes`);
-          }
-          const bytes = new Uint8Array(await response.arrayBuffer());
-          if (bytes.byteLength > MAX_RESULT_BYTES) return unusable(`result is ${String(bytes.byteLength)} bytes`);
-          const info = inspectImage(bytes);
-          if (info === null) return unusable("result is not a JPEG or PNG");
-          return { ok: true, bytes, contentType: info.type };
-        } catch (error) {
-          last = error instanceof Error ? error.name : "error";
-        }
+        const tried = await downloadOnce(url);
+        if (tried.ok || !tried.transient) return tried;
+        last = tried.detail;
       }
       return {
         ok: false,
@@ -172,18 +183,17 @@ export function createAilabtoolsProvider(options: { apiKey: string; fetch: typeo
     },
 
     async credits(): Promise<number | null> {
-      try {
-        const response = await fetch(`${API_BASE_URL}${CREDITS_PATH}`, {
-          headers: authorised,
-          signal: AbortSignal.timeout(CREDITS_TIMEOUT_MS),
-        });
-        const answer = Credits.safeParse(await response.json().catch(() => null));
-        if (!response.ok || !answer.success) return null;
-        const pools = answer.data.data ?? [];
-        return pools.reduce((total, pool) => total + pool.balance, 0);
-      } catch {
-        return null;
-      }
+      const response = await vendorFetch(
+        http,
+        { vendor: "ailabtools", step: "credits", timeoutMs: CREDITS_TIMEOUT_MS, codeOf: errorCodeOf },
+        `${API_BASE_URL}${CREDITS_PATH}`,
+        { headers: authorised },
+      );
+      if (response instanceof VendorUnreachable || !response.ok) return null;
+      const answer = Credits.safeParse(await response.json().catch(() => null));
+      if (!answer.success) return null;
+      const pools = answer.data.data ?? [];
+      return pools.reduce((total, pool) => total + pool.balance, 0);
     },
   };
 }
@@ -216,6 +226,8 @@ function submitForm(
 
 /** A result no retry will make usable: too large for WhatsApp, or not an image at all. */
 const unusable = (detail: string): DownloadResult => ({ ok: false, detail, transient: false });
+/** A try the result host did not answer in full: worth another. */
+const stalled = (detail: string): DownloadResult => ({ ok: false, detail, transient: true });
 
 async function readBody(response: Response): Promise<ApiBody | null> {
   const answer = ApiBody.safeParse(await response.json().catch(() => null));

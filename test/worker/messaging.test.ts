@@ -311,7 +311,7 @@ describe("Evolution API", () => {
 
   it("sends an image with the template's text as its caption, to the digits of the number", async () => {
     const http = fakeFetch({ [SEND_MEDIA]: () => json({ key: { id: "3EB0ABC" }, status: "PENDING" }, 201) });
-    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
 
     const result = await evolution.send({
       to: "+919810000001",
@@ -334,7 +334,7 @@ describe("Evolution API", () => {
 
   it("sends plain text when there is no image, and refuses an unknown template without calling out", async () => {
     const http = fakeFetch({ [SEND_TEXT]: () => json({ key: { id: "T1" } }) });
-    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
     expect(await evolution.send({ to: "+919810000001", template: "tryon_result_v1", params: ["Arjun"] })).toMatchObject(
       { ok: true },
     );
@@ -347,7 +347,7 @@ describe("Evolution API", () => {
 
   it("ends the text with the link that stops it, when the message carries one", async () => {
     const http = fakeFetch({ [SEND_TEXT]: () => json({ key: { id: "T1" } }) });
-    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
     await evolution.send({
       to: "+919810000001",
       template: "launch_alert_v1",
@@ -373,7 +373,7 @@ describe("Evolution API", () => {
     [400, { error: "number 919810000001 does not exist" }, false, "HTTP 400 number ############ does not exist"],
   ])("classifies HTTP %i", async (status, body, transient, detail) => {
     const http = fakeFetch({ [SEND_MEDIA]: () => json(body, status) });
-    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
     expect(await sendImage(evolution)).toEqual({ ok: false, transient, detail });
   });
 
@@ -388,7 +388,7 @@ describe("Evolution API", () => {
     [400, { error: "Connection Closed" }, "HTTP 400 Connection Closed"],
   ])("reads HTTP %i as the bridge being down, which is no fault of the message", async (status, body, detail) => {
     const http = fakeFetch({ [SEND_MEDIA]: () => json(body, status) });
-    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
     expect(await sendImage(evolution)).toEqual({ ok: false, transient: false, bridgeDown: true, detail });
   });
 
@@ -398,7 +398,7 @@ describe("Evolution API", () => {
         throw new TypeError("fetch failed");
       },
     });
-    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
     expect(
       await evolution.send({
         to: "+919810000001",
@@ -419,7 +419,7 @@ describe("Evolution API", () => {
         throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
       },
     });
-    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
     expect(
       await evolution.send({
         to: "+919810000001",
@@ -441,7 +441,7 @@ describe("Evolution API", () => {
         throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
       },
     });
-    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
     expect(await evolution.send({ to: "+919810000001", template: "login_code_v1", params: ["123456"] })).toEqual({
       ok: false,
       transient: false,
@@ -471,7 +471,7 @@ describe("Evolution API", () => {
       [json({}, 502), { open: false, fault: "unreachable", detail: "HTTP 502" }],
     ])("is read, never written, from its connection state", async (answer, connection) => {
       const http = fakeFetch({ [STATE]: () => answer });
-      const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+      const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
       expect(await evolution.connection()).toEqual(connection);
       expect(http.calls.map((call) => [call.method, call.headers.get("apikey")])).toEqual([["GET", "evo-key"]]);
     });
@@ -482,7 +482,7 @@ describe("Evolution API", () => {
           throw new TypeError("fetch failed");
         },
       });
-      const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+      const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
       expect(await evolution.connection()).toEqual({
         open: false,
         fault: "unreachable",
