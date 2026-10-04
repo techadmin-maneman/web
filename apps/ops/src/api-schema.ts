@@ -224,7 +224,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The client's record: who they are, their address, their visits, their payments, their history and their invite */
+        /** The client's record: who they are, their address, their visits, their money, their history and their invite */
         get: {
             parameters: {
                 query?: never;
@@ -6376,6 +6376,10 @@ export interface components {
             };
             /** @description Payments and refunds as one list, newest first. */
             payments: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
+            /** @description Every payment link, newest first. */
+            payment_links: components["schemas"]["ClientPaymentLink"][];
+            /** @description Each finished visit sold for a price, with its invoice; the latest visit first. */
+            invoices: components["schemas"]["ClientInvoice"][];
             history: components["schemas"]["ClientRecordHistory"];
             /** @description The invite they came with, or ops attached; null for none. */
             invite: components["schemas"]["ClientInvite"] | null;
@@ -6629,6 +6633,41 @@ export interface components {
             destination: string | null;
             /** @description normal (5 to 7 working days) or instant. */
             speed: string | null;
+        };
+        ClientPaymentLink: {
+            /** Format: uuid */
+            id: string;
+            /** @description The service it pays for, by its name now. */
+            product: string;
+            /** @description India's date of the visit it pays for; null where the visit has no start. */
+            visit_date: string | null;
+            /** @description In paise, GST included. */
+            amount: number;
+            /** @description As the client reads it on Razorpay's page; null on a link made before links had one. */
+            reference: string | null;
+            /** @description The address Razorpay texted the client; null until Razorpay has made the link. */
+            short_url: string | null;
+            sent_at: string | null;
+            /**
+             * @description making: Razorpay has not made it yet, and it is asked again; open: sent and not paid; paid; refused: Razorpay would not make it, so ops send one by hand; lapsed: closed unpaid.
+             * @enum {string}
+             */
+            state: "making" | "open" | "paid" | "refused" | "lapsed";
+            paid_at: string | null;
+        };
+        ClientInvoice: {
+            /** Format: uuid */
+            visit_id: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /**
+             * @description to_raise: Books holds none yet; draft: Books holds it unsent; issued: sent to the client.
+             * @enum {string}
+             */
+            state: "to_raise" | "draft" | "issued";
+            issued_at: string | null;
         };
         ClientRecordHistory: {
             /** @description Every visit done: a completed visit with a window. */
