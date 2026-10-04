@@ -193,15 +193,20 @@ export interface Ceilings {
   readonly resultRetentionDays: number;
 }
 
+/** The polls of a render followed to its give-up time, without the final one past it. */
+export function pollsPerRender(): number {
+  const earlyPolls = Math.ceil(POLL_SLOWDOWN_AFTER_MS / 1000 / POLL_DELAY_SECONDS.early);
+  const latePolls = Math.ceil((POLL_SLOW_AFTER_MS - POLL_SLOWDOWN_AFTER_MS) / 1000 / POLL_DELAY_SECONDS.late);
+  const slowPolls = Math.ceil((RENDER_GIVE_UP_MS - POLL_SLOW_AFTER_MS) / 1000 / POLL_DELAY_SECONDS.slow);
+  return earlyPolls + latePolls + slowPolls;
+}
+
 /**
  * The most queue operations one render can use. A message costs a write, a
  * read and a delete; each retry, and so each poll, is one more read.
  */
 export function queueOperationsPerRender(): number {
-  const earlyPolls = Math.ceil(POLL_SLOWDOWN_AFTER_MS / 1000 / POLL_DELAY_SECONDS.early);
-  const latePolls = Math.ceil((POLL_SLOW_AFTER_MS - POLL_SLOWDOWN_AFTER_MS) / 1000 / POLL_DELAY_SECONDS.late);
-  const slowPolls = Math.ceil((RENDER_GIVE_UP_MS - POLL_SLOW_AFTER_MS) / 1000 / POLL_DELAY_SECONDS.slow);
-  const render = 3 + earlyPolls + latePolls + slowPolls + 1 + DOWNLOAD_QUEUE_RETRIES; // + the final poll past the give-up
+  const render = 3 + pollsPerRender() + 1 + DOWNLOAD_QUEUE_RETRIES; // + the final poll past the give-up
   const message = 3 + (MAX_SEND_ATTEMPTS - 1);
   const crmSync = 3 + 1; // one quick retry
   return render + message + crmSync;

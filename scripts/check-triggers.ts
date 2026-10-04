@@ -1,5 +1,5 @@
-// Compares the cron schedules and queue consumers Cloudflare has attached with
-// what every Worker's config asks for, in one environment. Read-only. The deploy
+// Compares the cron schedules and queue consumers Cloudflare has attached, and each consumer's
+// settings, with what every Worker's config asks for, in one environment. Read-only. The deploy
 // workflows run it after deploying; an operator runs it after applying triggers.
 // See docs/decisions/0010-applying-triggers.md and scripts/lib/triggers.ts.
 //
