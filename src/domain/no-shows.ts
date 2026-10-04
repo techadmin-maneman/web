@@ -19,6 +19,7 @@
 
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import type { PlacesReached } from "../policy/access.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
 import {
   canCloseAsNoShow,
@@ -39,6 +40,7 @@ import {
 import { auditStatementIfRuled, type AuditEntry } from "./audit.ts";
 import type { Ruled } from "./after-a-ruling.ts";
 import type { LatestArrival } from "./check-ins.ts";
+import { reachBinding, withinReach } from "./places.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "./visit-changes.ts";
@@ -288,11 +290,12 @@ function closedBeforeTheClientsWait(row: CaseRow): boolean {
   return Date.parse(row.closed_at) < Date.parse(row.window_start) + waitMs;
 }
 
-/** The cases ops have still to rule on, oldest first, then the decided ones. */
+/** The cases in the places reached that ops have still to rule on, oldest first, then the decided ones. */
 export async function listNoShowCases(
   db: D1Database,
   decision: NoShowDecision | "all",
   limit: number,
+  reached: PlacesReached,
 ): Promise<NoShowCase[]> {
   // The receipt is read from the message itself as well as from the case, since
   // it can arrive after the case opened.
@@ -310,11 +313,11 @@ export async function listNoShowCases(
        LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
        LEFT JOIN outbound_messages o ON o.id = n.message_id
        LEFT JOIN technicians t ON t.id = c.technician_id
-       WHERE (?1 = 'all' OR n.decision = ?1)
+       WHERE (?1 = 'all' OR n.decision = ?1) AND ${withinReach("no_show", "n", "?3")}
        ORDER BY n.decision = 'undecided' DESC, n.created_at
        LIMIT ?2`,
     )
-    .bind(decision, limit)
+    .bind(decision, limit, reachBinding(reached))
     .all<CaseRow>();
   return results.map((row) => ({
     id: row.id,

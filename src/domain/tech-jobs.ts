@@ -318,7 +318,8 @@ export async function jobDetail(
   if (row === null) return null;
   const type = row.type ?? "service";
   const windowStart = new Date(row.window_start);
-  const progress = await progressOf(db, { id: row.id, type, windowStart }, options.waits);
+  const job = { id: row.id, type, windowStart, technicianId: options.technicianId };
+  const progress = await progressOf(db, job, options.waits);
   const summary = summaryOf(row, options.now, options.unlockHour, await loadSlotSchedule(db), progress);
   const locked = {
     ...summary,
@@ -555,10 +556,13 @@ function badgeOf(row: JobRow): PaymentBadge {
   return paymentBadge({ onCredit: row.on_credit === 1, free: row.free === 1, oneVisit: paidAtTheVisit(row.one_visit) });
 }
 
-/** What the phone has already sent for this job, from the events it landed. */
+/**
+ * What the phone has already sent for this job, from the events it landed. The check-in is the job's technician's
+ * own, so one given the job after another checked in at it still has to arrive himself.
+ */
 export async function progressOf(
   db: D1Database,
-  job: { id: string; type: VisitType; windowStart: Date },
+  job: { id: string; type: VisitType; windowStart: Date; technicianId: string },
   waits: Waits,
 ): Promise<JobProgress> {
   const { results } = await db
@@ -568,11 +572,10 @@ export async function progressOf(
     )
     .bind(job.id)
     .all<{ kind: JobEventKind; body: string; occurred_at: string; received_at: string }>();
-  const checkIn = results.find((event) => event.kind === "check_in");
-  const arrival = checkIn === undefined ? null : await latestArrival(db, job.id);
+  const arrival = await latestArrival(db, job);
   const { started_at, outcome } = stateOf(results);
   return {
-    checked_in_at: checkIn?.occurred_at ?? null,
+    checked_in_at: arrival?.at.toISOString() ?? null,
     wait_ends_at: arrival === null ? null : noShowWaitEnds(arrival, job.windowStart, job.type, waits).toISOString(),
     distance_m: arrival?.distanceM ?? null,
     started_at,
