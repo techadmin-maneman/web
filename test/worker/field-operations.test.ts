@@ -17,15 +17,7 @@ import { readMeter } from "../../src/domain/storage-meter.ts";
 import { MAX_PHOTO_BYTES, MAX_THUMBNAIL_BYTES } from "../../src/domain/tech-photos.ts";
 import { PHASE_2_SHARE_BYTES, RUNAWAY_CEILING_BYTES } from "../../src/policy/storage-share.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
-import {
-  appFor,
-  fakeDependencies,
-  fakeQueue,
-  markDatabase,
-  NOW,
-  request,
-  type TestDependencies,
-} from "./helpers.ts";
+import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
 import { syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -474,7 +466,6 @@ describe("the phone's clock", () => {
     );
     expect((await answer.json<{ checked_in_at: string }>()).checked_in_at).toBe(minutesAfterStart(-30).toISOString());
   });
-
 });
 
 describe("the outbox", () => {
@@ -1072,7 +1063,6 @@ describe("dispatch", () => {
     expect(board.leave).toEqual([]);
     expect(body).not.toMatch(/amount|"paise"/i);
   });
-
 });
 
 // A visit the technician has begun stays where he is working it: moved, his phone would carry on with a visit now
@@ -1303,7 +1293,6 @@ describe("a piece label already on record", () => {
     expect(corrected.status).toBe(202);
     expect(await pieceSteps()).toEqual({ n: 1 });
   });
-
 });
 
 // Leave goes through the same clash check as a visit, so nothing has to

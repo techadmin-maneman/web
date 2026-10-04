@@ -49,7 +49,11 @@ describe("a reviewed list", () => {
   });
 
   it("deletes only what the org still holds and marks, and nothing the owner took out", () => {
-    const foundNow = [record("books/contacts", "contact"), record("books/invoices", "invoice"), record("books/contacts", "kept")];
+    const foundNow = [
+      record("books/contacts", "contact"),
+      record("books/invoices", "invoice"),
+      record("books/contacts", "kept"),
+    ];
     expect(toDelete(reviewed, foundNow).map((each) => each.id)).toEqual(["invoice", "contact"]);
     expect(leftAlone(reviewed, foundNow).map((each) => each.id)).toEqual(["payment", "refund"]);
   });

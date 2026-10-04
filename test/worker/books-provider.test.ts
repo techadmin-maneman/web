@@ -455,7 +455,6 @@ describe("Books: invoices", () => {
     expect(new URL(calls[1]?.url ?? "").searchParams.get("accept")).toBe("pdf");
     expect(await books.invoicePdf("missing")).toBeNull();
   });
-
 });
 
 describe("Books: payments, receipts and refunds", () => {

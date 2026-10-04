@@ -133,8 +133,7 @@ const BoardSchema = z
           .strict(),
       )
       .openapi({
-        description:
-          "Leave ops recorded, clipped to this week.",
+        description: "Leave ops recorded, clipped to this week.",
       }),
   })
   .strict()

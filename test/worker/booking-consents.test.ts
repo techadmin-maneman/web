@@ -30,20 +30,16 @@ let cookie: string;
 const app = (minutesLater = 0) => appFor("local", fakeDependencies({ now: () => minutes(minutesLater) }), {}, "client");
 
 const post = (path: string, body: object, minutesLater = 0) =>
-  request(
-    app(minutesLater),
-    path,
-    {
-      method: "POST",
-      headers: {
-        Cookie: cookie,
-        "Content-Type": "application/json",
-        Origin: "https://maneman.test",
-        "CF-Connecting-IP": CLIENT_IP,
-      },
-      body: JSON.stringify(body),
+  request(app(minutesLater), path, {
+    method: "POST",
+    headers: {
+      Cookie: cookie,
+      "Content-Type": "application/json",
+      Origin: "https://maneman.test",
+      "CF-Connecting-IP": CLIENT_IP,
     },
-  );
+    body: JSON.stringify(body),
+  });
 
 async function held(body: object = { type: "service", date: "2026-09-24", window: "afternoon" }): Promise<string> {
   const answer = await post("/api/holds", body);

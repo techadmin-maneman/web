@@ -293,10 +293,7 @@ function ServiceBlock(props: {
         {service.name}
       </h4>
       <p className={styles.facts}>
-        {[
-          copy.facts(service.minutes, service.tier),
-          standing(service, today),
-        ].join(" · ")}
+        {[copy.facts(service.minutes, service.tier), standing(service, today)].join(" · ")}
       </p>
       <PriceLines target={asPriced(service)} today={today} busy={busy} may={opened.may} onAct={opened.onAct} />
       <div className={styles.actions}>

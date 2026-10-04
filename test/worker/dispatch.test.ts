@@ -270,7 +270,6 @@ describe("a move and the time it goes to", () => {
     expect(answer.status).toBe(200);
     expect(await holdState(hold)).toBe("released");
   });
-
 });
 
 // FEO-05: two ops users on the same board, the second working from what he loaded a while ago.

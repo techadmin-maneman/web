@@ -220,7 +220,6 @@ function auditOf(c: Context<AppEnv>, action: AuditAction, id: string, detail?: A
   };
 }
 
-
 /** The fields a change names, in a fixed order, for its audit entry: never their values. */
 const CHANGEABLE = ["name", "mobile", "zone", "city"] as const;
 

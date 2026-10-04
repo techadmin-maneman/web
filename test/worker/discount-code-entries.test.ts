@@ -60,9 +60,7 @@ const cookies = new Map<string, string>();
 
 /** A fitted client, with an address and a session in the app. */
 async function fittedClient(id: string, mobile: string) {
-  await env.DB.prepare(
-    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Rohit Malhotra')",
-  )
+  await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Rohit Malhotra')")
     .bind(id, NOW.toISOString(), mobile)
     .run();
   await savedAddress(id);
@@ -79,19 +77,15 @@ async function fittedClient(id: string, mobile: string) {
 }
 
 function call(personId: string, path: string, init: { method?: string; body?: object } = {}, now = NOW) {
-  return request(
-    appFor("local", fakeDependencies({ now: () => now }), {}, "client"),
-    path,
-    {
-      method: init.method ?? "GET",
-      headers: {
-        Cookie: cookies.get(personId) ?? "",
-        "Content-Type": "application/json",
-        Origin: "https://maneman.test",
-      },
-      ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+  return request(appFor("local", fakeDependencies({ now: () => now }), {}, "client"), path, {
+    method: init.method ?? "GET",
+    headers: {
+      Cookie: cookies.get(personId) ?? "",
+      "Content-Type": "application/json",
+      Origin: "https://maneman.test",
     },
-  );
+    ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+  });
 }
 
 interface HoldAnswer {
@@ -127,10 +121,6 @@ async function clientRecord(personId: string) {
   return answer.json<{ visits: { upcoming: unknown[] } }>();
 }
 
-/** Paid for, so the hold keeps its time until it is booked. */
-const paidFor = (holdId: string) =>
-  env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1").bind(holdId, NOW.toISOString()).run();
-
 /** The technician the app and the site book, where the technician's own tests bring theirs. */
 async function technician() {
   await env.DB.prepare(
@@ -164,19 +154,15 @@ describe("the client, at the app's pay step", () => {
     });
 
     const payments = createStubPayments();
-    const started = await request(
-      appFor("local", fakeDependencies({ payments }), {}, "client"),
-      "/api/bookings",
-      {
-        method: "POST",
-        headers: {
-          Cookie: cookies.get(PERSON) ?? "",
-          "Content-Type": "application/json",
-          Origin: "https://maneman.test",
-        },
-        body: JSON.stringify({ hold_id: hold.id }),
+    const started = await request(appFor("local", fakeDependencies({ payments }), {}, "client"), "/api/bookings", {
+      method: "POST",
+      headers: {
+        Cookie: cookies.get(PERSON) ?? "",
+        "Content-Type": "application/json",
+        Origin: "https://maneman.test",
       },
-    );
+      body: JSON.stringify({ hold_id: hold.id }),
+    });
     expect(await started.json()).toMatchObject({ checkout: { amount: 180_000 } });
     expect(payments.made.orders).toMatchObject([{ amount: 180_000 }]);
     expect((await uses()).results).toEqual([
@@ -236,19 +222,15 @@ describe("the client, at the app's pay step", () => {
 
     /** The client's app, with Razorpay as one stub throughout, so what it holds of an order carries over. */
     const withRazorpay = (path: string, init: { method: string; body?: object }) =>
-      request(
-        appFor("local", fakeDependencies({ payments }), {}, "client"),
-        path,
-        {
-          method: init.method,
-          headers: {
-            Cookie: cookies.get(PERSON) ?? "",
-            "Content-Type": "application/json",
-            Origin: "https://maneman.test",
-          },
-          ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+      request(appFor("local", fakeDependencies({ payments }), {}, "client"), path, {
+        method: init.method,
+        headers: {
+          Cookie: cookies.get(PERSON) ?? "",
+          "Content-Type": "application/json",
+          Origin: "https://maneman.test",
         },
-      );
+        ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+      });
     const pay = async (holdId: string) => {
       const started = await withRazorpay("/api/bookings", { method: "POST", body: { hold_id: holdId } });
       return (await started.json<{ checkout: { order_id: string; amount: number } }>()).checkout;

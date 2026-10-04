@@ -700,9 +700,14 @@ describe("POST /api/visits: the visit written in the request", () => {
 
   it("writes a consultation and fit in one visit in the request, marked as one", async () => {
     await rohit();
-    const answer = await book(
-      { client: ROHIT, kind: "first_fit", tier: NATURAL.tier, one_visit: true, date: WEDNESDAY, window: "morning" },
-    );
+    const answer = await book({
+      client: ROHIT,
+      kind: "first_fit",
+      tier: NATURAL.tier,
+      one_visit: true,
+      date: WEDNESDAY,
+      window: "morning",
+    });
     const body = await answer.json<{ visit_id: string; outcome: string }>();
     expect(body.outcome).toBe("booked");
     const booked = await env.DB.prepare("SELECT type, tier, one_visit FROM appointments WHERE id = ?1")

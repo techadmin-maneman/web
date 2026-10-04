@@ -53,10 +53,7 @@ export function registerDevVisits(app: App): void {
     if (visit === null) return c.json(errorBody("not_found", requestId), 404);
 
     const times = { startedAt: visit.window_start, endedAt: visit.window_end };
-    const [moved] = await db.batch([
-      moveVisit(db, id, outcome, at),
-      closeVisit(db, id, outcome, times, null, at),
-    ]);
+    const [moved] = await db.batch([moveVisit(db, id, outcome, at), closeVisit(db, id, outcome, times, null, at)]);
     if (moved?.meta.changes !== 1) return c.json(errorBody("not_changeable", requestId), 409);
 
     const status = CLOSED_AS[outcome];

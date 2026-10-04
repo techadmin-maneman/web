@@ -612,10 +612,7 @@ describe("GET /api/visits/:id and the photographs", () => {
    * must never have to guess the third from a price it happens to be showing.
    */
   it("says the invoice is still to come for a billed visit, and never coming for a free one", async () => {
-    const ids = await seed([
-      done("ap-done", "2026-09-10"),
-      done("ap-consult", "2026-09-08", { type: "consultation" }),
-    ]);
+    const ids = await seed([done("ap-done", "2026-09-10"), done("ap-consult", "2026-09-08", { type: "consultation" })]);
     await signIn();
     const detail = async (name: string) =>
       (await get(`/api/visits/${ids[name] ?? ""}`)).json<{ document_id: string | null; invoice_expected: boolean }>();
@@ -767,11 +764,7 @@ describe("GET /api/visits/:id and the photographs", () => {
 
 describe("GET /api/photos and /api/photos/compare", () => {
   it("lists the visits that have photographs, newest first, and compares one angle across two", async () => {
-    const ids = await seed([
-      done("ap-earlier", "2026-08-01"),
-      done("ap-done", "2026-09-10"),
-      booked("ap-next"),
-    ]);
+    const ids = await seed([done("ap-earlier", "2026-08-01"), done("ap-done", "2026-09-10"), booked("ap-next")]);
     await signIn();
     const timeline = await (await get("/api/photos")).json<{ visits: { date: string }[] }>();
     expect(timeline.visits.map((visit) => visit.date)).toEqual(["2026-09-10", "2026-08-01"]);

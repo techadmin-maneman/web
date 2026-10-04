@@ -15,7 +15,7 @@ import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { recordJobUse } from "../../src/domain/job-use.ts";
 import { count } from "../../src/domain/stock.ts";
-import { fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import { markDatabase, NOW, request } from "./helpers.ts";
 import { IMRAN, JOB, SAMEER, working, type Working } from "./job-fixtures.ts";
 
 interface Stock {

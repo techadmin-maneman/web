@@ -11,7 +11,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { CHECKLIST, PARTIAL_REASONS } from "../../src/config/job-sheet.ts";
-import { fakeQueue, markDatabase, request } from "./helpers.ts";
+import { markDatabase, request } from "./helpers.ts";
 import { JOB, PERSON, working, type Working } from "./job-fixtures.ts";
 
 interface List {

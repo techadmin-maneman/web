@@ -19,15 +19,11 @@ const TECHNICIAN = "33333333-3333-4333-8333-333333333333";
 let cookie: string;
 
 const note = (body: unknown, settings = {}, visit = VISIT) =>
-  request(
-    appFor("local", fakeDependencies(), settings, "client"),
-    `/api/appointments/${visit}/note`,
-    {
-      method: "POST",
-      headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    },
-  );
+  request(appFor("local", fakeDependencies(), settings, "client"), `/api/appointments/${visit}/note`, {
+    method: "POST",
+    headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 
 beforeEach(async () => {
   await markDatabase();

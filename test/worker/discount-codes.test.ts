@@ -249,9 +249,7 @@ describe("a code on a client's visit, in the console", () => {
     await make({ code: "UNQ5", maxUses: 1, oncePerClient: false });
     await post(`/api/visits/${VISIT}/discount-code`, { code: "UNQ5" });
     await env.DB.batch([
-      env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(
-        VISIT,
-      ),
+      env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(VISIT),
       env.DB.prepare(
         `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status,
            refunded_amount, captured_at, created_at, updated_at)

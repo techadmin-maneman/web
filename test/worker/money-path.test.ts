@@ -15,7 +15,18 @@ import { createLogger } from "../../src/log.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import type { PaymentsProvider } from "../../src/providers/payments.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, leaseRefused, LOCAL_SETTINGS, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  leaseRefused,
+  LOCAL_SETTINGS,
+  markDatabase,
+  NOW,
+  request,
+  savedAddress,
+} from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const OTHER = "55555555-5555-4555-8555-555555555555";

@@ -101,7 +101,6 @@ describe("runCronJobs", () => {
     expect(ran).toEqual(["always"]);
     expect(outcomes.map((outcome) => outcome.job)).toEqual(["always"]);
   });
-
 });
 
 describe("a job that keeps failing", () => {
@@ -439,7 +438,10 @@ describe("the schedule", () => {
 
 describe("CRON_JOBS", () => {
   it("bills and settles in Books, checks its items and books unbooked holds", async () => {
-    const withBooks: StaticConfig = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, BOOKS_PROVIDER: "stub" } };
+    const withBooks: StaticConfig = {
+      ...LOCAL_CONFIG,
+      providers: { ...LOCAL_CONFIG.providers, BOOKS_PROVIDER: "stub" },
+    };
     const outcomes = await runCronJobs(CRON_JOBS, {
       env,
       deps: fakeDependencies(),

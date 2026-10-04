@@ -168,9 +168,7 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
 });
 
 // Another group the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
-test("names a draft invoice's visit", async ({
-  page,
-}) => {
+test("names a draft invoice's visit", async ({ page }) => {
   await open(page, {
     overdue: 0,
     truncated: false,

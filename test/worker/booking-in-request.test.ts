@@ -251,7 +251,12 @@ describe("a paid booking", () => {
     const ordered = await heldAndOrdered();
     const payments = createStubPayments();
 
-    await webhook("payment.captured", "evt_late", payment("pay_late", ordered, at(725)), fakeDependencies({ payments }));
+    await webhook(
+      "payment.captured",
+      "evt_late",
+      payment("pay_late", ordered, at(725)),
+      fakeDependencies({ payments }),
+    );
 
     expect(await holdRow(ordered.holdId)).toEqual({ state: "released", appointment_id: null });
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 200000 }]);
@@ -669,11 +674,7 @@ describe("a booking, after the request that confirmed it failed", () => {
   }
 
   const pass = (deps: TestDependencies, seconds: number, budget = createCallBudget(40)) =>
-    bookUnbookedHolds(
-      env.DB,
-      { ...deps, notify: () => Promise.resolve(), budget, log: createLogger() },
-      at(seconds),
-    );
+    bookUnbookedHolds(env.DB, { ...deps, notify: () => Promise.resolve(), budget, log: createLogger() }, at(seconds));
 
   it("is booked by the half-hour pass", async () => {
     await fittedClient();
@@ -728,7 +729,6 @@ describe("a booking, after the request that confirmed it failed", () => {
     expect((await holdRow(holdId))?.state).toBe("booked");
     expect(messageQueue.sent).toHaveLength(1);
   });
-
 });
 
 describe("confirmBooking", () => {

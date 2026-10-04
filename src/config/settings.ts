@@ -358,9 +358,7 @@ export function readSettings(
 
   const devRoutes = read.optionalText("DEV_ROUTES");
   if (devRoutes !== null && environment !== "local") {
-    read.problems.push(
-      "DEV_ROUTES is set outside local: its routes would close jobs no technician worked",
-    );
+    read.problems.push("DEV_ROUTES is set outside local: its routes would close jobs no technician worked");
   }
 
   const tryon = readTryon(read, providers, isLocal);

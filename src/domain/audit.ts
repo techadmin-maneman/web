@@ -210,25 +210,6 @@ export function auditStatementIfRuled(
 }
 
 /**
- * The entry for a hold booked as a visit earlier in the same batch, by a statement that books nothing when another
- * booking took the visit a moment before: it is written only if the hold is now booked as that visit.
- */
-export function auditStatementIfBooked(
-  db: D1Database,
-  entry: AuditEntry,
-  now: Date,
-  booked: { readonly holdId: string; readonly visitId: string },
-): D1PreparedStatement {
-  return db
-    .prepare(
-      `INSERT INTO audit_log (${COLUMNS})
-       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
-       WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?10 AND state = 'booked' AND appointment_id = ?11)`,
-    )
-    .bind(...valuesOf(entry, now), booked.holdId, booked.visitId);
-}
-
-/**
  * The entry for a row stamped earlier in the same batch, by a statement that stamps nothing when another request
  * stamped it a moment before: written only if the row carries this entry's own time. A discount code switched off,
  * or a use taken off its booking (docs/decisions/0108-discount-codes.md).

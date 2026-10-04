@@ -478,9 +478,7 @@ test("switches a technician off only once asked, and lists the visits he no long
   roster.current = {
     ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.filter((each) => each.id !== IMRAN),
-    switched_off: [
-      { id: IMRAN, name: "Imran Qureshi", zone: "Sec 40–65", city: "Gurgaon", mobile: "+919810000001" },
-    ],
+    switched_off: [{ id: IMRAN, name: "Imran Qureshi", zone: "Sec 40–65", city: "Gurgaon", mobile: "+919810000001" }],
   };
   await panel.getByRole("button", { name: "Switch him off" }).click();
 

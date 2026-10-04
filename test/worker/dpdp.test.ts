@@ -31,9 +31,7 @@ let cookie: string;
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
-  await env.DB.prepare(
-    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Rohit Malhotra')",
-  )
+  await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Rohit Malhotra')")
     .bind(PERSON, NOW.toISOString(), MOBILE)
     .run();
   cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;

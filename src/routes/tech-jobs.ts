@@ -317,7 +317,7 @@ const AcceptedSchema = z
     event_id: z.string(),
     replayed: z.boolean().openapi({ description: "True when this write had already landed." }),
     fsm_write_state: z.enum(["pending", "written", "rejected"]).openapi({
-      description: "Kept for phones that read it: \"written\" once the step has landed, which it has.",
+      description: 'Kept for phones that read it: "written" once the step has landed, which it has.',
     }),
     progress: ProgressSchema,
   })

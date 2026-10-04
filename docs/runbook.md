@@ -1064,10 +1064,10 @@ SELECT id, razorpay_refund_id, created_at FROM refunds WHERE status = 'processed
 
 Staging writes to the owner's real FSM and Books (open point 19), and production's reconciliation and invoice pass will read the same org (open point 155), so staging's records go before production connects FSM. The script lists them, the owner reviews the list, and a second run deletes what the owner kept in it. It uses the scripts' own token (step 8.7).
 
-1. List them: `node --env-file=.env.fsm-scripts scripts/staging-records.ts`. It prints every FSM appointment, work order and Request whose summary starts "Staging test: ", and every FSM and Books contact named "Staging test" or "Load test"; and every Books payment whose description starts "Staging test: ", with its refunds, and every Books invoice of a staging contact. It writes them to `private/staging-records-<date>.json`, and names apart any record that looks like a test but carries neither mark, which it never deletes.
+1. List them: `node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/staging-records.ts`. It prints every Books contact named "Staging test" or "Load test", every Books payment whose description starts "Staging test: " with its refunds, and every Books invoice of a staging contact; and the CRM's staging leads, where the scripts' CRM token may read them (`ZohoCRM.modules.leads.READ`). It writes them to `private/staging-records-<date>.json`, and names apart any record that looks like a test but carries neither mark, which it never deletes.
 2. The owner reads the list. To keep a record, take its entry out of the file.
-3. Delete: `node --env-file=.env.fsm-scripts scripts/staging-records.ts --delete private/staging-records-<date>.json`. It reads the org again and deletes only what the file keeps and the org still marks as staging's, what points at a record before it: Books' refunds and payments, FSM's appointments, Books' invoices, FSM's work orders and Requests, then the contacts. Each line says `deleted`, `already gone` or `refused` with FSM's or Books' reason.
-4. A refusal is usually a record another still points at: run the delete again, and anything freed by the first run goes. What stays refused is put right by hand in FSM or Books.
+3. Delete: the same command with `--delete private/staging-records-<date>.json`. It reads Books again and deletes only what the file keeps and Books still marks as staging's, what points at a record before it: refunds and payments, invoices, then the contacts. Each line says `deleted`, `already gone` or `refused` with Books' reason. The CRM's leads it only lists: delete those in the CRM.
+4. A refusal is usually a record another still points at: run the delete again, and anything freed by the first run goes. What stays refused is put right by hand in Books.
 
 FSM's API deletes no invoice, so the list names FSM's invoices of staging's work orders apart: delete them in FSM's Invoices screen, if it still shows them, once the run has deleted their work orders and Books' invoices. On 1 October 2026 it showed none: FSM's API went on listing the three invoices as links of no work order, which neither FSM's screens nor anything of ours reads. Nothing of production reads them, since its invoice pass reads each of its own work orders' invoice.
 
@@ -1112,6 +1112,16 @@ Production has never used FSM. Staging leaves it in the order below, once every 
    - the cron's `fsm_reconcile`, `fsm_catalogue` and `requeue_fsm_erasures` stop, and `books_items` starts.
 
 6. **Prove it** as a real user, with staging's test records and backdating rather than waiting (the live-testing rules), and write each check in `docs/verification.md`, "FSM removal, PR 10".
+
+7. **Once FSM's code is gone** (FSM-PR11, which lands only after steps 1 to 6 and one cron run since the switch): nothing reads the queue any more. Take its consumer off and delete it, then confirm what is attached matches the config:
+
+   ```sh
+   W queues consumer remove mm-fsm-sync-staging mm-api-staging
+   W queues delete mm-fsm-sync-staging
+   node --env-file=<file> scripts/check-triggers.ts staging --strict
+   ```
+
+   FSM-PR11 also deletes `scripts/link-books-customers.ts`, so step 4 must be done before it lands.
 
 **Rolling back.** Set `FSM_PROVIDER` back to `"zoho"` for staging and deploy, and the owner switches FSM's workflow rules, webhooks and integrations back on. Visits booked meanwhile stay in our database, with no FSM record. A client given a Books customer meanwhile has none in FSM, so their payments wait until FSM's own integration makes one.
 

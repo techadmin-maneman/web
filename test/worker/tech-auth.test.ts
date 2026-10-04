@@ -126,7 +126,6 @@ describe("POST /api/tech/auth/otp", () => {
       expect.objectContaining({ event: "login_code_not_sent", reason: "number not on the allowlist" }),
     );
   });
-
 });
 
 describe("POST /api/tech/auth/verify", () => {
@@ -266,7 +265,6 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(202);
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000009"]);
   });
-
 });
 
 describe("a signed-in phone", () => {

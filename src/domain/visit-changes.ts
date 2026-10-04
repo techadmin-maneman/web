@@ -521,12 +521,7 @@ function restoredCredit(db: D1Database, terms: ChangeTerms, change: CancelOf, no
  * credit given back and ops' audit entry, each written only if the claim was. The message's ID, or null when the visit
  * could not be cancelled.
  */
-async function writeCancel(
-  db: D1Database,
-  terms: ChangeTerms,
-  change: CancelOf,
-  now: Date,
-): Promise<string | null> {
+async function writeCancel(db: D1Database, terms: ChangeTerms, change: CancelOf, now: Date): Promise<string | null> {
   const { visit } = terms;
   const message = visitMessageOnChange(db, {
     personId: visit.personId,

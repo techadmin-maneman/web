@@ -303,9 +303,7 @@ test.describe("the services and their prices", () => {
   const block = (page: Page, name: string) =>
     page.getByRole("listitem").filter({ has: page.getByRole("heading", { name, exact: true }) });
 
-  test("lists each kind's services with their length, and whether they are offered", async ({
-    page,
-  }) => {
+  test("lists each kind's services with their length, and whether they are offered", async ({ page }) => {
     await open(page, "/prices");
     for (const kind of ["Consultation", "First fit", "Service visit", "Replacement"]) {
       await expect(page.getByRole("heading", { level: 3, name: kind, exact: true })).toBeVisible();

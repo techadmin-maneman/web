@@ -50,8 +50,7 @@ async function nextVisitStage(): Promise<string | null> {
   return me.next_visit?.stage ?? null;
 }
 
-const changes = async () =>
-  (await env.DB.prepare("SELECT COUNT(*) AS n FROM visit_changes").first<{ n: number }>())?.n;
+const changes = async () => (await env.DB.prepare("SELECT COUNT(*) AS n FROM visit_changes").first<{ n: number }>())?.n;
 
 /** An event as the phone's outbox lands it, written straight to the table. */
 async function landed(kind: string, options: { body?: object; superseded?: boolean } = {}) {

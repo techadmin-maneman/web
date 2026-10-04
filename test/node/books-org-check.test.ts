@@ -1,12 +1,7 @@
 // What the read-only Books check makes of the org's answers (scripts/lib/books-org-check.ts). Every ID is made up.
 
 import { describe, expect, it } from "vitest";
-import {
-  discountPreference,
-  gstIdentity,
-  organisation,
-  refundAccount,
-} from "../../scripts/lib/books-org-check.ts";
+import { discountPreference, gstIdentity, organisation, refundAccount } from "../../scripts/lib/books-org-check.ts";
 
 describe("the invoice discount preference", () => {
   it("passes at line item level, before tax, which the invoice pass writes", () => {
@@ -15,7 +10,9 @@ describe("the invoice discount preference", () => {
   });
 
   it("fails at transaction level, and says where to change it", () => {
-    const line = discountPreference({ invoice_settings: { discount_type: "entity_level", is_discount_before_tax: true } });
+    const line = discountPreference({
+      invoice_settings: { discount_type: "entity_level", is_discount_before_tax: true },
+    });
     expect(line.outcome).toBe("fail");
     expect(line.detail).toContain("at line item level");
   });
@@ -93,9 +90,9 @@ describe("the refund account", () => {
   it("fails an inactive account, or one Books does not hold", () => {
     const inactive = { status: 200, json: { bankaccount: { account_name: "Old", is_active: false } } };
     expect(refundAccount("4242", inactive).outcome).toBe("fail");
-    expect(refundAccount("4242", { status: 404, json: { code: 1002, message: "Account does not exist" } }).outcome).toBe(
-      "fail",
-    );
+    expect(
+      refundAccount("4242", { status: 404, json: { code: 1002, message: "Account does not exist" } }).outcome,
+    ).toBe("fail");
   });
 
   it("is skipped when the scripts' token may not read accounts, and says which scope reads them", () => {

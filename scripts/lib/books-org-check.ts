@@ -86,7 +86,8 @@ export interface GstSettings {
  */
 export function gstIdentity(gst: GstSettings, organisationAnswer: unknown): CheckLine[] {
   const check = "GST";
-  if (gst.gstin === null) return [{ outcome: "skip", check, detail: "off: BOOKS_GSTIN is empty, so no invoice carries GST" }];
+  if (gst.gstin === null)
+    return [{ outcome: "skip", check, detail: "off: BOOKS_GSTIN is empty, so no invoice carries GST" }];
   const registered = registrationLine(gst.gstin, gst.stateCode);
   const kept = Organisation.safeParse(organisationAnswer);
   const keptIn = kept.success ? kept.data.organization.state_code : undefined;
@@ -127,7 +128,10 @@ const NOT_AUTHORISED = 57;
 
 const isNotAuthorised = (answer: BooksAnswer): boolean =>
   answer.status === 401 ||
-  (typeof answer.json === "object" && answer.json !== null && "code" in answer.json && answer.json.code === NOT_AUTHORISED);
+  (typeof answer.json === "object" &&
+    answer.json !== null &&
+    "code" in answer.json &&
+    answer.json.code === NOT_AUTHORISED);
 
 /** The account refunds are paid from, which Razorpay settles into: without it, no refund is recorded in Books. */
 export function refundAccount(accountId: string | null, answer: BooksAnswer | null): CheckLine {

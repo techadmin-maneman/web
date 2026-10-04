@@ -150,7 +150,6 @@ export function graceEndOf(hold: { readonly expires_at: string; readonly grace_s
   return new Date(Date.parse(hold.expires_at) + graceSeconds * 1000);
 }
 
-
 /** What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. */
 export async function occupancy(
   db: D1Database,
