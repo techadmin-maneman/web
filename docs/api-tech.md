@@ -363,6 +363,58 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
+### POST /api/tech/jobs/{id}/no-show
+
+Close the job as a no-show, once the wait has run
+
+**200**: Closed, with the case ops will rule on
+
+```json
+{
+  "$ref": "#/components/schemas/NoShowClose"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such job, or never this technician's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**425**: too_early_to_close: the wait has not run out
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/tech/jobs/{id}/photos/upload-url
 
 A link to PUT one photograph to, for one phase and angle
@@ -818,58 +870,6 @@ Request body:
 ```
 
 **409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-### POST /api/tech/jobs/{id}/no-show
-
-Close the job as a no-show, once the wait has run
-
-**200**: Closed, with the case ops will rule on
-
-```json
-{
-  "$ref": "#/components/schemas/NoShowClose"
-}
-```
-
-**400**: invalid_request: see error.fields
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**404**: not_found: no such job, or never this technician's
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**425**: too_early_to_close: the wait has not run out
 
 ```json
 {
@@ -3227,6 +3227,51 @@ Request body:
 }
 ```
 
+### NoShowClose
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "closed": {
+      "type": "boolean"
+    },
+    "wait_ends_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "case_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "accepted": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/TechnicianWriteAccepted"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "closed",
+    "wait_ends_at",
+    "case_id",
+    "accepted"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### TechnicianPhotoUrl
 
 ```json
@@ -3636,51 +3681,6 @@ Request body:
       "additionalProperties": false
     }
   ]
-}
-```
-
-### NoShowClose
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "closed": {
-      "type": "boolean"
-    },
-    "wait_ends_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "case_id": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "uuid"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "accepted": {
-      "anyOf": [
-        {
-          "$ref": "#/components/schemas/TechnicianWriteAccepted"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    }
-  },
-  "required": [
-    "closed",
-    "wait_ends_at",
-    "case_id",
-    "accepted"
-  ],
-  "additionalProperties": false
 }
 ```
 

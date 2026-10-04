@@ -280,7 +280,7 @@ export async function jobsOn(
   ]);
   return jobs.results
     .filter((row) => isOneOf(SHOWN, row.status))
-    .map((row) => summaryOf(row, now, unlockHour, schedule, stateOf(landed.get(row.id) ?? [])));
+    .map((row) => listingOf(row, now, unlockHour, schedule, stateOf(landed.get(row.id) ?? [])));
 }
 
 /** A job event as the job's state is read from it. */
@@ -352,7 +352,7 @@ export async function jobDetail(
     oneVisit ? decisionAtVisit(db, row.id) : null,
     unlocked(windowStart, options.now, options.unlockHour) ? unlockedPartsOf(db, row) : null,
   ]);
-  const summary = summaryOf(row, options.now, options.unlockHour, schedule, progress);
+  const summary = listingOf(row, options.now, options.unlockHour, schedule, progress);
   const locked = {
     ...summary,
     address: null,
@@ -564,7 +564,7 @@ export async function workableJob(db: D1Database, jobId: string): Promise<Workab
   };
 }
 
-function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSchedule, progress: JobState): JobSummary {
+function listingOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSchedule, progress: JobState): JobSummary {
   const starts = new Date(row.window_start);
   const open = unlocked(starts, now, unlockHour);
   return {

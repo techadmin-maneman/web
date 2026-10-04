@@ -136,7 +136,7 @@ async function oneVisitOf(db: D1Database, row: AppointmentRow): Promise<OneVisit
   return oneVisitPrice(db, row.id, indiaDate(new Date(row.window_start)));
 }
 
-async function summaryOf(
+async function visitSummaryOf(
   db: D1Database,
   row: AppointmentRow,
   context: SummaryContext,
@@ -180,7 +180,7 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
       .first<AppointmentRow>(),
     contextOf(db, personId),
   ]);
-  return row === null ? null : summaryOf(db, row, context, now);
+  return row === null ? null : visitSummaryOf(db, row, context, now);
 }
 
 /** The three states the apps show a client in. */
@@ -229,8 +229,8 @@ export async function listVisits(
       .all<AppointmentRow>(),
   ]);
   return {
-    upcoming: await Promise.all(upcoming.results.map((row) => summaryOf(db, row, context, now))),
-    past: await Promise.all(past.results.map((row) => summaryOf(db, row, context, now))),
+    upcoming: await Promise.all(upcoming.results.map((row) => visitSummaryOf(db, row, context, now))),
+    past: await Promise.all(past.results.map((row) => visitSummaryOf(db, row, context, now))),
   };
 }
 
@@ -360,7 +360,7 @@ export async function visitDetail(
   const photos = await photoSets(db, [row.id], signingKey, now);
   const noShows = await noShowNotes(db, [row.id], now);
   return {
-    ...(await summaryOf(db, row, await contextOf(db, personId), now)),
+    ...(await visitSummaryOf(db, row, await contextOf(db, personId), now)),
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
     what_was_done: await whatWasDone(db, row.id, row.type),
