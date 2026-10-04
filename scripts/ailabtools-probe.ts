@@ -70,8 +70,9 @@ if (command === "credits") {
 } else if (command === "poll" && (paths[1] === "pro" || paths[1] === "premium")) {
   // A task by its ID, e.g. one the render consumer gave up on (tryon_jobs.provider_task_id).
   const result = await image.poll(paths[0] ?? "", paths[1]);
-  const detail =
-    result.state === "done" ? "a result URL is waiting" : result.state === "failed" ? result.failure.detail : "";
+  let detail = "";
+  if (result.state === "done") detail = "a result URL is waiting";
+  if (result.state === "failed") detail = result.failure.detail;
   console.log(`task: ${result.state} ${detail}`);
 } else if (command === "wrong-extension" && paths[0] !== undefined) {
   const photo = new Uint8Array(readFileSync(paths[0]));
@@ -95,12 +96,9 @@ if (command === "credits") {
     const outcome = submitted.ok
       ? await follow(image, submitted.taskId)
       : { state: "failed" as const, failure: submitted.failure };
-    const summary =
-      outcome.state === "done"
-        ? "rendered (billed)"
-        : outcome.state === "failed"
-          ? `refused: ${outcome.failure.code} ${outcome.failure.detail}`
-          : "still running after 4 minutes";
+    let summary = "still running after 4 minutes";
+    if (outcome.state === "done") summary = "rendered (billed)";
+    if (outcome.state === "failed") summary = `refused: ${outcome.failure.code} ${outcome.failure.detail}`;
     console.log(
       `${basename(path)}: ${submitted.ok ? "accepted, then " : ""}${summary} (${String(Date.now() - started)} ms)`,
     );

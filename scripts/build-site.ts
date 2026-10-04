@@ -20,11 +20,12 @@ const { values } = parseArgs({
   },
 });
 const environment = values.env;
-const [verb, command] = values.check
-  ? ["check", ["check", "--minimumSeverity", "warning"]]
-  : values.dev
-    ? ["serve", ["dev", "--port", "4321"]]
-    : ["build", ["build", "--silent"]];
+/** What the run does: check the templates' types, serve the site, or build it. */
+function verbOf(): [string, string[]] {
+  if (values.check) return ["check", ["check", "--minimumSeverity", "warning"]];
+  return values.dev ? ["serve", ["dev", "--port", "4321"]] : ["build", ["build", "--silent"]];
+}
+const [verb, command] = verbOf();
 
 console.log(`${verb} site (${environment})`);
 const astro = spawnSync(process.execPath, ["node_modules/astro/bin/astro.mjs", ...command, "--root", "site"], {

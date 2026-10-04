@@ -204,7 +204,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
     });
 
   /** The example: any card of theirs comes down first, and until it has, nothing is shared. */
-  const useTheExample = () =>
+  const takeTheExample = () =>
     once(async () => {
       if (state.card.state === "personal") {
         const revoked = await api.revokeCard();
@@ -218,7 +218,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
     });
 
   function continueToShare() {
-    if (which === "house") void useTheExample();
+    if (which === "house") void takeTheExample();
     else if (state.card.state === "personal") void once(() => toShare("theirs", null));
     else void makeTheirOwn(false);
   }
@@ -348,7 +348,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
                 size="action"
                 className={styles.outline}
                 disabled={busy}
-                onClick={() => void useTheExample()}
+                onClick={() => void takeTheExample()}
               >
                 {refer.consent.instead}
               </Button>

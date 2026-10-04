@@ -1,9 +1,56 @@
 import eslint from "@eslint/js";
+import type { Linter } from "eslint";
 import { defineConfig } from "eslint/config";
+import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 // A suppression comment must cite the ADR that justifies it.
 const ADR_DESCRIPTION = { descriptionFormat: "^: see docs/decisions/\\d{4}-[a-z0-9-]+\\.md" };
+
+/** The most code lines a function, and a file, may hold in src/. */
+const SIZE = { fn: 80, lines: 400 } as const;
+
+/** A size rule at a level, counting code lines alone. */
+const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
+  level,
+  { max, skipBlankLines: true, skipComments: true },
+];
+
+/**
+ * The files of src/ past SIZE today, each at the size it has: its code lines, and its longest function's. Lower a
+ * figure when a file is split, and delete its line once it is within SIZE (the 2 Oct audit, CQ-10).
+ */
+const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
+  "src/routes/tech-jobs.ts": { lines: 1220, fn: 309 },
+  "src/routes/ops-clients.ts": { lines: 736, fn: 198 },
+  "src/domain/dispatch.ts": { lines: 726 },
+  "src/domain/bookings.ts": { lines: 685 },
+  "src/routes/client-booking.ts": { lines: 560, fn: 146 },
+  "src/routes/client-profile.ts": { lines: 556, fn: 223 },
+  "src/domain/public-booking.ts": { lines: 554, fn: 131 },
+  "src/routes/ops-field.ts": { lines: 532, fn: 209 },
+  "src/routes/ops-settings.ts": { lines: 513, fn: 134 },
+  "src/domain/tech-jobs.ts": { lines: 509 },
+  "src/domain/erasure.ts": { lines: 507, fn: 89 },
+  "src/domain/scheduling.ts": { lines: 498, fn: 107 },
+  "src/domain/visit-messages.ts": { lines: 492 },
+  "src/domain/books-sync.ts": { lines: 482 },
+  "src/routes/client-visits.ts": { lines: 465, fn: 94 },
+  "src/config/settings.ts": { lines: 444 },
+  "src/policy/personal-data.ts": { lines: 444 },
+  "src/domain/payment-links.ts": { lines: 443 },
+  "src/domain/visit-changes.ts": { lines: 411 },
+  "src/domain/no-shows.ts": { lines: 406 },
+  "src/routes/ops-dispatch.ts": { lines: 406 },
+  "src/routes/referral-landing.ts": { fn: 116 },
+  "src/providers/ailabtools.ts": { fn: 114 },
+  "src/providers/zoho-http.ts": { fn: 108 },
+  "src/routes/ops-profile.ts": { fn: 100 },
+  "src/routes/tech-auth.ts": { fn: 92 },
+  "src/queues/crm-sync.ts": { fn: 88 },
+  "src/routes/tryon-upload.ts": { fn: 86 },
+  "src/providers/razorpay.ts": { fn: 81 },
+};
 
 export default defineConfig(
   {
@@ -90,12 +137,44 @@ export default defineConfig(
   },
   {
     // What a junior developer can hold in their head on a first read: no ternary inside another, and no function
-    // or file past these sizes. Warnings while the longest are split; none of the three stops a build.
+    // or file past these sizes. A file past them today is pinned at its size below, so it may shrink but not grow.
     files: ["src/**/*.ts"],
     rules: {
       "no-nested-ternary": "warn",
-      "max-lines-per-function": ["warn", { max: 80, skipBlankLines: true, skipComments: true }],
-      "max-lines": ["warn", { max: 400, skipBlankLines: true, skipComments: true }],
+      "max-lines-per-function": sized("error", SIZE.fn),
+      "max-lines": sized("error", SIZE.lines),
+    },
+  },
+  ...Object.entries(PINNED).map(([file, pinned]) => ({
+    files: [file],
+    rules: {
+      ...(pinned.fn === undefined ? {} : { "max-lines-per-function": sized("error", pinned.fn) }),
+      ...(pinned.lines === undefined ? {} : { "max-lines": sized("error", pinned.lines) }),
+    },
+  })),
+  {
+    // The same sizes for the apps, the site and the scripts, as warnings while they are brought within them. The
+    // copy tables are long by nature and left out.
+    files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}", "scripts/**/*.ts"],
+    ignores: ["apps/*/src/content.ts", "site/src/content/**", "apps/*/src/api-schema.ts", "site/src/lib/api-schema.ts"],
+    rules: {
+      "max-lines-per-function": sized("warn", SIZE.fn),
+      "max-lines": sized("warn", SIZE.lines),
+    },
+  },
+  {
+    files: ["scripts/**/*.ts"],
+    rules: { "no-nested-ternary": "error" },
+  },
+  {
+    // A hook called conditionally breaks React at runtime, so that one is an error; an effect's missing dependency
+    // is a warning to read, since adding it blindly can loop (the 2 Oct audit, CQ-13).
+    files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}"],
+    // Its rules alone: the plugin's legacy configs do not fit flat config's types.
+    plugins: { "react-hooks": { rules: reactHooks.rules } },
+    rules: {
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
     },
   },
   {
