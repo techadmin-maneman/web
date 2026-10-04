@@ -266,7 +266,7 @@ export async function confirmBooking(
   payments: PaymentsProvider,
   holdId: string,
   now: Date,
-  options: ConfirmOptions,
+  options: ConfirmOptions = {},
 ): Promise<Confirmed> {
   const hold = await holdOf(db, holdId);
   if (hold === null) throw new Error("no such hold to book");
