@@ -73,6 +73,7 @@ export const SETTINGS = {
         "first_fit_to_book",
         "horizon",
         "invoice_prompt",
+        "replacement_order_lead",
       ],
       bounds: {
         first_fit_lead: { min: 0, max: 30, unit: "days" },
@@ -82,6 +83,7 @@ export const SETTINGS = {
         first_fit_to_book: { min: 1, max: 60, unit: "days" },
         horizon: { min: 14, max: 90, unit: "days" },
         invoice_prompt: { min: 1, max: 60, unit: "days" },
+        replacement_order_lead: { min: 1, max: 90, unit: "days" },
       },
       value: {
         first_fit_lead: 0,
@@ -91,6 +93,7 @@ export const SETTINGS = {
         first_fit_to_book: 7,
         horizon: 45,
         invoice_prompt: 14,
+        replacement_order_lead: 30,
       },
       default: {
         first_fit_lead: 0,
@@ -100,6 +103,7 @@ export const SETTINGS = {
         first_fit_to_book: 7,
         horizon: 45,
         invoice_prompt: 14,
+        replacement_order_lead: 30,
       },
       set_by: null,
       set_at: null,
