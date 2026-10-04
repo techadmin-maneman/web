@@ -15,7 +15,7 @@
 // The decision is written to the audit log as `deletion.decide`, under whoever
 // Access says is signed in, in the same batch as the erasure (ADRs 0031, 0066).
 // The API refuses while the client has a visit booked or a payment held, and
-// the refusal's copy says which.
+// the refusal's copy says which, with a link to the client's tab that settles it.
 
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
@@ -24,6 +24,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useEffect, useRef, useState } from "react";
 import { api, type DeletionRequest } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
+import { Reach } from "../components/Reach.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { deletions } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -137,6 +138,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
         <Left due={request.due} now={now} />
       </div>
       <p className={styles.who}>{copy.requested(phoneWords(request.mobile), longDate(request.requested_at))}</p>
+      <Reach name={request.name} mobile={request.mobile} />
       {asking?.choice === "delete" && (
         <ConfirmDelete
           request={request}
@@ -219,8 +221,28 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
       {deciding.step === "failed" && (
         <p className={styles.error} role="alert">
           {copy.errors[deciding.code] ?? copy.errors.unknown}
+          <SettleOn personId={request.person_id} code={deciding.code} />
         </p>
       )}
+    </>
+  );
+}
+
+/** The client's tab where what the refusal names is settled: the visit to cancel, or the refund to see through. */
+const SETTLED_ON: Readonly<Record<string, "visits" | "payments">> = {
+  visit_booked: "visits",
+  payment_held: "payments",
+};
+
+function SettleOn({ personId, code }: { personId: string; code: string }) {
+  const tab = SETTLED_ON[code];
+  if (tab === undefined) return null;
+  return (
+    <>
+      {" "}
+      <OpsLink className={styles.settleOn} to={clientPath(personId, tab)}>
+        {copy.settleOn[tab]}
+      </OpsLink>
     </>
   );
 }

@@ -31,9 +31,9 @@ const DisputeSchema = z
     id: z.uuid(),
     case_id: z.uuid(),
     appointment_id: z.uuid(),
-    person: z
-      .union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()])
-      .openapi({ description: "Whose visit it was; null once they have been erased." }),
+    person: z.union([z.object({ id: z.uuid(), name: z.string(), mobile: z.string() }).strict(), z.null()]).openapi({
+      description: "Whose visit it was, and the number to reach them on; null once they have been erased.",
+    }),
     reason: z
       .union([z.string(), z.null()])
       .openapi({ description: "Why the client says the charge is wrong, in their words; null once erased." }),

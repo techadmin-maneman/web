@@ -118,6 +118,7 @@ describe("restoring the whole database", () => {
       "slot_times",
     ]);
     expect(carry.writtenByTriggers).toEqual([
+      "people",
       "pieces",
       "consultation_requests",
       "visits",

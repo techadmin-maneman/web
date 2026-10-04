@@ -301,7 +301,8 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "How long we keep it",
         paragraphs: [
-          "We keep your details, your address and your visit photographs until you ask us to erase them. Invoices are kept for eight years, as the law requires.",
+          // PLACEHOLDER: the periods the owner ruled on 2 October 2026, for counsel to confirm (docs/open-points.md, item 149).
+          "Once you are a client, we keep your details, your address and your visit photographs until you ask us to erase them. If you never book a visit or pay us, we erase your details a year after you last used the site or the app. A waitlist place goes a year after we launch in your area. Where a technician checked in at your door is kept only until a no-show charge can no longer be disputed. Invoices are kept for eight years, as the law requires.",
         ],
       },
       {

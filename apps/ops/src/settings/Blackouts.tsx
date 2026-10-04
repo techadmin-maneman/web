@@ -256,7 +256,13 @@ export function Blackouts() {
           {copy.title}
         </h2>
       </div>
-      <p className={styles.note}>{copy.note}</p>
+      <p className={styles.note}>
+        {copy.note}{" "}
+        <OpsLink className={styles.link} to={dispatchPath({})}>
+          {copy.board}
+        </OpsLink>
+        .
+      </p>
       {mayAdd && <AddForm today={loaded.value.today} onAdded={setChanged} />}
       {periods.length === 0 ? (
         <p className={styles.note}>{copy.none}</p>

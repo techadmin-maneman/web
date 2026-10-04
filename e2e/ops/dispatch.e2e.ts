@@ -165,6 +165,34 @@ test("lists the tray's jobs with their client, the window asked beside the one o
   await expect(tray.getByText("Asked is what the client picked on their booking")).toBeVisible();
 });
 
+// OIA-16: a tray click picked the job up at once, so it could not be read before it was assigned.
+test("opens a tray job's drawer, with the client, Assign and Open client", async ({ page }) => {
+  await open(page);
+  const job = page.getByRole("complementary", { name: "Unassigned" }).getByRole("button").first();
+  await job.click();
+
+  const drawer = page.getByRole("dialog", { name: "Vikram Sethi" });
+  await expect(drawer).toContainText("Asked · morning · Offered · Sat, evening");
+  await expect(drawer).toContainText("First fit · 2 slots");
+  await expect(drawer).toContainText("Sec 43 · 122018");
+  await expect(drawer).toContainText("Rohit Malhotra");
+  await expect(drawer.getByRole("button", { name: "Assign to a technician" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "WhatsApp Vikram" })).toHaveAttribute(
+    "href",
+    "https://wa.me/919810000002",
+  );
+  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute(
+    "href",
+    `/clients/${VIKRAM.id}/visits`,
+  );
+  // Nothing is in hand until Assign is pressed.
+  await expect(page.getByRole("button", { name: /^Move Vikram S. to / })).toHaveCount(0);
+
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(job).toBeFocused();
+});
+
 // OPS-05 and OPS-12: board A3's badge, WhatsApp {client} and Open client.
 test("opens a block's drawer with the client, the badge, and both ways to reach him", async ({ page }) => {
   await open(page);
@@ -442,6 +470,10 @@ test("assigns a tray job through the assign route, with no technician expected",
   const tray = BOARD.unassigned[0];
 
   await page.getByRole("complementary", { name: "Unassigned" }).getByRole("button").first().click();
+  await page
+    .getByRole("dialog", { name: "Vikram Sethi" })
+    .getByRole("button", { name: "Assign to a technician" })
+    .click();
   await page.getByRole("button", { name: "Move Vikram S. to Imran Qureshi, Sat 20 Sep, afternoon" }).click();
   await page.getByRole("radio", { name: "Client asked to move it" }).check();
   await page.getByRole("button", { name: "Move", exact: true }).click();

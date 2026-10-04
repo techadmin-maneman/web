@@ -281,7 +281,9 @@ function ReferrersTable({ version }: { version: number }) {
               {pages.referrers.map((referrer) => (
                 <tr key={referrer.code}>
                   <th scope="row" className={styles.name}>
-                    {referrer.name}
+                    <OpsLink className={styles.person} to={clientPath(referrer.person_id, "referrals")}>
+                      {referrer.name}
+                    </OpsLink>
                   </th>
                   <td className={styles.quietFigure}>{referrer.opens}</td>
                   <td className={styles.quietFigure}>{referrer.consultations}</td>

@@ -127,6 +127,7 @@ const referrersRoute = createRoute({
               z
                 .object({
                   code: z.string(),
+                  person_id: z.uuid().openapi({ description: "Whose code it is: the client page to open." }),
                   name: z.string(),
                   opens: z.number().int(),
                   consultations: z.number().int(),
@@ -216,6 +217,7 @@ export function registerOpsWaitlist(app: App): void {
 
 interface ReferrerFigures {
   readonly code: string;
+  readonly person_id: string;
   readonly name: string;
   readonly opens: number;
   readonly consultations: number;
@@ -241,7 +243,7 @@ async function referrersFrom(db: D1Database, offset: number, reached: PlacesReac
          FROM credit_ledger e JOIN credit_ledger g ON g.id = e.grant_id JOIN referral_attributions a ON a.id = g.source_id
          WHERE e.kind = 'redeem' AND g.source_kind = 'referral' GROUP BY a.code
        )
-       SELECT r.code, p.name, r.opens, COALESCE(f.consultations, 0) AS consultations, COALESCE(f.fits, 0) AS fits,
+       SELECT r.code, r.person_id, p.name, r.opens, COALESCE(f.consultations, 0) AS consultations, COALESCE(f.fits, 0) AS fits,
          COALESCE(f.granted, 0) AS granted, COALESCE(s.redeemed, 0) AS redeemed
        FROM referral_codes r JOIN people p ON p.id = r.person_id
        LEFT JOIN funnel f ON f.code = r.code LEFT JOIN spent s ON s.code = r.code

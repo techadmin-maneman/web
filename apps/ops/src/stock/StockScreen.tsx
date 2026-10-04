@@ -14,9 +14,10 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Stock } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
+import { OpsLink, Shell } from "../components/Shell.tsx";
 import { stock as copy } from "../content.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
+import { settingsPath } from "../route.ts";
 import form from "../settings/settings.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
@@ -46,8 +47,26 @@ function Held({ book, code, technicianId }: { book: Stock; code: string; technic
   );
 }
 
+/** "Settings, Consumables", where each consumable and its low level is set. The sentence before it ends with it. */
+function ToSettings() {
+  return (
+    <>
+      <OpsLink className={form.link} to={settingsPath("consumables")}>
+        {copy.settings}
+      </OpsLink>
+      .
+    </>
+  );
+}
+
 function OnHand({ book }: { book: Stock }) {
-  if (book.consumables.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (book.consumables.length === 0) {
+    return (
+      <p className={form.note}>
+        {copy.none} <ToSettings />
+      </p>
+    );
+  }
   return (
     <div className={styles.scroll}>
       <Table className={form.table}>
@@ -150,7 +169,9 @@ export function StockScreen() {
                 {copy.onHand}
               </h2>
             </div>
-            <p className={form.note}>{copy.lowNote}</p>
+            <p className={form.note}>
+              {copy.lowNote} <ToSettings />
+            </p>
             <OnHand book={book ?? loaded.value} />
           </section>
           {firstKind !== undefined && (book ?? loaded.value).consumables.length > 0 && (

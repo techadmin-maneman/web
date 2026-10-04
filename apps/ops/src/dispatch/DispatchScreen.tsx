@@ -45,6 +45,7 @@ import { useAccess, type Access } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { useAddressKeeps } from "./address.ts";
 import { BlockDrawer } from "./BlockDrawer.tsx";
+import { TrayDrawer } from "./TrayDrawer.tsx";
 import styles from "./dispatch.module.css";
 import { Grid, type InHand } from "./Grid.tsx";
 import { phoneWords } from "../lib/phone.ts";
@@ -242,7 +243,7 @@ export function DispatchScreen() {
   const [asked] = useState(() => dispatchAsked(window.location.search));
   const [query, setQuery] = useState<BoardQuery>({ from: asked.from, city: asked.city });
   const [find, setFind] = useState(asked.find);
-  const [opened, setOpened] = useState<BlockJob | null>(null);
+  const [opened, setOpened] = useState<Job | null>(null);
   const [move, setMove] = useState<Move | null>(null);
   const [changing, setChanging] = useState<Changing | null>(null);
   const [rooms, setRooms] = useState<Rooms>({ state: "checking" });
@@ -275,8 +276,13 @@ export function DispatchScreen() {
       setOpened(job);
       return;
     }
-    const inTray = on.unassigned.some((each) => each.appointment_id === visit);
-    if (!inTray) setNotice({ tone: "refusal", text: dispatch.landing.notOnBoard, call: null });
+    const inTray = on.unassigned.find((each) => each.appointment_id === visit);
+    if (inTray === undefined) {
+      setNotice({ tone: "refusal", text: dispatch.landing.notOnBoard, call: null });
+      return;
+    }
+    opener.current = element;
+    setOpened({ kind: "unassigned", job: inTray });
   }, []);
 
   useEffect(() => {
@@ -325,7 +331,6 @@ export function DispatchScreen() {
   }, [inHandId, weekFrom, roomsAsked]);
 
   const open = useCallback((job: Job, from: HTMLElement) => {
-    if (job.kind !== "block") return;
     opener.current = from;
     setNotice(null);
     setOpened(job);
@@ -506,10 +511,23 @@ export function DispatchScreen() {
             </>
           )}
         </div>
-        {board !== null && <Tray unassigned={board.unassigned} onTake={mayAssign ? take : null} />}
+        {board !== null && <Tray unassigned={board.unassigned} onOpen={open} onTake={mayAssign ? take : null} />}
       </div>
 
-      {opened !== null && (
+      {opened?.kind === "unassigned" && (
+        <TrayDrawer
+          each={opened.job}
+          onClose={closeDrawer}
+          onAssign={
+            mayAssign
+              ? () => {
+                  take(opened, opener.current);
+                }
+              : null
+          }
+        />
+      )}
+      {opened?.kind === "block" && (
         <BlockDrawer
           job={opened}
           onClose={closeDrawer}
