@@ -8,10 +8,12 @@ import {
   boundedPhoneTime,
   BOUNDS,
   EARLIEST_BEFORE_START_MIN,
+  earliestCheckIn,
   MAX_OFFLINE_HOURS,
   onTheVisitsDay,
   PHONE_CLOCK,
   RULES,
+  tooEarlyToArrive,
 } from "../../src/policy/phone-clock.ts";
 
 /** A visit booked for 10:00 on Monday 21 September, in India. */
@@ -81,5 +83,17 @@ describe("the bounds on the phone's clock", () => {
     expect(onTheVisitsDay(new Date("2026-09-21T19:00:00Z"), VISIT_START)).toBe(false);
     // The evening before, when tomorrow's card is already unlocked.
     expect(onTheVisitsDay(new Date("2026-09-20T13:30:00Z"), VISIT_START)).toBe(false);
+  });
+
+  it(BOUNDS[3], () => {
+    expect(earliestCheckIn(VISIT_START)).toEqual(minutes(VISIT_START, -EARLIEST_BEFORE_START_MIN));
+    // An hour before the 10:00 visit is in time; a minute earlier is not.
+    expect(tooEarlyToArrive(minutes(VISIT_START, -60), VISIT_START)).toBe(false);
+    expect(tooEarlyToArrive(minutes(VISIT_START, -61), VISIT_START)).toBe(true);
+    // The audit's gate: a 4 pm visit checked in at 11:06, with the bound at its widest.
+    const fourPm = new Date("2026-09-21T10:30:00Z");
+    const widest = { before_start: 240, held_offline: 24 };
+    expect(tooEarlyToArrive(new Date("2026-09-21T05:36:00Z"), fourPm, widest)).toBe(true);
+    expect(earliestCheckIn(fourPm, widest)).toEqual(new Date("2026-09-21T06:30:00Z"));
   });
 });

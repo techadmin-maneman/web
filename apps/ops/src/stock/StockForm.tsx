@@ -14,8 +14,8 @@ import { refusalOf, type Failure } from "../settings/refusal.ts";
 import form from "../settings/settings.module.css";
 import styles from "./stock.module.css";
 
-const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
-type Kind = (typeof KINDS)[number];
+export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
+export type Kind = (typeof KINDS)[number];
 
 /** A place in a select: the central store, or a technician's kit by his ID. */
 const CENTRAL = "central";
@@ -169,19 +169,29 @@ async function sent(draft: Draft) {
   }
 }
 
-export function StockForm({ book, onRecorded }: { book: Stock; onRecorded: (book: Stock) => void }) {
+/** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
+export function StockForm({
+  book,
+  kinds,
+  onRecorded,
+}: {
+  book: Stock;
+  kinds: readonly [Kind, ...Kind[]];
+  onRecorded: (book: Stock) => void;
+}) {
   const places = book.places.map(
     (place) => [place.technician_id ?? CENTRAL, placeName(book, place.technician_id)] as const,
   );
-  const firstKit = book.places.find((place) => place.technician_id !== null)?.technician_id ?? CENTRAL;
+  // The store first where the caller's grants reach it, else their first kit.
+  const [first, second] = places.map(([value]) => value);
   const offered = book.consumables.filter((each) => !each.retired);
   const [draft, setDraft] = useState<Draft>({
-    kind: "delivery",
+    kind: kinds[0],
     code: offered[0]?.code ?? "",
     quantity: "",
-    from: CENTRAL,
-    to: firstKit,
-    place: CENTRAL,
+    from: first ?? CENTRAL,
+    to: second ?? first ?? CENTRAL,
+    place: first ?? CENTRAL,
     counted: "",
     note: "",
   });
@@ -216,7 +226,7 @@ export function StockForm({ book, onRecorded }: { book: Stock; onRecorded: (book
       <div className={form.group}>
         <fieldset className={styles.kinds}>
           <legend className={styles.kindsLegend}>{copy.record.what}</legend>
-          {KINDS.map((kind) => (
+          {kinds.map((kind) => (
             <label className={styles.kind} key={kind}>
               <input
                 className={styles.radio}
