@@ -509,7 +509,7 @@ const RECORDED = { description: "Recorded", ...json(AcceptedSchema) };
 const STEP_REFUSALS = {
   400: errorResponse("invalid_request: see error.fields"),
   401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
-  404: errorResponse("not_found: no such job"),
+  404: errorResponse("not_found: no such job, or never this technician's"),
   409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
 };
 
