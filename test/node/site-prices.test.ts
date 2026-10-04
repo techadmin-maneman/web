@@ -7,6 +7,8 @@ import { rupees } from "../../packages/web-kit/money.ts";
 import { BUILT_PRICES } from "../../site/src/content/prices.ts";
 import { referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
+import { PRICES_SHOWN } from "../../site/src/lib/flags.ts";
+import { readJsonc } from "../../scripts/lib/jsonc.ts";
 import type { PublishedPrices } from "../../site/src/lib/api.ts";
 import {
   BUILT_WORDS,
@@ -84,11 +86,20 @@ describe("the site's prices", () => {
   // The owner took the prices off the site on 1 October 2026 (ADR 0103). The prices section, the invite's list and the
   // price range search engines read wait on PRICES_SHOWN; nothing else gives a price.
   it("gives a price only in what waits on PRICES_SHOWN, which is off", () => {
-    expect(site.PRICES_SHOWN).toBe(false);
+    expect(PRICES_SHOWN).toBe(false);
     const home = { ...site, prices: null, business: { ...site.business, priceRange: null } };
     const landing = { ...referral, prices: null };
     for (const text of [JSON.stringify(home), JSON.stringify(landing)]) {
       expect(text.match(/\{(?:firstFit|service|replacement|firstYear|firstFitRange)\}/g)).toBeNull();
+    }
+  });
+
+  // The Worker writes the figures into / only while the site gives them, so only then does / go through it.
+  it("sends / through the site Worker only while the site gives prices, in every environment", () => {
+    type Assets = { assets: { run_worker_first: string[] } };
+    const config = readJsonc("site/wrangler.jsonc") as Assets & { env: Record<string, Assets> };
+    for (const assets of [config, ...Object.values(config.env)].map((each) => each.assets)) {
+      expect(assets.run_worker_first.includes("/")).toBe(PRICES_SHOWN);
     }
   });
 
