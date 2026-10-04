@@ -100,10 +100,12 @@ describe("the routes a caller's calls go ahead on", () => {
 
   it("are, once enforced, only those a city's grant reaches: the ones that keep to the caller's places", () => {
     const tasks = ["GET /api/tasks", "PUT /api/tasks/{group}/{id}/owner"];
-    expect(routesOpenTo(financeInDelhi, true, NO_ZONES)).toEqual([...SIGNED_IN_ROUTES, ...tasks]);
+    const alerts = ["GET /api/alerts", "POST /api/alerts/{id}/resolve", "POST /api/alerts/{id}/send-again"];
+    expect(routesOpenTo(financeInDelhi, true, NO_ZONES)).toEqual([...SIGNED_IN_ROUTES, ...tasks, ...alerts]);
     expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([
       ...SIGNED_IN_ROUTES,
       "GET /api/tasks",
+      "GET /api/alerts",
       "GET /api/staff",
     ]);
   });
