@@ -276,7 +276,7 @@ test("names the client of a no-show, and leads to their visits and to the case",
 });
 
 // A client's claim for money back once waited on No-shows alone: no row here, no count, no link (OIA-07).
-test("names a disputed charge and what it kept, and leads to the dispute in No-shows", async ({ page }) => {
+test("names a disputed charge and what it kept, and leads to the dispute in Payments", async ({ page }) => {
   const dispute = (id: string, person: { id: string; name: string } | null, kept: string) => ({
     id,
     person,
@@ -313,12 +313,12 @@ test("names a disputed charge and what it kept, and leads to the dispute in No-s
     "/clients/22000000-0000-4000-8000-000000000030/visits",
   );
   await expect(
-    vikram.getByRole("link", { name: "Rule on it in No-shows · Vikram Sethi", exact: true }),
+    vikram.getByRole("link", { name: "Rule on it in Payments · Vikram Sethi", exact: true }),
   ).toHaveAttribute("href", "/no-shows#dispute-dd000000-0000-4000-8000-000000000001");
   // A client since erased still has their charge ruled on.
   await expect(row(page, "A client since erased")).toContainText("Disputes the charge that kept a free service visit");
   await expect(
-    page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: /^No-shows, 2 waiting/ }),
+    page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: /^Payments, 2 waiting/ }),
   ).toBeVisible();
 });
 
