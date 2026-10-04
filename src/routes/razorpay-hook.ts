@@ -21,7 +21,7 @@ import { paymentStatusOf, recordPayment, recordRefund, recordRefundedPayment } f
 import { bookHold } from "../http/book-hold.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { sha256Hex } from "../lib/hash.ts";
-import { markLinkPaid, visitOfLink } from "../domain/payment-links.ts";
+import { linkPaid } from "../domain/payment-links.ts";
 import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../domain/visit-booking.ts";
 import {
   RazorpayPaymentLinkSchema,
@@ -57,30 +57,6 @@ export const razorpayHookRoute = createRoute({
     ),
   },
 });
-
-/**
- * A one visit's payment link paid: the payment recorded as the visit's, by the link it paid, whatever notes it
- * carries, and the link marked paid where the close made one; a link ops made by hand has no row of ours. False for
- * a link that names no visit of ours.
- */
-async function linkPaid(
-  db: D1Database,
-  paid: { readonly link: RazorpayPaymentLink; readonly payment: RazorpayPayment },
-  hashSalt: string,
-  now: Date,
-): Promise<boolean> {
-  const ours = await visitOfLink(db, { razorpayLinkId: paid.link.id, reference: paid.link.reference_id ?? null });
-  if (ours === null) return false;
-  const notes =
-    ours.personId === null
-      ? { appointment_id: ours.appointmentId }
-      : { appointment_id: ours.appointmentId, person_id: ours.personId };
-  await recordPayment(db, { ...paid.payment, notes }, "captured", hashSalt, now);
-  if (ours.linkId === null) return true;
-  const paidAt = new Date(paid.payment.created_at * 1000).toISOString();
-  await markLinkPaid(db, ours.linkId, { razorpayPaymentId: paid.payment.id, paidAt }, now);
-  return true;
-}
 
 /**
  * The link a client paid for a visit ops booked: the payment is recorded on the hold the link was for, which confirms

@@ -1113,6 +1113,7 @@ describe("ops refunding it from the console", () => {
       refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")),
       createPaymentLink: () => Promise.reject(new Error("unused")),
       findPaymentLink: () => Promise.reject(new Error("unused")),
+      paymentLink: () => Promise.reject(new Error("unused")),
     };
     await refund(fakeDependencies({ now: () => afterHeld(HOUR), fsm: stub, payments: refusing }), holdId).answer;
     const cancelled = stub.made.cancelled.map((each) => each.workOrderId);
@@ -1139,6 +1140,7 @@ describe("ops refunding it from the console", () => {
       refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")),
       createPaymentLink: () => Promise.reject(new Error("unused")),
       findPaymentLink: () => Promise.reject(new Error("unused")),
+      paymentLink: () => Promise.reject(new Error("unused")),
     };
     const deps = fakeDependencies({ now: () => afterHeld(26 * HOUR), payments });
     const { answer, messages } = refund(deps, holdId);
