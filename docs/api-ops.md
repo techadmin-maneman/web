@@ -2350,6 +2350,14 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
+**400**: invalid_request: person is not a client's id
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required, or not_permitted: no View in any department
 
 ```json

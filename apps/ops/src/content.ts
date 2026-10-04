@@ -465,10 +465,21 @@ export const clients = {
     { tab: "visits", label: "Visits" },
     { tab: "pieces", label: "Pieces" },
     { tab: "payments", label: "Payments" },
+    { tab: "referrals", label: "Referrals" },
     { tab: "consents", label: "Consents" },
     { tab: "photos", label: "Photos" },
     { tab: "history", label: "History" },
   ],
+  /**
+   * PLACEHOLDER, all of it: what waits on Tasks for the client, under the page's head, each with how long it has left
+   * and where it is done. No board draws it.
+   */
+  openTasks: {
+    title: "Open for this client",
+    none: "Nothing open for this client.",
+    /** A task done on another tab of the client's page: "Go to Payments". */
+    toTab: (tab: string) => `Go to ${tab}`,
+  },
   failed: "We could not load this client.",
   /*
    * PLACEHOLDER, all of it: the board draws a Visits tab and nothing in it. It
@@ -910,9 +921,8 @@ export const clients = {
     } as Readonly<Record<string, string>>,
   },
   /*
-   * PLACEHOLDER, all of it: no board draws a client's invite. Who sent it heads the page; under Payments, beside the
-   * credits it grants, is what it earns, or a way to attach one for a friend who booked away from its page
-   * (POST /api/clients/{id}/referral; docs/decisions/0089-an-invite-is-not-lost.md).
+   * PLACEHOLDER, all of it: board B1 draws a Referrals tab and nothing in it. Who sent the invite heads the page; the
+   * tab says what it earns, or gives a way to attach one for a friend who booked away from its page.
    */
   invite: {
     title: "Invite",

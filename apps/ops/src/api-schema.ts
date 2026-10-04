@@ -3284,7 +3284,10 @@ export interface paths {
         /** What ops still have to do, by group, the longest wait first */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description One client's tasks alone, for their page; every count is then theirs. */
+                    person?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -3298,6 +3301,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Tasks"];
+                    };
+                };
+                /** @description invalid_request: person is not a client's id */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description access_required, or not_permitted: no View in any department */
