@@ -5,7 +5,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ClientVisit, DeletionRequest, ErasedClientRecord } from "../../apps/ops/src/api.ts";
+import type { ClientVisit, DeletionRequest, ErasedClientRecord, HeldBooking } from "../../apps/ops/src/api.ts";
 import { ErasedRecord } from "../../apps/ops/src/clients/Erase.tsx";
 import { DeletionsScreen } from "../../apps/ops/src/deletions/DeletionsScreen.tsx";
 
@@ -19,6 +19,7 @@ const visit = (changes: Partial<ClientVisit>): ClientVisit => ({
   ends_at: "2026-09-10T07:30:00.000Z",
   length_minutes: 180,
   type: "service",
+  service: null,
   status: "completed",
   stage: null,
   prepaid: true,
@@ -72,6 +73,24 @@ const ERASED: ErasedClientRecord = {
   ],
   payment_links: [],
   invoices: [],
+  held_bookings: [],
+};
+
+/** A free service visit FSM refused before they were erased, still holding its slot. */
+const HELD: HeldBooking = {
+  id: "66666666-6666-4666-8666-666666666666",
+  type: "service",
+  service: "Service visit",
+  starts_at: "2027-09-24T08:30:00.000Z",
+  window: "afternoon",
+  paid: 0,
+  uses_credit: false,
+  moves_visit: false,
+  held_at: "2026-10-02T05:03:00.000Z",
+  refusal: "Zoho 400 INVALID_DATA",
+  retries_end: "2026-10-03T05:03:00.000Z",
+  retrying: false,
+  discount_code: null,
 };
 
 const REQUEST: DeletionRequest = {
@@ -139,6 +158,18 @@ describe("an erased client's page", () => {
     await show(createElement(ErasedRecord, { record: ERASED, onChanged: () => undefined }));
 
     expect(buttonNamed("Cancel")).toBeDefined();
+  });
+
+  // A live finding of 4 October 2026: the alert about a booking held for a client erased since sent ops to this page,
+  // which had nothing to act on.
+  it("shows a booking still held for them, which ops may refund", async () => {
+    await show(
+      createElement(ErasedRecord, { record: { ...ERASED, held_bookings: [HELD] }, onChanged: () => undefined }),
+    );
+
+    expect(page.textContent).toContain("Not in FSM yet");
+    const buttons = [...page.querySelectorAll("button")].map((each) => each.textContent);
+    expect(buttons.some((text) => text.startsWith("Refund it"))).toBe(true);
   });
 });
 

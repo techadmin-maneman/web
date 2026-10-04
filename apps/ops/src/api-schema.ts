@@ -224,7 +224,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits and their money */
+        /** The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits, their money and any booking still held for them */
         get: {
             parameters: {
                 query?: never;
@@ -7061,7 +7061,7 @@ export interface components {
             /** Format: date-time */
             refunded_at: string;
         };
-        /** @description What is kept of a client once erased: their visits and money, as records. Nothing names them. */
+        /** @description What is kept of a client once erased: their visits, their money and any booking still held for them. Nothing names them. */
         ErasedClientRecord: {
             /** Format: uuid */
             id: string;
@@ -7078,6 +7078,8 @@ export interface components {
             payment_links: components["schemas"]["ClientPaymentLink"][];
             /** @description Each finished visit sold for a price, with its invoice; the latest visit first. */
             invoices: components["schemas"]["ClientInvoice"][];
+            /** @description Bookings FSM refused, waiting for a try or for ops; the soonest visit first. */
+            held_bookings: components["schemas"]["HeldBooking"][];
         };
         ClientPhotos: {
             visits: {

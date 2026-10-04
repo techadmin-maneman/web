@@ -151,7 +151,7 @@ Request body:
 
 ### GET /api/clients/{id}
 
-The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits and their money
+The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits, their money and any booking still held for them
 
 **200**: The record
 
@@ -6631,6 +6631,13 @@ Request body:
         "$ref": "#/components/schemas/ClientInvoice"
       },
       "description": "Each finished visit sold for a price, with its invoice; the latest visit first."
+    },
+    "held_bookings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/HeldBooking"
+      },
+      "description": "Bookings FSM refused, waiting for a try or for ops; the soonest visit first."
     }
   },
   "required": [
@@ -6639,10 +6646,11 @@ Request body:
     "visits",
     "payments",
     "payment_links",
-    "invoices"
+    "invoices",
+    "held_bookings"
   ],
   "additionalProperties": false,
-  "description": "What is kept of a client once erased: their visits and money, as records. Nothing names them."
+  "description": "What is kept of a client once erased: their visits, their money and any booking still held for them. Nothing names them."
 }
 ```
 
