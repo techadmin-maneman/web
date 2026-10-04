@@ -72,6 +72,8 @@ export interface JobSummary {
   readonly slots: number | null;
   readonly unlocked: boolean;
   readonly unlocks_at: string;
+  /** The client's name once the job unlocks, as the card gives it, so the day's list can say whom each job is for. */
+  readonly client_name: string | null;
   /** When the job began and how it closed, from the events that landed, so the list says what the card says. */
   readonly progress: JobState;
 }
@@ -258,13 +260,15 @@ export async function jobsOn(
 ): Promise<JobSummary[]> {
   const from = indiaInstant(date, "00:00").toISOString();
   const to = indiaInstant(addDays(date, 1), "00:00").toISOString();
-  const { results } = await db
-    .prepare(`${SELECT_JOB} AND a.window_start >= ?2 AND a.window_start < ?3 ORDER BY a.window_start`)
-    .bind(technicianId, from, to)
-    .all<JobRow>();
-  const schedule = await loadSlotSchedule(db);
-  const landed = await startsAndOutcomesOn(db, technicianId, from, to);
-  return results
+  const [jobs, schedule, landed] = await Promise.all([
+    db
+      .prepare(`${SELECT_JOB} AND a.window_start >= ?2 AND a.window_start < ?3 ORDER BY a.window_start`)
+      .bind(technicianId, from, to)
+      .all<JobRow>(),
+    loadSlotSchedule(db),
+    startsAndOutcomesOn(db, technicianId, from, to),
+  ]);
+  return jobs.results
     .filter(worthShowing)
     .map((row) => summaryOf(row, now, unlockHour, schedule, stateOf(landed.get(row.id) ?? [])));
 }
@@ -313,18 +317,32 @@ function stateOf(events: readonly Pick<LandedEvent, "kind" | "body" | "occurred_
   };
 }
 
-/** One job of this technician's, with everything the day-before unlock allows. */
+/**
+ * One job of this technician's, with everything the day-before unlock allows. Each read is a trip to D1 and back, so
+ * the reads that need nothing from each other go together: the job and the day's times, then all the job leads to.
+ */
 export async function jobDetail(
   db: D1Database,
   options: { technicianId: string; jobId: string; now: Date; unlockHour: number; waits: Waits; phoneClock: PhoneClock },
 ): Promise<JobDetail | null> {
-  const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
+  const [row, schedule] = await Promise.all([
+    db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>(),
+    loadSlotSchedule(db),
+  ]);
   if (row === null) return null;
   const type = row.type ?? "service";
+  const oneVisit = row.one_visit !== null;
   const windowStart = new Date(row.window_start);
   const job = { id: row.id, type, windowStart, technicianId: options.technicianId };
-  const progress = await progressOf(db, job, options.waits);
-  const summary = summaryOf(row, options.now, options.unlockHour, await loadSlotSchedule(db), progress);
+  const [progress, products, paymentLink, discountCode, clientChoice, unlockedParts] = await Promise.all([
+    progressOf(db, job, options.waits),
+    takesProfile(type, oneVisit) ? productsOn(db, indiaDate(windowStart)) : [],
+    oneVisit ? paymentLinkOf(db, row.id) : null,
+    oneVisit ? jobCodeOf(db, row.id) : null,
+    oneVisit ? decisionAtVisit(db, row.id) : null,
+    unlocked(windowStart, options.now, options.unlockHour) ? unlockedPartsOf(db, row) : null,
+  ]);
+  const summary = summaryOf(row, options.now, options.unlockHour, schedule, progress);
   const locked = {
     ...summary,
     address: null,
@@ -336,14 +354,14 @@ export async function jobDetail(
     pieces: null,
     last_visit: null,
     reminder: null,
-    products: takesProfile(type, row.one_visit !== null) ? await productsOn(db, summary.date) : [],
-    payment_link: row.one_visit === null ? null : await paymentLinkOf(db, row.id),
-    discount_code: row.one_visit === null ? null : await jobCodeOf(db, row.id),
-    client_choice: row.one_visit === null ? null : await decisionAtVisit(db, row.id),
+    products,
+    payment_link: paymentLink,
+    discount_code: discountCode,
+    client_choice: clientChoice,
     profile: null,
-    steps: cardStepsFor(type, row.one_visit !== null, row.person_id !== null),
+    steps: cardStepsFor(type, oneVisit, row.person_id !== null),
   };
-  if (!summary.unlocked) return locked;
+  if (unlockedParts === null) return locked;
   return {
     ...locked,
     address: addressOf(row),
@@ -352,11 +370,23 @@ export async function jobDetail(
       row.client_name === null || row.client_mobile === null
         ? null
         : { name: row.client_name, mobile: row.client_mobile, note: row.client_note },
-    pieces: row.person_id === null ? [] : (await piecesOf(db, row.person_id)).map(cardPiece),
-    last_visit: await lastVisitOf(db, row),
-    reminder: await reminderOf(db, row.id),
-    profile: row.person_id === null ? null : await latestProfile(db, row.person_id),
+    ...unlockedParts,
   };
+}
+
+/** What only an unlocked card carries beyond the job's own row: the client's pieces and profile, and their last visit. */
+async function unlockedPartsOf(
+  db: D1Database,
+  row: JobRow,
+): Promise<Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile">> {
+  const personId = row.person_id;
+  const [pieces, lastVisit, reminder, profile] = await Promise.all([
+    personId === null ? [] : piecesOf(db, personId),
+    lastVisitOf(db, row),
+    reminderOf(db, row.id),
+    personId === null ? null : latestProfile(db, personId),
+  ]);
+  return { pieces: pieces.map(cardPiece), last_visit: lastVisit, reminder, profile };
 }
 
 /** The products offered on a visit's day: the hair systems offered and priced then, in ops' order. */
@@ -544,6 +574,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSch
     slots: row.type === null ? null : slotsFor(unitsFor(bookedMinutes(row))),
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
+    client_name: open ? row.client_name : null,
     progress: { started_at: progress.started_at, outcome: progress.outcome },
   };
 }
@@ -570,35 +601,37 @@ export async function progressOf(
   job: { id: string; type: VisitType; windowStart: Date; technicianId: string },
   waits: Waits,
 ): Promise<JobProgress> {
-  const { results } = await db
-    .prepare(
-      `SELECT kind, body, occurred_at, received_at FROM job_events
-       WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at, rowid`,
-    )
-    .bind(job.id)
-    .all<{ kind: JobEventKind; body: string; occurred_at: string; received_at: string }>();
-  const arrival = await latestArrival(db, job);
+  const [events, arrival, profileAt] = await Promise.all([
+    db
+      .prepare(
+        `SELECT kind, body, occurred_at, received_at FROM job_events
+         WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at, rowid`,
+      )
+      .bind(job.id)
+      .all<{ kind: JobEventKind; body: string; occurred_at: string; received_at: string }>(),
+    latestArrival(db, job),
+    profileTakenAt(db, job.id),
+  ]);
+  const { results } = events;
   const { started_at, outcome } = stateOf(results);
   return {
     checked_in_at: arrival?.at.toISOString() ?? null,
     wait_ends_at: arrival === null ? null : noShowWaitEnds(arrival, job.windowStart, job.type, waits).toISOString(),
     distance_m: arrival?.distanceM ?? null,
     started_at,
-    steps_done: await stepsDone(db, job.id, results),
+    steps_done: stepsDone(results, profileAt),
     outcome,
   };
 }
 
 /** The steps that have reached us, in the order they did: the job's events after the start, and the profile. */
-async function stepsDone(
-  db: D1Database,
-  jobId: string,
+function stepsDone(
   events: readonly { kind: JobEventKind; received_at: string }[],
-): Promise<CardStep[]> {
+  profileAt: string | null,
+): CardStep[] {
   const steps: { step: CardStep; at: string }[] = events
     .filter((event) => event.kind !== "check_in" && event.kind !== "start")
     .map((event) => ({ step: event.kind, at: event.received_at }));
-  const profileAt = await profileTakenAt(db, jobId);
   if (profileAt !== null) steps.push({ step: "profile", at: profileAt });
   // A stable sort: steps that reached us in the same millisecond keep the order they were read in.
   return steps.sort((a, b) => a.at.localeCompare(b.at)).map((taken) => taken.step);

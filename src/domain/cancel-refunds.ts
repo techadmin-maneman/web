@@ -7,7 +7,7 @@ import type { CallBudget } from "../lib/call-budget.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 import type { Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
-import type { AlertOnce } from "./alerts.ts";
+import { paymentsTab, type AlertOnce } from "./alerts.ts";
 import { ASKS, askRefund, refundLeftToOps, refundReceipt } from "./refunds.ts";
 
 export interface RefundDeps {
@@ -78,7 +78,7 @@ async function settleRefund(
     await deps.alertOnce({
       key: `cancel_refund_failed:${owed.appointmentId}`,
       message: refundLeftToOps(asked.kind, what, owed.razorpayPaymentId, owed.amount),
-      link: `/clients/${owed.personId}`,
+      link: paymentsTab(owed.personId),
     });
   }
   const refundId = asked.kind === "refunded" ? asked.refundId : null;
