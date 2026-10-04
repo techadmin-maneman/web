@@ -398,10 +398,10 @@ test.describe("the rules", () => {
   test("offers a base of its own on the open rule, and none where the keys are fixed", async ({ page }) => {
     await open(page);
     await expect(
-      page.getByRole("group", { name: "Replacement cycle" }).getByLabel("Base, exactly as FSM names it"),
+      page.getByRole("group", { name: "Replacement cycle" }).getByLabel("Base, exactly as the technician records it"),
     ).toBeVisible();
     await expect(
-      page.getByRole("group", { name: "No-show wait" }).getByLabel("Base, exactly as FSM names it"),
+      page.getByRole("group", { name: "No-show wait" }).getByLabel("Base, exactly as the technician records it"),
     ).toHaveCount(0);
   });
 });
@@ -413,17 +413,13 @@ test.describe("the services and their prices", () => {
   const block = (page: Page, name: string) =>
     page.getByRole("listitem").filter({ has: page.getByRole("heading", { name, exact: true }) });
 
-  test("lists each kind's services with their length, whether FSM has them, and whether they are offered", async ({
-    page,
-  }) => {
+  test("lists each kind's services with their length, and whether they are offered", async ({ page }) => {
     await open(page, "/prices");
     for (const kind of ["Consultation", "First fit", "Service visit", "Replacement"]) {
       await expect(page.getByRole("heading", { level: 3, name: kind, exact: true })).toBeVisible();
     }
-    await expect(block(page, "Service visit")).toContainText(
-      "90 minutes · code standard · In FSM's catalogue · Offered",
-    );
-    await expect(block(page, "Premium")).toContainText("240 minutes · code premium · Not found in FSM's catalogue yet");
+    await expect(block(page, "Service visit")).toContainText("90 minutes · code standard · Offered");
+    await expect(block(page, "Premium")).toContainText("240 minutes · code premium");
     await expect(block(page, "Lace replacement")).toContainText("Retired from 1 Sep 2027");
   });
 

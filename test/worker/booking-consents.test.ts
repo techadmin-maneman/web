@@ -4,7 +4,6 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { FieldRecord } from "../../src/config/field-record.ts";
 import { HOLD_SECONDS, PAYMENT_GRACE_SECONDS } from "../../src/config/scheduling.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
@@ -13,11 +12,9 @@ import {
   appFor,
   fakeDependencies,
   fakeQueue,
-  fsmSwitchedOff,
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
-  PROVIDERS_FOR,
   request,
   savedAddress,
 } from "./helpers.ts";
@@ -33,21 +30,16 @@ let cookie: string;
 const app = (minutesLater = 0) => appFor("local", fakeDependencies({ now: () => minutes(minutesLater) }), {}, "client");
 
 const post = (path: string, body: object, minutesLater = 0) =>
-  request(
-    app(minutesLater),
-    path,
-    {
-      method: "POST",
-      headers: {
-        Cookie: cookie,
-        "Content-Type": "application/json",
-        Origin: "https://maneman.test",
-        "CF-Connecting-IP": CLIENT_IP,
-      },
-      body: JSON.stringify(body),
+  request(app(minutesLater), path, {
+    method: "POST",
+    headers: {
+      Cookie: cookie,
+      "Content-Type": "application/json",
+      Origin: "https://maneman.test",
+      "CF-Connecting-IP": CLIENT_IP,
     },
-    { FSM_QUEUE: fakeQueue() },
-  );
+    body: JSON.stringify(body),
+  });
 
 async function held(body: object = { type: "service", date: "2026-09-24", window: "afternoon" }): Promise<string> {
   const answer = await post("/api/holds", body);
@@ -74,18 +66,17 @@ async function tappedToPay(consents: string[] = BOTH): Promise<Ordered> {
   return { holdId, orderId: checkout.order_id, amount: checkout.amount };
 }
 
-/** The webhook's app, where FSM books a paid visit from its queue, or our own database books it in the request. */
-function webhookApp(record: FieldRecord, now: Date) {
+/** The webhook's app, which books a paid visit in its request. */
+function webhookApp(now: Date) {
   const settings = {
     ...LOCAL_SETTINGS,
     razorpay: { keyId: "rzp_test_consents", keySecret: "s", webhookSecret: WEBHOOK_SECRET },
   };
-  const fsm = record === "ours" ? { fsm: fsmSwitchedOff() } : {};
-  return appFor("local", fakeDependencies({ now: () => now, ...fsm }), settings, "public", PROVIDERS_FOR[record]);
+  return appFor("local", fakeDependencies({ now: () => now }), settings, "public");
 }
 
 /** Razorpay's signed webhook: the payment for the order, made at `paidAt`, reaching us a minute later. */
-async function paid(ordered: Ordered, paidAt: Date, event = "payment.captured", record: FieldRecord = "fsm") {
+async function paid(ordered: Ordered, paidAt: Date, event = "payment.captured") {
   const payment = {
     id: `pay_${ordered.holdId.slice(0, 8)}`,
     amount: ordered.amount,
@@ -98,7 +89,7 @@ async function paid(ordered: Ordered, paidAt: Date, event = "payment.captured", 
   };
   const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment } } });
   const answer = await request(
-    webhookApp(record, new Date(paidAt.getTime() + 60_000)),
+    webhookApp(new Date(paidAt.getTime() + 60_000)),
     "/api/hooks/razorpay",
     {
       method: "POST",
@@ -109,7 +100,7 @@ async function paid(ordered: Ordered, paidAt: Date, event = "payment.captured", 
         "X-Razorpay-Event-Id": `evt_${event}_${ordered.holdId}`,
       },
     },
-    { FSM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
+    { MESSAGE_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
   );
   expect(answer.status).toBe(200);
 }
@@ -145,23 +136,21 @@ const audited = async () =>
 beforeEach(async () => {
   await markDatabase();
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
   )
     .bind(NOW.toISOString())
     .run();
   await env.DB.prepare(
-    `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id)
-     VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra', 'contact-1')`,
+    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
   )
     .bind(PERSON, NOW.toISOString())
     .run();
   await savedAddress(PERSON);
   // Fitted: a first fit done with Imran, so service visits are what they book.
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
-       fsm_modified_at, synced_at)
-     VALUES ('fit', 'fsm-fit', ?1, 'first_fit', 'completed', 'Completed', '2026-08-01T03:30:00.000Z',
-       '2026-08-01T06:30:00.000Z', 't1', ?2, ?2)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+     VALUES ('fit', 'fit', ?1, 'first_fit', 'completed', '2026-08-01T03:30:00.000Z', '2026-08-01T06:30:00.000Z', 't1',
+       ?2)`,
   )
     .bind(PERSON, NOW.toISOString())
     .run();
@@ -233,9 +222,9 @@ describe("a paid visit's consents", () => {
     expect(await audited()).toHaveLength(2);
   });
 
-  it("are recorded where our own database books the visit in the webhook's request", async () => {
+  it("are recorded as the webhook's request books the visit", async () => {
     const ordered = await tappedToPay();
-    await paid(ordered, minutes(3), "payment.captured", "ours");
+    await paid(ordered, minutes(3));
     expect(await holdState(ordered.holdId)).toBe("booked");
     expect(await ledger()).toMatchObject([
       { purpose: "photos_own_record", granted: 1, created_at: minutes(3).toISOString() },
@@ -246,17 +235,8 @@ describe("a paid visit's consents", () => {
   it("are not recorded for a payment made after the hold and its grace ran out, which is refunded", async () => {
     const ordered = await tappedToPay();
     const tooLate = new Date(NOW.getTime() + (HOLD_SECONDS + PAYMENT_GRACE_SECONDS + 5) * 1000);
-    await paid(ordered, tooLate, "payment.captured", "ours");
-    expect(await holdState(ordered.holdId)).toBe("released");
-    expect(await ledger()).toEqual([]);
-    expect(await audited()).toEqual([]);
-  });
-
-  it("are not recorded for a payment made too late while its hold still waits on FSM's queue to refund it", async () => {
-    const ordered = await tappedToPay();
-    const tooLate = new Date(NOW.getTime() + (HOLD_SECONDS + PAYMENT_GRACE_SECONDS + 5) * 1000);
     await paid(ordered, tooLate);
-    expect(await holdState(ordered.holdId)).toBe("held");
+    expect(await holdState(ordered.holdId)).toBe("released");
     expect(await ledger()).toEqual([]);
     expect(await audited()).toEqual([]);
   });
@@ -346,10 +326,8 @@ describe("POST /api/bookings with the consents the pay step showed", () => {
 describe("moving a visit", () => {
   it("records no consent, however the move is started", async () => {
     await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
-         window_end, technician_id, fsm_modified_at, synced_at)
-       VALUES (?1, 'fsm-visit-1', 'fsm-order-1', ?2, 'service', 'scheduled', 'Scheduled', '2026-09-24T06:30:00.000Z',
-         '2026-09-24T08:00:00.000Z', 't1', ?3, ?3)`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+       VALUES (?1, ?1, ?2, 'service', 'scheduled', '2026-09-24T06:30:00.000Z', '2026-09-24T08:00:00.000Z', 't1', ?3)`,
     )
       .bind(VISIT, PERSON, NOW.toISOString())
       .run();

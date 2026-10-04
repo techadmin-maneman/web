@@ -9,7 +9,7 @@
 //
 // It runs against a staging version with SELF_SERVE_BOOKING "false" and the per-address limit, LEAD_IP_DAILY_LIMIT,
 // raised above twice the people (docs/verification.md). With self-serve booking off each booking is a request for
-// ops, the day and window asked for, and nothing is written to FSM: the test books no work in the org staging
+// ops, the day and window asked for, and nothing is booked: the test books no work, nor anything in the org staging
 // shares with production (docs/decisions/0025-phase-2-conflicts-register.md, item 26). A "booked" answer means the
 // version holds slots, and the test stops at once. The leads reach the CRM, named "Load test".
 //
@@ -121,7 +121,7 @@ console.log(
 console.log(`numbers used: ${mobiles.map((m) => `…${m.slice(-4)}`).join(" ")}`);
 
 if (outcomes.some((o) => o.state === "booked")) {
-  console.error("This version holds slots, so FSM was told: run the test on one with SELF_SERVE_BOOKING false.");
+  console.error("This version holds slots, so visits were booked: run the test on one with SELF_SERVE_BOOKING false.");
   process.exit(1);
 }
 const expected = (o: Outcome) => o.status === 201 || o.code === "idempotency_in_progress";

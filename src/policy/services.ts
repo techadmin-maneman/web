@@ -8,7 +8,7 @@ import { hasStandardService, STANDARD_TIER, type VisitType } from "../config/vis
 import type { OneVisitState } from "./one-visit.ts";
 
 export const RULES = [
-  "every service belongs to one of four kinds (consultation, first fit, service visit, replacement), and the kind decides the technician's steps, the booking rules and which fees apply; within a kind ops add, rename, describe, price, reorder and retire services from the console, each synced to FSM; a new kind needs a release.",
+  "every service belongs to one of four kinds (consultation, first fit, service visit, replacement), and the kind decides the technician's steps, the booking rules and which fees apply; within a kind ops add, rename, describe, price, reorder and retire services from the console, each synced to Books; a new kind needs a release.",
   "Retiring a service stops clients seeing it from a date and changes nothing already sold; prices stay dated rows.",
 ] as const;
 
@@ -29,7 +29,7 @@ export function namesMoreThanItsKind(tier: string | null, oneVisit: OneVisitStat
 }
 
 /**
- * A service's name, as clients, ops and FSM's catalogue read it: a letter or a digit first, so a spreadsheet opening
+ * A service's name, as clients, ops and Books' items read it: a letter or a digit first, so a spreadsheet opening
  * an exported list never reads it as a formula, then letters in any script, digits, spaces and . , ' ( ) & - + /,
  * up to 60.
  */

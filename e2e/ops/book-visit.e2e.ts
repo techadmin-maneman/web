@@ -195,3 +195,22 @@ test("books a consultation asked for from its Tasks row, on the day and window a
   await booking.getByRole("button", { name: "Close" }).click();
   await expect(tasks.getByRole("listitem")).toHaveCount(0);
 });
+
+// MON-14: a booking that refunded its payment by itself showed nowhere in the console.
+test("lists a booking that refunded its payment by itself beneath the visits, and why", async ({ page }) => {
+  const refunded = {
+    hold_id: "66000000-0000-4000-8000-000000000002",
+    type: "service",
+    service: "Service visit",
+    date: "2027-09-24",
+    amount: 200_000,
+    reason: "lapsed",
+    refunded_at: "2027-09-22T06:00:00.000Z",
+  } satisfies Extract<OpsReply<"/api/clients/{id}">, { auto_refunds: unknown }>["auto_refunds"][number];
+  await openVisits(page, { [`GET /api/clients/${CLIENT.id}`]: json({ ...RECORD, auto_refunds: [refunded] }) });
+  const item = page.getByRole("region", { name: "Refunded bookings" }).getByRole("listitem");
+  await expect(item).toContainText("Service visit, 24 Sep 2027 · Rs. 2,000");
+  await expect(item).toContainText("Refunded automatically on 22 Sep 2027: paid after the hold lapsed.");
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});

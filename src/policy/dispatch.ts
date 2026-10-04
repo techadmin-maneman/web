@@ -10,9 +10,9 @@
 // one rule in src/policy/visit-length.ts, which gives the prompt's four sizes for
 // the four kinds' own lengths (docs/decisions/0085-services-ops-can-edit.md).
 //
-// The last rule is quoted as the prompt writes it, and it is the one rule we do
-// not keep: FSM has nowhere to read a leave period from, so ops record leave in
-// the console and the same clash check reads it (ADR 0062).
+// The rules are quoted as the prompt writes them, and two are not kept as
+// written: a move is written to our own database, not FSM, and ops record leave
+// in the console, where the same clash check reads it (ADR 0062).
 
 import { WINDOW_SLOT_MAP, type BookingWindow } from "../config/scheduling.ts";
 
@@ -59,8 +59,7 @@ export type MoveReason = (typeof MOVE_REASONS)[number];
 export const keepsTheClientsNotice = (reason: MoveReason): boolean => reason !== "client_asked";
 
 /**
- * How far the technician has got on a visit, by the steps his phone has sent, which FSM's status can lag behind: he
- * has arrived, started, or closed it (a no-show closes it too).
+ * How far the technician has got on a visit, by the steps his phone has sent: he has arrived, started, or closed it (a no-show closes it too).
  */
 export const BEGUN = ["arrived", "started", "closed"] as const;
 export type Begun = (typeof BEGUN)[number];
@@ -96,7 +95,7 @@ export function targetTime(
 
 /**
  * Why a job cannot go to this window of this technician's day; null when it can. The check runs on the server before
- * any write to FSM, so a refusal means nothing was written anywhere.
+ * anything is written, so a refusal means nothing was written anywhere.
  *
  * A time already gone is answered first; then leave, so ops are told the technician is away rather than busy; then
  * the clash, so a held window is named as held. `does_not_fit`: nobody holds the window, but the visit has no room in

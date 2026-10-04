@@ -60,7 +60,6 @@ describe("what each ops route asks of its caller", () => {
       .map(([route]) => route);
     expect(manage).toEqual(
       expect.arrayContaining([
-        "POST /api/held-bookings/{id}/refund",
         "POST /api/clients/{id}/credits",
         "POST /api/prices",
         "POST /api/discount-codes",
@@ -132,7 +131,6 @@ describe("the routes a caller's calls go ahead on", () => {
         "GET /api/services",
       ]),
     );
-    expect(routes).not.toContain("POST /api/held-bookings/{id}/refund");
     expect(routes).not.toContain("POST /api/discount-codes");
     expect(routes).not.toContain("POST /api/prices");
   });
@@ -174,7 +172,6 @@ describe("the routes a caller's calls go ahead on", () => {
     );
     expect(routes).not.toContain("POST /api/technicians");
     expect(routes).not.toContain("POST /api/stock/deliveries");
-    expect(routes).not.toContain("POST /api/held-bookings/{id}/retry");
   });
 
   it("are, for Growth in one city, every Growth route up to the level granted but the service area's", () => {
@@ -241,7 +238,7 @@ describe("Tasks, where each department sees the groups it decides", () => {
   });
 
   it("gives each group to the department that decides it", () => {
-    expect(TASK_DEPARTMENTS.held_booking).toBe("operations");
+    expect(TASK_DEPARTMENTS.untold_move).toBe("operations");
     expect(TASK_DEPARTMENTS.grievance).toBe("customer_care");
     expect(TASK_DEPARTMENTS.no_show_decision).toBe("finance");
     expect(TASK_DEPARTMENTS.no_show_dispute).toBe("finance");

@@ -1,5 +1,5 @@
 // Board A2: the reason a move must carry, asked for before anything is
-// written. The clash check runs on the server before any write to FSM
+// written. The clash check runs on the server before anything is written
 // (docs/decisions/0034-clash-check.md), so this panel sends nothing until a
 // reason is chosen, and the server may still refuse what it sends.
 //

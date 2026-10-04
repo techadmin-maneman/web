@@ -1,8 +1,8 @@
 // The consumables, each service's expected use, the job sheet, and the stock
 // (docs/decisions/0087-consumables-and-stock.md). No board draws them, so the
-// figures are made up to show each state once: a consumable FSM holds, one it
-// holds under its old name, one not in FSM, one retiring and one retired; a kit
-// low on one consumable, and a store below nothing on another.
+// figures are made up to show each state once: a consumable offered, one
+// retiring and one retired; a kit low on one consumable, and a store below
+// nothing on another.
 
 import type { OpsReply } from "../answer.ts";
 
@@ -20,7 +20,6 @@ export const CONSUMABLES = {
       reorder_central: 200,
       retired_from: null,
       offered: true,
-      fsm: { state: "renamed", item_id: "fsm-part-2", name: "Glue" },
     },
     {
       code: "shampoo_sachet",
@@ -31,7 +30,6 @@ export const CONSUMABLES = {
       reorder_central: null,
       retired_from: "2027-09-01",
       offered: false,
-      fsm: { state: "linked", item_id: "fsm-part-4", name: "Shampoo sachet" },
     },
     {
       code: "solvent",
@@ -42,7 +40,6 @@ export const CONSUMABLES = {
       reorder_central: null,
       retired_from: "2027-10-01",
       offered: true,
-      fsm: { state: "missing", item_id: null, name: null },
     },
     {
       code: "tape_strips",
@@ -53,7 +50,6 @@ export const CONSUMABLES = {
       reorder_central: 50,
       retired_from: null,
       offered: true,
-      fsm: { state: "linked", item_id: "fsm-part-1", name: "Tape strips" },
     },
   ],
   // The services the console holds, by name, in its order (docs/decisions/0085-services-ops-can-edit.md): a premium
@@ -87,7 +83,6 @@ export const CONSUMABLES = {
     { visit_type: "replacement", tier: "standard", name: "Replacement", retired_date: null, expected: [] },
   ],
   today: "2027-09-21",
-  fsm_push: false,
   max_unit_cost: 10_000_000,
   max_expected: 999,
   max_reorder_level: 100_000,

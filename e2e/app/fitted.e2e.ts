@@ -25,14 +25,9 @@ test("Home shows a fitted client's next visit, with the technician, and Reschedu
   // Board B1's one prompt: this client has given no address, which comes before the replacement falling due.
   await expect(page.getByText("Add your address, so your technician can find the door.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Add your address" })).toHaveAttribute("href", "/profile");
-  // Self-serve booking is on locally, so Reschedule opens the move sheet (C7). This visit has no work order in
-  // FSM, so the sheet sends the client to ops on WhatsApp instead.
+  // Self-serve booking is on locally, so Reschedule opens the move sheet (C7; e2e/app/changes.e2e.ts moves one).
   await page.getByRole("button", { name: "Reschedule" }).click();
-  const sheet = page.getByRole("dialog", { name: "This visit can no longer be changed here." });
-  await expect(sheet.getByRole("link", { name: "Message us" })).toHaveAttribute(
-    "href",
-    new RegExp(`^https://wa\\.me/\\d+\\?text=${encodeURIComponent("I would like to move my service visit on")}`),
-  );
+  await expect(page.getByRole("dialog", { name: /^Move \w+day's visit$/ })).toBeVisible();
 });
 
 test("Visits lists what is coming and what is done, and a past visit opens with its photographs", async ({ page }) => {

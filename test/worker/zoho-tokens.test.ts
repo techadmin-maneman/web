@@ -66,8 +66,8 @@ beforeEach(() => {
 });
 
 describe("the access token", () => {
-  it("is kept per client in one table, CRM, FSM and Books each their own", async () => {
-    for (const client of ["crm", "fsm", "books"] as const) {
+  it("is kept per client in one table, the CRM and Books each their own", async () => {
+    for (const client of ["crm", "books"] as const) {
       const { request } = requester(
         { [TOKEN_URL]: () => issued(`${client}-1`), [LEADS_URL]: () => json({ data: [] }) },
         client,
@@ -79,7 +79,6 @@ describe("the access token", () => {
     expect(rows.results).toEqual([
       { client: "books", access_token: "books-1" },
       { client: "crm", access_token: "crm-1" },
-      { client: "fsm", access_token: "fsm-1" },
     ]);
   });
 
@@ -173,13 +172,13 @@ describe("after Zoho refuses a new token", () => {
   });
 });
 
-/** FSM and Books on Zoho, each on a client of its own, as the Worker builds its providers. */
+/** The CRM and Books on Zoho, each on a client of its own, as the Worker builds its providers. */
 const connected = {
   ...LOCAL_CONFIG,
-  providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "zoho" as const, BOOKS_PROVIDER: "zoho" as const },
+  providers: { ...LOCAL_CONFIG.providers, CRM_PROVIDER: "zoho" as const, BOOKS_PROVIDER: "zoho" as const },
   settings: {
     ...LOCAL_SETTINGS,
-    zohoFsm: { ...CLIENT, clientId: "1000.FSMCLIENT", refreshToken: "1000.fsm-refresh", webhookToken: null },
+    zoho: { ...CLIENT, clientId: "1000.CRMCLIENT", refreshToken: "1000.crm-refresh", larId: null },
     zohoBooks: {
       ...CLIENT,
       clientId: "1000.BOOKSCLIENT",
@@ -201,10 +200,8 @@ describe("how long a call may take, as the Worker builds its providers", () => {
     vi.restoreAllMocks();
   });
 
-  it("gives FSM and Books 8 s inside a request someone waits on, and 20 s in a queue or the cron", async () => {
+  it("gives Books 8 s inside a request someone waits on, and 20 s in a queue or the cron", async () => {
     const make = productionDependencies(connected);
-    await expect(make(env, createLogger(), "request").fsm.contact("c-1")).rejects.toThrow("within 8 s");
-    await expect(make(env, createLogger()).fsm.contact("c-1")).rejects.toThrow("within 20 s");
     await expect(make(env, createLogger(), "request").books.invoice("inv-1")).rejects.toThrow("within 8 s");
     await expect(make(env, createLogger()).books.invoice("inv-1")).rejects.toThrow("within 20 s");
   });
@@ -215,7 +212,7 @@ describe("Books' own client, as the Worker builds its providers", () => {
     vi.restoreAllMocks();
   });
 
-  it("mints Books' token from Books' client, never FSM's, and keeps it as Books'", async () => {
+  it("mints Books' token from Books' client, never the CRM's, and keeps it as Books'", async () => {
     const minted: { clientId: string | null; refreshToken: string | null }[] = [];
     vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
       const url = new URL(input instanceof Request ? input.url : String(input));

@@ -4,7 +4,7 @@
 //
 // A row shows each photograph's small copy, which the technician's phone made
 // at capture, and the whole photograph once it is opened. A photograph with no
-// small copy, such as one copied from FSM, shows itself, about 65 px wide
+// small copy shows itself, about 65 px wide
 // (docs/decisions/0093-the-storage-meter.md). Each is fetched only as it nears
 // the screen, and says its size, so the page does not move as it arrives.
 

@@ -32,9 +32,6 @@ export type ClientVisit = ClientRecord["visits"]["past"][number];
 export type ClientPayment = ClientRecord["payments"][number];
 export type ClientPaymentLink = ClientRecord["payment_links"][number];
 export type ClientInvoice = ClientRecord["invoices"][number];
-/** A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). */
-export type HeldBooking = ClientRecord["held_bookings"][number];
-export type HeldBookingRefunded = Body<paths["/api/held-bookings/{id}/refund"]["post"]>;
 /** A booking that refunded its payment by itself: paid after its hold lapsed, or a move whose visit had begun. */
 export type AutoRefund = ClientRecord["auto_refunds"][number];
 /** A visit ops book for a client: the windows free for it, what is sent, and what came of it. */
@@ -290,15 +287,6 @@ export const api = {
    */
   findClients: (text: string) => client.post("/api/clients/find", { body: { text } }),
   client: (id: string) => client.get("/api/clients/{id}", { path: { id } }),
-  /** FSM tried again now for a booking it refused, as the hourly try would. */
-  retryHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/retry", { path: { id } }),
-  /** Its hourly tries stopped, before ops book it in FSM by hand. */
-  stopHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/stop", { path: { id } }),
-  /** The visit ops booked in FSM by hand is this booking. */
-  linkHeldBooking: (id: string, visitId: string) =>
-    client.post("/api/held-bookings/{id}/link", { path: { id }, body: { visit_id: visitId } }),
-  /** What FSM holds for it cancelled, its payment refunded, and the client told. */
-  refundHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/refund", { path: { id } }),
   /** A client's 14 days of windows for a kind of visit, who is free in each, and how it would be paid. */
   visitAvailability: (query: AvailabilityQuery) => client.get("/api/visits/availability", { query }),
   /** A visit booked for a client: at once when nothing is paid at booking, else a payment link goes to them. */
@@ -337,7 +325,7 @@ export const api = {
       file: true,
     }),
   clientConsents: (id: string) => client.get("/api/clients/{id}/consents", { path: { id } }),
-  /** The client's pieces. The route reads FSM afresh first, since FSM is the record. */
+  /** The client's pieces. */
   clientPieces: (id: string) => client.get("/api/clients/{id}/pieces", { path: { id } }),
   /** The client's hair profile as it stands, and every version of it. */
   clientHairProfile: (id: string) => client.get("/api/clients/{id}/hair-profile", { path: { id } }),
@@ -488,7 +476,7 @@ export const api = {
     client.post("/api/service-area", { body: { changes: [...changes] } }),
   /** A pincode the service area does not hold, added unserved in one of our cities. */
   addPincode: (pincode: NewPincode) => client.post("/api/pincodes", { body: pincode }),
-  /** Every consumable, where each stands in FSM's catalogue, and each service's expected use. */
+  /** Every consumable, and each service's expected use. */
   consumables: () => client.get("/api/consumables"),
   addConsumable: (added: NewConsumable) => client.post("/api/consumables", { body: added }),
   /** Only the fields sent change; a null level clears it. */

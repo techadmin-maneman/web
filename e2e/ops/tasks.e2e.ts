@@ -216,10 +216,8 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
-// Two more groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
-test("names a draft invoice's visit, and heads an unfinished erasure with the day, never a client", async ({
-  page,
-}) => {
+// Another group the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
+test("names a draft invoice's visit", async ({ page }) => {
   await open(page, {
     overdue: 0,
     truncated: false,
@@ -240,29 +238,10 @@ test("names a draft invoice's visit, and heads an unfinished erasure with the da
           },
         ],
       },
-      {
-        group: "erasure_unfinished",
-        count: 1,
-        closable: false,
-        tasks: [
-          {
-            id: "22000000-0000-4000-8000-000000000009",
-            person: null,
-            detail: "8229000000500123",
-            since: "2027-09-20T06:00:00.000Z",
-            due: "2027-09-22T06:00:00.000Z",
-            owner: null,
-          },
-        ],
-      },
     ],
   });
-  // Customer Care's before Finance's, as the navigation orders the departments.
-  await expect(groupNames(page)).toHaveText(["Erasure left in FSM", "Draft invoice"]);
+  await expect(groupNames(page)).toHaveText(["Draft invoice"]);
   await expect(row(page, "Sanjay Arora")).toContainText("Visit of Mon 20 Sep, still a draft in Books");
-  const erased = row(page, "FSM contact 8229000000500123 still holds their details");
-  await expect(erased).toContainText("Client erased Mon 20 Sep");
-  await expect(erased.getByRole("link")).toHaveCount(0);
 });
 
 // A consultation and fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): the request ops
@@ -399,7 +378,7 @@ test("leads each task to the row it is decided on, in the section that decides i
   for (const [heading, name, path] of links) {
     await expect(row(page, heading).getByRole("link", { name, exact: true })).toHaveAttribute("href", path);
   }
-  // A replacement is ordered in FSM, so it leads to the client's pieces and nowhere else.
+  // A replacement leads to the client's pieces and nowhere else.
   await expect(row(page, "Kunal Mehta").getByRole("link")).toHaveCount(1);
 });
 

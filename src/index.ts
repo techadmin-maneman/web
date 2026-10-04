@@ -2,7 +2,6 @@ import { env } from "cloudflare:workers";
 import { createApp } from "./app.ts";
 import type { App } from "./http/context.ts";
 import { ENABLED_SURFACES, type Surface } from "./config/environments.ts";
-import { fieldRecord } from "./config/field-record.ts";
 import { productionDependencies } from "./dependencies.ts";
 import { alertIfForgotten, MAINTENANCE_RETRY_SECONDS, maintenanceUnderWay } from "./domain/maintenance.ts";
 import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
@@ -10,7 +9,6 @@ import { byHost } from "./http/surfaces.ts";
 import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
 import { createLogger, type Logger } from "./log.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
-import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
 import { CRON_JOBS, runCron } from "./scheduled/cron.ts";
@@ -73,14 +71,6 @@ async function consumeBatch(batch: MessageBatch, workerEnv: Env, log: Logger): P
   if (batch.queue.startsWith("mm-render-")) {
     await handleRenderBatch(batch, workerEnv, deps, log, {
       resultRetentionDays: config.settings.tryon.resultRetentionDays,
-    });
-    return;
-  }
-  if (batch.queue.startsWith("mm-fsm-sync-")) {
-    await handleFsmSyncBatch(batch, workerEnv, deps, log, {
-      labelAsTest: config.environment !== "production",
-      cataloguePush: config.settings.fsmCataloguePush,
-      record: fieldRecord(config.providers),
     });
     return;
   }

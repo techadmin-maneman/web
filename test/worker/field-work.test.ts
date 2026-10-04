@@ -1,6 +1,5 @@
-// A technician's day where our own database holds the record of field work (FSM_PROVIDER "none"): each step, piece and
-// move is written in the request that makes it, and nothing reaches FSM, whose every call here fails. NOW is Monday
-// 21 September 2026, 12 noon in India; today's job is at 13:00. Every name, number and label here is made up.
+// A technician's day: each step, piece and move is written in the request that makes it. NOW is Monday 21 September
+// 2026, 12 noon in India; today's job is at 13:00. Every name, number and label here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -16,11 +15,9 @@ import {
   appFor,
   fakeDependencies,
   fakeQueue,
-  fsmSwitchedOff,
   LOCAL_CONFIG,
   markDatabase,
   NOW,
-  PROVIDERS_FOR,
   request,
   type TestDependencies,
 } from "./helpers.ts";
@@ -43,20 +40,15 @@ const minutesAfterStart = (minutes: number) => new Date(TODAY_START.getTime() + 
 /** The event ID the app makes for a write queued that many minutes after the start. */
 const uuidv7At = (minutes: number) => uuidv7(minutesAfterStart(minutes).getTime());
 
-let fsmQueue: ReturnType<typeof fakeQueue>;
 let messageQueue: ReturnType<typeof fakeQueue>;
 let cookie: string;
 
-/** Dependencies with FSM switched off, as FSM_PROVIDER "none" makes them. */
-const withoutFsm = (overrides: Parameters<typeof fakeDependencies>[0] = {}): TestDependencies =>
-  fakeDependencies({ fsm: fsmSwitchedOff(), ...overrides });
-
-const bindings = () => ({ FSM_QUEUE: fsmQueue, MESSAGE_QUEUE: messageQueue }) as unknown as Partial<Env>;
+const bindings = () => ({ MESSAGE_QUEUE: messageQueue }) as unknown as Partial<Env>;
 
 /** A write from the technician's phone that reaches the API at `at`, as a phone replaying its outbox does. */
 const postAt = (at: Date, path: string, body: unknown, eventId: string) =>
   request(
-    appFor("local", withoutFsm({ now: () => at }), {}, "tech", PROVIDERS_FOR.ours),
+    appFor("local", fakeDependencies({ now: () => at }), {}, "tech"),
     path,
     {
       method: "POST",
@@ -72,9 +64,9 @@ const postAt = (at: Date, path: string, body: unknown, eventId: string) =>
   );
 
 /** A write from the console. */
-const opsPost = (path: string, body: unknown, deps: TestDependencies = withoutFsm()) =>
+const opsPost = (path: string, body: unknown, deps: TestDependencies = fakeDependencies()) =>
   request(
-    appFor("local", deps, {}, "ops", PROVIDERS_FOR.ours),
+    appFor("local", deps, {}, "ops"),
     path,
     {
       method: "POST",
@@ -84,8 +76,8 @@ const opsPost = (path: string, body: unknown, deps: TestDependencies = withoutFs
     bindings(),
   );
 
-/** A visit booked without FSM: its FSM ID is its own, and it has no work order and no FSM status. */
-async function bookedWithoutFsm(id: string, options: { start: string; type?: string; technician?: string }) {
+/** A visit booked for Imran, unless another technician is named. */
+async function booked(id: string, options: { start: string; type?: string; technician?: string }) {
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
        service_city, service_pincode, synced_at)
@@ -142,7 +134,6 @@ const writeStatesOf = async (id: string) =>
 
 beforeEach(async () => {
   await markDatabase();
-  fsmQueue = fakeQueue();
   messageQueue = fakeQueue();
   const at = NOW.toISOString();
   await env.DB.batch([
@@ -160,7 +151,7 @@ beforeEach(async () => {
        VALUES ('addr-1', ?1, ?2, 'House 7', 'Sector 65', 'Gurgaon', '122018', 28.398, 77.07, ?2)`,
     ).bind(PERSON, at),
   ]);
-  await bookedWithoutFsm(TODAY_JOB, { start: TODAY_START.toISOString() });
+  await booked(TODAY_JOB, { start: TODAY_START.toISOString() });
   cookie = `mm_tech=${await openTechnicianSession(env.DB, {
     technicianId: IMRAN,
     deviceId: "phone-abc-123",
@@ -169,7 +160,7 @@ beforeEach(async () => {
   })}`;
 });
 
-describe("a technician's steps, without FSM", () => {
+describe("a technician's steps", () => {
   it("move the visit on as each lands, and close it completed with the duration the phone measured", async () => {
     // Worked from 13:02 with no signal, and sent at 14:30 in one go.
     const sentAt = minutesAfterStart(90);
@@ -192,7 +183,6 @@ describe("a technician's steps, without FSM", () => {
       partial_reason: null,
     });
     expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
-    expect(fsmQueue.sent).toEqual([]);
   });
 
   it("close a partial job as terminated, with the technician's reason", async () => {
@@ -230,7 +220,6 @@ describe("a technician's steps, without FSM", () => {
       outcome: "no_show",
       partial_reason: null,
     });
-    expect(fsmQueue.sent).toEqual([]);
   });
 
   it("change nothing twice when the phone replays its outbox", async () => {
@@ -254,22 +243,21 @@ describe("a technician's steps, without FSM", () => {
     expect(await visitRowOf(TODAY_JOB)).toMatchObject({ ended_at: minutesAfterStart(80).toISOString() });
   });
 
-  it("keep the photographs to our own bucket, and send nothing to FSM", async () => {
+  it("write each step as it lands, the photographs' among them", async () => {
     const sentAt = minutesAfterStart(30);
     await work(sentAt, TODAY_JOB, UP_TO_THE_OUTCOME.slice(0, 3));
 
     expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
-    expect(fsmQueue.sent).toEqual([]);
   });
 });
 
 // The job closes as done at 14:30; anything sent after it would contradict the close.
-describe("a closed job, without FSM", () => {
+describe("a closed job", () => {
   const CLOSED_AT = minutesAfterStart(90);
   const minutesAfterClose = (minutes: number) => new Date(CLOSED_AT.getTime() + minutes * 60_000);
   const stepPath = (step: string) => `/api/tech/jobs/${TODAY_JOB}/${step}`;
 
-  const techAppAt = (at: Date) => appFor("local", withoutFsm({ now: () => at }), {}, "tech", PROVIDERS_FOR.ours);
+  const techAppAt = (at: Date) => appFor("local", fakeDependencies({ now: () => at }), {}, "tech");
 
   const askForUploadLinkAt = (at: Date) =>
     request(
@@ -379,7 +367,7 @@ describe("a closed job, without FSM", () => {
       ended_at: minutesAfterStart(80).toISOString(),
       reason: "Imran's phone was lost; the client confirmed the visit by phone",
     };
-    const closed = await opsPost(`/api/visits/${TODAY_JOB}/close`, byHand, withoutFsm({ now: () => CLOSED_AT }));
+    const closed = await opsPost(`/api/visits/${TODAY_JOB}/close`, byHand, fakeDependencies({ now: () => CLOSED_AT }));
     expect(closed.status).toBe(200);
 
     await refusedAsClosed(await postAt(minutesAfterClose(30), stepPath("photos"), { phase: "before" }, uuidv7At(10)));
@@ -388,7 +376,7 @@ describe("a closed job, without FSM", () => {
 });
 
 // A replacement: the old piece comes off, failed, and a new one goes on.
-describe("the piece, without FSM", () => {
+describe("the piece", () => {
   const REPLACEMENT = OTHER_JOB;
   const UP_TO_THE_PIECE = [
     ["checkin", AT_THE_DOOR, 2],
@@ -399,7 +387,7 @@ describe("the piece, without FSM", () => {
   ] as const;
 
   beforeEach(async () => {
-    await bookedWithoutFsm(REPLACEMENT, { start: TODAY_START.toISOString(), type: "replacement" });
+    await booked(REPLACEMENT, { start: TODAY_START.toISOString(), type: "replacement" });
     await env.DB.prepare("DELETE FROM appointments WHERE id = ?1").bind(TODAY_JOB).run();
     await env.DB.prepare(
       `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, fitted_at, replacement_due_at, synced_at)
@@ -463,7 +451,6 @@ describe("the piece, without FSM", () => {
       },
       expect.objectContaining({ piece_code: "MM-STD-9999-A", person_id: NEIGHBOUR }),
     ]);
-    expect(fsmQueue.sent).toEqual([]);
   });
 
   it("records a piece that failed on the client's head, and fits nothing", async () => {
@@ -536,7 +523,7 @@ describe("the piece, without FSM", () => {
   });
 });
 
-describe("dispatch, without FSM", () => {
+describe("dispatch", () => {
   /** Today's job as a dispatch board loaded now shows it, which every move sends. */
   const AS_THE_BOARD_SHOWS_IT = { expected_technician_id: IMRAN, expected_starts_at: TODAY_START.toISOString() };
 
@@ -583,7 +570,7 @@ describe("dispatch, without FSM", () => {
   });
 
   it("refuses a move that would give one technician two jobs in one window, and writes nothing", async () => {
-    await bookedWithoutFsm(OTHER_JOB, { start: TODAY_START.toISOString(), technician: SAMEER });
+    await booked(OTHER_JOB, { start: TODAY_START.toISOString(), technician: SAMEER });
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
@@ -610,7 +597,7 @@ describe("dispatch, without FSM", () => {
 
     const outcome = await moveJob(
       movedMeanwhile as D1Database,
-      { fsm: fsmSwitchedOff(), labelAsTest: true, record: "ours" },
+      {},
       {
         appointmentId: TODAY_JOB,
         date: "2026-09-22",
@@ -645,7 +632,7 @@ describe("dispatch, without FSM", () => {
 
     const outcome = await moveJob(
       startedMeanwhile as D1Database,
-      { fsm: fsmSwitchedOff(), labelAsTest: true, record: "ours" },
+      {},
       {
         appointmentId: TODAY_JOB,
         date: "2026-09-22",
@@ -676,7 +663,7 @@ describe("dispatch, without FSM", () => {
   });
 });
 
-describe("an erasure, without FSM", () => {
+describe("an erasure", () => {
   let books: StubBooks;
 
   beforeEach(async () => {
@@ -695,7 +682,7 @@ describe("an erasure, without FSM", () => {
     env.DB.prepare("SELECT books_erased_at, books_erasure_attempts FROM people WHERE id = ?1").bind(personId).first();
 
   it("reaches the client's Books customer, once", async () => {
-    const deps = withoutFsm({ books });
+    const deps = fakeDependencies({ books });
 
     expect(await pass(deps)).toBe(1);
     expect(await pass(deps)).toBe(0);
@@ -705,7 +692,7 @@ describe("an erasure, without FSM", () => {
   });
 
   it("is tried again on the next pass when Books fails, and tells ops once it stops trying", async () => {
-    const deps = withoutFsm({ books });
+    const deps = fakeDependencies({ books });
     await env.DB.prepare("UPDATE people SET books_erasure_attempts = 8 WHERE id = ?1").bind(PERSON).run();
 
     books.failNext("eraseCustomer", "Books said 500");
@@ -730,7 +717,7 @@ describe("an erasure, without FSM", () => {
     )
       .bind(PERSON, NOW.toISOString())
       .run();
-    const deps = withoutFsm({ books });
+    const deps = fakeDependencies({ books });
 
     expect(await pass(deps)).toBe(0);
 
@@ -750,7 +737,7 @@ describe("an erasure, without FSM", () => {
       env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(PERSON, twoDaysAgo),
     ]);
 
-    expect(await pass(withoutFsm({ books }))).toBe(1);
+    expect(await pass(fakeDependencies({ books }))).toBe(1);
   });
 
   it("leaves a client nobody has erased, and one with no Books customer", async () => {
@@ -759,26 +746,25 @@ describe("an erasure, without FSM", () => {
       .run();
     await env.DB.prepare("UPDATE people SET books_customer_id = NULL WHERE id = ?1").bind(PERSON).run();
 
-    expect(await pass(withoutFsm({ books }))).toBe(0);
+    expect(await pass(fakeDependencies({ books }))).toBe(0);
     expect(books.made.erased).toEqual([]);
   });
 
   it("stops when the run's calls are spent, and the next run finishes", async () => {
-    const deps = withoutFsm({ books });
+    const deps = fakeDependencies({ books });
 
     expect(await pass(deps, createCallBudget(2))).toBe(0);
     expect(books.made.erased).toEqual([]);
     expect(await pass(deps)).toBe(1);
   });
 
-  it("is the cron's own job, which runs with FSM switched off", async () => {
+  it("is the cron's own job", async () => {
     const job = CRON_JOBS.filter((each) => each.name === "books_erasures");
-    const config = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, ...PROVIDERS_FOR.ours } };
 
     const outcomes = await runCronJobs(job, {
-      env: { ...env, FSM_QUEUE: fsmQueue, MESSAGE_QUEUE: messageQueue },
-      deps: withoutFsm({ books }),
-      config,
+      env: { ...env, MESSAGE_QUEUE: messageQueue },
+      deps: fakeDependencies({ books }),
+      config: LOCAL_CONFIG,
       log: createLogger(),
     });
 

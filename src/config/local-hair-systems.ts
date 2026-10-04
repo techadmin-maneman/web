@@ -1,6 +1,5 @@
-// The hair systems a local database sells first fits as: scripts/seed-local.ts adds each as a first-fit service, and
-// the local stub FSM holds an item for each (src/providers/fsm.ts), so a local booking of one reaches it. Every name
-// and price is made up; prices are in paise before GST.
+// The hair systems a local database sells first fits as: scripts/seed-local.ts adds each as a first-fit service. Every
+// name and price is made up; prices are in paise before GST.
 
 export const LOCAL_HAIR_SYSTEMS = [
   { tier: "essential", name: "Mane Man Essential", price: 2_500_000 },

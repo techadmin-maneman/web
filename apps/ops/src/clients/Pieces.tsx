@@ -1,6 +1,6 @@
 // Board B1: every piece the client has been fitted with, in the board's own six
-// columns. FSM owns the asset, and the route reads it afresh before it answers,
-// so nothing here is edited (src/routes/ops-field.ts). Above them, the client's
+// columns. A piece is recorded by the technician's phone, so nothing here is
+// edited (src/routes/ops-field.ts). Above them, the client's
 // hair profile, which the board does not draw (./HairProfile.tsx).
 //
 // The board sets the live piece's replacement date in brass and leaves the rest

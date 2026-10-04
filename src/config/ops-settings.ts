@@ -13,7 +13,6 @@
 // issued depends on what was true then; the ADR gives the split.
 
 import { CHECKIN_RADIUS_M } from "../policy/check-in.ts";
-import { FSM_RETRY, FSM_RETRY_KEYS } from "../policy/held-bookings.ts";
 import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "../policy/job-visibility.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAY_KEYS, NEXT_VISIT_DAYS } from "../policy/next-visit.ts";
 import { chargesFor, FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "../policy/moving-a-visit.ts";
@@ -65,7 +64,7 @@ export interface NumberSetting extends Described {
   /**
    * null for one number. A list of keys where the set is closed, as the visit
    * types and the task groups are. "open" where ops name the keys themselves:
-   * a piece base is whatever FSM's part item is called, so the set cannot be
+   * a piece base is whatever the technician records it as, so the set cannot be
    * known here, and the key `default` then stands for every base without one.
    */
   readonly keys: readonly string[] | "open" | null;
@@ -223,22 +222,6 @@ export const OPS_SETTINGS = [
     fallback: PAYMENT_HOLD,
   },
   {
-    // The owner's ruling of 27 September 2026 on a booking FSM refuses (docs/open-points.md, item 141).
-    name: "fsm_retry",
-    title: "Trying again a booking FSM refused",
-    note: "How often, and for how long, a booking FSM refused is tried again before it waits on Tasks.",
-    unit: "hours",
-    min: 1,
-    max: 168,
-    keys: FSM_RETRY_KEYS,
-    bounds: {
-      every: { min: 1, max: 12 },
-      // A week at the most: a booking FSM has refused that long needs ops, not another try.
-      for: { min: 1, max: 168 },
-    },
-    fallback: FSM_RETRY,
-  },
-  {
     // The owner's ruling of 30 September 2026 (docs/open-points.md, item 60; ADR 0025, item 85).
     name: "dispute_window_days",
     title: "How long a no-show charge can be disputed",
@@ -313,7 +296,7 @@ export const MAX_OPEN_KEYS = 32;
  * test/node/ops-settings.test.ts holds the register to it.
  */
 export const MAX_SNAPSHOT_BYTES = 16 * 1024;
-/** A base names itself; this is only long enough to hold FSM's own part names. */
+/** A base names itself; this is long enough for any base's name. */
 const KEY = /^[A-Za-z0-9][A-Za-z0-9 _.-]{0,63}$/;
 
 /** What one figure may be: its key's own bounds where it has them, else the input's, and what it counts. */

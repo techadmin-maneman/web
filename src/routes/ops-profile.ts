@@ -12,7 +12,6 @@ import type { Context } from "hono";
 import { afterResponse } from "../http/after-response.ts";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { fieldRecord } from "../config/field-record.ts";
 import { type AuditAction, type AuditEntry } from "../domain/audit.ts";
 import { decideDeletion, deletionDoneMessage, deletionsWaiting, type ErasedContact } from "../domain/deletion.ts";
 import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.ts";
@@ -244,7 +243,6 @@ export function registerOpsProfile(app: App): void {
       staff: staffOf(c).id,
       reason,
       audit: decisionAudit(c, "deletion.decide", { kind: "deletion", id }, decision),
-      fsmConnected: fieldRecord(c.var.config.providers) === "fsm",
       payments: c.var.deps.payments,
       alertOnce: c.var.deps.alertOnce,
       requestId: c.var.requestId,

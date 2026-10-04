@@ -134,7 +134,7 @@ export const VISIT_TYPES = {
   service: "Service visit",
   replacement: "Replacement piece",
 } as const;
-// PLACEHOLDER: a visit whose FSM service item is none of the four.
+// PLACEHOLDER: a visit of none of the four kinds.
 export const OTHER_VISIT = "Visit";
 // PLACEHOLDER: a consultation and fit in one visit, as the site and the technician's phone call it.
 export const ONE_VISIT = "Consultation and fit";
@@ -179,7 +179,7 @@ const freeVisitsTile = {
   tonight: "tonight",
 };
 
-/** The booking sheet's words for a paid visit still being written to FSM, which Home repeats while it waits. */
+/** The booking sheet's words for a paid visit still being booked, which Home repeats while it waits. */
 const PAID_IN = "Your payment is in. We are booking your visit.";
 const TOLD_WHEN_BOOKED = "We will message you on WhatsApp when the visit is booked.";
 
@@ -222,7 +222,7 @@ export const home = {
     invoice: (what: string, date: string) => `The invoice for your ${what.toLowerCase()} on ${date} is ready.`,
     openInvoice: "Open the invoice",
   },
-  /** A visit FSM has not closed, once it has begun (LIFE-03). PLACEHOLDER: the design draws neither. */
+  /** A visit not yet closed, once it has begun (LIFE-03). PLACEHOLDER: the design draws neither. */
   stages: { in_progress: "Today · in progress", done: "Done · notes on the way", closing: "Wrapping up" },
   next: {
     label: "Your next visit",
@@ -248,8 +248,8 @@ export const home = {
     ],
   },
   /**
-   * A visit paid for, or booked free, that FSM does not have yet (docs/decisions/0095-a-booking-fsm-refuses-is-held.md):
-   * the booking sheet's own words for a booking being written. PLACEHOLDER: the free line, and the design draws none.
+   * A visit paid for, or booked free, that is not booked yet (docs/decisions/0068-a-paid-hold-is-kept.md): the booking
+   * sheet's own words for a booking being written. PLACEHOLDER: the free line, and the design draws none.
    */
   beingBooked: {
     paid: PAID_IN,
@@ -300,9 +300,7 @@ export const visits = {
    * one sentence about a replacement, "Your replacement piece is due in
    * March.", and that sentence is kept word for word.
    *
-   * A month and never a day: `syncPieces` works the date out afresh from FSM's
-   * install date on every sync, so a day shown here could move under the client
-   * who read it (ADR 0059). Nothing here is shown at all until there is
+   * A month and never a day (ADR 0059). Nothing here is shown at all until there is
    * something true to say.
    */
   record: {
@@ -311,7 +309,7 @@ export const visits = {
     /** Past its month, the same fact in the tense it is now true in. */
     overdue: (month: string) => `Your replacement piece was due in ${month}.`,
     rows: { firstFit: "First fit", services: "Service visits", replacements: "Replacements", spend: "Total paid" },
-    /** A client fitted before FSM held their visits has no first fit to name, which is not the same as none. */
+    /** A client fitted before their visits were recorded has no first fit to name, which is not the same as none. */
     noFirstFit: "Not on record",
     /** Beside the total, so a figure that includes tax is not read as one that does not. */
     gst: "GST included",

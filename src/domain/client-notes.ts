@@ -4,15 +4,9 @@
 // technician reads it on the client's card, which opens the day before
 // (src/domain/tech-jobs.ts). A visit already under way still takes one; one
 // closed, cancelled or gone does not.
-//
-// It is also written to the visit's appointment in FSM, for ops, by the
-// fsm-sync queue (docs/decisions/0099-the-clients-note-in-fsm.md).
 
 /** A note, not a letter: what the technician needs at the door. */
 export const CLIENT_NOTE_MAX_CHARS = 500;
-
-/** The alert that the note did not reach FSM, told once and cleared by a later note that does. */
-export const clientNoteAlertKey = (visitId: string): string => `client_note_fsm:${visitId}`;
 
 export type NoteSaved =
   | { readonly kind: "saved"; readonly note: string; readonly notedAt: string }

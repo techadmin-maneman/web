@@ -2,11 +2,10 @@
 // (docs/decisions/0034-clash-check.md, 0035-window-slot-map.md).
 //
 // A technician's day is eight half-slots. What takes them: slots held
-// (slot_claims), live visits in the mirror, whether ops booked them in FSM or a
-// hold became one, and leave ops recorded (ADR 0062). A technician holds one
-// live job per window. A hold writes its claims in one batch, and the claims'
-// key stops two holds taking the same time; once a hold is booked, its visit in
-// the mirror takes the time instead. A visit being moved keeps its technician,
+// (slot_claims), live visits, and leave ops recorded (ADR 0062). A technician
+// holds one live job per window. A hold writes its claims in one batch, and the
+// claims' key stops two holds taking the same time; once a hold is booked, its
+// visit takes the time instead. A visit being moved keeps its technician,
 // and its own time does not count against the move
 // (docs/decisions/0046-moving-and-cancelling.md).
 //
@@ -16,17 +15,15 @@
 // (docs/decisions/0068-a-paid-hold-is-kept.md). Nobody's hold lets a paid one
 // go. The days ops black out (visit_blackouts) are not offered at all.
 //
-// A move on the dispatch board claims its new time the same way while FSM is
-// written, and the claims count here for as long as the move can still finish
-// (docs/decisions/0069-dispatch-under-concurrency.md).
+// A move on the dispatch board claims its new time the same way, in the batch
+// that moves the visit (docs/decisions/0069-dispatch-under-concurrency.md).
 //
 // A visit holds the half-slots its length needs (src/policy/visit-length.ts):
 // a hold, its service's length as it was made; a visit already booked, the
-// longer of its service's length and the time FSM books it for
+// longer of its service's length and its booked window
 // (docs/decisions/0085-services-ops-can-edit.md).
 
 import {
-  MOVE_CLAIM_SECONDS,
   PAYMENT_GRACE_SECONDS,
   UNITS_PER_DAY,
   VISIT_BLOCKS,
@@ -86,7 +83,7 @@ export function claimsOf(start: number, units: number, window: BookingWindow): s
   return [...covered, `window:${window}`];
 }
 
-/** A visit already booked, as the mirror holds it: its kind, its service's length where the table has it, its times. */
+/** A visit already booked: its kind, its service's length where the table has it, its times. */
 export interface BookedVisit {
   readonly type: VisitType | null;
   /** The length of the service it is, from the services table; null where no service is it. */
@@ -97,7 +94,7 @@ export interface BookedVisit {
 
 /**
  * How long a visit already booked takes (src/policy/visit-length.ts): the longer of its service's length, or its
- * kind's where no service is it, and the time FSM books it for, where FSM gives one.
+ * kind's where no service is it, and its booked window, where it has one.
  */
 export function bookedMinutes(visit: BookedVisit): number {
   const service = visit.service_minutes ?? VISIT_BLOCKS[visit.type ?? "service"].minutes;
@@ -117,7 +114,7 @@ async function techniciansFor(db: D1Database, moving: Moving | null): Promise<Te
   return moving === null ? technicians : technicians.filter((technician) => technician.id === moving.technicianId);
 }
 
-/** Technicians FSM lists as active. Whether one is away on a given day is `occupancy`'s answer, not this one's. */
+/** Technicians switched on. Whether one is away on a given day is `occupancy`'s answer, not this one's. */
 export async function activeTechnicians(db: D1Database): Promise<Technician[]> {
   const { results } = await db
     .prepare("SELECT id, name, initials FROM technicians WHERE active = 1 ORDER BY name")
@@ -156,9 +153,6 @@ export function graceEndOf(hold: { readonly expires_at: string; readonly grace_s
   return new Date(Date.parse(hold.expires_at) + graceSeconds * 1000);
 }
 
-/** A dispatch move opened before this, and still open, never finished. */
-export const movesOpenSince = (now: Date): string => new Date(now.getTime() - MOVE_CLAIM_SECONDS * 1000).toISOString();
-
 /**
  * What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. The visit
  * `exceptVisitId` and the claims of the hold `exceptHoldId` are left out.
@@ -180,17 +174,14 @@ export async function occupancy(
   };
 
   const [claims, leave, visits, schedule] = await Promise.all([
-    // A hold's claims, and a dispatch move's while it can still finish.
+    // A hold's claims. A dispatch move's claims are let go in the batch that writes it.
     db
       .prepare(
         `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
          WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR ${graceEnds("h")} > ?3)
-           AND h.id IS NOT ?5
-         UNION ALL
-         SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN dispatch_moves m ON m.id = c.move_id
-         WHERE c.date BETWEEN ?1 AND ?2 AND m.fsm_write_state = 'pending' AND m.created_at > ?4`,
+           AND h.id IS NOT ?4`,
       )
-      .bind(from, to, now.toISOString(), movesOpenSince(now), exceptHoldId)
+      .bind(from, to, now.toISOString(), exceptHoldId)
       .all<{ technician_id: string; date: string; claim: string }>(),
     db
       .prepare(
@@ -199,7 +190,7 @@ export async function occupancy(
       )
       .bind(from, to)
       .all<{ technician_id: string; from_date: string; to_date: string }>(),
-    // A visit is the standard tier's where the mirror knows no other (migration 0050).
+    // A visit is the standard tier's where it names no other (migration 0050).
     db
       .prepare(
         `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes FROM appointments a
@@ -291,7 +282,7 @@ export interface LiveVisit {
 }
 
 /**
- * The client's visit of this kind still to happen: booked, or paid for and on its way to FSM, other than the
+ * The client's visit of this kind still to happen: booked, or paid for and still to be booked, other than the
  * hold `exceptHoldId`. Null when there is none, and always for a kind a client may have several of. A consultation
  * and fit in one visit is the client's consultation still to happen as well as their first fit
  * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
@@ -668,7 +659,7 @@ export async function retakeSlot(db: D1Database, hold: HeldTime, now: Date): Pro
 }
 
 /**
- * When a visit starting in a half-slot starts and ends, as FSM books it: from the half-slot's start by the times in
+ * When a visit starting in a half-slot starts and ends: from the half-slot's start by the times in
  * force on its day, for its length.
  */
 export function visitTimes(

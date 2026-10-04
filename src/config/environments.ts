@@ -13,22 +13,11 @@ export function isEnvironmentName(value: unknown): value is EnvironmentName {
 }
 
 /**
- * Whether a price ops set is written to FSM's catalogue (docs/decisions/0073-prices-from-the-price-book.md).
- * Off until the owner switches it on in production, and never on in staging, whose FSM is the owner's real org
- * and whose price book holds placeholders. A constant here rather than a Worker var: mm-api is at the Workers
- * Free limit of 64 variables and secrets (docs/decisions/0009-stay-inside-cloudflare-free-tier.md).
- */
-export const FSM_CATALOGUE_PUSH: Readonly<Record<EnvironmentName, boolean>> = {
-  local: false,
-  staging: false,
-  production: false,
-};
-
-/**
  * Whether the hourly item check makes and writes Books' items from the console's services and the price book
- * (src/domain/books-items.ts), where FSM's catalogue no longer is. Staging and production share one Books
- * organisation, so only one writes: staging until production takes over in the release that launches it, which
- * switches staging off. A constant, as FSM_CATALOGUE_PUSH is.
+ * (src/domain/books-items.ts). Staging and production share one Books organisation, so only one writes: staging until
+ * production takes over in the release that launches it, which switches staging off. A constant rather than a Worker
+ * var: mm-api is at the Workers Free limit of 64 variables and secrets
+ * (docs/decisions/0009-stay-inside-cloudflare-free-tier.md).
  */
 export const BOOKS_ITEM_PUSH: Readonly<Record<EnvironmentName, boolean>> = {
   local: false,
@@ -130,10 +119,8 @@ export const PROVIDER_VARS = {
   // Login codes by SMS need a DLT-registered provider. Until one is chosen, "none": the app offers WhatsApp only
   // (docs/decisions/0030-one-time-codes.md). "none" is not a stub, so production may hold it.
   SMS_PROVIDER: ["none", "stub"],
-  // Zoho FSM, the system of record for field work, and Zoho Books, for invoices and receipts
-  // (docs/decisions/0032-fsm-mirror.md). "none" until the client surface is switched on where it runs, as
+  // Zoho Books, for customers, invoices and receipts. "none" until the client surface is switched on where it runs, as
   // production is until Phase 2's release.
-  FSM_PROVIDER: ["zoho", "stub", "none"],
   BOOKS_PROVIDER: ["zoho", "stub", "none"],
   // Razorpay, for payments (docs/decisions/0044-payments-mirror.md): test keys on staging, none in production until
   // Phase 2's release.

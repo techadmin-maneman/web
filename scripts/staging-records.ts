@@ -1,11 +1,10 @@
-// Lists every record staging wrote into the owner's real Zoho org, in Books, the CRM and, when its file is given, FSM,
-// for the owner to review; a second run deletes what the list keeps, and clears staging's database's links to what is
+// Lists every record staging wrote into the owner's real Zoho org, in Books and the CRM, for the owner to review; a second run deletes what the list keeps, and clears staging's database's links to what is
 // gone (docs/runbook.md, "Staging's records in the org").
 //
 //   node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/staging-records.ts                  lists
 //   node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/staging-records.ts --delete <file>   deletes
 //
-// Add --env-file=.env.fsm-scripts to take in FSM's records as well. The files hold each client's ID, secret and hosts,
+// The files hold each client's ID, secret and hosts,
 // ZOHO_BOOKS_ORG_ID, and the scripts' own refresh tokens (scripts/lib/zoho-script-token.ts). Staging's database is read
 // and written with wrangler. No secret is printed. Nothing is deleted without --delete, and then only a record the
 // owner's list keeps that the org and staging's database, read again, still hold as staging's.
@@ -52,7 +51,7 @@ function required(name: string): string {
 }
 
 /** What each client's variables start with: its ID, secret and hosts. */
-const PREFIXES: Readonly<Record<ZohoClient, string>> = { books: "ZOHO_BOOKS_", crm: "ZOHO_", fsm: "ZOHO_FSM_" };
+const PREFIXES: Readonly<Record<ZohoClient, string>> = { books: "ZOHO_BOOKS_", crm: "ZOHO_" };
 
 async function accessToken(client: ZohoClient): Promise<string> {
   const prefix = PREFIXES[client];
@@ -73,13 +72,11 @@ async function accessToken(client: ZohoClient): Promise<string> {
   return body.access_token;
 }
 
-const readsFsm = optional("ZOHO_FSM_API_HOST") !== "";
 const booksHost = required("ZOHO_BOOKS_API_HOST");
 const booksOrgId = required("ZOHO_BOOKS_ORG_ID");
 const crmHost = required("ZOHO_API_HOST");
 const booksToken = await accessToken("books");
 const crmToken = await accessToken("crm");
-const fsmToken = readsFsm ? await accessToken("fsm") : "";
 
 type Row = Record<string, unknown>;
 
@@ -102,10 +99,6 @@ function books(method: string, path: string): Promise<Answer> {
 
 function crm(method: string, path: string): Promise<Answer> {
   return send(method, `https://${crmHost}/crm/v8${path}`, crmToken);
-}
-
-function fsm(method: string, path: string): Promise<Answer> {
-  return send(method, `https://${required("ZOHO_FSM_API_HOST")}/fsm/v1${path}`, fsmToken);
 }
 
 /** Every record of a Books list, a page of 200 at a time, under the answer's `key`. */
@@ -135,18 +128,6 @@ async function crmRows(module: "Leads" | "Contacts"): Promise<Row[] | null> {
   }
 }
 
-/** Every record of an FSM module, a page of 200 at a time; FSM answers 204 for none. */
-async function fsmRows(module: string): Promise<Row[]> {
-  const rows: Row[] = [];
-  for (let page = 1; ; page += 1) {
-    const answer = await fsm("GET", `/${module}?page=${String(page)}&per_page=200`);
-    if (answer.status === 204) return rows;
-    if (answer.status !== 200) throw new Error(`FSM ${module} answered ${String(answer.status)}`);
-    rows.push(...((answer.json?.data as Row[] | undefined) ?? []));
-    if ((answer.json?.info as { more_records?: boolean } | undefined)?.more_records !== true) return rows;
-  }
-}
-
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
 const idOf = (row: Row, key: string): string => text(row[key]);
 
@@ -154,8 +135,6 @@ interface Found {
   readonly records: StagingRecord[];
   /** Records that look like tests but carry neither mark: shown, never deleted. */
   readonly lookAlikes: string[];
-  /** FSM's invoices of staging's work orders, which only FSM's own screen deletes. */
-  readonly byHand: string[];
   /** IDs staging's database keeps of records the org no longer holds. */
   readonly gone: KnownId[];
   /** The CRM modules the scripts' CRM token may not read. */
@@ -197,29 +176,6 @@ async function readCrm(found: Found): Promise<void> {
       const name = text(row.Full_Name);
       judge(found, `crm/${module}`, idOf(row, "id"), name, isStagingMarked(name));
     }
-  }
-}
-
-/** FSM's records of staging's. FSM's invoices of staging's work orders are listed apart: its API deletes none. */
-async function readFsm(found: Found): Promise<void> {
-  for (const module of ["Service_Appointments", "Work_Orders", "Requests"] as const) {
-    for (const row of await fsmRows(module)) {
-      const summary = text(row.Summary);
-      judge(found, `fsm/${module}`, idOf(row, "id"), summary, isStagingLabelled(summary));
-    }
-  }
-  const workOrders = new Set(
-    found.records.filter((record) => record.kind === "fsm/Work_Orders").map((record) => record.id),
-  );
-  for (const row of await fsmRows("Invoices")) {
-    const workOrder = (row.Work_Order as { id?: string } | null | undefined)?.id;
-    if (workOrder !== undefined && workOrders.has(workOrder)) {
-      found.byHand.push(`${idOf(row, "id")} ${text(row.Name)}, of a staging work order`);
-    }
-  }
-  for (const row of await fsmRows("Contacts")) {
-    const name = text(row.Full_Name);
-    judge(found, "fsm/Contacts", idOf(row, "id"), name, isStagingMarked(name));
   }
 }
 
@@ -281,8 +237,7 @@ async function readRefunds(found: Found): Promise<void> {
 }
 
 async function stagingRecords(): Promise<Found> {
-  const found: Found = { records: [], lookAlikes: [], byHand: [], gone: [], unreadable: [] };
-  if (readsFsm) await readFsm(found);
+  const found: Found = { records: [], lookAlikes: [], gone: [], unreadable: [] };
   await readBooks(found);
   await readCrm(found);
   await readKnown(found);
@@ -307,19 +262,8 @@ async function deleteFromCrm(record: StagingRecord): Promise<Outcome> {
   return crmDeleteOutcome(answer.status, answer.json);
 }
 
-async function deleteFromFsm(record: StagingRecord): Promise<Outcome> {
-  const answer = await fsm("DELETE", `/${record.kind.slice("fsm/".length)}/${record.id}`);
-  if (answer.status === 404) return "already gone";
-  // FSM answers 200 naming, under invalid_records, what it would not delete and why.
-  const refused = (answer.json?.restricted_to_delete as { invalid_records?: Row } | undefined)?.invalid_records;
-  if (refused !== undefined && Object.keys(refused).length > 0) return `refused: ${JSON.stringify(refused)}`;
-  if (answer.status >= 200 && answer.status < 300) return "deleted";
-  return `refused: ${String(answer.status)} ${JSON.stringify(answer.json)}`;
-}
-
 function deleteOne(record: StagingRecord): Promise<Outcome> {
   if (record.kind.startsWith("crm/")) return deleteFromCrm(record);
-  if (record.kind.startsWith("fsm/")) return deleteFromFsm(record);
   return deleteFromBooks(record);
 }
 
@@ -331,17 +275,12 @@ function printList(found: Found): void {
   writeFileSync(listed, `${JSON.stringify({ records: found.records }, null, 2)}\n`);
   for (const record of found.records) console.log(line(record));
   console.log(`\n${String(found.records.length)} records staging wrote, written to ${listed}.`);
-  if (!readsFsm) console.log("FSM was not read: add --env-file=.env.fsm-scripts to take in its records.");
   for (const module of found.unreadable) {
     console.log(
       `\nThe CRM's ${module} could not be read: the scripts' CRM token lacks ` +
         `ZohoCRM.modules.${module.toLowerCase()}.READ (runbook, step 8.7). Until it has it, delete those named ` +
         `"Staging test" or "Load test" in the CRM's ${module} screen.`,
     );
-  }
-  if (found.byHand.length > 0) {
-    console.log("\nFSM's API deletes no invoice. Delete these in FSM's Invoices screen, after the run below:");
-    for (const invoice of found.byHand) console.log(`  ${invoice}`);
   }
   if (found.gone.length > 0) {
     console.log(

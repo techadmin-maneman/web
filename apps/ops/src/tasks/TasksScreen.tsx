@@ -2,8 +2,8 @@
 // each is and how long it has left. Nothing is decided here. A task is a row in a queue the
 // database already keeps — a consultation asked for, a held grant, an
 // undecided no-show, a disputed charge, a number change, an erasure, a grievance, a piece past its
-// replacement date, an invoice still a draft, an erasure FSM would not finish,
-// a moved visit whose client has not heard of it, a booking FSM refused, a visit left partly done, a
+// replacement date, an invoice still a draft, a moved visit whose client has not
+// heard of it, a visit left partly done, a
 // visit to come with no address, a job on its technician's day off, a client
 // past their next service with nothing booked, a first fit asked for and not
 // booked, a one visit's payment still owed — so it leaves the list when that row
@@ -78,12 +78,6 @@ function linkOwed(word: string): "sent" | "unsent" | "closed" {
 function subOf(group: Group, task: Task, now: Date): string {
   const copy = tasks.subs;
   if (group === "untold_move") return untoldMoveOf(task.detail);
-  if (group === "held_booking") {
-    // The visit's kind, its day and its window, as the booking held them.
-    const [type = "", day = "", when = ""] = task.detail?.split(" ") ?? [];
-    if (day === "") return tasks.unknown;
-    return copy.held_booking(dispatch.typeNames[type] ?? type, shortDate(day), dispatch.windows[when] ?? when);
-  }
   if (group === "leave_conflict") {
     // The job's start, then the technician who is away that day.
     const [start = "", ...technician] = task.detail?.split(" ") ?? [];
@@ -136,7 +130,6 @@ function subOf(group: Group, task: Task, now: Date): string {
     if (amount === "") return tasks.unknown;
     return copy.payment_owed(product.join(" "), rupees(Number(amount)), linkOwed(link));
   }
-  if (group === "erasure_unfinished") return copy.erasure_unfinished(task.detail ?? tasks.unknown);
   if (group === "grievance") return copy.grievance;
   return group === "number_change" ? copy.number_change : copy.erasure_request;
 }
@@ -149,13 +142,11 @@ function disputedTook(kept: string | null): string {
 
 /**
  * The first line of a task with no client to name: an erased client has no
- * name left, so the day they were erased heads an erasure FSM would not
- * finish, the visit heads a no-show, and a disputed charge says only that.
+ * name left, so the visit heads a no-show, and a disputed charge says only that.
  */
 function unnamedSubject(group: Group, task: Task): string {
   if (group === "no_show_dispute") return tasks.disputeErased;
-  const day = shortDate(indiaDate(task.since));
-  return group === "erasure_unfinished" ? tasks.erased(day) : tasks.visit(day);
+  return tasks.visit(shortDate(indiaDate(task.since)));
 }
 
 /** "priya.sharma@maneman.in" reads "Priya", as the board names an owner in ops by their first name. */

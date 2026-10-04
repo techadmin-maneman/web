@@ -49,10 +49,8 @@ describe("a reviewed list", () => {
     record("crm/Leads", "lead"),
     record("books/contacts", "b-contact"),
     record("crm/Contacts", "c-contact"),
-    record("fsm/Contacts", "f-contact"),
-    record("fsm/Service_Appointments", "appointment"),
+    record("books/invoices", "invoice"),
     record("books/customerpayments", "payment"),
-    record("fsm/Work_Orders", "work-order"),
     record("books/refunds", "refund"),
   ];
 
@@ -60,31 +58,31 @@ describe("a reviewed list", () => {
     expect(toDelete(reviewed, reviewed).map((each) => each.id)).toEqual([
       "refund",
       "payment",
-      "appointment",
-      "work-order",
-      "f-contact",
+      "invoice",
       "b-contact",
       "c-contact",
       "lead",
     ]);
-    expect(DELETE_ORDER.indexOf("fsm/Contacts")).toBeGreaterThan(DELETE_ORDER.indexOf("fsm/Requests"));
+    expect(DELETE_ORDER.indexOf("crm/Leads")).toBe(DELETE_ORDER.length - 1);
   });
 
   it("deletes only what the org still holds as staging's, and nothing the owner took out", () => {
-    const foundNow = [record("fsm/Contacts", "f-contact"), record("crm/Leads", "lead"), record("fsm/Contacts", "kept")];
-    expect(toDelete(reviewed, foundNow).map((each) => each.id)).toEqual(["f-contact", "lead"]);
+    const foundNow = [
+      record("books/invoices", "invoice"),
+      record("crm/Leads", "lead"),
+      record("books/invoices", "kept"),
+    ];
+    expect(toDelete(reviewed, foundNow).map((each) => each.id)).toEqual(["invoice", "lead"]);
     expect(leftAlone(reviewed, foundNow).map((each) => each.id)).toEqual([
       "b-contact",
       "c-contact",
-      "appointment",
       "payment",
-      "work-order",
       "refund",
     ]);
   });
 
   it("matches a record by where it is as well as its ID", () => {
-    expect(toDelete([record("books/contacts", "same")], [record("fsm/Contacts", "same")])).toEqual([]);
+    expect(toDelete([record("books/contacts", "same")], [record("books/invoices", "same")])).toEqual([]);
   });
 });
 
@@ -188,7 +186,6 @@ describe("clearing the links to records now gone", () => {
       unlinkStatements([
         { kind: "books/customerpayments", id: "payment-2" },
         { kind: "books/refunds", id: "refund-1" },
-        { kind: "fsm/Contacts", id: "contact-1" },
       ]),
     ).toEqual([]);
   });

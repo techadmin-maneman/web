@@ -5,9 +5,9 @@
 //   GET  /api/tech/me           who is signed in, and on which phone
 //
 // "Mobile number plus a one-time code, the same flow as clients but a separate
-// role. A technician is recognised only if FSM lists him as an active field
-// technician." A number FSM does not list gets the same answer as one it does,
-// and no code opens it.
+// role." A technician is recognised only while ops have him switched on. A
+// number that is not his gets the same answer as one that is, and no code
+// opens it.
 //
 // The phone sends its own ID, which it keeps in its storage: the session is
 // bound to it, so ops can revoke that phone and its cached jobs go with it.
@@ -19,10 +19,8 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { LoginSettings } from "../config/settings.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { logDeactivated, syncTechnicians } from "../domain/fsm-mirror.ts";
 import { mobileHashOf } from "../domain/number-codes.ts";
 import { createChallenge } from "../domain/one-time-codes.ts";
-import { takeOne } from "../domain/rate-limit.ts";
 import { revokeSession, deviceLabel } from "../domain/sessions.ts";
 import {
   findFieldTechnician,
@@ -44,15 +42,6 @@ import {
 import { visitorOf } from "../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { newLoginCode } from "../policy/one-time-code.ts";
-
-/**
- * FSM's technicians are read for a number the mirror does not know at most once
- * in ten minutes, however many such numbers are tried: one window per ten UTC
- * minutes, "2026-09-21T06:3".
- */
-function mayReadFsm(db: D1Database, now: Date): Promise<boolean> {
-  return takeOne(db, { scope: "tech:fsm_read", key: "all", window: now.toISOString().slice(0, 15), limit: 1 });
-}
 
 /** Why an active technician was refused a code, and what he can do, in ops' words. */
 function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings): string {
@@ -131,10 +120,10 @@ const TechVerifySchema = z
 const otpRoute = createRoute({
   method: "post",
   path: "/api/tech/auth/otp",
-  summary: "Send a login code on WhatsApp. The answer is the same whether or not FSM lists the number",
+  summary: "Send a login code on WhatsApp. The answer is the same whether or not the number is a technician's",
   request: { body: { required: true, ...json(TechLoginRequestSchema) } },
   responses: {
-    202: { description: "A code is on its way, if FSM lists this number", ...json(TechChallengeSchema) },
+    202: { description: "A code is on its way, if the number is a technician's", ...json(TechChallengeSchema) },
     400: errorResponse("invalid_request"),
     429: errorResponse("rate_limited"),
     503: errorResponse("busy: today's ceiling on codes is reached"),
@@ -213,7 +202,7 @@ export function registerTechAuth(app: App): void {
     if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
 
     const visitor = await visitorOf(c);
-    let technician = await findFieldTechnician(db, mobileE164);
+    const technician = await findFieldTechnician(db, mobileE164);
     const known = technician?.name ?? null;
     const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
     const asked = await mayAskForCode(c, { surface: "tech", mobileHash, ipHash: visitor.ipHash, now, name: known });
@@ -221,15 +210,6 @@ export function registerTechAuth(app: App): void {
     if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
     if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
 
-    // A technician FSM listed since the last sync is unknown to the mirror; read it, then look again.
-    if (technician === null && config.providers.FSM_PROVIDER !== "none" && (await mayReadFsm(db, now))) {
-      const deactivated = await syncTechnicians(db, deps.fsm, now.toISOString()).catch((error: unknown) => {
-        c.var.log.warn("technician_sync_failed", { error });
-        return [];
-      });
-      logDeactivated(c.var.log, deactivated);
-      technician = await findFieldTechnician(db, mobileE164);
-    }
     const sendsTo = technician?.mobileE164 ?? null;
     const name = technician?.name ?? null;
     if (!(await countCode(c, "tech", sendsTo, name, now))) return c.json(errorBody("busy", requestId), 503);

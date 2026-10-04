@@ -1,9 +1,8 @@
 // Ops add a technician, change his name, number, zone or city, and switch him off or back on
 // (src/routes/ops-technicians.ts).
 //
-// A technician added here gets an ID of our own, written as his FSM ID too, and is marked hand-written, so FSM's
-// sync leaves him alone (src/domain/fsm-mirror.ts). Two active technicians never share a number: the number is how
-// he signs in (src/domain/technicians.ts).
+// A technician added here gets an ID of our own, written as his FSM ID too (docs/schema.md). Two active technicians
+// never share a number: the number is how he signs in (src/domain/technicians.ts).
 //
 // Switching a technician off ends his sessions at once and takes his visits still to come off him, so they wait in
 // the dispatch board's tray. His phone is not revoked: it keeps the work it has not sent, should he be switched back
@@ -24,8 +23,6 @@ export interface RosterTechnician {
   readonly city: string | null;
   readonly mobile: string | null;
   readonly active: boolean;
-  /** Ops added him, or a script wrote him: FSM's sync does not own him. */
-  readonly handWritten: boolean;
 }
 
 interface RosterRow {
@@ -36,7 +33,6 @@ interface RosterRow {
   city: string | null;
   mobile_e164: string | null;
   active: number;
-  hand_written: number;
 }
 
 const rosterTechnicianOf = (row: RosterRow): RosterTechnician => ({
@@ -47,10 +43,9 @@ const rosterTechnicianOf = (row: RosterRow): RosterTechnician => ({
   city: row.city,
   mobile: row.mobile_e164,
   active: row.active === 1,
-  handWritten: row.hand_written === 1,
 });
 
-const ROSTER_COLUMNS = "id, name, initials, zone, city, mobile_e164, active, hand_written";
+const ROSTER_COLUMNS = "id, name, initials, zone, city, mobile_e164, active";
 
 /** Every technician, active or switched off, by name. */
 export async function roster(db: D1Database): Promise<RosterTechnician[]> {

@@ -422,7 +422,7 @@ const serviceBody = (service: { readonly tier: string; readonly name: string; re
 
 /**
  * The terms for moving one of the client's visits of this type now, and the visit as a move sees it; null if it
- * can no longer be moved in the app. A visit FSM has no technician for yet is ops' to move.
+ * can no longer be moved in the app. A visit with no technician yet is ops' to move.
  */
 export async function moveTermsFor(
   c: Context<AppEnv>,
