@@ -45,7 +45,7 @@ test("opens on Tasks, with the sections under their departments and what waits i
     "Number changes, 1 waiting, some overdue",
     "Deletion requests, 1 waiting",
   ]);
-  await expectNames(department("Finance"), ["No-shows, 2 waiting, some overdue", "Prices", "Discount codes"]);
+  await expectNames(department("Finance"), ["Payments, 2 waiting, some overdue", "Prices", "Discount codes"]);
   await expectNames(department("Growth"), ["Referrals, 2 waiting, some overdue", "Waitlist", "Service area"]);
   await expectNames(department("Admin"), ["Settings", "Staff"]);
   await expect(department("Operations").first()).toHaveAttribute("aria-current", "page");
@@ -61,9 +61,9 @@ test("shows a person only the sections their access opens, and opens on the firs
   });
   await page.goto("/");
   await expect(page).toHaveURL(/\/no-shows$/);
-  await expect(page.getByRole("heading", { level: 1, name: "No-shows" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
   await expect(navigation(page).getByRole("list")).toHaveCount(1);
-  await expectNames(navigation(page).getByRole("list", { name: "Finance" }).getByRole("link"), ["No-shows", "Prices"]);
+  await expectNames(navigation(page).getByRole("list", { name: "Finance" }).getByRole("link"), ["Payments", "Prices"]);
 
   await page.goto("/waitlist");
   await expect(page.getByRole("heading", { level: 1, name: "Waitlist" })).toBeVisible();

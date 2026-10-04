@@ -977,6 +977,7 @@ Request body:
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -1561,6 +1562,17 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
+    },
     "progress": {
       "$ref": "#/components/schemas/TechnicianJobState"
     }
@@ -1581,6 +1593,7 @@ Request body:
     "slots",
     "unlocked",
     "unlocks_at",
+    "client_name",
     "progress"
   ],
   "additionalProperties": false
@@ -1773,6 +1786,17 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
     },
     "progress": {
       "$ref": "#/components/schemas/TechnicianJobProgress"
@@ -2167,6 +2191,7 @@ Request body:
     "slots",
     "unlocked",
     "unlocks_at",
+    "client_name",
     "progress",
     "address",
     "access_notes",

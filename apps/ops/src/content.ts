@@ -38,7 +38,7 @@ export const shell = {
     grievances: "Grievances",
     "number-changes": "Number changes",
     "deletion-requests": "Deletion requests",
-    "no-shows": "No-shows",
+    "no-shows": "Payments",
     prices: "Prices",
     "discount-codes": "Discount codes",
     referrals: "Referrals",
@@ -434,7 +434,15 @@ export const clients = {
    * the piece in wear's, as a month, exactly as the board writes it. The
    * mobile is ours: the board draws a WhatsApp button and no number to call.
    */
-  meta: { state: "Status", credits: "Free service visits", replacement: "Replacement due", mobile: "Mobile" },
+  meta: {
+    state: "Status",
+    credits: "Free service visits",
+    replacement: "Replacement due",
+    mobile: "Mobile",
+    // PLACEHOLDER: who invited the client, and the invite's code beside their name: "Vikram Sethi (VSAB23)".
+    invitedBy: "Invited by",
+    inviteCode: (code: string) => `(${code})`,
+  },
   /** Board B1's button beside the name, which opens a chat with the client. */
   whatsapp: "WhatsApp",
   whatsappLabel: (name: string) => `WhatsApp ${name}`,
@@ -830,6 +838,34 @@ export const clients = {
     /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
     code: (applied: string) => `Code ${applied}`,
   },
+  /* PLACEHOLDER, all of it: the payment links Razorpay texted the client, and an open one's address to send again. */
+  links: {
+    title: "Payment links",
+    columns: ["Sent", "For", "Amount", "State"],
+    none: "No payment links yet.",
+    unsent: "Not sent",
+    /** "Natural hair system, visit of 25 Sep 2027". */
+    what: (product: string, day: string | null) => (day === null ? product : `${product}, visit of ${day}`),
+    states: {
+      making: "Being made: Razorpay is asked again",
+      open: "Waiting to be paid",
+      paid: "Paid",
+      refused: "Razorpay refused it: send one by hand",
+      lapsed: "Closed unpaid",
+    },
+    paidOn: (date: string) => `Paid ${date}`,
+    reference: (reference: string) => `Ref ${reference}`,
+    copy: "Copy link",
+    copied: "Copied",
+  },
+  /* PLACEHOLDER, all of it: where each finished visit's invoice stands in Books. */
+  invoices: {
+    title: "Invoices",
+    columns: ["Visit", "Invoice"],
+    none: "No finished visit to invoice yet.",
+    states: { to_raise: "Not raised yet", draft: "Draft in Books, not sent", issued: "Sent" },
+    sentOn: (date: string) => `Sent ${date}`,
+  },
   /** Putting a client's free service visits right by hand (POST /api/clients/{id}/credits). */
   credits: {
     title: "Free service visits",
@@ -859,14 +895,12 @@ export const clients = {
     } as Readonly<Record<string, string>>,
   },
   /*
-   * PLACEHOLDER, all of it: no board draws a client's invite. The invite they came with, under Payments beside the
-   * credits it grants, or a way to attach one for a friend who booked away from its page
+   * PLACEHOLDER, all of it: no board draws a client's invite. Who sent it heads the page; under Payments, beside the
+   * credits it grants, is what it earns, or a way to attach one for a friend who booked away from its page
    * (POST /api/clients/{id}/referral; docs/decisions/0089-an-invite-is-not-lost.md).
    */
   invite: {
     title: "Invite",
-    code: "Code",
-    from: "Sent by",
     erased: "A client since erased",
     grant: "What it earns",
     grants: {
@@ -1089,9 +1123,14 @@ export const clients = {
     owed: {
       visit_booked: "They still have a visit booked, so nothing was erased. Cancel it and refund what they paid first.",
       payment_held: "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it first.",
+      payment_owed: "A payment link of theirs is still unpaid, so nothing was erased.",
     },
     /** To erase today all the same, when what is owed cannot be settled first. */
-    settle: "I will cancel and refund it by hand today.",
+    settle: {
+      visit_booked: "I will cancel and refund it by hand today.",
+      payment_held: "I will cancel and refund it by hand today.",
+      payment_owed: "Their link is cancelled, and what they owe goes unpaid.",
+    },
     anyway: "Erase anyway",
     done: {
       title: "Erased",
@@ -1202,13 +1241,12 @@ export const waitlist = {
 } as const;
 
 /**
- * Board D1's queue. The board draws the day's money over "No-shows and late
- * cancellations", and beside it a disputed charge ruled on with Refund or
- * Uphold. Only the no-show cases and their three facts have a route, so only
- * they are here (docs/open-points.md, item 60).
+ * Board D1, the design's Payments: the day's money over "No-shows and late
+ * cancellations", a disputed charge ruled on with Refund or Uphold, and the
+ * no-show cases to rule on.
  */
 export const noShows = {
-  title: "No-shows",
+  title: "Payments",
   /**
    * Board D1's first card: the day's money, over the charges it was kept on.
    * The card carries no heading on the board and names no day, so both are
@@ -1216,12 +1254,18 @@ export const noShows = {
    * themselves (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
    */
   money: {
-    /** PLACEHOLDER: the board's card has no heading, and a panel needs a name to be read by. */
-    title: "Today",
-    /** The board's own three, in its order and its words. */
-    figures: { collected: "Collected today", processing: "Refunds processing", charged: "Charges and no-shows" },
+    /** PLACEHOLDER: the card's heading, which names its day: "Today, Wed 22 Sep", or "Mon 20 Sep". */
+    title: (day: string, today: boolean) => (today ? `Today, ${day}` : day),
+    /** PLACEHOLDER: the field that shows another day's money. */
+    pick: "Day",
+    /** The board's own three, in its order and its words; "today" only on today's card. */
+    figures: {
+      collected: (today: boolean) => (today ? "Collected today" : "Collected"),
+      processing: "Refunds processing",
+      charged: "Charges and no-shows",
+    },
     /** Under "Refunds processing", which counts what has not gone back yet. */
-    refunded: (amount: string) => `${amount} went back today`,
+    refunded: (amount: string, today: boolean) => `${amount} went back ${today ? "today" : "that day"}`,
     charges: {
       /** The board's own heading over the list. */
       title: "No-shows and late cancellations",
@@ -1250,7 +1294,7 @@ export const noShows = {
        */
       noAmount: "Amount not recorded",
       /** PLACEHOLDER: the board draws two charges and no empty day. */
-      empty: "Nothing was charged today.",
+      empty: (today: boolean) => (today ? "Nothing was charged today." : "Nothing was charged that day."),
     },
   },
   queue: {
@@ -1259,7 +1303,7 @@ export const noShows = {
      * Nothing lists a late cancellation, and what is here is a queue, as board
      * C1's "Held for review" is.
      */
-    title: "Waiting for a decision",
+    title: "No-shows waiting for a decision",
     /** The visit the case belongs to: "Visit of Sat 19 Sep". */
     visit: (date: string) => `Visit of ${date}`,
     /** PLACEHOLDER: a case whose appointment carries no date. */
@@ -1476,7 +1520,7 @@ export const tasks = {
     untold_move: "Record the call in Dispatch",
     leave_conflict: "Move it in Dispatch",
     referral_review: "Decide it in Referrals",
-    no_show_decision: "Rule on it in No-shows",
+    no_show_decision: "Rule on it in Payments",
     number_change: "Decide it in Number changes",
     erasure_request: "Decide it in Deletion requests",
     grievance: "Answer it in Grievances",
@@ -1923,6 +1967,7 @@ export const deletions = {
         "paid, then delete.",
       payment_held:
         "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it, then delete.",
+      payment_owed: "A payment link of theirs is still unpaid, so nothing was erased. Delete once it is paid.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. The client has not been erased.",
     } as Readonly<Record<string, string>>,

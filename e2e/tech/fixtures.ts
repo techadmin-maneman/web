@@ -96,6 +96,7 @@ const firstJob = (date: string, type: VisitType, oneVisit = false, progress = NO
   slots: SLOTS[type],
   unlocked: true,
   unlocks_at: unlocksAt(date),
+  client_name: "Rohit M.",
   progress,
 });
 
@@ -115,6 +116,7 @@ const secondJob = (date: string): Job => ({
   slots: 1,
   unlocked: true,
   unlocks_at: unlocksAt(date),
+  client_name: "Vikram S.",
   progress: NOT_BEGUN,
 });
 
@@ -135,6 +137,7 @@ const lockedJob = (date: string): Job => ({
   slots: 2,
   unlocked: false,
   unlocks_at: at(dayAfter(date), "12:30"),
+  client_name: null,
   progress: NOT_BEGUN,
 });
 
@@ -157,6 +160,7 @@ const tomorrowsJob = (today: string): Job => {
     slots: 1,
     unlocked: true,
     unlocks_at: unlocksAt(date),
+    client_name: "Rohit M.",
     progress: NOT_BEGUN,
   };
 };

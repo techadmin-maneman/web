@@ -2,7 +2,7 @@
 // (apps/tech/sw/sw.ts). Kept apart from the worker so the rule can be read and
 // tested on its own (test/node/tech-sw.test.ts).
 
-/** The one API answer the worker keeps a copy of: the day's list, which carries no client. */
+/** The one API answer the worker keeps a copy of: the day's list, which gives no client's address or number. */
 export const DAY_PATH = "/api/tech/jobs";
 
 /**

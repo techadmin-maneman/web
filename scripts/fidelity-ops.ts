@@ -138,6 +138,9 @@ const RECORD = {
   credits: { visits: 2, earliest_expiry: "2028-01-03T06:00:00.000Z" },
   visits: { upcoming: [], past: [] },
   payments: [],
+  payment_links: [],
+  invoices: [],
+  invite: null,
   /*
    * The board's own client, counted from the visits and ledger the client app's
    * boards draw of him: a first fit, two service visits and a replacement, and
