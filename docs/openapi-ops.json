@@ -5448,13 +5448,18 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "signed_in": {
+                        "type": "boolean",
+                        "description": "Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it."
                       }
                     },
                     "required": [
                       "device_id",
                       "label",
                       "last_seen_at",
-                      "revoked_at"
+                      "revoked_at",
+                      "signed_in"
                     ],
                     "additionalProperties": false
                   }
@@ -5592,6 +5597,109 @@
         ],
         "additionalProperties": false
       },
+      "TechnicianStandingLeave": {
+        "type": "object",
+        "properties": {
+          "leave": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "to": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Inclusive: a single day's leave has the same date twice."
+                },
+                "note": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "jobs": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TechnicianJobOnLeave"
+                  },
+                  "description": "The jobs still booked on its days from today on, soonest first."
+                }
+              },
+              "required": [
+                "id",
+                "from",
+                "to",
+                "note",
+                "jobs"
+              ],
+              "additionalProperties": false
+            },
+            "description": "His leave that has not ended yet, soonest first."
+          }
+        },
+        "required": [
+          "leave"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianJobOnLeave": {
+        "type": "object",
+        "properties": {
+          "appointment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "appointment_id",
+          "starts_at",
+          "type",
+          "client"
+        ],
+        "additionalProperties": false,
+        "description": "A job booked on a day the technician is away, which the leave moves nowhere: ops move it on the dispatch board, and it waits on the Tasks board until they do."
+      },
       "TechnicianLeaveRecorded": {
         "type": "object",
         "properties": {
@@ -5602,52 +5710,9 @@
           "jobs": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "appointment_id": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "starts_at": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "type": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "enum": [
-                        "consultation",
-                        "first_fit",
-                        "service",
-                        "replacement"
-                      ]
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "client": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "appointment_id",
-                "starts_at",
-                "type",
-                "client"
-              ],
-              "additionalProperties": false
+              "$ref": "#/components/schemas/TechnicianJobOnLeave"
             },
-            "description": "The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch board, and each waits on the Tasks board until they do (OPS-07)."
+            "description": "The jobs already booked on those days, soonest first."
           }
         },
         "required": [
@@ -9755,7 +9820,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such client, or one who has been erased",
+            "description": "not_found: no such client in the caller's cities, or one who has been erased",
             "content": {
               "application/json": {
                 "schema": {
@@ -11988,7 +12053,7 @@
     },
     "/api/no-shows": {
       "get": {
-        "summary": "No-show cases: undecided first, each with its three facts",
+        "summary": "No-show cases in the caller's cities: undecided first, each with its three facts",
         "parameters": [
           {
             "schema": {
@@ -12085,7 +12150,7 @@
             }
           },
           "403": {
-            "description": "access_required, or not_permitted: waiving asks Finance MANAGE",
+            "description": "access_required, or not_permitted: waiving asks Finance MANAGE in the case's city",
             "content": {
               "application/json": {
                 "schema": {
@@ -12095,7 +12160,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such case, or it was ruled on already",
+            "description": "not_found: no such case in the caller's cities, or it was ruled on already",
             "content": {
               "application/json": {
                 "schema": {
@@ -12238,6 +12303,52 @@
       }
     },
     "/api/technicians/{id}/leave": {
+      "get": {
+        "summary": "A technician's leave that has not ended, each with the jobs still booked on its days",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The leave",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianStandingLeave"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such technician, or he is outside the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Record leave. Those days are then refused to booking and to the dispatch board alike",
         "parameters": [
@@ -12441,7 +12552,7 @@
     },
     "/api/no-shows/disputes": {
       "get": {
-        "summary": "Disputed no-show charges still to rule on, oldest first, each with its evidence",
+        "summary": "Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence",
         "responses": {
           "200": {
             "description": "The disputes",
@@ -12533,7 +12644,7 @@
             }
           },
           "403": {
-            "description": "access_required, or not_permitted: refunding asks Finance MANAGE",
+            "description": "access_required, or not_permitted: refunding asks Finance MANAGE in the dispute's city",
             "content": {
               "application/json": {
                 "schema": {
@@ -12543,7 +12654,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such dispute, or it was ruled on already",
+            "description": "not_found: no such dispute in the caller's cities, or it was ruled on already",
             "content": {
               "application/json": {
                 "schema": {
@@ -12751,7 +12862,7 @@
     },
     "/api/payments": {
       "get": {
-        "summary": "A day's money: what was collected, what went back, and each charge kept or ruled on",
+        "summary": "A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on",
         "parameters": [
           {
             "schema": {
@@ -15181,7 +15292,7 @@
             }
           },
           "404": {
-            "description": "not_found",
+            "description": "not_found: no such visit in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -15244,7 +15355,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such visit, or it carries no code",
+            "description": "not_found: no such visit in the caller's cities, or it carries no code",
             "content": {
               "application/json": {
                 "schema": {

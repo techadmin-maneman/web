@@ -287,7 +287,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -331,7 +331,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -525,7 +525,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -577,7 +577,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -629,7 +629,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -681,7 +681,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -733,7 +733,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -785,7 +785,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -829,7 +829,7 @@ Close the job as a no-show, once the wait has run
 }
 ```
 
-**404**: not_found: no such job
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {

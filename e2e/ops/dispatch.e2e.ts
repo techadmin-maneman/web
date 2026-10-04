@@ -482,6 +482,21 @@ test("moves between weeks and cities, asking the route for each", async ({ page 
   await expect.poll(() => asked.at(-1)).toBe("?city=Delhi");
 });
 
+// A technician's page shows his days by linking here with the week and his name.
+test("opens on the week and the search a link asks for", async ({ page }) => {
+  const asked: string[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === BOARD_PATH) asked.push(url.search);
+  });
+  await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
+  await page.goto("/dispatch?from=2025-09-19&find=Sohna");
+
+  await expect(page.getByLabel("Find a technician, zone or client")).toHaveValue("Sohna");
+  await expect(page.getByRole("rowheader")).toHaveText(["Faizan AliSohna Rd"]);
+  await expect.poll(() => asked[0]).toBe("?from=2025-09-19");
+});
+
 // OPS-10: 168 technicians made a board 15,000 px tall whose day headers scrolled away, with no way to find a row.
 test("keeps its header row and technicians' column in place, and finds a row by name, zone or client", async ({
   page,
