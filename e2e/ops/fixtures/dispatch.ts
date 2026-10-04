@@ -193,22 +193,21 @@ export const BOARD = {
 export const ROOM = {
   appointment_id: "77000000-0000-4000-8000-000000000001",
   rooms: BOARD_TECHNICIANS.flatMap((technician) =>
-    DATES.map((date) => ({
-      technician_id: technician.id,
-      date,
-      windows: technician === SANDEEP && date === DATES[1] ? roomless("afternoon") : roomless(null),
-    })),
+    DATES.map((date) => roomOn(technician.id, date, technician === SANDEEP && date === DATES[1] ? "afternoon" : null)),
   ).filter((room) => {
     const faizanAway = room.technician_id === FAIZAN.id && (room.date === DATES[2] || room.date === DATES[3]);
     const arjunFull = room.technician_id === ARJUN.id && room.date === DATES[4];
     return !faizanAway && !arjunFull;
   }),
+  blackouts: [],
 } satisfies OpsReply<"/api/dispatch/room">;
 
-/** Every window of a day but the one taken, if one is. */
-function roomless(taken: Window | null): Window[] {
-  const windows: Window[] = ["morning", "afternoon", "evening"];
-  return windows.filter((window) => window !== taken);
+/** A technician's day with every window but the one taken, if one is, each at its first half-slot. */
+function roomOn(technicianId: string, date: string, taken: Window | null) {
+  const allWindows: Window[] = ["morning", "afternoon", "evening"];
+  const windows = allWindows.filter((window) => window !== taken);
+  const starts = windows.map((window) => ({ window, starts_at: `${date}T${STARTS[window]}:00.000Z` }));
+  return { technician_id: technicianId, date, windows, starts };
 }
 
 export const MOVED = {

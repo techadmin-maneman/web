@@ -30,10 +30,12 @@ import {
   keepsTheClientsNotice,
   moveRefusal,
   slotsFor,
+  targetTime,
   type Begun,
   type ClientNotice,
   type MoveReason,
   type MoveRefusal,
+  type TargetTime,
   type UntoldReason,
 } from "../policy/dispatch.ts";
 import { reachesCity, type PlacesReached } from "../policy/access.ts";
@@ -53,6 +55,7 @@ import {
   claimsOf,
   fitsAt,
   lettingGo,
+  loadBlackouts,
   occupancy,
   placement,
   visitTimes,
@@ -61,7 +64,7 @@ import {
 import { latestConsentSql } from "./messages.ts";
 import { begunPastArrival, visitBegun } from "./visit-begun.ts";
 import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";
-import { unitAt, type SlotTimes } from "../policy/slot-times.ts";
+import { firstUnitAfter, unitAt, type SlotTimes } from "../policy/slot-times.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
@@ -491,6 +494,8 @@ export interface MoveInput {
    * entry records who chose it. Absent for an ordinary move.
    */
   readonly clearCheckIn?: AuditEntry | null;
+  /** Why ops move the visit onto a day they blacked out, as they typed it; absent for any other day. */
+  readonly blackoutReason?: string | null;
 }
 
 /**
@@ -517,10 +522,13 @@ interface Target {
   readonly technicianId: string;
   readonly date: string;
   readonly window: BookingWindow;
-  /** Only the technician changes: the visit keeps its own start, and its half-slots are checked there. */
+  /** Only the technician changes: the visit keeps its own start, still ahead, and its half-slots are checked there. */
   readonly keepsTime: boolean;
   /** The target day's times, which its half-slots are read by. */
   readonly times: SlotTimes;
+  /** The first half-slot the visit may start in there: any on a day ahead, only one still to start today. */
+  readonly earliest: number;
+  readonly time: TargetTime;
 }
 
 type Landing =
@@ -535,17 +543,23 @@ interface Placing {
 /** The half-slot a job would start in on the target's day, or null where it has no room. */
 function startOn(day: Day, job: Placing, target: Target): number | null {
   const units = unitsFor(job.minutes);
-  if (!target.keepsTime) return placement(day, target.window, units);
+  if (!target.keepsTime) return placement(day, target.window, units, target.earliest);
   const start = unitAt(indiaTime(job.start), target.times);
   return fitsAt(day, start, units) ? start : null;
 }
 
 /** Where the job lands on the target's day, or why it cannot. */
-function landingOf(day: Day, job: Placing, target: Target): Landing {
+function landingOf(day: Day, job: Placing, target: Target, blackoutWithoutReason = false): Landing {
   const start = startOn(day, job, target);
-  const refusal = moveRefusal(day, target.window, { fits: start !== null });
+  const refusal = moveRefusal(day, target.window, { time: target.time, fits: start !== null, blackoutWithoutReason });
   if (refusal !== null) return { kind: "refused", reason: refusal };
   return start === null ? { kind: "refused", reason: "does_not_fit" } : { kind: "lands", start };
+}
+
+/** When the job starts and ends where it lands: its own times where it keeps them, else from its half-slot there. */
+function timesAt(target: Target, startUnit: number, job: Placing, schedule: SlotSchedule): { start: Date; end: Date } {
+  if (!target.keepsTime) return visitTimes(target.date, startUnit, job.minutes, schedule);
+  return { start: job.start, end: new Date(job.start.getTime() + job.minutes * MINUTE_MS) };
 }
 
 export interface MoveDeps {
@@ -607,17 +621,32 @@ const isOnlyCheckedIn = (job: LiveJob): boolean =>
 const mayMove = (job: LiveJob, clearingCheckIn: boolean): boolean =>
   !isUnderWay(job) || (clearingCheckIn && isOnlyCheckedIn(job));
 
-/** Where a move puts the job. A day and window that are the job's own keep its start: only the technician changes. */
+/**
+ * Where a move puts the job. A day and window that are the job's own keep its start while that start is still ahead:
+ * only the technician changes. Otherwise the job takes the window's first free half-slot still to start.
+ */
 function targetOf(
   job: LiveJob,
   technicianId: string,
-  date: string,
-  window: BookingWindow,
+  place: { readonly date: string; readonly window: BookingWindow },
   schedule: SlotSchedule,
+  now: Date,
 ): Target {
-  const now = schedule.at(job.window_start);
-  const keepsTime = date === now.date && window === now.window;
-  return { technicianId, date, window, keepsTime, times: schedule.on(date) };
+  const { date, window } = place;
+  const was = schedule.at(job.window_start);
+  const today = schedule.at(now);
+  const times = schedule.on(date);
+  const startIsAhead = Date.parse(job.window_start) > now.getTime();
+  const keepsTime = date === was.date && window === was.window && startIsAhead;
+  const earliest = date === today.date ? firstUnitAfter(today.time, times) : 0;
+  const time = keepsTime ? "ahead" : targetTime(place, { date: today.date, firstUnitAhead: earliest });
+  return { technicianId, date, window, keepsTime, times, earliest, time };
+}
+
+/** Whether the move puts the job onto a day ops blacked out, from another day. */
+async function movesOntoBlackout(db: D1Database, job: LiveJob, date: string): Promise<boolean> {
+  if (date === indiaDate(new Date(job.window_start))) return false;
+  return (await loadBlackouts(db, date, date)).has(date);
 }
 
 /** Where the job already is: no move at all. */
@@ -642,6 +671,8 @@ interface PlannedMove {
   readonly claims: readonly string[];
   /** The audit entry for clearing the technician's check-in; null when he had not checked in. */
   readonly clearCheckIn: AuditEntry | null;
+  /** Why ops moved it onto a day they blacked out; null for any other day. */
+  readonly blackoutReason: string | null;
 }
 
 /**
@@ -664,30 +695,34 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   // What ops left out keeps what the job has.
   const date = input.date ?? indiaDate(wasStart);
   const window = input.window ?? schedule.at(wasStart).window;
-  const target = targetOf(job, technicianId, date, window, schedule);
+  const target = targetOf(job, technicianId, { date, window }, schedule, now);
   if (isWhereItIs(job, target)) return { kind: "nothing_to_move" };
 
   // The check runs before anything is written. The job's own time does not
   // count against its own move.
-  const held = await occupancy(db, date, date, now, job.id);
-  const minutes = bookedMinutes(job);
-  const landing = landingOf(held(technicianId, date), { minutes, start: wasStart }, target);
+  const [held, ontoBlackout] = await Promise.all([
+    occupancy(db, date, date, now, job.id),
+    movesOntoBlackout(db, job, date),
+  ]);
+  const blackoutReason = ontoBlackout ? (input.blackoutReason ?? null) : null;
+  const placing = { minutes: bookedMinutes(job), start: wasStart };
+  const landing = landingOf(held(technicianId, date), placing, target, ontoBlackout && blackoutReason === null);
   if (landing.kind === "refused") return landing;
 
-  const times = target.keepsTime ? null : visitTimes(date, landing.start, minutes, schedule);
-  const start = times?.start ?? wasStart;
+  const times = timesAt(target, landing.start, placing, schedule);
   const move: PlannedMove = {
     id: crypto.randomUUID(),
     job,
     technicianId,
     reason: input.reason,
     actor: input.actor,
-    start,
-    end: times?.end ?? new Date(start.getTime() + minutes * MINUTE_MS),
+    start: times.start,
+    end: times.end,
     keepsTime: target.keepsTime,
     date,
-    claims: claimsOf(landing.start, unitsFor(minutes), window),
+    claims: claimsOf(landing.start, unitsFor(placing.minutes), window),
     clearCheckIn: isUnderWay(job) ? clearCheckIn : null,
+    blackoutReason,
   };
   return writeMove(db, deps, move, now);
 }
@@ -731,12 +766,12 @@ function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null
   return db
     .prepare(
       `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
-         reason, actor, fsm_write_state, message_id, created_at, updated_at)
+         reason, actor, fsm_write_state, message_id, created_at, updated_at, blackout_reason)
        VALUES (?1,
          (SELECT a.id FROM appointments a
           WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.deleted_at IS NULL
             AND a.status IN ('scheduled', 'dispatched') AND NOT ${begun} AND NOT ${CLIENT_MOVING}),
-         ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10)`,
+         ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10, ?11)`,
     )
     .bind(
       move.id,
@@ -749,6 +784,7 @@ function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null
       move.actor,
       messageId,
       at,
+      move.blackoutReason,
     );
 }
 
@@ -857,11 +893,24 @@ const failedNotNullOn = (error: unknown, column: string): boolean =>
 const releasingClaims = (db: D1Database, moveId: string): D1PreparedStatement =>
   db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId);
 
+/** A window the job would land in, and when it would start there. */
+export interface RoomStart {
+  readonly window: BookingWindow;
+  readonly starts_at: string;
+}
+
 export interface Room {
   readonly technician_id: string;
   readonly date: string;
   /** The windows the job would land in, by the check a move runs. */
   readonly windows: BookingWindow[];
+  readonly starts: RoomStart[];
+}
+
+export interface Rooms {
+  readonly rooms: Room[];
+  /** The days of the week ops blacked out, other than the job's own: a move onto one needs a reason. */
+  readonly blackouts: string[];
 }
 
 /**
@@ -875,26 +924,37 @@ export async function roomFor(
   db: D1Database,
   input: { readonly appointmentId: string; readonly from: string },
   now: Date,
-): Promise<Room[] | null> {
+): Promise<Rooms | null> {
   const job = await liveJob(db, input.appointmentId);
   if (job === null || !mayMove(job, true)) return null;
   const dates = weekFrom(input.from);
-  const [technicians, held, schedule] = await Promise.all([
+  const to = dates[dates.length - 1] ?? input.from;
+  const [technicians, held, schedule, blackouts] = await Promise.all([
     activeTechnicians(db),
-    occupancy(db, input.from, dates[dates.length - 1] ?? input.from, now, job.id),
+    occupancy(db, input.from, to, now, job.id),
     loadSlotSchedule(db),
+    loadBlackouts(db, input.from, to),
   ]);
   const visit = { minutes: bookedMinutes(job), start: new Date(job.window_start) };
-  const windowsFor = (technicianId: string, date: string) =>
-    BOOKING_WINDOWS.filter((window) => {
-      const target = targetOf(job, technicianId, date, window, schedule);
-      return !isWhereItIs(job, target) && landingOf(held(technicianId, date), visit, target).kind === "lands";
+  const startsFor = (technicianId: string, date: string): RoomStart[] =>
+    BOOKING_WINDOWS.flatMap((window) => {
+      const target = targetOf(job, technicianId, { date, window }, schedule, now);
+      if (isWhereItIs(job, target)) return [];
+      const landing = landingOf(held(technicianId, date), visit, target);
+      if (landing.kind === "refused") return [];
+      return [{ window, starts_at: timesAt(target, landing.start, visit, schedule).start.toISOString() }];
     });
-  return technicians
-    .flatMap((technician) =>
-      dates.map((date) => ({ technician_id: technician.id, date, windows: windowsFor(technician.id, date) })),
-    )
-    .filter((room) => room.windows.length > 0);
+  const roomOn = (technicianId: string, date: string): Room => {
+    const starts = startsFor(technicianId, date);
+    return { technician_id: technicianId, date, windows: starts.map((each) => each.window), starts };
+  };
+  const ownDate = indiaDate(visit.start);
+  return {
+    rooms: technicians
+      .flatMap((technician) => dates.map((date) => roomOn(technician.id, date)))
+      .filter((room) => room.starts.length > 0),
+    blackouts: dates.filter((date) => blackouts.has(date) && date !== ownDate),
+  };
 }
 
 /**

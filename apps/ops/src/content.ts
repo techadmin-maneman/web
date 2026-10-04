@@ -274,6 +274,9 @@ export const dispatch = {
       `This visit is inside ${String(hours)} hours. The client is not charged, because we moved it.`,
     /** PLACEHOLDER: a move of a visit the technician had checked in at, chosen after the drawer's warning. */
     checkInCleared: "The technician's check-in is cleared. They check in again at the new time.",
+    /** PLACEHOLDER: a move onto a day ops blacked out goes only with a reason, kept with the move. */
+    blackout: (date: string) => `${date} is blacked out, so nothing is booked that day. Say why this visit goes ahead.`,
+    blackoutReason: "Why it goes ahead that day",
     send: "Move and notify",
     /** PLACEHOLDER: the same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",
@@ -326,6 +329,12 @@ export const dispatch = {
       `${technician} already holds a job on ${date}, ${window}. Nothing was moved.`,
     /** Leave is named as leave, so ops know the day is off rather than merely full (ADR 0062). */
     onLeave: (technician: string, date: string) => `${technician} is away on ${date}. Nothing was moved.`,
+    /** PLACEHOLDER: a move lands only at a start still ahead. */
+    pastDay: (date: string) => `${date} has passed. Choose a day ahead. Nothing was moved.`,
+    windowPassed: (date: string, window: string) =>
+      `Too late for ${date}, ${window}. Choose a later window. Nothing was moved.`,
+    /** PLACEHOLDER: the day was blacked out after the board offered it; picking it again asks for the reason. */
+    blackout: (date: string) => `${date} is blacked out. Choose it again to give a reason. Nothing was moved.`,
     /** PLACEHOLDER: the window is free, but the visit's block has no room in it (ADR 0069). */
     doesNotFit: (type: string, technician: string, date: string, window: string) =>
       `${type} has no room in ${technician}'s ${window} on ${date}: its time is taken, or it would run past the day's end. Nothing was moved.`,
