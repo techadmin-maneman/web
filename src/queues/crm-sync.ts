@@ -17,35 +17,33 @@ import type { CrmLead, LeadSource } from "../providers/crm.ts";
 import { resolveAlertStatement } from "../domain/alerts.ts";
 import { leadNotice } from "../domain/lead-notice.ts";
 import { crmErasureKey, crmLeadKey } from "../policy/alerts.ts";
-import { retryWithBackoff } from "./backoff.ts";
+import { backoffSeconds, DONE, runConsumer, type Settle } from "./consumer.ts";
 import { CrmSyncMessageSchema, MAX_SYNC_ATTEMPTS, QUICK_RETRY_DELAY_SECONDS } from "../config/pipeline.ts";
 
-export async function handleCrmSyncBatch(
+/** A lead written, an erased person blanked, or a contact updated; work that D1 fails is tried again shortly. */
+export function handleCrmSyncBatch(
   batch: MessageBatch,
   db: D1Database,
   deps: Dependencies,
   log: Logger,
 ): Promise<void> {
-  for (const message of batch.messages) {
-    const parsed = CrmSyncMessageSchema.safeParse(message.body);
-    if (!parsed.success) {
-      log.error("crm_sync_bad_message", { message_id: message.id });
-      message.ack();
-      continue;
-    }
-    const messageLog = log.child({ request_id: parsed.data.request_id });
-    if ("update_person_id" in parsed.data) {
-      const { update_person_id: personId, invite_attached: inviteAttached = false } = parsed.data;
-      await updateContact(message, db, deps, messageLog, { personId, inviteAttached });
-      continue;
-    }
-    const { retrySoon } =
-      "erase_person_id" in parsed.data
-        ? await eraseInCrm(db, deps, messageLog, parsed.data.erase_person_id)
-        : await syncLead(db, deps, messageLog, parsed.data.lead_id);
-    if (retrySoon) message.retry({ delaySeconds: QUICK_RETRY_DELAY_SECONDS });
-    else message.ack();
-  }
+  return runConsumer(batch, {
+    name: "crm_sync",
+    schema: CrmSyncMessageSchema,
+    log,
+    logFor: (data) => log.child({ request_id: data.request_id }),
+    handle: async (data, attempts, messageLog) => {
+      if ("update_person_id" in data) {
+        const { update_person_id: personId, invite_attached: inviteAttached = false } = data;
+        return updateContact(db, deps, messageLog, { personId, inviteAttached, attempts });
+      }
+      const { retrySoon } =
+        "erase_person_id" in data
+          ? await eraseInCrm(db, deps, messageLog, data.erase_person_id)
+          : await syncLead(db, deps, messageLog, data.lead_id);
+      return retrySoon ? { retryAfterSeconds: QUICK_RETRY_DELAY_SECONDS } : DONE;
+    },
+  });
 }
 
 /** Tries of a contact update before ops are told to make it by hand. */
@@ -58,12 +56,11 @@ export const MAX_CONTACT_UPDATE_ATTEMPTS = 5;
  * CRM never had. A failure is tried again on the queue, and the fifth tells ops.
  */
 async function updateContact(
-  message: Message,
   db: D1Database,
   deps: Dependencies,
   log: Logger,
-  { personId, inviteAttached }: { personId: string; inviteAttached: boolean },
-): Promise<void> {
+  { personId, inviteAttached, attempts }: { personId: string; inviteAttached: boolean; attempts: number },
+): Promise<Settle> {
   const person = await db
     .prepare(
       `SELECT p.mobile_e164, p.zoho_lead_id,
@@ -74,10 +71,7 @@ async function updateContact(
     )
     .bind(personId)
     .first<{ mobile_e164: string; zoho_lead_id: string | null; city: string | null; invite_code: string | null }>();
-  if (person === null) {
-    message.ack();
-    return;
-  }
+  if (person === null) return DONE;
   try {
     const { crmLeadId } = await deps.crm.updateContact(
       { personId, mobileE164: person.mobile_e164, city: person.city, inviteCode: person.invite_code, inviteAttached },
@@ -88,22 +82,21 @@ async function updateContact(
     }
     await deps.resolveAlert(`crm_contact_update:${personId}`);
     log.info("crm_contact_updated", { person_id: personId, found: crmLeadId !== null });
-    message.ack();
+    return DONE;
   } catch (error) {
     const reason = describe(error);
-    log.warn("crm_contact_update_failed", { person_id: personId, attempt: message.attempts, reason });
-    if (message.attempts < MAX_CONTACT_UPDATE_ATTEMPTS) {
-      retryWithBackoff(message, QUICK_RETRY_DELAY_SECONDS);
-      return;
+    log.warn("crm_contact_update_failed", { person_id: personId, attempt: attempts, reason });
+    if (attempts < MAX_CONTACT_UPDATE_ATTEMPTS) {
+      return { retryAfterSeconds: backoffSeconds(attempts, QUICK_RETRY_DELAY_SECONDS) };
     }
     await deps.alertOnce({
       key: `crm_contact_update:${personId}`,
       message:
         `Client ${personId}'s new number, city or invite did not reach their CRM lead after ` +
-        `${String(message.attempts)} attempts: ${reason}. Update the lead by hand.`,
+        `${String(attempts)} attempts: ${reason}. Update the lead by hand.`,
       link: `/clients/${personId}`,
     });
-    message.ack();
+    return DONE;
   }
 }
 

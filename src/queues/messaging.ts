@@ -64,40 +64,33 @@ import { scrubString, type Logger } from "../log.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 import { isOneOf } from "../lib/one-of.ts";
 import { MessagingMessageSchema } from "../config/pipeline.ts";
+import { runConsumer, type Settle } from "./consumer.ts";
 
 const RETRY_DELAY_SECONDS = 30;
 /** A send claimed longer ago than this is taken to have died, and may be claimed again. */
 export const SENDING_LEASE_MS = 2 * MINUTE_MS;
 
-type Next = { readonly retryAfterSeconds?: number };
+type Next = Settle;
 
-export async function handleMessagingBatch(
+/** Each message sent; one whose every try threw is failed, and ops told, so the sweeper does not send it for ever. */
+export function handleMessagingBatch(
   batch: MessageBatch,
   db: D1Database,
   config: StaticConfig,
   deps: Dependencies,
   log: Logger,
 ): Promise<void> {
-  for (const message of batch.messages) {
-    const parsed = MessagingMessageSchema.safeParse(message.body);
-    if (!parsed.success) {
-      log.error("messaging_bad_message", { message_id: message.id });
-      message.ack();
-      continue;
-    }
-    const messageLog = log.child({ request_id: parsed.data.request_id, outbound_message_id: parsed.data.message_id });
-
-    let next: Next;
-    try {
-      next = await sendMessage(db, config, deps, messageLog, parsed.data.message_id);
-    } catch (error) {
-      messageLog.error("messaging_step_error", { error });
-      if (message.attempts < MAX_SEND_ATTEMPTS) next = { retryAfterSeconds: RETRY_DELAY_SECONDS };
-      else next = await failAfterErrors(db, deps, messageLog, parsed.data.message_id, error);
-    }
-    if (next.retryAfterSeconds === undefined) message.ack();
-    else message.retry({ delaySeconds: next.retryAfterSeconds });
-  }
+  return runConsumer(batch, {
+    name: "messaging",
+    schema: MessagingMessageSchema,
+    log,
+    logFor: (data) => log.child({ request_id: data.request_id, outbound_message_id: data.message_id }),
+    handle: (data, _attempts, messageLog) => sendMessage(db, config, deps, messageLog, data.message_id),
+    onError: async (data, attempts, error, messageLog) =>
+      attempts < MAX_SEND_ATTEMPTS
+        ? { retryAfterSeconds: RETRY_DELAY_SECONDS }
+        : failAfterErrors(db, deps, messageLog, data.message_id, error),
+  });
 }
 
 /** A message whose every delivery threw: failed, and ops told, so the sweeper does not send it again for ever. */

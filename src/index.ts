@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { createApp } from "./app.ts";
 import type { App } from "./http/context.ts";
 import { ENABLED_SURFACES, type Surface } from "./config/environments.ts";
-import { productionDependencies } from "./dependencies.ts";
+import { productionDependencies, type Dependencies } from "./dependencies.ts";
 import { alertIfForgotten, MAINTENANCE_RETRY_SECONDS, maintenanceUnderWay } from "./domain/maintenance.ts";
 import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { byHost } from "./http/surfaces.ts";
@@ -41,7 +41,7 @@ async function cronHeldForMaintenance(workerEnv: Env, log: Logger): Promise<bool
   const maintenance = await maintenanceUnderWay(workerEnv.DB);
   if (maintenance === null) return false;
   log.warn("cron_stopped_for_maintenance", { since: maintenance.startedAt });
-  const deps = makeDependencies(workerEnv, log);
+  const deps = makeDependencies(workerEnv, log, "background");
   await alertIfForgotten(maintenance, deps.alertOnce, deps.now());
   return true;
 }
@@ -54,6 +54,28 @@ async function batchHeldForMaintenance(batch: MessageBatch, db: D1Database, log:
   return true;
 }
 
+/** Each queue's consumer, by how the queue's name begins in every environment (wrangler.jsonc). */
+const QUEUE_CONSUMERS: readonly {
+  readonly prefix: string;
+  readonly consume: (batch: MessageBatch, workerEnv: Env, deps: Dependencies, log: Logger) => Promise<void>;
+}[] = [
+  {
+    prefix: "mm-crm-sync-",
+    consume: (batch, workerEnv, deps, log) => handleCrmSyncBatch(batch, workerEnv.DB, deps, log),
+  },
+  {
+    prefix: "mm-render-",
+    consume: (batch, workerEnv, deps, log) =>
+      handleRenderBatch(batch, workerEnv, deps, log, {
+        resultRetentionDays: config.settings.tryon.resultRetentionDays,
+      }),
+  },
+  {
+    prefix: "mm-messaging-",
+    consume: (batch, workerEnv, deps, log) => handleMessagingBatch(batch, workerEnv.DB, config, deps, log),
+  },
+];
+
 /** Hands a batch to its queue's consumer, once the database is this environment's and no maintenance is under way. */
 async function consumeBatch(batch: MessageBatch, workerEnv: Env, log: Logger): Promise<void> {
   const started = Date.now();
@@ -62,24 +84,13 @@ async function consumeBatch(batch: MessageBatch, workerEnv: Env, log: Logger): P
   const identityMs = Date.now() - started;
   if (identityMs > SLOW_STEP_MS) log.warn("slow_step", { step: "database_identity", duration_ms: identityMs });
   if (await batchHeldForMaintenance(batch, workerEnv.DB, log)) return;
-  const deps = makeDependencies(workerEnv, log);
-
-  if (batch.queue.startsWith("mm-crm-sync-")) {
-    await handleCrmSyncBatch(batch, workerEnv.DB, deps, log);
+  const consumer = QUEUE_CONSUMERS.find((each) => batch.queue.startsWith(each.prefix));
+  if (consumer === undefined) {
+    log.error("unknown_queue", { queue: batch.queue });
+    batch.retryAll();
     return;
   }
-  if (batch.queue.startsWith("mm-render-")) {
-    await handleRenderBatch(batch, workerEnv, deps, log, {
-      resultRetentionDays: config.settings.tryon.resultRetentionDays,
-    });
-    return;
-  }
-  if (batch.queue.startsWith("mm-messaging-")) {
-    await handleMessagingBatch(batch, workerEnv.DB, config, deps, log);
-    return;
-  }
-  log.error("unknown_queue", { queue: batch.queue });
-  batch.retryAll();
+  await consumer.consume(batch, workerEnv, makeDependencies(workerEnv, log, "background"), log);
 }
 
 export default {
@@ -107,7 +118,7 @@ export default {
     const meteredEnv = { ...workerEnv, DB: meter.db };
     await assertOwnDatabase(meteredEnv.DB);
     if (await cronHeldForMaintenance(meteredEnv, log)) return;
-    const deps = makeDependencies(meteredEnv, log);
+    const deps = makeDependencies(meteredEnv, log, "background");
     const { cron, scheduledTime } = controller;
     const run = { env: meteredEnv, deps, config, log, meter, calls: callsFor(cron) };
     await runCron(jobsDue(CRON_JOBS, cron, scheduledTime), run, pingsWhenWell(cron, scheduledTime));

@@ -385,6 +385,34 @@ describe("crm-sync: the queue batch", () => {
     expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
   });
 
+  // CQ-23: a D1 read outside any catch rejected the whole batch, and every message came back at once.
+  it("tries again a message D1 failed, and still syncs the rest of the batch", async () => {
+    const ok = await phaseOneLead();
+    let failed = false;
+    const flaky = new Proxy(env.DB, {
+      get(target, key) {
+        if (key === "prepare" && !failed) {
+          failed = true;
+          return () => {
+            throw new Error("D1_ERROR: Network connection lost.");
+          };
+        }
+        const value: unknown = Reflect.get(target, key);
+        return typeof value === "function" ? (value.bind(target) as unknown) : value;
+      },
+    });
+    const batch = batchOf([
+      { lead_id: "00000000-0000-4000-8000-000000000000", request_id: "r1" },
+      { lead_id: ok, request_id: "r2" },
+    ]);
+
+    await handleCrmSyncBatch(batch as unknown as MessageBatch, flaky, fakeDependencies(), log);
+
+    expect(batch.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
+    expect(batch.messages[1]?.ack).toHaveBeenCalledOnce();
+    expect((await leadRow(ok))?.sync_state).toBe("synced");
+  });
+
   it("drops a malformed message instead of retrying it forever", async () => {
     const batch = batchOf([{ lead: "nope" }]);
     await handleCrmSyncBatch(batch as unknown as MessageBatch, env.DB, fakeDependencies(), log);
