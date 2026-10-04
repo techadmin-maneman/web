@@ -45,10 +45,7 @@ export const bookedWithCode = (booked: Booked) => ({
 });
 
 /** A keyed run answered: its first success again, the key's conflict, its success now, or its refusal. */
-function answered<Body>(
-  c: Context<AppEnv>,
-  run: KeyedRun<{ readonly ok: true; readonly body: Body } | Refusal>,
-) {
+function answered<Body>(c: Context<AppEnv>, run: KeyedRun<{ readonly ok: true; readonly body: Body } | Refusal>) {
   const { requestId } = c.var;
   if (run.kind === "replay") return c.json(run.body, 201);
   if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
