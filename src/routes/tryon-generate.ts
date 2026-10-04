@@ -23,6 +23,7 @@ import { setLookCookie } from "../http/look-cookie.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { indiaHour } from "../lib/india-time.ts";
 import { tryOnRuns } from "../policy/tryon-delivery.ts";
+import { enqueue } from "../queues/enqueue.ts";
 import type { RenderMessage } from "../queues/render.ts";
 
 export const GenerateRequestSchema = z
@@ -174,10 +175,6 @@ function choiceValues(choice: RenderChoice): string[] {
 }
 
 async function enqueueRender(c: Context<AppEnv>, jobId: string): Promise<void> {
-  try {
-    await c.env.RENDER_QUEUE.send({ job_id: jobId, request_id: c.var.requestId } satisfies RenderMessage);
-  } catch (error) {
-    // The job is safe in D1; the sweeper re-enqueues queued jobs that never started.
-    c.var.log.warn("render_enqueue_failed", { job_id: jobId, error });
-  }
+  const body = { job_id: jobId, request_id: c.var.requestId } satisfies RenderMessage;
+  await enqueue(c.env.RENDER_QUEUE, body, { log: c.var.log, ifLost: "sweeper" });
 }
