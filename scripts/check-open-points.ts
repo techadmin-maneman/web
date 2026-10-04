@@ -1,4 +1,4 @@
-// Checks docs/open-points.md and every citation of it (scripts/lib/open-points.ts).
+// Checks docs/open-points.md and docs/open-points-settled.md, and every citation of a point (scripts/lib/open-points.ts).
 //
 //   node scripts/check-open-points.ts    prints the problems, or the next free number
 
@@ -11,7 +11,11 @@ import {
   referenceProblems,
 } from "./lib/open-points.ts";
 
-const markdown = readFileSync("docs/open-points.md", "utf8");
+// The settled points are kept in a file of their own, after the open ones (docs/open-points-settled.md): read as one, a
+// number is never used twice across the two.
+const markdown = ["docs/open-points.md", "docs/open-points-settled.md"]
+  .map((file) => readFileSync(file, "utf8"))
+  .join("\n");
 const points = readOpenPoints(markdown);
 const files = citingFiles().map((path) => ({ path, text: readFileSync(path, "utf8") }));
 const problems = [

@@ -60,7 +60,7 @@ A screen that chooses between several things says so in a function that returns 
 
 What a client does after booking: Home, Visits, Photos, Payments, Refer and Profile (ADR 0043). Only a person with a consultation booked, or a visit since, can sign in (`src/policy/login.ts`).
 
-- **Booking and paying.** A visit is held for ten minutes while the client pays through Razorpay's Checkout, whose hosts the app's policy allows (`apps/app/headers.ts`). The booking is written to FSM from mm-api's queue once Razorpay's webhook says the money came (ADR 0068). Where `SELF_SERVE_BOOKING` is off, the API answers `ops_assisted` and the app says booking goes through ops.
+- **Booking and paying.** A visit is held for ten minutes while the client pays through Razorpay's Checkout, whose hosts the app's policy allows (`apps/app/headers.ts`). The visit is booked once Razorpay's webhook says the money came, in that request (ADR 0110). Where `SELF_SERVE_BOOKING` is off, the API answers `ops_assisted` and the app says booking goes through ops.
 - **Installable, and open offline.** `packages/web-kit/pwa.ts` draws the manifest and icons from the brand kit, with the app's names in `apps/app/pwa.ts`; `apps/app/sw/sw.ts` keeps the app's files and the last Home it was sent, which Home shows offline (board B3).
 - **Its budget.** A build over 150 KB of gzipped JavaScript fails (`scripts/lib/spa-build.ts`), and Lighthouse holds its first screen to the budgets in `scripts/lighthouse.ts`.
 
@@ -72,7 +72,7 @@ Ops' desk tool, drawn at 1440 px: dispatch, clients, no-shows, referrals, the wa
 
 What a technician needs at a client's door, in a basement, with gloves on (ADR 0053):
 
-- **Today's and tomorrow's jobs**, one job's card, and its six steps: before photographs, checklist, consumables, the piece, after photographs, the outcome (`apps/tech/src/route.ts`).
+- **Today's and tomorrow's jobs**, one job's card, and its steps: before photographs, checklist, consumables, the piece (a first fit's and a replacement's), after photographs and the outcome, with the client's hair profile on a consultation and a one visit (`apps/tech/src/route.ts`).
 - **An outbox.** Every step goes into IndexedDB (`mm-tech`, `apps/tech/src/store/`) and is sent one at a time, oldest first, whenever the phone has signal. "Waiting to reach us" (`/waiting`) shows what is still on the phone. Signing out, or ops revoking the phone, wipes the database whole.
 - **One phone per session.** The phone enrols itself when he signs in, and ops can revoke it from the console (ADR 0052).
 - **Photographs that never touch the gallery,** taken through `getUserMedia` into a canvas and re-encoded to 250 KB or less (`apps/tech/src/camera/`).

@@ -23,13 +23,13 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 
 ## Operate
 
-| Document                                                                                       | Read it for                                                               |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [runbook.md](runbook.md)                                                                       | Provisioning, deploys, incidents, every alert, restoring D1, rolling back |
-| [go-live.md](go-live.md)                                                                       | What takes each release to production, in the owner's order               |
-| [open-points.md](open-points.md)                                                               | What is still owed before production, and what staging uses meanwhile     |
-| [tech-field-test.md](tech-field-test.md), [technician-test-setup.md](technician-test-setup.md) | The technician app's field test, and signing in to it on your own phone   |
-| [turnstile.md](turnstile.md)                                                                   | The Turnstile widgets, their site keys and hostnames                      |
+| Document                                                                                       | Read it for                                                                             |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [runbook.md](runbook.md)                                                                       | Provisioning, deploys, incidents, every alert, restoring D1, rolling back               |
+| [go-live.md](go-live.md)                                                                       | What takes each release to production, in the owner's order                             |
+| [open-points.md](open-points.md), [open-points-settled.md](open-points-settled.md)             | What is still owed before production, what staging uses meanwhile, and what was settled |
+| [tech-field-test.md](tech-field-test.md), [technician-test-setup.md](technician-test-setup.md) | The technician app's field test, and signing in to it on your own phone                 |
+| [turnstile.md](turnstile.md)                                                                   | The Turnstile widgets, their site keys and hostnames                                    |
 
 ## Reference
 
