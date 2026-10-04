@@ -15,6 +15,7 @@ function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[])
     orderPayments: notAsked,
     createPaymentLink: notAsked,
     findPaymentLink: notAsked,
+    resendPaymentLink: notAsked,
     paymentLink: notAsked,
     cancelPaymentLink: notAsked,
     refund: (_paymentId, refund) => {

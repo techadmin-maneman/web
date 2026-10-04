@@ -2,7 +2,7 @@
 // "Read endpoints"), from the payments mirror (docs/decisions/0044-payments-mirror.md)
 // and Zoho Books (docs/decisions/0032-fsm-mirror.md).
 //
-//   GET /api/payments                one list of payments and refunds, newest first
+//   GET /api/payments                what is owed, then one list of payments and refunds, newest first
 //   GET /api/payments/:id            one entry: a payment with its documents, or a refund with its destination
 //   GET /api/payments/:id/receipt    a payment's receipt, as a PDF from Books
 //   GET /api/documents/:id           a visit's invoice, as a PDF from Books
@@ -25,6 +25,7 @@ import {
   receiptOf,
   REFERRAL_SIDES,
 } from "../domain/client-payments.ts";
+import { owedPayments } from "../domain/one-visit-money.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { NoShowNoteSchema } from "./client-visits.ts";
@@ -125,6 +126,23 @@ const RefundEntrySchema = z
 
 export const EntrySchema = z.discriminatedUnion("kind", [PaymentEntrySchema, RefundEntrySchema]);
 
+/** A consultation and fit in one visit the client was fitted at and has not paid for yet. */
+export const OwedPaymentSchema = z
+  .object({
+    visit_id: z.uuid(),
+    date: z.iso.date().openapi({ description: "India's date of the visit." }),
+    amount: z
+      .number()
+      .int()
+      .openapi({ description: "In paise, GST included, after any code: what the link asks for." }),
+    product: z.string().openapi({ description: 'The hair system fitted: "Mane Man Natural hair system".' }),
+    url: z.union([z.string(), z.null()]).openapi({
+      description: "The payment link Razorpay texted the client; null until it has made one.",
+    }),
+  })
+  .strict()
+  .openapi("OwedPayment");
+
 /** What happened to the client's service-visit credits, entry by entry, as the ledger keeps them. */
 const CreditLineSchema = z
   .object({
@@ -183,6 +201,9 @@ const paymentsRoute = createRoute({
         "application/json": {
           schema: z
             .object({
+              owed: z.array(OwedPaymentSchema).openapi({
+                description: "Payment links not yet paid, the oldest first: a one visit's, once the client is fitted.",
+              }),
               entries: z.array(EntrySchema),
               credits: z.array(CreditLineSchema).openapi({
                 description:
@@ -247,11 +268,12 @@ export function registerClientPayments(app: App): void {
 
   app.openapi(paymentsRoute, async (c) => {
     const session = clientOf(c);
-    const [entries, credits] = await Promise.all([
+    const [owed, entries, credits] = await Promise.all([
+      owedPayments(c.env.DB, session.subjectId),
       paymentEntries(c.env.DB, session.subjectId, c.var.deps.now()),
       creditLines(c.env.DB, session.subjectId, c.var.deps.now()),
     ]);
-    return c.json({ entries, credits }, 200);
+    return c.json({ owed, entries, credits }, 200);
   });
 
   app.openapi(entryRoute, async (c) => {

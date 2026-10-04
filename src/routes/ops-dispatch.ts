@@ -40,6 +40,7 @@ import { json } from "../http/openapi.ts";
 import { queueMessage } from "../http/queue-message.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { BEGUN, CLIENT_NOTICES, MOVE_REASONS, UNTOLD_REASONS } from "../policy/dispatch.ts";
 import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 
@@ -180,6 +181,13 @@ const EXPECTED = {
   expected_starts_at: z.iso.datetime().openapi({ description: "The start the board showed the job with." }),
 };
 
+const BLACKOUT_REASON = {
+  blackout_reason: z.string().trim().min(1).max(REASON_MAX_CHARS).optional().openapi({
+    description:
+      "Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day.",
+  }),
+};
+
 const AssignRequestSchema = z
   .object({
     appointment_id: z.uuid(),
@@ -188,6 +196,7 @@ const AssignRequestSchema = z
     window: z.enum(BOOKING_WINDOWS).optional(),
     reason: z.enum(MOVE_REASONS),
     ...EXPECTED,
+    ...BLACKOUT_REASON,
   })
   .strict()
   .openapi("DispatchAssignRequest");
@@ -200,6 +209,7 @@ const MoveRequestSchema = z
     window: z.enum(BOOKING_WINDOWS).optional(),
     reason: z.enum(MOVE_REASONS),
     ...EXPECTED,
+    ...BLACKOUT_REASON,
     clear_check_in: z.literal(true).optional().openapi({
       description:
         "Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress.",
@@ -256,7 +266,7 @@ const assignRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
-      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
+      "past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
     ),
   },
 });
@@ -274,7 +284,7 @@ const moveRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
-      "clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is",
+      "past_day; window_passed; clash; on_leave; does_not_fit; blackout; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is",
     ),
   },
 });
@@ -288,14 +298,22 @@ const RoomSchema = z
           technician_id: z.uuid(),
           date: z.iso.date(),
           windows: z.array(z.enum(BOOKING_WINDOWS)).min(1),
+          starts: z
+            .array(z.object({ window: z.enum(BOOKING_WINDOWS), starts_at: z.iso.datetime() }).strict())
+            .min(1)
+            .openapi({ description: "When the job would start in each of those windows, as the move would place it." }),
         })
         .strict(),
     ),
+    blackouts: z.array(z.iso.date()).openapi({
+      description:
+        "The days of the week ops blacked out, other than the job's own. A move onto one needs a blackout_reason.",
+    }),
   })
   .strict()
   .openapi("DispatchRoom", {
     description:
-      "Each technician's day in the caller's cities with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is.",
+      "Each technician's day in the caller's cities with a window the job would land in, by the check a move runs: today, only at a start still ahead, and never on a day gone. A day not listed has none. Not where the job already is.",
   });
 
 const roomRoute = createRoute({
@@ -343,11 +361,11 @@ export function registerOpsDispatch(app: App): void {
     const { appointment_id: appointmentId, from } = c.req.valid("query");
     if (!(await withinRouteReach(c, "visit", appointmentId)))
       return c.json(errorBody("not_found", c.var.requestId), 404);
-    const rooms = await roomFor(c.env.DB, { appointmentId, from: from ?? indiaDate(now) }, now);
-    if (rooms === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    const room = await roomFor(c.env.DB, { appointmentId, from: from ?? indiaDate(now) }, now);
+    if (room === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const technicians = await techniciansWithin(c.env.DB, await routeReach(c));
-    const reached = rooms.filter((room) => isWithin(technicians, room.technician_id));
-    return c.json({ appointment_id: appointmentId, rooms: reached }, 200);
+    const reached = room.rooms.filter((each) => isWithin(technicians, each.technician_id));
+    return c.json({ appointment_id: appointmentId, rooms: reached, blackouts: room.blackouts }, 200);
   });
 
   app.openapi(assignRoute, (c) => write(c, c.req.valid("json")));
@@ -414,6 +432,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     actor: staff.id,
     expected: { technicianId: request.expected_technician_id, startsAt: request.expected_starts_at },
     clearCheckIn: checkInClearedBy(c, request),
+    blackoutReason: request.blackout_reason ?? null,
   };
   const outcome = await moveJob(
     c.env.DB,

@@ -84,7 +84,7 @@ const LINK_COLUMNS = "id, amount, reference, sent_at, refused_at";
 const referenceOf = (link: LinkRow, visit: FittedVisit) => link.reference ?? visit.appointmentId;
 
 /** What the client reads they are paying for: "Mane Man Natural hair system". */
-function hairSystemName(product: string | undefined): string {
+export function hairSystemName(product: string | undefined): string {
   if (product === undefined) return "Hair system";
   return /hair system$/i.test(product) ? product : `${product} hair system`;
 }
@@ -236,15 +236,64 @@ export async function sendUnsentLinks(db: D1Database, deps: LinkDeps, now: Date,
   for (const row of results) {
     if (row.person_id === null) continue;
     if (!budget.spend(CALLS_PER_LINK)) break;
-    const visit = {
-      appointmentId: row.appointment_id,
-      personId: row.person_id,
-      tier: row.tier,
-      day: indiaDate(new Date(row.window_start)),
-    };
-    if ((await askRazorpay(db, deps, row, visit, now)) === "sent") sent += 1;
+    if ((await askRazorpay(db, deps, row, fittedVisitOf(row, row.person_id), now)) === "sent") sent += 1;
   }
   return sent;
+}
+
+function fittedVisitOf(row: UnsentRow, personId: string): FittedVisit {
+  return {
+    appointmentId: row.appointment_id,
+    personId,
+    tier: row.tier,
+    day: indiaDate(new Date(row.window_start)),
+  };
+}
+
+/** What ops sending a client's link again came to: texted again, made now, or why it was not sent. */
+export type Resent = "resent" | "sent" | "not_texted" | "paid" | "refused" | "unavailable" | "not_found";
+
+interface ResendRow extends UnsentRow {
+  person_id: string;
+  razorpay_link_id: string | null;
+  paid_at: string | null;
+}
+
+/**
+ * Ops send a client's unpaid link again: Razorpay texts the link it made once more, and a link the close could not
+ * have made is asked for now rather than at the cron's next run. A link already paid is not sent, nor one Razorpay
+ * refused, which ops send from Razorpay's dashboard. A number messaging may not text (a staging test record) is not
+ * texted again. An erased client's link is not found.
+ */
+export async function resendLink(db: D1Database, deps: LinkDeps, linkId: string, now: Date): Promise<Resent> {
+  const row = await db
+    .prepare(
+      `SELECT l.id, l.amount, l.reference, l.sent_at, l.refused_at, l.paid_at, l.razorpay_link_id, l.appointment_id,
+         l.tier, a.person_id, a.window_start
+       FROM payment_links l JOIN appointments a ON a.id = l.appointment_id JOIN people pe ON pe.id = a.person_id
+       WHERE l.id = ?1 AND pe.erased_at IS NULL`,
+    )
+    .bind(linkId)
+    .first<ResendRow>();
+  if (row === null) return "not_found";
+  if (row.paid_at !== null) return "paid";
+  if (row.refused_at !== null) return "refused";
+  if (row.razorpay_link_id === null) return askRazorpay(db, deps, row, fittedVisitOf(row, row.person_id), now);
+  const client = await db.prepare("SELECT mobile_e164 FROM people WHERE id = ?1").bind(row.person_id).first<{
+    mobile_e164: string;
+  }>();
+  if (!onAllowlist(deps.messagingSettings, client?.mobile_e164 ?? "")) {
+    deps.log.info("payment_link_not_texted", { appointment_id: row.appointment_id });
+    return "not_texted";
+  }
+  try {
+    await deps.payments.resendPaymentLink(row.razorpay_link_id);
+  } catch (error) {
+    deps.log.warn("payment_link_resend_failed", { appointment_id: row.appointment_id, reason: failureReason(error) });
+    return "unavailable";
+  }
+  deps.log.info("payment_link_resent", { appointment_id: row.appointment_id });
+  return "resent";
 }
 
 /** Asks Razorpay to make the link and text it to the client; never throws. */

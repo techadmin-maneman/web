@@ -230,10 +230,11 @@ describe("closing a one visit the client was fitted at", () => {
     const owed = async (at: Date) =>
       (await outstandingTasks(env.DB, at, TASK_SLA_HOURS)).tasks.find((task) => task.group === "payment_owed")?.detail;
 
-    expect(await owed(new Date(TWO_WEEKS_ON.getTime() - 60_000))).toBe(
-      `sent ${String(NATURAL.amount)} Mane Man Natural`,
-    );
-    expect(await owed(TWO_WEEKS_ON)).toBe(`closed ${String(NATURAL.amount)} Mane Man Natural`);
+    // The task reads "<state> <paise> <link address> <product>".
+    const reads = (state: string) =>
+      new RegExp(`^${state} ${String(NATURAL.amount)} https://rzp\\.io/i/\\S+ Mane Man Natural$`);
+    expect(await owed(new Date(TWO_WEEKS_ON.getTime() - 60_000))).toMatch(reads("sent"));
+    expect(await owed(TWO_WEEKS_ON)).toMatch(reads("closed"));
   });
 
   // MON-45, PS-46: on staging a test record's made-up number, very likely a stranger's, was texted "pay Rs. 30,000".
@@ -266,7 +267,12 @@ describe("closing a one visit the client was fitted at", () => {
     await closeAsDone(job);
     const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(tasks.filter((task) => task.group === "payment_owed")).toMatchObject([
-      { person: { id: PERSON, name: "Rohit Malhotra" }, detail: `sent ${String(NATURAL.amount)} Mane Man Natural` },
+      {
+        person: { id: PERSON, name: "Rohit Malhotra" },
+        detail: expect.stringMatching(
+          new RegExp(`^sent ${String(NATURAL.amount)} https://rzp\\.io/i/\\S+ Mane Man Natural$`),
+        ) as string,
+      },
     ]);
   });
 
@@ -358,7 +364,7 @@ describe("closing a one visit the client was fitted at", () => {
     expect(job.deps.alerts[0]).toContain(`reference ${JOB}`);
     const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(tasks.find((task) => task.group === "payment_owed")?.detail).toBe(
-      `unsent ${String(NATURAL.amount)} Mane Man Natural`,
+      `refused ${String(NATURAL.amount)} - Mane Man Natural`,
     );
   });
 
