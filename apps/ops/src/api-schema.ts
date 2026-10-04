@@ -224,7 +224,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The client's record: who they are, their address, their visits, their money, their history and their invite */
+        /** The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits, their money and any booking still held for them */
         get: {
             parameters: {
                 query?: never;
@@ -242,10 +242,10 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ClientRecord"];
+                        "application/json": components["schemas"]["ClientRecord"] | components["schemas"]["ErasedClientRecord"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
+                /** @description not_found: no such client, or the client is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1953,7 +1953,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Open grievances in the caller's cities, oldest first */
+        /** Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's */
         get: {
             parameters: {
                 query?: never;
@@ -2091,6 +2091,8 @@ export interface paths {
                             }[];
                             /** @description More than 200 pincodes have someone waiting; these are the longest waits. */
                             more: boolean;
+                            /** @description Our cities the caller may add a pincode in: those their Growth MANAGE reaches. */
+                            cities: string[];
                         };
                     };
                 };
@@ -2143,6 +2145,15 @@ export interface paths {
                         };
                     };
                 };
+                /** @description launch_in_future: launch_on is a day still to come */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE */
                 403: {
                     headers: {
@@ -2152,7 +2163,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: we have no such pincode */
+                /** @description not_found: the service area holds no such pincode, so it is added first */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2248,6 +2259,51 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["DispatchBoard"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dispatch/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The board's version, which the open board asks for every minute: one row, where the board itself is hundreds */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The version now */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DispatchBoardVersion"];
                     };
                 };
                 /** @description access_required */
@@ -4311,6 +4367,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             pincodes: components["schemas"]["ServedPincode"][];
+                            /** @description Our cities, which a pincode added must be in. */
+                            cities: string[];
                         };
                     };
                 };
@@ -4354,7 +4412,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served */
+                /** @description invalid_request: fields names a pincode we do not hold. launch_in_future: fields names a pincode it would serve from a day still to come. no_service_area: it would leave none served */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -4365,6 +4423,73 @@ export interface paths {
                 };
                 /** @description access_required */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pincodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a pincode the service area does not hold, unserved, in one of our cities */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NewPincode"];
+                };
+            };
+            responses: {
+                /** @description The pincode, as the service area now lists it */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ServedPincode"];
+                    };
+                };
+                /** @description invalid_request: fields names the box refused, city for a city that is not one of ours */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required, or not_permitted: the city is outside the caller's Growth MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description pincode_held: the service area holds that pincode already */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6550,7 +6675,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -6700,6 +6825,8 @@ export interface components {
             ends_at: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
@@ -6754,6 +6881,8 @@ export interface components {
             ends_at: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
@@ -7057,6 +7186,26 @@ export interface components {
             /** Format: date-time */
             refunded_at: string;
         };
+        /** @description What is kept of a client once erased: their visits, their money and any booking still held for them. Nothing names them. */
+        ErasedClientRecord: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            erased_at: string;
+            /** @description Upcoming soonest first; past newest first. No discount code may be entered or taken off: price_open is false. */
+            visits: {
+                upcoming: components["schemas"]["ClientVisit"][];
+                past: components["schemas"]["ClientVisit"][];
+            };
+            /** @description Payments and refunds as one list, newest first. */
+            payments: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
+            /** @description Every payment link, newest first. */
+            payment_links: components["schemas"]["ClientPaymentLink"][];
+            /** @description Each finished visit sold for a price, with its invoice; the latest visit first. */
+            invoices: components["schemas"]["ClientInvoice"][];
+            /** @description Bookings FSM refused, waiting for a try or for ops; the soonest visit first. */
+            held_bookings: components["schemas"]["HeldBooking"][];
+        };
         ClientPhotos: {
             visits: {
                 /** Format: uuid */
@@ -7354,7 +7503,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -7639,11 +7788,13 @@ export interface components {
             confirm: boolean;
             /**
              * Format: date
-             * @description India's date it starts; today if left out.
+             * @description India's date it started: today if left out, and never a day to come.
              */
             launch_on?: string;
         };
         DispatchBoard: {
+            /** @description Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another. */
+            version: number;
             /** Format: date */
             from: string;
             /** @description 7 days, the board's columns. */
@@ -7668,6 +7819,8 @@ export interface components {
                 /** Format: uuid */
                 appointment_id: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+                service: string | null;
                 /** @description First name and last initial. */
                 client: string | null;
                 /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
@@ -7716,6 +7869,8 @@ export interface components {
             /** Format: uuid */
             appointment_id: string;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
+            service: string | null;
             /** @description First name and last initial. */
             client: string | null;
             /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
@@ -7738,12 +7893,14 @@ export interface components {
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does. */
             notice_hours: number;
-            /** @description The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told. */
+            /** @description The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told. */
             untold: {
                 /** Format: uuid */
                 move_id: string;
                 /** Format: date-time */
                 starts_at: string;
+                /** @enum {string} */
+                reason: "no_consent" | "not_sent";
             } | null;
             /** @description How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved. */
             begun: ("arrived" | "started" | "closed") | null;
@@ -7759,6 +7916,10 @@ export interface components {
             whatsapp_visits: boolean;
             /** @description Who invited him, by name; null when he came on his own. */
             referred_by: string | null;
+        };
+        DispatchBoardVersion: {
+            /** @description Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another. */
+            version: number;
         };
         /** @description Each technician's day in the caller's cities with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is. */
         DispatchRoom: {
@@ -8076,6 +8237,11 @@ export interface components {
             distance_m: number | null;
             /** @description The check-in radius in force when he checked in. */
             radius_m: number;
+            /**
+             * @description What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.
+             * @enum {string}
+             */
+            message_state: "delivered" | "sent" | "not_sent" | "no_consent" | "none";
             message_delivered_at: string | null;
             closed_at: string | null;
         };
@@ -8125,7 +8291,7 @@ export interface components {
                 /** Format: date-time */
                 starts_at: string;
             };
-            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
+            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
             detail: string | null;
             /**
              * Format: date-time
@@ -8426,6 +8592,12 @@ export interface components {
                 /** @description A better name for the area than its post office's. Left out, the name stays. */
                 area?: string;
             }[];
+        };
+        NewPincode: {
+            pincode: string;
+            /** @description What messages call the area. */
+            area: string;
+            city: string;
         };
         SlotTimes: {
             in_force: {

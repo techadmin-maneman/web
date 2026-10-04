@@ -1,15 +1,23 @@
-// Which of the org's records staging wrote, and the order a reviewed list of them is deleted in
-// (scripts/lib/staging-records.ts; docs/open-points.md, items 19 and 155).
+// Which of the org's records staging wrote, the order a reviewed list of them is deleted in, and the links staging's
+// database keeps to them (scripts/lib/staging-records.ts). Every ID is made up.
 
+import type { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import {
+  crmDeleteOutcome,
+  crmHoldsNoSuchRecord,
+  crmScopeMissing,
   DELETE_ORDER,
   isStagingMarked,
+  KNOWN_IDS_SQL,
   leftAlone,
   looksLikeATest,
   toDelete,
+  unlinkStatements,
+  unlisted,
   type StagingRecord,
 } from "../../scripts/lib/staging-records.ts";
+import { migratedDatabase } from "./d1-over-sqlite.ts";
 
 describe("staging's marks", () => {
   it("are the label before a summary or description, and the names our scripts give", () => {
@@ -38,7 +46,9 @@ describe("staging's marks", () => {
 describe("a reviewed list", () => {
   const record = (kind: StagingRecord["kind"], id: string): StagingRecord => ({ kind, id, name: "Staging test" });
   const reviewed = [
+    record("crm/Leads", "lead"),
     record("books/contacts", "b-contact"),
+    record("crm/Contacts", "c-contact"),
     record("fsm/Contacts", "f-contact"),
     record("fsm/Service_Appointments", "appointment"),
     record("books/customerpayments", "payment"),
@@ -46,7 +56,7 @@ describe("a reviewed list", () => {
     record("books/refunds", "refund"),
   ];
 
-  it("is deleted with whatever points at a record before it", () => {
+  it("is deleted with whatever points at a record before it, the CRM's after Books' customers", () => {
     expect(toDelete(reviewed, reviewed).map((each) => each.id)).toEqual([
       "refund",
       "payment",
@@ -54,26 +64,163 @@ describe("a reviewed list", () => {
       "work-order",
       "f-contact",
       "b-contact",
+      "c-contact",
+      "lead",
     ]);
     expect(DELETE_ORDER.indexOf("fsm/Contacts")).toBeGreaterThan(DELETE_ORDER.indexOf("fsm/Requests"));
   });
 
-  it("deletes only what the org still holds and marks, and nothing the owner took out", () => {
-    const foundNow = [
-      record("fsm/Contacts", "f-contact"),
-      record("fsm/Work_Orders", "work-order"),
-      record("fsm/Contacts", "kept"),
-    ];
-    expect(toDelete(reviewed, foundNow).map((each) => each.id)).toEqual(["work-order", "f-contact"]);
+  it("deletes only what the org still holds as staging's, and nothing the owner took out", () => {
+    const foundNow = [record("fsm/Contacts", "f-contact"), record("crm/Leads", "lead"), record("fsm/Contacts", "kept")];
+    expect(toDelete(reviewed, foundNow).map((each) => each.id)).toEqual(["f-contact", "lead"]);
     expect(leftAlone(reviewed, foundNow).map((each) => each.id)).toEqual([
       "b-contact",
+      "c-contact",
       "appointment",
       "payment",
+      "work-order",
       "refund",
     ]);
   });
 
   it("matches a record by where it is as well as its ID", () => {
     expect(toDelete([record("books/contacts", "same")], [record("fsm/Contacts", "same")])).toEqual([]);
+  });
+});
+
+/** Staging's database with an erased client, a client still here, and what each holds in Books and the CRM. */
+function stagingDatabase(): DatabaseSync {
+  const db = migratedDatabase();
+  db.exec(`
+    INSERT INTO people (id, created_at, mobile_e164, name, books_customer_id, zoho_lead_id, erased_at) VALUES
+      ('erased', '2026-10-01T00:00:00Z', 'erased:erased', 'Erased', 'customer-erased', 'lead-erased',
+        '2026-10-02T00:00:00Z'),
+      ('here', '2026-10-01T00:00:00Z', '+919800000001', 'Staging test Asha', 'customer-here', 'lead-here', NULL),
+      ('new', '2026-10-01T00:00:00Z', '+919800000002', 'Staging test Ravi', NULL, NULL, NULL);
+    INSERT INTO appointments (id, fsm_id, person_id, status, synced_at, fsm_invoice_id, invoice_issued_at) VALUES
+      ('visit-issued', 'ours:visit-issued', 'here', 'completed', '2026-10-02T00:00:00Z', 'invoice-1',
+        '2026-10-02T00:00:00Z'),
+      ('visit-draft', 'ours:visit-draft', 'erased', 'completed', '2026-10-02T00:00:00Z', 'invoice-2', NULL),
+      ('visit-new', 'ours:visit-new', 'new', 'scheduled', '2026-10-02T00:00:00Z', NULL, NULL);
+    INSERT INTO payments (id, person_id, razorpay_payment_id, amount, currency, status, created_at, updated_at,
+        captured_at, books_payment_id, books_applied_at) VALUES
+      ('applied', 'here', 'pay_1', 2900000, 'INR', 'captured', '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z',
+        '2026-10-01T00:00:00Z', 'payment-1', '2026-10-02T00:00:00Z'),
+      ('refunded', 'erased', 'pay_2', 100000, 'INR', 'refunded', '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z',
+        '2026-10-01T00:00:00Z', 'payment-2', NULL);
+  `);
+  return db;
+}
+
+describe("the IDs staging's database keeps", () => {
+  it("are every client's Books customer and CRM lead, erased clients' too, and each payment's and invoice's", () => {
+    const known = stagingDatabase().prepare(KNOWN_IDS_SQL).all();
+
+    expect(known).toEqual(
+      expect.arrayContaining([
+        { kind: "books/contacts", id: "customer-erased" },
+        { kind: "books/contacts", id: "customer-here" },
+        { kind: "books/customerpayments", id: "payment-1" },
+        { kind: "books/customerpayments", id: "payment-2" },
+        { kind: "books/invoices", id: "invoice-1" },
+        { kind: "books/invoices", id: "invoice-2" },
+        { kind: "crm/Leads", id: "lead-erased" },
+        { kind: "crm/Leads", id: "lead-here" },
+      ]),
+    );
+    expect(known).toHaveLength(8);
+  });
+
+  it("are read one by one only where the marks did not find their record", () => {
+    const known = [
+      { kind: "books/contacts", id: "customer-here" },
+      { kind: "books/contacts", id: "customer-erased" },
+      { kind: "crm/Leads", id: "customer-here" },
+    ] as const;
+    const found: StagingRecord[] = [{ kind: "books/contacts", id: "customer-here", name: "Staging test Asha" }];
+
+    expect(unlisted(known, found)).toEqual([
+      { kind: "books/contacts", id: "customer-erased" },
+      { kind: "crm/Leads", id: "customer-here" },
+    ]);
+  });
+});
+
+describe("clearing the links to records now gone", () => {
+  const links = (db: DatabaseSync) => ({
+    people: db.prepare("SELECT id, books_customer_id, zoho_lead_id FROM people ORDER BY id").all(),
+    visits: db.prepare("SELECT id, fsm_invoice_id FROM appointments ORDER BY id").all(),
+    payments: db.prepare("SELECT id, books_payment_id FROM payments ORDER BY id").all(),
+  });
+
+  it("lets go of a client's customer and lead and a visit's invoice, and of nothing still held", () => {
+    const db = stagingDatabase();
+
+    for (const statement of unlinkStatements([
+      { kind: "books/contacts", id: "customer-erased" },
+      { kind: "crm/Leads", id: "lead-erased" },
+      { kind: "books/invoices", id: "invoice-2" },
+      { kind: "books/invoices", id: "invoice-2" },
+    ])) {
+      db.exec(statement);
+    }
+
+    expect(links(db)).toEqual({
+      people: [
+        { id: "erased", books_customer_id: null, zoho_lead_id: null },
+        { id: "here", books_customer_id: "customer-here", zoho_lead_id: "lead-here" },
+        { id: "new", books_customer_id: null, zoho_lead_id: null },
+      ],
+      visits: [
+        { id: "visit-draft", fsm_invoice_id: null },
+        { id: "visit-issued", fsm_invoice_id: "invoice-1" },
+        { id: "visit-new", fsm_invoice_id: null },
+      ],
+      payments: [
+        { id: "applied", books_payment_id: "payment-1" },
+        { id: "refunded", books_payment_id: "payment-2" },
+      ],
+    });
+  });
+
+  it("keeps a payment's and a refund's IDs, so the Books pass never records staging's old payments again", () => {
+    expect(
+      unlinkStatements([
+        { kind: "books/customerpayments", id: "payment-2" },
+        { kind: "books/refunds", id: "refund-1" },
+        { kind: "fsm/Contacts", id: "contact-1" },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("quotes what it is given", () => {
+    expect(unlinkStatements([{ kind: "crm/Leads", id: "lead'1" }])).toEqual([
+      "UPDATE people SET zoho_lead_id = NULL WHERE zoho_lead_id IN ('lead''1');",
+    ]);
+  });
+});
+
+describe("the CRM's answers", () => {
+  it("say a record deleted, merged away or never there is gone", () => {
+    expect(crmHoldsNoSuchRecord(204, null)).toBe(true);
+    expect(crmHoldsNoSuchRecord(400, { code: "INVALID_DATA", status: "error" })).toBe(true);
+    expect(crmHoldsNoSuchRecord(200, { data: [{ code: "ENTITY_ID_INVALID", status: "error" }] })).toBe(true);
+    expect(crmHoldsNoSuchRecord(200, { data: [{ id: "lead-1", Full_Name: "Erased" }] })).toBe(false);
+  });
+
+  it("tell a token without the scope from any other refusal", () => {
+    const mismatch = { code: "OAUTH_SCOPE_MISMATCH", message: "invalid oauth scope to access this URL" };
+    expect(crmScopeMissing(mismatch)).toBe(true);
+    expect(crmScopeMissing({ code: "INVALID_TOKEN" })).toBe(false);
+  });
+
+  it("say how a delete went", () => {
+    const deleted = { data: [{ code: "SUCCESS", details: { id: "lead-1" }, status: "success" }] };
+    expect(crmDeleteOutcome(200, deleted)).toBe("deleted");
+    expect(crmDeleteOutcome(400, { data: [{ code: "INVALID_DATA", status: "error" }] })).toBe("already gone");
+    expect(crmDeleteOutcome(401, { code: "OAUTH_SCOPE_MISMATCH" })).toBe(
+      "refused: the scripts' CRM token may not delete it (runbook, step 8.7); delete it in the CRM",
+    );
+    expect(crmDeleteOutcome(500, { code: "INTERNAL_ERROR" })).toBe('refused: 500 {"code":"INTERNAL_ERROR"}');
   });
 });

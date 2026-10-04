@@ -4,8 +4,9 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { autoRefundsOf } from "../../src/domain/auto-refunds.ts";
 import { bookUnbookedHolds, confirmBooking } from "../../src/domain/bookings.ts";
-import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
+import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { resolveAskedWindows } from "../../src/domain/asked-windows.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { settleOwedRefunds } from "../../src/domain/cancel-refunds.ts";
@@ -17,6 +18,7 @@ import {
   termsInForce,
   type OpsCancel,
 } from "../../src/domain/visit-changes.ts";
+import { moveJob } from "../../src/domain/dispatch.ts";
 import { readOpsInputs } from "../../src/domain/ops-settings.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
@@ -146,15 +148,19 @@ async function fittedClient() {
     .run();
 }
 
-/** A paid service visit with Imran, booked without FSM: its FSM ID is its own, and it has no work order. */
-async function bookedWithoutFsm(start: string) {
-  const end = new Date(new Date(start).getTime() + 90 * 60_000).toISOString();
+/**
+ * A paid visit with Imran, a service visit unless `type` says, booked without FSM: its FSM ID is its own, and it has
+ * no work order.
+ */
+async function bookedWithoutFsm(start: string, type = "service") {
+  const minutes = type === "first_fit" ? 180 : 90;
+  const end = new Date(new Date(start).getTime() + minutes * 60_000).toISOString();
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
        synced_at)
-     VALUES (?1, ?1, ?2, 'service', 'standard', 'scheduled', ?3, ?4, 't1', ?5)`,
+     VALUES (?1, ?1, ?2, ?6, 'standard', 'scheduled', ?3, ?4, 't1', ?5)`,
   )
-    .bind(VISIT, PERSON, start, end, NOW.toISOString())
+    .bind(VISIT, PERSON, start, end, NOW.toISOString(), type)
     .run();
   await env.DB.prepare(
     `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, method, status,
@@ -173,6 +179,13 @@ async function heldAndOrdered(body: object = { type: "service", date: "2026-09-2
   const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
   const checkout = (await started.json<{ checkout: { order_id: string; amount: number } | null }>()).checkout;
   return { holdId: hold.id, orderId: checkout?.order_id ?? "", amount: checkout?.amount ?? 0 };
+}
+
+/** A hold that moves the visit, a service visit unless `type` says. */
+async function moveHold(date: string, window: string, type = "service") {
+  const answer = await call(PERSON, "/api/holds", { method: "POST", body: { type, date, window, moving: VISIT } });
+  expect(answer.status).toBe(201);
+  return (await answer.json<{ id: string }>()).id;
 }
 
 const holdRow = (id: string) =>
@@ -359,16 +372,120 @@ describe("a free booking", () => {
   });
 });
 
-describe("a visit booked without FSM, moved by the client", () => {
-  async function moveHold(date: string, window: string) {
-    const answer = await call(PERSON, "/api/holds", {
+describe("one credit pays for one visit, without FSM", () => {
+  const hold = async (date: string) => {
+    const held = await call(PERSON, "/api/holds", {
       method: "POST",
-      body: { type: "service", date, window, moving: VISIT },
+      body: { type: "service", date, window: "afternoon" },
     });
-    expect(answer.status).toBe(201);
-    return (await answer.json<{ id: string }>()).id;
+    expect(held.status).toBe(201);
+    return (await held.json<{ id: string }>()).id;
+  };
+  const book = async (holdId: string) => {
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: holdId } });
+    // A call that finds its hold booked already answers 409, with no checkout.
+    return started.json<{ checkout?: { amount: number } | null }>();
+  };
+  const redeems = async () =>
+    (await env.DB.prepare("SELECT source_id FROM credit_ledger WHERE kind = 'redeem'").all()).results;
+
+  /** The one service visit booked, its credit redeemed, and nothing left to spend. */
+  async function oneVisitOnTheCredit() {
+    const visits = (await visitsOf(PERSON, "service")).results;
+    expect(visits).toHaveLength(1);
+    expect(await redeems()).toEqual([{ source_id: visits[0]?.id }]);
+    expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(0);
   }
 
+  beforeEach(async () => {
+    await fittedClient();
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+  });
+
+  it("books one of two visits booked in two tabs at the same moment on it, and asks payment for the other", async () => {
+    const first = await hold("2026-09-24");
+    const second = await hold("2026-09-25");
+    // Each tab held its visit on the credit before either was booked.
+    await env.DB.prepare("UPDATE slot_holds SET state = 'held', use_credit = 1").run();
+
+    const answers = await Promise.all([book(first), book(second)]);
+
+    const onCredit = answers.filter((answer) => answer.checkout === null);
+    const paid = answers.filter((answer) => answer.checkout?.amount === 200000);
+    expect([onCredit.length, paid.length]).toEqual([1, 1]);
+    await oneVisitOnTheCredit();
+  });
+
+  it("books a booking call sent twice at once as one visit, on one credit", async () => {
+    const first = await hold("2026-09-24");
+
+    const answers = await Promise.all([book(first), book(first)]);
+
+    for (const answer of answers) expect(answer.checkout ?? null).toBeNull();
+    await oneVisitOnTheCredit();
+  });
+
+  it("books only the first of three visits booked back to back on it, and asks payment for the others", async () => {
+    const answers = [];
+    for (const date of ["2026-09-24", "2026-09-25", "2026-09-28"]) answers.push(await book(await hold(date)));
+
+    expect(answers.map((answer) => answer.checkout?.amount ?? 0)).toEqual([0, 200000, 200000]);
+    await oneVisitOnTheCredit();
+  });
+
+  /** The booking confirmed on the credit, and its request stopped before the visit was written. */
+  const confirmedButUnwritten = (holdId: string) =>
+    env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2, queued_at = ?2 WHERE id = ?1")
+      .bind(holdId, NOW.toISOString())
+      .run();
+
+  const halfHourPass = (deps: TestDependencies) =>
+    bookUnbookedHolds(
+      env.DB,
+      {
+        ...deps,
+        notify: () => Promise.resolve(),
+        labelAsTest: true,
+        budget: createCallBudget(40),
+        log: createLogger(),
+      },
+      at(32 * 60),
+    );
+
+  it("asks payment on another device's visit while the credit waits on a booking not yet written", async () => {
+    const first = await hold("2026-09-24");
+    await confirmedButUnwritten(first);
+    const second = await hold("2026-09-25");
+    // The second device read the balance just before the first booking was confirmed.
+    await env.DB.prepare("UPDATE slot_holds SET use_credit = 1 WHERE id = ?1").bind(second).run();
+
+    expect(await book(second)).toMatchObject({ checkout: { amount: 200000 } });
+    const secondHold = await env.DB.prepare("SELECT use_credit, confirmed_at FROM slot_holds WHERE id = ?1")
+      .bind(second)
+      .first();
+    expect(secondHold).toEqual({ use_credit: 0, confirmed_at: null });
+
+    expect(await halfHourPass(withoutFsm())).toBe(1);
+    await oneVisitOnTheCredit();
+  });
+
+  it("books a credit visit whose credit was taken back before it was written, and tells ops nothing paid for it", async () => {
+    const first = await hold("2026-09-24");
+    await confirmedButUnwritten(first);
+    await clawBack(env.DB, "ops", "o1", NOW);
+    const deps = withoutFsm();
+
+    expect(await halfHourPass(deps)).toBe(1);
+
+    expect((await visitsOf(PERSON, "service")).results).toHaveLength(1);
+    expect(await redeems()).toEqual([]);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("had none left by then, so nothing has paid for it. Decide whether to charge"),
+    ]);
+  });
+});
+
+describe("a visit booked without FSM, moved by the client", () => {
   it("moves it in place for free, in the request that confirms the move", async () => {
     await fittedClient();
     await bookedWithoutFsm(THURSDAY_NOON);
@@ -421,6 +538,127 @@ describe("a visit booked without FSM, moved by the client", () => {
         payment_id: PAYMENT,
       },
     ]);
+  });
+});
+
+describe("a client's move in place, when ops change the visit before it is booked", () => {
+  const OPS = { fsm: fsmSwitchedOff(), labelAsTest: true, record: "ours" } as const;
+
+  /** Ops giving the visit to Sameer on the dispatch board, at the time it has. */
+  const toSameer = (startsAt: string) => ({
+    appointmentId: VISIT,
+    technicianId: "t2",
+    reason: "zone_rebalance" as const,
+    actor: "ops@maneman.test",
+    expected: { technicianId: "t1", startsAt },
+  });
+
+  const confirm = (holdId: string) =>
+    env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1").bind(holdId, NOW.toISOString()).run();
+
+  const countOf = async (table: string) =>
+    (await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${table}`).first<{ n: number }>())?.n;
+
+  beforeEach(async () => {
+    await env.DB.prepare(
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t2', 't2', 'Sameer Bhatt', 'SB', 1, ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+  });
+
+  it("gives a free move back and tells the client when ops gave the visit to another technician meanwhile", async () => {
+    await fittedClient();
+    await bookedWithoutFsm(THURSDAY_NOON);
+    const holdId = await moveHold("2026-09-25", "evening");
+    expect(await moveJob(env.DB, OPS, toSameer(THURSDAY_NOON), NOW)).toMatchObject({ kind: "moved" });
+
+    await call(PERSON, `/api/appointments/${VISIT}/reschedule`, { method: "POST", body: { hold_id: holdId } });
+
+    expect(await visitOf(VISIT)).toMatchObject({ technician_id: "t2", window_start: THURSDAY_NOON });
+    expect(await holdRow(holdId)).toEqual({ state: "released", appointment_id: null });
+    expect((await changes()).results).toEqual([]);
+    expect((await messagesOf(PERSON)).results).toEqual([{ kind: "booking_refunded", subject_id: holdId }]);
+    expect(messageQueue.sent).toHaveLength(1);
+    expect(await countOf("slot_claims")).toBe(0);
+  });
+
+  it("refunds a late fee paid after ops gave the visit to another technician, and tells the client", async () => {
+    await client(PERSON, "+919810000001", "Rohit Malhotra");
+    await bookedWithoutFsm(TUESDAY_MORNING, "first_fit");
+    const holdId = await moveHold("2026-09-28", "morning", "first_fit");
+    const started = await call(PERSON, `/api/appointments/${VISIT}/reschedule`, {
+      method: "POST",
+      body: { hold_id: holdId },
+    });
+    const { checkout } = await started.json<{ checkout: { order_id: string; amount: number } }>();
+    expect(checkout.amount).toBe(400000);
+    expect(await moveJob(env.DB, OPS, toSameer(TUESDAY_MORNING), NOW)).toMatchObject({ kind: "moved" });
+    const payments = createStubPayments();
+
+    const ordered = { holdId, orderId: checkout.order_id, amount: checkout.amount };
+    await webhook("payment.captured", "evt_fee", payment("pay_fee", ordered), withoutFsm({ payments }));
+
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_fee", amount: 400000 }]);
+    expect(await visitOf(VISIT)).toMatchObject({ technician_id: "t2", window_start: TUESDAY_MORNING });
+    expect(await holdRow(holdId)).toEqual({ state: "released", appointment_id: null });
+    expect((await changes()).results).toEqual([]);
+    expect((await messagesOf(PERSON)).results).toEqual([{ kind: "booking_refunded", subject_id: holdId }]);
+    expect(await autoRefundsOf(env.DB, PERSON)).toMatchObject([{ holdId, amount: 400000, reason: "not_movable" }]);
+  });
+
+  it("gives a free move back and tells the client when the technician is away on the new day", async () => {
+    await fittedClient();
+    await bookedWithoutFsm(THURSDAY_NOON);
+    const holdId = await moveHold("2026-09-25", "evening");
+    await env.DB.prepare(
+      `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+       VALUES ('leave-1', 't1', '2026-09-25', '2026-09-25', 'ops@maneman.test', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+
+    await call(PERSON, `/api/appointments/${VISIT}/reschedule`, { method: "POST", body: { hold_id: holdId } });
+
+    expect(await visitOf(VISIT)).toMatchObject({ technician_id: "t1", window_start: THURSDAY_NOON });
+    expect(await holdRow(holdId)).toEqual({ state: "released", appointment_id: null });
+    expect((await messagesOf(PERSON)).results).toEqual([{ kind: "booking_refunded", subject_id: holdId }]);
+  });
+
+  it("refuses ops' move of a visit whose client's move is confirmed and waits to be booked", async () => {
+    await fittedClient();
+    await bookedWithoutFsm(THURSDAY_NOON);
+    const holdId = await moveHold("2026-09-25", "evening");
+    await confirm(holdId);
+
+    expect(await moveJob(env.DB, OPS, toSameer(THURSDAY_NOON), NOW)).toEqual({
+      kind: "superseded",
+      changed: ["moving"],
+    });
+    expect(await visitOf(VISIT)).toMatchObject({ technician_id: "t1", window_start: THURSDAY_NOON });
+    expect(await countOf("dispatch_moves")).toBe(0);
+  });
+
+  it("writes nothing when the client's move is confirmed between ops' checks and their write", async () => {
+    await fittedClient();
+    await bookedWithoutFsm(THURSDAY_NOON);
+    const holdId = await moveHold("2026-09-25", "evening");
+    const claimsHeld = await countOf("slot_claims");
+    const db = env.DB;
+    const confirmedMeanwhile: Pick<D1Database, "prepare" | "batch"> = {
+      prepare: (sql) => db.prepare(sql),
+      batch: async <T = unknown>(statements: D1PreparedStatement[]) => {
+        await confirm(holdId);
+        return db.batch<T>(statements);
+      },
+    };
+
+    const outcome = await moveJob(confirmedMeanwhile as D1Database, OPS, toSameer(THURSDAY_NOON), NOW);
+
+    expect(outcome).toEqual({ kind: "superseded", changed: ["moving"] });
+    expect(await visitOf(VISIT)).toMatchObject({ technician_id: "t1", window_start: THURSDAY_NOON });
+    expect(await countOf("dispatch_moves")).toBe(0);
+    expect(await countOf("slot_claims")).toBe(claimsHeld);
   });
 });
 

@@ -124,8 +124,22 @@ describe("the day's list", () => {
     expect(jobs.map((job) => job.slots)).toEqual([1, 2, 1.5]);
   });
 
-  // The owner's decision of 2 October 2026: a first fit is one of the hair systems ops offer, and the card names it.
-  it("names the hair system a first fit was sold as, and none for any other visit or a one visit still to choose", async () => {
+  // FLD-61, CP-38: "9 am · consultation · 1 slot" told the technician nothing about a 60-minute visit.
+  it("says how long each visit is booked for, in minutes", async () => {
+    await insertJob(LAST_VISIT, { start: "2026-09-21T09:30:00.000Z", type: "first_fit" });
+    await insertJob(OLDER_VISIT, { start: "2026-09-21T11:30:00.000Z", type: "consultation" });
+    await env.DB.prepare("UPDATE appointments SET window_end = ?2 WHERE id = ?1")
+      .bind(OLDER_VISIT, "2026-09-21T12:30:00.000Z")
+      .run();
+
+    const { jobs } = await (await get("/api/tech/jobs?date=2026-09-21")).json<{ jobs: { minutes: number }[] }>();
+
+    expect(jobs.map((job) => job.minutes)).toEqual([90, 180, 60]);
+    expect(await card(OLDER_VISIT)).toMatchObject({ minutes: 60 });
+  });
+
+  // MON-10, FLD-14: a client paid for Mane Man Essential, and the card said only "First fit".
+  it("names the service a visit was sold as, and none for a kind's standard one or a one visit still to choose", async () => {
     await env.DB.batch([
       env.DB.prepare(
         `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
@@ -143,10 +157,27 @@ describe("the day's list", () => {
       .run();
     await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(OLDER_VISIT).run();
 
-    const { jobs } = await (await get("/api/tech/jobs?date=2026-09-21")).json<{ jobs: { product: string | null }[] }>();
+    const { jobs } = await (await get("/api/tech/jobs?date=2026-09-21")).json<{ jobs: { service: unknown }[] }>();
 
-    expect(jobs.map((job) => job.product)).toEqual([null, "Mane Man Essential", null]);
-    expect(await card(LAST_VISIT)).toMatchObject({ product: "Mane Man Essential" });
+    const essential = { tier: "essential", name: "Mane Man Essential" };
+    expect(jobs.map((job) => job.service)).toEqual([null, essential, null]);
+    expect(await card(LAST_VISIT)).toMatchObject({ service: essential });
+  });
+
+  it("names a replacement sold as a service of its own, beside its kind's standard one", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('replacement', 'natural', 'Mane Man Natural replacement', 135, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare("UPDATE appointments SET tier = 'natural' WHERE id = ?1").bind(LATER_JOB),
+    ]);
+    await insertJob(OLDER_VISIT, { start: "2026-09-25T09:30:00.000Z", type: "replacement" });
+    await env.DB.prepare("UPDATE appointments SET tier = 'standard' WHERE id = ?1").bind(OLDER_VISIT).run();
+
+    const { jobs } = await (await get("/api/tech/jobs?date=2026-09-25")).json<{ jobs: { service: unknown }[] }>();
+
+    expect(jobs.map((job) => job.service)).toEqual([{ tier: "natural", name: "Mane Man Natural replacement" }, null]);
   });
 
   // FLD-42: Today names each client from the list, rather than once each card has arrived in turn.
@@ -205,6 +236,20 @@ async function landed(
 describe("the card", () => {
   it("carries the no-show wait its type runs, so the phone can count it with no signal", async () => {
     expect(await card(TODAY_JOB)).toMatchObject({ no_show_wait_min: 15 });
+  });
+
+  // FLD-61, CP-38: the door said "within 200 m" whatever radius ops had set.
+  it("carries the check-in radius ops set, for the door to say", async () => {
+    expect(await card(TODAY_JOB)).toMatchObject({ checkin_radius_m: 200 });
+
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('checkin_radius_m', '350', 'ops', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    tech = appFor("local", fakeDependencies(), {}, "tech");
+
+    expect(await card(TODAY_JOB)).toMatchObject({ checkin_radius_m: 350 });
   });
 
   it("carries the client's pieces, newest fit first, for the piece card and the piece step's list", async () => {
@@ -296,6 +341,34 @@ describe("the card", () => {
 
     expect((await card(TODAY_JOB)).reminder).toEqual({ delivered_at: "2026-09-20T12:31:00Z" });
     expect((await card(LATER_JOB)).reminder).toBeNull();
+  });
+
+  // FLD-35, UX-26: a reminder skipped for a test record read "messaged on WhatsApp, not delivered", with a tick.
+  describe("counts only a WhatsApp that went to the client", () => {
+    async function message(id: string, kind: string, state: string, createdAt: string): Promise<void> {
+      await env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, last_error)
+         VALUES (?1, ?2, ?3, ?4, 'appointment', ?5, ?6, ?7)`,
+      )
+        .bind(id, createdAt, PERSON, kind, TODAY_JOB, state, state === "skipped" ? "test record" : null)
+        .run();
+    }
+
+    it.each(["queued", "skipped", "failed"])("has none where the reminder was %s", async (state) => {
+      await message("m1", "visit_reminder", state, "2026-09-20T12:30:00Z");
+      expect((await card(TODAY_JOB)).reminder).toBeNull();
+    });
+
+    it("has one sent and never delivered", async () => {
+      await message("m1", "visit_reminder", "sent", "2026-09-20T12:30:00Z");
+      expect((await card(TODAY_JOB)).reminder).toEqual({ delivered_at: null });
+    });
+
+    it("keeps the reminder that went when a later arrival notice did not", async () => {
+      await message("m1", "visit_reminder", "sent", "2026-09-20T12:30:00Z");
+      await message("m2", "arrival_notice", "skipped", "2026-09-21T06:00:00Z");
+      expect((await card(TODAY_JOB)).reminder).toEqual({ delivered_at: null });
+    });
   });
 
   // PLAT-15: each D1 read is a round trip to the database's region, so the card's reads that need nothing from each

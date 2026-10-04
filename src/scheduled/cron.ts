@@ -13,7 +13,7 @@
 // subrequests (src/lib/call-budget.ts). Their calls to D1, R2 and the queues are a separate allowance of 1,000 a run,
 // kept by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
 
-import { BOOKS_ITEM_PUSH } from "../config/environments.ts";
+import { BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
 import { fieldRecord } from "../config/field-record.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
@@ -30,6 +30,7 @@ import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
+import { tellOfNewGrievances } from "../domain/grievances.ts";
 import { anyHeldBooking, retryHeldBookings } from "../domain/held-bookings.ts";
 import { queueCreditReminders } from "../domain/credit-reminders.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
@@ -45,6 +46,7 @@ import { pingHeartbeat } from "../providers/heartbeat.ts";
 import { enqueue, enqueueBatch } from "../queues/enqueue.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { checkDailyAllowances } from "./daily-allowances.ts";
+import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
 import {
@@ -99,7 +101,7 @@ const ALERT_AFTER_FAILED_RUNS = 3;
  * no appointment, so a job that trusts FSM's word on what exists would take it that every visit had been deleted.
  * "books_without_fsm" is Books where D1, not FSM, is the record of field work (src/config/field-record.ts).
  */
-type Needs = "nothing" | "fsm" | "fsm_record" | "books" | "books_without_fsm" | "messaging";
+type Needs = "nothing" | "fsm" | "fsm_record" | "books" | "books_without_fsm" | "messaging" | "payments";
 
 /** A job, and when it runs (src/scheduled/schedule.ts). */
 export interface CronJob extends Timing {
@@ -129,6 +131,8 @@ function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
       return books && fieldRecord(config.providers) === "ours";
     case "messaging":
       return config.settings.messaging.enabled;
+    case "payments":
+      return config.providers.PAYMENTS_PROVIDER !== "none";
   }
 }
 
@@ -207,6 +211,10 @@ async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
 }
 
+async function grievanceAlertsJob({ env, deps, config }: CronContext): Promise<void> {
+  await tellOfNewGrievances(env.DB, deps.alert, `${OPS_ORIGIN[config.environment]}/grievances`, deps.now());
+}
+
 /** R2's share and the database fill over months, so an hourly look is enough. */
 async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
   await tellOfStorage(env.DB, deps.alertOnce);
@@ -256,8 +264,9 @@ async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Prom
   if (reminders.length > 0) log.info("credit_reminders_queued", { count: reminders.length });
 }
 
-async function paymentLinksJob({ env, deps, log, budget }: CronContext): Promise<void> {
-  const sent = await sendUnsentLinks(env.DB, { ...deps, log }, deps.now(), budget);
+async function paymentLinksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const linkDeps = { ...deps, log, messagingSettings: config.settings.messaging };
+  const sent = await sendUnsentLinks(env.DB, linkDeps, deps.now(), budget);
   if (sent > 0) log.info("payment_links_sent", { count: sent });
 }
 
@@ -349,6 +358,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // A finished job's invoice (ADRs 0055 and 0056), before the Books pass, which sets a client's advance against the
   // invoice once it is issued.
   { name: "invoices", needs: "books", every: 15, at: 3, run: invoicesJob },
+  // A payment Razorpay's webhook never told us of, read from Razorpay, before the Books pass that records it there.
+  { name: "razorpay_catch_up", needs: "payments", every: 15, at: 3, run: razorpayCatchUpJob },
   { name: "referrals", needs: "nothing", every: 15, at: 6, run: referralsJob },
   { name: "release_unfinished_moves", needs: "nothing", every: 15, at: 7, run: letUnfinishedMovesGo },
   { name: "books_sync", needs: "books", every: 15, at: 8, run: booksJob },
@@ -365,6 +376,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
   { name: "requeue_fsm_erasures", needs: "fsm", every: 60, at: 19, run: requeueFsmErasures },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
+  // The grievances raised in the hour, in one message, so one client cannot flood the chat.
+  { name: "grievance_alerts", needs: "nothing", every: 60, at: 24, run: grievanceAlertsJob },
   { name: "housekeeping", needs: "nothing", every: 60, at: 28, run: housekeep },
   // What the client asked for, beside what the board offers them (ADR 0063).
   { name: "asked_windows", needs: "nothing", every: 60, at: 29, run: askedWindowsJob },

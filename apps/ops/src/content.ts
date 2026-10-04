@@ -12,6 +12,9 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
 /** PLACEHOLDER: the API refused a call the person's access does not reach. */
 export const NOT_PERMITTED = "Your access doesn't include this. Ask an admin.";
 
+/** PLACEHOLDER: shown wherever a number would be, for a client erased since, whose number is gone. */
+export const ERASED_MOBILE = "Erased client";
+
 /** The five departments, as the navigation heads its sections and the Staff page names a grant. */
 const DEPARTMENT_NAMES = {
   operations: "Operations",
@@ -42,8 +45,7 @@ export const shell = {
     prices: "Prices",
     "discount-codes": "Discount codes",
     referrals: "Referrals",
-    waitlist: "Waitlist",
-    "service-area": "Service area",
+    areas: "Areas",
     settings: "Settings",
     staff: "Staff",
   },
@@ -193,7 +195,8 @@ export const dispatch = {
     badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
       Record<string, string>
     >,
-    rows: { type: "Type", area: "Area", state: "State", referred: "Referred by" },
+    // PLACEHOLDER: the board draws no Service row; it names a first fit's hair system, say.
+    rows: { type: "Type", service: "Service", area: "Area", state: "State", referred: "Referred by" },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** "Sector 65 · 122018": the area the visit's pincode is in, and the pincode. */
@@ -223,9 +226,13 @@ export const dispatch = {
     /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
-    /** PLACEHOLDER: a move the client has not heard of, which ops tell him of by phone (ADR 0069). */
-    untold: (when: string, mobile: string) =>
-      `Not told of the move to ${when}: no WhatsApp. Call ${mobile}, then record it here.`,
+    /** PLACEHOLDER: a move the client has not heard of, and why, which ops tell him of by phone (ADR 0069). */
+    untold: {
+      no_consent: (when: string, mobile: string) =>
+        `Not told of the move to ${when}: they have not agreed to WhatsApp. Call ${mobile}, then record it here.`,
+      not_sent: (when: string, mobile: string) =>
+        `Not told of the move to ${when}: the WhatsApp did not go. Call ${mobile}, then record it here.`,
+    },
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
     /** PLACEHOLDER: a visit ops cancel for the client, or close by hand once its technician's phone was lost. */
@@ -296,7 +303,8 @@ export const dispatch = {
     stop: "Stop moving it",
     /** What happened, from the move's own answer: a message is claimed only where one was queued. */
     moved: {
-      messaged: (job: string) => `${job} moved. The client was sent the new window on WhatsApp.`,
+      messaged: (job: string) =>
+        `Moved. We're sending ${job} the new window on WhatsApp; if it fails, a call task appears.`,
       call: (job: string, name: string, mobile: string) =>
         `${job} moved. ${name} has not agreed to WhatsApp: call ${mobile} with the new window.`,
       unchanged: (job: string, technician: string) =>
@@ -572,7 +580,7 @@ export const clients = {
       why: (when: string, reason: string) => `Refunded automatically on ${when}: ${reason}.`,
       reasons: {
         lapsed: "paid after the hold lapsed",
-        not_movable: "the visit had begun, so it could not be moved",
+        not_movable: "the visit had begun, or its technician or time had changed, so it could not be moved",
       },
     },
     /**
@@ -729,6 +737,8 @@ export const clients = {
       service: "Service visit",
       replacement: "Replacement",
     },
+    /** "First fit · Mane Man Essential": the kind, and the service it was sold as where that says more. */
+    what: (kind: string, service: string | null) => (service === null ? kind : `${kind} · ${service}`),
     /** A visit to come, by where it stands, and one done, by how FSM closed it. */
     stages: {
       booked: "Booked",
@@ -1155,6 +1165,15 @@ export const clients = {
         "minutes. Tell them it is done, in the chat they asked in.",
       back: "Find another client",
     },
+    /** PLACEHOLDER: the page of a client erased since, which keeps only their visits and money. */
+    record: {
+      title: "Erased client",
+      /** Whose visit the panels that cancel or close one name. */
+      whose: "the erased client",
+      on: (date: string) =>
+        `Erased on ${date}. Their name, number, address and photographs are gone; their visits and payments stay on ` +
+        "record.",
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "They were erased already. Reload to see.",
@@ -1194,37 +1213,29 @@ export const clients = {
   },
 } as const;
 
-export const waitlist = {
-  title: "Waitlist",
-  columns: ["Pincode", "Area", "Count", "Oldest", "Ref", "Alerts"],
-  /** An area or a date the pincode table has nothing for, written as the design's tables write a gap. */
-  unknown: "—",
-  /** A pincode we already come to. PLACEHOLDER: the board draws only those waiting. */
-  live: "Live",
-  choose: (pincode: string, area: string) => `Mark ${pincode} live, ${area}`,
-  /**
-   * PLACEHOLDER: a pincode served without its waitlist being told, as the
-   * Settings screen served them until it launched them too (FEO-02). Choosing
-   * it asks who is still to be told.
-   */
-  tell: (pincode: string, area: string) => `Tell those waiting in ${pincode}, ${area}`,
-  // PLACEHOLDER: the board draws no empty waitlist.
-  empty: "Nobody is waiting outside the areas we serve.",
-  // PLACEHOLDER: the table lists the two hundred pincodes that have waited longest.
-  more: "More pincodes have people waiting than are listed. These are the ones who have waited longest.",
+/**
+ * Areas, under Growth: who waits in each pincode, and every pincode we hold. Both tabs mark a pincode live through
+ * one panel, which says who it messages before anything is sent.
+ */
+export const areas = {
+  title: "Areas",
+  /** PLACEHOLDER: no board draws Areas. Waiting is board C3's waitlist; Served was Settings · Service area. */
+  tabs: { waiting: "Waiting", served: "Served" },
+  /** PLACEHOLDER: Served for a person whose Growth access is not national. */
+  servedClosed: "Served lists every pincode in every city, so it needs Growth access nationally.",
+  /** The board's launch panel (C3), for a pincode chosen on Waiting and for a save on Served alike. */
   launch: {
     label: (pincode: string) => `Mark ${pincode} live`,
     /** PLACEHOLDER: the panel's head for a pincode already live. */
     tellLabel: (pincode: string) => `Tell those waiting in ${pincode}`,
+    /** PLACEHOLDER: the panel's head for a save on Served that marks several pincodes live. */
+    manyLabel: (count: number) => `Mark ${String(count)} pincodes live`,
     title: (alerts: number) =>
       alerts === 0 ? "This messages nobody" : `This messages ${String(alerts)} ${alerts === 1 ? "person" : "people"}`,
-    rows: { waiting: "On the list", alerts: "Opted in to alerts", referred: "Held referral invites" },
-    /** PLACEHOLDER: the board's launch sends today; the API takes the day a technician starts coming. */
-    date: "Launch date",
-    dateHint: "The day a technician starts coming. A held referral invite lapses twelve months from it.",
-    /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
-    named: "The message names the area once Service area gives it a name, and its city until then.",
-    rename: "Change the name",
+    rows: { waiting: "On the list", alerts: "Asked to be told", referred: "Came by referral" },
+    /** PLACEHOLDER: one line a pincode, for a save on Served. */
+    line: (pincode: string, area: string, people: number) =>
+      `${pincode}, ${area}: ${String(people)} waiting ${people === 1 ? "asks" : "ask"} to be told.`,
     /**
      * What each of them gets. The words are launch_alert_v1's in
      * src/config/message-templates.ts, which is what the queue actually sends;
@@ -1233,8 +1244,12 @@ export const waitlist = {
      */
     message: (area: string, bookingUrl: string) =>
       `Hello {first name}, we now come to ${area}. Your free consultation can be booked here: ${bookingUrl}`,
+    /** The area a message about several pincodes names, each its own. */
+    eachArea: "{area}",
     /** The board's "Send to 84"; with nobody to message, the press only marks the pincode live, and says so. */
     send: (alerts: number) => (alerts === 0 ? "Mark it live" : `Send to ${String(alerts)}`),
+    /** PLACEHOLDER: a save on Served sends every change in the table with the messages. */
+    saveAndSend: (alerts: number) => `Save and send to ${String(alerts)}`,
     sending: "Sending",
     cancel: "Not now",
     /** The board's note beneath the panel, with the figures filled in. */
@@ -1249,11 +1264,137 @@ export const waitlist = {
       alerts === 0 ? "Marked live. Nobody was messaged." : `Launched. ${String(alerts)} on their way.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "We have no such pincode.",
+      not_found: "We do not hold that pincode. Add it first.",
+      launch_in_future: "A pincode goes live today or from a day already past, never one to come.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
   },
+  /** PLACEHOLDER, every line: adding a pincode the service area does not hold, on Waiting and on Served. */
+  add: {
+    /** The panel's head on Waiting. */
+    label: (pincode: string) => `Add ${pincode}`,
+    /** Served's own way in. */
+    title: "Add a pincode",
+    note: "It goes in unserved. Marking it live comes next, and says first who it messages.",
+    pincode: "Pincode",
+    area: "Area, as messages name it",
+    city: "City",
+    chooseCity: "Choose a city",
+    noCity: "Your access reaches no city to add a pincode in.",
+    add: "Add it",
+    adding: "Adding",
+    added: (pincode: string, city: string) =>
+      `${pincode} is in ${city} now, not served yet. Tick Served and save to mark it live.`,
+    badPincode: "A pincode is six digits and starts with 1 to 8.",
+    badName: "An area's name starts with a letter or a digit and runs from 2 to 40 characters.",
+    errors: {
+      pincode_held: "We hold that pincode already.",
+      invalid_request: "Check the pincode, the area's name and the city.",
+      not_permitted: NOT_PERMITTED,
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was added.",
+    } as Readonly<Record<string, string>>,
+  },
+  served: {
+    title: "Every pincode we hold",
+    /**
+     * The file is what the owner already edits (data/pincodes/README.md), so
+     * the screen takes it back rather than asking for 198 rows to be retyped.
+     * The rows are for the one-at-a-time change, which is what a launch is.
+     */
+    note: "Change a pincode here, or download the list, edit it in a spreadsheet and upload it again.",
+    city: (city: string, served: number, all: number) => `${city} · ${String(served)} of ${String(all)}`,
+    columns: ["Pincode", "Area, as messages name it", "Served", "Launch date", "Waiting"],
+    areaLabel: (pincode: string) => `Area name for ${pincode}`,
+    served: (pincode: string) => `Served ${pincode}`,
+    launchOn: (pincode: string) => `Launch date for ${pincode}`,
+    /** Beneath the table: what the two boxes of a row mean. */
+    hint:
+      "The area's name is what a launch message, the waitlist and the dispatch board call it. " +
+      "A held referral invite for an area lapses twelve months from its launch date.",
+    /** The name a row's box holds: a letter or a digit first, as the API takes it. */
+    badName: (pincode: string) =>
+      `${pincode}: an area's name starts with a letter or a digit and runs from 2 to 40 characters.`,
+    save: "Save these pincodes",
+    saving: "Saving",
+    saved: (changed: number, alerted: number) => {
+      const pincodes = changed === 1 ? "One pincode changed." : `${String(changed)} pincodes changed.`;
+      if (alerted === 0) return pincodes;
+      return `${pincodes} ${String(alerted)} ${alerted === 1 ? "person is" : "people are"} being told on WhatsApp.`;
+    },
+    nothing: "Nothing to save: no pincode has changed.",
+    /** A row that would serve a pincode from a day still to come, which /book would take bookings for at once. */
+    later: (pincode: string) => `${pincode}: a pincode goes live today or from a day already past, never one to come.`,
+    bulk: {
+      serve: (city: string) => `Serve all of ${city}`,
+      stop: (city: string) => `Stop serving ${city}`,
+    },
+    upload: {
+      title: "Upload the file",
+      label: "The CSV you have edited",
+      hint:
+        "It needs pincode, served and launch_on columns; every other column is ignored. " +
+        "Served is yes or no, and a blank is no. A launch date is written 2026-10-01.",
+      /** What the file would change, pincode by pincode, before any of it is taken. */
+      read: (changed: number) =>
+        changed === 1 ? "The file changes one pincode:" : `The file changes ${String(changed)} pincodes:`,
+      columns: ["Pincode", "Area", "Now", "In the file"],
+      state: (served: boolean, launch: string | null) => {
+        const serving = served ? "Served" : "Not served";
+        return launch === null ? serving : `${serving}, launch ${launch}`;
+      },
+      none: "The file changes nothing. Every pincode in it already reads that way.",
+      apply: "Put these in the table",
+      applied: "The file's changes are in the table. Check them, then save.",
+      cancel: "Not now",
+      badDate: (pincode: string) => `${pincode}: a launch date has to be written as 2026-10-01.`,
+      badServed: (pincode: string) => `${pincode}: served has to be yes or no.`,
+      badHeader: "That file needs a pincode, a served and a launch_on column. Save it as CSV, with its header row.",
+    },
+    download: "Download the current list",
+    downloadName: "service-area.csv",
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      no_service_area: "That would leave no pincode served, and every client on the waitlist. Nothing was changed.",
+      launch_in_future: "A pincode goes live today or from a day already past, never one to come. Nothing was changed.",
+      /** A pincode we do not hold: one is added below, never by the file. */
+      invalid_request: "That names a pincode we do not hold. Add it first. Nothing was changed.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+  },
+} as const;
+
+/** Areas' Waiting tab, board C3: who waits in each pincode, the longest wait first. */
+export const waitlist = {
+  columns: ["Pincode", "Area", "Count", "Oldest", "Came by referral", "Asked to be told"],
+  /** An area or a date the pincode table has nothing for, written as the design's tables write a gap. */
+  unknown: "—",
+  /** PLACEHOLDER: a pincode the service area does not hold, which is added before it is marked live. */
+  notHeld: "Not in the service area",
+  /** A pincode we already come to. PLACEHOLDER: the board draws only those waiting. */
+  live: "Live",
+  choose: (pincode: string, area: string) => `Mark ${pincode} live, ${area}`,
+  /**
+   * PLACEHOLDER: a pincode served without its waitlist being told, as the
+   * Settings screen served them until it launched them too (FEO-02). Choosing
+   * it asks who is still to be told.
+   */
+  tell: (pincode: string, area: string) => `Tell those waiting in ${pincode}, ${area}`,
+  /** PLACEHOLDER: choosing a pincode the service area does not hold. */
+  add: (pincode: string) => `Add ${pincode}, then mark it live`,
+  // PLACEHOLDER: the board draws no empty waitlist.
+  empty: "Nobody is waiting outside the areas we serve.",
+  // PLACEHOLDER: the table lists the two hundred pincodes that have waited longest.
+  more: "More pincodes have people waiting than are listed. These are the ones who have waited longest.",
+  /** PLACEHOLDER: the board's launch sends today; the API takes the day a technician started coming. */
+  date: "Launch date",
+  dateHint:
+    "Today, or the day a technician started coming if earlier. A held referral invite lapses twelve months from it.",
+  /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
+  named: "The message names the area as Served names it, or its city until then.",
+  rename: "Change the name",
 } as const;
 
 /**
@@ -1485,8 +1626,6 @@ export const noShows = {
     credit: "a free service visit",
     /** The board's four rows. */
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
-    /** PLACEHOLDER: no receipt came back for the reminder or the arrival notice. */
-    notDelivered: "Not delivered",
     /** The board's note, "Your note · required", and its placeholder. */
     reason: {
       label: "Your note · required",
@@ -1509,6 +1648,9 @@ export const noShows = {
   },
 } as const;
 
+/** Where a payment link still owed stands, as the Tasks board says it. */
+const PAYMENT_LINK_STATES = { sent: "link sent", unsent: "link not sent", closed: "link closed unpaid" } as const;
+
 /**
  * Board D2's queue. A task is not a record: it is a row in a queue the database
  * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
@@ -1519,6 +1661,10 @@ export const tasks = {
   title: "Tasks",
   /** The head's count, in oxblood, as the board writes "4 overdue". */
   overdue: (count: number) => `${String(count)} overdue`,
+  /** PLACEHOLDER: the head's count as a screen reader names it, with what it does. */
+  overdueJump: (count: number) => `${String(count)} overdue, go to the first`,
+  /** Each department's section, named as the navigation names it. */
+  departments: DEPARTMENT_NAMES,
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
@@ -1576,6 +1722,9 @@ export const tasks = {
   } as Readonly<Record<string, string>>,
   /** PLACEHOLDER: a group longer than the board lists: its count is all of them. */
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
+  /** PLACEHOLDER: a group shows its five longest waits until ops ask for the rest. */
+  more: (count: number) => `Show ${String(count)} more`,
+  fewer: "Show fewer",
   /** PLACEHOLDER: what a consultation asked for, a first fit to book and a replacement due are done with. */
   book: "Book a visit",
   /** A move the client has not heard of, settled from its row. */
@@ -1589,8 +1738,15 @@ export const tasks = {
   truncated: "More are waiting than one look reads, so a count here may be short.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
-    /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the row. */
-    untold_move: (when: string) => `Moved to ${when}; not on WhatsApp`,
+    /**
+     * PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; has not agreed to WhatsApp": ops call, then say so on the row. A
+     * reason the API does not name says only that the client was not told.
+     */
+    untold_move: {
+      no_consent: (when: string) => `Moved to ${when}; has not agreed to WhatsApp`,
+      not_sent: (when: string) => `Moved to ${when}; the WhatsApp did not go`,
+      unknown: (when: string) => `Moved to ${when}; not told yet`,
+    },
     /**
      * PLACEHOLDER: "Service visit, Thu 24 Sep, afternoon; FSM refused it": booked or refunded from the client's
      * Visits tab (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
@@ -1655,20 +1811,14 @@ export const tasks = {
     draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
     /**
      * PLACEHOLDER: "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
-     * link not sent waits for ops to send one from Razorpay's dashboard (ADR 0105).
+     * link not sent, or closed unpaid, waits for ops to send one from Razorpay's dashboard (ADR 0105).
      */
-    payment_owed: (product: string, amount: string, sent: boolean) =>
-      `${product}, ${amount}; ${sent ? "link sent" : "link not sent"}`,
+    payment_owed: (product: string, amount: string, link: "sent" | "unsent" | "closed") =>
+      `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
     // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
     erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
     unknown: "Held for review",
-  },
-  /** The last column, as the board writes it: "2 days", "1 day", "Today", "Overdue 3". */
-  sla: {
-    today: "Today",
-    left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"}`,
-    over: (days: number) => `Overdue ${String(days)}`,
   },
   /**
    * Whose each task is (docs/decisions/0092-task-owners.md). The board writes each owner in ops by their first name,
@@ -1978,11 +2128,11 @@ export const technicians = {
  * each queue is built as the boards' own queues are (C1 and D1).
  */
 
-/** How long a request has left before the time we have promised runs out, as board D2 words its column. */
+/** How long something waiting on ops has left, on Tasks and in every queue: "2 days left", "3 days overdue". */
 export const waiting = {
   left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"} left`,
   today: "Due today",
-  over: (days: number) => `Overdue ${String(days)}`,
+  over: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"} overdue`,
 } as const;
 
 export const grievances = {
@@ -1998,14 +2148,14 @@ export const grievances = {
     /** Beneath the name: the number to answer on, and the day it was raised. */
     raised: (mobile: string, date: string) => `${mobile} · raised ${date}`,
     label: "Your answer",
-    hint: "Kept with the grievance, under your name. The audit log records that you answered it.",
+    hint: "The client sees this in their app. The audit log records that you answered it.",
     send: "Record the answer and close it",
     sending: "Closing",
     empty: "No grievance is open.",
-    /** Recording an answer sends nothing: the client hears from whoever answers them. */
+    /** Recording an answer sends nothing: the client hears from whoever answers them, and reads it in the app. */
     note: (days: number) =>
-      `The client is told in the app that we answer within ${String(days)} days, on WhatsApp. ` +
-      "Nothing here messages them: send your answer, then record it.",
+      `The client is told in the app that we answer within ${String(days)} days. ` +
+      "Nothing here messages them: answer on WhatsApp, then record the answer here. Their app shows it.",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "Someone has answered this one already. Reload to see the queue as it stands.",
@@ -2040,7 +2190,7 @@ export const deletions = {
         "Every photograph of them, their visits' and their try-ons', the files as well as the records",
         "Their referral card, so an invite they sent shows the house card from now on",
         "Their saved addresses, and any number change under way",
-        "Their name, number and e-mail on the record, and the words of any grievance",
+        "Their name, number and e-mail on the record, and the words of any grievance; one still open is closed",
         "Their sessions, so their phone is signed out at once",
       ],
     },
@@ -2066,6 +2216,11 @@ export const deletions = {
       cancel: "Leave it waiting",
     },
     rejecting: "Rejecting",
+    /** PLACEHOLDER: above the queue once a decision is made. */
+    done: {
+      delete: "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within the hour.",
+      reject: "Request rejected. The client is told why on WhatsApp.",
+    },
     empty: "No deletion request is waiting.",
     note: (days: number) =>
       `Each request is processed within ${String(days)} days of being made. ` +
@@ -2534,84 +2689,6 @@ export const settings = {
     takeBackErrors: {
       not_permitted: NOT_PERMITTED,
       valid_from: "That price applies already, so it stays in the book.",
-    } as Readonly<Record<string, string>>,
-  },
-  area: {
-    title: "Service area",
-    /**
-     * The file is what the owner already edits (data/pincodes/README.md), so
-     * the screen takes it back rather than asking for 198 rows to be retyped.
-     * The rows are for the one-at-a-time change, which is what a launch is.
-     */
-    note: "Change a pincode here, or download the list, edit it in a spreadsheet and upload it again.",
-    city: (city: string, served: number, all: number) => `${city} · ${String(served)} of ${String(all)}`,
-    columns: ["Pincode", "Area, as messages name it", "Served", "Launch date", "Waiting"],
-    areaLabel: (pincode: string) => `Area name for ${pincode}`,
-    served: (pincode: string) => `Served ${pincode}`,
-    launchOn: (pincode: string) => `Launch date for ${pincode}`,
-    /** Beneath the table: what the two boxes of a row mean. */
-    hint:
-      "The area's name is what a launch message, the waitlist and the dispatch board call it. " +
-      "A held referral invite for an area lapses twelve months from its launch date.",
-    /** The name a row's box holds: a letter or a digit first, as the API takes it. */
-    badName: (pincode: string) =>
-      `${pincode}: an area's name starts with a letter or a digit and runs from 2 to 40 characters.`,
-    save: "Save these pincodes",
-    saving: "Saving",
-    saved: (changed: number, alerted: number) => {
-      const pincodes = changed === 1 ? "One pincode changed." : `${String(changed)} pincodes changed.`;
-      if (alerted === 0) return pincodes;
-      return `${pincodes} ${String(alerted)} ${alerted === 1 ? "person is" : "people are"} being told on WhatsApp.`;
-    },
-    nothing: "Nothing to save: no pincode has changed.",
-    bulk: {
-      serve: (city: string) => `Serve all of ${city}`,
-      stop: (city: string) => `Stop serving ${city}`,
-    },
-    /**
-     * Serving a pincode is a launch: whoever waits there and asked to be told
-     * is messaged when it is saved, as marking it live on the waitlist does.
-     * So the save that would message anyone says so first.
-     */
-    launch: {
-      title: (people: number) => `This messages ${String(people)} ${people === 1 ? "person" : "people"}`,
-      line: (pincode: string, area: string, people: number) =>
-        `${pincode}, ${area}: ${String(people)} waiting ${people === 1 ? "asks" : "ask"} to be told.`,
-      note: "Serving a pincode tells those on its waitlist who asked to hear from us, on WhatsApp, once.",
-      send: (people: number) => `Save and message ${String(people)}`,
-      cancel: "Not now",
-    },
-    upload: {
-      title: "Upload the file",
-      label: "The CSV you have edited",
-      hint:
-        "It needs pincode, served and launch_on columns; every other column is ignored. " +
-        "Served is yes or no, and a blank is no. A launch date is written 2026-10-01.",
-      /** What the file would change, pincode by pincode, before any of it is taken. */
-      read: (changed: number) =>
-        changed === 1 ? "The file changes one pincode:" : `The file changes ${String(changed)} pincodes:`,
-      columns: ["Pincode", "Area", "Now", "In the file"],
-      state: (served: boolean, launch: string | null) => {
-        const serving = served ? "Served" : "Not served";
-        return launch === null ? serving : `${serving}, launch ${launch}`;
-      },
-      none: "The file changes nothing. Every pincode in it already reads that way.",
-      apply: "Put these in the table",
-      applied: "The file's changes are in the table. Check them, then save.",
-      cancel: "Not now",
-      badDate: (pincode: string) => `${pincode}: a launch date has to be written as 2026-10-01.`,
-      badServed: (pincode: string) => `${pincode}: served has to be yes or no.`,
-      badHeader: "That file needs a pincode, a served and a launch_on column. Save it as CSV, with its header row.",
-    },
-    download: "Download the current list",
-    downloadName: "service-area.csv",
-    errors: {
-      not_permitted: NOT_PERMITTED,
-      no_service_area: "That would leave no pincode served, and every client on the waitlist. Nothing was changed.",
-      /** A pincode we do not hold: the file is reference data, not a way to add one. */
-      invalid_request: "That names a pincode we do not hold. Nothing was changed.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
   },
   /**

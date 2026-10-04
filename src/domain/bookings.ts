@@ -26,7 +26,9 @@
 //
 // A hold that moves a visit (docs/decisions/0046-moving-and-cancelling.md)
 // either moves it in place, once its late fee is paid or at once when free, or
-// books a new visit and cancels the old one, whose payment is kept.
+// books a new visit and cancels the old one, whose payment is kept. A move in
+// place whose visit ops gave to another technician meanwhile, or whose time is
+// no longer free, is given back, and the client told.
 //
 // A visit is booked on its service's own FSM item, for the length its hold
 // was made with, and the mirror's copy carries the hold's tier, since the hold
@@ -50,7 +52,7 @@ import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { refundedMessage, toLinkAlert, toLinkAlertKey } from "./held-bookings.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
-import { graceEndOf, heldVisitTimes, liveVisitOf, retakeSlot } from "./scheduling.ts";
+import { graceEndOf, heldTimeFree, heldVisitTimes, liveVisitOf, retakeSlot } from "./scheduling.ts";
 import { hasBegun, visitBegun } from "./visit-begun.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
@@ -762,6 +764,13 @@ async function afterBooked(
   if (hold.move_kind === "replace") await retireReplaced(db, fsm, hold, now, options);
 }
 
+interface VisitToMove {
+  id: string;
+  fsm_id: string;
+  window_start: string;
+  technician_id: string | null;
+}
+
 /** Moves the visit to the hold's time, with its technician; its payment carries over, and a late fee is kept. */
 async function moveInPlace(
   db: D1Database,
@@ -773,12 +782,13 @@ async function moveInPlace(
 ): Promise<Confirmed> {
   const visit = await db
     .prepare(
-      `SELECT a.id, a.fsm_id, a.window_start FROM appointments a
+      `SELECT a.id, a.fsm_id, a.window_start, a.technician_id FROM appointments a
        WHERE a.id = ?1 AND a.status IN ('scheduled', 'dispatched') AND a.deleted_at IS NULL AND NOT ${visitBegun("a")}`,
     )
     .bind(hold.moves_appointment_id)
-    .first<{ id: string; fsm_id: string; window_start: string }>();
+    .first<VisitToMove>();
   if (visit === null) return moveRefused(db, payments, hold, now, options);
+  if (!(await takesHeldTime(db, hold, visit, now))) return moveOvertaken(db, payments, hold, now, options);
   const { start, end } = await heldVisitTimes(db, hold);
   if (writesFsmFor(options, visit)) {
     await fsm.rescheduleVisit(visit.fsm_id, { start: indiaIso(start), end: indiaIso(end) });
@@ -833,6 +843,36 @@ async function moveInPlace(
   ]);
   await options.notify?.(message.id);
   return "booked";
+}
+
+/**
+ * Whether the visit can still take the hold's time: it is still with the technician the time was held on, since ops
+ * may have given it to another after the client chose it, and nothing else has taken that time on his day.
+ */
+async function takesHeldTime(db: D1Database, hold: HoldRow, visit: VisitToMove, now: Date): Promise<boolean> {
+  if (visit.technician_id !== hold.technician_id) return false;
+  return heldTimeFree(db, hold, now, visit.id);
+}
+
+/**
+ * Lets a move in place go where the visit can no longer take the held time, and gives back what the client paid for
+ * it. The visit stays as it is, and the client is told so.
+ */
+async function moveOvertaken(
+  db: D1Database,
+  payments: PaymentsProvider,
+  hold: HoldRow,
+  now: Date,
+  options: ConfirmOptions,
+): Promise<Confirmed> {
+  (options.log ?? createLogger()).warn("move_overtaken", { hold_id: hold.id });
+  const told = refundedMessage(db, { personId: hold.person_id, holdId: hold.id, now });
+  const alongside = [told.statement, ...(options.alongside ?? [])];
+  await giveBack(db, payments, hold.id, now, AUTO_REFUND_NOTES.not_movable, alongside, [
+    autoRefundMarked(db, hold.id, "not_movable"),
+  ]);
+  await options.notify?.(told.id);
+  return hold.amount > 0 ? "refunded" : "lapsed";
 }
 
 /** A late move whose visit the technician began before FSM was given the new one: it is refunded, not booked. */
@@ -1015,6 +1055,10 @@ const AUTO_REFUND_NOTES: Readonly<Record<AutoRefundReason, string>> = {
   not_movable: "the visit could no longer be moved",
 };
 
+/** Marks a hold as refunded by the booking itself, which ops read on the client's Visits tab. */
+const autoRefundMarked = (db: D1Database, holdId: string, reason: AutoRefundReason): D1PreparedStatement =>
+  db.prepare("UPDATE slot_holds SET auto_refund_reason = ?2 WHERE id = ?1").bind(holdId, reason);
+
 /**
  * Lets go a hold the booking could not keep: one paid after it lapsed, or a move whose visit has begun. A payment
  * refunded here is marked as refunded by the booking itself, and the client is told, both in the batch that lets the
@@ -1029,9 +1073,8 @@ async function giveBackUnkept(
   options: ConfirmOptions,
 ): Promise<GivenBack> {
   const message = refundedMessage(db, { personId: hold.person_id, holdId: hold.id, now });
-  const marked = db.prepare("UPDATE slot_holds SET auto_refund_reason = ?2 WHERE id = ?1").bind(hold.id, reason);
   const given = await giveBack(db, payments, hold.id, now, AUTO_REFUND_NOTES[reason], options.alongside, [
-    marked,
+    autoRefundMarked(db, hold.id, reason),
     message.statement,
   ]);
   if (given.kind === "refunded") await tellOfRefund(message.id, options);

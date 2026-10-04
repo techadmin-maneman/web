@@ -40,6 +40,11 @@ function stateOf(visit: ClientVisit): string {
   return copy.statuses[visit.status] ?? clients.unknown;
 }
 
+function whatOf(visit: ClientVisit): string {
+  const kind = visit.type === null ? clients.unknown : copy.types[visit.type];
+  return copy.what(kind, visit.service);
+}
+
 /** The address on one line, narrowest part first, as the client app writes it. */
 function written(address: SavedAddress): string {
   const parts = [address.flat, address.floor, address.tower, address.building, address.line1, address.line2];
@@ -242,7 +247,7 @@ function VisitTable({
                   {onBoard && <ShowOnBoard visit={visit} />}
                 </td>
                 <td className={styles.cell}>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
-                <td className={styles.cell}>{visit.type === null ? clients.unknown : copy.types[visit.type]}</td>
+                <td className={styles.cell}>{whatOf(visit)}</td>
                 <td className={styles.quietCell}>{visit.technician?.name ?? clients.unknown}</td>
                 <td className={styles.cell}>
                   {stateOf(visit)}
@@ -345,15 +350,33 @@ export function Visits({
       <BookOne clientId={clientId} record={record} onBooked={onChanged} />
       <HeldBookings bookings={record.held_bookings} upcoming={record.visits.upcoming} />
       <Address clientId={clientId} address={address} onAddress={onAddress} />
-      <VisitTable
-        title={copy.upcoming}
-        visits={record.visits.upcoming}
-        empty={copy.noUpcoming}
-        changing={{ name: record.name, onChanged }}
-        onBoard
-      />
-      <VisitTable title={copy.past} visits={record.visits.past} empty={copy.noPast} />
+      <VisitRecords visits={record.visits} name={record.name} onChanged={onChanged} />
       <AutoRefunds refunds={record.auto_refunds} />
     </div>
+  );
+}
+
+/** The visits to come, which ops may cancel or close by hand, then the visits done. */
+export function VisitRecords({
+  visits,
+  name,
+  onChanged,
+}: {
+  visits: ClientRecord["visits"];
+  /** Whose visits they are, as the panels that change one name them. */
+  name: string;
+  onChanged: () => void;
+}) {
+  return (
+    <>
+      <VisitTable
+        title={copy.upcoming}
+        visits={visits.upcoming}
+        empty={copy.noUpcoming}
+        changing={{ name, onChanged }}
+        onBoard
+      />
+      <VisitTable title={copy.past} visits={visits.past} empty={copy.noPast} />
+    </>
   );
 }

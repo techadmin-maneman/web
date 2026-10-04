@@ -36,13 +36,14 @@ import { slotsFor } from "../policy/dispatch.ts";
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
 import { paidAtTheVisit, type Decision, type OneVisitState } from "../policy/one-visit.ts";
 import { earliestCheckIn, type PhoneClock } from "../policy/phone-clock.ts";
+import { namesMoreThanItsKind } from "../policy/services.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { latestArrival } from "./check-ins.ts";
 import { codeOnVisit, type VisitCode } from "./discount-code-uses.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles.ts";
-import { EVIDENCE_MESSAGE } from "./no-shows.ts";
+import { evidenceMessage, messageStateOf } from "./no-shows.ts";
 import { decisionAtVisit } from "./one-visit.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { bookedMinutes } from "./scheduling.ts";
@@ -62,14 +63,16 @@ export interface JobSummary {
   readonly type: VisitType | null;
   /** A consultation and fit in one visit, which runs the first fit's steps with the client's choice at the piece. */
   readonly one_visit: boolean;
-  /** On a first fit, the hair system the client was sold, by its name in the console (productOf). */
-  readonly product: string | null;
+  /** The service the visit was sold as, where it names more than the kind: a first fit's hair system, say. */
+  readonly service: JobService | null;
   /** Where the visit is, at the coarsest useful grain: a locked job shows this and nothing else of the place. */
   readonly sector: string | null;
   readonly status: AppointmentStatus;
   readonly badge: PaymentBadge;
-  /** How much of the day the visit takes, as board A1 writes it beneath the time: 1, 1.5 or 2 slots. */
+  /** How much of the day the visit takes: 1, 1.5 or 2 slots. */
   readonly slots: number | null;
+  /** How long the visit is booked for, which the technician's day reads beside the time. */
+  readonly minutes: number | null;
   readonly unlocked: boolean;
   readonly unlocks_at: string;
   /** The client's name once the job unlocks, as the card gives it, so the day's list can say whom each job is for. */
@@ -153,7 +156,7 @@ export interface JobDetail extends JobSummary {
   /** The client's pieces, newest fit first; null while the job is locked. */
   readonly pieces: CardPiece[] | null;
   readonly last_visit: LastVisit | null;
-  /** The day-before WhatsApp, or the arrival one, and when it reached the client's phone. */
+  /** The day-before WhatsApp, or the arrival one, that went to the client, and when it reached his phone. */
   readonly reminder: { readonly delivered_at: string | null } | null;
   /**
    * On a one visit and a consultation, the products by name: the first fit's services offered that day, which the
@@ -176,6 +179,12 @@ export interface JobDetail extends JobSummary {
 export interface JobCode {
   readonly code: string;
   readonly given_by: VisitCode["givenBy"];
+}
+
+/** A service by its code, which the hair profile names a product by, and its name in the console. */
+interface JobService {
+  readonly tier: string;
+  readonly name: string;
 }
 
 /** A product the client may choose at a one visit: a first fit's service, by its tier and its name. */
@@ -480,10 +489,16 @@ export async function lastVisitPhoto(
   return photo === null ? null : { key: photo.r2_key, contentType: photo.content_type };
 }
 
-/** The WhatsApp ops read the receipt of on a no-show, as they read it (src/domain/no-shows.ts). */
+/**
+ * The WhatsApp ops read the receipt of on a no-show (src/domain/no-shows.ts), where it went to the client; null where
+ * none did, since one queued, skipped or failed never reached his phone.
+ */
 async function reminderOf(db: D1Database, appointmentId: string): Promise<{ delivered_at: string | null } | null> {
-  const message = await db.prepare(EVIDENCE_MESSAGE).bind(appointmentId).first<{ delivered_at: string | null }>();
-  return message === null ? null : { delivered_at: message.delivered_at };
+  const message = await evidenceMessage(db, appointmentId);
+  if (message === null) return null;
+  const state = messageStateOf(message);
+  if (state !== "delivered" && state !== "sent") return null;
+  return { delivered_at: message.delivered_at };
 }
 
 function addressOf(row: JobRow): JobAddress | null {
@@ -565,13 +580,14 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSch
     window_label: schedule.at(starts).window,
     type: row.type,
     one_visit: row.one_visit !== null,
-    product: productOf(row),
+    service: soldServiceOf(row),
     // "only time, type and sector": the area, never the street, whether the job is unlocked or not. The visit's
     // pincode names it first, as the dispatch board does (ADR 0069).
     sector: row.pincode_area ?? row.locality ?? row.service_city,
     status: row.status,
     badge: badgeOf(row),
     slots: row.type === null ? null : slotsFor(unitsFor(bookedMinutes(row))),
+    minutes: row.type === null ? null : bookedMinutes(row),
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
     client_name: open ? row.client_name : null,
@@ -579,13 +595,10 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSch
   };
 }
 
-/**
- * The hair system a first fit was sold as, which the technician brings and fits. None on any other visit, on a one
- * visit until the client chooses theirs, or on a first fit that names none.
- */
-function productOf(row: JobRow): string | null {
-  if (row.type !== "first_fit" || row.tier === null || row.one_visit === "booked") return null;
-  return row.service_name;
+function soldServiceOf(row: JobRow): JobService | null {
+  if (row.tier === null || row.service_name === null) return null;
+  if (!namesMoreThanItsKind(row.tier, row.one_visit)) return null;
+  return { tier: row.tier, name: row.service_name };
 }
 
 function badgeOf(row: JobRow): PaymentBadge {

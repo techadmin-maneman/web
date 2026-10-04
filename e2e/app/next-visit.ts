@@ -78,6 +78,13 @@ export async function seedNextVisit(): Promise<void> {
     `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES
        ${row(crypto.randomUUID(), firstFit.person, "afternoon", now)};`,
   );
+  // A first fit is sold only as a hair system set up in the console, so the local database offers one.
+  sql.push(
+    `INSERT OR IGNORE INTO services (kind, tier, name, minutes, sort, updated_by, updated_at) VALUES
+       ${row("first_fit", "essential", "Mane Man Essential", 180, 1, "e2e", now)};`,
+    `INSERT OR IGNORE INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES
+       ${row("first_fit", "essential", 2_500_000, 0, "2026-01-01")};`,
+  );
 
   await wrangler("d1", "execute", "DB", "--local", "--command", sql.join("\n"));
   process.env[HANDOVER] = JSON.stringify({

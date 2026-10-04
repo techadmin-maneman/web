@@ -1,9 +1,10 @@
 // Boards B1, B2 and B3: one client's page, their photographs, consents and pieces.
 
 import sharp from "sharp";
+import type { components } from "../../../apps/ops/src/api-schema.ts";
 import type { OpsReply } from "../answer.ts";
 
-type ClientRecord = OpsReply<"/api/clients/{id}">;
+type ClientRecord = components["schemas"]["ClientRecord"];
 type Photos = OpsReply<"/api/clients/{id}/photos">;
 
 /** The board's client, on a number nobody holds. */
@@ -42,6 +43,7 @@ export const RECORD = {
         ends_at: "2027-09-25T05:00:00.000Z",
         length_minutes: 90,
         type: "service",
+        service: null,
         status: "scheduled",
         stage: "booked",
         prepaid: true,
@@ -63,6 +65,7 @@ export const RECORD = {
         ends_at: "2027-08-22T05:00:00.000Z",
         length_minutes: 90,
         type: "service",
+        service: null,
         status: "completed",
         stage: null,
         prepaid: false,

@@ -12,9 +12,9 @@
 // technician and the window the board asked for, because the API answers with
 // the code alone.
 //
-// The board reads itself again every minute and when the tab comes back, and
-// after a move, without the loading state: the grid keeps its scroll, and the
-// keyboard goes back to the block that moved.
+// The board reads itself again when something on it has changed (useBoard.ts),
+// and after a move, without the loading state: the grid keeps its scroll, and
+// the keyboard goes back to the block that moved.
 //
 // A link may open the board on a week, a city, a search and a visit
 // ("?from=2026-10-12&find=Imran&visit=…"), as Tasks, a client's visits, a
@@ -120,7 +120,10 @@ function windowsFrom(rooms: Rooms): InHand["windowsAt"] {
     rooms.rooms.find((room) => room.technician_id === technicianId && room.date === date)?.windows ?? [];
 }
 
-/** What a move did, in words, from the server's own answer: a message is claimed only where one was queued. */
+/**
+ * What a move did, in words, from the server's own answer. A message queued is not yet one sent, so the notice says
+ * it is on its way, and where it fails the move waits on the Tasks board for a call.
+ */
 function doneNotice(job: Job, to: Target, moved: Moved): Notice {
   const copy = dispatch.landing.moved;
   const name = nameOf(job);

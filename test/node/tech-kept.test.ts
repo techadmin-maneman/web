@@ -50,11 +50,12 @@ const summary = (id: string, date: string) =>
     window_label: "morning",
     type: "service",
     one_visit: false,
-    product: null,
+    service: null,
     sector: "Sector 65",
     status: "scheduled",
     badge: "prepaid",
     slots: 1,
+    minutes: 90,
     unlocked: true,
     unlocks_at: `${date}T00:00:00.000Z`,
     client_name: null,
@@ -89,6 +90,7 @@ const card = (id: string, date: string) =>
       outcome: null,
     },
     no_show_wait_min: 15,
+    checkin_radius_m: 200,
     checkin_from: `${date}T03:00:00.000Z`,
     pieces: [],
     last_visit: null,
@@ -314,6 +316,13 @@ describe("a day's jobs", () => {
     expect((await keptDay(TODAY))?.[0]?.progress).toEqual({ started_at: null, outcome: null });
     expect((await keptStates()).get("a")).toEqual({ started_at: null, outcome: null });
   });
+
+  it("kept before the list said how long each visit is, says nothing of it", async () => {
+    const { minutes: _none, ...earlier } = summary("a", TODAY);
+    await keepDay(TODAY, [earlier as unknown as JobSummary]);
+
+    expect((await keptDay(TODAY))?.[0]?.minutes).toBeNull();
+  });
 });
 
 describe("a job's card", () => {
@@ -366,6 +375,14 @@ describe("a job's card", () => {
     const kept = await keptJob("a");
     expect(kept?.client_choice).toBeNull();
     expect(kept?.checklist_if_declined).toEqual(whole);
+  });
+
+  it("kept before the card carried the visit's length and the check-in radius, says neither", async () => {
+    const { minutes: _length, checkin_radius_m: _radius, ...earlier } = card("a", TODAY);
+    await keepJob(earlier as unknown as Job);
+    const kept = await keptJob("a");
+    expect(kept?.minutes).toBeNull();
+    expect(kept?.checkin_radius_m).toBeNull();
   });
 });
 

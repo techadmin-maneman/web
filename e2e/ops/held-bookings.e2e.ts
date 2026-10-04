@@ -5,6 +5,7 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
+import type { components } from "../../apps/ops/src/api-schema.ts";
 import { expect, test } from "../support.ts";
 import {
   answer,
@@ -256,7 +257,8 @@ test("is a task on the board that leads to the client's Visits tab", async ({ pa
   await answer(page, { "GET /api/tasks": json(board) });
   await page.goto("/tasks");
   const tasks = page.getByRole("region", { name: "Tasks" });
-  await expect(tasks.getByRole("heading", { level: 3 })).toHaveText(["Booking not in FSM"]);
+  await expect(tasks.getByRole("heading", { level: 3 })).toHaveText(["Operations"]);
+  await expect(tasks.getByRole("heading", { level: 4 })).toHaveText(["Booking not in FSM"]);
   await expect(tasks.getByRole("listitem")).toContainText("Service visit, Sat 25 Sep, morning; FSM refused it");
   await expect(tasks.getByRole("link", { name: CLIENT.name })).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
 });
@@ -271,7 +273,7 @@ test("lists a booking that refunded its payment by itself beneath the visits, an
     amount: 200_000,
     reason: "lapsed",
     refunded_at: "2027-09-22T06:00:00.000Z",
-  } satisfies OpsReply<"/api/clients/{id}">["auto_refunds"][number];
+  } satisfies components["schemas"]["AutoRefund"];
   await openVisits(page, { [`GET /api/clients/${CLIENT.id}`]: json({ ...RECORD, auto_refunds: [refunded] }) });
   const item = page.getByRole("region", { name: "Refunded bookings" }).getByRole("listitem");
   await expect(item).toContainText("Service visit, 24 Sep 2027 · Rs. 2,000");

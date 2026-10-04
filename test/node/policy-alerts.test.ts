@@ -37,6 +37,8 @@ describe("the department that acts on an alert", () => {
     expect(alertDepartment("invoice_draft")).toBe("finance");
     expect(alertDepartment("books_refund_refused")).toBe("finance");
     expect(alertDepartment("razorpay_refund_unheard")).toBe("finance");
+    expect(alertDepartment("razorpay_payment_unheard")).toBe("finance");
+    expect(alertDepartment("razorpay_catch_up_not_booked")).toBe("finance");
     expect(alertDepartment("low_stock")).toBe("operations");
   });
 
@@ -67,7 +69,14 @@ describe("what can be sent again", () => {
 
 describe("how often the chat is told again of an alert still open", () => {
   it("is every six hours when nobody can sign in, or a client has paid and has no visit or no refund", () => {
-    for (const kind of ["whatsapp_bridge", "login_codes_failing", "unbooked_hold", "cancel_refund_failed"]) {
+    const kinds = [
+      "whatsapp_bridge",
+      "login_codes_failing",
+      "unbooked_hold",
+      "cancel_refund_failed",
+      "razorpay_catch_up_not_booked",
+    ];
+    for (const kind of kinds) {
       expect(retellAfterHours(kind)).toBe(6);
     }
   });

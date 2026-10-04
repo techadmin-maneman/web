@@ -66,8 +66,8 @@ async function holdClosed(
  */
 async function nothingPaidOn(payments: PaymentsProvider, orderId: string): Promise<boolean> {
   try {
-    const statuses = await payments.orderPayments(orderId);
-    return statuses.every((status) => status === "failed");
+    const made = await payments.orderPayments(orderId);
+    return made.every((payment) => payment.status === "failed");
   } catch {
     return false;
   }

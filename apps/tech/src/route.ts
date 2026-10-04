@@ -16,7 +16,7 @@
 import type { Step } from "./api.ts";
 
 /** The router the apps share (packages/ui/router.tsx), so a screen takes its routes and its way between them from here. */
-export { go, usePath } from "@maneman/ui/router";
+export { go, redirect, usePath } from "@maneman/ui/router";
 
 /** The URL each step is at, and the step each URL means. The API's names, with hyphens. */
 export const STEP_PATHS = {

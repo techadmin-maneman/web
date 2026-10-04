@@ -1,13 +1,13 @@
 // Board A3's card: the address with its access notes and Navigate, a way to
-// reach the client, the piece on his head, and the last visit's after
+// reach the client, their hair profile, the piece, and the last visit's after
 // photograph. A job further out has none of it: the API withholds the address
 // and the client until the day before, so the card says when they open.
 //
-// The piece card reads the board's tier, colour, adhesive and scalp from the
-// client's hair profile, with the base's size, where one is recorded; the
-// board's template is recorded nowhere, so it is not drawn
-// (docs/decisions/0106-a-clients-hair-profile.md). On a first fit it names the
-// hair system the client was sold above them.
+// The hair profile gives the board's tier, colour, adhesive and scalp, with the
+// base's size, where one is recorded; the board's template is recorded nowhere,
+// so it is not drawn. The piece says what the client paid for, warns when the
+// profile names another product, and gives the piece on the client's head. A
+// consultation fits nothing, so its card has no piece.
 //
 // The last visit's photograph is fetched each time the card is open and never
 // kept: the API answers it `no-store`, and the service worker leaves it alone.
@@ -19,6 +19,7 @@ import { job as copy, profile as profileCopy } from "../content.ts";
 import { PIN, STROKE } from "../icons.ts";
 import { addressLine, callLink, wayTo } from "../lib/navigate.ts";
 import { dayMonth, where } from "../lib/when.ts";
+import { paidFor, profileNamesAnother } from "./paid-for.ts";
 import styles from "./job.module.css";
 
 type Piece = NonNullable<Job["pieces"]>[number];
@@ -55,33 +56,43 @@ function profileLines(profile: HairProfile | null): Line[] {
   return lines.filter((line) => line !== null);
 }
 
-/** On a first fit, the hair system the client was sold, which he brings: ahead of what the profile says. */
-function soldLine(job: Job): Line | null {
-  // A card kept on the phone before the API named the product has none.
-  const product = job.product ?? null;
-  return product === null ? null : { key: copy.piece.rows.sold, value: product };
+function Rows({ lines }: { lines: readonly Line[] }) {
+  return (
+    <dl className={styles.rows}>
+      {lines.map((line) => (
+        <div className={styles.row} key={line.key}>
+          <dt className={styles.rowKey}>{line.key}</dt>
+          <dd className={styles.rowValue}>{line.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function ProfileCard({ profile }: { profile: HairProfile | null }) {
+  const lines = profileLines(profile);
+  if (lines.length === 0) return null;
+  return (
+    <section className={styles.piece} aria-labelledby="profile-title">
+      <h2 className={styles.pieceTitle} id="profile-title">
+        {copy.profileTitle}
+      </h2>
+      <Rows lines={lines} />
+    </section>
+  );
 }
 
 function PieceCard({ job }: { job: Job }) {
   const piece = onTheHead(job.pieces ?? []);
-  const sold = soldLine(job);
-  const fromProfile = sold === null ? profileLines(job.profile) : [sold, ...profileLines(job.profile)];
-  const last = job.last_visit;
+  const paid = paidFor(job);
+  const inProfile = profileNamesAnother(job);
   return (
     <section className={styles.piece} aria-labelledby="piece-title">
       <h2 className={styles.pieceTitle} id="piece-title">
         {copy.piece.title}
       </h2>
-      {fromProfile.length > 0 && (
-        <dl className={styles.rows}>
-          {fromProfile.map((line) => (
-            <div className={styles.row} key={line.key}>
-              <dt className={styles.rowKey}>{line.key}</dt>
-              <dd className={styles.rowValue}>{line.value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
+      {paid !== null && <Rows lines={[{ key: copy.piece.rows.paidFor, value: paid }]} />}
+      {inProfile !== null && <p className={styles.pieceWarn}>{copy.piece.mismatch(inProfile)}</p>}
       {piece === null ? (
         <p className={styles.pieceNone}>{copy.piece.none}</p>
       ) : (
@@ -116,12 +127,17 @@ function PieceCard({ job }: { job: Job }) {
           )}
         </dl>
       )}
-      {last !== null && (
-        <div className={styles.lastVisit}>
-          <img className={styles.lastVisitPhoto} src={last.photo_url} alt={copy.piece.lastVisitImage} />
-          <p className={styles.lastVisitLine}>{copy.piece.lastVisit(dayMonth(last.date), last.technician)}</p>
-        </div>
-      )}
+    </section>
+  );
+}
+
+function LastVisit({ last }: { last: NonNullable<Job["last_visit"]> }) {
+  return (
+    <section className={styles.piece}>
+      <div className={styles.lastVisit}>
+        <img className={styles.lastVisitPhoto} src={last.photo_url} alt={copy.piece.lastVisitImage} />
+        <p className={styles.lastVisitLine}>{copy.piece.lastVisit(dayMonth(last.date), last.technician)}</p>
+      </div>
     </section>
   );
 }
@@ -145,7 +161,10 @@ export function JobCard({ job }: { job: Job }) {
       <section className={styles.address}>
         <p className={styles.line}>{addressLine(job.address)}</p>
         {job.address.landmark !== null && job.address.landmark.trim() !== "" && (
-          <p className={styles.access}>{copy.near(job.address.landmark)}</p>
+          <dl className={styles.landmark}>
+            <dt className={styles.landmarkLabel}>{copy.landmark}</dt>
+            <dd className={styles.access}>{job.address.landmark}</dd>
+          </dl>
         )}
         {job.access_notes !== null && <p className={styles.access}>{job.access_notes}</p>}
         {client !== null && clientNote !== null && (
@@ -172,7 +191,9 @@ export function JobCard({ job }: { job: Job }) {
           </div>
         )}
       </section>
-      <PieceCard job={job} />
+      <ProfileCard profile={job.profile} />
+      {job.type !== "consultation" && <PieceCard job={job} />}
+      {job.last_visit !== null && <LastVisit last={job.last_visit} />}
     </>
   );
 }

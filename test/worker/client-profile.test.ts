@@ -115,6 +115,7 @@ describe("GET /api/profile", () => {
       number_change_decided: null,
       deletion: null,
       deletion_rejected: null,
+      grievances: [],
     });
   });
 

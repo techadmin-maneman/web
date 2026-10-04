@@ -1,6 +1,7 @@
 // The dispatch board on the ops console, behind Access (Ops Console, board A;
 // src/policy/dispatch.ts):
 //   GET  /api/dispatch?from=&city=   the grid, blocks, unassigned tray, leave and utilisation
+//   GET  /api/dispatch/version       whether anything the board draws has changed since it was read
 //   GET  /api/dispatch/room?appointment_id=&from=   where a job in hand would land this week
 //   POST /api/dispatch/assign        put an unassigned job on a technician
 //   POST /api/dispatch/move          move a job, with a reason from the design's list
@@ -25,7 +26,15 @@ import { fieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import type { AuditEntry } from "../domain/audit.ts";
-import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, roomFor, type MoveInput } from "../domain/dispatch.ts";
+import {
+  BOARD_DAYS,
+  boardVersion,
+  dispatchBoard,
+  moveJob,
+  recordToldByPhone,
+  roomFor,
+  type MoveInput,
+} from "../domain/dispatch.ts";
 import { isWithin, techniciansWithin } from "../domain/places.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -33,7 +42,7 @@ import { json } from "../http/openapi.ts";
 import { queueMessage } from "../http/queue-message.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { BEGUN, CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
+import { BEGUN, CLIENT_NOTICES, MOVE_REASONS, UNTOLD_REASONS } from "../policy/dispatch.ts";
 import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 
 const ClientSchema = z
@@ -55,6 +64,11 @@ const ClientSchema = z
 const VISIT = {
   appointment_id: z.uuid(),
   type: z.union([z.enum(VISIT_TYPES), z.null()]),
+  service: z.union([z.string(), z.null()]).openapi({
+    description:
+      "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, " +
+      "say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses.",
+  }),
   client: z.union([z.string(), z.null()]).openapi({ description: "First name and last initial." }),
   sector: z.union([z.string(), z.null()]).openapi({
     description: "The area the visit's pincode is in, from the service area; else the address's locality, or the city.",
@@ -77,10 +91,15 @@ const BlockSchema = z
       description:
         "The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does.",
     }),
-    untold: z.union([z.object({ move_id: z.uuid(), starts_at: z.iso.datetime() }).strict(), z.null()]).openapi({
-      description:
-        "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told.",
-    }),
+    untold: z
+      .union([
+        z.object({ move_id: z.uuid(), starts_at: z.iso.datetime(), reason: z.enum(UNTOLD_REASONS) }).strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told.",
+      }),
     begun: z.union([z.enum(BEGUN), z.null()]).openapi({
       description:
         "How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved.",
@@ -89,8 +108,14 @@ const BlockSchema = z
   .strict()
   .openapi("DispatchBlock");
 
+const VERSION = z.number().int().openapi({
+  description:
+    "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another.",
+});
+
 const BoardSchema = z
   .object({
+    version: VERSION,
     from: z.iso.date(),
     dates: z.array(z.iso.date()).openapi({ description: `${String(BOARD_DAYS)} days, the board's columns.` }),
     city: z.union([z.string(), z.null()]).openapi({ description: "The city the jobs are narrowed to; null for all." }),
@@ -209,6 +234,20 @@ const boardRoute = createRoute({
   },
 });
 
+const versionRoute = createRoute({
+  method: "get",
+  path: "/api/dispatch/version",
+  summary:
+    "The board's version, which the open board asks for every minute: one row, where the board itself is hundreds",
+  responses: {
+    200: {
+      description: "The version now",
+      ...json(z.object({ version: VERSION }).strict().openapi("DispatchBoardVersion")),
+    },
+    403: errorResponse("access_required"),
+  },
+});
+
 const assignRoute = createRoute({
   method: "post",
   path: "/api/dispatch/assign",
@@ -303,6 +342,8 @@ export function registerOpsDispatch(app: App): void {
       200,
     );
   });
+
+  app.openapi(versionRoute, async (c) => c.json({ version: await boardVersion(c.env.DB) }, 200));
 
   app.openapi(roomRoute, async (c) => {
     const now = c.var.deps.now();
