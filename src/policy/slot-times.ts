@@ -12,10 +12,12 @@
 import { DAY_END, UNIT_STARTS, UNITS_PER_DAY, WINDOW_SLOT_MAP } from "../config/scheduling.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
 import { addDays } from "../lib/india-time.ts";
+import { MINUTES_PER_UNIT } from "./visit-length.ts";
 
 export const RULES = [
   "the window times become a console setting; every surface reads the hours from the API rather than at build, and a window's place in the day (its half-slots) stays in code.",
   "a change of times applies only after the furthest day a client can book (today + the app's horizon, 45 days now) and after the last visit already booked. Nothing booked or bookable ever moves.",
+  "every half-slot, the last one up to the day's end included, lasts at least the 45 minutes a half-slot is counted as, so a visit placed by half-slots cannot run into the next visit or past the day's end.",
 ] as const;
 
 /** A day's times in India: when each half-slot starts, and when the day ends. */
@@ -65,13 +67,30 @@ export function firstUnitAfter(time: string, times: SlotTimes): number {
 
 const isTime = (value: string): boolean => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 
+/** Minutes since midnight of an "HH:MM" time. */
+function minutesOf(time: string): number {
+  const [hours = 0, minutes = 0] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+/** How long each half-slot lasts, in minutes: from its start to the next one's, the last one to the day's end. */
+function halfSlotLengths(times: SlotTimes): number[] {
+  const boundaries = [...times.unitStarts, times.dayEnd].map(minutesOf);
+  return boundaries.slice(1).map((end, index) => end - (boundaries[index] ?? end));
+}
+
 /** What is wrong with a day's times, as codes the console names; none for times that may be set. */
 export function slotTimesProblems(times: SlotTimes): string[] {
   const all = [...times.unitStarts, times.dayEnd];
   if (times.unitStarts.length !== UNITS_PER_DAY) return ["not_eight_starts"];
   if (!all.every(isTime)) return ["not_a_time"];
   const problems: string[] = [];
-  if (!all.every((time, index) => index === 0 || (all[index - 1] ?? "") < time)) problems.push("not_in_order");
+  const lengths = halfSlotLengths(times);
+  if (lengths.some((length) => length <= 0)) {
+    problems.push("not_in_order");
+  } else if (lengths.some((length) => length < MINUTES_PER_UNIT)) {
+    problems.push("half_slot_too_short");
+  }
   if ((all[0] ?? "") < DAY_BOUNDS.earliest || times.dayEnd > DAY_BOUNDS.latest) problems.push("outside_the_day");
   return problems;
 }
