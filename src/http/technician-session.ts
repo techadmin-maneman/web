@@ -15,7 +15,11 @@ import { deviceOfSession, markWiped, touchDevice } from "../domain/technicians.t
 import { sha256Hex } from "../lib/hash.ts";
 import { errorBody } from "./errors.ts";
 
-export const TECHNICIAN_COOKIE = "mm_tech";
+/** __Host-: the browser holds it to this host, over HTTPS, at path /, whatever a page sets. */
+export const TECHNICIAN_COOKIE = "__Host-mm_tech";
+
+/** Its name until October 2026, still read until every session it names has lapsed (90 days from last use). */
+const OLD_TECHNICIAN_COOKIE = "mm_tech";
 
 /** The technician this request is from, and the phone he is on. */
 export interface TechnicianSession {
@@ -39,6 +43,7 @@ export function setTechnicianCookie(c: Context<AppEnv>, token: string): void {
 
 export function clearTechnicianCookie(c: Context<AppEnv>): void {
   deleteCookie(c, TECHNICIAN_COOKIE, { path: "/", secure: true });
+  deleteCookie(c, OLD_TECHNICIAN_COOKIE, { path: "/", secure: true });
 }
 
 /**
@@ -46,7 +51,7 @@ export function clearTechnicianCookie(c: Context<AppEnv>): void {
  * session's expiry on (at most hourly). Sets c.var.technicianSession.
  */
 export const requireTechnicianSession = createMiddleware<AppEnv>(async (c, next) => {
-  const token = getCookie(c, TECHNICIAN_COOKIE);
+  const token = getCookie(c, TECHNICIAN_COOKIE) ?? getCookie(c, OLD_TECHNICIAN_COOKIE);
   const now = c.var.deps.now();
   if (token === undefined || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
     return c.json(errorBody("session_required", c.var.requestId), 401);

@@ -291,7 +291,7 @@ describe("switching a technician off", () => {
     const me = await send(tech, "GET", "/api/tech/me", undefined, cookie);
     expect(me.status).toBe(401);
     expect(await me.json()).toMatchObject({ error: { code: "technician_inactive" } });
-    expect(me.headers.get("Set-Cookie")).toMatch(/^mm_tech=;/);
+    expect(me.headers.get("Set-Cookie")).toMatch(/^__Host-mm_tech=;/);
 
     await signInBy(tech, "9810000009");
     expect(deps.sentCodes).toEqual([]);
