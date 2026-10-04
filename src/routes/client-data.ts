@@ -1,15 +1,18 @@
 // A client's rights over their data (docs/decisions/0049-dpdp.md), on the client surface:
-//   GET  /api/me/export     everything we hold about them, as a JSON file: the right of access, with who in ops
-//                           opened their photographs and when (docs/open-points.md, item 68)
-//   POST /api/grievances    a grievance, for ops to answer: the right of redress. The same words,
-//                           still open, are one grievance however often they are sent (ADR 0058)
+//   GET  /api/me/export       everything we hold about them, as a JSON file: the right of access, with who in ops
+//                             opened their photographs and when (docs/open-points.md, item 68)
+//   GET  /api/me/export.html  the same, as a page they can read, which the app's "Download my data" gives
+//   POST /api/grievances      a grievance, for ops to answer: the right of redress. The same words,
+//                             still open, are one grievance however often they are sent (ADR 0058)
 // Correction is the profile itself (address, number change); erasure is the deletion request (ADR 0042).
 // Each is audited under the client.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
+import type { Context } from "hono";
+import type { App, AppEnv } from "../http/context.ts";
 import { auditStatementIfWritten, recordAudit } from "../domain/audit.ts";
 import { everythingHeldAbout } from "../domain/data-export.ts";
+import { myDataPage } from "../domain/my-data-page.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorResponse } from "../http/errors.ts";
 
@@ -25,6 +28,37 @@ const exportRoute = createRoute({
     401: errorResponse("session_required"),
   },
 });
+
+const exportPageRoute = createRoute({
+  method: "get",
+  path: "/api/me/export.html",
+  summary: "Everything held about the client, as a page to download and read",
+  responses: {
+    200: {
+      description: "An HTML file, maneman-my-data.html, labelled and in India's time",
+      content: { "text/html": { schema: z.string() } },
+    },
+    401: errorResponse("session_required"),
+  },
+});
+
+/** Everything held about the signed-in client, once the export is audited: one the log could not record is not given. */
+async function auditedExport(c: Context<AppEnv>): Promise<{ held: Record<string, unknown>; now: Date }> {
+  const id = clientOf(c).subjectId;
+  const now = c.var.deps.now();
+  await recordAudit(
+    c.env.DB,
+    {
+      surface: "client",
+      actor: { kind: "client", id },
+      action: "data.export",
+      subject: { kind: "person", id },
+      requestId: c.var.requestId,
+    },
+    now,
+  );
+  return { held: await everythingHeldAbout(c.env.DB, id), now };
+}
 
 const grievanceRoute = createRoute({
   method: "post",
@@ -56,28 +90,26 @@ const grievanceRoute = createRoute({
 
 export function registerClientData(app: App): void {
   app.use("/api/me/export", requireClientSession);
+  app.use("/api/me/export.html", requireClientSession);
   app.use("/api/grievances", requireClientSession);
 
   app.openapi(exportRoute, async (c) => {
-    const session = clientOf(c);
-    const db = c.env.DB;
-    const id = session.subjectId;
-    const now = c.var.deps.now();
-    // Written before anything is read: an export the log could not record is not given.
-    await recordAudit(
-      db,
-      {
-        surface: "client",
-        actor: { kind: "client", id },
-        action: "data.export",
-        subject: { kind: "person", id },
-        requestId: c.var.requestId,
-      },
-      now,
-    );
-    return c.json({ exported_at: now.toISOString(), ...(await everythingHeldAbout(db, id)) }, 200, {
+    const { held, now } = await auditedExport(c);
+    return c.json({ exported_at: now.toISOString(), ...held }, 200, {
       "Content-Disposition": 'attachment; filename="maneman-my-data.json"',
       "Cache-Control": "private, no-store",
+    });
+  });
+
+  app.openapi(exportPageRoute, async (c) => {
+    const { held, now } = await auditedExport(c);
+    return new Response(myDataPage(held, now), {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": 'attachment; filename="maneman-my-data.html"',
+        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
+        "Cache-Control": "private, no-store",
+      },
     });
   });
 

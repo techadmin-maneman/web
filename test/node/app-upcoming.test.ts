@@ -12,7 +12,14 @@ type BeingBooked = NonNullable<Me["being_booked"]>;
 const visit = (id: string, date: string): VisitSummary => ({ id, date }) as VisitSummary;
 
 const BOOKING: BeingBooked = { type: "first_fit", date: "2026-10-08", window: "morning", paid: false, one_visit: true };
-const CONSULTATION = { date: "2026-10-06", window: "morning", window_label: "before noon", place: "Gurgaon" } as const;
+const CONSULTATION = {
+  date: "2026-10-06",
+  window: "morning",
+  window_label: "before noon",
+  place: "Gurgaon",
+  requested: false,
+  one_visit: false,
+} as const;
 
 describe("Upcoming on Visits", () => {
   it("lists a visit being booked, as Home does, where FSM has nothing for the client yet", () => {

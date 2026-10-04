@@ -255,6 +255,13 @@
   color: var(--error-on-paper);
 }
 
+/* A case closed before the booked start's wait had run: it argues for the client, in the ink kept for that. */
+.closedEarly {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
 .actions {
   display: flex;
   gap: var(--sp-10);

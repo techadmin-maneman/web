@@ -7,7 +7,14 @@ import { createMiddleware } from "hono/factory";
 import { routePath } from "hono/route";
 import { cityOf, type PlacedRecord } from "../domain/places.ts";
 import { callerAccessOf } from "../domain/staff.ts";
-import { placesReached, reachesCity, type CallerAccess, type PlacesReached } from "../policy/access.ts";
+import {
+  placesReached,
+  reachesCity,
+  type CallerAccess,
+  type Department,
+  type Level,
+  type PlacesReached,
+} from "../policy/access.ts";
 import { meetsNeed, needOf, OWN_DEPARTMENTS, SIGNED_IN, type RouteNeed } from "../policy/console-routes.ts";
 import type { AppEnv } from "./context.ts";
 import { errorBody } from "./errors.ts";
@@ -68,7 +75,12 @@ export async function routeReach(c: Context<AppEnv>): Promise<PlacesReached> {
   if (need === undefined || need === SIGNED_IN || need.department === OWN_DEPARTMENTS) {
     throw new Error("only a route of one department keeps to the caller's places");
   }
-  return placesReached(await callerAccess(c), need.department, need.level);
+  return reachOf(c, need.department, need.level);
+}
+
+/** The places the caller's work in a department reaches at a level, where the route's own line does not say. */
+export async function reachOf(c: Context<AppEnv>, department: Department, level: Level): Promise<PlacesReached> {
+  return placesReached(await callerAccess(c), department, level);
 }
 
 /** Whether a record is within this route's reach for the caller. One with no city is reached only everywhere. */

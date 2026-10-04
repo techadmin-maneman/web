@@ -483,7 +483,7 @@ A client's windows for a kind of visit over 14 days, and who is free in each
 }
 ```
 
-**404**: not_found: no such client, or one who has been erased
+**404**: not_found: no such client in the caller's cities, or one who has been erased
 
 ```json
 {
@@ -535,7 +535,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or one who has been erased
+**404**: not_found: no such client in the caller's cities, or one who has been erased
 
 ```json
 {
@@ -543,7 +543,7 @@ Request body:
 }
 ```
 
-**409**: taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before
+**409**: taken: nobody chosen is free in that window now, or the technician chosen is not in the caller's cities; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before
 
 ```json
 {
@@ -603,7 +603,7 @@ Request body:
 }
 ```
 
-**409**: not_changeable: the visit has begun, passed or gone, or is no client's; terms_changed: the notice is not the one shown, so show the terms again
+**409**: not_changeable: the visit has begun, passed or gone, is no client's, or is not in the caller's cities; terms_changed: the notice is not the one shown, so show the terms again
 
 ```json
 {
@@ -655,7 +655,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such visit
+**404**: not_found: no such visit in the caller's cities
 
 ```json
 {
@@ -1667,7 +1667,7 @@ The referrers' figures, the busiest first, 50 at a time
 
 ### GET /api/dispatch
 
-The dispatch board: seven days of every active technician, with the unassigned tray
+The dispatch board: seven days of the visits and active technicians in the caller's cities, with the unassigned tray
 
 **200**: The board
 
@@ -1705,7 +1705,7 @@ Where a job in hand can go in the board's week, before ops pick a reason. Writes
 }
 ```
 
-**404**: not_found: no such live job, or one the technician has started or closed, which stays where it is
+**404**: not_found: no such live job in the caller's cities, or one the technician has started or closed, which stays where it is
 
 ```json
 {
@@ -1733,7 +1733,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: fields names technician_id for one not in the caller's cities
 
 ```json
 {
@@ -1749,7 +1749,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such live job
+**404**: not_found: no such live job in the caller's cities
 
 ```json
 {
@@ -1793,7 +1793,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request, including a move to the technician, day and window the job already has
+**400**: invalid_request, including a move to the technician, day and window the job already has, or to a technician not in the caller's cities
 
 ```json
 {
@@ -1809,7 +1809,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such live job
+**404**: not_found: no such live job in the caller's cities
 
 ```json
 {
@@ -1865,7 +1865,7 @@ Ops called the client about a move he had not heard of; its task leaves the boar
 }
 ```
 
-**404**: not_found: no move of a live visit whose client is still to be told
+**404**: not_found: no move of a live visit in the caller's cities whose client is still to be told
 
 ```json
 {
@@ -1976,7 +1976,7 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
 
 ### GET /api/technicians
 
-Active technicians, the phones they have logged in on and their leave, and those switched off
+Active technicians in the caller's cities, the phones they have logged in on and their leave, and those switched off
 
 **200**: The technicians
 
@@ -2014,7 +2014,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: no name, not an Indian mobile, or not one of our cities
+**400**: invalid_request: no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach
 
 ```json
 {
@@ -2074,7 +2074,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such active technician
+**404**: not_found: no such active technician in the caller's cities
 
 ```json
 {
@@ -2111,7 +2111,7 @@ Take leave back, so those days can be worked again
 }
 ```
 
-**404**: not_found: no such leave of that technician's
+**404**: not_found: no such leave of that technician's, or he is not in the caller's cities
 
 ```json
 {
@@ -2149,7 +2149,7 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 }
 ```
 
-**404**: not_found: no such phone of that technician's
+**404**: not_found: no such phone of that technician's, or he is not in the caller's cities
 
 ```json
 {
@@ -2306,7 +2306,7 @@ Request body:
 
 What ops still have to do, by group, the longest wait first
 
-**200**: The groups with something in them, of the caller's own departments once the Staff list is enforced
+**200**: The groups with something in them, of the caller's own departments and cities once the Staff list is enforced
 
 ```json
 {
@@ -2358,7 +2358,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such task on the board now; its thing may be done already
+**404**: not_found: no such task on the board now in the caller's cities; its thing may be done already
 
 ```json
 {
@@ -2396,7 +2396,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such task on the board now; a follow-up may be booked, or it is closed already
+**404**: not_found: no such task on the board now in the caller's cities; a follow-up may be booked, or it is closed already
 
 ```json
 {
@@ -2452,7 +2452,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities
+**400**: invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach
 
 ```json
 {
@@ -2468,7 +2468,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such technician
+**404**: not_found: no such technician in the caller's cities
 
 ```json
 {
@@ -2504,7 +2504,7 @@ Switch a technician off: he is signed out at once, and his visits still to come 
 }
 ```
 
-**404**: not_found: no such technician
+**404**: not_found: no such technician in the caller's cities
 
 ```json
 {
@@ -2552,7 +2552,7 @@ Switch a technician back on, so he can sign in again
 }
 ```
 
-**404**: not_found: no such technician
+**404**: not_found: no such technician in the caller's cities
 
 ```json
 {
@@ -3793,7 +3793,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is
+**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities
 
 ```json
 {
@@ -3829,7 +3829,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code, from, or to for the place it came from
+**400**: invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities
 
 ```json
 {
@@ -3865,7 +3865,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is
+**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities
 
 ```json
 {
@@ -3901,7 +3901,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is
+**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is or one not in the caller's cities
 
 ```json
 {
@@ -4371,6 +4371,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
             "already_closed",
             "no_service_area",
             "service_exists",
@@ -4428,6 +4429,11 @@ Request body:
           ],
           "additionalProperties": false,
           "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+        },
+        "earliest_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [
@@ -6831,7 +6837,7 @@ Request body:
                   "items": {
                     "$ref": "#/components/schemas/FreeTechnician"
                   },
-                  "description": "Who is free for the visit, the client's regular technician first."
+                  "description": "Who in the caller's cities is free for the visit, the client's regular technician first."
                 }
               },
               "required": [
@@ -7436,6 +7442,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
             "already_closed",
             "no_service_area",
             "service_exists",
@@ -7493,6 +7500,11 @@ Request body:
           ],
           "additionalProperties": false,
           "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+        },
+        "earliest_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [
@@ -8808,7 +8820,7 @@ Request body:
       "items": {
         "type": "string"
       },
-      "description": "The cities the board can be narrowed to."
+      "description": "The cities the board can be narrowed to: the caller's."
     },
     "technicians": {
       "type": "array",
@@ -9384,7 +9396,7 @@ Request body:
     "rooms"
   ],
   "additionalProperties": false,
-  "description": "Each technician's day with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is."
+  "description": "Each technician's day in the caller's cities with a window the job would land in, by the check a move runs. A day not listed has none. Not where the job already is."
 }
 ```
 
@@ -9662,7 +9674,7 @@ Request body:
     "checked_in_at": {
       "type": "string",
       "format": "date-time",
-      "description": "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here."
+      "description": "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here, or from the booked start for an arrival before it."
     },
     "phone_checked_in_at": {
       "anyOf": [
@@ -9757,6 +9769,10 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "closed_early": {
+      "type": "boolean",
+      "description": "The wait ran from a check-in before the booked start, so the case closed before the client's own wait had run: waive it, or give the reason to charge."
+    },
     "closed_at": {
       "anyOf": [
         {
@@ -9815,6 +9831,7 @@ Request body:
     "message_state",
     "message_delivered_at",
     "wait_ends_at",
+    "closed_early",
     "closed_at",
     "opened_at",
     "due",
@@ -10150,7 +10167,7 @@ Request body:
       "items": {
         "type": "string"
       },
-      "description": "The cities a technician may be given, in display order."
+      "description": "The cities the caller may give a technician, those their Operations MANAGE reaches, in display order."
     }
   },
   "required": [
@@ -10657,7 +10674,7 @@ Request body:
           },
           "count": {
             "type": "integer",
-            "description": "How many are waiting in the group, all of them."
+            "description": "How many are waiting in the group in the caller's cities, all of them."
           },
           "closable": {
             "type": "boolean",
@@ -11069,7 +11086,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
+      "description": "The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does."
     }
   },
   "required": [
@@ -11121,7 +11138,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
+      "description": "The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does."
     }
   },
   "additionalProperties": false,
@@ -11213,7 +11230,7 @@ Request body:
       "items": {
         "$ref": "#/components/schemas/TechnicianWork"
       },
-      "description": "Every active technician, by name, including those who finished nothing."
+      "description": "Every active technician in the caller's cities, by name, including those who finished nothing."
     }
   },
   "required": [
@@ -13332,7 +13349,7 @@ Request body:
         ],
         "additionalProperties": false
       },
-      "description": "The central store first, then each active technician's kit, and any other still holding stock."
+      "description": "The central store first, then each active technician's kit, and any other still holding stock: those in the caller's cities, and the store only with a national grant."
     },
     "holdings": {
       "type": "array",

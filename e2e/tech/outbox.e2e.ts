@@ -223,7 +223,9 @@ test("accounts plainly for what has not reached us, and says what changed on a s
 
   // Not only here: every screen says so, and the card offers nothing to press on with.
   await page.getByRole("button", { name: "Back" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: `Rohit M. · ${movedToSameer}` })).toBeVisible();
+  await expect(
+    page.getByRole("alert").filter({ hasText: `9:30 am service · Sector 65: ${movedToSameer}` }),
+  ).toBeVisible();
   await page.getByRole("listitem").filter({ hasText: "Rohit M." }).click();
   await expect(page.getByRole("heading", { level: 2, name: "This job changed" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
@@ -242,7 +244,8 @@ test("accounts plainly for what has not reached us, and says what changed on a s
   await expect(page.getByRole("alert").filter({ hasText: movedToSameer })).toHaveCount(0);
 });
 
-test("says a job moved to another time was moved, from the start the phone held", async ({ page }) => {
+// BK-43, FLD-38: which job moved, by the time the technician knew, and the time it moved to from the card read again.
+test("says which job moved to another time, and to when", async ({ page }) => {
   const fake = await fakeTech(page);
   await atTheDoor(page);
   await page.goto(`/jobs/${JOB_ID}`);
@@ -250,11 +253,17 @@ test("says a job moved to another time was moved, from the start the phone held"
   await expect(page.getByRole("button", { name: "Start job" })).toBeVisible();
   await expect.poll(() => fake.writes.length).toBe(1);
 
-  // Ops move the visit an hour on, and the phone still holds the old time.
+  // Ops move the 9:30 visit an hour on, and the phone's write still carries the old time.
   fake.movedTo = new Date(Date.parse(fake.writes[0]?.startsAt ?? "") + 3_600_000).toISOString();
   await page.getByRole("button", { name: "Start job" }).click();
 
-  await expect(page.getByRole("alert").filter({ hasText: "Ops moved this job to another time." })).toBeVisible();
+  // Start job has gone on to the before photos, where the banner says it.
+  const movedLine = "Ops moved this job to 10:30 am today.";
+  await expect(page.getByRole("alert").filter({ hasText: `9:30 am service · Sector 65: ${movedLine}` })).toBeVisible();
+
+  await page.goto(`/jobs/${JOB_ID}`);
+  const changed = page.getByRole("alert").filter({ has: page.getByRole("heading", { name: "This job changed" }) });
+  await expect(changed).toContainText(movedLine);
 });
 
 test("a job ops gave away while its photographs waited says whom to, and asks before deleting them", async ({

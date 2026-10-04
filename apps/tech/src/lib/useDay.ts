@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, unreachable, type Job, type JobSummary } from "../api.ts";
-import { forgetOld, keepDay, keepJob, keptDay, keptJob, keptNames } from "../store/jobs.ts";
+import { forgetOld, keepDay, keepJob, keptDay, keptJob, keptJobs, keptNames, type HeldJob } from "../store/jobs.ts";
 import { unsentJobs } from "../store/outbox.ts";
 import { todayInIndia } from "./when.ts";
 
@@ -119,26 +119,36 @@ export function useJob(id: string, watch: unknown = null): readonly [Loaded<Job>
   return useKept(load, watch);
 }
 
-/**
- * The client names the phone holds, by job. The day's list carries none — the
- * API gives a client only with the card, and only from the day before — so the
- * rows, the waiting screen and the close-out all read what `keepCards` kept.
- */
-export function useNames(watch: unknown = null): ReadonlyMap<string, string> {
-  const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map());
+/** What a read of the phone's store answers, read again whenever `watch` changes. */
+function useStored<T>(read: () => Promise<T>, nothing: T, watch: unknown): T {
+  const [found, setFound] = useState<T>(nothing);
   useEffect(() => {
     let current = true;
-    void keptNames().then(
-      (found) => {
-        if (current) setNames(found);
+    void read().then(
+      (answer) => {
+        if (current) setFound(answer);
       },
       () => {
-        // A store that will not open has no names to give; the rows go without.
+        // A store that will not open has nothing to give; the screens go without.
       },
     );
     return () => {
       current = false;
     };
-  }, [watch]);
-  return names;
+  }, [read, watch]);
+  return found;
+}
+
+/**
+ * The client names the phone holds, by job. The day's list carries none — the
+ * API gives a client only with the card, and only from the day before — so the
+ * rows and the close-out read what `keepCards` kept.
+ */
+export function useNames(watch: unknown = null): ReadonlyMap<string, string> {
+  return useStored<ReadonlyMap<string, string>>(keptNames, new Map(), watch);
+}
+
+/** Each job the phone holds, locked or not, for the screens that must name a job whose card has gone. */
+export function useHeldJobs(watch: unknown = null): ReadonlyMap<string, HeldJob> {
+  return useStored<ReadonlyMap<string, HeldJob>>(keptJobs, new Map(), watch);
 }
