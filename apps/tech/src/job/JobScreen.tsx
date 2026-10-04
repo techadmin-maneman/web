@@ -18,7 +18,7 @@ import { closeOut as closeOutCopy, job as copy, whatStopped } from "../content.t
 import { nextStep, outcomeOf, stageOf, type Stage } from "../lib/progress.ts";
 import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
-import { clock, dayAfter, todayInIndia } from "../lib/when.ts";
+import { dayAfter, todayInIndia } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
@@ -31,9 +31,7 @@ import styles from "./job.module.css";
 function whatChanged(job: Job, queued: readonly Queued[]): string {
   const moved = queued.find((event) => event.job_id === job.id && event.state === "superseded");
   if (moved === undefined) return "";
-  const held = moved.starts_at ?? null;
-  const newTime = moved.fields.includes("time") && held !== null && held !== job.starts_at;
-  return newTime ? copy.changed.movedTo(clock(job.starts_at)) : whatStopped(moved);
+  return whatStopped({ ...moved, startsAt: moved.starts_at ?? null }, new Date(), job.starts_at);
 }
 
 function Changed({ job, queued }: { job: Job; queued: readonly Queued[] }) {

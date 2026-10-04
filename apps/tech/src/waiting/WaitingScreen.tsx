@@ -17,7 +17,8 @@ import { Offline } from "../components/Banners.tsx";
 import { Confirm } from "../components/Confirm.tsx";
 import { atRisk as atRiskCopy, queue as copy, reference, whatStopped } from "../content.ts";
 import { STROKE } from "../icons.ts";
-import { useNames } from "../lib/useDay.ts";
+import { jobLabel } from "../lib/kind.ts";
+import { useHeldJobs } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock } from "../lib/when.ts";
@@ -59,14 +60,20 @@ function SetLine({ set }: { set: PhotoSet }) {
 export function WaitingScreen() {
   const { offline, atRisk } = useSession();
   const waiting = useOutbox();
-  const names = useNames(waiting);
+  const kept = useHeldJobs(waiting);
   const heading = useScreen(copy.title);
   const [forgetting, setForgetting] = useState<string | null>(null);
 
   const held = account(waiting.events);
   const sets = photoSets(waiting.frames, waiting.events);
   const jobs = [...new Set([...sets.map((set) => set.job), ...held.map((line) => line.job_id)])];
-  const name = (id: string) => names.get(id) ?? id.slice(0, 8);
+
+  /** The client while the phone holds the card; else the job's time, kind and area as the technician knew them. */
+  const name = (id: string) => {
+    const job = kept.get(id);
+    const startsAt = waiting.events.find((event) => event.job_id === id)?.starts_at ?? null;
+    return job?.client ?? jobLabel(job, startsAt);
+  };
 
   /** When this job's oldest unsent thing was taken: a half-captured set has frames and no event yet. */
   const since = (id: string): number | null => {
@@ -140,7 +147,9 @@ export function WaitingScreen() {
                   {taken !== null && <p className={styles.count}>{copy.since(clock(new Date(taken).toISOString()))}</p>}
                   {stopped !== null && (
                     <div className={styles.stopped} role="alert">
-                      <p className={styles.stoppedLine}>{whatStopped(stopped)}</p>
+                      <p className={styles.stoppedLine}>
+                        {whatStopped(stopped, new Date(), kept.get(id)?.starts_at ?? null)}
+                      </p>
                       {stopped.requestId !== null && (
                         <ErrorRef requestId={stopped.requestId} words={reference} className={styles.reference} />
                       )}
