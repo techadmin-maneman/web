@@ -1,5 +1,6 @@
-// Who acts on an alert (src/domain/alerts.ts) on the Tasks board's "Needs a hand", and which alerts' work ops may
-// send again from there. An alert's kind is its key up to the first colon: "crm_lead:<leadId>" is a crm_lead.
+// Who acts on an alert (src/domain/alerts.ts) on the Tasks board's "Needs a hand", which alerts' work ops may send
+// again from there, and how often the chat is told again of one still open. An alert's kind is its key up to the
+// first colon: "crm_lead:<leadId>" is a crm_lead.
 
 import type { Department, Level } from "./access.ts";
 
@@ -82,6 +83,20 @@ const DEPARTMENT_OF_KIND: ReadonlyMap<string, Department> = new Map([
  * job, the WhatsApp bridge, Cloudflare's allowances), which is Admin's.
  */
 export const alertDepartment = (kind: string): Department => DEPARTMENT_OF_KIND.get(kind) ?? "admin";
+
+/** Nobody can sign in, or a client has paid and has no visit or no refund: the chat hears of these more often. */
+const RETOLD_EVERY_6_HOURS = [
+  "whatsapp_bridge",
+  "login_codes_failing",
+  "unbooked_hold",
+  "booking_held",
+  "cancel_refund_failed",
+  "no_show_refund_failed",
+  "razorpay_refund_unheard",
+];
+
+/** How long an open alert goes untold before its next sighting tells the chat again. */
+export const retellAfterHours = (kind: string): number => (RETOLD_EVERY_6_HOURS.includes(kind) ? 6 : 24);
 
 /**
  * The level marking an alert done asks. Done on a CRM erasure records the person erased there, and erasures are

@@ -1,6 +1,6 @@
 # 0067. A failure that needs a person reaches one, once, with the IDs to act on
 
-- Status: accepted. Amends ADR 0011 on what a refused Turnstile secret answers, and ADR 0044 on a Books refusal. Amended 4 October 2026: "Alerts on Tasks", on the owner's ruling that alerts get a home in the console.
+- Status: accepted. Amends ADR 0011 on what a refused Turnstile secret answers, and ADR 0044 on a Books refusal. Amended 4 October 2026: "Alerts on Tasks", on the owner's ruling that alerts get a home in the console; and "Told again on a clock".
 - Date: 2026-09-25
 
 ## Context
@@ -17,7 +17,7 @@ The audit of 24 September 2026 found that much of what goes wrong reached nobody
 **Alerts are kept in D1, and told once** (`src/domain/alerts.ts`, migration 0038).
 
 - An alert is raised under a key naming what went wrong and to what, such as `books_refund_refused:<refundId>`. Raising it again only counts it.
-- The chat is told the first time, and again at 10, 100 and 1,000 times as many ("Still happening, 10 times: …"). A failure expected now and then waits for its `after`-th sighting before anyone is told.
+- The chat is told the first time, and again while it stays open ("Told again on a clock"). A failure expected now and then waits for its `after`-th sighting before anyone is told.
 - It is resolved when what it was about is put right, by the code that sees it put right. Raised again after that, it is a new alert.
 - Its message carries IDs, never a name, number or address, and a link into the ops console, such as `/clients/<personId>`, which finds the client without their mobile number. The chat post still scrubs numbers and e-mail addresses as a last defence.
 - The webhook stays optional, as `ALERT_WEBHOOK_URL` always was: without it the alert is logged and kept. If D1 cannot keep it, the chat is told anyway.
@@ -45,8 +45,8 @@ Alerts that already fire once per record, and name it, still post directly: a tr
 | A technician's step not in FSM                                         | an hour after it landed                                                 | it is written or given up                                |
 | Login codes failing                                                    | on the third in an hour                                                 | a code goes through                                      |
 | The WhatsApp bridge closed                                             | on the second reading in a row, read every five minutes                 | it is open                                               |
-| Google refusing the address search                                     | once a day while it lasts                                               | never: each day's is its own                             |
-| Turnstile unable to check visitors                                     | on the fifth in an hour, once a day                                     | never: each day's is its own                             |
+| Google refusing the address search                                     | at once                                                                 | Google answers a search                                  |
+| Turnstile unable to check visitors                                     | on the fifth in an hour                                                 | Turnstile answers again                                  |
 | A cancelled visit's refund failing                                     | at once, naming the visit and the Razorpay payment                      | never: ops refund by hand, once                          |
 | FSM sync giving up on an appointment                                   | at once, then counted as the reconciliation queues it night after night | it syncs                                                 |
 | AILabTools credits below the floor                                     | once, not every hour                                                    | a top-up lifts them over the floor                       |
@@ -74,10 +74,18 @@ The 2 October audit found that failures needing a person still lived only in the
 
 What the audit asked of FSM here (a Tasks group for a technician's close FSM refused, "Try again" through FSM, and the phone's and the dispatch board's words for it) is not built: FSM is being removed, and without it a technician's steps land in our own database.
 
+## Told again on a clock (4 October 2026)
+
+The 2 October audit found that telling the chat only at 10, 100 and 1,000 sightings goes quiet in a long outage: the bridge check, every five minutes, posted at about 10 minutes, 1.6 hours and 16.6 hours, then nothing for days (PLAT-41). It also found open alerts whose subject was gone.
+
+- **An open alert is told again** at its first sighting once it has gone 24 hours untold, or 6 hours for the WhatsApp bridge, failing login codes, a paid booking with no visit, and a refund that failed (`retellAfterHours`, `src/policy/alerts.ts`). The 10, 100 and 1,000 counts still tell it too. Either reads "Still open since Mon 21 Sep, 12 pm, 37 times: …". `alerts.last_told_at` (migration 0086) holds when it was last told; one sighting tells it, however many come together.
+- **Google's refusal and Turnstile's outage** are one alert each, no longer one a day, and close at the next search Google answers or the next visitor Turnstile checks.
+- Migration 0086 closed what was open with nothing left to put right: the dated Google and Turnstile alerts, invoice alerts of visits FSM had deleted, and technicians' steps no longer waiting for FSM. Nothing raises these two kinds once FSM is off, so no code closes them.
+
 ## Consequences
 
 - A failure that needs a person is in the `alerts` table, open until it is put right, and on Tasks once ops have been told of it.
 - A resolved alert stays in the table, and so does one nothing closes (the table's "never" rows), so "open" means not yet known to be put right. The table grows by the alerts raised, which is small; nothing deletes them yet.
 - Checking whether to close an alert costs one indexed D1 statement where the good outcome happens: a login code sent, an appointment synced, a job step written, a Books record gone through. Each reads the open alert by key through a partial index and usually writes nothing.
-- A refused Books refund is still asked again every hour, as a refusal can be put right in Books. Ops now know of it, once, and again at the tenth and hundredth hour.
+- A refused Books refund is still asked again every hour, as a refusal can be put right in Books. Ops now know of it at once, and again each day it stays refused.
 - **Still open:** how a kept charge is invoiced waits for the CA (open point 16), and whether Books may keep an erased client's display name waits for counsel (open point 23).
