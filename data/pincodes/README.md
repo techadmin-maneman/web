@@ -25,7 +25,7 @@ One row per pincode. The header names the columns and `scripts/import-pincodes.t
 
 Leave a pincode you have not decided on blank in both columns. Blank is "not served", which is the safe answer.
 
-**Uploading the file in the ops console** (Settings · Service area) reads the same two columns, and is stricter than the import: the file must have `pincode`, `served` and `launch_on` columns, `served` may be yes, y, true or 1 for served and no, n, false, 0 or blank for not, and any other word stops the upload with its pincode. What the file would change is shown pincode by pincode before anything is saved. The list the console downloads writes `yes` or `no`.
+**Uploading the file in the ops console** (Areas › Served) reads the same two columns, and is stricter than the import: the file must have `pincode`, `served` and `launch_on` columns, `served` may be yes, y, true or 1 for served and no, n, false, 0 or blank for not, and any other word stops the upload with its pincode. What the file would change is shown pincode by pincode before anything is saved. The console will not serve a pincode from a day still to come: leave it unserved until its day. The list the console downloads writes `yes` or `no`.
 
 **An area's name** starts as the shortest of its post offices. Ops can give it a better one in the console, and the import leaves a name ops gave alone (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 

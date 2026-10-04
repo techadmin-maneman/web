@@ -104,6 +104,7 @@ export type ServiceAdd = Sent<paths["/api/services"]["post"]>;
 export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
 export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
 export type AreaChanged = Body<paths["/api/service-area"]["post"]>;
+export type NewPincode = Sent<paths["/api/pincodes"]["post"]>;
 
 /** The consumables, each service's expected use, the job sheet, and the stock (docs/decisions/0087-consumables-and-stock.md). */
 export type Consumables = Body<paths["/api/consumables"]["get"]>;
@@ -464,15 +465,17 @@ export const api = {
   enterVisitCode: (visitId: string, code: string) =>
     client.post("/api/visits/{id}/discount-code", { path: { id: visitId }, body: { code } }),
   removeVisitCode: (visitId: string) => client.post("/api/visits/{id}/discount-code/remove", { path: { id: visitId } }),
-  /** Every pincode, with how many wait there and how many serving it would tell. */
+  /** Every pincode, with how many wait there and how many serving it would tell, and our cities. */
   serviceArea: () => client.get("/api/service-area"),
   /**
    * Only the pincodes named change. The route refuses a change that would leave
-   * none served, and launches each pincode it begins serving: `alerted` counts
-   * the WhatsApps that queues.
+   * none served, or serve one from a day to come, and launches each pincode it
+   * begins serving: `alerted` counts the WhatsApps that queues.
    */
   setServiceArea: (changes: readonly AreaChange[]) =>
     client.post("/api/service-area", { body: { changes: [...changes] } }),
+  /** A pincode the service area does not hold, added unserved in one of our cities. */
+  addPincode: (pincode: NewPincode) => client.post("/api/pincodes", { body: pincode }),
   /** Every consumable, where each stands in FSM's catalogue, and each service's expected use. */
   consumables: () => client.get("/api/consumables"),
   addConsumable: (added: NewConsumable) => client.post("/api/consumables", { body: added }),

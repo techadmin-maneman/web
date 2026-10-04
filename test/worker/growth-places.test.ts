@@ -252,6 +252,19 @@ describe("a grant of Growth in one city", () => {
     ]);
   });
 
+  it("adds a pincode only in its city, and offers only its city to add one in", async () => {
+    const list = await (await get(delhi, "/api/waitlist")).json<{ cities: string[] }>();
+    expect(list.cities).toEqual(["Delhi"]);
+
+    const elsewhere = await post(delhi, "/api/pincodes", { pincode: "122099", area: "Sector 99", city: "Gurgaon" });
+    expect(elsewhere.status).toBe(403);
+    expect(await errorCode(elsewhere)).toBe("not_permitted");
+    expect((await post(delhi, "/api/pincodes", { pincode: "110099", area: "Dwarka", city: "Delhi" })).status).toBe(201);
+
+    const pincodes = await env.DB.prepare("SELECT pincode FROM serviceable_pincodes ORDER BY pincode").all();
+    expect(pincodes.results).toEqual([{ pincode: "110017" }, { pincode: "110099" }, { pincode: "122018" }]);
+  });
+
   it("leaves the service area to a national grant", async () => {
     expect((await get(delhi, "/api/service-area")).status).toBe(403);
     expect((await post(delhi, "/api/service-area", {})).status).toBe(403);
@@ -281,6 +294,14 @@ describe("Growth's reach", () => {
     expect(await heldIds(ncr)).toEqual([HELD_IN_DELHI.id, HELD_IN_GURGAON.id]);
     expect(await referrerCodes(ncr)).toEqual([DELHI_CODE, GURGAON_CODE]);
     expect(await waitingPincodes(ncr)).toEqual(["110017", "122018"]);
+  });
+
+  it("offers no city to add a pincode in to one who may only view, and adds none for them", async () => {
+    const viewer = await staffWith("growth:view:city:Delhi");
+    const list = await (await get(viewer, "/api/waitlist")).json<{ cities: string[] }>();
+    expect(list.cities).toEqual([]);
+    const refused = await post(viewer, "/api/pincodes", { pincode: "110099", area: "Dwarka", city: "Delhi" });
+    expect(refused.status).toBe(403);
   });
 
   it("is everywhere for a national grant", async () => {

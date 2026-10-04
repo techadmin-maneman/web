@@ -1,6 +1,6 @@
 // Ops' waitlist, the pincode launch and the referrers' funnel (Ops Console, C2 and C3;
 // docs/decisions/0048-referrals.md), on the ops surface behind Access:
-//   GET  /api/waitlist                 who is waiting, by pincode
+//   GET  /api/waitlist                 who is waiting, by pincode, and the cities a pincode may be added in
 //   POST /api/pincodes/:pin/launch     what a launch would send, then the launch itself
 //   GET  /api/referrers                every referrer's figures: opens, consultations, fits, granted, redeemed
 // A launch is audited, and its alerts leave in a paced line.
@@ -8,14 +8,17 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
+import { listCities } from "../domain/cities.ts";
 import { reachBinding, withinReach } from "../domain/places.ts";
+import { launchedPincode, pincodeOf } from "../domain/service-area.ts";
 import { launchPincode, launchPreview, waitlistByPincode } from "../domain/waitlist.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { queuePacedMessages } from "../http/queue-message.ts";
-import { routeReach } from "../http/staff-access.ts";
+import { reachOf, routeReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { reachesCity, type PlacesReached } from "../policy/access.ts";
+import { launchesLater } from "../policy/launch.ts";
 
 /** The pincodes the waitlist lists at once, the longest waits: far more than a launch is chosen from. */
 export const WAITLIST_AREAS = 200;
@@ -53,6 +56,9 @@ const waitlistRoute = createRoute({
             more: z.boolean().openapi({
               description: `More than ${String(WAITLIST_AREAS)} pincodes have someone waiting; these are the longest waits.`,
             }),
+            cities: z.array(z.string()).openapi({
+              description: "Our cities the caller may add a pincode in: those their Growth MANAGE reaches.",
+            }),
           })
           .strict(),
       ),
@@ -72,7 +78,10 @@ const launchRoute = createRoute({
         z
           .object({
             confirm: z.boolean(),
-            launch_on: z.iso.date().optional().openapi({ description: "India's date it starts; today if left out." }),
+            launch_on: z.iso
+              .date()
+              .optional()
+              .openapi({ description: "India's date it started: today if left out, and never a day to come." }),
           })
           .strict()
           .openapi("PincodeLaunch"),
@@ -93,8 +102,9 @@ const launchRoute = createRoute({
           .strict(),
       ),
     },
+    400: errorResponse("launch_in_future: launch_on is a day still to come"),
     403: errorResponse("access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE"),
-    404: errorResponse("not_found: we have no such pincode"),
+    404: errorResponse("not_found: the service area holds no such pincode, so it is added first"),
   },
 });
 
@@ -137,9 +147,12 @@ const referrersRoute = createRoute({
 export function registerOpsWaitlist(app: App): void {
   app.openapi(waitlistRoute, async (c) => {
     const areas = await waitlistByPincode(c.env.DB, WAITLIST_AREAS + 1, await routeReach(c));
+    const adding = await reachOf(c, "growth", "manage");
+    const cities = (await listCities(c.env.DB)).filter((city) => reachesCity(adding, city.name));
     return c.json(
       {
         more: areas.length > WAITLIST_AREAS,
+        cities: cities.map((city) => city.name),
         areas: areas.slice(0, WAITLIST_AREAS).map((area) => ({
           pincode: area.pincode,
           area: area.area,
@@ -161,10 +174,7 @@ export function registerOpsWaitlist(app: App): void {
     const { confirm, launch_on: launchOn } = c.req.valid("json");
     const db = c.env.DB;
     const now = c.var.deps.now();
-    const known = await db
-      .prepare("SELECT city FROM serviceable_pincodes WHERE pincode = ?1")
-      .bind(pin)
-      .first<{ city: string }>();
+    const known = await pincodeOf(db, pin);
     if (known === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     // Whether we serve a pincode is no secret, as the site says so to anyone, so one elsewhere is refused, not hidden.
     if (!reachesCity(await routeReach(c), known.city)) {
@@ -175,10 +185,14 @@ export function registerOpsWaitlist(app: App): void {
       const preview = await launchPreview(db, pin);
       return c.json({ pincode: pin, waiting: preview.waiting, alerts: preview.alerts, launched: false }, 200);
     }
+    const today = indiaDate(now);
+    if (launchOn !== undefined && launchesLater(launchOn, today)) {
+      return c.json(errorBody("launch_in_future", c.var.requestId, ["launch_on"]), 400);
+    }
     const staff = staffOf(c);
     const { alerts } = await launchPincode(db, {
-      pincode: pin,
-      launchOn: launchOn ?? indiaDate(now),
+      pincode: launchedPincode(known),
+      launchDay: launchOn ?? today,
       audit: {
         surface: "ops",
         actor: staff,
