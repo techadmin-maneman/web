@@ -288,7 +288,7 @@ describe("the waitlist and a launch", () => {
     expect(message).toEqual({ person_id: FRIEND, kind: "launch_alert", subject_id: "400050" });
     const composed = await composeLaunchAlert(env.DB, "400050", FRIEND, "local");
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hello Karan, we now come to Bandra. Your free consultation can be booked here: http://localhost:4321/book",
+      "Hi Karan, Mane Man now comes to Bandra. Book your free consultation: http://localhost:4321/book",
     );
 
     // Launched again: nobody is told twice.
@@ -306,7 +306,7 @@ describe("the waitlist and a launch", () => {
     expect((await launch({ confirm: true })).status).toBe(200);
     const composed = await composeLaunchAlert(env.DB, "400050", FRIEND, "local");
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hello Karan, we now come to Mumbai. Your free consultation can be booked here: http://localhost:4321/book",
+      "Hi Karan, Mane Man now comes to Mumbai. Book your free consultation: http://localhost:4321/book",
     );
   });
 
@@ -445,7 +445,7 @@ describe("the waitlist and a launch", () => {
     expect(await (await launch({ confirm: true }, queue)).json()).toMatchObject({ alerts: 1, launched: true });
     const composed = await composeLaunchAlert(env.DB, "400050", FRIEND, "local");
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hello Karan, we now come to Bandra West. Your free consultation can be booked here: http://localhost:4321/book",
+      "Hi Karan, Mane Man now comes to Bandra West. Book your free consultation: http://localhost:4321/book",
     );
   });
 

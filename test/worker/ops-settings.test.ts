@@ -962,7 +962,7 @@ describe("the name ops give an area", () => {
     await env.DB.prepare("UPDATE serviceable_pincodes SET served = 1 WHERE pincode = '122018'").run();
     const composed = await composeLaunchAlert(env.DB, "122018", PERSON, "local");
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toContain(
-      "we now come to Sector 91.",
+      "Hi Karan, Mane Man now comes to Sector 91. Book your free consultation: http://localhost:4321/book",
     );
   });
 

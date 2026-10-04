@@ -5,136 +5,140 @@ import { MESSAGE_KINDS, type MessageKind } from "../domain/messages.ts";
 import type { MessagePurpose } from "../policy/consents.ts";
 
 export const TEMPLATES: Readonly<Record<string, string>> = {
-  // The try-on's look, to the number that claimed it: {{1}} the first name. The second sentence is the design's own.
+  // The try-on's look, to the number that claimed it: {{1}} the first name, {{2}} where to book a consultation.
   tryon_result_v1:
-    "Hello {{1}}, here is your Mane Man try-on. What you see is a simulation, not a photograph of a result.",
+    "Hi {{1}}, here's your new look from Mane Man. It's a simulation: your real hair system is matched to your own hair. See it for real at a free consultation: {{2}}",
   // The login code, {{1}}.
-  login_code_v1: "{{1}} is your Mane Man code. It works for ten minutes. We will never ask you for it.",
+  login_code_v1: "{{1}} is your Mane Man code. It expires in 10 minutes. Don't share it with anyone.",
   // A visit's params: {{1}} first name, {{2}} visit, {{3}} day ("Thu 24 Sep"), {{4}} window ("12 to 4 pm"),
   // {{5}} technician, {{6}} amount ("Rs. 2,000"), {{7}} reference, {{8}} refund to, {{9}} minutes waited, {{10}} back.
-  consultation_booked_v1: "Hello {{1}}, your free consultation is booked for {{3}}, {{4}}. We will see you then.",
+  consultation_booked_v1:
+    "Hi {{1}}, your free consultation is booked for {{3}}, {{4}}. Your technician comes to you. To change it, open the Mane Man app.",
   // The consultation and fit in one visit, booked from the site with nothing paid.
   one_visit_booked_v1:
-    "Hello {{1}}, your consultation and fit is booked for {{3}}, {{4}}. You pay only once you are fitted.",
+    "Hi {{1}}, your consultation and fit is booked for {{3}}, {{4}}. Choose your hair system with your technician. You only pay once you're fitted.",
   visit_booked_v1:
-    "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Paid {{6}}, reference {{7}}. The receipt is in the app.",
+    "Hi {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. We've received {{6}} (ref {{7}}). Your receipt is in the app.",
   visit_booked_credit_v1:
-    "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. One of your free service visits covers it.",
+    "Hi {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. It's covered by one of your free service visits.",
   // The receipt for a one visit paid by its link once the client is fitted: {{2}} the hair system.
   link_paid_v1:
-    "Hello {{1}}, thank you for your payment of {{6}} for your {{2}}, reference {{7}}. Welcome to Mane Man. The receipt is in the app.",
+    "Hi {{1}}, thank you: we've received {{6}} for your {{2}} (ref {{7}}). Welcome to Mane Man. Your receipt is in the app.",
   // A visit a discount code made free: booked with nothing to pay.
   visit_booked_code_v1:
-    "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Your discount code covers it, so there is nothing to pay.",
+    "Hi {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Your discount code covers it, so there's nothing to pay.",
   // A consultation and fit in one visit a discount code made free, once the client is fitted.
   visit_fitted_code_v1:
-    "Hello {{1}}, you are fitted. Your discount code covers your hair system, so there is nothing to pay.",
-  visit_reminder_v1: "Hello {{1}}, a reminder that your {{2}} is tomorrow, {{3}}, {{4}}, with {{5}}.",
-  visit_moved_v1: "Hello {{1}}, your {{2}} is now on {{3}}, {{4}}, with {{5}}.",
+    "Hi {{1}}, welcome to Mane Man. Your discount code covers your hair system, so there's nothing to pay.",
+  visit_reminder_v1:
+    "Hi {{1}}, see you tomorrow: your {{2}} is {{3}}, {{4}}, with {{5}}. Need to move it? Open the Mane Man app.",
+  visit_moved_v1: "Hi {{1}}, your {{2}} is now on {{3}}, {{4}}, with {{5}}.",
   // At the technician's check-in, which is also the no-show's evidence.
-  technician_arrived_v1: "Hello {{1}}, {{5}} has arrived for your {{2}}.",
+  technician_arrived_v1: "Hi {{1}}, {{5}} is at your door for your {{2}}.",
   // Ops' ruling on a visit the client was not home for: {{6}} what is kept, {{10}} what goes back. Never ops' reason.
   no_show_missed_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. You can book again in the Mane Man app.",
+    "Hi {{1}}, {{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. Book a new time in the Mane Man app.",
   no_show_charged_paid_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. The {{6}} you paid for it is kept as the no-show charge. If you were home, you can dispute it in the Mane Man app.",
+    "Hi {{1}}, {{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept the {{6}} you paid as the no-show charge. If you were home, dispute it in the Mane Man app.",
   no_show_charged_fee_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. {{6}} of what you paid is kept as the no-show charge, and {{10}} is on its way back to your {{8}}, in 5 to 7 working days. If you were home, you can dispute the charge in the Mane Man app.",
+    "Hi {{1}}, {{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept {{6}} as the no-show charge and refunded {{10}} to your {{8}} (5 to 7 working days). If you were home, dispute it in the Mane Man app.",
   no_show_charged_credit_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. The free service visit it used is spent as the no-show charge. If you were home, you can dispute it in the Mane Man app.",
+    "Hi {{1}}, {{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. The free service visit it used counts as the no-show charge. If you were home, dispute it in the Mane Man app.",
   no_show_waived_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. You can book again in the Mane Man app.",
+    "Hi {{1}}, {{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge. Book a new time in the Mane Man app.",
   no_show_waived_paid_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us about the {{6}} you paid for it.",
+    "Hi {{1}}, {{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge. Message us about the {{6}} you paid.",
   no_show_waived_credit_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us about the free service visit it used.",
+    "Hi {{1}}, {{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge. Message us about the free service visit it used.",
   no_show_waived_refund_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
+    "Hi {{1}}, {{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge: we've refunded {{6}} to your {{8}} (5 to 7 working days).",
   no_show_waived_credit_back_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, and your free service visit is back.",
+    "Hi {{1}}, {{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge, and your free service visit is back.",
   // A credit given back to a grant that has since expired or been clawed back does not come back; ops are told.
   no_show_waived_credit_gone_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, but the free service visit it used is no longer valid, so it cannot come back.",
+    "Hi {{1}}, {{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge, but the free service visit it used has expired, so we can't return it.",
   // Ops' ruling on a client's dispute of a no-show charge: refunded, credit back or gone, or upheld. Never ops' reason.
   no_show_dispute_refunded_v1:
-    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
+    "Hi {{1}}, we've reviewed your dispute about your {{2}} on {{3}} and refunded {{6}} to your {{8}} (5 to 7 working days).",
   no_show_dispute_credit_back_v1:
-    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: your free service visit is back.",
+    "Hi {{1}}, we've reviewed your dispute about your {{2}} on {{3}} and returned your free service visit.",
   no_show_dispute_credit_gone_v1:
-    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we agree the charge should not stand, but the free service visit it used is no longer valid, so it cannot come back.",
+    "Hi {{1}}, we've reviewed your dispute about your {{2}} on {{3}}, and the charge shouldn't stand. The free service visit it used has expired, so we can't return it.",
   no_show_dispute_upheld_v1:
-    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}. The charge stands. Message us if you would like to know why.",
+    "Hi {{1}}, we've reviewed your dispute about your {{2}} on {{3}}. The charge stands. Message us if you'd like to know why.",
   // Due in a few days with nothing booked: {{2}} "service visit" or "replacement", {{3}} the due day.
-  next_visit_due_v1: "Hello {{1}}, your next {{2}} is due on {{3}}. You can book it in the Mane Man app.",
-  visit_cancelled_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled.",
-  visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your free service visit is back.",
+  next_visit_due_v1: "Hi {{1}}, your next {{2}} is due on {{3}}. Book it in the Mane Man app.",
+  visit_cancelled_v1: "Hi {{1}}, we've cancelled your {{2}} on {{3}}.",
+  visit_cancelled_credit_v1: "Hi {{1}}, we've cancelled your {{2}} on {{3}}. Your free service visit is back.",
   // Cancelled too late, so the credit is spent, as the cancel sheet warned.
   visit_cancelled_credit_lost_v1:
-    "Hello {{1}}, your {{2}} on {{3}} is cancelled. It was too close to the visit, so the free service visit it used is gone.",
+    "Hi {{1}}, we've cancelled your {{2}} on {{3}}. As it was cancelled late, the free service visit it used can't be returned.",
   // Cancelled in time, but the credit's grant has since expired or been withdrawn.
   visit_cancelled_credit_gone_v1:
-    "Hello {{1}}, your {{2}} on {{3}} is cancelled. The free service visit it used has expired, so it cannot come back.",
+    "Hi {{1}}, we've cancelled your {{2}} on {{3}}. The free service visit it used has expired, so we can't return it.",
   // To someone on a pincode's waitlist, {{2}} the area ops named, else "pincode 400050"; only one who asked for the
   // launch alert is promised it.
-  waitlist_listed_v1: "Hello {{1}}, you are on our list for {{2}}. We do not come there yet.",
+  waitlist_listed_v1: "Hi {{1}}, you're on our list for {{2}}. We don't cover it yet.",
   waitlist_listed_alert_v1:
-    "Hello {{1}}, you are on our list for {{2}}. We will message you on WhatsApp when we come there.",
+    "Hi {{1}}, you're on our list for {{2}}. We'll WhatsApp you as soon as we start coming there.",
   // A pincode launched, to those on its waitlist who asked to be told: {{2}} the area ops named, else its city,
   // {{3}} where to book.
-  launch_alert_v1: "Hello {{1}}, we now come to {{2}}. Your free consultation can be booked here: {{3}}",
+  launch_alert_v1: "Hi {{1}}, Mane Man now comes to {{2}}. Book your free consultation: {{3}}",
   // To a referrer once the friend is fitted: {{2}} friend's name, {{3}} referrer's visits, {{4}} expiry, {{5}} friend's.
   friend_fitted_v2:
-    "Hello {{1}}, {{2}} has been fitted. You each have {{3}} free, until {{4}}. Thank you for the introduction.",
+    "Hi {{1}}, {{2}} has been fitted. You each get {{3}} free, to use by {{4}}. Thanks for sending them our way.",
   friend_fitted_each_v1:
-    "Hello {{1}}, {{2}} has been fitted. You have {{3}} free, until {{4}}, and {{2}} has {{5}}. Thank you for the introduction.",
+    "Hi {{1}}, {{2}} has been fitted. You get {{3}} free, to use by {{4}}, and {{2}} gets {{5}}. Thanks for sending them our way.",
   friend_fitted_yours_v1:
-    "Hello {{1}}, {{2}} has been fitted. You have {{3}} free, until {{4}}. Thank you for the introduction.",
-  friend_fitted_thanks_v1: "Hello {{1}}, {{2}} has been fitted. Thank you for the introduction.",
+    "Hi {{1}}, {{2}} has been fitted. You get {{3}} free, to use by {{4}}. Thanks for sending them our way.",
+  friend_fitted_thanks_v1: "Hi {{1}}, {{2}} has been fitted. Thanks for sending them our way.",
   // To the friend once credited ({{2}} visits, {{3}} expiry); in a rejection to the referrer, {{2}} is the friend.
   friend_credited_v2:
-    "Hello {{1}}, your first fit is done, so the invite you came with gives you {{2}} free, until {{3}}. Your balance is in the app.",
+    "Hi {{1}}, welcome to Mane Man. Your invite gives you {{2}} free, to use by {{3}}. You'll find them in the app.",
   referral_rejected_referrer_v1:
-    "Hello {{1}}, we could not give the service visits for {{2}}'s first fit. Message us if you would like to know why.",
+    "Hi {{1}}, we couldn't add free service visits for {{2}}'s fit. Message us if you'd like to know why.",
   referral_rejected_friend_v1:
-    "Hello {{1}}, we could not give the service visits from your invite. Message us if you would like to know why.",
+    "Hi {{1}}, we couldn't add free service visits from your invite. Message us if you'd like to know why.",
   // A month, then a week, before free service visits run out: {{2}} how many end that day, {{3}} their last day.
   credits_expiring_v1:
-    "Hello {{1}}, you have {{2}} free to book by {{3}}. A visit booked by then is covered, even one on a later date. Book in the Mane Man app.",
+    "Hi {{1}}, you have {{2}} free to book by {{3}}. A visit booked by then is covered, even on a later date. Book in the Mane Man app.",
   visit_cancelled_refund_v1:
-    "Hello {{1}}, your {{2}} on {{3}} is cancelled. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
+    "Hi {{1}}, we've cancelled your {{2}} on {{3}} and refunded {{6}} to your {{8}} (5 to 7 working days).",
   // A booking given back, with a visit's params: one paid after its hold lapsed, or a move whose visit had begun.
   booking_refunded_v1:
-    "Hello {{1}}, we could not book your {{2}} on {{3}}. {{6}} is on its way back to your {{8}}, in 5 to 7 working days. You can book another time in the Mane Man app.",
+    "Hi {{1}}, we couldn't confirm your {{2}} on {{3}}, so we've refunded {{6}} to your {{8}} (5 to 7 working days). Book another time in the Mane Man app. Sorry about that.",
   booking_not_made_v1:
-    "Hello {{1}}, we could not book your {{2}} on {{3}}. You can book another time in the Mane Man app.",
+    "Hi {{1}}, we couldn't confirm your {{2}} on {{3}}. Book another time in the Mane Man app. Sorry about that.",
+  // The same, for a booking a free service visit was to pay for, which the client still has.
+  booking_not_made_credit_v1:
+    "Hi {{1}}, we couldn't confirm your {{2}} on {{3}}. Your free service visit is still yours: book another time in the Mane Man app. Sorry about that.",
   // The same, for a booking that moved a visit, which stays as it was: {{3}} is the day it was to move to.
   move_refunded_v1:
-    "Hello {{1}}, we could not move your {{2}} to {{3}}, so it stays as it was booked. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
-  move_not_made_v1: "Hello {{1}}, we could not move your {{2}} to {{3}}, so it stays as it was booked.",
+    "Hi {{1}}, we couldn't move your {{2}} to {{3}}, so it stays as booked. We've refunded {{6}} to your {{8}} (5 to 7 working days).",
+  move_not_made_v1: "Hi {{1}}, we couldn't move your {{2}} to {{3}}, so it stays as booked.",
   // To a number our site's booking form was just sent for, since the page tells every number the same thing
   // (src/domain/site-notices.ts). PLACEHOLDER COPY, pending the owner's wording: {{1}} the first name, and for a
   // consultation still to happen {{2}} the visit, {{3}} its day and {{4}} its window.
   consultation_exists_v1:
-    "Hello {{1}}, this number was just used to book on our site. Your {{2}} is already booked for {{3}}, {{4}}, so we have not booked another. You can see or move it in the Mane Man app.",
+    "Hi {{1}}, this number was just used to book on our site. Your {{2}} is already booked for {{3}}, {{4}}, so we haven't booked another. See or move it in the Mane Man app.",
   book_in_app_v1:
-    "Hello {{1}}, this number was just used to book on our site. As a Mane Man client, you book your next visit in the Mane Man app. Sign in with this number.",
+    "Hi {{1}}, this number was just used to book on our site. As a Mane Man client, you book in the Mane Man app. Sign in with this number.",
   address_on_account_v1:
-    "Hello {{1}}, we will come to the address already on your account, not the one typed on our site. You can change it in the Mane Man app.",
+    "Hi {{1}}, we'll come to the address on your account, not the one typed on our site. Change it in the Mane Man app.",
   // {{2}} the pincode of the address on the account.
   address_not_served_v1:
-    "Hello {{1}}, this number was just used to book on our site. The address on your account is at pincode {{2}}, which we do not cover yet, so nothing was booked. If you have moved, change your address in the Mane Man app and book there.",
+    "Hi {{1}}, this number was just used to book on our site. The address on your account is at pincode {{2}}, which we don't cover yet, so nothing was booked. If you've moved, change your address in the Mane Man app and book there.",
   // Ops' decision on a client's request to delete their account. {{2}} is ops' reason, which they write knowing the
   // client reads it.
   deletion_rejected_v1:
-    "Hello {{1}}, we have not deleted your Mane Man account. Our reason: {{2}} Message us if you disagree.",
+    "Hi {{1}}, we haven't deleted your Mane Man account. Our reason: {{2}} Message us if you disagree.",
   // Sent once the erasure is done, to the number it has just blanked.
   deletion_done_v1:
-    "Hello {{1}}, as you asked, your Mane Man account is deleted. Your invoices are kept for eight years, as the law requires.",
+    "Hi {{1}}, as you asked, we've deleted your Mane Man account. Your invoices are kept for eight years, as the law requires.",
   // The line a reminder or alert ends with, {{1}} the link that stops them (STOP_LINKS below).
   stop_link_v1: "Stop these messages: {{1}}",
   // The answer to a STOP reply, once it has withdrawn something.
-  messages_stopped_v1:
-    "Done, {{1}}. We will no longer message you here about your visits, or when we come to a new area.",
+  messages_stopped_v1: "Done, {{1}}. We won't message you here about your visits, or when we come to a new area.",
 };
 
 /** The text with its params filled in, or null for an unknown template or a missing param. */

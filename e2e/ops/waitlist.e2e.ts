@@ -70,7 +70,7 @@ test("asks what a launch would send before anything goes out", async ({ page }) 
   await expect(panel.getByText("On the list")).toBeVisible();
   await expect(panel.getByText("Asked to be told")).toBeVisible();
   await expect(panel.getByText("Came by referral")).toBeVisible();
-  await expect(panel).toContainText("we now come to Bandra W");
+  await expect(panel).toContainText("Mane Man now comes to Bandra W");
   await expect(panel).toContainText("The 33 who did not opt in are not messaged.");
 });
 

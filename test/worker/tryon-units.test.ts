@@ -127,8 +127,10 @@ describe("signed tokens", () => {
 
 describe("message templates", () => {
   it("fills params in order, and refuses a missing param or an unknown template", () => {
-    expect(renderMessage("tryon_result_v1", ["Arjun"])).toMatch(/^Hello Arjun, here is your Mane Man try-on\./);
-    expect(renderMessage("tryon_result_v1", [])).toBeNull();
+    expect(renderMessage("tryon_result_v1", ["Arjun", "https://maneman.in/book"])).toMatch(
+      /^Hi Arjun, here's your new look from Mane Man\..*: https:\/\/maneman\.in\/book$/,
+    );
+    expect(renderMessage("tryon_result_v1", ["Arjun"])).toBeNull();
     expect(renderMessage("nope", ["Arjun"])).toBeNull();
   });
 

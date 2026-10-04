@@ -38,6 +38,7 @@ import type { StaticConfig } from "../guard.ts";
 import { takeOne, type Limit } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { firstNameOf } from "../lib/names.ts";
 import { signToken } from "../lib/signed-token.ts";
 import { composeBookingRefunded } from "../domain/auto-refunds.ts";
 import { composeCreditsExpiring } from "../domain/credit-reminders.ts";
@@ -209,7 +210,8 @@ async function resultContent(db: D1Database, config: StaticConfig, row: MessageR
   const resultKey = job.result_key;
   return {
     template: RESULT_TEMPLATE,
-    params: [row.name],
+    // Greeted by first name, and sent on to book the consultation that shows it for real.
+    params: [firstNameOf(row.name), `${PUBLIC_ORIGIN[config.environment]}/book`],
     // The provider fetches the image when it sends.
     mediaUrl: async () => {
       const token = await signToken(

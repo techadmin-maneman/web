@@ -112,8 +112,7 @@ describe("the grant", () => {
     ]);
     const composed = await composeFriendFitted(env.DB, ATTRIBUTION, REFERRER);
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hello Rohit, Karan has been fitted. You each have 3 service visits free, until 21 Sep 2027. " +
-        "Thank you for the introduction.",
+      "Hi Rohit, Karan has been fitted. You each get 3 service visits free, to use by 21 Sep 2027. Thanks for sending them our way.",
     );
 
     expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0 });
@@ -234,13 +233,11 @@ describe("what a referral earns, as ops set it", () => {
     expect(await grantsOf(REFERRER)).toEqual([{ visits: 2, expires_at: expiry }]);
     expect(await grantsOf(FRIEND)).toEqual([{ visits: 4, expires_at: expiry }]);
     expect(await toldReferrer()).toBe(
-      "Hello Rohit, Karan has been fitted. You have 2 service visits free, until 20 Dec 2026, and Karan has 4 " +
-        "service visits. Thank you for the introduction.",
+      "Hi Rohit, Karan has been fitted. You get 2 service visits free, to use by 20 Dec 2026, and Karan gets 4 service visits. Thanks for sending them our way.",
     );
     await visitsConsent(FRIEND);
     expect(await told("friend_credited", FRIEND)).toBe(
-      "Hello Karan, your first fit is done, so the invite you came with gives you 4 service visits free, until " +
-        "20 Dec 2026. Your balance is in the app.",
+      "Hi Karan, welcome to Mane Man. Your invite gives you 4 service visits free, to use by 20 Dec 2026. You'll find them in the app.",
     );
   });
 
@@ -250,8 +247,7 @@ describe("what a referral earns, as ops set it", () => {
     await rewardSet({ referrer_visits: 1, friend_visits: 1, valid_days: 30 });
     expect(await grantsOf(FRIEND)).toEqual([{ visits: 3, expires_at: "2027-09-21T18:29:59.999Z" }]);
     expect(await toldReferrer()).toBe(
-      "Hello Rohit, Karan has been fitted. You each have 3 service visits free, until 21 Sep 2027. " +
-        "Thank you for the introduction.",
+      "Hi Rohit, Karan has been fitted. You each get 3 service visits free, to use by 21 Sep 2027. Thanks for sending them our way.",
     );
 
     const next = "55555555-5555-4555-8555-555555555555";
@@ -270,7 +266,7 @@ describe("what a referral earns, as ops set it", () => {
     expect(await grantsOf(FRIEND)).toEqual([]);
     expect(await messagesWritten()).toEqual([{ person_id: REFERRER, kind: "friend_fitted", subject_id: ATTRIBUTION }]);
     expect(await toldReferrer()).toBe(
-      "Hello Rohit, Karan has been fitted. You have 3 service visits free, until 21 Sep 2027. Thank you for the introduction.",
+      "Hi Rohit, Karan has been fitted. You get 3 service visits free, to use by 21 Sep 2027. Thanks for sending them our way.",
     );
   });
 
@@ -280,11 +276,10 @@ describe("what a referral earns, as ops set it", () => {
     await referralsRun();
     expect(await grantsOf(REFERRER)).toEqual([]);
     expect(await grantsOf(FRIEND)).toEqual([{ visits: 1, expires_at: "2027-09-21T18:29:59.999Z" }]);
-    expect(await toldReferrer()).toBe("Hello Rohit, Karan has been fitted. Thank you for the introduction.");
+    expect(await toldReferrer()).toBe("Hi Rohit, Karan has been fitted. Thanks for sending them our way.");
     await visitsConsent(FRIEND);
     expect(await told("friend_credited", FRIEND)).toBe(
-      "Hello Karan, your first fit is done, so the invite you came with gives you 1 service visit free, until " +
-        "21 Sep 2027. Your balance is in the app.",
+      "Hi Karan, welcome to Mane Man. Your invite gives you 1 service visit free, to use by 21 Sep 2027. You'll find them in the app.",
     );
   });
 
@@ -573,10 +568,10 @@ describe("ops' review", () => {
     expect(queue.sent).toHaveLength(2);
     await visitsConsent(FRIEND);
     expect(await told("referral_rejected", REFERRER)).toBe(
-      "Hello Rohit, we could not give the service visits for Karan's first fit. Message us if you would like to know why.",
+      "Hi Rohit, we couldn't add free service visits for Karan's fit. Message us if you'd like to know why.",
     );
     expect(await told("referral_rejected", FRIEND)).toBe(
-      "Hello Karan, we could not give the service visits from your invite. Message us if you would like to know why.",
+      "Hi Karan, we couldn't add free service visits from your invite. Message us if you'd like to know why.",
     );
   });
 });
@@ -653,8 +648,7 @@ describe("what the friend is told (LIFE-10)", () => {
     await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     await visitsConsent(FRIEND);
     expect(await told("friend_credited", FRIEND)).toBe(
-      "Hello Karan, your first fit is done, so the invite you came with gives you 3 service visits free, until " +
-        "21 Sep 2027. Your balance is in the app.",
+      "Hi Karan, welcome to Mane Man. Your invite gives you 3 service visits free, to use by 21 Sep 2027. You'll find them in the app.",
     );
   });
 
