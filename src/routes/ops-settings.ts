@@ -59,7 +59,6 @@ const Described = {
   name: SettingName,
   title: z.string(),
   note: z.string(),
-  source: z.string().openapi({ description: "The module the default lives in." }),
   set_by: z.union([z.string(), z.null()]),
   set_at: z.union([z.iso.datetime(), z.null()]),
 };
@@ -369,7 +368,6 @@ const stateBody = ({ setting, value, setBy, setAt }: State) => {
     name: setting.name,
     title: setting.title,
     note: setting.note,
-    source: setting.source,
     set_by: setBy,
     set_at: setAt,
   };

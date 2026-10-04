@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import catalog from "../../data/ailabtools-catalog.json";
-import { renderMessage } from "../../src/config/message-templates.ts";
+import { isKnownTemplate, RESULT_TEMPLATE, renderMessage } from "../../src/config/message-templates.ts";
 import { leadNotice } from "../../src/domain/lead-notice.ts";
 import { PRESETS, findPreset } from "../../src/config/presets.ts";
 import { MAX_UPLOAD_BYTES } from "../../src/config/tryon.ts";
@@ -130,6 +130,10 @@ describe("message templates", () => {
     expect(renderMessage("tryon_result_v1", ["Arjun"])).toMatch(/^Hello Arjun, here is your Mane Man try-on\./);
     expect(renderMessage("tryon_result_v1", [])).toBeNull();
     expect(renderMessage("nope", ["Arjun"])).toBeNull();
+  });
+
+  it("sends the try-on result with a template that exists", () => {
+    expect(isKnownTemplate(RESULT_TEMPLATE)).toBe(true);
   });
 });
 
