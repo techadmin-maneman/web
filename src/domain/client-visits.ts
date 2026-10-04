@@ -7,6 +7,8 @@ import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { FITTED } from "./fitted.ts";
 import { signToken } from "../lib/signed-token.ts";
+import type { OneVisitState } from "../policy/one-visit.ts";
+import { namesMoreThanItsKind } from "../policy/services.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
 import { jobSheet } from "./job-sheet-settings.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
@@ -40,6 +42,8 @@ export interface VisitSummary {
   readonly ends_at: string;
   readonly length_minutes: number;
   readonly type: VisitType | null;
+  /** Its service's name in the console, where it names more than the kind: a first fit's hair system, say. */
+  readonly service: string | null;
   readonly status: AppointmentStatus;
   /** Null for a closed visit. */
   readonly stage: VisitStage | null;
@@ -54,6 +58,9 @@ interface AppointmentRow {
   type: VisitType | null;
   /** Its service's tier; null where it names none, which is the standard tier's. */
   tier: string | null;
+  one_visit: OneVisitState | null;
+  /** The name of the service its tier is; null for none. */
+  service_name: string | null;
   status: AppointmentStatus;
   window_start: string;
   window_end: string;
@@ -75,7 +82,8 @@ const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id
   OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = a.person_id AND h.appointment_id = a.id
     AND h.state = 'booked' AND h.use_credit = 1))`;
 
-const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.status, a.window_start, a.window_end, a.service_city, a.service_pincode,
+const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.service_city,
+  a.service_pincode, (SELECT s.name FROM services s WHERE s.kind = a.type AND s.tier = a.tier) AS service_name,
   t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
   ${visitBegun("a")} AS begun, ${landedOutcome("a")} AS landed_outcome`;
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
@@ -124,6 +132,7 @@ function summaryOf(row: AppointmentRow, context: SummaryContext, now: Date): Vis
     ends_at: row.window_end,
     length_minutes: minutesBetween(row.window_start, row.window_end),
     type: row.type,
+    service: namesMoreThanItsKind(row.tier, row.one_visit) ? row.service_name : null,
     status: row.status,
     stage: stageOf(row, now),
     prepaid: row.prepaid === 1,

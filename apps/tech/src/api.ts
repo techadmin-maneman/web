@@ -14,6 +14,7 @@ import type { components, paths } from "./api-schema.ts";
 import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, SUPERSEDED } from "./routes.ts";
 
 export {
+  ALREADY_CLOSED,
   DEVICE_REVOKED,
   EVENT_KINDS,
   OUT_OF_ORDER,

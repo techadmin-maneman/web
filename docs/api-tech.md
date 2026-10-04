@@ -295,7 +295,7 @@ Request body:
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -339,7 +339,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -391,7 +391,7 @@ Request body:
 }
 ```
 
-**409**: superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom
+**409**: superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom; already_closed: the job has closed, so it takes no more photographs
 
 ```json
 {
@@ -420,6 +420,14 @@ The photograph itself: a JPEG or PNG, at most 2 MB
 ```
 
 **404**: not_found: the link is wrong or expired
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: already_closed: the job has closed, so it takes no more photographs
 
 ```json
 {
@@ -465,7 +473,7 @@ The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB 
 }
 ```
 
-**409**: upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since
+**409**: upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since; already_closed: the job has closed, so it takes no more photographs
 
 ```json
 {
@@ -533,7 +541,7 @@ Request body:
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -585,7 +593,7 @@ Request body:
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -637,7 +645,7 @@ Request body:
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -689,7 +697,7 @@ Request body:
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again
 
 ```json
 {
@@ -741,7 +749,7 @@ Request body:
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -793,7 +801,7 @@ Request body:
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour
 
 ```json
 {
@@ -837,7 +845,7 @@ Close the job as a no-show, once the wait has run
 }
 ```
 
-**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_started: the job was started, so the client was home
+**409**: superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home
 
 ```json
 {
@@ -1497,16 +1505,16 @@ Request body:
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
     },
-    "product": {
+    "service": {
       "anyOf": [
         {
-          "type": "string"
+          "$ref": "#/components/schemas/TechnicianService"
         },
         {
           "type": "null"
         }
       ],
-      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+      "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
     },
     "sector": {
       "anyOf": [
@@ -1583,7 +1591,7 @@ Request body:
     "window_label",
     "type",
     "one_visit",
-    "product",
+    "service",
     "sector",
     "status",
     "badge",
@@ -1592,6 +1600,29 @@ Request body:
     "unlocks_at",
     "client_name",
     "progress"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianService
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string",
+      "description": "Its code, which the hair profile names a first fit's product by."
+    },
+    "name": {
+      "type": "string",
+      "description": "Its name in the console."
+    }
+  },
+  "required": [
+    "tier",
+    "name"
   ],
   "additionalProperties": false
 }
@@ -1699,16 +1730,16 @@ Request body:
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
     },
-    "product": {
+    "service": {
       "anyOf": [
         {
-          "type": "string"
+          "$ref": "#/components/schemas/TechnicianService"
         },
         {
           "type": "null"
         }
       ],
-      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+      "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
     },
     "sector": {
       "anyOf": [
@@ -2201,7 +2232,7 @@ Request body:
     "window_label",
     "type",
     "one_visit",
-    "product",
+    "service",
     "sector",
     "status",
     "badge",

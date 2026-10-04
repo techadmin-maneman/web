@@ -53,6 +53,11 @@ const ClientSchema = z
 const VISIT = {
   appointment_id: z.uuid(),
   type: z.union([z.enum(VISIT_TYPES), z.null()]),
+  service: z.union([z.string(), z.null()]).openapi({
+    description:
+      "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, " +
+      "say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses.",
+  }),
   client: z.union([z.string(), z.null()]).openapi({ description: "First name and last initial." }),
   sector: z.union([z.string(), z.null()]).openapi({
     description: "The area the visit's pincode is in, from the service area; else the address's locality, or the city.",

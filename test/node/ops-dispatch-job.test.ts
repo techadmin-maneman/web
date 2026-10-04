@@ -33,6 +33,7 @@ const ROHIT = {
 const block = (overrides: Partial<Block> = {}): Block => ({
   appointment_id: "a1",
   type: "service",
+  service: null,
   client: "Rohit M.",
   sector: "Sec 65",
   pincode: "122018",
@@ -62,6 +63,7 @@ const inTray = (overrides: Partial<Unassigned> = {}): TrayJob => ({
   job: {
     appointment_id: "a2",
     type: "first_fit",
+    service: null,
     client: null,
     sector: "DLF 3",
     pincode: null,

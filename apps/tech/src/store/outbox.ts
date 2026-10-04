@@ -7,6 +7,7 @@
 import type { Moved } from "@maneman/web-kit/api";
 import { reportClientError } from "@maneman/web-kit/client-errors";
 import {
+  ALREADY_CLOSED,
   api,
   type Answer,
   OUT_OF_ORDER,
@@ -332,14 +333,16 @@ async function markIfRefused(frame: Frame, trouble: Trouble): Promise<Trouble> {
 /**
  * What a failed call on the way to a write means for the round: wait, sign out,
  * or stop the job. A `409 superseded` is the API saying ops gave the job to
- * someone else, or cancelled it, and whom it went to; a 404, that it is no
- * longer on this technician's list. The screens say either as the change it
- * is, not as photographs that would not upload.
+ * someone else, or cancelled it, and whom it went to; `already_closed`, that
+ * the job has closed; a 404, that it is no longer on this technician's list.
+ * The screens say each as the change it is, not as photographs that would not
+ * upload.
  */
 function failureOf(answer: Refused): Trouble {
   if (unreachable(answer)) return "offline";
   if (answer.status === 401) return "signed-out";
   if (answer.code === SUPERSEDED) return { kind: "gone", note: SUPERSEDED, fields: answer.fields, moved: answer.moved };
+  if (answer.code === ALREADY_CLOSED) return { kind: "gone", note: ALREADY_CLOSED, fields: [], moved: null };
   if (answer.status === 404) return { kind: "gone", note: "not_found", fields: [], moved: null };
   return { kind: "rejected", answer };
 }
@@ -417,8 +420,9 @@ async function run(): Promise<Replayed> {
     if (answer.code === "offline") return { sent, superseded, refused, stopped: "offline" };
     if (answer.status === 401) return { sent, superseded, refused, stopped: "signed-out" };
     // The job changed underneath the phone, or a step arrived before the one ahead of
-    // it, or the job is no longer this technician's at all.
-    if (answer.code === SUPERSEDED || answer.code === OUT_OF_ORDER || answer.status === 404) {
+    // it, or the job has closed, or it is no longer this technician's at all.
+    const jobStopped = answer.code === SUPERSEDED || answer.code === OUT_OF_ORDER || answer.code === ALREADY_CLOSED;
+    if (jobStopped || answer.status === 404) {
       await markStopped(event, "superseded", answer.code, answer.fields, answer.moved);
       await readAgainIfMoved(event.job_id, answer.fields);
       superseded += 1;

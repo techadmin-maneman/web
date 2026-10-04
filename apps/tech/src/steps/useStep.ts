@@ -8,14 +8,19 @@
 // put right, starting from what it sent. Finishing it then sends the corrected
 // step in the place the refused one had, and the steps queued behind it follow
 // (../store/outbox.ts).
+//
+// A closed job takes no more steps. The close-out takes the outcome's place in
+// the history, and a step screen opened on a closed job, by Back or an old link,
+// goes to the job's card instead.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { useEffect, useState } from "react";
 import type { Job } from "../api.ts";
-import { done, stepsOf } from "../lib/progress.ts";
+import { closed, done, stepsOf } from "../lib/progress.ts";
 import type { Loaded } from "../lib/useDay.ts";
 import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
-import { go, stepPath, type InJobStep } from "../route.ts";
+import { go, redirect, stepPath, type InJobStep } from "../route.ts";
 import { keepClosed } from "../store/jobs.ts";
 import { correct, queue, replay, type Queued } from "../store/outbox.ts";
 
@@ -38,14 +43,23 @@ export function useStep(id: string, step: InJobStep): Standing {
   const waiting = useOutbox();
   const [card, retry] = useJob(id, signatureOf(waiting));
   const [, once] = useOneAtATime();
+  const [finishing, setFinishing] = useState(false);
   const loaded = waiting.read ? card : LOADING;
   const job = loaded.state === "loaded" ? loaded.value : null;
   const refused =
     waiting.events.find((event) => event.job_id === id && event.kind === step && event.state === "refused") ?? null;
+  // A step being put right opens: the outcome queued behind it has not landed. Finishing a step can close the job,
+  // and then the screen moves on by itself.
+  const leaves = !finishing && job !== null && refused === null && closed(job, waiting.events);
+
+  useEffect(() => {
+    if (leaves) redirect(`/jobs/${id}`);
+  }, [leaves, id]);
 
   const finish = (body: unknown) =>
     once(async () => {
       if (job === null) return;
+      setFinishing(true);
       if (refused === null) await queue(step, id, body, job.starts_at);
       else await correct(refused.seq, body);
       // The duration board B4 shows runs from Start job to the outcome, and nothing gives it back.
@@ -56,12 +70,13 @@ export function useStep(id: string, step: InJobStep): Standing {
       const following = stepsOf(job)
         .slice(stepsOf(job).indexOf(step) + 1)
         .find((later) => !sent.has(later));
-      go(following === undefined || step === "outcome" ? `/jobs/${id}/done` : stepPath(id, following));
+      if (following === undefined || step === "outcome") redirect(`/jobs/${id}/done`);
+      else go(stepPath(id, following));
     });
 
   const back = () => {
     go(`/jobs/${id}`);
   };
 
-  return { loaded, retry, refused, queued: waiting.events, finish, back };
+  return { loaded: leaves ? LOADING : loaded, retry, refused, queued: waiting.events, finish, back };
 }

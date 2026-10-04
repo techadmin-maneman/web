@@ -21,6 +21,7 @@ import {
   request,
   type TestDependencies,
 } from "./helpers.ts";
+import { syntheticJpeg } from "./tryon-fixtures.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const NEIGHBOUR = "11111111-1111-4111-8111-111111111112";
@@ -247,6 +248,130 @@ describe("a technician's steps", () => {
     await work(sentAt, TODAY_JOB, UP_TO_THE_OUTCOME.slice(0, 3));
 
     expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
+  });
+});
+
+// The job closes as done at 14:30; anything sent after it would contradict the close.
+describe("a closed job", () => {
+  const CLOSED_AT = minutesAfterStart(90);
+  const minutesAfterClose = (minutes: number) => new Date(CLOSED_AT.getTime() + minutes * 60_000);
+  const stepPath = (step: string) => `/api/tech/jobs/${TODAY_JOB}/${step}`;
+
+  const techAppAt = (at: Date) => appFor("local", fakeDependencies({ now: () => at }), {}, "tech");
+
+  const askForUploadLinkAt = (at: Date) =>
+    request(
+      techAppAt(at),
+      stepPath("photos/upload-url"),
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ phase: "after", angle: "front" }),
+      },
+      bindings(),
+    );
+
+  const putPhotoAt = (at: Date, link: string, body: Uint8Array) =>
+    request(
+      techAppAt(at),
+      link,
+      {
+        method: "PUT",
+        headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "image/jpeg" },
+        body,
+      },
+      bindings(),
+    );
+
+  const refusedAsClosed = async (answer: Response) => {
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "already_closed" } });
+  };
+
+  const eventKinds = async () =>
+    (
+      await env.DB.prepare("SELECT kind FROM job_events WHERE appointment_id = ?1 ORDER BY received_at, rowid")
+        .bind(TODAY_JOB)
+        .all<{ kind: string }>()
+    ).results.map((row) => row.kind);
+
+  /** The after set's front photograph as it is held: which take, and its small copy. */
+  const afterFront = () =>
+    env.DB.prepare(
+      `SELECT p.r2_key, p.thumbnail_key FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id
+       WHERE s.appointment_id = ?1 AND s.phase = 'after' AND p.angle = 'front'`,
+    )
+      .bind(TODAY_JOB)
+      .first();
+
+  async function closedAsDone() {
+    await work(CLOSED_AT, TODAY_JOB, [...UP_TO_THE_OUTCOME, ["outcome", { outcome: "done" }, 80]]);
+  }
+
+  it("refuses a second outcome, and the visit stays closed as the first said", async () => {
+    await closedAsDone();
+
+    const partial = { outcome: "partial", reason: "client_stopped_it" };
+    await refusedAsClosed(await postAt(minutesAfterClose(5), stepPath("outcome"), partial, uuidv7At(95)));
+
+    expect(await statusOf(TODAY_JOB)).toBe("completed");
+    expect(await visitRowOf(TODAY_JOB)).toMatchObject({ outcome: "done", partial_reason: null });
+    expect((await eventKinds()).filter((kind) => kind === "outcome")).toHaveLength(1);
+  });
+
+  it("refuses a check-in and a no-show after the close", async () => {
+    await closedAsDone();
+    const landed = await eventKinds();
+
+    await refusedAsClosed(await postAt(minutesAfterClose(5), stepPath("checkin"), AT_THE_DOOR, uuidv7At(95)));
+    await refusedAsClosed(await postAt(minutesAfterClose(5), stepPath("no-show"), undefined, uuidv7At(96)));
+
+    expect(await eventKinds()).toEqual(landed);
+    expect(await statusOf(TODAY_JOB)).toBe("completed");
+  });
+
+  it("gives no upload link, and takes no photograph or small copy on a link given before the close", async () => {
+    await work(CLOSED_AT, TODAY_JOB, UP_TO_THE_OUTCOME);
+    const link = await (await askForUploadLinkAt(CLOSED_AT)).json<{ upload_url: string; small_upload_url: string }>();
+    const taken = await putPhotoAt(CLOSED_AT, link.upload_url, syntheticJpeg(1200, 1600, "first"));
+    const { take } = await taken.json<{ take: string }>();
+    const kept = await afterFront();
+    await work(CLOSED_AT, TODAY_JOB, [["outcome", { outcome: "done" }, 80]]);
+
+    await refusedAsClosed(await askForUploadLinkAt(minutesAfterClose(1)));
+    const retake = await putPhotoAt(minutesAfterClose(1), link.upload_url, syntheticJpeg(1200, 1600, "retake"));
+    await refusedAsClosed(retake);
+    const small = `${link.small_upload_url}?take=${take}`;
+    await refusedAsClosed(await putPhotoAt(minutesAfterClose(1), small, syntheticJpeg(300, 400)));
+
+    expect(await afterFront()).toEqual(kept);
+  });
+
+  it("takes a corrected checklist and count of what was used for an hour after the close, and nothing after", async () => {
+    await closedAsDone();
+
+    const withinTheHour = minutesAfterClose(59);
+    expect((await postAt(withinTheHour, stepPath("checklist"), { done: [] }, uuidv7At(140))).status).toBe(202);
+    expect((await postAt(withinTheHour, stepPath("consumables"), { items: [] }, uuidv7At(141))).status).toBe(202);
+
+    const pastTheHour = minutesAfterClose(61);
+    await refusedAsClosed(await postAt(pastTheHour, stepPath("checklist"), { done: [] }, uuidv7At(150)));
+    await refusedAsClosed(await postAt(pastTheHour, stepPath("consumables"), { items: [] }, uuidv7At(151)));
+  });
+
+  it("refuses the phone's steps on a job ops closed by hand", async () => {
+    await work(minutesAfterStart(10), TODAY_JOB, UP_TO_THE_OUTCOME.slice(0, 2));
+    const byHand = {
+      outcome: "done",
+      started_at: minutesAfterStart(5).toISOString(),
+      ended_at: minutesAfterStart(80).toISOString(),
+      reason: "Imran's phone was lost; the client confirmed the visit by phone",
+    };
+    const closed = await opsPost(`/api/visits/${TODAY_JOB}/close`, byHand, fakeDependencies({ now: () => CLOSED_AT }));
+    expect(closed.status).toBe(200);
+
+    await refusedAsClosed(await postAt(minutesAfterClose(30), stepPath("photos"), { phase: "before" }, uuidv7At(10)));
+    expect(await eventKinds()).toEqual(["check_in", "start"]);
   });
 });
 

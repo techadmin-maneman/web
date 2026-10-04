@@ -22,7 +22,7 @@
 // What the step records is written in the event's own batch (src/domain/job-record.ts).
 
 import { firstNameOf } from "../lib/names.ts";
-import { isNoShow, stepBefore, type JobEventKind } from "../policy/in-job-steps.ts";
+import { isNoShow, landsAfterClose, stepBefore, type JobEventKind } from "../policy/in-job-steps.ts";
 import { namesTheOtherTechnician } from "../policy/job-visibility.ts";
 import { earliestCheckIn, onTheVisitsDay, tooEarlyToArrive, type PhoneClock } from "../policy/phone-clock.ts";
 import type { WorkableJob } from "./tech-jobs.ts";
@@ -67,7 +67,9 @@ export type Landing =
   /** A check-in or a start before the earliest check-in, which it names. */
   | { readonly kind: "too_early"; readonly earliest: Date }
   /** A no-show on a job already started: the client was home. */
-  | { readonly kind: "already_started" };
+  | { readonly kind: "already_started" }
+  /** A step on a job that has closed, other than a correction it still takes. */
+  | { readonly kind: "already_closed" };
 
 /** A write as the phone sent it. */
 export interface EventInput {
@@ -106,8 +108,9 @@ export async function landJobEvent(db: D1Database, input: LandingInput): Promise
 
 /**
  * What a write is answered with before anything of it is measured or lands: a replay, as it was answered the first
- * time; the refusal of a job that changed under the phone, which records that the phone tried; or of a check-in or a
- * start on a day that is not the job's own, or before the earliest check-in. Null when the write may go on to land.
+ * time; the refusal of a job that changed under the phone, which records that the phone tried; of a job that has
+ * closed; or of a check-in or a start on a day that is not the job's own, or before the earliest check-in. Null when
+ * the write may go on to land.
  */
 export async function answerBeforeLanding(db: D1Database, input: EventInput): Promise<Landing | null> {
   const held = await eventByClientId(db, input.job.id, input.eventId);
@@ -118,6 +121,9 @@ export async function answerBeforeLanding(db: D1Database, input: EventInput): Pr
     await recordSuperseded(db, input);
     return { kind: "superseded", ...superseding };
   }
+
+  const closed = await closedAt(db, input.job.id);
+  if (closed !== null && !landsAfterClose(input.kind, closed, input.now)) return { kind: "already_closed" };
 
   const startsTheDay = input.kind === "check_in" || input.kind === "start";
   if (startsTheDay && !onTheVisitsDay(input.occurredAt, input.job.windowStart)) return { kind: "not_today" };
@@ -210,6 +216,22 @@ async function movedTo(db: D1Database, job: WorkableJob): Promise<MovedTo | null
   if (row === null) return null;
   const technician = firstNameOf(row.name);
   return technician === "" ? null : { technician, at: row.moved_at };
+}
+
+/** When the job closed: its first outcome to land, or ops closing it by hand. Null while it is open. */
+export async function closedAt(db: D1Database, appointmentId: string): Promise<Date | null> {
+  const row = await db
+    .prepare(
+      `SELECT MIN(at) AS closed_at FROM (
+         SELECT received_at AS at FROM job_events WHERE appointment_id = ?1 AND kind = 'outcome' AND superseded = 0
+         UNION ALL
+         SELECT updated_at AS at FROM visits WHERE appointment_id = ?1 AND closed_by IS NOT NULL
+       )`,
+    )
+    .bind(appointmentId)
+    .first<{ closed_at: string | null }>();
+  const closed = row?.closed_at ?? null;
+  return closed === null ? null : new Date(closed);
 }
 
 /** The kinds of event a job holds, superseded ones aside. */
