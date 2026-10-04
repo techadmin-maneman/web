@@ -6,12 +6,12 @@ import { track } from "../../lib/analytics.ts";
 import { joinPublicWaitlist, joinWaitlist } from "../../lib/api.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
-import { readAttribution } from "../../lib/visit.ts";
 import { Icon } from "../Drawings.tsx";
 import type { Listing } from "./Done.tsx";
 import { ExtentFieldset, ForPincode, PersonFieldset, RememberedInvite, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
+import { byDoor, leadSent } from "./submit.ts";
 import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
 
 /** Board C3: we do not come there yet, so the page takes a number instead. */
@@ -36,15 +36,8 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
       contact_consent: true as const,
       launch_alert: alert,
     };
-    const attribution = readAttribution();
-    const onInvite = { ...request, ...(props.credits ? { invite_told: true as const } : {}) };
-    const onBook = {
-      ...request,
-      ...(extent === null ? {} : { loss_extent: extent }),
-      ...(attribution === undefined ? {} : { attribution }),
-      ...(remembered === null ? {} : { invite_code: remembered, invite_told: true as const }),
-    };
-    const invite = props.invited ? codeInPath() : remembered;
+    const door = { invited: props.invited, credits: props.credits, extent, remembered };
+    const { onInvite, onBook } = byDoor(request, door);
     void form.submit(
       event,
       (token, keyFor) =>
@@ -52,11 +45,8 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
           ? joinWaitlist(codeInPath(), { ...onInvite, turnstile_token: token }, keyFor(onInvite))
           : joinPublicWaitlist({ ...onBook, turnstile_token: token }, keyFor(onBook)),
       (listed) => {
-        const page = props.invited ? "invite" : "book";
-        const loss_extent = props.invited ? null : extent;
-        track({ name: "lead_submitted", page, served: false, area: props.answer.area, window: null, loss_extent });
+        const page = leadSent(door, { served: false, area: props.answer.area, window: null });
         track({ name: "waitlist_submitted", page, area: listed.area });
-        if (invite !== null) forgetInvite(invite);
         props.onListed({ ...listed, pincode: props.answer.pincode, alerted: alert });
       },
     );

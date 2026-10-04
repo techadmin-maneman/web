@@ -24,7 +24,6 @@ import { dayStrip, indiaTomorrow, stripMonths } from "../../lib/dates.ts";
 import { anyOpen, chosenSlot, dayOpen, isOpen, type Slot } from "../../lib/open-windows.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
-import { readAttribution } from "../../lib/visit.ts";
 import { NumberCodeField, type CodeFieldClasses } from "../NumberCodeField.tsx";
 import { useNumberCode } from "../useNumberCode.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
@@ -32,6 +31,7 @@ import type { Booking } from "./Done.tsx";
 import { ExtentFieldset, ForPincode, PersonFieldset, RememberedInvite, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath, hairSystemsInPage } from "./page.ts";
+import { byDoor, leadSent } from "./submit.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm } from "./useTurnstileForm.ts";
 import { isOneOf } from "../../../../src/lib/one-of.ts";
@@ -157,18 +157,9 @@ export function Consultation(props: ConsultationProps) {
       ...(numberCodeId === null ? {} : { number_code_id: numberCodeId }),
       consent: true as const,
     };
-    // The site's own page carries where this visit came from, where the hair loss is, and the invite this browser
-    // remembers; the invite's page, its own invite. Each says whether the form told the friend who hears of the fit.
-    const attribution = readAttribution();
-    const onInvite = { ...request, ...(props.credits ? { invite_told: true as const } : {}) };
-    const onBook = {
-      ...request,
-      ...(extent === null ? {} : { loss_extent: extent }),
-      ...(attribution === undefined ? {} : { attribution }),
-      ...(remembered === null ? {} : { invite_code: remembered, invite_told: true as const }),
-      ...(sentCode === null ? {} : { discount_code: sentCode }),
-    };
-    const invite = props.invited ? codeInPath() : remembered;
+    const door = { invited: props.invited, credits: props.credits, extent, remembered };
+    const { onInvite, onBook: onSite } = byDoor(request, door);
+    const onBook = { ...onSite, ...(sentCode === null ? {} : { discount_code: sentCode }) };
     const send = (token: string, keyFor: (request: unknown) => string) =>
       props.invited
         ? bookConsultation(codeInPath(), { ...onInvite, turnstile_token: token }, keyFor(onInvite))
@@ -183,12 +174,8 @@ export function Consultation(props: ConsultationProps) {
         return answer;
       },
       (booked) => {
-        const page = props.invited ? "invite" : "book";
-        const loss_extent = props.invited ? null : extent;
-        const { area } = props.answer;
-        track({ name: "lead_submitted", page, served: true, area, window: slot.window, loss_extent });
+        const page = leadSent(door, { served: true, area: props.answer.area, window: slot.window });
         track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
-        if (invite !== null) forgetInvite(invite);
         props.onBooked({ result: booked, mobile: fields.mobile, code: sentCode });
       },
       addressComplete,

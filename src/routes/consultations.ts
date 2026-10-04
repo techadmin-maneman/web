@@ -42,17 +42,16 @@ import { LOSS_EXTENTS } from "../config/booking.ts";
 import { TOLD_NOTICES } from "../config/notices.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { openDays } from "../domain/open-windows.ts";
-import { bookConsultation, joinTheWaitlist, type StandingCode } from "../domain/public-booking.ts";
 import { isServed } from "../domain/service-area.ts";
 import { DISCOUNT_KINDS } from "../policy/discount-codes.ts";
 import { PLANS, type Plan } from "../policy/one-visit.ts";
 import { CODE_PATTERN } from "../config/invite-codes.ts";
 import { inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
+import { IdempotencyKeyHeaderSchema } from "../http/idempotency.ts";
 import { PersonNameSchema } from "../http/openapi.ts";
-import { formRequest } from "../http/public-form.ts";
 import { addressOf, AddressSchema, RequiredFlatSchema } from "./client-profile.ts";
+import { bookedWithCode, bookFromForm, joinWaitlistFromForm } from "./public-forms.ts";
 
 /** Six digits, and never starting with 0 or 9: India's pincodes. */
 const PincodeSchema = z
@@ -220,13 +219,6 @@ const ConsultationSchema = z
   .strict()
   .openapi("Consultation");
 
-/** A code as it stands on a site booking: what it takes off comes off the hair system's price when they pay. */
-function standingCodeBody(standing: StandingCode | null) {
-  if (standing === null) return null;
-  const { kind, value, cap } = standing.terms;
-  return { code: standing.code, kind, value, cap };
-}
-
 const WaitlistSchema = z
   .object({
     area: z
@@ -355,13 +347,13 @@ export function registerConsultations(app: App): void {
     return c.json({ plan, days }, 200, { "Cache-Control": "public, max-age=60" });
   });
 
-  app.openapi(consultationRoute, async (c) => {
+  app.openapi(consultationRoute, (c) => {
     const body = c.req.valid("json");
-    const { requestId } = c.var;
-    const key = c.req.valid("header")["idempotency-key"];
-
-    const run = await onceForKey(c, { route: "POST /api/consultation", key, request: body }, async () => {
-      const booked = await bookConsultation(formRequest(c), {
+    const keyed = { route: "POST /api/consultation", key: c.req.valid("header")["idempotency-key"], request: body };
+    return bookFromForm(
+      c,
+      keyed,
+      async () => ({
         name: body.name,
         mobile: body.mobile,
         pincode: body.pincode,
@@ -377,48 +369,25 @@ export function registerConsultations(app: App): void {
         plan: planOf(body.one_visit),
         discountCode: body.discount_code ?? null,
         numberCodeId: body.number_code_id ?? null,
-      });
-      if (!booked.ok) return booked;
-      const { state, date, window, area, credits, invite, oneVisit, discountCode } = booked;
-      const answer = { state, date, window, area, credits, invite, one_visit: oneVisit };
-      return { ok: true, body: { ...answer, discount_code: standingCodeBody(discountCode) } };
-    });
-    if (run.kind === "replay") return c.json(run.body, 201);
-    if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
-    if (run.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
-
-    const booked = run.outcome;
-    if (booked.ok) return c.json(booked.body, 201);
-    return c.json(errorBody(booked.code, requestId, booked.fields), booked.status);
+      }),
+      bookedWithCode,
+    );
   });
 
-  app.openapi(waitlistRoute, async (c) => {
+  app.openapi(waitlistRoute, (c) => {
     const body = c.req.valid("json");
-    const { requestId } = c.var;
-    const key = c.req.valid("header")["idempotency-key"];
-
-    const run = await onceForKey(c, { route: "POST /api/waitlist", key, request: body }, async () => {
-      const listed = await joinTheWaitlist(formRequest(c), {
-        name: body.name,
-        mobile: body.mobile,
-        pincode: body.pincode,
-        lossExtent: body.loss_extent ?? null,
-        launchAlert: body.launch_alert,
-        turnstileToken: body.turnstile_token,
-        attribution: body.attribution ?? {},
-        invite: await rememberedInvite(c, body),
-        toldNotice: TOLD_NOTICES.book,
-        source: "site_waitlist",
-      });
-      if (!listed.ok) return listed;
-      return { ok: true, body: { area: listed.area, credits: listed.credits, invite: listed.invite } };
-    });
-    if (run.kind === "replay") return c.json(run.body, 201);
-    if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
-    if (run.kind === "key_reused") return c.json(errorBody("idempotency_key_reused", requestId), 422);
-
-    const listed = run.outcome;
-    if (listed.ok) return c.json(listed.body, 201);
-    return c.json(errorBody(listed.code, requestId, listed.fields), listed.status);
+    const keyed = { route: "POST /api/waitlist", key: c.req.valid("header")["idempotency-key"], request: body };
+    return joinWaitlistFromForm(c, keyed, async () => ({
+      name: body.name,
+      mobile: body.mobile,
+      pincode: body.pincode,
+      lossExtent: body.loss_extent ?? null,
+      launchAlert: body.launch_alert,
+      turnstileToken: body.turnstile_token,
+      attribution: body.attribution ?? {},
+      invite: await rememberedInvite(c, body),
+      toldNotice: TOLD_NOTICES.book,
+      source: "site_waitlist",
+    }));
   });
 }
