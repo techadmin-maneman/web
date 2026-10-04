@@ -1,6 +1,6 @@
 // What the technician app's service worker answers, and from where
 // (apps/tech/sw/requests.ts): the shell from what it keeps, the day's list from
-// the network with its copy behind it, and nothing of a client's at all.
+// the network with its copy behind it, and never a card, an address or a number.
 
 import { describe, expect, it } from "vitest";
 import { answerFor } from "../../apps/tech/sw/requests.ts";
@@ -19,7 +19,7 @@ describe("what the service worker answers", () => {
     expect(answerFor(get("/manifest.webmanifest"), ORIGIN)).toBe("file");
   });
 
-  it("keeps a copy of the day's list, which carries no client", () => {
+  it("keeps a copy of the day's list, which names a client but carries no address or number", () => {
     expect(answerFor(get("/api/tech/jobs?date=2030-09-01"), ORIGIN)).toBe("day");
   });
 

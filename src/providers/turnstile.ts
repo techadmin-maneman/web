@@ -1,6 +1,9 @@
 // Cloudflare Turnstile. Locally the secret is Cloudflare's always-pass test
 // secret, so the real endpoint is called everywhere and needs no stub.
 
+import type { Logger } from "../log.ts";
+import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
+
 /** Cloudflare's published dummy token, which its always-pass test secret accepts. */
 export const TURNSTILE_TEST_TOKEN = "XXXX.DUMMY.TOKEN.XXXX";
 
@@ -21,6 +24,7 @@ export interface TurnstileCheck {
   /** The visitor's IP, which Cloudflare cross-checks. */
   readonly ip: string | null;
   readonly fetch: typeof fetch;
+  readonly log: Logger;
 }
 
 /**
@@ -34,17 +38,17 @@ const NOBODY_COULD_PASS = new Set(["internal-error", "invalid-input-secret", "mi
  * "unavailable": the token could not be checked. The lead is refused either way;
  * an unverified form submission is not accepted.
  */
-export async function verifyTurnstile({ secret, token, ip, fetch }: TurnstileCheck): Promise<TurnstileVerdict> {
+export async function verifyTurnstile(check: TurnstileCheck): Promise<TurnstileVerdict> {
   const form = new FormData();
-  form.append("secret", secret);
-  form.append("response", token);
-  if (ip !== null) form.append("remoteip", ip);
+  form.append("secret", check.secret);
+  form.append("response", check.token);
+  if (check.ip !== null) form.append("remoteip", check.ip);
 
-  let response: Response;
-  try {
-    response = await fetch(SITEVERIFY_URL, { method: "POST", body: form, signal: AbortSignal.timeout(TIMEOUT_MS) });
-  } catch (error) {
-    return { result: "unavailable", detail: `unreachable: ${error instanceof Error ? error.name : "error"}` };
+  const call = { vendor: "turnstile", step: "siteverify", timeoutMs: TIMEOUT_MS } as const;
+  const http = { fetch: check.fetch, log: check.log };
+  const response = await vendorFetch(http, call, SITEVERIFY_URL, { method: "POST", body: form });
+  if (response instanceof VendorUnreachable) {
+    return { result: "unavailable", detail: `unreachable: ${response.reason}` };
   }
   if (!response.ok) return { result: "unavailable", detail: `siteverify ${String(response.status)}` };
 

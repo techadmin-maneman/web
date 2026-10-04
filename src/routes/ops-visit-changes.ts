@@ -29,9 +29,9 @@ import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
+import { queueMessage } from "../http/queue-message.ts";
 import { withinRouteReach } from "../http/staff-access.ts";
 import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 
 const visitParams = z.object({ id: z.uuid().openapi({ description: "The visit's ID." }) });
 
@@ -218,8 +218,7 @@ async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: Cance
   if (asked.notice !== terms.notice) return c.json(errorBody("terms_changed", requestId), 409);
 
   const { applied, ops } = opsCancelOf(c, terms, asked.on_client_terms === true, reason);
-  const notify = (messageId: string) =>
-    c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
+  const notify = (messageId: string) => queueMessage(c, messageId);
   let outcome;
   try {
     outcome = await cancelVisit(db, { ...deps, notify }, applied, now, {

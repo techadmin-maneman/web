@@ -60,6 +60,7 @@ import type { Logger } from "../log.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { bookingNeedsProof } from "../policy/number-proof.ts";
 import { ONE_VISIT_TERMS, planStartsIn, type Plan } from "../policy/one-visit.ts";
+import { enqueue } from "../queues/enqueue.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
 import { recordConsent, type ConsentRule } from "./consents.ts";
@@ -120,7 +121,10 @@ export interface FormRequest {
   readonly provedNumber: (codeId: string | null, mobileE164: string) => Promise<boolean>;
   /** Sends a person's first address on to their FSM contact and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
-  /** Sends a hold the form booked free to be booked (src/http/book-hold.ts). */
+  /**
+   * Sends a hold the form booked free to be booked (src/http/book-hold.ts). It never throws, so the invite and the
+   * lead are recorded whatever comes of it.
+   */
   readonly bookHold: (holdId: string) => Promise<void>;
 }
 
@@ -183,10 +187,14 @@ async function notBookedFor(
   personId: string,
   addressOutsideArea: boolean,
 ): Promise<NotBookedFromSite | null> {
+  const [consultationToCome, types] = await Promise.all([
+    liveVisitOf(db, personId, "consultation"),
+    bookableTypes(db, personId),
+  ]);
   return notBookedFromSite({
     addressOutsideArea,
-    hasConsultationToCome: (await liveVisitOf(db, personId, "consultation")) !== null,
-    mayBookConsultation: (await bookableTypes(db, personId)).includes("consultation"),
+    hasConsultationToCome: consultationToCome !== null,
+    mayBookConsultation: types.includes("consultation"),
   });
 }
 
@@ -267,22 +275,14 @@ async function recordLead(
     requestId,
     now: input.now,
   });
-  try {
-    await form.queues.crm.send({ lead_id: leadId, request_id: requestId });
-  } catch (error) {
-    // The lead is safe in D1; the sweeper enqueues anything left pending.
-    log.warn("crm_enqueue_failed", { lead_id: leadId, error });
-  }
+  await enqueue(form.queues.crm, { lead_id: leadId, request_id: requestId }, { log, ifLost: "sweeper" });
   return leadId;
 }
 
 /** Sends a message written with the form's batch to the messaging queue. One the queue drops, the sweeper sends. */
 async function queueMessage(form: FormRequest, messageId: string): Promise<void> {
-  try {
-    await form.queues.messages.send({ message_id: messageId, request_id: form.requestId } satisfies MessagingMessage);
-  } catch (error) {
-    form.log.warn("message_enqueue_failed", { outbound_message_id: messageId, error });
-  }
+  const body = { message_id: messageId, request_id: form.requestId } satisfies MessagingMessage;
+  await enqueue(form.queues.messages, body, { log: form.log, ifLost: "sweeper" });
 }
 
 /**
@@ -432,16 +432,19 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const { db, log, now } = form;
 
   const first = addDays(indiaDate(now), 1);
-  const pincode = await pincodeOf(db, request.pincode);
+  const oneVisit = request.plan === "one_visit";
+  const [pincode, products] = await Promise.all([
+    pincodeOf(db, request.pincode),
+    oneVisit ? offeredProducts(db, request.date) : [],
+  ]);
   if (pincode?.served !== 1 || request.date < first || request.date > addDays(first, BOOKING_DAYS - 1)) {
     return { ok: false, status: 422, code: "not_bookable" };
   }
   // The first fit's three hours do not fit in the evening (src/policy/one-visit.ts), which the form does not offer.
-  const oneVisit = request.plan === "one_visit";
   if (!planStartsIn(request.plan, request.window)) {
     return { ok: false, status: 400, code: "invalid_request", fields: ["window"] };
   }
-  if (oneVisit && (await offeredProducts(db, request.date)).length === 0) {
+  if (oneVisit && products.length === 0) {
     return { ok: false, status: 422, code: "no_product" };
   }
   // The technician goes to the address, so it must be where the pincode said we come.
@@ -455,7 +458,12 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     return { ok: false, status: 403, code: "number_not_proved" };
   }
 
-  const knownId = await personWithMobile(db, checked.mobile);
+  // A slot is held and booked only while self-serve booking is on and the day offers what was asked for;
+  // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
+  const [knownId, visit] = await Promise.all([
+    personWithMobile(db, checked.mobile),
+    form.selfServeBooking ? siteVisit(db, request.plan, request.date) : null,
+  ]);
   const saved = knownId === null ? null : await currentAddress(db, knownId);
   const savedPincode = saved === null ? null : await pincodeOf(db, saved.pincode);
   if (knownId !== null) {
@@ -489,9 +497,6 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     ...(addressNotice === null ? [] : [addressNotice.statement]),
   ];
 
-  // A slot is held and booked only while self-serve booking is on and the day offers what was asked for;
-  // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
-  const visit = form.selfServeBooking ? await siteVisit(db, request.plan, request.date) : null;
   let holdId: string | null = null;
   if (visit !== null) {
     const hold = await holdSlot(

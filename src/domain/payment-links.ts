@@ -23,7 +23,7 @@ import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { isRefusal } from "../providers/provider-error.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
 import { referenceLink } from "./payments.ts";
 import { priceOf } from "./price-book.ts";
@@ -183,7 +183,7 @@ export async function sendPaymentLink(
     await deps.alertOnce({
       key: refusedKey(visit.appointmentId),
       message: `${notMade(visit, made.kind)} Send the client a link from Razorpay's dashboard with reference ${visit.appointmentId}.`,
-      link: `/clients/${visit.personId}`,
+      link: paymentsTab(visit.personId),
     });
     return made.kind === "unpriced" ? "unpriced" : "unavailable";
   }
@@ -210,7 +210,7 @@ interface UnsentRow extends LinkRow {
 
 /**
  * The links a close could not have made, asked of Razorpay again, oldest first: a few a run, each paid for from the
- * run's outside calls first. Answers how many were made.
+ * run's outside calls first. Never one for a client erased since. Answers how many were made.
  */
 export async function sendUnsentLinks(db: D1Database, deps: LinkDeps, now: Date, budget: CallBudget): Promise<number> {
   const { results } = await db
@@ -219,6 +219,7 @@ export async function sendUnsentLinks(db: D1Database, deps: LinkDeps, now: Date,
          a.window_start
        FROM payment_links l JOIN appointments a ON a.id = l.appointment_id
        WHERE l.sent_at IS NULL AND l.refused_at IS NULL
+         AND NOT EXISTS (SELECT 1 FROM people p WHERE p.id = a.person_id AND p.erased_at IS NOT NULL)
        ORDER BY l.created_at LIMIT ?1`,
     )
     .bind(LINKS_PER_PASS)
@@ -303,7 +304,7 @@ async function refusedOrMadeBefore(
       `Razorpay would not make the payment link of ${rupees(link.amount)} for visit ${visit.appointmentId}: ` +
       `${reason}. Send the client one from Razorpay's dashboard with reference ${visit.appointmentId}, whose ` +
       "payment then finds the visit.",
-    link: `/clients/${visit.personId}`,
+    link: paymentsTab(visit.personId),
   });
   return "refused";
 }
@@ -332,7 +333,7 @@ async function tellFailure(deps: LinkDeps, visit: FittedVisit, reason: string): 
     message:
       `The payment link for visit ${visit.appointmentId} could not be asked of Razorpay ` +
       `${String(FAILURES_BEFORE_ALERT)} times: ${reason}. It is asked again every five minutes.`,
-    link: `/clients/${visit.personId}`,
+    link: paymentsTab(visit.personId),
     after: FAILURES_BEFORE_ALERT,
   });
 }

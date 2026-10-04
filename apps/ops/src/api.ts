@@ -26,6 +26,8 @@ export type ClientsFound = Body<paths["/api/clients/find"]["post"]>;
 export type ClientRecord = Body<paths["/api/clients/{id}"]["get"]>;
 export type ClientVisit = ClientRecord["visits"]["past"][number];
 export type ClientPayment = ClientRecord["payments"][number];
+export type ClientPaymentLink = ClientRecord["payment_links"][number];
+export type ClientInvoice = ClientRecord["invoices"][number];
 /** A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). */
 export type HeldBooking = ClientRecord["held_bookings"][number];
 export type HeldBookingRefunded = Body<paths["/api/held-bookings/{id}/refund"]["post"]>;
@@ -337,8 +339,8 @@ export const api = {
     client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
   /** The cases nobody has ruled on yet. The route also answers the decided ones; the board draws a queue. */
   noShows: () => client.get("/api/no-shows", { query: { decision: "undecided" } }),
-  /** Today's money, as board D1 heads it. The route takes a date; the board draws no way of asking for another. */
-  dayMoney: () => client.get("/api/payments"),
+  /** A day's money, as board D1 heads it: India's date, or today with null. */
+  dayMoney: (date: string | null) => client.get("/api/payments", { query: setOnly({ date }) }),
   /**
    * Charge the visit or waive it, with the reason either way. A charge costs
    * what the booking was sold to cost a no-show, and gives back the rest.
@@ -367,7 +369,7 @@ export const api = {
     client.post("/api/deletion-requests/{id}/decision", { path: { id }, body: { decision, reason } }),
   /**
    * Erases a client now, from their page; it cannot be undone. `settledByHand` erases despite a visit booked or a
-   * payment held, which ops then cancel and refund themselves.
+   * payment held, which ops then cancel and refund themselves, or a payment link unpaid, which is cancelled.
    */
   eraseClient: (id: string, settledByHand: boolean) =>
     client.post("/api/clients/{id}/erasure", {

@@ -1,8 +1,9 @@
-// No-shows (Ops Console, board D1): the day's money over the charges it was
-// kept on, then each charge a client disputed, refunded or upheld here
-// (Disputes.tsx), then each case with the evidence ops rule on, charged or
-// waived here (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md), then
-// the cases ruled on today. A ruling reads the day's money again.
+// Payments (Ops Console, board D1): a day's money over the charges it was
+// kept on, today unless ops pick another day, then each charge a client
+// disputed, refunded or upheld here (Disputes.tsx), then each no-show case
+// with the evidence ops rule on, charged or waived here
+// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md), then the cases
+// ruled on today. A ruling reads the day's money again.
 //
 // A case is evidence a client may be charged on, so it names the client and
 // says when the visit was booked for, when the technician's phone says he
@@ -17,7 +18,6 @@
 import { Button } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { type Loaded, useLoad } from "@maneman/ui/useLoad";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
@@ -50,9 +50,9 @@ function evidenceOf(charge: Charge): string {
   return charge.technician === null ? copy.unattended(was) : copy.attended(charge.technician, was);
 }
 
-function Charges({ charges }: { charges: readonly Charge[] }) {
+function Charges({ charges, today }: { charges: readonly Charge[]; today: boolean }) {
   const copy = noShows.money.charges;
-  if (charges.length === 0) return <p className={styles.empty}>{copy.empty}</p>;
+  if (charges.length === 0) return <p className={styles.empty}>{copy.empty(today)}</p>;
 
   return (
     <ul className={styles.charges}>
@@ -74,28 +74,61 @@ function Charges({ charges }: { charges: readonly Charge[] }) {
   );
 }
 
+/** India's date today, by this computer's clock. */
+const indiaToday = () => indiaDate(new Date().toISOString());
+
+/** The card's heading, which names the day its figures are for, and the field that asks for another day. */
+function DayHead({ date, shown, onDay }: { date: string; shown: string; onDay: (date: string) => void }) {
+  const copy = noShows.money;
+  const today = indiaToday();
+  return (
+    <div className={styles.dayHead}>
+      <h2 className={styles.dayTitle} id="day-money">
+        {copy.title(shortDate(date), date === today)}
+      </h2>
+      <div>
+        <label className={styles.dayLabel} htmlFor="money-day">
+          {copy.pick}
+        </label>
+        <input
+          className={styles.dayField}
+          id="money-day"
+          type="date"
+          max={today}
+          value={shown}
+          onChange={(event) => {
+            if (event.target.value !== "") onDay(event.target.value);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function Money() {
-  const [loaded, retry] = useLoad(api.dayMoney);
+  // The day asked for; null for today, which the API answers when it is given no date.
+  const [asked, setAsked] = useState<string | null>(null);
+  const load = useCallback(() => api.dayMoney(asked), [asked]);
+  const [loaded, retry] = useLoad(load);
   const copy = noShows.money;
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const day = loaded.value;
+  const isToday = day.date === indiaToday();
   return (
     <section className={styles.panel} aria-labelledby="day-money">
-      <VisuallyHidden as="h2" id="day-money">
-        {copy.title}
-      </VisuallyHidden>
+      <DayHead date={day.date} shown={asked ?? day.date} onDay={setAsked} />
       <dl className={styles.figures}>
         <div className={styles.figure}>
-          <dt className={styles.figureName}>{copy.figures.collected}</dt>
+          <dt className={styles.figureName}>{copy.figures.collected(isToday)}</dt>
           <dd className={styles.amount}>{rupees(day.collected)}</dd>
         </div>
         <div className={styles.figure}>
           <dt className={styles.figureName}>
             {copy.figures.processing}
-            {day.refunded > 0 && <span className={styles.aside}>{copy.refunded(rupees(day.refunded))}</span>}
+            {day.refunded > 0 && <span className={styles.aside}>{copy.refunded(rupees(day.refunded), isToday)}</span>}
           </dt>
           <dd className={styles.amount}>{rupees(day.refunds_processing)}</dd>
         </div>
@@ -105,7 +138,7 @@ function Money() {
         </div>
       </dl>
       <h3 className={styles.chargesTitle}>{copy.charges.title}</h3>
-      <Charges charges={day.charges} />
+      <Charges charges={day.charges} today={isToday} />
     </section>
   );
 }
