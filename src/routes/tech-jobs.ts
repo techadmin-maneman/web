@@ -167,6 +167,16 @@ const JobSummarySchema = z
       .openapi({ description: "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type." }),
     unlocked: z.boolean(),
     unlocks_at: z.iso.datetime(),
+    progress: z
+      .object({
+        started_at: z.union([z.iso.datetime(), z.null()]),
+        outcome: z.union([z.string(), z.null()]),
+      })
+      .strict()
+      .openapi("TechnicianJobState", {
+        description:
+          "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet.",
+      }),
   })
   .strict()
   .openapi("TechnicianJob");
