@@ -19,6 +19,9 @@
 // take a task, give it to another member of staff or hand it back, and close a
 // visit left partly done without a follow-up, from the row (TaskActions.tsx;
 // docs/decisions/0092-task-owners.md).
+//
+// Above the tasks, "Needs a hand" lists the alerts ops were told of and not yet
+// put right (NeedsAHand.tsx).
 
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -36,6 +39,7 @@ import type { ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
 import { DECIDED_IN } from "./decided.ts";
+import { NeedsAHand } from "./NeedsAHand.tsx";
 import { TaskActions } from "./TaskActions.tsx";
 import styles from "./tasks.module.css";
 
@@ -332,6 +336,7 @@ export function TasksScreen() {
   return (
     <Shell section="/tasks" title={tasks.title}>
       <div className={styles.column}>
+        <NeedsAHand />
         <Queue />
       </div>
     </Shell>

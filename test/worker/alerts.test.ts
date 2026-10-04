@@ -85,6 +85,31 @@ describe("alertOnce", () => {
     expect(told).toEqual(["Codes are failing.", "Still happening, 30 times: Codes are failing."]);
   });
 
+  it("records when ops were told, which is when the alert waits on Tasks: not before its `after`-th sighting", async () => {
+    const toldAt = () => env.DB.prepare("SELECT told_at FROM alerts WHERE key = 'k'").first("told_at");
+    const later = new Date(NOW.getTime() + 60_000);
+    let now = NOW;
+    alertOnce = createAlertOnce({
+      db: env.DB,
+      alert: () => Promise.resolve(),
+      now: () => now,
+      environment: "staging",
+      log: createLogger(),
+    });
+
+    await raiseTimes(2, { key: "k", message: "Codes are failing.", after: 3 });
+    expect(await toldAt()).toBeNull();
+
+    now = later;
+    await raiseTimes(2, { key: "k", message: "Codes are failing.", after: 3 });
+    expect(await toldAt()).toBe(later.toISOString());
+
+    await alertOnce({ key: "once", message: "A refund failed." });
+    expect(await env.DB.prepare("SELECT told_at FROM alerts WHERE key = 'once'").first("told_at")).toBe(
+      later.toISOString(),
+    );
+  });
+
   it("keeps apart alerts with different keys", async () => {
     await alertOnce({ key: "a", message: "A." });
     await alertOnce({ key: "b", message: "B." });

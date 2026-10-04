@@ -46,6 +46,7 @@ import { registerOpsNoShowRulings } from "./routes/ops-no-show-rulings.ts";
 import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
 import { registerOpsTasks } from "./routes/ops-tasks.ts";
+import { registerOpsAlerts } from "./routes/ops-alerts.ts";
 import { registerOpsTechnicians } from "./routes/ops-technicians.ts";
 import { registerOpsServices } from "./routes/ops-services.ts";
 import { registerOpsSettings } from "./routes/ops-settings.ts";
@@ -154,6 +155,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsNoShowRulings,
     registerOpsDisputes,
     registerOpsTasks,
+    // The alerts on Tasks' "Needs a hand".
+    registerOpsAlerts,
     registerOpsPayments,
     registerOpsTechnicians,
     registerOpsSettings,

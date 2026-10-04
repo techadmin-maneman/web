@@ -279,7 +279,7 @@ async function openRequest(personId: string): Promise<void> {
     .run();
 }
 
-const alertsNow = () => alertAgedDeletions(env.DB, NOW, () => Promise.resolve());
+const alertsNow = () => alertAgedDeletions(env.DB, NOW, fakeDependencies().alertOnce);
 
 // PS-17: the operators' door left the client's own request listed as waiting, and alerting.
 describe("a client erased with a deletion request open", () => {
@@ -293,6 +293,19 @@ describe("a client erased with a deletion request open", () => {
     expect(closed).toEqual({ state: "done", decided_at: NOW.toISOString(), decided_by: STAFF });
     expect(await deletionsWaiting(env.DB, EVERYWHERE)).toEqual([]);
     expect(await alertsNow()).toBe(0);
+  });
+
+  it("closes the request's alert on Tasks with it", async () => {
+    const personId = await book();
+    await openRequest(personId);
+    expect(await alertsNow()).toBe(1);
+
+    expect(await statusOf(personId)).toBe(200);
+
+    const open = await env.DB.prepare(
+      "SELECT key FROM alerts WHERE resolved_at IS NULL AND key LIKE 'deletion_waiting:%'",
+    ).all();
+    expect(open.results).toEqual([]);
   });
 
   it("is left out of the queue and its alert when an earlier erasure left the request open", async () => {
