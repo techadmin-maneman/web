@@ -9,7 +9,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { settings } from "../content.ts";
-import { CODE, codeOf } from "./code.ts";
+import { PRICE_TIER, tierCodeOf } from "../../../../src/policy/services.ts";
 import styles from "./settings.module.css";
 
 const copy = settings.services;
@@ -663,7 +663,7 @@ export function AddForm(props: {
   const [code, setCode] = useState("");
   const [codeTyped, setCodeTyped] = useState(false);
   const [minutes, setMinutes] = useState(String(props.minutes));
-  const codeSent = codeTyped ? code.trim() : codeOf(name);
+  const codeSent = codeTyped ? code.trim() : (tierCodeOf(name) ?? "");
   const steps = useSteps(async () => {
     const answer = await api.addService({ kind, name: name.trim(), tier: codeSent, minutes: Number(minutes) });
     return answer.ok
@@ -671,7 +671,7 @@ export function AddForm(props: {
       : { ok: false, code: answer.code, fields: answer.fields };
   }, props.onDone);
   const id = `add-${kind}`;
-  const ready = name.trim() !== "" && CODE.test(codeSent) && minutes.trim() !== "";
+  const ready = name.trim() !== "" && PRICE_TIER.test(codeSent) && minutes.trim() !== "";
   return (
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.addTitle(kindName)}</legend>
@@ -699,7 +699,7 @@ export function AddForm(props: {
               id={`${id}-code`}
               type="text"
               maxLength={32}
-              value={codeTyped ? code : codeOf(name)}
+              value={codeTyped ? code : (tierCodeOf(name) ?? "")}
               aria-describedby={hint}
               onChange={(event) => {
                 setCode(event.target.value);

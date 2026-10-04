@@ -2,7 +2,6 @@
 // (src/policy/services.ts; docs/decisions/0085-services-ops-can-edit.md).
 
 import { describe, expect, it } from "vitest";
-import { PRICE_TIER } from "../../src/config/ops-settings.ts";
 import { hasStandardService, STANDARD_TIER, VISIT_TYPES } from "../../src/config/visit-types.ts";
 import {
   DESCRIPTION_LENGTH,
@@ -13,6 +12,7 @@ import {
   RULES,
   SERVICE_NAME,
   tierCodeOf,
+  PRICE_TIER,
 } from "../../src/policy/services.ts";
 
 describe("the services", () => {

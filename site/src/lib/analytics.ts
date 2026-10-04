@@ -14,6 +14,7 @@ import type { LossExtent } from "../../../src/config/booking.ts";
 import type { BookingWindow } from "../../../src/config/scheduling.ts";
 import { ANALYTICS_IDS } from "./analytics-ids.ts";
 import { ENVIRONMENT } from "./build.ts";
+import { INVITE_PATH_IN_URL } from "./invite.ts";
 
 /** Which booking page: the site's own /book, or a friend's invite at /r/:code. */
 type BookingPage = "book" | "invite";
@@ -96,12 +97,9 @@ function startMetaPixel(pixelId: string): void {
   fbq("track", "PageView");
 }
 
-/** A referral invite's address: /r/ and the code, which is one person's. */
-const INVITE_PATH = /\/r\/[A-Za-z0-9]{4,12}\/?(?=[?#]|$)/;
-
 /** The address as the tags are told it: an invite's code taken out. */
 function reportedAddress(address: string): string {
-  return address.replace(INVITE_PATH, "/r/");
+  return address.replace(INVITE_PATH_IN_URL, "/r/");
 }
 
 /**
@@ -129,7 +127,7 @@ export function startAnalytics(): void {
   // Outside production, GA4 marks every hit as debug traffic.
   if (ids.ga4 !== null) gtag("config", ids.ga4, ENVIRONMENT === "production" ? {} : { debug_mode: true });
   if (ids.googleAds !== null) gtag("config", ids.googleAds.id);
-  const onInvite = INVITE_PATH.test(location.pathname);
+  const onInvite = INVITE_PATH_IN_URL.test(location.pathname);
   if (ids.metaPixel !== null && !onInvite) startMetaPixel(ids.metaPixel);
 }
 

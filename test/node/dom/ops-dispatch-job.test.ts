@@ -9,7 +9,6 @@ import {
   blockOn,
   changeOf,
   changesTime,
-  firstNameOf,
   isMovable,
   movesIfCheckInCleared,
   nameOf,
@@ -20,6 +19,7 @@ import {
 } from "../../../apps/ops/src/dispatch/job.ts";
 import { daysUntil } from "../../../apps/ops/src/lib/due.ts";
 import { whatsappChat } from "../../../packages/web-kit/whatsapp.ts";
+import { firstNameOf } from "../../../src/lib/names.ts";
 
 const ROHIT = {
   id: "p1",
@@ -89,7 +89,7 @@ describe("a job's name on the board", () => {
   });
 
   it("gives the drawer the client's first name, and a WhatsApp chat with digits only", () => {
-    expect(firstNameOf(ROHIT)).toBe("Rohit");
+    expect(firstNameOf(ROHIT.name)).toBe("Rohit");
     // The drawer's link is web-kit's, as every front end's is (ADR 0076).
     expect(whatsappChat(ROHIT.mobile)).toBe("https://wa.me/919810000001");
   });

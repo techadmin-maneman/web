@@ -6,6 +6,7 @@ import type { Invite, PublishedPrices, ReferralReward } from "../../lib/api.ts";
 import { isInvite } from "../../lib/invite.ts";
 import { hairSystemsIn, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "../../lib/prices.ts";
 import { isReferralReward } from "../../lib/reward.ts";
+import { INVITE_PATH } from "../../lib/invite.ts";
 
 /**
  * The code in the address: /r/ABC123. Empty where the page is opened without one, and while
@@ -13,7 +14,7 @@ import { isReferralReward } from "../../lib/reward.ts";
  */
 export function codeInPath(): string {
   if (typeof location === "undefined") return "";
-  return /^\/r\/([A-Za-z0-9]{4,12})\/?$/.exec(location.pathname)?.[1]?.toUpperCase() ?? "";
+  return INVITE_PATH.exec(location.pathname)?.[1]?.toUpperCase() ?? "";
 }
 
 /** The invite the Worker wrote into the page, if it did and it reads as one. */

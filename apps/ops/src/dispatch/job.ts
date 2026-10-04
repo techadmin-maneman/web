@@ -137,4 +137,3 @@ export const mayLetIn = (block: Block, now: number): boolean =>
   indiaDate(block.starts_at) === indiaDate(new Date(now).toISOString());
 
 /** "Rohit", as the drawer's WhatsApp button names him. */
-export const firstNameOf = (person: BoardClient): string => person.name.trim().split(/\s+/)[0] ?? person.name;

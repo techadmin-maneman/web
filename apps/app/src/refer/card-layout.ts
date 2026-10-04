@@ -5,8 +5,9 @@
 // words. The phone's composition (card-draw.ts) and the house card's script
 // (scripts/make-house-card.ts) both draw from these figures.
 
-export const CARD_WIDTH = 1200;
-export const CARD_HEIGHT = 630;
+import { CARD_HEIGHT, CARD_WIDTH } from "../../../../src/config/referral-cards.ts";
+
+export { CARD_HEIGHT, CARD_WIDTH };
 export const RULE_WIDTH = 2;
 
 /** Each photograph's half: the width either side of the rule. */

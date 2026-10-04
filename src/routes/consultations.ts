@@ -46,7 +46,8 @@ import { bookConsultation, joinTheWaitlist, type StandingCode } from "../domain/
 import { isServed } from "../domain/service-area.ts";
 import { DISCOUNT_KINDS } from "../policy/discount-codes.ts";
 import { PLANS, type Plan } from "../policy/one-visit.ts";
-import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
+import { CODE_PATTERN } from "../config/invite-codes.ts";
+import { inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { PersonNameSchema } from "../http/openapi.ts";

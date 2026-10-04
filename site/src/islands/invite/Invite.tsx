@@ -49,6 +49,7 @@ import { Prices } from "./Prices.tsx";
 import { previewNamed, SAMPLE, sampleBooking } from "./preview.ts";
 import { usePincode } from "./usePincode.ts";
 import { Waitlist } from "./Waitlist.tsx";
+import { CARD_HEIGHT, CARD_WIDTH } from "../../../../src/config/referral-cards.ts";
 
 interface Props {
   turnstileSiteKey: string;
@@ -67,7 +68,6 @@ interface Props {
 type State = "arrival" | "booked" | "listed";
 
 /** The card the page shows: the referrer's own while it is live, else our house one. */
-const CARD = { width: 1200, height: 630 };
 
 /** The site's own page is headed with what it books: the plan chosen, or the waitlist where we do not come yet. */
 function bookingTitle(answer: PincodeAnswer | null, plan: Plan): string {
@@ -267,8 +267,8 @@ export default function Invite(props: Props) {
             <img
               class={styles.inviteCard}
               src={invite === null ? HOUSE_CARD : cardPath(invite, codeInPath())}
-              width={CARD.width}
-              height={CARD.height}
+              width={CARD_WIDTH}
+              height={CARD_HEIGHT}
               alt=""
               onError={(event) => {
                 event.currentTarget.src = HOUSE_CARD;

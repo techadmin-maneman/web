@@ -24,7 +24,7 @@
 // `{city}` and similar are filled in by the page.
 
 import { GUARANTEE } from "@maneman/web-kit/guarantee";
-import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
+import { WHATSAPP_DISPLAY, WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 import { LOSS_EXTENTS, type LossExtent } from "../../../src/config/booking.ts";
 import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "../../../src/config/notices.ts";
 import { PRESETS, type PresetId } from "../../../src/config/presets.ts";
@@ -93,8 +93,6 @@ export const tryOnSendsCopy = KEEPING_NOTICES.includes(notices.photo.version);
 // ---------------------------------------------------------------------------
 // Placeholder blocks
 // ---------------------------------------------------------------------------
-
-const WHATSAPP_DISPLAY = "+91 90079 73247";
 
 /** The business WhatsApp number: the footer's, the legal pages', and every wa.me link. */
 export const whatsapp = {

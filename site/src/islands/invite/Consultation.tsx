@@ -35,6 +35,7 @@ import { codeInPath, hairSystemsInPage } from "./page.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm } from "./useTurnstileForm.ts";
 import { isOneOf } from "../../../../src/lib/one-of.ts";
+import { BOOKING_DAYS } from "../../../../src/config/scheduling.ts";
 
 type BookingWindow = ReferralConsultation["window"];
 export type Plan = "consultation" | "one_visit";
@@ -48,9 +49,6 @@ interface ConsultationProps extends FormProps {
 
 /** Whether a consultation and fit in one visit can start in a window: the morning or the afternoon. */
 const oneVisitStartsIn = (window: BookingWindow): boolean => isOneOf(ONE_VISIT_WINDOWS, window);
-
-/** How far ahead the date strip reaches, from tomorrow: src/config/scheduling.ts, BOOKING_DAYS. */
-const DAYS = 14;
 
 /** The WhatsApp code's field, on this form's paper. */
 const CODE_FIELD: CodeFieldClasses = {
@@ -102,7 +100,7 @@ export function Consultation(props: ConsultationProps) {
   const windowIds = windows.map((option) => option.id);
   // The visitor's pick while it is open; else the nearest open window.
   const slot = chosenSlot(open.days, windowIds, picked);
-  const days = dayStrip(open.days?.[0]?.date ?? indiaTomorrow(), open.days?.length ?? DAYS);
+  const days = dayStrip(open.days?.[0]?.date ?? indiaTomorrow(), open.days?.length ?? BOOKING_DAYS);
   // The site's own page takes a discount code for the one visit; an invite's page is the invite's offer (ADR 0108).
   const takesCode = plan === "one_visit" && !props.invited;
   const sentCode = takesCode && code.trim() !== "" ? code.trim() : null;

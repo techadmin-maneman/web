@@ -31,7 +31,7 @@
 import { inviteDescription, invitePageTitle, inviteTitle } from "./content/referral.ts";
 import type { Invite, PublishedPrices, ReferralReward } from "./lib/api.ts";
 import { partOf } from "./lib/byte-range.ts";
-import { cardPath, HOUSE_CARD, isInvite } from "./lib/invite.ts";
+import { cardPath, HOUSE_CARD, INVITE_PATH, isInvite } from "./lib/invite.ts";
 import { fillPrices, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "./lib/prices.ts";
 import { isReferralReward } from "./lib/reward.ts";
 import { PRICES_SHOWN } from "./lib/flags.ts";
@@ -42,8 +42,6 @@ export interface SiteEnv {
   /** mm-api, bound directly: on staging its host is behind Access, which a request over the internet fails. */
   readonly API: Fetcher;
 }
-
-const CODE = /^\/r\/([A-Za-z0-9]{4,12})\/?$/;
 
 /** The landing with no code, which has no invite to show: the booking page is the same page without one. */
 const NO_CODE = /^\/r\/?$/;
@@ -263,7 +261,7 @@ export function createSiteWorker({ clock = Date.now, pricesShown = PRICES_SHOWN 
       if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
       if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
 
-      const code = CODE.exec(url.pathname)?.[1]?.toUpperCase();
+      const code = INVITE_PATH.exec(url.pathname)?.[1]?.toUpperCase();
       if (code === undefined && !PRICED_PAGES.has(url.pathname)) return env.ASSETS.fetch(request);
 
       // The landing is r.html for every code, which the assets serve at /r (site/astro.config.ts builds files).

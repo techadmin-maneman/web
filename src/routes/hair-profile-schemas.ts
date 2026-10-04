@@ -3,7 +3,6 @@
 // technician's card and the client's page in the console read. The lists and ranges are src/policy/hair-profile.ts.
 
 import { z } from "@hono/zod-openapi";
-import { PRICE_TIER } from "../config/ops-settings.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import {
   ATTACHMENTS,
@@ -18,6 +17,7 @@ import {
   WAVES,
   type Measurement,
 } from "../policy/hair-profile.ts";
+import { PRICE_TIER } from "../policy/services.ts";
 
 /** A measurement in its range, to one decimal; null where it was not taken. */
 const measured = (measurement: Measurement, unit: string) => {

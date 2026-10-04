@@ -28,7 +28,6 @@ import {
   OPS_SETTINGS,
   settingNamed,
   PRICE_BOUNDS,
-  PRICE_TIER,
   type NumberSetting,
 } from "../config/ops-settings.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
@@ -49,6 +48,7 @@ import { queuePacedMessages } from "../http/queue-message.ts";
 import { routeReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { reachesCity } from "../policy/access.ts";
+import { PRICE_TIER } from "../policy/services.ts";
 
 /** One number, or one per key: the two shapes a rule of numbers takes. */
 const NumberValue = z.union([z.number().int(), z.record(z.string(), z.number().int())]);

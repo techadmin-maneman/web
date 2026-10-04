@@ -429,6 +429,3 @@ export function checkValue(setting: OpsSetting, value: unknown): Checked {
  * slip and never a rate.
  */
 export const PRICE_BOUNDS = { minPaise: 0, maxPaise: 100_000_000, minGstPercent: 0, maxGstPercent: 28 } as const;
-
-/** A tier names itself: "standard", and whatever the bases are called when the catalogue has them. */
-export const PRICE_TIER = /^[a-z][a-z0-9_]{0,31}$/;

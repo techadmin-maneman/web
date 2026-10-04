@@ -4,6 +4,13 @@
 
 import { HOUSE_CARD, HOUSE_CARD_VERSION } from "../../../src/config/house-card.ts";
 import type { Invite } from "./api.ts";
+import { INVITE_CODE } from "../../../src/config/invite-codes.ts";
+
+/** An invite's landing, the code captured: "/r/MM4417" or "/r/MM4417/". */
+export const INVITE_PATH = new RegExp(`^/r/(${INVITE_CODE})/?$`);
+
+/** An invite's landing within a whole address, so the code can be taken out of what is reported. */
+export const INVITE_PATH_IN_URL = new RegExp(`/r/${INVITE_CODE}/?(?=[?#]|$)`);
 
 /** The house card, with its version, which the API's preview redirects to as well (src/config/house-card.ts). */
 export { HOUSE_CARD, HOUSE_CARD_VERSION };

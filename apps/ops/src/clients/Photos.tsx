@@ -17,6 +17,7 @@ import { clients } from "../content.ts";
 import { whoWords } from "../lib/who.ts";
 import { Loading } from "../states/States.tsx";
 import styles from "./clients.module.css";
+import { firstNameOf } from "../../../../src/lib/names.ts";
 
 const copy = clients.photos;
 const PHASES = ["before", "after"] as const;
@@ -233,7 +234,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
       <p className={styles.eyebrow}>{copy.locked}</p>
       <h3 className={styles.photosTitle}>{copy.title(name)}</h3>
       <p className={styles.caption}>{copy.basis}</p>
-      <p className={styles.warning}>{copy.warning(name.split(" ")[0] ?? name)}</p>
+      <p className={styles.warning}>{copy.warning(firstNameOf(name))}</p>
       {state.step === "opening" ? (
         <Loading />
       ) : (

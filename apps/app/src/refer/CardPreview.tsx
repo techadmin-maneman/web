@@ -8,6 +8,7 @@ import { Mark } from "@maneman/ui/Mark";
 import type { FirstFitPair } from "./card.ts";
 import houseCard from "./invite-house.jpg";
 import styles from "./refer.module.css";
+import { CARD_HEIGHT, CARD_WIDTH } from "./card-layout.ts";
 
 /** The house example as the app bundles it, the same file as the site's (scripts/make-house-card.ts). */
 export { houseCard };
@@ -19,8 +20,10 @@ export type Shown =
   | { readonly kind: "made"; readonly url: string };
 
 export function CardPreview({ shown }: { shown: Shown }) {
-  if (shown.kind === "house") return <img className={styles.card} src={houseCard} alt="" width={1200} height={630} />;
-  if (shown.kind === "made") return <img className={styles.card} src={shown.url} alt="" width={1200} height={630} />;
+  if (shown.kind === "house")
+    return <img className={styles.card} src={houseCard} alt="" width={CARD_WIDTH} height={CARD_HEIGHT} />;
+  if (shown.kind === "made")
+    return <img className={styles.card} src={shown.url} alt="" width={CARD_WIDTH} height={CARD_HEIGHT} />;
   const pair = shown.pair;
   return (
     <div className={styles.card}>

@@ -43,7 +43,6 @@ import { z } from "@hono/zod-openapi";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import { PRICE_TIER } from "../config/ops-settings.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { keepShownConsents, recordBookingConsents } from "../domain/booking-consents.ts";
@@ -84,6 +83,7 @@ import { indiaInstant } from "../lib/india-time.ts";
 import { changeChargedOnBooking, CHARGES, LATE_FEES, type SoldTerms } from "../policy/moving-a-visit.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
+import { PRICE_TIER } from "../policy/services.ts";
 
 export const PriceSchema = z
   .object({
@@ -106,7 +106,7 @@ export const ServiceSchema = z
   .strict()
   .openapi("VisitService");
 
-/** A service's code within its kind, as the price book prices it (PRICE_TIER). */
+/** A service's code within its kind, as the price book prices it (PRICE_TIER, src/policy/services.ts). */
 const Tier = z
   .string()
   .regex(PRICE_TIER)

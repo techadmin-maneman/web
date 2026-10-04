@@ -24,7 +24,8 @@ import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
-import { firstNameOf, isMovable, movesIfCheckInCleared, nameOf, type BlockJob, type VisitChange } from "./job.ts";
+import { isMovable, movesIfCheckInCleared, nameOf, type BlockJob, type VisitChange } from "./job.ts";
+import { firstNameOf } from "../../../../src/lib/names.ts";
 
 /** Each action is null when the person's access does not let them take it. */
 interface Props {
@@ -131,7 +132,7 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
                 <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d={ICONS.whatsapp} />
                 </svg>
-                {copy.whatsapp(firstNameOf(person))}
+                {copy.whatsapp(firstNameOf(person.name))}
               </ButtonLink>
               <OpsLink
                 className={buttonLook({ variant: "outline", size: "small" })}

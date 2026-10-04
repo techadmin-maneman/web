@@ -1,19 +1,14 @@
-// The piece step checks a label on the phone with the API's own rule, so a
+// The piece step checks a label on the phone with the API's own rule (src/config/pieces.ts), so a
 // label the API would refuse is caught where it can still be put right
 // (apps/tech/src/steps/label.ts), and the upload queue counts a set by what the
 // API confirmed (apps/tech/src/waiting/sets.ts).
 
 import { describe, expect, it } from "vitest";
-import { asLabel, isLabel, PIECE_LABEL } from "../../../apps/tech/src/steps/label.ts";
+import { asLabel, isLabel } from "../../../apps/tech/src/steps/label.ts";
 import type { Frame, Queued } from "../../../apps/tech/src/store/outbox.ts";
 import { anglesRefused, anglesTaken, photoSets, sentOf } from "../../../apps/tech/src/waiting/sets.ts";
-import { PIECE_CODE_PATTERN } from "../../../src/config/pieces.ts";
 
 describe("a piece's label", () => {
-  it("is checked with the very pattern the API refuses a label by", () => {
-    expect(PIECE_LABEL.source).toBe(PIECE_CODE_PATTERN.source);
-  });
-
   it("reads a space as the hyphen it stands for, and small letters as capitals", () => {
     expect(asLabel("mm-std-7193 c")).toBe("MM-STD-7193-C");
     expect(asLabel(" MM STD  4417 - B")).toBe("MM-STD-4417-B");

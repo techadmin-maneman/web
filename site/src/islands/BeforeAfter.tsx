@@ -16,7 +16,7 @@ interface Props {
   before?: ComponentChildren;
   after?: ComponentChildren;
   /** Where the handle starts, as v2's teaser draws it. */
-  start: 46;
+  start: number;
   beforeLabel: string;
   afterLabel: string;
   sliderLabel: string;

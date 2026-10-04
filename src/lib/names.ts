@@ -1,6 +1,6 @@
 // Short forms of a person's name, for the places the designs show them.
 
-import { withoutTestMark } from "../policy/staging-test-records.ts";
+import { withoutTestMark } from "./test-names.ts";
 
 /** "Rohit Malhotra" → "Rohit": how a message and a screen greet a person. "Staging test Asha" → "Asha". */
 export const firstNameOf = (name: string): string => withoutTestMark(name.trim()).split(/\s+/)[0] ?? "";

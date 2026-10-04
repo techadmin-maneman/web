@@ -5,6 +5,9 @@
 /** The business's WhatsApp, the owner's number since 22 September 2026: digits with the country code, no "+". */
 export const WHATSAPP_NUMBER = "919007973247";
 
+/** The business's number as it is written for people: "+91 90079 73247". */
+export const WHATSAPP_DISPLAY = `+${WHATSAPP_NUMBER.slice(0, 2)} ${WHATSAPP_NUMBER.slice(2, 7)} ${WHATSAPP_NUMBER.slice(7)}`;
+
 /** A chat with `number`, written any way ("+91 98100 04417"), with `text` ready to send if there is any. */
 export function whatsappChat(number: string, text?: string): string {
   const chat = `https://wa.me/${number.replace(/\D/g, "")}`;

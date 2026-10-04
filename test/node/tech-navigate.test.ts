@@ -4,7 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import { whatsappChat } from "../../packages/web-kit/whatsapp.ts";
-import { addressLine, callLink, wayTo } from "../../apps/tech/src/lib/navigate.ts";
+import { callLink, wayTo } from "../../apps/tech/src/lib/navigate.ts";
+import { addressLine } from "../../packages/web-kit/address.ts";
 
 const WITH_PIN = {
   line1: "Tower C, 14th floor",

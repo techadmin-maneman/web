@@ -8,6 +8,7 @@
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
+import { given, missingParts } from "@maneman/web-kit/address";
 import { api, type Address } from "../api.ts";
 import { BOOKING_URL, messages, profile } from "../content.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
@@ -38,27 +39,6 @@ const ERROR_ID = "address-error";
 
 /** The site's /book, where a pincode we do not come to joins the waitlist. */
 const WAITLIST_URL = BOOKING_URL[String(import.meta.env.MM_ENV)] ?? BOOKING_URL.production;
-
-/** A part the client filled in. Absent and null mean the same: they did not. */
-export const given = (part: string | null | undefined): part is string =>
-  part !== null && part !== undefined && part.trim() !== "";
-
-/**
- * The fields an address is not one without, left out. The building search is
- * an addition, never a gate: a client who cannot use it, or whose provider is
- * down, fills these in and saves the same address. `line1` is the building
- * where one was chosen, so a client who used the search is never asked for the
- * same words twice.
- */
-function missing(address: Address): Field[] {
-  const left: Field[] = [];
-  if (!given(address.flat)) left.push("flat");
-  if (address.line1.trim() === "") left.push("line1");
-  if (address.locality.trim() === "") left.push("locality");
-  if (address.city.trim() === "") left.push("city");
-  if (!/^\d{6}$/.test(address.pincode.trim())) left.push("pincode");
-  return left;
-}
 
 export function AddressForm({
   address,
@@ -93,7 +73,7 @@ export function AddressForm({
       const draft: Address = given(chosenDraft.building)
         ? { ...chosenDraft, line1: chosenDraft.building }
         : chosenDraft;
-      const left = missing(draft);
+      const left = missingParts(draft);
       setInvalid(left);
       setRefused(null);
       if (left.length > 0) {

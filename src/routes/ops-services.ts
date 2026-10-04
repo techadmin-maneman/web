@@ -17,7 +17,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { PRICE_BOUNDS, PRICE_TIER } from "../config/ops-settings.ts";
+import { PRICE_BOUNDS } from "../config/ops-settings.ts";
 import { VISIT_BLOCKS } from "../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { priceBook, type PriceRow } from "../domain/price-book.ts";
@@ -38,7 +38,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { LATE_FEES } from "../policy/moving-a-visit.ts";
-import { DESCRIPTION_LENGTH, isOffered } from "../policy/services.ts";
+import { DESCRIPTION_LENGTH, isOffered, PRICE_TIER } from "../policy/services.ts";
 import { SERVICE_MINUTES } from "../policy/visit-length.ts";
 import { PriceRowSchema } from "./ops-settings.ts";
 

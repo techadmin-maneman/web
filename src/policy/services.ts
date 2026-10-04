@@ -45,7 +45,10 @@ export const DESCRIPTION_LENGTH = 160;
 export const isServiceDescription = (line: string): boolean =>
   line.length <= DESCRIPTION_LENGTH && !/\p{Cc}/u.test(line);
 
-/** The longest a tier's code may be (PRICE_TIER, src/config/ops-settings.ts). */
+/** A tier names itself: "standard", and whatever the bases are called when the catalogue has them. */
+export const PRICE_TIER = /^[a-z][a-z0-9_]{0,31}$/;
+
+/** The longest a tier's code may be (PRICE_TIER). */
 const CODE_LENGTH = 32;
 
 /**
