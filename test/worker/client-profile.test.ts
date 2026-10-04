@@ -611,7 +611,7 @@ describe("a number change", () => {
   it("holds back both number-change codes for a 'Staging test' record off the allowlist", async () => {
     const SCRIPT_OLD = "+919810000060";
     await env.DB.prepare(
-      "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p-script', ?1, ?2, 'Staging test', 1)",
+      "INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record) VALUES ('p-script', ?1, ?2, 'Staging test', 1, 1)",
     )
       .bind(NOW.toISOString(), SCRIPT_OLD)
       .run();

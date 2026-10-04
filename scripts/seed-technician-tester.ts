@@ -174,8 +174,8 @@ const appointment = (jobId: string, date: string) => {
 await execute([
   `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
      VALUES ${row(technicianId, `${FSM_ID_PREFIX}${tag}`, "Test Technician", "TT", 1, ZONE, mobileE164, now, 1)};`,
-  `INSERT INTO people (id, created_at, mobile_e164, name, contactable)
-     VALUES ${row(personId, now, `+91${clientMobile}`, "Staging test", 1)};`,
+  `INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record)
+     VALUES ${row(personId, now, `+91${clientMobile}`, "Staging test", 1, 1)};`,
   // No lat or lng, on purpose. An address with no coordinates cannot be measured
   // against, so "I have arrived" is accepted wherever the tester is standing
   // (src/domain/check-ins.ts). The 200 m geofence is docs/tech-field-test.md's

@@ -22,6 +22,8 @@ export interface BookingLead {
   /** Used only if the mobile number is new to us. */
   readonly newPersonId: string;
   readonly name: string;
+  /** Whether a person this makes is a test record (testRecordAtCreation, src/policy/staging-test-records.ts). */
+  readonly testRecord: boolean;
   readonly mobileE164: string;
   /** Null where the pincode's city is not one of ours (migration 0025). */
   readonly city: string | null;
@@ -45,10 +47,10 @@ export async function saveBookingLead(db: D1Database, lead: BookingLead): Promis
     // a number never renames the person it belongs to (docs/decisions/0068-a-paid-hold-is-kept.md).
     db
       .prepare(
-        `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?, ?, ?, ?, 1)
+        `INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record) VALUES (?, ?, ?, ?, 1, ?)
          ON CONFLICT (mobile_e164) DO UPDATE SET contactable = 1`,
       )
-      .bind(lead.newPersonId, at, lead.mobileE164, lead.name),
+      .bind(lead.newPersonId, at, lead.mobileE164, lead.name, lead.testRecord ? 1 : 0),
 
     db
       .prepare(

@@ -121,12 +121,14 @@ function fromRow(row: AddressRow): SavedAddress {
 export async function liveContact(
   db: D1Database,
   personId: string,
-): Promise<{ readonly name: string; readonly mobileE164: string } | null> {
+): Promise<{ readonly name: string; readonly mobileE164: string; readonly testRecord: boolean } | null> {
   const person = await db
-    .prepare("SELECT name, mobile_e164 FROM people WHERE id = ?1 AND erased_at IS NULL")
+    .prepare("SELECT name, mobile_e164, test_record FROM people WHERE id = ?1 AND erased_at IS NULL")
     .bind(personId)
-    .first<{ name: string; mobile_e164: string }>();
-  return person === null ? null : { name: person.name, mobileE164: person.mobile_e164 };
+    .first<{ name: string; mobile_e164: string; test_record: number }>();
+  return person === null
+    ? null
+    : { name: person.name, mobileE164: person.mobile_e164, testRecord: person.test_record === 1 };
 }
 
 export async function currentAddress(db: D1Database, personId: string): Promise<SavedAddress | null> {

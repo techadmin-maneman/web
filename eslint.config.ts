@@ -27,7 +27,7 @@ const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: n
   "src/domain/bookings.ts": { lines: 685 },
   "src/routes/client-booking.ts": { lines: 560, fn: 146 },
   "src/routes/client-profile.ts": { lines: 556, fn: 223 },
-  "src/domain/public-booking.ts": { lines: 554, fn: 131 },
+  "src/domain/public-booking.ts": { lines: 518, fn: 130 },
   "src/routes/ops-field.ts": { lines: 532, fn: 209 },
   "src/routes/ops-settings.ts": { lines: 513, fn: 134 },
   "src/domain/tech-jobs.ts": { lines: 509 },
@@ -196,6 +196,11 @@ export default defineConfig(
     // The logger is the only place src/ may write to the console.
     files: ["src/log.ts", "scripts/**/*.ts", "site/astro.config.ts"],
     rules: { "no-console": "off" },
+  },
+  {
+    // The site Worker has no logger: one warning line for each mm-api answer it cannot use.
+    files: ["site/src/worker.ts"],
+    rules: { "no-console": ["error", { allow: ["warn"] }] },
   },
   {
     files: ["test/**/*.ts", "e2e/**/*.ts"],

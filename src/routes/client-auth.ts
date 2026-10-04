@@ -154,7 +154,7 @@ function challengeBody(c: Ctx, challenge: Challenge, now: Date) {
 async function contactOf(
   db: D1Database,
   personId: string | null,
-): Promise<{ mobileE164: string; name: string } | null> {
+): Promise<{ mobileE164: string; name: string; testRecord: boolean } | null> {
   if (personId === null) return null;
   return liveContact(db, personId);
 }
@@ -175,15 +175,15 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
 
   const person = await findEligiblePerson(db, mobileE164);
   const sendsTo = person?.mobileE164 ?? null;
-  const name = person?.name ?? null;
+  const testRecord = person?.testRecord ?? false;
   const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
-  const asked = await mayAskForCode(c, { surface: "login", mobileHash, ipHash: visitor.ipHash, now, name });
+  const asked = await mayAskForCode(c, { surface: "login", mobileHash, ipHash: visitor.ipHash, now, testRecord });
   if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
   if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
 
-  if (!(await countCode(c, "login", sendsTo, name, now))) return c.json(errorBody("busy", requestId), 503);
+  if (!(await countCode(c, "login", sendsTo, testRecord, now))) return c.json(errorBody("busy", requestId), 503);
 
-  const code = knownCode(limits, name) ?? newLoginCode();
+  const code = knownCode(limits, testRecord) ?? newLoginCode();
   const challenge = await createChallenge(db, {
     holder: "person",
     holderId: person?.id ?? null,
@@ -192,7 +192,7 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
     pepper: limits.codePepper,
     now,
   });
-  await sendCodeAfterResponse(c, sendsTo, name, "whatsapp", code);
+  await sendCodeAfterResponse(c, sendsTo, testRecord, "whatsapp", code);
   return c.json(challengeBody(c, challenge, now), 202);
 };
 
@@ -215,17 +215,17 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
 
   const contact = await contactOf(db, challenge.holderId);
   const sendsTo = contact?.mobileE164 ?? null;
-  const name = contact?.name ?? null;
+  const testRecord = contact?.testRecord ?? false;
   const { ipHash } = await visitorOf(c);
-  const asked = await mayAskForCode(c, { surface: "login", mobileHash: challenge.mobileHash, ipHash, now, name });
+  const asked = await mayAskForCode(c, { surface: "login", mobileHash: challenge.mobileHash, ipHash, now, testRecord });
   if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
   if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
 
-  if (!(await countCode(c, "login", sendsTo, name, now))) return c.json(errorBody("busy", requestId), 503);
+  if (!(await countCode(c, "login", sendsTo, testRecord, now))) return c.json(errorBody("busy", requestId), 503);
 
-  const code = knownCode(config.settings.login, name) ?? newLoginCode();
+  const code = knownCode(config.settings.login, testRecord) ?? newLoginCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
-  await sendCodeAfterResponse(c, sendsTo, name, channel, code);
+  await sendCodeAfterResponse(c, sendsTo, testRecord, channel, code);
   const sent = { ...challenge, channel, lastSentAt: now, sends: challenge.sends + 1 };
   return c.json(challengeBody(c, sent, now), 202);
 }

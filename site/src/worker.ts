@@ -23,6 +23,10 @@
 //
 // The built films are given a byte range at a time, which the assets cannot do: iOS Safari plays a video only from a
 // server that can.
+//
+// While the site gives no prices (PRICES_SHOWN), the Worker asks for no price book, and / is left to the assets.
+// Every answer of mm-api's that cannot be used is one line in the Worker's log, and a failure is remembered for ten
+// seconds, so a down mm-api is not asked again by every view.
 
 import { inviteDescription, invitePageTitle, inviteTitle } from "./content/referral.ts";
 import type { Invite, PublishedPrices, ReferralReward } from "./lib/api.ts";
@@ -30,6 +34,7 @@ import { partOf } from "./lib/byte-range.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "./lib/invite.ts";
 import { fillPrices, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "./lib/prices.ts";
 import { isReferralReward } from "./lib/reward.ts";
+import { PRICES_SHOWN } from "./lib/flags.ts";
 import { faqPage, jsonLd, localBusiness } from "./lib/structured-data.ts";
 
 export interface SiteEnv {
@@ -55,7 +60,36 @@ const REWARD_PAGE = "/book";
 /** How long an answer of mm-api's is kept: the console's own minute (docs/decisions/0061-ops-editable-inputs.md). */
 const KEPT_MS = 60_000;
 
-/** The invite, or null when mm-api could not say: down, refusing, or answering a shape we do not know. */
+/** How long a failure is remembered before mm-api is asked again. */
+const FAILURE_KEPT_MS = 10_000;
+
+/** What the Worker asks mm-api for, as its log line names it. */
+type Asked = "invite" | "prices" | "reward";
+
+/** One line in the Worker's log for an answer it cannot use, and null in its place. */
+function failed(asked: Asked, status: number | null, reason: string): null {
+  console.warn(JSON.stringify({ level: "warn", event: "mm_api_failed", worker: "mm-site", asked, status, reason }));
+  return null;
+}
+
+/** mm-api's answer, or null when it is down, refuses, or answers a shape `is` does not accept. */
+async function fetchJson<T>(
+  env: SiteEnv,
+  request: Request,
+  asked: Asked,
+  is: (body: unknown) => body is T,
+): Promise<T | null> {
+  try {
+    const answer = await env.API.fetch(request);
+    if (!answer.ok) return failed(asked, answer.status, "refused");
+    const body: unknown = await answer.json();
+    return is(body) ? body : failed(asked, answer.status, "unknown shape");
+  } catch (error) {
+    return failed(asked, null, error instanceof Error ? error.message : "unreachable");
+  }
+}
+
+/** The invite, or null when mm-api could not say. */
 async function lookUp(env: SiteEnv, visit: Request, origin: string, code: string): Promise<Invite | null> {
   // The visitor's user agent goes along, so mm-api does not count a link preview's fetch as an open; and their
   // address, which mm-api counts opens and misses by. A request through the binding carries only what is set here.
@@ -64,51 +98,37 @@ async function lookUp(env: SiteEnv, visit: Request, origin: string, code: string
     const value = visit.headers.get(name);
     if (value !== null) headers.set(name, value);
   }
-  try {
-    const answer = await env.API.fetch(new Request(`${origin}/api/r/${code}`, { headers }));
-    if (!answer.ok) return null;
-    const body: unknown = await answer.json();
-    return isInvite(body) ? body : null;
-  } catch {
-    return null;
-  }
+  return fetchJson(env, new Request(`${origin}/api/r/${code}`, { headers }), "invite", isInvite);
 }
 
 /** The price book's figures, or null when mm-api could not give them. */
-async function askForPrices(env: SiteEnv, origin: string): Promise<PublishedPrices | null> {
-  try {
-    const answer = await env.API.fetch(new Request(`${origin}/api/published-prices`));
-    if (!answer.ok) return null;
-    const body: unknown = await answer.json();
-    return isPublishedPrices(body) ? body : null;
-  } catch {
-    return null;
-  }
-}
+const askForPrices = (env: SiteEnv, origin: string): Promise<PublishedPrices | null> =>
+  fetchJson(env, new Request(`${origin}/api/published-prices`), "prices", isPublishedPrices);
 
 /** What a referral earns, or null when mm-api could not say. */
-async function askForReward(env: SiteEnv, origin: string): Promise<ReferralReward | null> {
-  try {
-    const answer = await env.API.fetch(new Request(`${origin}/api/referral-reward`));
-    if (!answer.ok) return null;
-    const body: unknown = await answer.json();
-    return isReferralReward(body) ? body : null;
-  } catch {
-    return null;
-  }
-}
+const askForReward = (env: SiteEnv, origin: string): Promise<ReferralReward | null> =>
+  fetchJson(env, new Request(`${origin}/api/referral-reward`), "reward", isReferralReward);
 
 type Ask<T> = (env: SiteEnv, origin: string) => Promise<T | null>;
 
-/** An answer kept a minute on `clock`, then asked again; the last good one while mm-api stops answering. */
-function keptAMinute<T>(clock: () => number, ask: Ask<T>): Ask<T> {
+/**
+ * An answer kept `keptMs` on `clock`, then asked again. While mm-api stops answering, the last good one, and mm-api
+ * is asked again only once the failure is ten seconds old.
+ */
+function cachedFor<T>(keptMs: number, clock: () => number, ask: Ask<T>): Ask<T> {
   let kept: { value: T; at: number } | null = null;
+  let failedAt: number | null = null;
   return async (env, origin) => {
     const now = clock();
-    if (kept !== null && now - kept.at < KEPT_MS) return kept.value;
+    if (kept !== null && now - kept.at < keptMs) return kept.value;
+    if (failedAt !== null && now - failedAt < FAILURE_KEPT_MS) return kept?.value ?? null;
     const value = await ask(env, origin);
-    if (value === null) return kept?.value ?? null;
+    if (value === null) {
+      failedAt = now;
+      return kept?.value ?? null;
+    }
     kept = { value, at: now };
+    failedAt = null;
     return value;
   };
 }
@@ -226,10 +246,16 @@ function writePrices(rewriter: HTMLRewriter, prices: PublishedPrices): void {
   rewriter.on("body", new Written("data-prices", JSON.stringify(prices)));
 }
 
-/** The Worker, keeping the book's answer and the reward for a minute on `clock`: a test gives it its own. */
-export function createSiteWorker(clock: () => number = Date.now) {
-  const publishedPrices = keptAMinute(clock, askForPrices);
-  const referralReward = keptAMinute(clock, askForReward);
+export interface SiteWorkerOptions {
+  /** What the book's answer and the reward are kept a minute on: a test gives it its own. */
+  readonly clock?: () => number;
+  /** Whether the site gives prices; a test of the dormant price pipeline switches them on. */
+  readonly pricesShown?: boolean;
+}
+
+export function createSiteWorker({ clock = Date.now, pricesShown = PRICES_SHOWN }: SiteWorkerOptions = {}) {
+  const publishedPrices = cachedFor(KEPT_MS, clock, askForPrices);
+  const referralReward = cachedFor(KEPT_MS, clock, askForReward);
 
   return {
     async fetch(request: Request, env: SiteEnv): Promise<Response> {
@@ -247,7 +273,7 @@ export function createSiteWorker(clock: () => number = Date.now) {
 
       const saysReward = code !== undefined || url.pathname === REWARD_PAGE;
       const [prices, invite, reward] = await Promise.all([
-        publishedPrices(env, url.origin),
+        pricesShown ? publishedPrices(env, url.origin) : null,
         code === undefined ? null : lookUp(env, request, url.origin, code),
         saysReward ? referralReward(env, url.origin) : null,
       ]);

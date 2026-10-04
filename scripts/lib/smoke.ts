@@ -181,9 +181,10 @@ const indexing: Check = async ({ options, api, site }) => {
 };
 
 /**
- * The pages the site's Worker answers before its assets (run_worker_first in site/wrangler.jsonc). It serves each
- * through its assets binding, which keeps the rules of the site's _headers; nothing else would notice if a change to
- * the Worker lost them. Any invite code will do: the Worker serves the built page for every one.
+ * The home page, and the pages the site's Worker answers before its assets (run_worker_first in site/wrangler.jsonc),
+ * which / joins while the site gives prices. The Worker serves each through its assets binding, which keeps the rules
+ * of the site's _headers; nothing else would notice if a change to the Worker lost them. Any invite code will do: the
+ * Worker serves the built page for every one.
  */
 const WORKER_PAGES = ["/", "/book", "/r/SMOKE0"] as const;
 

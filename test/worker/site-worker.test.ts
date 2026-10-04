@@ -4,7 +4,7 @@
 // (docs/decisions/0073-prices-from-the-price-book.md), a first fit's only from the hair systems ops offer; and the
 // built films, given a byte range at a time.
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { HOUSE_CARD } from "../../src/config/house-card.ts";
 import { createSiteWorker, type SiteEnv } from "../../site/src/worker.ts";
 
@@ -106,9 +106,9 @@ function siteEnv(api: Api, page = PAGE): { env: SiteEnv; asked: Request[]; files
   return { env, asked, files };
 }
 
-async function open(api: Api, headers: HeadersInit = {}, origin = "https://maneman.in") {
+async function open(api: Api, headers: HeadersInit = {}, origin = "https://maneman.in", worker = createSiteWorker()) {
   const { env, asked } = siteEnv(api);
-  const response = await createSiteWorker().fetch(new Request(`${origin}/r/RM4K7P`, { headers }), env);
+  const response = await worker.fetch(new Request(`${origin}/r/RM4K7P`, { headers }), env);
   const html = await response.text();
   const meta = (property: string) =>
     new RegExp(`<meta property="${property}" content="([^"]*)"`).exec(html)?.[1] ?? "(missing)";
@@ -117,6 +117,15 @@ async function open(api: Api, headers: HeadersInit = {}, origin = "https://manem
   const description = /<meta name="description" content="([^"]*)"/.exec(html)?.[1] ?? "(missing)";
   return { response, html, meta, invite, title, description, asked };
 }
+
+/** The lines the Worker wrote to its log, each parsed. */
+function logged(warn: { mock: { calls: unknown[][] } }): Record<string, unknown>[] {
+  return warn.mock.calls.map(([line]) => JSON.parse(String(line)) as Record<string, unknown>);
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 /** A page with prices, read back: its figures, its structured data and what the booking form's island is given. */
 function readPriced(html: string) {
@@ -163,7 +172,7 @@ describe("the site Worker at /r/:code", () => {
 
   it("gives the landing's island what a referral earns, and asks for it once a minute", async () => {
     let now = 0;
-    const worker = createSiteWorker(() => now);
+    const worker = createSiteWorker({ clock: () => now });
     const visit = async () => {
       const { env, asked } = siteEnv(withReward());
       const html = await (await worker.fetch(new Request("https://maneman.in/r/RM4K7P"), env)).text();
@@ -194,9 +203,14 @@ describe("the site Worker at /r/:code", () => {
     expect(page.description).not.toContain("service visits");
   });
 
-  it("leaves the page's own title when mm-api cannot say what the invite is", async () => {
+  it("leaves the page's own title when mm-api cannot say what the invite is, and logs why, without the code", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const page = await open(() => Response.json({ error: { code: "unavailable" } }, { status: 503 }));
     expect(page.title).toBe("You have a Mane Man invite");
+    expect(logged(warn)).toContainEqual(
+      expect.objectContaining({ event: "mm_api_failed", asked: "invite", status: 503 }),
+    );
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("RM4K7P");
   });
 
   // BK-62: /r with no code answered 200 with a form that would post to /api/r//consultation.
@@ -265,15 +279,27 @@ describe("the site Worker at /r/:code", () => {
     expect(lookUp?.headers.get("CF-Connecting-IP")).toBe("203.0.113.7");
   });
 
-  it("gives the landing's island the book's prices beside the invite", async () => {
-    const page = await open(withPrices());
+  it("gives the landing's island the book's prices beside the invite, while the site gives prices", async () => {
+    const page = await open(withPrices(), {}, undefined, createSiteWorker({ pricesShown: true }));
     expect(JSON.parse(page.invite)).toEqual({ ...VALID, code: "RM4K7P" });
     expect(readPriced(page.html).written).toEqual(PRICES);
   });
+
+  it("asks for no price book while the site gives none", async () => {
+    const page = await open(withPrices());
+    expect(page.asked.filter(isPriceRequest)).toEqual([]);
+    expect(readPriced(page.html).written).toBeNull();
+  });
 });
 
+// The dormant price pipeline, switched on as it will be when the site gives prices again (PRICES_SHOWN).
 describe("the site Worker on a page that shows a price", () => {
-  async function visit(path: string, api: Api, worker = createSiteWorker(), headers: HeadersInit = {}) {
+  async function visit(
+    path: string,
+    api: Api,
+    worker = createSiteWorker({ pricesShown: true }),
+    headers: HeadersInit = {},
+  ) {
     const { env, asked, files } = siteEnv(api, PRICED_PAGE);
     const response = await worker.fetch(new Request(`https://maneman.in${path}`, { headers }), env);
     const html = await response.text();
@@ -332,7 +358,7 @@ describe("the site Worker on a page that shows a price", () => {
 
   it("asks mm-api for the book once a minute, however many pages it serves", async () => {
     let now = 0;
-    const worker = createSiteWorker(() => now);
+    const worker = createSiteWorker({ clock: () => now, pricesShown: true });
     const asked = async () => (await visit("/", withPrices(), worker)).asked.filter(isPriceRequest).length;
 
     expect(await asked()).toBe(1);
@@ -366,7 +392,7 @@ describe("the site Worker on a page that shows a price", () => {
 
   it("keeps the last answer it had when mm-api stops answering", async () => {
     let now = 0;
-    const worker = createSiteWorker(() => now);
+    const worker = createSiteWorker({ clock: () => now, pricesShown: true });
     await visit("/", withPrices(), worker);
 
     now = 120_000;
@@ -376,8 +402,26 @@ describe("the site Worker on a page that shows a price", () => {
     expect(page.written).toEqual(PRICES);
   });
 
+  it("logs each answer it cannot use, and asks again only once the failure is ten seconds old", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    let now = 0;
+    const worker = createSiteWorker({ clock: () => now, pricesShown: true });
+    const down: Api = () => Response.json({ error: { code: "unavailable" } }, { status: 503 });
+    const asked = async () => (await visit("/", down, worker)).asked.filter(isPriceRequest).length;
+
+    expect(await asked()).toBe(1);
+    expect(logged(warn)).toEqual([
+      { level: "warn", event: "mm_api_failed", worker: "mm-site", asked: "prices", status: 503, reason: "refused" },
+    ]);
+    now = 9_000;
+    expect(await asked()).toBe(0);
+    now = 11_000;
+    expect(await asked()).toBe(1);
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
   it("asks for the built file whole, and gives the browser nothing to keep old figures by", async () => {
-    const page = await visit("/", withPrices(), createSiteWorker(), { "If-None-Match": '"built-file"' });
+    const page = await visit("/", withPrices(), undefined, { "If-None-Match": '"built-file"' });
 
     expect(page.files[0]?.headers.get("If-None-Match")).toBeNull();
     expect(page.response.headers.get("ETag")).toBeNull();

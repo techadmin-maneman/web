@@ -782,12 +782,6 @@ export const materials: { readonly title: string; readonly intro: string; readon
   };
 
 /**
- * Whether the site gives prices. The owner took them off every page on 1 October 2026 (ADR 0103): the prices
- * section, the invite's price list and the price range search engines read wait on this.
- */
-export const PRICES_SHOWN = false as boolean;
-
-/**
  * A first fit's price is the cheapest hair system ops offer in the console, and its row and the example say nothing
  * while they offer none.
  */
@@ -1176,7 +1170,7 @@ export const business = {
   areaServed: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"],
   /**
    * A first fit, from the cheapest hair system ops offer to the dearest. Given only while the site gives prices
-   * (PRICES_SHOWN).
+   * (PRICES_SHOWN, site/src/lib/flags.ts).
    */
   priceRange: "{firstFitRange}",
 };

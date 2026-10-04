@@ -96,6 +96,8 @@ export async function deletionsWaiting(
 export interface ErasedContact {
   readonly name: string;
   readonly mobileE164: string;
+  /** One of our own scripts' records, or a staging test's, messaged only on the allowlist. */
+  readonly testRecord: boolean;
 }
 
 export type DeletionOutcome =
