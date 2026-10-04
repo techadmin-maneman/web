@@ -1635,6 +1635,20 @@ Everything held about the client, to download
 }
 ```
 
+### GET /api/me/export.html
+
+Everything held about the client, as a page to download and read
+
+**200**: An HTML file, maneman-my-data.html, labelled and in India's time
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/grievances
 
 Raise a grievance about how the client's data is handled. The same words, still open, are one

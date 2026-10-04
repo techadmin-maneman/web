@@ -503,7 +503,7 @@ describe("the client's data export", () => {
     }>();
     expect(exported.no_show_disputes).toEqual([
       {
-        appointment_id: VISIT,
+        visit: "2026-09-19T03:30:00.000Z",
         reason: "I was home all morning; the bell is broken",
         created_at: NOW.toISOString(),
         ruling: null,

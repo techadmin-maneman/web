@@ -4,7 +4,8 @@
 //                                   services, and how the visit would be paid
 //   POST /api/visits                book it: at once when nothing is paid at booking, else a payment link goes out
 //
-// The booking is audited in the batch that holds its slot (ADR 0031).
+// Both keep to the caller's cities: a client elsewhere is not found, and only the technicians there are offered. The
+// booking is audited in the batch that holds its slot (ADR 0031).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -16,6 +17,7 @@ import { confirmUnpaid, giveBack } from "../domain/bookings.ts";
 import { spendableCredits } from "../domain/credits.ts";
 import type { Hold } from "../domain/scheduling.ts";
 import { freeTechnicians } from "../domain/scheduling.ts";
+import { isWithin, techniciansWithin } from "../domain/places.ts";
 import { offeredServices, type PricedService } from "../domain/services.ts";
 import { loadSlotSchedule } from "../domain/slot-times.ts";
 import {
@@ -38,6 +40,7 @@ import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
+import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { ServiceSchema } from "./client-booking.ts";
@@ -82,9 +85,10 @@ const OpsAvailabilitySchema = z
                 window: z.enum(BOOKING_WINDOWS),
                 start: z.string().openapi({ description: "When the window starts that day, in India's time." }),
                 end: z.string(),
-                technicians: z
-                  .array(TechnicianSchema)
-                  .openapi({ description: "Who is free for the visit, the client's regular technician first." }),
+                technicians: z.array(TechnicianSchema).openapi({
+                  description:
+                    "Who in the caller's cities is free for the visit, the client's regular technician first.",
+                }),
               })
               .strict(),
           ),
@@ -138,7 +142,7 @@ const availabilityRoute = createRoute({
   responses: {
     200: { description: "Each day's windows", ...json(OpsAvailabilitySchema) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such client, or one who has been erased"),
+    404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     422: errorResponse(
       "not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale",
     ),
@@ -175,9 +179,9 @@ const bookRoute = createRoute({
     201: { description: "Booked, on its way, or waiting for the link to be paid", ...json(OpsBookingSchema) },
     400: errorResponse("invalid_request: a one visit that is not a first fit, or in the evening"),
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such client, or one who has been erased"),
+    404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     409: errorResponse(
-      "taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to " +
+      "taken: nobody chosen is free in that window now, or the technician chosen is not in the caller's cities; already_booked: a consultation or first fit is still to " +
         "come, or a payment link for one is open; " +
         "terms_changed: the client's last credit went on another booking a moment before",
     ),
@@ -236,12 +240,16 @@ const bookingBody = ({ hold, sale, outcome, visitId, link }: Answer) => ({
   link,
 });
 
-/** Each day's windows from `start`, and who is free in each; nobody on a day the client may not book. */
+/**
+ * Each day's windows from `start`, and who of `reached` is free in each, where null is every technician; nobody on a
+ * day the client may not book.
+ */
 async function windowsOffered(
   db: D1Database,
   clientId: string,
   service: PricedService,
   days: { readonly start: string; readonly range: { readonly opens: string; readonly last: string } },
+  reached: ReadonlySet<string> | null,
   now: Date,
 ) {
   const visit = { minutes: service.minutes, until: service.retired_date };
@@ -255,7 +263,9 @@ async function windowsOffered(
     const offered = windows.map((each) => ({
       window: each.window,
       ...hours[each.window],
-      technicians: shut(date) ? [] : each.technicians.map((one) => ({ id: one.id, name: one.name })),
+      technicians: shut(date)
+        ? []
+        : each.technicians.filter((one) => isWithin(reached, one.id)).map((one) => ({ id: one.id, name: one.name })),
     }));
     return { date, windows: offered };
   });
@@ -272,13 +282,28 @@ const askedOf = (body: z.infer<typeof VisitToBookSchema>): VisitAsked => ({
   code: body.code,
 });
 
+/** Whether the client is on our records, not erased, and in the caller's cities. */
+async function isClientInReach(c: Context<AppEnv>, client: string): Promise<boolean> {
+  const person = await c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?1 AND erased_at IS NULL")
+    .bind(client)
+    .first();
+  return person !== null && withinRouteReach(c, "client", client);
+}
+
+/** A booking outside the caller's cities: a client elsewhere is not found, and a technician elsewhere is not free. */
+async function refusedElsewhere(c: Context<AppEnv>, asked: VisitAsked) {
+  if (!(await withinRouteReach(c, "client", asked.personId))) return { code: "not_found", status: 404 } as const;
+  if (asked.technicianId === undefined) return null;
+  if (!(await withinRouteReach(c, "technician", asked.technicianId))) return { code: "taken", status: 409 } as const;
+  return null;
+}
+
 export function registerOpsVisits(app: App): void {
   app.openapi(availabilityRoute, async (c) => {
     const { client, kind, tier, from } = c.req.valid("query");
     const db = c.env.DB;
     const now = c.var.deps.now();
-    const person = await db.prepare("SELECT 1 FROM people WHERE id = ?1 AND erased_at IS NULL").bind(client).first();
-    if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await isClientInReach(c, client))) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const range = bookableRange(now, await opsInputs(c));
     const start = stripStart(from, range, BOOKING_DAYS);
@@ -288,8 +313,9 @@ export function registerOpsVisits(app: App): void {
       const refusal = kind === "first_fit" && services.length === 0 ? "no_product" : "not_bookable";
       return c.json(errorBody(refusal, c.var.requestId), 422);
     }
+    const reached = await techniciansWithin(db, await routeReach(c));
     const [strip, credits, onCredit] = await Promise.all([
-      windowsOffered(db, client, service, { start, range }, now),
+      windowsOffered(db, client, service, { start, range }, reached, now),
       spendableCredits(db, client, now),
       paysByCredit(db, client, kind, now),
     ]);
@@ -310,6 +336,8 @@ export function registerOpsVisits(app: App): void {
     const asked = askedOf(c.req.valid("json"));
     const db = c.env.DB;
     const now = c.var.deps.now();
+    const elsewhere = await refusedElsewhere(c, asked);
+    if (elsewhere !== null) return c.json(errorBody(elsewhere.code, c.var.requestId), elsewhere.status);
     const inputs = await opsInputs(c);
     const checked = await saleFor(db, asked, inputs, now);
     if (!checked.ok) {
