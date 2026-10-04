@@ -18,6 +18,11 @@ export type Measurement = keyof typeof MEASUREMENTS;
 
 export const GREY_PERCENT = { min: 0, max: 100 } as const;
 
+/** The suppliers' colour codes in their own order, #1B after #1, which an object's keys would put after #8. */
+export const COLOURS = ["1", "1B", "2", "3", "4", "5", "6", "7", "8"] as const satisfies readonly NonNullable<
+  FitSpec["colour"]
+>[];
+
 /** The densities suppliers make, in per cent, in the API's order. */
 export const DENSITIES = [80, 100, 120, 140] as const satisfies readonly NonNullable<FitSpec["density_percent"]>[];
 

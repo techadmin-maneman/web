@@ -73,7 +73,7 @@
   --tech-row: 88px; /* a job row, a checklist line */
   --tech-stepper: 56px; /* a stepper's square, and the buttons that are not the primary one */
   --tech-min: 48px; /* nothing under this: the initials chip, Retry */
-  --tech-time: 62px; /* the time column down the left of a job row (board A1) */
+  --tech-time: 76px; /* the time column down the left of a job row (board A1), "12:30 pm" on one line */
   --tech-mark: 28px; /* the mark at the head of Today */
   --tech-box: 36px; /* a checklist item's box (board B2) */
   --fs-timer: 56px; /* the wait timer's count, board B5's one large number */

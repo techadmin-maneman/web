@@ -4517,6 +4517,10 @@
       "DispatchBoard": {
         "type": "object",
         "properties": {
+          "version": {
+            "type": "integer",
+            "description": "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another."
+          },
           "from": {
             "type": "string",
             "format": "date"
@@ -4851,6 +4855,7 @@
           }
         },
         "required": [
+          "version",
           "from",
           "dates",
           "city",
@@ -5080,6 +5085,19 @@
           "mobile",
           "whatsapp_visits",
           "referred_by"
+        ],
+        "additionalProperties": false
+      },
+      "DispatchBoardVersion": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "description": "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another."
+          }
+        },
+        "required": [
+          "version"
         ],
         "additionalProperties": false
       },
@@ -12298,6 +12316,33 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DispatchBoard"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dispatch/version": {
+      "get": {
+        "summary": "The board's version, which the open board asks for every minute: one row, where the board itself is hundreds",
+        "responses": {
+          "200": {
+            "description": "The version now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchBoardVersion"
                 }
               }
             }

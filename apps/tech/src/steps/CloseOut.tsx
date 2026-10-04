@@ -27,7 +27,7 @@ import { declinedTheFit, outcomeOf, type Outcome } from "../lib/progress.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { clock, clockShort, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
+import { clock, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { keptArrival, keptClosed } from "../store/jobs.ts";
@@ -180,7 +180,7 @@ export function CloseOut({ id }: { id: string }) {
         >
           {later === null
             ? copy.lastJob
-            : copy.nextJob(clockShort(later.starts_at), names.get(later.id) ?? where(later.sector))}
+            : copy.nextJob(clock(later.starts_at), names.get(later.id) ?? where(later.sector))}
         </Button>
       </div>
     </main>

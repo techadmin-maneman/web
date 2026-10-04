@@ -124,6 +124,20 @@ describe("the day's list", () => {
     expect(jobs.map((job) => job.slots)).toEqual([1, 2, 1.5]);
   });
 
+  // FLD-61, CP-38: "9 am · consultation · 1 slot" told the technician nothing about a 60-minute visit.
+  it("says how long each visit is booked for, in minutes", async () => {
+    await insertJob(LAST_VISIT, { start: "2026-09-21T09:30:00.000Z", type: "first_fit" });
+    await insertJob(OLDER_VISIT, { start: "2026-09-21T11:30:00.000Z", type: "consultation" });
+    await env.DB.prepare("UPDATE appointments SET window_end = ?2 WHERE id = ?1")
+      .bind(OLDER_VISIT, "2026-09-21T12:30:00.000Z")
+      .run();
+
+    const { jobs } = await (await get("/api/tech/jobs?date=2026-09-21")).json<{ jobs: { minutes: number }[] }>();
+
+    expect(jobs.map((job) => job.minutes)).toEqual([90, 180, 60]);
+    expect(await card(OLDER_VISIT)).toMatchObject({ minutes: 60 });
+  });
+
   // MON-10, FLD-14: a client paid for Mane Man Essential, and the card said only "First fit".
   it("names the service a visit was sold as, and none for a kind's standard one or a one visit still to choose", async () => {
     await env.DB.batch([
@@ -222,6 +236,20 @@ async function landed(
 describe("the card", () => {
   it("carries the no-show wait its type runs, so the phone can count it with no signal", async () => {
     expect(await card(TODAY_JOB)).toMatchObject({ no_show_wait_min: 15 });
+  });
+
+  // FLD-61, CP-38: the door said "within 200 m" whatever radius ops had set.
+  it("carries the check-in radius ops set, for the door to say", async () => {
+    expect(await card(TODAY_JOB)).toMatchObject({ checkin_radius_m: 200 });
+
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('checkin_radius_m', '350', 'ops', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    tech = appFor("local", fakeDependencies(), {}, "tech");
+
+    expect(await card(TODAY_JOB)).toMatchObject({ checkin_radius_m: 350 });
   });
 
   it("carries the client's pieces, newest fit first, for the piece card and the piece step's list", async () => {
