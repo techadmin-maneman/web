@@ -7,7 +7,7 @@
 //               or whose FSM contact is not yet anonymised              -> fsm-sync
 //   job steps   a technician's step not written to FSM for 15 minutes -> fsm-sync
 //               and after an hour, an alert naming it; once FSM is switched off, given up on, one alert a visit
-//   messages    queued but unsent for over 5 minutes, while WhatsApp is up -> messaging
+//   messages    queued but unsent 5 minutes after it was due, while WhatsApp is up -> messaging, a paced one paced again
 //               and failed after a day (src/scheduled/unsent-messages.ts)
 //   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
@@ -32,6 +32,7 @@ import type { CallBudget } from "../lib/call-budget.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../queues/crm-sync.ts";
+import { enqueueBatch } from "../queues/enqueue.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { RenderMessage } from "../queues/render.ts";
 import { requeueUnsentMessages } from "./unsent-messages.ts";
@@ -170,6 +171,7 @@ export async function requeueLeads(context: SweepContext): Promise<string[]> {
   await sendAll(
     env.CRM_QUEUE,
     leads.map((id) => ({ lead_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
+    log,
   );
   logCount(log, "leads_requeued", leads.length);
   return leads;
@@ -190,6 +192,7 @@ export async function requeueCrmErasures(context: SweepContext): Promise<string[
   await sendAll(
     env.CRM_QUEUE,
     erasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies CrmSyncMessage),
+    log,
   );
   logCount(log, "crm_erasures_requeued", erasures.length);
   return erasures;
@@ -211,6 +214,7 @@ export async function requeueFsmErasures(context: SweepContext): Promise<void> {
   await sendAll(
     env.FSM_QUEUE,
     fsmErasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
+    log,
   );
   logCount(log, "fsm_erasures_requeued", fsmErasures.length);
 }
@@ -269,6 +273,7 @@ export async function requeueJobEvents(context: SweepContext): Promise<string[]>
   await sendAll(
     env.FSM_QUEUE,
     jobEvents.map((id) => ({ job_event_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
+    log,
   );
   await alertStuckJobEvents(db, deps, before(JOB_EVENT_ALERT_AFTER_MS));
   logCount(log, "job_events_requeued", jobEvents.length);
@@ -342,6 +347,7 @@ export async function requeueTryons(
   await sendAll(
     env.RENDER_QUEUE,
     [...renders, ...downloads].map((id) => ({ job_id: id, request_id: "sweeper" }) satisfies RenderMessage),
+    log,
   );
   logCount(log, "renders_requeued", renders.length);
   logCount(log, "downloads_requeued", downloads.length);
@@ -534,6 +540,11 @@ async function idsOfEach(db: D1Database, statements: D1PreparedStatement[]): Pro
   return answers.map((answer) => answer.results.map((row) => row.id));
 }
 
-async function sendAll(queue: Queue, bodies: readonly unknown[]): Promise<void> {
-  if (bodies.length > 0) await queue.sendBatch(bodies.map((body) => ({ body })));
+/** Puts the messages back on their queue. One the queue refuses is still waiting in D1, and the next run finds it. */
+async function sendAll(queue: Queue, bodies: readonly unknown[], log: Logger): Promise<void> {
+  await enqueueBatch(
+    queue,
+    bodies.map((body) => ({ body })),
+    { log, ifLost: "sweeper" },
+  );
 }
