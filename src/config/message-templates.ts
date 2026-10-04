@@ -4,6 +4,7 @@
 
 import { MESSAGE_KINDS, type MessageKind } from "../domain/messages.ts";
 import type { MessagePurpose } from "../policy/consents.ts";
+import { isOneOf } from "../lib/one-of.ts";
 
 export const TEMPLATES = {
   // The try-on's look, to the number that claimed it: {{1}} the first name, {{2}} where to book a consultation.
@@ -234,5 +235,5 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
 
 /** A kind's class, defaulting to automatic for one this table does not name, so an unsure case is never open. */
 export function messageClass(kind: string): MessageClass {
-  return (MESSAGE_KINDS as readonly string[]).includes(kind) ? MESSAGE_CLASSES[kind as MessageKind] : "automatic";
+  return isOneOf(MESSAGE_KINDS, kind) ? MESSAGE_CLASSES[kind] : "automatic";
 }

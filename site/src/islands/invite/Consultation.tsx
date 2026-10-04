@@ -34,6 +34,7 @@ import styles from "./Invite.module.css";
 import { codeInPath, hairSystemsInPage } from "./page.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm } from "./useTurnstileForm.ts";
+import { isOneOf } from "../../../../src/lib/one-of.ts";
 
 type BookingWindow = ReferralConsultation["window"];
 export type Plan = "consultation" | "one_visit";
@@ -46,7 +47,7 @@ interface ConsultationProps extends FormProps {
 }
 
 /** Whether a consultation and fit in one visit can start in a window: the morning or the afternoon. */
-const oneVisitStartsIn = (window: BookingWindow): boolean => (ONE_VISIT_WINDOWS as readonly string[]).includes(window);
+const oneVisitStartsIn = (window: BookingWindow): boolean => isOneOf(ONE_VISIT_WINDOWS, window);
 
 /** How far ahead the date strip reaches, from tomorrow: src/config/scheduling.ts, BOOKING_DAYS. */
 const DAYS = 14;

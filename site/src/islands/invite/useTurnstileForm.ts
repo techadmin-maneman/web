@@ -6,6 +6,7 @@ import { referral } from "../../content/referral.ts";
 import type { Answer, ErrorCode } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
 import { useInvalidFocus } from "../useInvalidFocus.ts";
+import { isOneOf } from "../../../../src/lib/one-of.ts";
 
 /** What both forms hold: the name, the number and the agreement. */
 export interface PersonFields {
@@ -19,7 +20,7 @@ export interface PersonFields {
 export const PERSON_FIELDS = ["name", "mobile", "consent"] as const;
 export type PersonField = (typeof PERSON_FIELDS)[number];
 
-const isPersonField = (field: string): field is PersonField => (PERSON_FIELDS as readonly string[]).includes(field);
+const isPersonField = (field: string): field is PersonField => isOneOf(PERSON_FIELDS, field);
 
 /** The ten digits a form sends. Empty while the field holds no mobile number, when submit sends nothing anyway. */
 export function mobileToSend(fields: PersonFields): string {

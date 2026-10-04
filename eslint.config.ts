@@ -30,7 +30,7 @@ const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: n
   "src/domain/public-booking.ts": { lines: 518, fn: 130 },
   "src/routes/ops-field.ts": { lines: 532, fn: 209 },
   "src/routes/ops-settings.ts": { lines: 513, fn: 134 },
-  "src/domain/tech-jobs.ts": { lines: 509 },
+  "src/domain/tech-jobs.ts": { lines: 507 },
   "src/domain/erasure.ts": { lines: 507, fn: 89 },
   "src/domain/scheduling.ts": { lines: 498, fn: 107 },
   "src/domain/visit-messages.ts": { lines: 480 },

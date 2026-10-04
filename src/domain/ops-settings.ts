@@ -19,6 +19,7 @@ import {
   settingNamed,
   type OpsSetting,
   type OpsSettingName,
+  type OpsValues,
   type SettingValue,
 } from "../config/ops-settings.ts";
 import type { Cycles } from "../config/pieces.ts";
@@ -69,34 +70,32 @@ export interface SettingState {
 
 type Row = { name: string; value: string; set_by: string; set_at: string };
 
-const fallbacks = (): Readonly<Record<OpsSettingName, SettingValue>> =>
-  Object.fromEntries(OPS_SETTINGS.map((setting) => [setting.name, setting.fallback])) as Record<
-    OpsSettingName,
-    SettingValue
-  >;
+// Object.fromEntries cannot know each entry's own type; the register pairs every name with its own default.
+const fallbacks = (): OpsValues =>
+  Object.fromEntries(OPS_SETTINGS.map((setting) => [setting.name, setting.fallback])) as OpsValues;
 
 /** The committed defaults, which are what runs while nothing is set. */
 export const COMMITTED: OpsInputs = shape(fallbacks());
 
 /** The register's names against the fields the code reads them by. */
-function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInputs {
+function shape(values: OpsValues): OpsInputs {
   return {
-    checkinRadiusM: values.checkin_radius_m as number,
-    noShowWaitMin: values.no_show_wait_min as Waits,
-    phoneClock: values.phone_clock as PhoneClock,
-    changeNoticeHours: values.change_notice_hours as number,
-    lateChangeCharges: values.late_change_charge as Charges,
-    noShowCharges: values.no_show_charge as Charges,
-    noShowWaiver: values.no_show_waiver as Waiver,
-    disputeWindowDays: values.dispute_window_days as number,
-    addressUnlockHour: values.address_unlock_hour as number,
-    reminderHour: values.reminder_hour as number,
-    taskSlaHours: values.task_sla_hours as Slas,
-    pieceCycleDays: values.piece_cycle_days as Cycles,
-    nextVisitDays: values.booking_days as NextVisitDays,
-    paymentHold: values.payment_hold as PaymentHold,
-    technicianWork: values.technician_work as TechnicianWorkFigures,
-    referralReward: values.referral_reward as ReferralReward,
+    checkinRadiusM: values.checkin_radius_m,
+    noShowWaitMin: values.no_show_wait_min,
+    phoneClock: values.phone_clock,
+    changeNoticeHours: values.change_notice_hours,
+    lateChangeCharges: values.late_change_charge,
+    noShowCharges: values.no_show_charge,
+    noShowWaiver: values.no_show_waiver,
+    disputeWindowDays: values.dispute_window_days,
+    addressUnlockHour: values.address_unlock_hour,
+    reminderHour: values.reminder_hour,
+    taskSlaHours: values.task_sla_hours,
+    pieceCycleDays: values.piece_cycle_days,
+    nextVisitDays: values.booking_days,
+    paymentHold: values.payment_hold,
+    technicianWork: values.technician_work,
+    referralReward: values.referral_reward,
   };
 }
 
@@ -146,12 +145,14 @@ function fittedToRegisterKeys(setting: OpsSetting, stored: unknown): unknown {
 
 /** The inputs a snapshot holds: its JSON object of each name with its value, the committed figure for the rest. */
 function resolve(snapshot: string): OpsInputs {
-  const values = fallbacks() as Record<OpsSettingName, SettingValue>;
+  const values = fallbacks();
   const stored = parsedOrNull(snapshot);
   if (typeof stored !== "object" || stored === null || Array.isArray(stored)) return shape(values);
+  // Each value is checked against its own input's register entry (storedValue), so it is that input's type.
+  const byName: Record<OpsSettingName, SettingValue> = values;
   for (const [name, value] of Object.entries(stored)) {
     const accepted = storedValue(name, value);
-    if (accepted !== null) values[accepted.name] = accepted.value;
+    if (accepted !== null) byName[accepted.name] = accepted.value;
   }
   return shape(values);
 }

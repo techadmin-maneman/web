@@ -2,6 +2,8 @@
 // to. Shared by the Worker (startup guard) and by scripts/check-wrangler-config.ts,
 // so the config check and the runtime guard cannot drift apart.
 
+import { isOneOf } from "../lib/one-of.ts";
+
 export const ENVIRONMENTS = ["local", "staging", "production"] as const;
 export type EnvironmentName = (typeof ENVIRONMENTS)[number];
 
@@ -9,7 +11,7 @@ export const REMOTE_ENVIRONMENTS = ["staging", "production"] as const;
 export type RemoteEnvironmentName = (typeof REMOTE_ENVIRONMENTS)[number];
 
 export function isEnvironmentName(value: unknown): value is EnvironmentName {
-  return typeof value === "string" && (ENVIRONMENTS as readonly string[]).includes(value);
+  return isOneOf(ENVIRONMENTS, value);
 }
 
 /**
