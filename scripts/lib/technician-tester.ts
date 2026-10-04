@@ -17,12 +17,14 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
        OR appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}))
        OR transfer_id IN (SELECT transfer_id FROM stock_movements WHERE technician_id IN (${ids}));`,
     `DELETE FROM consumables_used WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM job_events WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     // The client's dispute of a no-show's charge points at the case and at the client.
     `DELETE FROM no_show_disputes WHERE case_id IN (SELECT id FROM no_show_cases WHERE appointment_id IN
        (SELECT id FROM appointments WHERE technician_id IN (${ids})));`,
     `DELETE FROM no_show_cases WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM checkins WHERE technician_id IN (${ids});`,
+    // A check-in that passed points at the event it landed as.
+    `DELETE FROM checkins WHERE technician_id IN (${ids})
+       OR appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
+    `DELETE FROM job_events WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM photos WHERE photo_set_id IN (SELECT id FROM photo_sets WHERE appointment_id IN
        (SELECT id FROM appointments WHERE technician_id IN (${ids})));`,
     `DELETE FROM photo_sets WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,

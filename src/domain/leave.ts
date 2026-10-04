@@ -108,12 +108,38 @@ export async function leaveFrom(db: D1Database, from: string): Promise<LeavePeri
   return results;
 }
 
+/** A period that has not ended, with the jobs still booked on its days. */
+export interface StandingLeave extends LeavePeriod {
+  readonly jobs: JobOnLeave[];
+}
+
 /**
- * Records leave. Days already recorded are left as they are rather than
- * refused: two overlapping periods keep the technician away on the same days,
- * and ops should not have to unpick their own entries to add a day.
+ * One technician's leave that has not ended before `today`, soonest first, each with the jobs still booked on its
+ * days from today on: what the technician's page lists, however long after the leave was recorded.
  */
-/** Records leave, with its audit entry in the same batch (src/domain/audit.ts). */
+export async function standingLeave(db: D1Database, technicianId: string, today: string): Promise<StandingLeave[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT id, technician_id, from_date AS "from", to_date AS "to", note FROM technician_leave
+       WHERE technician_id = ?1 AND cancelled_at IS NULL AND to_date >= ?2
+       ORDER BY from_date, created_at`,
+    )
+    .bind(technicianId, today)
+    .all<LeavePeriod>();
+  return Promise.all(
+    results.map(async (period) => {
+      const from = period.from < today ? today : period.from;
+      const jobs = await jobsOnLeave(db, { technicianId, from, to: period.to });
+      return { ...period, jobs };
+    }),
+  );
+}
+
+/**
+ * Records leave, with its audit entry in the same batch (src/domain/audit.ts). Days already recorded are left as
+ * they are rather than refused: two overlapping periods keep the technician away on the same days, and ops should not
+ * have to unpick their own entries to add a day.
+ */
 export async function recordLeave(
   db: D1Database,
   leave: NewLeave,

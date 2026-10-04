@@ -140,8 +140,9 @@ export type TechnicianChange = Sent<paths["/api/technicians/{id}"]["patch"]>;
 export type ReturnedVisit = Body<paths["/api/technicians/{id}/deactivate"]["post"]>["visits"][number];
 export type Device = Technician["devices"][number];
 export type Leave = Technician["leave"][number];
-export type LeaveRecorded = Body<paths["/api/technicians/{id}/leave"]["post"]>;
-export type JobOnLeave = LeaveRecorded["jobs"][number];
+/** One technician's leave still to end, each period with the jobs still booked on its days. */
+export type StandingLeave = Body<paths["/api/technicians/{id}/leave"]["get"]>["leave"][number];
+export type JobOnLeave = StandingLeave["jobs"][number];
 export type TechniciansWork = Body<paths["/api/technicians/work"]["get"]>;
 export type TechnicianWork = TechniciansWork["technicians"][number];
 export type Board = Body<paths["/api/dispatch"]["get"]>;
@@ -395,6 +396,7 @@ export const api = {
   revokeDevice: (id: string, deviceId: string) =>
     client.post("/api/technicians/{id}/devices/{device}/revoke", { path: { id, device: deviceId } }),
   /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0062). */
+  standingLeave: (id: string) => client.get("/api/technicians/{id}/leave", { path: { id } }),
   recordLeave: (id: string, leave: { from: string; to: string; note: string | null }) =>
     client.post("/api/technicians/{id}/leave", {
       path: { id },

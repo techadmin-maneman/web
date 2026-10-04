@@ -97,6 +97,7 @@ const RECORD_PLACES = {
   consultation_request: { table: "consultation_requests", city: (row) => pincodeCity(`${row}.pincode`) },
   waitlist_entry: { table: "waitlist_entries", city: (row) => pincodeCity(`${row}.pincode`) },
   technician: { table: "technicians", city: (row) => `${row}.city` },
+  visit_change: { table: "visit_changes", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
 } satisfies Record<string, RecordPlace>;
 
 export type PlacedRecord = keyof typeof RECORD_PLACES;
