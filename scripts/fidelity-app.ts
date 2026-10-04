@@ -50,38 +50,73 @@ const ME = {
     window_label: "before noon",
     place: "Sector 65, Gurgaon 122018",
     requested: false,
-    one_visit: false,
+    one_visit: null,
   },
   next_visit: null,
+  being_booked: null,
+  payment_owed: null,
   credits: null,
   prompt: null,
   invoice: null,
-  booking: { self_serve: false, types: ["consultation"] },
-};
+  booking: { self_serve: false, types: ["consultation"], services: [], next: null },
+  referral_reward: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
+  pending_invite: null,
+} satisfies Schemas["Me"];
 
 // ---- Fitted (P2-F2) --------------------------------------------------------------
+
+/** The services a fitted client books: a service visit, and a replacement on the price book's figures. */
+const OFFERED: Schemas["OfferedService"][] = [
+  {
+    type: "service",
+    tier: "standard",
+    name: "Service visit",
+    description: null,
+    minutes: 90,
+    price: { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 },
+  },
+  {
+    type: "replacement",
+    tier: "essential",
+    name: "Mane Man Essential",
+    description: null,
+    minutes: 180,
+    price: { amount_ex_gst: 3000000, amount: 3540000, gst_percent: 18 },
+  },
+];
 
 const IMRAN = { name: "Imran Qureshi", initials: "IQ" };
 const SANDEEP = { name: "Sandeep Rawat", initials: "SR" };
 const PLACE = "Sector 65, Gurgaon 122018";
 
-const visit = (n: number, date: string, type: string, technician: typeof IMRAN) => ({
-  id: `c0000000-0000-4000-8000-00000000000${String(n)}`,
-  date,
-  window_label: "afternoon",
-  starts_at: `${date}T06:30:00.000Z`,
-  ends_at: `${date}T08:00:00.000Z`,
-  length_minutes: 90,
-  type,
-  status: "completed",
-  stage: null,
-  prepaid: false,
-  technician,
-  place: PLACE,
-});
+type VisitSummary = Schemas["VisitSummary"];
+
+const visit = (n: number, date: string, type: NonNullable<VisitSummary["type"]>, technician: typeof IMRAN) =>
+  ({
+    id: `c0000000-0000-4000-8000-00000000000${String(n)}`,
+    date,
+    window_label: "afternoon",
+    starts_at: `${date}T06:30:00.000Z`,
+    ends_at: `${date}T08:00:00.000Z`,
+    length_minutes: 90,
+    type,
+    service: null,
+    status: "completed",
+    stage: null,
+    prepaid: false,
+    technician,
+    place: PLACE,
+    client_note: null,
+    one_visit: null,
+  }) satisfies VisitSummary;
 
 /** A Thursday, as B1's "Thu 19 Sep" is; paid ahead, as C1's "Prepaid" says. */
-const NEXT = { ...visit(1, "2030-09-19", "service", IMRAN), status: "scheduled", stage: "booked", prepaid: true };
+const NEXT = {
+  ...visit(1, "2030-09-19", "service", IMRAN),
+  status: "scheduled",
+  stage: "booked",
+  prepaid: true,
+} satisfies VisitSummary;
 const PAST = [
   visit(2, "2027-08-22", "service", IMRAN),
   visit(3, "2027-07-25", "service", IMRAN),
@@ -103,7 +138,7 @@ const HISTORY = {
   last_visit_on: "2027-08-22",
   spend: 6_018_000,
   replacement_due: { month: "2028-03" },
-};
+} satisfies Schemas["ClientHistory"];
 
 /** B1's credit tile, two credits expiring 3 Jan 2028, and its one prompt, the replacement due in March. */
 const ME_FITTED = {
@@ -111,14 +146,14 @@ const ME_FITTED = {
   state: "fitted",
   consultation: null,
   next_visit: NEXT,
-  credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z" },
-  prompt: { kind: "replacement_due", month: "2028-03" },
-  booking: { self_serve: false, types: ["service", "replacement"] },
-};
+  credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z", expiring_visits: 2 },
+  prompt: { kind: "replacement_due", month: "2028-03", tier: null },
+  booking: { self_serve: false, types: ["service", "replacement"], services: OFFERED, next: null },
+} satisfies Schemas["Me"];
 
-const ANGLES = ["front", "top", "left", "right", "hair"];
+const ANGLES = ["front", "top", "left", "right", "hair"] as const;
 /** The five angles after a visit, each answered with a block of `ink` (see PHOTO_FILES). */
-const photoSet = (ink: string) => ({
+const photoSet = (ink: string): Schemas["PhotoSet"] => ({
   before: [],
   after: ANGLES.map((angle) => ({
     angle,
@@ -144,7 +179,7 @@ const VISIT_DETAIL = {
   invoice_expected: true,
   invoice_held: null,
   no_show: null,
-};
+} satisfies Schemas["VisitDetail"];
 
 const timeline = (inks: readonly [string, string, string]) => ({
   visits: [AUGUST, JULY, NOVEMBER].map((each, index) => ({
@@ -161,7 +196,13 @@ const TIMELINE = timeline(["ink", "ink", "ink"]);
 const COMPARED = timeline(["raised", "ink", "frame"]);
 
 const visitRef = (each: (typeof PAST)[number]) => ({ id: each.id, date: each.date, type: each.type });
-const paid = (n: number, of: (typeof PAST)[number], exGst: number, method: string, reference: string) => ({
+const paid = (
+  n: number,
+  of: (typeof PAST)[number],
+  exGst: number,
+  method: string,
+  reference: string,
+): Schemas["PaymentEntry"] => ({
   kind: "payment",
   id: `e0000000-0000-4000-8000-00000000000${String(n)}`,
   date: of.date,
@@ -177,6 +218,7 @@ const paid = (n: number, of: (typeof PAST)[number], exGst: number, method: strin
   purpose: "visit",
   charge: null,
   no_show: null,
+  discount_code: null,
 });
 const SERVICE_PAID = paid(2, AUGUST, 200000, "upi", "MM-2027-0841");
 /** Board E1's entries that exist before booking (P2-M5): the charge and the credit arrive with it. */
@@ -203,30 +245,47 @@ const ENTRIES = {
   ],
   credits: [],
 };
-const ENTRY = { ...SERVICE_PAID, documents: { invoice: AUGUST.id, receipt: null } };
+const ENTRY = { ...SERVICE_PAID, documents: { invoice: AUGUST.id, receipt: null } } satisfies Schemas["PaymentDetail"];
 /** The clock for the payments: in 2027, so its entries drop the year, as E1's do. */
 const IN_2027 = new Date("2027-09-20T05:00:00Z");
 
 // ---- Booking (P2-F5) ----------------------------------------------------------------
 
 /** Booking on: the design's strip runs Mon 16 to Sun 29 Sep, with the 17th, 24th and 28th full. */
-const ME_BOOKING = { ...ME_FITTED, booking: { self_serve: true, types: ["service", "replacement"] } };
+const ME_BOOKING = {
+  ...ME_FITTED,
+  booking: { ...ME_FITTED.booking, self_serve: true },
+} satisfies Schemas["Me"];
 const FULL_DAYS = new Set([1, 8, 12]);
+const SERVICE_PRICE = { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 };
+type Window = Schemas["Availability"]["days"][number]["windows"][number];
+const WINDOW_TIMES = {
+  morning: ["09:00", "12:00"],
+  afternoon: ["12:00", "16:00"],
+  evening: ["16:00", "20:00"],
+} as const;
+const slot = (name: Window["window"], comes: Window["with"]): Window => ({
+  window: name,
+  start: WINDOW_TIMES[name][0],
+  end: WINDOW_TIMES[name][1],
+  with: comes,
+  change_charged: false,
+});
 const AVAILABILITY = {
   type: "service",
-  price: { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 },
+  service: { tier: "standard", name: "Service visit", minutes: 90 },
+  price: SERVICE_PRICE,
   regular: IMRAN,
+  change_notice_hours: 24,
+  last: "2030-09-29",
   days: Array.from({ length: 14 }, (_, index) => ({
     date: `2030-09-${String(16 + index)}`,
+    price: SERVICE_PRICE,
     windows: FULL_DAYS.has(index)
-      ? ["morning", "afternoon", "evening"].map((window) => ({ window, with: null }))
-      : [
-          { window: "morning", with: null },
-          { window: "afternoon", with: "regular" },
-          { window: "evening", with: "another" },
-        ],
+      ? [slot("morning", null), slot("afternoon", null), slot("evening", null)]
+      : [slot("morning", null), slot("afternoon", "regular"), slot("evening", "another")],
   })),
-};
+} satisfies Schemas["Availability"];
 /** The clock for booking: Monday 16 September 2030, the strip's first day. */
 /**
  * The design's referrer: two credits left, and two friends fitted (boards F1 and F5). They have agreed to the
@@ -236,19 +295,25 @@ const REFER = {
   code: "RM4417",
   link: "https://maneman.in/r/RM4417",
   named: true,
-  credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z" },
+  credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z", expiring_visits: 2 },
   card: { state: "house", version: 1, consented: true },
   fitted: [
-    { first_name: "Vikram", month: "2027-08" },
-    { first_name: "Ashish", month: "2027-03" },
+    { first_name: "Vikram", month: "2027-08", visits: 3 },
+    { first_name: "Ashish", month: "2027-03", visits: 3 },
   ],
   invite_credits: null,
-};
+} satisfies Schemas["Refer"];
 
 const IN_2030 = new Date("2030-09-16T05:00:00Z");
-const hold = (type: string, price: object, lateFee: object | null) => ({
+type Price = Schemas["Price"];
+
+const hold = (type: "first_fit" | "service", price: Price, lateFee: Price | null): Schemas["Hold"] => ({
   id: "b0000000-0000-4000-8000-000000000001",
   type,
+  service:
+    type === "service"
+      ? { tier: "standard", name: "Service visit", minutes: 90 }
+      : { tier: "essential", name: "Mane Man Essential", minutes: 180 },
   date: "2030-09-19",
   window: "afternoon",
   starts_at: "2030-09-19T06:30:00.000Z",
@@ -262,11 +327,14 @@ const hold = (type: string, price: object, lateFee: object | null) => ({
   late_change_charge: lateFee === null ? "visit" : "late_fee",
   // Board C4 shows 9:42 left.
   expires_at: new Date(IN_2030.getTime() + 582_000).toISOString(),
+  // Checkout must be paid by the hold's end.
+  pay_by: new Date(IN_2030.getTime() + 582_000).toISOString(),
   state: "held",
   paid: false,
   visit_id: null,
   moves_visit_id: null,
   credit: null,
+  discount: null,
 });
 const SERVICE_HOLD = hold("service", { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 }, null);
 const FIRST_FIT_HOLD = hold(
@@ -285,7 +353,7 @@ const BOOKING = {
     description: "Service visit, 2030-09-19",
     prefill: { name: "Rohit Malhotra", contact: "+919800044417" },
   },
-};
+} satisfies Schemas["Booking"];
 
 /** Razorpay's Checkout, replaced by one that pays or fails as it opens. */
 function fakeCheckout(outcome: "paid" | "failed") {
@@ -301,6 +369,22 @@ function fakeCheckout(outcome: "paid" | "failed") {
       };`,
     });
 }
+
+/**
+ * Where the client is signed in: this phone alone, as on the boards' one handset. No board draws the card
+ * (docs/decisions/0029-sessions.md); Profile shows it beneath the change of number, a departure the pairs record.
+ */
+const SESSIONS = {
+  sessions: [
+    {
+      id: "0123456789abcdef",
+      device: "Safari on iOS",
+      signed_in_at: "2026-09-12T05:30:00.000Z",
+      last_used_at: "2026-09-21T06:30:00.000Z",
+      this_device: true,
+    },
+  ],
+};
 
 const PROFILE = {
   name: "Rohit Malhotra",
@@ -323,7 +407,10 @@ const PROFILE = {
   number_change: null,
   number_change_decided: null,
   deletion: null,
-};
+  deletion_rejected: null,
+  address_given_to_ops: null,
+  grievances: [],
+} satisfies Schemas["Profile"];
 
 /** A code sent 30 seconds ago, as board A2 is drawn: SMS offered, WhatsApp's resend 18 s away. */
 const CHALLENGE = {
@@ -332,7 +419,7 @@ const CHALLENGE = {
   expires_in_s: 600,
   resend_in_s: 48,
   sms_in_s: 30,
-};
+} satisfies Schemas["LoginChallenge"];
 
 type Api = Readonly<Record<string, (route: Route) => Promise<void>>>;
 
@@ -454,7 +541,11 @@ async function home(browser: Browser, design: Page): Promise<void> {
 }
 
 async function states(browser: Browser, design: Page): Promise<void> {
-  const loading = await openApp(browser, "/profile", { "/api/me": json(ME), "/api/profile": never });
+  const loading = await openApp(browser, "/profile", {
+    "/api/me": json(ME),
+    "/api/profile": never,
+    "/api/sessions": json(SESSIONS),
+  });
   // Signed in first: a cold start shows the same loading before there is a frame around it.
   await loading.getByRole("navigation").waitFor();
   await loading.getByRole("status").filter({ hasText: "Loading" }).waitFor({ state: "attached" });
@@ -479,7 +570,11 @@ async function states(browser: Browser, design: Page): Promise<void> {
 }
 
 async function profile(browser: Browser, design: Page): Promise<void> {
-  const app = await openApp(browser, "/profile", { "/api/me": json(ME), "/api/profile": json(PROFILE) });
+  const app = await openApp(browser, "/profile", {
+    "/api/me": json(ME),
+    "/api/profile": json(PROFILE),
+    "/api/sessions": json(SESSIONS),
+  });
   await app.getByRole("heading", { name: "Where we come" }).waitFor();
   await pair(OUT, WIDTH, "g1-profile", await frame(design, "Profile"), await shot(app));
 
@@ -526,7 +621,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
     ...me,
     [`/api/visits/${AUGUST.id}`]: json(VISIT_DETAIL),
   });
-  await detail.getByRole("heading", { name: "Photographs from this visit" }).waitFor();
+  await detail.getByRole("heading", { name: "Photos from this visit" }).waitFor();
   await photographsIn(detail);
   await pair(OUT, WIDTH, "c9-visit", await frame(design, "Visit detail"), await shot(detail));
   await detail.close();
@@ -552,7 +647,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   await compare.close();
 
   const none = await openApp(browser, "/photos", { ...me, "/api/photos": json({ visits: [], try_ons: [] }) });
-  await none.getByText("Your photographs start at your first fit.").waitFor();
+  await none.getByText("Your photos start at your first visit.").waitFor();
   await pair(
     OUT,
     WIDTH,
@@ -624,7 +719,8 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
     await app.getByRole("radio", { name: /Afternoon/ }).click();
     if (shots) await pair(OUT, WIDTH, "c3-window", await frame(design, "Booking · window"), await shot(app));
     await app.getByRole("button", { name: "Continue to payment" }).click();
-    await app.getByRole("heading", { name: "Pay and confirm" }).waitFor();
+    // A visit a credit covers is confirmed, not paid for.
+    await app.getByRole("heading", { name: /^(Pay and confirm|Confirm)$/ }).waitFor();
   }
 
   /**
@@ -673,7 +769,7 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
   const failed = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030, fakeCheckout("failed"));
   await throughTheSheet(failed, false);
   await failed.getByRole("button", { name: /^Pay/ }).click();
-  await failed.getByText("The payment did not go through.").waitFor();
+  await failed.getByText("The payment didn’t go through.").waitFor();
   await pair(
     OUT,
     WIDTH,
@@ -686,7 +782,7 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
   const expired = await openApp(browser, "/visits", api(SERVICE_HOLD), IN_2030);
   await throughTheSheet(expired, false);
   await expired.clock.fastForward("10:00");
-  await expired.getByText("That slot has gone back.").waitFor();
+  await expired.getByText("That time has been released.").waitFor();
   await pair(
     OUT,
     WIDTH,
@@ -701,7 +797,7 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
   await throughTheSheet(confirmed, false);
   await confirmed.getByRole("button", { name: /^Pay/ }).click();
   await confirmed.clock.fastForward("00:03");
-  await confirmed.getByText("Imran messages you the day before.").waitFor();
+  await confirmed.getByText("We’ll remind you on WhatsApp the day before.").waitFor();
   const confirmedFrame = design
     .locator('[data-screen-label="Booking · pay states"] > div')
     .filter({ has: design.getByText("Confirmed", { exact: true }) })
@@ -818,7 +914,7 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
     navigator.clipboard.writeText = () => Promise.reject(new DOMException("refused", "NotAllowedError"));
   });
   await landing.getByRole("button", { name: "Copy link" }).click();
-  await landing.getByText("The link did not generate. Nothing was sent.").waitFor();
+  await landing.getByText("The link didn’t generate. Nothing was sent.").waitFor();
   await pair(
     OUT,
     WIDTH,
@@ -834,7 +930,7 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
     "/api/refer": json({ ...REFER, card: { state: "personal", version: 2, consented: true } }),
   });
   await revoke.getByRole("button", { name: "Revoke the photo card" }).click();
-  await revoke.getByRole("heading", { name: "Switch off your photographs?" }).waitFor();
+  await revoke.getByRole("heading", { name: "Switch off your photos?" }).waitFor();
   await pair(
     OUT,
     WIDTH,

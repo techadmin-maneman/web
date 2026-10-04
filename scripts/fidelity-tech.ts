@@ -19,6 +19,9 @@ import { chromium, type Browser, type Page, type Route } from "@playwright/test"
 import sharp from "sharp";
 import { pair, rest, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
+import type { components } from "../apps/tech/src/api-schema.ts";
+
+type Schemas = components["schemas"];
 
 const APP_DIR = resolve("apps/tech/dist/local");
 const DESIGN_DIR = resolve("design/phase2");
@@ -32,7 +35,8 @@ const STATUS_BAR = 44;
 
 // ---- The design's example, as the API would answer it -------------------------
 
-const ME = {
+const ME: Schemas["TechnicianMe"] = {
+  id: "t0000000-0000-4000-8000-000000000001",
   name: "Imran Qureshi",
   first_name: "Imran",
   initials: "IQ",
@@ -55,7 +59,15 @@ const CLIENTS: Readonly<Record<string, string>> = {
 
 const jobId = (id: number) => `a0000000-0000-4000-8000-00000000000${String(id)}`;
 
-const job = (id: number, date: string, time: string, minutes: number, type: string, badge: string, sector: string) => ({
+const job = (
+  id: number,
+  date: string,
+  time: string,
+  minutes: number,
+  type: Schemas["TechnicianJob"]["type"],
+  badge: Schemas["TechnicianJob"]["badge"],
+  sector: string,
+): Schemas["TechnicianJob"] => ({
   id: jobId(id),
   day: date === DAY ? "today" : "tomorrow",
   date,
@@ -69,7 +81,8 @@ const job = (id: number, date: string, time: string, minutes: number, type: stri
   sector,
   status: "scheduled",
   badge,
-  slots: SLOTS[type] ?? 1,
+  slots: SLOTS[type ?? "service"] ?? 1,
+  minutes,
   unlocked: true,
   unlocks_at: `${date}T00:00:00.000Z`,
   client_name: CLIENTS[jobId(id)] ?? null,
@@ -117,14 +130,7 @@ const CONSUMABLES = [
   { code: "shampoo_sachet", name: "Shampoo sachet", unit: "sachet", expected: 0 },
 ];
 
-interface Progress {
-  checked_in_at: string | null;
-  wait_ends_at: string | null;
-  distance_m: number | null;
-  started_at: string | null;
-  steps_done: string[];
-  outcome: string | null;
-}
+type Progress = Schemas["TechnicianJobProgress"];
 
 const NOTHING_DONE: Progress = {
   checked_in_at: null,
@@ -152,9 +158,10 @@ const LAST_VISIT_PHOTO = Buffer.from(
   "base64",
 );
 
-const cardFor = (id: string, progress: Progress = NOTHING_DONE) => {
-  const summary = [...JOBS, ...TOMORROW].find((one) => one.id === id) ?? JOBS[0];
-  const takesPiece = summary?.type === "replacement" || summary?.type === "first_fit";
+const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["TechnicianJobDetail"] => {
+  const summary = [...JOBS, ...TOMORROW].find((one) => one.id === id);
+  if (summary === undefined) throw new Error(`no job ${id} in the fixtures`);
+  const takesPiece = summary.type === "replacement" || summary.type === "first_fit";
   return {
     ...summary,
     address: {
@@ -175,6 +182,9 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE) => {
     client: { name: CLIENTS[id] ?? "", mobile: "+919810000000", note: null },
     progress,
     no_show_wait_min: 15,
+    // An hour before the booked start, as ops set it, and the check-in radius in force.
+    checkin_from: new Date(new Date(summary.starts_at).getTime() - 3_600_000).toISOString(),
+    checkin_radius_m: 200,
     pieces: [PIECE],
     // Board A3's "Last visit, after. 22 Aug, Imran.", and board B5's "delivered 9:33 am".
     last_visit: { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${id}/last-visit-photo` },
@@ -183,10 +193,14 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE) => {
       ? ["before_photos", "checklist", "consumables", "piece", "after_photos", "outcome"]
       : ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
     checklist: CHECKLIST,
+    checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
     products: [],
     payment_link: null,
+    discount_code: null,
+    client_choice: null,
+    profile: null,
   };
 };
 
@@ -363,7 +377,7 @@ const checkIn = (passed: boolean, distanceM: number) => (route: Route) =>
 async function steps(browser: Browser, design: Page): Promise<void> {
   const first = JOBS[0];
   if (first === undefined) throw new Error("the day has no jobs");
-  const started = {
+  const started: Progress = {
     ...NOTHING_DONE,
     checked_in_at: `${DAY}T03:44:00.000Z`,
     started_at: `${DAY}T02:20:00.000Z`,
@@ -435,17 +449,22 @@ async function steps(browser: Browser, design: Page): Promise<void> {
   await outcome.close();
 
   // The close-out, which the board draws beneath the outcome and the app shows after it.
-  const closedOut = {
+  const closedOut: Progress = {
     ...started,
     steps_done: [...started.steps_done, "checklist", "consumables", "after_photos", "outcome"],
     outcome: "done",
   };
   // The outcome lands, so the close-out is the one the board draws and not the sign-in an unanswered write would end in.
   const landed = json({ event_id: "fidelity", replayed: false, fsm_write_state: "written", progress: closedOut });
+  // The outcome's own step, every step before it sent: a job already closed opens on its close-out instead.
+  const beforeOutcome: Progress = {
+    ...started,
+    steps_done: [...started.steps_done, "checklist", "consumables", "after_photos"],
+  };
   const done = await openApp(
     browser,
     `/jobs/${first.id}/outcome`,
-    { ...jobApi(first.id, closedOut), [`/api/tech/jobs/${first.id}/outcome`]: landed },
+    { ...jobApi(first.id, beforeOutcome), [`/api/tech/jobs/${first.id}/outcome`]: landed },
     FRAME_HEIGHT,
   );
   await done.getByText("Outcome").first().waitFor();
