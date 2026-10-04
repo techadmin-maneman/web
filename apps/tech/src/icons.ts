@@ -1,6 +1,6 @@
 // How the technician app draws its glyphs (design/phase2/Technician App.dc.html):
 // the brand's own, from @maneman/brand/icons, at the heavier strokes the board
-// draws for reading in the sun, and the one glyph no other app draws.
+// draws for reading in the sun, and the two glyphs no other app draws.
 
 /** The board draws its glyphs at 1.8, heavier than the icon set's 1.6. */
 export const STROKE = 1.8;
@@ -8,6 +8,9 @@ export const STROKE = 1.8;
 /** A stepper's signs are drawn at 2 (board B3), and a ticked box's at 2.6 (board B2). */
 export const STEPPER_STROKE = 2;
 export const BOX_TICK_STROKE = 2.6;
+
+/** A label tied to a piece, beside the field its label is typed in: typed, never scanned, so no barcode. */
+export const TAG = "M3.5 3.5 H12 L20.5 12 L12 20.5 L3.5 12 Z M8 6.8 A1.2 1.2 0 0 1 8 9.2 A1.2 1.2 0 0 1 8 6.8";
 
 /** Navigate, on the address (board A3). */
 export const PIN =

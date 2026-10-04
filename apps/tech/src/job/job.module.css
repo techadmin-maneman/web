@@ -90,6 +90,19 @@
   color: var(--ink-soft);
 }
 
+.landmark {
+  margin: var(--sp-10) 0 0;
+}
+
+.landmarkLabel {
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.landmark .access {
+  margin: var(--sp-3) 0 0;
+}
+
 .navigate,
 .reachLink {
   display: flex;

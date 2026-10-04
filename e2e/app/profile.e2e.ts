@@ -98,7 +98,10 @@ test("finds a building, keeps the flat separately, and shows the address as writ
   await page.getByRole("button", { name: "Save" }).click();
 
   await expect(page.getByText("Flat 1203, 12, Tower C, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
-  await expect(page.getByText("Near Opposite the sector market")).toBeVisible();
+  // FLD-57: as the client typed it, under its own label, never "Near Opposite the sector market".
+  await expect(page.getByText("Landmark", { exact: true })).toBeVisible();
+  await expect(page.getByText("Opposite the sector market", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Near Opposite/)).toHaveCount(0);
 });
 
 test("the suggestion list works by keyboard alone", async ({ page }) => {
