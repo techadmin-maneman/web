@@ -42,6 +42,7 @@ import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "../lib/d1-meter.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
+import { enqueue, enqueueBatch } from "../queues/enqueue.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { checkDailyAllowances } from "./daily-allowances.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
@@ -131,11 +132,14 @@ function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
   }
 }
 
-async function queueMessages(queue: Queue, ids: readonly string[], requestId: string): Promise<void> {
-  if (ids.length === 0) return;
-  await queue.sendBatch(
-    ids.map((id) => ({ body: { message_id: id, request_id: requestId } satisfies MessagingMessage })),
-  );
+/** Messages the job wrote to the outbox. Those the queue refuses, the sweeper sends minutes later. */
+async function queueMessages(
+  { env, log }: Pick<CronContext, "env" | "log">,
+  ids: readonly string[],
+  requestId: string,
+): Promise<void> {
+  const requests = ids.map((id) => ({ body: { message_id: id, request_id: requestId } satisfies MessagingMessage }));
+  await enqueueBatch(env.MESSAGE_QUEUE, requests, { log, ifLost: "sweeper" });
 }
 
 /**
@@ -162,8 +166,10 @@ async function unbookedHoldsJob(context: CronContext): Promise<void> {
 }
 
 async function bookUnbookedHoldsJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
-  const notify = (messageId: string) =>
-    env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: "unbooked-holds" } satisfies MessagingMessage);
+  const notify = (messageId: string) => {
+    const body = { message_id: messageId, request_id: "unbooked-holds" } satisfies MessagingMessage;
+    return enqueue(env.MESSAGE_QUEUE, body, { log, ifLost: "sweeper" });
+  };
   const pass = { ...deps, notify, labelAsTest: config.environment !== "production", budget, log };
   const booked = await bookUnbookedHolds(env.DB, pass, deps.now());
   if (booked > 0) log.warn("unbooked_holds_booked", { count: booked });
@@ -226,13 +232,13 @@ async function utilisationJob({ env, deps, log }: CronContext): Promise<void> {
 
 async function referralsJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const messages = await referralPass(env.DB, deps.now(), log, (await inputs()).referralReward);
-  await queueMessages(env.MESSAGE_QUEUE, messages, "referrals");
+  await queueMessages({ env, log }, messages, "referrals");
 }
 
 async function remindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const now = deps.now();
   const reminders = await queueReminders(env.DB, now, (await inputs()).reminderHour);
-  await queueMessages(env.MESSAGE_QUEUE, reminders, "reminders");
+  await queueMessages({ env, log }, reminders, "reminders");
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
 
@@ -240,13 +246,13 @@ async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext):
   const now = deps.now();
   const { nextVisitDays, reminderHour } = await inputs();
   const reminders = await queueNextServiceReminders(env.DB, now, nextVisitDays, reminderHour);
-  await queueMessages(env.MESSAGE_QUEUE, reminders, "next-service-reminders");
+  await queueMessages({ env, log }, reminders, "next-service-reminders");
   if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }
 
 async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const reminders = await queueCreditReminders(env.DB, deps.now(), (await inputs()).reminderHour);
-  await queueMessages(env.MESSAGE_QUEUE, reminders, "credit-reminders");
+  await queueMessages({ env, log }, reminders, "credit-reminders");
   if (reminders.length > 0) log.info("credit_reminders_queued", { count: reminders.length });
 }
 

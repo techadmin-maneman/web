@@ -22,7 +22,9 @@ import { useState } from "react";
 import type { Job, PartialReason } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import type { Queued } from "../store/outbox.ts";
 import { DiscountCode } from "./DiscountCode.tsx";
+import { outcomeSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
@@ -39,20 +41,27 @@ function codeSaid(code: NonNullable<Job["discount_code"]>): string {
   return code.given_by === "technician" ? oneVisit.code.applied(code.code) : oneVisit.code.appliedAtBooking(code.code);
 }
 
-export function Outcome({ id }: { id: string }) {
-  const { loaded, retry, refused, finish, back } = useStep(id, "outcome");
-  const [choice, setChoice] = useState<Choice>(null);
-  const [reason, setReason] = useState<PartialReason["id"] | null>(null);
+/** The choice once the job is in hand: a refused outcome starts as it was chosen. */
+function Choosing({
+  job,
+  refused,
+  onFinish,
+  onBack,
+}: {
+  job: Job;
+  refused: Queued | null;
+  onFinish: (body: unknown) => void;
+  onBack: () => void;
+}) {
+  const reasons = job.partial_reasons;
+  const offered = reasons.map((one) => one.id);
+  const sent = outcomeSent(refused, offered);
+  const [choice, setChoice] = useState<Choice>(sent?.choice ?? null);
+  const [reason, setReason] = useState<PartialReason["id"] | null>(sent?.reason ?? null);
   const [codeChecking, setCodeChecking] = useState(false);
 
-  if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
-  }
-
-  const reasons = loaded.value.partial_reasons;
-  const closesOneVisit = loaded.value.one_visit && choice === "done";
-  const standingCode = loaded.value.discount_code;
+  const closesOneVisit = job.one_visit && choice === "done";
+  const standingCode = job.discount_code;
   // A code being checked would change the link closing the visit sends: Next waits for it.
   const ready = !codeChecking && (choice === "done" || (choice === "partial" && reason !== null));
 
@@ -63,10 +72,10 @@ export function Outcome({ id }: { id: string }) {
       ready={ready}
       unfinished={stillToChoose(choice)}
       notice={refused === null ? null : copy.corrected.other}
-      onBack={back}
-      onAction={() =>
-        void finish(choice === "partial" && reason !== null ? { outcome: "partial", reason } : { outcome: "done" })
-      }
+      onBack={onBack}
+      onAction={() => {
+        onFinish(choice === "partial" && reason !== null ? { outcome: "partial", reason } : { outcome: "done" });
+      }}
     >
       <div className={styles.choices}>
         <button
@@ -93,7 +102,7 @@ export function Outcome({ id }: { id: string }) {
       </div>
 
       {closesOneVisit && <p className={styles.note}>{oneVisit.closeNote}</p>}
-      {closesOneVisit && standingCode === null && <DiscountCode jobId={id} onChecking={setCodeChecking} />}
+      {closesOneVisit && standingCode === null && <DiscountCode jobId={job.id} onChecking={setCodeChecking} />}
       {closesOneVisit && standingCode !== null && <p className={styles.note}>{codeSaid(standingCode)}</p>}
 
       {choice === "partial" && (
@@ -116,4 +125,14 @@ export function Outcome({ id }: { id: string }) {
       )}
     </StepFrame>
   );
+}
+
+export function Outcome({ id }: { id: string }) {
+  const { loaded, retry, refused, finish, back } = useStep(id, "outcome");
+
+  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
+  return <Choosing job={loaded.value} refused={refused} onFinish={(body) => void finish(body)} onBack={back} />;
 }

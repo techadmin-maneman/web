@@ -21,10 +21,11 @@ import { queueContactSync } from "../http/contact-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { queueMessage } from "../http/queue-message.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { dueAt } from "../policy/tasks.ts";
-import { heldBackByAllowlist, type MessagingMessage } from "../queues/messaging.ts";
+import { heldBackByAllowlist } from "../queues/messaging.ts";
 import { scrubString } from "../log.ts";
 import { ErasureRefusedSchema, erasureRefused } from "./ops-erasure.ts";
 
@@ -261,15 +262,6 @@ export function registerOpsProfile(app: App): void {
     if (outcome.told !== null) await tellDeletionDone(c, outcome.told);
     return c.json({ state: "done" as const }, 200);
   });
-}
-
-/** Sends a message written with the decision's batch to the messaging queue. One the queue drops, the sweeper sends. */
-async function queueMessage(c: Context<AppEnv>, messageId: string): Promise<void> {
-  try {
-    await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
-  } catch (error) {
-    c.var.log.warn("message_enqueue_failed", { outbound_message_id: messageId, error });
-  }
 }
 
 /**

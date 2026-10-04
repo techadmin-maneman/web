@@ -3,14 +3,15 @@
 // ops' ruling on a visit the client was not home for, and since docs/decisions/0096-a-no-shows-charge-and-its-dispute.md
 // their ruling on the client's dispute of its charge. Each is a row in outbound_messages about the appointment, written
 // with the change it tells of, then queued. The messaging consumer writes the text from the visit as it stands when it sends, and
-// sends it only with the client's consent to WhatsApp about visits. The sweeper queues any whose queue message was
-// lost.
+// sends it only with the client's consent to WhatsApp about visits, but for a receipt or a refund, which goes without
+// it (src/policy/consents.ts). The sweeper queues any whose queue message was lost.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import type { BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
+import { isTransactional } from "../policy/consents.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
 import type { OneVisitState } from "../policy/one-visit.ts";
@@ -242,6 +243,16 @@ export type Composed = { readonly template: string; readonly params: string[] } 
 /** Why a message about a visit was skipped when the client never agreed to them; the no-show queue reads it back. */
 export const NO_VISITS_CONSENT = "no consent to WhatsApp about visits";
 
+/**
+ * A composed message as it may go: as it is with the client's consent to WhatsApp about visits, or without it when it
+ * is a receipt or a refund. Anything else without that consent is skipped for the want of it.
+ */
+export async function underVisitsConsent(db: D1Database, personId: string, composed: Composed): Promise<Composed> {
+  if (await consentGiven(db, personId, "whatsapp_visits")) return composed;
+  if ("template" in composed && isTransactional(composed.template)) return composed;
+  return { skip: NO_VISITS_CONSENT };
+}
+
 /** Why an arrival or a no-show's ruling is not told: the check-in came before a technician may check in. */
 export const ARRIVED_TOO_EARLY = "the check-in came before the earliest check-in";
 
@@ -274,8 +285,15 @@ export async function composeVisitMessage(
   appointmentId: string,
   personId: string,
 ): Promise<Composed> {
-  if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
+  return underVisitsConsent(db, personId, await composeVisitText(db, kind, appointmentId, personId));
+}
 
+async function composeVisitText(
+  db: D1Database,
+  kind: VisitMessageKind,
+  appointmentId: string,
+  personId: string,
+): Promise<Composed> {
   const visit = await db
     .prepare(
       `SELECT a.type, a.one_visit, a.window_start, a.status, a.technician_id, p.name, t.name AS technician
