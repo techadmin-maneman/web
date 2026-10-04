@@ -5,9 +5,9 @@
 
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { onSessionEnded } from "../../apps/tech/src/api.ts";
+import { onSessionEnded, type JobSummary } from "../../apps/tech/src/api.ts";
 import { wipe } from "../../apps/tech/src/store/db.ts";
-import { keptArrival } from "../../apps/tech/src/store/jobs.ts";
+import { keepArrival, keepClosed, keepDay, keptArrival, keptClosed, keptDay } from "../../apps/tech/src/store/jobs.ts";
 import {
   correct,
   events,
@@ -401,5 +401,63 @@ describe("the jobs with work still on the phone", () => {
     await queue("start", "a", null);
     await keepFrame("b", "front", "before", new Blob(["front"]));
     expect(await unsentJobs()).toEqual(new Set(["a", "b"]));
+  });
+});
+
+/** Job "a" on the day the phone holds, as the list said it before anything of it landed. */
+const kept = (): JobSummary =>
+  ({ id: "a", date: "2030-09-19", progress: { started_at: null, outcome: null } }) as JobSummary;
+
+describe("where a job stands, once a write of its lands", () => {
+  // FLD-36: with no signal, the row of a job started since the list was kept lost its "In progress".
+  it("is kept in the day the phone holds, from the write's answer", async () => {
+    await keepDay("2030-09-19", [kept()]);
+    await queue("start", "a", null);
+    const progress = { started_at: "2030-09-19T04:05:00.000Z", outcome: null };
+    api(() => ({ status: 202, json: { ...accepted.json, progress } }));
+
+    await replay();
+
+    expect((await keptDay("2030-09-19"))?.[0]?.progress).toEqual({
+      started_at: "2030-09-19T04:05:00.000Z",
+      outcome: null,
+    });
+  });
+
+  it("is kept from a no-show's answer, which carries the step it recorded", async () => {
+    await keepDay("2030-09-19", [kept()]);
+    await queue("no_show", "a", null);
+    const recorded = { ...accepted.json, progress: { started_at: null, outcome: "no_show" } };
+    api(() => ({ status: 200, json: { closed: true, wait_ends_at: "t", case_id: null, accepted: recorded } }));
+
+    await replay();
+
+    expect((await keptDay("2030-09-19"))?.[0]?.progress).toEqual({ started_at: null, outcome: "no_show" });
+  });
+});
+
+// FLD-36: after "Got it" deleted a job's work, Today still read "Closed out" from the phone's own close-out mark.
+describe("letting go of a job's stopped work", () => {
+  it("lets go of its arrival and close-out too, since only what landed speaks for the job", async () => {
+    await keepArrival("a", {
+      passed: true,
+      distance_m: 40,
+      radius_m: 200,
+      checked_in_at: "t",
+      wait_ends_at: null,
+      accepted: null,
+    });
+    await keepClosed("a", 1);
+    await keepClosed("b", 2);
+    await queue("outcome", "a", { outcome: "done" });
+    api(() => ({ status: 409, json: { error: { code: "superseded", request_id: "t", fields: ["time"] } } }));
+    await replay();
+
+    await forget("a");
+
+    expect(await events()).toEqual([]);
+    expect(await keptArrival("a")).toBeNull();
+    expect(await keptClosed("a")).toBeNull();
+    expect(await keptClosed("b")).toBe(2);
   });
 });
