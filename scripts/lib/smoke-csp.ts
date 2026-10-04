@@ -30,3 +30,28 @@ export function isOwnHost(url: string, environment: RemoteEnvironmentName): bool
   const ownHosts: readonly string[] = Object.values(SURFACE_HOSTS[environment]);
   return ownHosts.includes(new URL(url).hostname);
 }
+
+/** Where Cloudflare's JavaScript detections load from, in the inline script it adds to every page at its edge. */
+export const CHALLENGE_SCRIPT = "/cdn-cgi/challenge-platform/";
+
+/** Web Analytics' beacon, which Cloudflare adds to every host of the zone, and only the site's policy lets in. */
+const BEACON = "https://static.cloudflareinsights.com/";
+
+/**
+ * The refusals left once Cloudflare's own two edge scripts are set aside. Neither can be switched off, nor kept to
+ * one host, on the zone's free plan, so every policy refuses them and nothing of theirs runs (runbook, section 14):
+ * the beacon wherever it is refused, and one inline refusal for each challenge script Cloudflare put in the page.
+ * Any other refusal stands.
+ */
+export function withoutEdgeScripts(refused: readonly string[], challengeScripts: number): string[] {
+  let inlineLeft = challengeScripts;
+  return refused.filter((refusal) => {
+    const [, blocked = ""] = refusal.split(" ");
+    if (blocked.startsWith(BEACON)) return false;
+    if (blocked === "inline" && inlineLeft > 0) {
+      inlineLeft -= 1;
+      return false;
+    }
+    return true;
+  });
+}

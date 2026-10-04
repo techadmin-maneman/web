@@ -1230,7 +1230,7 @@ export const areas = {
      * test/node/ops-content.test.ts holds the two together.
      */
     message: (area: string, bookingUrl: string) =>
-      `Hello {first name}, we now come to ${area}. Your free consultation can be booked here: ${bookingUrl}`,
+      `Hi {first name}, Mane Man now comes to ${area}. Book your free consultation: ${bookingUrl}`,
     /** The area a message about several pincodes names, each its own. */
     eachArea: "{area}",
     /** The board's "Send to 84"; with nobody to message, the press only marks the pincode live, and says so. */

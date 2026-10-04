@@ -63,8 +63,7 @@ describe("the reminder that free service visits are running out", () => {
     await grant({ visits: 3, expiresAt: LAST_DAY_EXPIRY });
     const [month] = await queueCreditReminders(env.DB, evening("2026-09-21"));
     expect(await told(month ?? "", evening("2026-09-21"))).toBe(
-      "Hello Rohit, you have 3 service visits free to book by 21 Oct 2026. A visit booked by then is covered, even " +
-        "one on a later date. Book in the Mane Man app.",
+      "Hi Rohit, you have 3 service visits free to book by 21 Oct 2026. A visit booked by then is covered, even on a later date. Book in the Mane Man app.",
     );
     expect(await queueCreditReminders(env.DB, evening("2026-09-21"))).toEqual([]);
     expect(await queueCreditReminders(env.DB, evening("2026-10-13"))).toEqual([]);
@@ -77,7 +76,7 @@ describe("the reminder that free service visits are running out", () => {
     await grant({ visits: 1, expiresAt: LAST_DAY_EXPIRY, sourceId: "o2" });
     const queued = await queueCreditReminders(env.DB, evening("2026-09-21"));
     expect(queued).toHaveLength(1);
-    expect(await told(queued[0] ?? "", evening("2026-09-21"))).toMatch(/^Hello Rohit, you have 3 service visits free/);
+    expect(await told(queued[0] ?? "", evening("2026-09-21"))).toMatch(/^Hi Rohit, you have 3 service visits free/);
   });
 
   it("says how many are left as it is sent, and is not sent once none are, or without consent", async () => {

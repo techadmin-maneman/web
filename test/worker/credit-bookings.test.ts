@@ -99,7 +99,7 @@ describe("booking with a credit", () => {
     expect(redeemed).toEqual({ visits: -1 });
     const composed = await composeVisitMessage(env.DB, "payment_receipt", visitId, PERSON);
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hello Rohit, your service visit is booked for Thu 24 Sep, 12 to 4 pm, with Imran. One of your free service visits covers it.",
+      "Hi Rohit, your service visit is booked for Thu 24 Sep, 12 to 4 pm, with Imran. It's covered by one of your free service visits.",
     );
   });
 
@@ -293,7 +293,7 @@ describe("changing a visit paid with a credit", () => {
     expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(1);
     const composed = await composeVisitMessage(env.DB, "cancel_confirmation", visitId, PERSON);
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hello Rohit, your service visit on Thu 24 Sep is cancelled. Your free service visit is back.",
+      "Hi Rohit, we've cancelled your service visit on Thu 24 Sep. Your free service visit is back.",
     );
   });
 

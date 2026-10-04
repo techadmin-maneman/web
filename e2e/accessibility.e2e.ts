@@ -69,13 +69,13 @@ test("the forms' error states meet WCAG 2.2 AA", async ({ page }) => {
   // then the form it decides on (docs/decisions/0051-booking-from-the-site.md).
   await visit(page, "/book?state=served");
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Please tell us your name.")).toBeVisible();
-  await expect(page.getByText("Please give the building or society.")).toBeVisible();
+  await expect(page.getByText("Enter your name.")).toBeVisible();
+  await expect(page.getByText("Enter the building or society.")).toBeVisible();
   expect(await violations(page)).toEqual([]);
 
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill("12");
   await page.getByRole("button", { name: "Check" }).click();
-  await expect(page.getByText("That is not a six-digit Indian pincode.")).toBeVisible();
+  await expect(page.getByText("That isn’t a six-digit Indian pincode.")).toBeVisible();
   expect(await violations(page)).toEqual([]);
 });

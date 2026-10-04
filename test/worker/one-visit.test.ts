@@ -495,8 +495,8 @@ describe("Razorpay's word that a one visit's link is paid", () => {
       params: ["Rohit", "Mane Man Natural hair system", "", "", "", "Rs. 45,000", LINK_REFERENCE],
     });
     expect("template" in composed && renderMessage(composed.template, composed.params)).toBe(
-      "Hello Rohit, thank you for your payment of Rs. 45,000 for your Mane Man Natural hair system, reference " +
-        `${LINK_REFERENCE}. Welcome to Mane Man. The receipt is in the app.`,
+      "Hi Rohit, thank you: we've received Rs. 45,000 for your Mane Man Natural hair system " +
+        `(ref ${LINK_REFERENCE}). Welcome to Mane Man. Your receipt is in the app.`,
     );
   });
 

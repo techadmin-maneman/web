@@ -65,7 +65,7 @@ async function workTheJob(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Start job" }).click();
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
-  for (const item of await page.getByRole("button", { name: /PLACEHOLDER/ }).all()) await item.click();
+  for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
   await page.getByRole("button", { name: "Next" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Consumables used" })).toBeVisible();
   await page.getByRole("button", { name: "One more tape strips" }).click();
@@ -118,7 +118,7 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
   // Back on signal: the other four before photographs go up, and the set and what follows it wait.
   fake.online = true;
   await context.setOffline(false);
-  const stopped = page.getByRole("alert").filter({ hasText: "The photographs would not upload." });
+  const stopped = page.getByRole("alert").filter({ hasText: "The photos wouldn’t upload." });
   await expect(stopped).toBeVisible({ timeout: 30_000 });
   expect(fake.photos.filter((slot) => slot.startsWith("before-"))).toHaveLength(4);
   expect(fake.writes.map((write) => write.path.split("/").at(-1))).toEqual(["checkin", "start"]);
@@ -130,7 +130,7 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
 
   // Only the refused angle is asked for: the four that reached us count.
   await expect(page.getByRole("heading", { level: 1, name: "Before photos" })).toBeVisible();
-  await expect(page.getByText("The top photograph would not upload. Take it again.")).toBeVisible();
+  await expect(page.getByText("The top photo wouldn’t upload. Take it again.")).toBeVisible();
   await expect(page.getByText("4 of 5")).toBeVisible();
   await expect(page.getByRole("button", { name: "Retake" })).toBeDisabled();
   fake.refusedPhoto = null;
@@ -358,7 +358,7 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
 
   // Deleting never throws away photographs on one tap, and the question opens on the safe answer (UX-30).
   await page.getByRole("button", { name: "Delete this job's work" }).click();
-  await expect(page.getByText("This deletes 5 photographs and 1 action from this phone.")).toBeVisible();
+  await expect(page.getByText("This deletes 5 photos and 1 action from this phone.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Keep them" })).toBeFocused();
   await page.keyboard.press("Enter");
   expect(await heldOnPhone(page)).toMatchObject({ frames: 5 });

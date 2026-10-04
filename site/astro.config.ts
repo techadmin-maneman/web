@@ -14,6 +14,7 @@ import { defineConfig } from "astro/config";
 import { ANALYTICS_IDS } from "./src/lib/analytics-ids.ts";
 import { siteEnvironment } from "./src/lib/environment.ts";
 import { assertPublishable } from "./src/lib/publish-gate.ts";
+import { CONTENT_FILES, contentProblems } from "../scripts/lib/content-gate.ts";
 import {
   contentSecurityPolicy,
   headersFile,
@@ -25,7 +26,9 @@ import {
 } from "./src/lib/static-files.ts";
 
 const environment = siteEnvironment(process.env.MM_ENV);
-if (environment === "production") assertPublishable();
+// Here, so a direct `astro build` is gated too: one refusal for the site's blocks and notices, and for any copy still
+// marked for the owner or counsel (scripts/lib/content-gate.ts).
+if (environment === "production") assertPublishable(contentProblems(CONTENT_FILES.site));
 
 /** Deletes every file in _astro that no page, script or stylesheet names (unreferencedAssets). */
 async function removeUnreferencedAssets(dir: URL): Promise<void> {

@@ -232,7 +232,7 @@ test("the gate says when a number has had its codes for today, and claims nothin
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill(MOBILE);
   await page.getByRole("button", { name: "Send my look" }).click();
-  await expect(page.getByText("That is a few too many codes for this number today.", { exact: false })).toBeVisible();
+  await expect(page.getByText("That’s too many codes for this number today.", { exact: false })).toBeVisible();
   await expect(page.getByLabel("WhatsApp code")).toHaveCount(0);
   expect(named(seen, "claim")).toHaveLength(0);
 });

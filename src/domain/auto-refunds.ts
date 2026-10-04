@@ -76,10 +76,13 @@ export function refundedMessage(
   return { id, statement };
 }
 
-/** The client's message, by whether the booking moved a visit, which still stands, and whether anything was paid. */
+/**
+ * The client's message, by whether the booking moved a visit, which still stands, and whether anything was paid. A
+ * booking a free service visit was to pay for says the visit is still theirs.
+ */
 const REFUNDED_TEMPLATES = {
-  booking: { paid: "booking_refunded_v1", unpaid: "booking_not_made_v1" },
-  move: { paid: "move_refunded_v1", unpaid: "move_not_made_v1" },
+  booking: { paid: "booking_refunded_v1", unpaid: "booking_not_made_v1", credit: "booking_not_made_credit_v1" },
+  move: { paid: "move_refunded_v1", unpaid: "move_not_made_v1", credit: "move_not_made_v1" },
 } as const;
 
 /**
@@ -94,7 +97,7 @@ export async function composeBookingRefunded(db: D1Database, holdId: string, per
 async function composeGivenBack(db: D1Database, holdId: string, personId: string): Promise<Composed> {
   const hold = await db
     .prepare(
-      `SELECT h.type, h.minutes, h.date, h.start_unit, h.move_kind, p.name,
+      `SELECT h.type, h.minutes, h.date, h.start_unit, h.move_kind, h.use_credit, p.name,
               (SELECT pay.amount FROM payments pay WHERE pay.razorpay_order_id = h.razorpay_order_id
                  AND pay.status IN ('captured', 'refunded', 'partially_refunded') ORDER BY pay.created_at LIMIT 1) AS paid,
               (SELECT pay.method FROM payments pay WHERE pay.razorpay_order_id = h.razorpay_order_id
@@ -109,6 +112,7 @@ async function composeGivenBack(db: D1Database, holdId: string, personId: string
       date: string;
       start_unit: number;
       move_kind: "move" | "replace" | null;
+      use_credit: number;
       name: string;
       paid: number | null;
       method: string | null;
@@ -126,5 +130,6 @@ async function composeGivenBack(db: D1Database, holdId: string, personId: string
     DESTINATIONS[hold.method ?? ""] ?? "payment method",
   ];
   const templates = REFUNDED_TEMPLATES[hold.move_kind === null ? "booking" : "move"];
-  return { template: hold.paid === null ? templates.unpaid : templates.paid, params };
+  if (hold.paid !== null) return { template: templates.paid, params };
+  return { template: hold.use_credit === 1 ? templates.credit : templates.unpaid, params };
 }

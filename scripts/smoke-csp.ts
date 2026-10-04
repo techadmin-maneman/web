@@ -2,6 +2,8 @@
 //
 // Opens every switched-on host's pages in headless Chromium, as deployed, and fails on anything a page's content
 // security policy refuses, or a page that does not load (scripts/lib/smoke-csp.ts). Runs after every staging deploy.
+// Cloudflare's own edge scripts, which every policy refuses and the free plan cannot switch off, are set aside
+// (withoutEdgeScripts).
 //
 // Environment:
 //   CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET   Access service token, sent to our own hosts only. By hand on
@@ -12,7 +14,7 @@ import { parseArgs } from "node:util";
 import { chromium, type Browser } from "@playwright/test";
 import type { RemoteEnvironmentName } from "../src/config/environments.ts";
 import { recordPolicyRefusals } from "./lib/csp-refusals.ts";
-import { isOwnHost, pagesToCheck } from "./lib/smoke-csp.ts";
+import { CHALLENGE_SCRIPT, isOwnHost, pagesToCheck, withoutEdgeScripts } from "./lib/smoke-csp.ts";
 
 /** Long enough for the scripts a page adds after it loads, and for an app's first screen to draw. */
 const SETTLE_MS = 2_000;
@@ -57,7 +59,12 @@ async function problemsOn(
     if (response?.ok() !== true) return [`answered ${String(response?.status() ?? "nothing")}`];
     if (!isOwnHost(page.url(), environment)) return [`ended on ${page.url()}, not the page: is Access letting it in?`];
     await page.waitForTimeout(SETTLE_MS);
-    return refused;
+    const challengeScripts = await page.evaluate(
+      (marker) =>
+        [...document.querySelectorAll("script:not([src])")].filter((each) => each.textContent.includes(marker)).length,
+      CHALLENGE_SCRIPT,
+    );
+    return withoutEdgeScripts(refused, challengeScripts);
   } finally {
     await context.close();
   }
@@ -81,4 +88,4 @@ if (failed > 0) {
   console.error(`content security policy check failed on ${String(failed)} page(s) (${environment})`);
   process.exit(1);
 }
-console.log(`content security policy check passed: no page refused anything (${environment})`);
+console.log(`content security policy check passed: no page refused anything of ours (${environment})`);

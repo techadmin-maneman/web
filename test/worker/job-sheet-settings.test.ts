@@ -81,7 +81,7 @@ describe("a checklist ops save", () => {
       { code: "cut_and_styled", label: "Cut and styled" },
       { code: "photo_angles_checked", label: "Photo angles checked" },
     ]);
-    expect(list?.retired).toEqual([{ code: "adhesive_renewed", label: "PLACEHOLDER Adhesive renewed" }]);
+    expect(list?.retired).toEqual([{ code: "adhesive_renewed", label: "Adhesive renewed" }]);
     expect(list?.set_by).toBe("ops@localhost");
 
     const audit = await env.DB.prepare(
@@ -91,7 +91,8 @@ describe("a checklist ops save", () => {
       detail: string;
     }>();
     expect(audit?.subject_id).toBe("checklist/service");
-    expect(JSON.parse(audit?.detail ?? "{}")).toEqual({ items: 6, added: 1, renamed: 5, retired: 1 });
+    // "Cut and styled" is the committed label already, so it is not counted as renamed.
+    expect(JSON.parse(audit?.detail ?? "{}")).toEqual({ items: 6, added: 1, renamed: 4, retired: 1 });
   });
 
   it("brings back an item it retired when it is sent again, and leaves the other kinds' lists alone", async () => {
@@ -239,12 +240,12 @@ describe("the partial reasons ops save", () => {
     await closed("piece_not_ready");
     expect(await partialTask()).toMatchObject({
       person: { id: PERSON },
-      detail: "PLACEHOLDER The piece was not ready",
+      detail: "Hair system not ready",
     });
 
     await job.opsPost("/api/job-sheet/partial-reasons", { items: REASONS });
     expect((await partialTask())?.detail).toBe("The piece was not ready");
     await closed("client_unwell");
-    expect((await partialTask())?.detail).toBe("PLACEHOLDER Client unwell");
+    expect((await partialTask())?.detail).toBe("Client unwell");
   });
 });

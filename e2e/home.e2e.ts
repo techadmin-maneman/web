@@ -421,7 +421,7 @@ test.describe("other pages", () => {
     await page.getByRole("button", { name: "Stop them" }).click();
 
     await expect(page.getByRole("heading", { name: "Done." })).toBeFocused();
-    await expect(page.getByText("We will no longer message you when we come to a new area.")).toBeVisible();
+    await expect(page.getByText("We won’t message you when we come to a new area any more.")).toBeVisible();
     expect(sent).toEqual([{ token: "the-token" }]);
     expect(new URL(page.url()).hash).toBe("");
   });

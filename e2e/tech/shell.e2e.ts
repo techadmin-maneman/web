@@ -253,7 +253,7 @@ test("a screen that fails to draw says so and offers a reload, and the reload lo
   // A release sends the day in a shape the screen cannot draw.
   fake.malformed = true;
   await page.reload();
-  await expect(page.getByText("This screen did not open. Nothing you recorded is lost.")).toBeVisible();
+  await expect(page.getByText("This screen didn’t open. Nothing you recorded is lost.")).toBeVisible();
   const results = await wcag(page);
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
