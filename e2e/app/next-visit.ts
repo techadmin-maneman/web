@@ -23,7 +23,8 @@ export interface NextVisitClient {
 export interface NextVisitClients {
   readonly due: NextVisitClient;
   readonly replacement: NextVisitClient;
-  readonly firstFit: NextVisitClient;
+  /** Offered from tomorrow, which firstFitDay reads when asked: a run can cross India's midnight after the seed. */
+  readonly firstFit: Pick<NextVisitClient, "mobile">;
 }
 
 const HANDOVER = "MM_E2E_NEXT_VISIT";
@@ -31,6 +32,9 @@ const DAY = 24 * 60 * 60 * 1000;
 
 /** India's calendar day `days` from today. */
 const indiaDay = (days: number) => new Date(Date.now() + 330 * 60 * 1000 + days * DAY).toISOString().slice(0, 10);
+
+/** India's day the app offers the first fit on: tomorrow, as of the moment it is asked. */
+export const firstFitDay = (): string => indiaDay(1);
 
 /** The clients the global setup seeded. */
 export function nextVisitClients(): NextVisitClients {
@@ -86,6 +90,6 @@ export async function seedNextVisit(): Promise<void> {
   process.env[HANDOVER] = JSON.stringify({
     due: { mobile: due.mobile, date: indiaDay(5) },
     replacement: { mobile: replacement.mobile, date: indiaDay(3) },
-    firstFit: { mobile: firstFit.mobile, date: indiaDay(1) },
+    firstFit: { mobile: firstFit.mobile },
   } satisfies NextVisitClients);
 }
