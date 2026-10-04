@@ -26,6 +26,6 @@ describe("icoOf", () => {
       const offset = view.getUint32(entry + 12, true);
       expect(ico.slice(offset, offset + png.length)).toEqual(new Uint8Array(png));
     });
-    expect(ico.length).toBe(6 + 32 + images[0].png.length + images[1].png.length);
+    expect(ico.length).toBe(6 + 32 + images.reduce((total, image) => total + image.png.length, 0));
   });
 });
