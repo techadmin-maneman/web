@@ -4,8 +4,9 @@
 // Separate from the messaging classification (src/config/message-templates.ts), which decides by the message's
 // kind: this decides by who it is about. Our own scripts invent a client or technician with a random
 // 9xxxxxxxxx number, very likely a real person's, since India publishes no reserved test range for mobiles.
-// Every one of them already names its invented record "Staging test" or "Load test", so that is the mark a test
-// record carries and a real one never does.
+// Every one of them names its invented record "Staging test" or "Load test", and a record so named when it is made
+// on staging is marked a test record, on the person (people.test_record). The mark is read from there, never from the
+// name again, so a rename can make nothing a test record that was not one (the owner's decision 23 of 2 Oct 2026).
 
 import type { EnvironmentName } from "../config/environments.ts";
 
@@ -20,13 +21,18 @@ export const RULES = [
 const STAGING_TEST_NAME_PREFIXES = ["Staging test", "Load test"] as const;
 
 /**
- * Whether this name marks a record one of our own scripts or fixtures wrote, not a real person or technician's.
- * Exactly one of the names above, or either followed by a word ("Staging test technician"), counts; nothing else
- * does, so a script that gives its invented record another name is the one that is wrong, not this check.
+ * Whether this name is one our own scripts and fixtures give an invented record. Exactly one of the names above, or
+ * either followed by a word ("Staging test technician"), counts; nothing else does, so a script that gives its
+ * invented record another name is the one that is wrong, not this check. A person's mark is read from people.test_record
+ * once they exist; a technician's, whom ops alone name, from their name.
  */
-export function isStagingTestRecord(name: string): boolean {
+export function isStagingTestName(name: string): boolean {
   return STAGING_TEST_NAME_PREFIXES.some((prefix) => name === prefix || name.startsWith(`${prefix} `));
 }
+
+/** Whether a person made now, with this name, is a test record: on staging alone, and so named. */
+export const testRecordAtCreation = (environment: EnvironmentName | undefined, name: string): boolean =>
+  environment === "staging" && isStagingTestName(name);
 
 /**
  * A name as a screen or message shows it: a test record's without its mark, so named copy can be judged on staging.
@@ -43,6 +49,6 @@ export function withoutTestMark(name: string): string {
  * Whether a test run on staging may skip the limits per address (IP) for this record: an audit books and signs in
  * many test records from one machine, where real clients come from many. The limits per number still apply.
  */
-export function skipsAddressLimits(environment: EnvironmentName | undefined, name: string | null): boolean {
-  return environment === "staging" && name !== null && isStagingTestRecord(name);
+export function skipsAddressLimits(environment: EnvironmentName | undefined, testRecord: boolean): boolean {
+  return environment === "staging" && testRecord;
 }

@@ -67,6 +67,8 @@ import { recordConsent, type ConsentRule } from "./consents.ts";
 import { bookableService, offeredProducts } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
 import { notBookedFromSite, typedAddress, type NotBookedFromSite } from "../policy/site-booking.ts";
+import { testRecordAtCreation } from "../policy/staging-test-records.ts";
+import type { EnvironmentName } from "../config/environments.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
 import { checkForOneVisit, codeOnHold, useOnNewHold, type OneVisitCode } from "./discount-code-holds.ts";
 import { attribute, hasAskedForAVisit, type Invite, type InviteState, type Via } from "./referrals.ts";
@@ -113,6 +115,8 @@ export interface FormRequest {
   readonly log: Logger;
   readonly requestId: string;
   readonly now: Date;
+  /** Where the form is answered: a person made on staging with a test name is a test record. */
+  readonly environment: EnvironmentName;
   /** Clients book, and the slot is held, only while self-serve booking is on (ADR 0045). */
   readonly selfServeBooking: boolean;
   /** The number, the Turnstile token and the day's limits per number and address, the same for both pages. */
@@ -147,6 +151,7 @@ function formPerson(
     knownId: string | null;
     mobile: string;
     name: string;
+    testRecord: boolean;
     purpose: "whatsapp_visits" | "contact";
     notice: string;
     source: ConsentSource;
@@ -159,8 +164,11 @@ function formPerson(
   const person =
     input.knownId === null
       ? db
-          .prepare("INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?1, ?2, ?3, ?4, 1)")
-          .bind(id, at, input.mobile, input.name)
+          .prepare(
+            `INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record)
+             VALUES (?1, ?2, ?3, ?4, 1, ?5)`,
+          )
+          .bind(id, at, input.mobile, input.name, input.testRecord ? 1 : 0)
       : db.prepare("UPDATE people SET contactable = 1 WHERE id = ?1").bind(id);
   const consent = recordConsent(db, {
     person: { id },
@@ -263,6 +271,7 @@ async function recordLead(
     leadId,
     newPersonId: input.personId,
     name: input.name,
+    testRecord: testRecordAtCreation(form.environment, input.name),
     mobileE164: input.mobile,
     city: input.pincode === null ? null : await leadCity(db, input.pincode.city),
     source: input.served ? "form" : "waitlist",
@@ -477,6 +486,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     knownId,
     mobile: checked.mobile,
     name: request.name,
+    testRecord: testRecordAtCreation(form.environment, request.name),
     purpose: "whatsapp_visits",
     notice: CONSULTATION_NOTICES[request.source],
     source: request.source,
@@ -718,6 +728,7 @@ export async function joinTheWaitlist(
     knownId,
     mobile: checked.mobile,
     name: request.name,
+    testRecord: testRecordAtCreation(form.environment, request.name),
     purpose: "contact",
     notice: LANDING_NOTICES.waitlist,
     source: request.source,

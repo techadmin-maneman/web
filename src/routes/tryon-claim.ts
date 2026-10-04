@@ -14,6 +14,8 @@ import type { App, AppEnv } from "../http/context.ts";
 import { CURRENT_NOTICE } from "../config/notices.ts";
 import { TRYON_STAGES } from "../config/tryon.ts";
 import { isSpent, takeOne } from "../domain/rate-limit.ts";
+import { isTestNumber } from "../domain/test-records.ts";
+import { testRecordAtCreation } from "../policy/staging-test-records.ts";
 import { loadJob, type JobRow } from "../domain/tryon.ts";
 import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../domain/tryon-claims.ts";
 import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
@@ -161,7 +163,7 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
     messaging: settings.messaging,
     heldBack: heldBackByAllowlist(settings.messaging, {
       mobile_e164: mobileE164,
-      name: request.name,
+      test_record: (await isTestNumber(db, c.var.config.environment, mobileE164, request.name)) ? 1 : 0,
       kind: "tryon_result",
     }),
     capSpent: await isSpent(db, await resultMessageCap(settings, mobileE164, now)),
@@ -186,6 +188,7 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
     job,
     mobileE164,
     name: request.name,
+    testRecord: testRecordAtCreation(c.var.config.environment, request.name),
     stage: request.stage,
     gateNotice,
     attribution: request.attribution ?? {},

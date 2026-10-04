@@ -276,7 +276,11 @@ async function tellDeletionDone(c: Context<AppEnv>, contact: ErasedContact): Pro
       return;
     }
     if (
-      heldBackByAllowlist(messaging, { mobile_e164: contact.mobileE164, name: contact.name, kind: "deletion_done" })
+      heldBackByAllowlist(messaging, {
+        mobile_e164: contact.mobileE164,
+        test_record: contact.testRecord ? 1 : 0,
+        kind: "deletion_done",
+      })
     ) {
       log.info("deletion_done_not_sent", { reason: "number not on the allowlist" });
       return;

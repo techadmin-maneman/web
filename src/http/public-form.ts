@@ -5,6 +5,7 @@
 import type { Context } from "hono";
 import type { Checked, FormRequest } from "../domain/public-booking.ts";
 import { takeOne } from "../domain/rate-limit.ts";
+import { isTestNumber } from "../domain/test-records.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { toE164 } from "../lib/mobile.ts";
@@ -28,7 +29,7 @@ async function checkPerson(c: Context<AppEnv>, mobile: string, token: string, na
   const db = c.env.DB;
   // The address first: a refusal of the address costs the number nothing.
   const within =
-    (skipsAddressLimits(environment, name) ||
+    (skipsAddressLimits(environment, await isTestNumber(db, environment, mobileE164, name)) ||
       (await takeOne(db, {
         scope: "booking:ip",
         key: visitor.ipHash,
@@ -53,6 +54,7 @@ export function formRequest(c: Context<AppEnv>): FormRequest {
     log: c.var.log,
     requestId: c.var.requestId,
     now: c.var.deps.now(),
+    environment: c.var.config.environment,
     selfServeBooking: c.var.config.settings.selfServeBooking,
     checkPerson: (mobile, token, name) => checkPerson(c, mobile, token, name),
     provedNumber: (codeId, mobileE164) => provedNumber(c, codeId, mobileE164),

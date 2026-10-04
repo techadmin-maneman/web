@@ -2,18 +2,31 @@
 
 import { describe, expect, it } from "vitest";
 import { firstNameOf } from "../../src/lib/names.ts";
-import { isStagingTestRecord, RULES, withoutTestMark } from "../../src/policy/staging-test-records.ts";
+import {
+  isStagingTestName,
+  RULES,
+  testRecordAtCreation,
+  withoutTestMark,
+} from "../../src/policy/staging-test-records.ts";
 
 describe("a staging test record", () => {
   it(RULES[0], () => {
     for (const name of ["Staging test", "Load test", "Staging test technician", "Load test friend"]) {
-      expect(isStagingTestRecord(name), name).toBe(true);
+      expect(isStagingTestName(name), name).toBe(true);
     }
+  });
+
+  // PS-35 and the owner's decision 23: the mark is stored when a record is made, on staging alone.
+  it("is marked when made on staging with a test name, and never elsewhere", () => {
+    expect(testRecordAtCreation("staging", "Staging test Asha")).toBe(true);
+    expect(testRecordAtCreation("staging", "Asha Verma")).toBe(false);
+    expect(testRecordAtCreation("production", "Staging test Asha")).toBe(false);
+    expect(testRecordAtCreation("local", "Staging test Asha")).toBe(false);
   });
 
   it("is never a real person's or technician's name", () => {
     for (const name of ["Arjun Mehta", "Load", "Staging", "Load testing centre", "Staging testimonial"]) {
-      expect(isStagingTestRecord(name), name).toBe(false);
+      expect(isStagingTestName(name), name).toBe(false);
     }
   });
 

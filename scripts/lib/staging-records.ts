@@ -7,7 +7,7 @@
 // (src/policy/staging-test-records.ts), and their Books customer and CRM lead carry that name.
 // Every ID staging's database keeps is staging's too, whatever the record is named now: an erased client's, say.
 
-import { isStagingTestRecord } from "../../src/policy/staging-test-records.ts";
+import { isStagingTestName } from "../../src/policy/staging-test-records.ts";
 
 /** Where a record is, and its module there, in the order a list is deleted in: what points at a record goes first. */
 export const DELETE_ORDER = [
@@ -46,7 +46,7 @@ export function isStagingLabelled(text: string | null | undefined): boolean {
 
 /** Whether a name or description is staging's by either mark. */
 export function isStagingMarked(text: string | null | undefined): boolean {
-  return isStagingLabelled(text) || isStagingTestRecord(text ?? "");
+  return isStagingLabelled(text) || isStagingTestName(text ?? "");
 }
 
 /**

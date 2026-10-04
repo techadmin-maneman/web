@@ -13,9 +13,9 @@
 //
 // A code is always asked for by the phone that receives it, so staging's messaging allowlist never holds one back
 // (docs/decisions/0025-phase-2-conflicts-register.md, item 84; ADR 0097) — unless the account is a test record one
-// of our own scripts made ("Staging test", "Load test"), which is messaged only on the allowlist like any other
-// (isStagingTestRecord, src/policy/staging-test-records.ts). Production's allowlist is empty, so neither changes
-// anything there.
+// of our own scripts made, marked on the person (people.test_record), which is messaged only on the allowlist like
+// any other (src/policy/staging-test-records.ts). Production's allowlist is empty, and production marks no test
+// record, so neither changes anything there.
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
@@ -24,7 +24,7 @@ import { alertCeilingReached, ceilingReached, takeFromCeiling, type Ceiling } fr
 import { countOne, takeOne } from "../domain/rate-limit.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { scrubString } from "../log.ts";
-import { isStagingTestRecord, skipsAddressLimits } from "../policy/staging-test-records.ts";
+import { skipsAddressLimits } from "../policy/staging-test-records.ts";
 import type { CodeChannel } from "../providers/codes.ts";
 import { afterResponse } from "./after-response.ts";
 
@@ -71,15 +71,15 @@ export async function mayAskForCode(
     readonly mobileHash: string;
     readonly ipHash: string;
     readonly now: Date;
-    /** The name of whoever holds the number, where it is already known. */
-    readonly name: string | null;
+    /** Whether the number is a test record's (src/domain/test-records.ts). */
+    readonly testRecord: boolean;
   },
 ): Promise<CodeGate> {
   if (await ceilingSpent(c, CEILING_OF[input.surface], input.now)) return "busy";
   const { login: limits } = c.var.config.settings;
   const db = c.env.DB;
   const withinAddress =
-    skipsAddressLimits(c.var.config.environment, input.name) ||
+    skipsAddressLimits(c.var.config.environment, input.testRecord) ||
     (await takeOne(db, {
       scope: `${input.surface}:code:ip`,
       key: input.ipHash,
@@ -100,17 +100,17 @@ export async function mayAskForCode(
  * The code a new challenge is made with when it is not a random one: staging's known code for one of our own test
  * records, or locally the fixed code for everyone. Null means a fresh random code.
  */
-export function knownCode(login: LoginSettings, name: string | null): string | null {
-  if (login.testRecordCode !== null && name !== null && isStagingTestRecord(name)) return login.testRecordCode;
+export function knownCode(login: LoginSettings, testRecord: boolean): string | null {
+  if (login.testRecordCode !== null && testRecord) return login.testRecordCode;
   return login.fixedCode;
 }
 
 /**
  * Whether this account's code would be held back by staging's allowlist: only ever true for one of our own
- * scripts' test records (ADR 0097, isStagingTestRecord). A real account's code is never held back by it.
+ * scripts' test records (ADR 0097). A real account's code is never held back by it.
  */
-function heldBackByAllowlist(c: Context<AppEnv>, sendsTo: string, name: string): boolean {
-  return isStagingTestRecord(name) && !onAllowlist(c.var.config.settings.messaging, sendsTo);
+function heldBackByAllowlist(c: Context<AppEnv>, sendsTo: string, testRecord: boolean): boolean {
+  return testRecord && !onAllowlist(c.var.config.settings.messaging, sendsTo);
 }
 
 /**
@@ -121,11 +121,11 @@ export async function countCode(
   c: Context<AppEnv>,
   surface: CodeSurface,
   sendsTo: string | null,
-  name: string | null,
+  testRecord: boolean,
   now: Date,
 ): Promise<boolean> {
   if (sendsTo === null) return true;
-  if (name !== null && heldBackByAllowlist(c, sendsTo, name)) return true;
+  if (heldBackByAllowlist(c, sendsTo, testRecord)) return true;
   return withinCodeCeiling(c, now, CEILING_OF[surface]);
 }
 
@@ -137,7 +137,7 @@ export async function countCode(
 export async function sendCodeAfterResponse(
   c: Context<AppEnv>,
   mobileE164: string | null,
-  name: string | null,
+  testRecord: boolean,
   channel: CodeChannel,
   code: string,
 ): Promise<void> {
@@ -147,7 +147,7 @@ export async function sendCodeAfterResponse(
       log.info("login_code_not_sent", { channel, reason: "no account holds the number" });
       return;
     }
-    if (name !== null && heldBackByAllowlist(c, mobileE164, name)) {
+    if (heldBackByAllowlist(c, mobileE164, testRecord)) {
       log.info("login_code_not_sent", { channel, reason: "number not on the allowlist" });
       return;
     }

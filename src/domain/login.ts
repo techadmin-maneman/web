@@ -15,8 +15,9 @@ import {
 export interface EligiblePerson {
   readonly id: string;
   readonly mobileE164: string;
-  /** Whether this record is one of our own scripts' is read from it (isStagingTestRecord, ADR 0097). */
   readonly name: string;
+  /** One of our own scripts' records, or a staging test's (src/policy/staging-test-records.ts). */
+  readonly testRecord: boolean;
 }
 
 /**
@@ -27,14 +28,14 @@ export interface EligiblePerson {
 export async function findEligiblePerson(db: D1Database, mobileE164: string): Promise<EligiblePerson | null> {
   const row = await db
     .prepare(
-      `SELECT p.id, p.name FROM people p
+      `SELECT p.id, p.name, p.test_record FROM people p
        WHERE p.mobile_e164 = ?1 AND p.erased_at IS NULL
          AND (EXISTS (SELECT 1 FROM leads l WHERE l.person_id = p.id AND l.proposed_visit_date IS NOT NULL)
            OR EXISTS (SELECT 1 FROM appointments a WHERE a.person_id = p.id AND a.deleted_at IS NULL))`,
     )
     .bind(mobileE164)
-    .first<{ id: string; name: string }>();
-  return row === null ? null : { id: row.id, mobileE164, name: row.name };
+    .first<{ id: string; name: string; test_record: number }>();
+  return row === null ? null : { id: row.id, mobileE164, name: row.name, testRecord: row.test_record === 1 };
 }
 
 /** A challenge that can still be answered: not expired, verified or void. */

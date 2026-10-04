@@ -588,11 +588,15 @@ export function registerClientProfile(app: App): void {
       pepper: config.settings.login.codePepper,
       audit: audit(personId, requestId, { action: "number_change.request" }),
       now,
-      fixedCode: knownCode(config.settings.login, contact?.name ?? null),
+      // The known code proves only the number a test record already has: never the new one (PS-35).
+      knownCodes: {
+        old: knownCode(config.settings.login, contact?.testRecord ?? false),
+        new: knownCode(config.settings.login, false),
+      },
     });
-    const name = contact?.name ?? null;
-    await sendCodeAfterResponse(c, current, name, "whatsapp", started.codes.old.code);
-    await sendCodeAfterResponse(c, newMobile, name, "whatsapp", started.codes.new.code);
+    const testRecord = contact?.testRecord ?? false;
+    await sendCodeAfterResponse(c, current, testRecord, "whatsapp", started.codes.old.code);
+    await sendCodeAfterResponse(c, newMobile, testRecord, "whatsapp", started.codes.new.code);
     const expiresIn = Math.round((started.codes.new.challenge.expiresAt.getTime() - now.getTime()) / 1000);
     return c.json({ request_id: started.change.id, expires_in_s: expiresIn }, 202);
   });

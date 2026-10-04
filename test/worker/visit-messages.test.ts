@@ -456,7 +456,7 @@ describe("sending a visit message", () => {
       await consent(true);
       await visit();
       await paid();
-      await env.DB.prepare("UPDATE people SET name = 'Staging test' WHERE id = ?1").bind(PERSON).run();
+      await env.DB.prepare("UPDATE people SET name = 'Staging test', test_record = 1 WHERE id = ?1").bind(PERSON).run();
       const message = visitMessage(env.DB, {
         personId: PERSON,
         appointmentId: VISIT,
@@ -529,7 +529,7 @@ describe("sending a visit message", () => {
       await consent(true);
       await visit();
       await paid();
-      await env.DB.prepare("UPDATE people SET name = 'Staging test' WHERE id = ?1").bind(PERSON).run();
+      await env.DB.prepare("UPDATE people SET name = 'Staging test', test_record = 1 WHERE id = ?1").bind(PERSON).run();
       const message = visitMessage(env.DB, {
         personId: PERSON,
         appointmentId: VISIT,
