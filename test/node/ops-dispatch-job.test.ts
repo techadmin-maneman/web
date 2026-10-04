@@ -7,6 +7,7 @@ import type { Block, BoardRow, Unassigned } from "../../apps/ops/src/api.ts";
 import {
   addDays,
   begunWord,
+  blockOn,
   changeOf,
   changesTime,
   firstNameOf,
@@ -147,6 +148,19 @@ describe("where a job stands, and what a move changes", () => {
     expect(changeOf(block({ status: "in_progress", begun: "closed" }), after)).toBeNull();
     expect(changeOf(block({ status: "completed" }), after)).toBeNull();
     expect(changeOf(block({ status: "terminated" }), after)).toBeNull();
+  });
+
+  // OIA-03, BK-21: a link names the visit, and the board opens its drawer from the block it finds.
+  it("finds a visit's block on a technician's day, and nothing for a visit it does not hold", () => {
+    const tuesday = block({ appointment_id: "a7" });
+    const board = { technicians: [{ ...ROW, days: [{ date: "2025-09-23", blocks: [block(), tuesday] }] }] };
+    expect(blockOn(board, "a7")).toEqual({
+      kind: "block",
+      block: tuesday,
+      technician: board.technicians[0],
+      date: "2025-09-23",
+    });
+    expect(blockOn(board, "a9")).toBeNull();
   });
 
   it("counts the board's weeks in whole days, across a month and a year's end", () => {
