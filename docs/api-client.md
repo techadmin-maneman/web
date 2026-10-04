@@ -2804,6 +2804,17 @@ Request body:
     "name": {
       "type": "string"
     },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The line ops wrote to read under its name; null for none."
+    },
     "minutes": {
       "type": "integer",
       "description": "How long the visit is booked for."
@@ -2816,6 +2827,7 @@ Request body:
     "type",
     "tier",
     "name",
+    "description",
     "minutes",
     "price"
   ],
@@ -5454,6 +5466,10 @@ Request body:
       ],
       "description": "Whoever did the client's latest visit."
     },
+    "change_notice_hours": {
+      "type": "integer",
+      "description": "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it."
+    },
     "last": {
       "type": "string",
       "format": "date",
@@ -5513,13 +5529,18 @@ Request body:
                     }
                   ],
                   "description": "Who would come: the regular technician, another, or nobody (full)."
+                },
+                "change_charged": {
+                  "type": "boolean",
+                  "description": "Booked now, moving or cancelling it would already cost the client: it starts inside the notice, and its kind is charged there."
                 }
               },
               "required": [
                 "window",
                 "start",
                 "end",
-                "with"
+                "with",
+                "change_charged"
               ],
               "additionalProperties": false
             }
@@ -5539,6 +5560,7 @@ Request body:
     "service",
     "price",
     "regular",
+    "change_notice_hours",
     "last",
     "days"
   ],

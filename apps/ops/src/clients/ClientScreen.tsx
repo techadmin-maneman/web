@@ -6,7 +6,8 @@
 // The record is read once for the page. Visits, Payments, Referrals and History
 // are drawn from it, so moving between them costs no request. The photographs'
 // opening is held here too, so leaving their tab and coming back is the same
-// view and not a second entry in the log.
+// view and not a second entry in the log. A client erased since has no tabs:
+// their page keeps only their visits and money (Erase.tsx).
 
 import { ICONS } from "@maneman/brand/icons";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
@@ -14,7 +15,7 @@ import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useState } from "react";
-import { api, type ClientInvite, type ClientRecord } from "../api.ts";
+import { api, isErased, type ClientInvite, type ClientRecord } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -22,7 +23,7 @@ import { clientPath, type ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Consents } from "./Consents.tsx";
-import { Erased } from "./Erase.tsx";
+import { Erased, ErasedRecord } from "./Erase.tsx";
 import { History, replacementDueOf } from "./History.tsx";
 import { Invite, type InviteNews } from "./Invite.tsx";
 import { OpenTasks } from "./OpenTasks.tsx";
@@ -212,45 +213,53 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
             <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />
           </div>
         ),
-        loaded: (record) => (
-          <div className={styles.client}>
-            <Head
-              record={record}
-              credits={adjusted?.credits ?? record.credits}
-              invite={attached?.invite ?? record.invite}
-            />
-            <OpenTasks clientId={clientId} />
-            <Tabs className={styles.tabs} label={record.name}>
-              {clients.tabs.map((each) => (
-                <OpsLink key={each.tab} className={TAB} to={clientPath(clientId, each.tab)} current={each.tab === tab}>
-                  {each.label}
-                </OpsLink>
-              ))}
-            </Tabs>
-            <div className={styles.panel}>
-              <Tab
-                clientId={clientId}
-                tab={tab}
+        loaded: (record) =>
+          isErased(record) ? (
+            <ErasedRecord record={record} onChanged={retry} />
+          ) : (
+            <div className={styles.client}>
+              <Head
                 record={record}
                 credits={adjusted?.credits ?? record.credits}
-                onCredits={(credits) => {
-                  setAdjusted({ credits });
-                }}
-                attached={attached}
-                onAttached={setAttached}
-                address={given?.address ?? record.address}
-                onAddress={(address) => {
-                  setGiven({ address });
-                }}
-                onChanged={retry}
-                onErased={() => {
-                  setErasedId(clientId);
-                }}
-                photos={photos}
+                invite={attached?.invite ?? record.invite}
               />
+              <OpenTasks clientId={clientId} />
+              <Tabs className={styles.tabs} label={record.name}>
+                {clients.tabs.map((each) => (
+                  <OpsLink
+                    key={each.tab}
+                    className={TAB}
+                    to={clientPath(clientId, each.tab)}
+                    current={each.tab === tab}
+                  >
+                    {each.label}
+                  </OpsLink>
+                ))}
+              </Tabs>
+              <div className={styles.panel}>
+                <Tab
+                  clientId={clientId}
+                  tab={tab}
+                  record={record}
+                  credits={adjusted?.credits ?? record.credits}
+                  onCredits={(credits) => {
+                    setAdjusted({ credits });
+                  }}
+                  attached={attached}
+                  onAttached={setAttached}
+                  address={given?.address ?? record.address}
+                  onAddress={(address) => {
+                    setGiven({ address });
+                  }}
+                  onChanged={retry}
+                  onErased={() => {
+                    setErasedId(clientId);
+                  }}
+                  photos={photos}
+                />
+              </div>
             </div>
-          </div>
-        ),
+          ),
       })}
     </Shell>
   );

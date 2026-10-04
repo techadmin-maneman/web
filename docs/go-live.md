@@ -76,7 +76,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 **Before it:**
 
 - [ ] The home page's material in `site/src/assets`, each block `publish: true` (items 73 to 81), and the production build looked at (`docs/frontend.md`, "Going live in production").
-- [ ] Counsel's wording of the privacy page and the terms (items 44 and 149), and the try-on's notices approved (item 146): production's site build refuses `photo-v3` and `gate-v3` until they are (ADR 0104).
+- [ ] Counsel's wording of the privacy page and the terms (items 44 and 149), and the try-on's notices approved (item 146): production's site build refuses `photo-v4` and `gate-v4` until they are (ADR 0104).
 - [ ] The Grievance Officer on the privacy page (item 51).
 - [ ] The analytics IDs, and the consent banner they need (item 84).
 - [ ] The dedicated WhatsApp number (item 38) and `MESSAGING_ENABLED` `"true"` in production's vars (item 164): the try-on's look goes to WhatsApp only, so while it is off the try-on does not run (ADR 0104).

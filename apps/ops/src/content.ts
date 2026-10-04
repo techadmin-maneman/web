@@ -12,6 +12,9 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
 /** PLACEHOLDER: the API refused a call the person's access does not reach. */
 export const NOT_PERMITTED = "Your access doesn't include this. Ask an admin.";
 
+/** PLACEHOLDER: shown wherever a number would be, for a client erased since, whose number is gone. */
+export const ERASED_MOBILE = "Erased client";
+
 /** The five departments, as the navigation heads its sections and the Staff page names a grant. */
 const DEPARTMENT_NAMES = {
   operations: "Operations",
@@ -223,9 +226,13 @@ export const dispatch = {
     /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
-    /** PLACEHOLDER: a move the client has not heard of, which ops tell him of by phone (ADR 0069). */
-    untold: (when: string, mobile: string) =>
-      `Not told of the move to ${when}: no WhatsApp. Call ${mobile}, then record it here.`,
+    /** PLACEHOLDER: a move the client has not heard of, and why, which ops tell him of by phone (ADR 0069). */
+    untold: {
+      no_consent: (when: string, mobile: string) =>
+        `Not told of the move to ${when}: they have not agreed to WhatsApp. Call ${mobile}, then record it here.`,
+      not_sent: (when: string, mobile: string) =>
+        `Not told of the move to ${when}: the WhatsApp did not go. Call ${mobile}, then record it here.`,
+    },
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
     /** PLACEHOLDER: a visit ops cancel for the client, or close by hand once its technician's phone was lost. */
@@ -296,7 +303,8 @@ export const dispatch = {
     stop: "Stop moving it",
     /** What happened, from the move's own answer: a message is claimed only where one was queued. */
     moved: {
-      messaged: (job: string) => `${job} moved. The client was sent the new window on WhatsApp.`,
+      messaged: (job: string) =>
+        `Moved. We're sending ${job} the new window on WhatsApp; if it fails, a call task appears.`,
       call: (job: string, name: string, mobile: string) =>
         `${job} moved. ${name} has not agreed to WhatsApp: call ${mobile} with the new window.`,
       unchanged: (job: string, technician: string) =>
@@ -584,7 +592,7 @@ export const clients = {
       why: (when: string, reason: string) => `Refunded automatically on ${when}: ${reason}.`,
       reasons: {
         lapsed: "paid after the hold lapsed",
-        not_movable: "the visit had begun, so it could not be moved",
+        not_movable: "the visit had begun, or its technician or time had changed, so it could not be moved",
       },
     },
     /**
@@ -1150,13 +1158,14 @@ export const clients = {
     /** Why nothing was erased, and what ops may do about it. */
     owed: {
       visit_booked: "They still have a visit booked, so nothing was erased. Cancel it and refund what they paid first.",
-      payment_held: "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it first.",
+      payment_held:
+        "We still owe them money back, so nothing was erased. Erase once their Payments tab shows it refunded.",
       payment_owed: "A payment link of theirs is still unpaid, so nothing was erased.",
     },
     /** To erase today all the same, when what is owed cannot be settled first. */
     settle: {
       visit_booked: "I will cancel and refund it by hand today.",
-      payment_held: "I will cancel and refund it by hand today.",
+      payment_held: "I will make sure it is refunded today.",
       payment_owed: "Their link is cancelled, and what they owe goes unpaid.",
     },
     anyway: "Erase anyway",
@@ -1166,6 +1175,15 @@ export const clients = {
         "Their photographs and details are gone. Their records in the CRM, Books and FSM are blanked within a few " +
         "minutes. Tell them it is done, in the chat they asked in.",
       back: "Find another client",
+    },
+    /** PLACEHOLDER: the page of a client erased since, which keeps only their visits and money. */
+    record: {
+      title: "Erased client",
+      /** Whose visit the panels that cancel or close one name. */
+      whose: "the erased client",
+      on: (date: string) =>
+        `Erased on ${date}. Their name, number, address and photographs are gone; their visits and payments stay on ` +
+        "record.",
     },
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -1619,8 +1637,6 @@ export const noShows = {
     credit: "a free service visit",
     /** The board's four rows. */
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
-    /** PLACEHOLDER: no receipt came back for the reminder or the arrival notice. */
-    notDelivered: "Not delivered",
     /** The board's note, "Your note · required", and its placeholder. */
     reason: {
       label: "Your note · required",
@@ -1733,8 +1749,15 @@ export const tasks = {
   truncated: "More are waiting than one look reads, so a count here may be short.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
-    /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the row. */
-    untold_move: (when: string) => `Moved to ${when}; not on WhatsApp`,
+    /**
+     * PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; has not agreed to WhatsApp": ops call, then say so on the row. A
+     * reason the API does not name says only that the client was not told.
+     */
+    untold_move: {
+      no_consent: (when: string) => `Moved to ${when}; has not agreed to WhatsApp`,
+      not_sent: (when: string) => `Moved to ${when}; the WhatsApp did not go`,
+      unknown: (when: string) => `Moved to ${when}; not told yet`,
+    },
     /**
      * PLACEHOLDER: "Service visit, Thu 24 Sep, afternoon; FSM refused it": booked or refunded from the client's
      * Visits tab (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
@@ -2178,7 +2201,7 @@ export const deletions = {
         "Every photograph of them, their visits' and their try-ons', the files as well as the records",
         "Their referral card, so an invite they sent shows the house card from now on",
         "Their saved addresses, and any number change under way",
-        "Their name, number and e-mail on the record, and the words of any grievance",
+        "Their name, number and e-mail on the record, and the words of any grievance; one still open is closed",
         "Their sessions, so their phone is signed out at once",
       ],
     },
@@ -2204,6 +2227,11 @@ export const deletions = {
       cancel: "Leave it waiting",
     },
     rejecting: "Rejecting",
+    /** PLACEHOLDER: above the queue once a decision is made. */
+    done: {
+      delete: "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within the hour.",
+      reject: "Request rejected. The client is told why on WhatsApp.",
+    },
     empty: "No deletion request is waiting.",
     note: (days: number) =>
       `Each request is processed within ${String(days)} days of being made. ` +
@@ -2216,7 +2244,7 @@ export const deletions = {
         "They still have a visit booked, so nothing was erased. Cancel it on their Visits tab, which refunds what they " +
         "paid, then delete.",
       payment_held:
-        "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it, then delete.",
+        "We still owe them money back, so nothing was erased. Delete once their Payments tab shows it refunded.",
       payment_owed: "A payment link of theirs is still unpaid, so nothing was erased. Delete once it is paid.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. The client has not been erased.",
@@ -2254,6 +2282,9 @@ export const numberChanges = {
     } as Readonly<Record<string, string>>,
   },
 } as const;
+
+/** A service's description in a check line: quoted, or "no description". */
+const descriptionWords = (line: string) => (line === "" ? "no description" : `“${line}”`);
 
 /**
  * Settings: the business inputs ops set for themselves. The design draws this
@@ -2538,10 +2569,13 @@ export const settings = {
     kinds: dispatch.typeNames,
     /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
     hairSystems:
-      "Clients book a first fit only as one of these hair systems, by its name and price here. With none offered " +
-      "and priced, first fits and the consultation and fit in one visit cannot be booked.",
+      "Clients book a first fit only as one of these hair systems, by its name, description and price here. With " +
+      "none offered and priced, first fits and the consultation and fit in one visit cannot be booked.",
     /** "180 minutes · code premium": how long it is held and booked for, and what the price book prices it by. */
     facts: (minutes: number, tier: string) => `${String(minutes)} minutes · code ${tier}`,
+    /** The line clients read under the service's name in the app as they choose. */
+    described: (line: string) => `Clients read: “${line}”`,
+    notDescribed: "No description, so clients read the name alone.",
     fsm: { linked: "In FSM's catalogue", notYet: "Not found in FSM's catalogue yet" },
     offered: "Offered",
     retiring: (from: string) => `Clients stop seeing it from ${from}`,
@@ -2569,6 +2603,7 @@ export const settings = {
       correct: "Correct",
       takeBack: "Take back",
       rename: "Rename",
+      describe: "Change description",
       length: "Change length",
       retire: "Retire",
       restore: "Restore",
@@ -2583,6 +2618,7 @@ export const settings = {
       correct: (name: string, from: string) => `Correct the ${name} price from ${from}`,
       takeBack: (name: string, from: string) => `Take back the ${name} price from ${from}`,
       rename: (name: string) => `Rename ${name}`,
+      describe: (name: string) => `Change the description of ${name}`,
       length: (name: string) => `Change the length of ${name}`,
       retire: (name: string) => `Retire ${name}`,
       restore: (name: string) => `Restore ${name}`,
@@ -2602,6 +2638,11 @@ export const settings = {
       renameTitle: (name: string) => `Rename ${name}`,
       name: "Name",
       nameHint: "What clients, ops and FSM's catalogue call it. A letter or a digit first.",
+      describeTitle: (name: string) => `The description of ${name}`,
+      description: "Description",
+      descriptionHint: (max: number) =>
+        `One line clients read under its name as they choose: what sets it apart. Up to ${String(max)} characters. ` +
+        "Leave it empty to show none.",
       lengthTitle: (name: string) => `The length of ${name}`,
       minutes: "Length, in minutes",
       minutesHint: (min: number, max: number) =>
@@ -2626,6 +2667,8 @@ export const settings = {
       sameDay: "A price is already set from that day. This replaces it.",
       rename: (was: string, now: string, tier: string) =>
         `${was} → ${now}. Its code stays ${tier}, and with it every price it has and every visit sold.`,
+      describe: (name: string, was: string, now: string) =>
+        `${name}: ${descriptionWords(was)} → ${descriptionWords(now)}`,
       length: (name: string, was: number, now: number) =>
         `${name}: ${String(was)} → ${String(now)} minutes. A visit held or booked before keeps its own length.`,
       retire: (name: string, from: string) =>
@@ -2651,6 +2694,7 @@ export const settings = {
       not_permitted: NOT_PERMITTED,
       tier: "No service of this kind has that code, or a code cannot be made from that name. Nothing was changed.",
       name: "A name starts with a letter or a digit, runs from 2 to 60 characters, and opens no formula. Nothing was changed.",
+      description: "A description is one line, up to the length under the field. Nothing was changed.",
       minutes: "A length is whole minutes, inside the range under the field. Nothing was changed.",
       retired_date:
         "A service retires from today or a day after it, and one already retired is restored first. Nothing was changed.",

@@ -400,6 +400,64 @@ export function RenameForm(props: {
   );
 }
 
+/** The line clients read under a service's name as they choose. Left empty, they read the name alone. */
+export function DescribeForm(props: {
+  readonly service: OpsService;
+  readonly maxLength: number;
+  readonly onDone: (written: Written & { ok: true }) => void;
+  readonly onCancel: () => void;
+}) {
+  const { service } = props;
+  const was = service.description ?? "";
+  const [line, setLine] = useState(was);
+  const steps = useSteps(async () => {
+    const answer = await api.describeService(service.kind, service.tier, line.trim());
+    return answer.ok
+      ? { ok: true, services: answer.body, said: copy.done.saved }
+      : { ok: false, code: answer.code, fields: answer.fields };
+  }, props.onDone);
+  const id = `describe-${service.kind}-${service.tier}`;
+  return (
+    <fieldset className={styles.group}>
+      <legend className={styles.ruleTitle}>{form.describeTitle(service.name)}</legend>
+      <div className={styles.fields}>
+        <Box id={id} label={form.description} hint={form.descriptionHint(props.maxLength)}>
+          {(hint) => (
+            <input
+              className={styles.text}
+              id={id}
+              type="text"
+              maxLength={props.maxLength}
+              value={line}
+              aria-describedby={hint}
+              onChange={(event) => {
+                setLine(event.target.value);
+                steps.edit();
+              }}
+            />
+          )}
+        </Box>
+      </div>
+      {steps.step === "editing" ? (
+        <FormButtons ready={line.trim() !== was} onNext={steps.check} onCancel={props.onCancel} />
+      ) : (
+        <Check
+          id={`${id}-check`}
+          title={check.title}
+          busy={steps.step === "saving"}
+          send={check.send}
+          back={check.back}
+          onSend={steps.go}
+          onBack={steps.edit}
+        >
+          <p className={styles.checkLine}>{check.describe(service.name, was, line.trim())}</p>
+        </Check>
+      )}
+      <Refused failed={steps.failed} />
+    </fieldset>
+  );
+}
+
 /** How long a service is booked for, from now on, inside the bounds the API gives. */
 export function LengthForm(props: {
   readonly service: OpsService;

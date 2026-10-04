@@ -335,6 +335,24 @@ export function Payments({
 }) {
   return (
     <div className={styles.visits}>
+      <MoneyRecords payments={payments} links={links} invoices={invoices} />
+      <CreditForm clientId={clientId} credits={credits} onCredits={onCredits} />
+    </div>
+  );
+}
+
+/** What the client paid and had back, the payment links they were sent, and each finished visit's invoice. */
+export function MoneyRecords({
+  payments,
+  links,
+  invoices,
+}: {
+  payments: readonly ClientPayment[];
+  links: readonly ClientPaymentLink[];
+  invoices: readonly ClientInvoice[];
+}) {
+  return (
+    <>
       <section className={styles.visitList} aria-label={copy.title}>
         <h3 className={styles.sectionTitle}>{copy.title}</h3>
         <PaymentTable payments={payments} />
@@ -347,7 +365,6 @@ export function Payments({
         <h3 className={styles.sectionTitle}>{invoiceCopy.title}</h3>
         <InvoiceTable invoices={invoices} />
       </section>
-      <CreditForm clientId={clientId} credits={credits} onCredits={onCredits} />
-    </div>
+    </>
   );
 }

@@ -24,15 +24,15 @@ const BUILDS = AWAITING_COUNSEL.length === 0 && PAGES_AWAITING_COUNSEL.length ==
 
 describe("the production site build", () => {
   it.runIf(!BUILDS)("refuses what awaits counsel, and nothing else", { timeout: 180_000 }, () => {
-    expect(AWAITING_COUNSEL.map((notice) => notice.version)).toEqual(["photo-v3", "gate-v3"]);
+    expect(AWAITING_COUNSEL.map((notice) => notice.version)).toEqual(["photo-v4", "gate-v4"]);
     expect(PAGES_AWAITING_COUNSEL.map((page) => page.title)).toEqual(["Privacy", "Terms"]);
     const build = spawnSync(process.execPath, ["scripts/build-site.ts", "--env", "production"], { encoding: "utf8" });
     const output = `${build.stdout}${build.stderr}`;
     expect(build.status, output).not.toBe(0);
     const problems = output.split("\n").filter((line) => line.startsWith("  - "));
     expect(problems).toEqual([
-      "  - the photo notice (photo-v3) is not approved",
-      "  - the gate notice (gate-v3) is not approved",
+      "  - the photo notice (photo-v4) is not approved",
+      "  - the gate notice (gate-v4) is not approved",
       "  - the privacy page's wording is not approved",
       "  - the terms page's wording is not approved",
     ]);

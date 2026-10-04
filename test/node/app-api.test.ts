@@ -1,9 +1,9 @@
 // The client app's one way to the API (apps/app/src/api.ts): what a 401 sets
-// off, what an answer that is not the API's counts as, and whose clock a hold
-// is counted on (apps/app/src/lib/clock.ts).
+// off, what an answer that is not the API's counts as, how long a call waits,
+// and whose clock a hold is counted on (apps/app/src/lib/clock.ts).
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api, onSessionEnded } from "../../apps/app/src/api.ts";
+import { api, onSessionEnded, putCard } from "../../apps/app/src/api.ts";
 import { apiNow } from "../../apps/app/src/lib/clock.ts";
 
 afterEach(() => {
@@ -69,6 +69,59 @@ describe("an answer that is not the API's", () => {
     expect(await api.payments()).toMatchObject({ ok: false, status: 0, code: "offline" });
   });
 });
+
+// UX-11, CQ-46: on a stalled signal, Pay, Continue and Cancel stayed busy until the page was reloaded.
+describe("a signal that never answers", () => {
+  it("is no connection after 15 seconds for a read", async () => {
+    neverAnswering();
+    const answer = settled(api.visits());
+    await vi.advanceTimersByTimeAsync(14_999);
+    expect(answer.value).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(answer.value).toMatchObject({ ok: false, status: 0, code: "offline" });
+  });
+
+  it("is no connection after 20 seconds for a write", async () => {
+    neverAnswering();
+    const answer = settled(api.cancel("visit-1", "free"));
+    await vi.advanceTimersByTimeAsync(19_999);
+    expect(answer.value).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(answer.value).toMatchObject({ ok: false, status: 0, code: "offline" });
+  });
+
+  it("is waited on for a minute while the referral card goes up", async () => {
+    neverAnswering();
+    const answer = settled(putCard(new Blob(["jpeg"], { type: "image/jpeg" })));
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(answer.value).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(answer.value).toMatchObject({ ok: false, status: 0, code: "offline" });
+  });
+});
+
+/** A fetch that never answers until it is given up on, on the test's own clock. */
+function neverAnswering(): void {
+  vi.useFakeTimers();
+  vi.stubGlobal(
+    "fetch",
+    (_url: string, init: RequestInit) =>
+      new Promise((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () => {
+          reject(new DOMException("gave up", "AbortError"));
+        });
+      }),
+  );
+}
+
+/** A call's answer once it has one, so a test can see it has none yet. */
+function settled<T>(call: Promise<T>): { value: T | undefined } {
+  const seen: { value: T | undefined } = { value: undefined };
+  void call.then((value) => {
+    seen.value = value;
+  });
+  return seen;
+}
 
 describe("the API's clock", () => {
   const apiTime = Date.parse("2030-09-16T05:00:00Z");

@@ -285,7 +285,7 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 4. **Workflows.** Setup → Automation → Workflow Rules → Leads:
    - on create, when Lead Status is New: notify the assigned technician and ops;
    - on edit, when Contact Consent becomes true: assign an owner. This covers a try-on customer who later books; Zoho has no assignment rule on update.
-   - Nothing may fire for Lead Status "Try-on — delivery only". The sync also sends those with workflows switched off.
+   - Nothing may fire for Lead Status "Try-on — delivery only". The sync no longer sends a try-on to the CRM (ADR 0012, amended 4 October 2026), so only older records carry it.
 5. **API client.** The data centre is in the address you log in at: `crm.zoho.in` is India, `crm.zoho.com` the US, and so on. Use the matching API console, for example `https://api-console.zoho.in`. A Developer Edition org answers on `developer.zohoapis.<dc>`, not `www.zohoapis.<dc>`, even though the token reply names `www` (ADR 0012).
    1. **Add Client** → **Self Client** → **Create Now** → **OK**. The **Client Secret** tab shows the client ID and secret.
    2. **Generate Code** tab. Scope, exactly:
@@ -304,6 +304,8 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
       Keep the `refresh_token` from the answer. It does not expire; revoke it in the API console if it leaks.
 
+   Do 2 and 3 once for each environment: staging and production each keep a refresh token of their own from this Self Client. One refresh token mints at most ten access tokens in ten minutes, and each environment counts only its own, so with one shared token either could lock the other out of the CRM for ten minutes.
+
 6. **Check, then store.** Put the Zoho values (and `ALERT_WEBHOOK_URL`) in `.env.worker-<env>` (step 7). Leave `ZOHO_LAR_ID` empty if you don't know it yet. Then:
 
    ```sh
@@ -312,8 +314,14 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
    It confirms every field, type and pick-list value the sync writes, and lists the Leads assignment rules with their IDs. Fill in `ZOHO_LAR_ID`, run it again until it passes, then `W secret bulk` the file and delete it. The next lead proves the setup end to end: it should reach Zoho within a minute, assigned and with its proposed date.
 
-7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`, and for the contract probe's reads `ZohoCRM.modules.leads.READ` and `ZohoSearch.securesearch.READ`; for FSM and for Books, the same scopes as the Worker's FSM and Books tokens, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
-   - the CRM's as `ZOHO_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET` and the hosts;
+7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need. For the CRM, exactly:
+
+   ```
+   ZohoCRM.settings.fields.ALL,ZohoCRM.settings.assignment_rules.READ,ZohoCRM.modules.leads.READ,ZohoCRM.modules.leads.DELETE,ZohoCRM.modules.contacts.READ,ZohoCRM.modules.contacts.DELETE,ZohoSearch.securesearch.READ
+   ```
+
+   The settings scopes are for `scripts/setup-crm.ts` and `scripts/check-zoho-setup.ts`, the lead read and the search for the contract probe, and the lead and contact reads and deletes for "Staging's records in the org". For FSM and for Books, use the same scopes as the Worker's FSM and Books tokens (step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
+   - the CRM's as `ZOHO_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET` and the hosts, in `.env.crm-scripts`;
    - FSM's as `ZOHO_FSM_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and the hosts;
    - Books' as `ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, the hosts and `ZOHO_BOOKS_ORG_ID`, in `.env.books-scripts`.
 
@@ -937,7 +945,7 @@ Symptoms: every sync fails with `invalid_code` or `INVALID_TOKEN`.
 
 ### Zoho refused a new token ("Access Denied")
 
-Symptoms: calls fail with `Zoho 400 Access Denied: could not refresh the access token`, then with `TOKEN_COOLING_DOWN`. One refresh token mints at most 10 access tokens in 10 minutes, and staging and production share the CRM's (ADR 0050). After Zoho refuses one, nothing asks for another for ten minutes (`zoho_access_tokens.cool_down_until`), and every Zoho call fails at once meanwhile; the queues and the passes try again afterwards on their own. Find what minted the tokens, usually a script run by hand against the same client, and stop it. Do not clear `cool_down_until` to hurry it: asking again inside the ten minutes extends Zoho's refusal.
+Symptoms: calls fail with `Zoho 400 Access Denied: could not refresh the access token`, then with `TOKEN_COOLING_DOWN`. One refresh token mints at most 10 access tokens in 10 minutes, and each environment has its own (step 8.5). After Zoho refuses one, nothing asks for another for ten minutes (`zoho_access_tokens.cool_down_until`), and every Zoho call fails at once meanwhile; the queues and the passes try again afterwards on their own. Find what minted the tokens, usually a script run by hand against the same client, and stop it. Do not clear `cool_down_until` to hurry it: asking again inside the ten minutes extends Zoho's refusal.
 
 ### Replaying failed leads
 
@@ -1062,12 +1070,19 @@ SELECT id, razorpay_refund_id, created_at FROM refunds WHERE status = 'processed
 
 ### Staging's records in the org
 
-Staging writes to the owner's real FSM and Books (open point 19), and production's reconciliation and invoice pass will read the same org (open point 155), so staging's records go before production connects FSM. The script lists them, the owner reviews the list, and a second run deletes what the owner kept in it. It uses the scripts' own token (step 8.7).
+Staging writes to the owner's real Books and CRM, which production shares (open point 19), so staging's records go before production goes live. The script lists them, the owner reviews the list, and a second run deletes what the owner kept in it. It uses the scripts' own tokens (step 8.7): the CRM's must read and delete leads and contacts. It reads staging's database with wrangler, so run it signed in to Cloudflare.
 
-1. List them: `node --env-file=.env.fsm-scripts scripts/staging-records.ts`. It prints every FSM appointment, work order and Request whose summary starts "Staging test: ", and every FSM and Books contact named "Staging test" or "Load test"; and every Books payment whose description starts "Staging test: ", with its refunds, and every Books invoice of a staging contact. It writes them to `private/staging-records-<date>.json`, and names apart any record that looks like a test but carries neither mark, which it never deletes.
+1. List them:
+
+   ```sh
+   node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/staging-records.ts
+   ```
+
+   It lists every Books payment whose description starts "Staging test: ", with its refunds; every Books invoice of a staging contact; every Books contact, CRM lead and CRM contact named "Staging test" or "Load test"; and every Books customer, payment and invoice and CRM lead whose ID staging's database keeps, read one by one, so an erased or inactive one is listed too. It writes them to `private/staging-records-<date>.json`. It names apart any record that looks like a test but carries neither mark, which it never deletes, and any ID staging's database keeps of a record the org no longer holds. While staging still has FSM, add `--env-file=.env.fsm-scripts` to take in FSM's appointments, work orders and Requests whose summary starts "Staging test: ", and its contacts named "Staging test" or "Load test".
+
 2. The owner reads the list. To keep a record, take its entry out of the file.
-3. Delete: `node --env-file=.env.fsm-scripts scripts/staging-records.ts --delete private/staging-records-<date>.json`. It reads the org again and deletes only what the file keeps and the org still marks as staging's, what points at a record before it: Books' refunds and payments, FSM's appointments, Books' invoices, FSM's work orders and Requests, then the contacts. Each line says `deleted`, `already gone` or `refused` with FSM's or Books' reason.
-4. A refusal is usually a record another still points at: run the delete again, and anything freed by the first run goes. What stays refused is put right by hand in FSM or Books.
+3. Delete: the same command with `--delete private/staging-records-<date>.json`. It reads the org and staging's database again and deletes only what the file keeps and they still hold as staging's, what points at a record before it: Books' refunds and payments, FSM's appointments, Books' invoices, FSM's work orders and Requests, the contacts, then the CRM's contacts and leads. Each line says `deleted`, `already gone` or `refused` with the reason. Then it clears staging's database's links to each customer, invoice and lead now gone, so the Books pass makes a client a new customer when they next need one. A payment's and a refund's IDs stay: cleared, the pass would record staging's old payments again, without their refunds.
+4. A refusal is usually a record another still points at: run the delete again, and anything freed by the first run goes. What stays refused is put right by hand in Books, the CRM or FSM.
 
 FSM's API deletes no invoice, so the list names FSM's invoices of staging's work orders apart: delete them in FSM's Invoices screen, if it still shows them, once the run has deleted their work orders and Books' invoices. On 1 October 2026 it showed none: FSM's API went on listing the three invoices as links of no work order, which neither FSM's screens nor anything of ours reads. Nothing of production reads them, since its invoice pass reads each of its own work orders' invoice.
 
@@ -1119,19 +1134,29 @@ Production has never used FSM. Staging leaves it in the order below, once every 
 
 ## Razorpay
 
-Razorpay is the record of money. We learn of each payment and refund only from its webhook (ADR 0044): nothing reads them from Razorpay afterwards. Production has it switched off today (`PAYMENTS_PROVIDER` is `none`).
+Razorpay is the record of money. We learn of each payment and refund from its webhook (ADR 0044). Where the webhook misses a payment, the cron's `razorpay_catch_up` job reads it from Razorpay (below). Production has payments switched off today (`PAYMENTS_PROVIDER` is `none`).
 
 ### Razorpay's webhook is not arriving
 
-Symptoms: clients pay, their booking sheet never confirms, and the hold runs out; Razorpay's dashboard shows the payments captured, and D1 has not heard of them.
+Symptoms: the alert "Payment … reached us only when we asked Razorpay" (key `razorpay_payment_unheard:<payment ID>`), or `razorpay_payment_unheard` in Workers Logs. Clients who pay wait longer than they should for their booking to confirm.
+
+The cron's `razorpay_catch_up` job, every quarter hour, asks Razorpay about each payment the webhook may have missed:
+
+- a hold paid at Checkout and never confirmed, from a quarter hour after its grace ended until three days after it ran out;
+- a hold ops sent a payment link for, from an hour after it was made until three days after it ran out;
+- a one visit's payment link, from an hour after it was sent until a week after it was made.
+
+Each is asked about at most once an hour; holds and links take turns while the run's calls last, so a long list waits a few runs. A payment found is recorded as the webhook would have recorded it, and its hold is booked, or refunded in full if Razorpay made the payment after the hold and its grace ran out (ADR 0068). Ops get one alert per payment. Close it once the cause below is put right. "Booking … is paid for, but could not be booked or refunded" (key `razorpay_catch_up_not_booked:<hold ID>`) is a found payment that needs ops: book the visit for the client from the console, or refund the payment once in Razorpay's dashboard.
+
+To see how far the webhook is behind:
 
 ```sql
 SELECT event, COUNT(*) AS events, MAX(received_at) AS last FROM razorpay_events GROUP BY event;
-SELECT id, person_id, razorpay_order_id, created_at FROM slot_holds
+SELECT id, person_id, razorpay_order_id, payment_checked_at FROM slot_holds
 WHERE razorpay_order_id IS NOT NULL AND confirmed_at IS NULL AND created_at > '<since, ISO>' ORDER BY created_at;
 ```
 
-The second lists the holds whose Checkout opened and whose payment we never heard of. Look each order ID up in Razorpay's dashboard to see whether it was paid.
+The second lists the holds whose Checkout opened and whose payment we have not heard of, and when the cron last asked Razorpay about each.
 
 The cause, from Workers Logs:
 
@@ -1140,9 +1165,9 @@ The cause, from Workers Logs:
 - nothing at all: Razorpay is not calling. The webhook is disabled (Razorpay disables one that has failed for 24 hours, and e-mails the account), its URL is wrong, it is set up in the other mode from the keys (test or live), or, on staging, Access is stopping `/api/hooks/` (step 12, point 3);
 - `razorpay_hook_refund_early`, answered 409: a refund came before its payment, in an event that does not carry the payment. Razorpay sends it again; nothing is wrong.
 
-Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068).
+Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068). A payment the cron recorded first is not recorded again when its webhook arrives.
 
-For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
+A payment older than the cron looks (a hold three days past, a one visit's link a week old) is not found by it: look it up in Razorpay's dashboard, and refund it there, then ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
 
 ### A payment link
 
@@ -1336,7 +1361,7 @@ The console has two doors, and both run the same erasure, written to `audit_log`
 
    The files (photos, results, visit photographs, the referral card) are deleted just after the rest. If R2 fails, the person is erased all the same and the cron finishes the files within five minutes; `files_erased_at` on the person is set once they are gone. A deletion request of theirs still open is closed by the erasure, under your name, so it neither waits in the queue nor alerts.
 
-3. **Check Zoho within a few minutes.** The erasure queues the CRM's blanking at once, and FSM's while FSM is connected: in the CRM the last name becomes "Erased", mobile and e-mail are emptied, and Contact Consent is unticked. Books' customer is erased by the cron's own pass: deleted where no invoice or payment names it, otherwise renamed "Erased client", blanked and made inactive. That pass waits up to a day for a payment of theirs still on its way to Books. The person's ID is in the address of their page.
+3. **Check Zoho within a few minutes.** The erasure queues the CRM's blanking at once, and FSM's while FSM is connected: in the CRM the last name becomes "Erased", mobile and e-mail are emptied, and Contact Consent is unticked. Books' customer is erased by the cron's own pass: deleted where no invoice or payment names it, otherwise renamed "Erased client", blanked and made inactive. That pass waits up to a day for a payment of theirs still on its way to Books. The person's ID is in the address of their page: in the CRM, search Leads by **D1 Person ID** with it and check the lead.
 
    ```sql
    SELECT erased_at, crm_erased_at, crm_erasure_attempts, crm_erasure_error, fsm_erased_at, books_erased_at

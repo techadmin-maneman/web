@@ -10,7 +10,7 @@ import { Button } from "@maneman/ui/Button";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type ClientInvite } from "../api.ts";
+import { api, isErased, type ClientInvite } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
@@ -80,7 +80,7 @@ function AttachForm({
     // The client came with one meanwhile: their record now says which, and the page shows it.
     if (answer.code === "already_invited") {
       const record = await api.client(clientId);
-      if (record.ok && record.body.invite !== null) {
+      if (record.ok && !isErased(record.body) && record.body.invite !== null) {
         onInvite(record.body.invite, "already_invited");
         return;
       }

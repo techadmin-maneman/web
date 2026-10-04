@@ -1,7 +1,7 @@
 // The services clients book, and every price each has had and is to have (docs/decisions/0085-services-ops-can-edit.md,
 // 0061-ops-editable-inputs.md). A kind of visit is code; the services within it are ops', and each is added, renamed,
-// timed, priced, ordered and retired from a day here. A price is a row from the day it applies, so an invoice already
-// issued keeps the figure it was issued under, and the row in force and the spent ones stay.
+// described, timed, priced, ordered and retired from a day here. A price is a row from the day it applies, so an
+// invoice already issued keeps the figure it was issued under, and the row in force and the spent ones stay.
 //
 // Each service shows all three states at once -- in force, still to come, and, folded away, what it cost before --
 // because a price set for next month is a decision somebody has to see and be able to take back or correct before it
@@ -23,6 +23,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { rulePath } from "./rule-groups.ts";
 import {
   AddForm,
+  DescribeForm,
   LengthForm,
   OrderCheck,
   PriceForm,
@@ -42,7 +43,7 @@ const copy = settings.services;
 type Action =
   | { readonly kind: "price"; readonly target: Priced }
   | { readonly kind: "correct" | "takeBack"; readonly target: Priced; readonly row: Price }
-  | { readonly kind: "rename" | "length" | "retire" | "restore"; readonly service: OpsService }
+  | { readonly kind: "rename" | "describe" | "length" | "retire" | "restore"; readonly service: OpsService }
   | { readonly kind: "order"; readonly of: Kind; readonly tiers: readonly string[] }
   | { readonly kind: "add"; readonly of: Kind };
 
@@ -52,6 +53,7 @@ const CALL_OF: Readonly<Record<Action["kind"], OpsCall>> = {
   correct: "POST /api/prices/correct",
   takeBack: "POST /api/prices/withdraw",
   rename: "POST /api/services/{kind}/{tier}/name",
+  describe: "POST /api/services/{kind}/{tier}/description",
   length: "POST /api/services/{kind}/{tier}/length",
   retire: "POST /api/services/{kind}/{tier}/retire",
   restore: "POST /api/services/{kind}/{tier}/restore",
@@ -215,6 +217,8 @@ function OpenAction({ opened, where }: { opened: Opened; where: string }) {
       return <TakeBack target={action.target} row={action.row} onDone={done} onKeep={cancel} />;
     case "rename":
       return <RenameForm service={action.service} onDone={done} onCancel={cancel} />;
+    case "describe":
+      return <DescribeForm service={action.service} maxLength={book.max_description} onDone={done} onCancel={cancel} />;
     case "length":
       return <LengthForm service={action.service} bounds={bounds} onDone={done} onCancel={cancel} />;
     case "retire":
@@ -278,7 +282,7 @@ function ServiceBlock(props: {
   const where = whereOf(service.kind, service.tier);
   const place = siblings.findIndex((each) => each.tier === service.tier);
   const busy = opened.action !== null;
-  const act = (kind: "rename" | "length" | "retire" | "restore") => () => {
+  const act = (kind: "rename" | "describe" | "length" | "retire" | "restore") => () => {
     opened.onAct({ kind, service });
   };
   const move = (by: -1 | 1) => () => {
@@ -301,6 +305,9 @@ function ServiceBlock(props: {
           standing(service, today),
         ].join(" · ")}
       </p>
+      <p className={styles.facts}>
+        {service.description === null ? copy.notDescribed : copy.described(service.description)}
+      </p>
       <PriceLines target={asPriced(service)} today={today} busy={busy} may={opened.may} onAct={opened.onAct} />
       <div className={styles.actions}>
         {!retiredNow && (
@@ -317,6 +324,14 @@ function ServiceBlock(props: {
         )}
         <ActionButton opened={opened} kind="rename" label={copy.labels.rename(service.name)} onClick={act("rename")}>
           {copy.actions.rename}
+        </ActionButton>
+        <ActionButton
+          opened={opened}
+          kind="describe"
+          label={copy.labels.describe(service.name)}
+          onClick={act("describe")}
+        >
+          {copy.actions.describe}
         </ActionButton>
         <ActionButton opened={opened} kind="length" label={copy.labels.length(service.name)} onClick={act("length")}>
           {copy.actions.length}

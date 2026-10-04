@@ -101,8 +101,8 @@ async function openClient(page: Page, path: string, over: Answers = {}): Promise
   await page.goto(path);
 }
 
-/** The head's figures, by the name the board letters each with. */
-const meta = (page: Page) => page.getByRole("definition");
+/** The head's figures, by the name the board letters each with. The head's list is the page's first; Visits has the address's. */
+const meta = (page: Page) => page.locator("dl").first().getByRole("definition");
 
 /** One of the client's tabs, apart from the navigation's section of the same name. */
 const clientTab = (page: Page, name: string) =>

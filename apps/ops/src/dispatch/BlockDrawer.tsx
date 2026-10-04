@@ -100,7 +100,7 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
         </dl>
         {block.untold !== null && person !== null && (
           <div className={styles.untold}>
-            <p className={styles.untoldLine}>{copy.untold(movedTo, phoneWords(person.mobile))}</p>
+            <p className={styles.untoldLine}>{copy.untold[block.untold.reason](movedTo, phoneWords(person.mobile))}</p>
             {onTold !== null && (
               <Button
                 variant="outline"

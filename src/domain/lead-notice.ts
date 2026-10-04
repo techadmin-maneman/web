@@ -1,4 +1,4 @@
-// The Google Chat line posted for each new lead, once it has reached the CRM.
+// The Google Chat line posted for each new lead, once it has reached the CRM, or for a try-on, which never does.
 // City, window and date only: never a name or a number.
 
 import { shortDate } from "@maneman/web-kit/dates";
@@ -11,8 +11,6 @@ export interface NoticeLead {
   readonly city: string | null;
   readonly first_choice_window: VisitWindow | null;
   readonly proposed_visit_date: string | null;
-  /** 1 once the person has agreed to be contacted. */
-  readonly contactable: number;
 }
 
 export function leadNotice(lead: NoticeLead): string {
@@ -23,7 +21,6 @@ export function leadNotice(lead: NoticeLead): string {
     return `New booking: ${lead.city ?? "no city"}${window}${date}. ${reference}`;
   }
   if (lead.source === "waitlist") return `New waitlist sign-up: ${lead.city ?? "no city"}. ${reference}`;
-  return lead.contactable === 1
-    ? `New try-on lead, from someone who has booked before. ${reference}`
-    : `New try-on lead: WhatsApp copy only, not to be chased. ${reference}`;
+  // The gate promises no marketing, to a client as much as to anyone.
+  return `New try-on lead: WhatsApp copy only, not to be chased. ${reference}`;
 }
