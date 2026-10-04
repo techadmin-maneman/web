@@ -61,6 +61,7 @@ import { allConsumables, offeredForJob, serviceOfJob } from "../domain/consumabl
 import { profileLanded, recordAtVisit } from "../domain/hair-profiles.ts";
 import {
   answerBeforeLanding,
+  closedAt,
   eventByClientId,
   kindsLanded,
   landInOrder,
@@ -542,17 +543,20 @@ const ProfileRecordedSchema = z
 /** A step that landed, or had landed before. */
 const RECORDED = { description: "Recorded", ...json(AcceptedSchema) };
 
+const CLOSED = "already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour";
+const PHOTOS_CLOSED = "already_closed: the job has closed, so it takes no more photographs";
+
 /** What every in-job write can be refused with. A route with more to say of a conflict says it after these. */
 const STEP_REFUSALS = {
   400: errorResponse("invalid_request: see error.fields"),
   401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
   404: errorResponse("not_found: no such job, or never this technician's"),
-  409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+  409: errorResponse(`superseded: FSM moved the job; out_of_order: send the step before this one first; ${CLOSED}`),
 };
 
 /** A check-in's or a start's conflict, which may also be on the wrong day or too early in it. */
 const DAY_CONFLICT = errorResponse(
-  "superseded: FSM moved the job; out_of_order: send the step before this one first; " +
+  `superseded: FSM moved the job; out_of_order: send the step before this one first; ${CLOSED}; ` +
     "not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
 );
 
@@ -631,7 +635,8 @@ const uploadUrlRoute = createRoute({
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: no such job, or never this technician's"),
     409: errorResponse(
-      "superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom",
+      "superseded: the job was given to another technician or cancelled while its photographs waited; moved names " +
+        `whom; ${PHOTOS_CLOSED}`,
     ),
   },
 });
@@ -654,6 +659,7 @@ const uploadRoute = createRoute({
     200: { description: "Received", ...json(PhotoTakenSchema) },
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: the link is wrong or expired"),
+    409: errorResponse(PHOTOS_CLOSED),
     422: errorResponse("photo_invalid_file: not a JPEG or PNG, or over 2 MB"),
     503: errorResponse("busy: R2 holds past the runaway ceiling; the phone keeps the photograph and sends it later"),
   },
@@ -672,7 +678,8 @@ const smallUploadRoute = createRoute({
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: the link is wrong or expired"),
     409: errorResponse(
-      "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since",
+      "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since; " +
+        PHOTOS_CLOSED,
     ),
     422: errorResponse("photo_invalid_file: not a JPEG, or over 64 KB or 800 px a side"),
     503: errorResponse("busy: R2 holds past the runaway ceiling"),
@@ -721,9 +728,10 @@ const pieceRoute = createRoute({
     202: RECORDED,
     ...STEP_REFUSALS,
     409: errorResponse(
-      "superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already " +
-        "on record, as another client's piece or this client's from an earlier visit, or a piece that came off that " +
-        "is another client's. error.fields names piece_code or old_piece, to correct and send again",
+      `superseded: FSM moved the job; out_of_order: send the step before this one first; ${CLOSED}; ` +
+        "piece_code: a label already on record, as another client's piece or this client's from an earlier visit, " +
+        "or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct " +
+        "and send again",
     ),
   },
 });
@@ -765,7 +773,8 @@ const noShowRoute = createRoute({
     200: { description: "Closed, with the case ops will rule on", ...json(NoShowSchema) },
     ...STEP_REFUSALS,
     409: errorResponse(
-      "superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
+      `superseded: FSM moved the job; out_of_order: send the step before this one first; ${CLOSED}; ` +
+        "already_started: the job was started, so the client was home",
     ),
     425: errorResponse("too_early_to_close: the wait has not run out"),
   },
@@ -900,6 +909,7 @@ export function registerTechJobs(app: App): void {
       c.var.log.info("upload_link_superseded", { appointment_id: job.id, changed: superseding.changed });
       return c.json(refusalOf(c, superseded(superseding)), 409);
     }
+    if (await hasClosed(c, job.id)) return c.json(errorBody("already_closed", c.var.requestId), 409);
     const { phase, angle } = c.req.valid("json");
     if (!takesPhotoSet(job, phase)) return c.json(errorBody("invalid_request", c.var.requestId, ["phase"]), 400);
     const link = await uploadLink(c.var.config.settings.tryon.linkSigningKey, { appointmentId: id, phase, angle }, now);
@@ -914,6 +924,7 @@ export function registerTechJobs(app: App): void {
     const now = deps.now();
     const slot = await uploadSlot(c, c.req.valid("param").token);
     if (slot === null) return c.json(errorBody("not_found", requestId), 404);
+    if (await hasClosed(c, slot.appointmentId)) return c.json(errorBody("already_closed", requestId), 409);
 
     const bytes = new Uint8Array(await c.req.arrayBuffer());
     if (bytes.byteLength === 0 || bytes.byteLength > MAX_PHOTO_BYTES) {
@@ -932,6 +943,7 @@ export function registerTechJobs(app: App): void {
     const { deps, requestId } = c.var;
     const slot = await uploadSlot(c, c.req.valid("param").token);
     if (slot === null) return c.json(errorBody("not_found", requestId), 404);
+    if (await hasClosed(c, slot.appointmentId)) return c.json(errorBody("already_closed", requestId), 409);
 
     const bytes = new Uint8Array(await c.req.arrayBuffer());
     if (!(await roomFor(c.env.DB, deps.alertOnce, bytes.byteLength))) {
@@ -1028,6 +1040,7 @@ export function registerTechJobs(app: App): void {
       c.var.log.info("profile_superseded", { appointment_id: job.id, changed: superseding.changed });
       return c.json(refusalOf(c, superseded(superseding)), 409);
     }
+    if (await hasClosed(c, job.id)) return c.json(errorBody("already_closed", requestId), 409);
     if (!(await kindsLanded(c.env.DB, job.id)).has("start")) {
       return c.json(errorBody("out_of_order", requestId, ["start"]), 409);
     }
@@ -1113,6 +1126,11 @@ export function registerTechJobs(app: App): void {
 }
 
 type Ctx = Context<AppEnv>;
+
+/** Whether the job has closed: an outcome landed, or ops closed it by hand. */
+async function hasClosed(c: Ctx, appointmentId: string): Promise<boolean> {
+  return (await closedAt(c.env.DB, appointmentId)) !== null;
+}
 
 /** The slot an upload link names, while its job is still this technician's; null for any other link. */
 async function uploadSlot(c: Ctx, token: string): Promise<PhotoSlot | null> {
@@ -1247,7 +1265,8 @@ type Landed =
   | { readonly ok: true; readonly accepted: z.infer<typeof AcceptedSchema> }
   | {
       readonly ok: false;
-      readonly code: "superseded" | "out_of_order" | "not_today" | "already_started" | "too_early_to_arrive";
+      readonly code:
+        "superseded" | "out_of_order" | "not_today" | "already_started" | "already_closed" | "too_early_to_arrive";
       readonly fields?: string[];
       /** On a job given to another technician: whom, by first name, and when (docs/open-points.md, item 92). */
       readonly moved?: MovedTo;
