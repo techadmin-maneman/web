@@ -175,6 +175,10 @@ const HISTORY = [
   `INSERT INTO audit_log (at, surface, actor_kind, actor, action, subject_kind, subject_id, request_id, detail)
    SELECT '${AGO}', 'ops', 'staff', 'ops@localhost', 'client.view', 'person', 'p-' || i, 'r-' || i, '{}' FROM n`,
   `INSERT INTO stored_objects (key, bytes) SELECT 'visits/a-' || i || '/before-front.jpg', 250000 FROM n`,
+  // Every kit's stock of one consumable, which the hourly look at low stock reads only for a place with an alert open.
+  `INSERT OR IGNORE INTO consumables (code, name, unit, unit_cost, reorder_kit, created_at, updated_at)
+   VALUES ('history_tape', 'History tape', 'strip', 100, 5, '${AGO}', '${AGO}')`,
+  `INSERT INTO stock_balances (consumable_code, place, quantity) SELECT 'history_tape', 't-' || i, 10 FROM n`,
   // What the sweeper deletes once it has outlived its use, still in use: today's counts, the day's keys, a login code
   // and a site's number code proved, and a try-on session still open.
   `INSERT INTO counters (scope, key, window_start, count) SELECT 'login_code', 'k-' || i, '${TODAY}', 1 FROM n`,
