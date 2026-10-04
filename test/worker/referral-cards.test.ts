@@ -495,7 +495,18 @@ describe("ops' referrers", () => {
 
     const answer = await (await request(ops(), "/api/referrers")).json();
     expect(answer).toEqual({
-      referrers: [{ code: CODE, name: "Rohit Malhotra", opens: 2, consultations: 1, fits: 0, granted: 1, redeemed: 1 }],
+      referrers: [
+        {
+          code: CODE,
+          person_id: PERSON,
+          name: "Rohit Malhotra",
+          opens: 2,
+          consultations: 1,
+          fits: 0,
+          granted: 1,
+          redeemed: 1,
+        },
+      ],
       more: false,
     });
   });

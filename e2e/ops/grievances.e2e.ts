@@ -47,8 +47,22 @@ test("says plainly that recording an answer messages nobody", async ({ page }) =
 
 test("reaches the client's record from the name", async ({ page }) => {
   await open(page);
-  await row(page, "Rohit Malhotra").getByRole("link", { name: "Rohit Malhotra" }).click();
+  await row(page, "Rohit Malhotra").getByRole("link", { name: "Rohit Malhotra", exact: true }).click();
   expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/consents");
+});
+
+// OIA-16: ops answer on the number shown, and copied it by hand to do so.
+test("reaches the client on WhatsApp or by phone from the row", async ({ page }) => {
+  await open(page);
+  const first = row(page, "Rohit Malhotra");
+  await expect(first.getByRole("link", { name: "WhatsApp Rohit Malhotra" })).toHaveAttribute(
+    "href",
+    "https://wa.me/919810004417",
+  );
+  await expect(first.getByRole("link", { name: "Call Rohit Malhotra on +91 98100 04417" })).toHaveAttribute(
+    "href",
+    "tel:+919810004417",
+  );
 });
 
 test("will not close a grievance with no answer written", async ({ page }) => {

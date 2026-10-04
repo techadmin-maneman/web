@@ -120,9 +120,12 @@ describe("the dispatch board's place in the address", () => {
     expect(asked()).toEqual({ from: "2025-09-26", city: "Delhi", find: "Rohit" });
   });
 
-  it("takes the keyboard to a visit still in the tray, which has no drawer", async () => {
+  it("opens the drawer of a visit still in the tray, and gives it back the keyboard when it closes", async () => {
     await openAt(`/dispatch?from=2025-09-19&visit=${IN_THE_TRAY}`);
 
+    expect(drawer()).not.toBeNull();
+    press("Close", drawer() ?? page);
+    await settle();
     expect(drawer()).toBeNull();
     expect(document.activeElement?.getAttribute("data-appointment")).toBe(IN_THE_TRAY);
     expect(page.querySelector("[role=alert]")).toBeNull();

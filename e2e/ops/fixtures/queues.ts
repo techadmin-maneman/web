@@ -154,7 +154,7 @@ export const DISPUTES = {
       id: "dd000000-0000-4000-8000-000000000001",
       case_id: "66000000-0000-4000-8000-000000000009",
       appointment_id: "77000000-0000-4000-8000-000000000009",
-      person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
+      person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi", mobile: "+919810060916" },
       reason: "I was home all morning. Nobody rang the bell.",
       raised_at: "2027-09-21T06:00:00.000Z",
       due: "2027-09-23T06:00:00.000Z",

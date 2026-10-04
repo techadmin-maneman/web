@@ -11,9 +11,12 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type DisputeRuling, type NoShowDispute } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
+import { Reach } from "../components/Reach.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { noShows } from "../content.ts";
 import { REFUNDING_A_DISPUTE, useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
+import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Distance } from "./Distance.tsx";
 import styles from "./no-shows.module.css";
@@ -23,8 +26,17 @@ const copy = noShows.dispute;
 /** Whole minutes from one instant to another. */
 const minutesBetween = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 60_000);
 
-function titleOf(each: NoShowDispute): string {
-  return each.person === null ? copy.erased : copy.title(each.person.name);
+/** "Vikram Sethi disputes the charge", his name opening his visits. */
+function Title({ person }: { person: NoShowDispute["person"] }) {
+  if (person === null) return copy.erased;
+  return (
+    <>
+      <OpsLink className={styles.disputeName} to={clientPath(person.id, "visits")}>
+        {person.name}
+      </OpsLink>{" "}
+      {copy.title}
+    </>
+  );
 }
 
 /** "The charge kept Rs. 4,000, for the visit of Sat 19 Sep", or the credit it spent. */
@@ -105,8 +117,9 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
         <Left due={each.due} now={now} />
       </div>
       <h3 className={styles.disputeTitle} id={titleId}>
-        {titleOf(each)}
+        <Title person={each.person} />
       </h3>
+      {each.person !== null && <Reach name={each.person.name} mobile={each.person.mobile} />}
       {each.reason === null ? (
         <p className={styles.disputeWords}>{copy.wordsErased}</p>
       ) : (

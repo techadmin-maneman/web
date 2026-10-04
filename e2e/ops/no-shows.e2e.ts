@@ -180,6 +180,25 @@ test("draws a disputed charge: the client's words, what the charge took, and the
   await expect(row("Waited")).toHaveText("16 min · closed 11:47 am");
 });
 
+// OIA-16: the name was plain text, and the client could not be reached from the card.
+test("reaches the client's visits from their name, and the client on WhatsApp or by phone", async ({ page }) => {
+  await open(page);
+  const card = disputeCard(page);
+  const person = DISPUTES.disputes[0]?.person;
+  await expect(card.getByRole("link", { name: "Vikram Sethi", exact: true })).toHaveAttribute(
+    "href",
+    `/clients/${person?.id ?? ""}/visits`,
+  );
+  await expect(card.getByRole("link", { name: "WhatsApp Vikram Sethi" })).toHaveAttribute(
+    "href",
+    "https://wa.me/919810060916",
+  );
+  await expect(card.getByRole("link", { name: "Call Vikram Sethi on +91 98100 60916" })).toHaveAttribute(
+    "href",
+    "tel:+919810060916",
+  );
+});
+
 // FLD-35: a reminder that was skipped read "Not delivered" on the evidence a refund is ruled on.
 test("says on a disputed charge that the reminder never went, where it was not sent", async ({ page }) => {
   const disputes = [{ ...DISPUTES.disputes[0], message_state: "not_sent", message_delivered_at: null }];

@@ -267,6 +267,8 @@ export const dispatch = {
     },
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
+    /** PLACEHOLDER: the same for a job in the tray, whose drawer the board does not draw. */
+    assign: "Assign to a technician",
     /** PLACEHOLDER: a visit ops cancel for the client, or close by hand once its technician's phone was lost. */
     cancel: "Cancel this visit",
     closeByHand: "Close by hand",
@@ -1585,7 +1587,7 @@ export const noShows = {
      * PLACEHOLDER: the board heads the card "Vikram Sethi says he was home", its
      * summary of the client's words. Their words stand beneath, as they wrote them.
      */
-    title: (name: string) => `${name} disputes the charge`,
+    title: "disputes the charge",
     erased: "A client since erased disputes the charge",
     /** PLACEHOLDER: the client's words, erased with them. */
     wordsErased: "Their words were erased with them.",
@@ -2231,6 +2233,8 @@ export const deletions = {
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. The client has not been erased.",
     } as Readonly<Record<string, string>>,
+    /** PLACEHOLDER: beneath a refusal, the client's tab that settles it. */
+    settleOn: { visits: "Open their visits", payments: "Open their payments" },
   },
 } as const;
 
@@ -2497,9 +2501,11 @@ export const settings = {
    */
   blackouts: {
     title: "Blackout days",
+    /** Followed by a link to the dispatch board. */
     note:
       "Days no visit is offered, in the app or from the site. Blacking out a day moves no visit already booked on " +
-      "it: move those on the dispatch board.",
+      "it: move those on",
+    board: "the dispatch board",
     from: "First day",
     to: "Last day",
     reason: "Why",
@@ -2995,10 +3001,12 @@ export const stock = {
   /** PLACEHOLDER: "12 strip", and a mark for a place at or below its level. */
   held: (quantity: number, unit: string) => `${String(quantity)} ${unit}`,
   low: "Low",
-  lowNote: "Low: at or below the level set for the consumable in Settings, Consumables.",
+  /** Each followed by a link to Settings, Consumables. */
+  lowNote: "Low: at or below the level set for the consumable in",
+  none: "No consumables yet. Add them in",
+  settings: "Settings, Consumables",
   retired: "retired",
   counted: (when: string) => `Counted ${when}`,
-  none: "No consumables yet. Add them in Settings, Consumables.",
   record: {
     // PLACEHOLDER
     title: "Record a movement",

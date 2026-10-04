@@ -167,6 +167,10 @@ test("says what to settle first when the client still has a visit booked, and er
   await page.getByRole("checkbox", { name: CHECKED }).check();
   await page.getByRole("button", { name: "Delete this account" }).click();
   await expect(page.getByRole("alert")).toContainText("They still have a visit booked, so nothing was erased.");
+  await expect(page.getByRole("alert").getByRole("link", { name: "Open their visits" })).toHaveAttribute(
+    "href",
+    `/clients/${FIRST?.person_id ?? ""}/visits`,
+  );
   await expect(row(page, "Rohit Malhotra")).toBeVisible();
 });
 
