@@ -40,6 +40,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
     ...progress,
   },
   no_show_wait_min: 15,
+  checkin_from: "2030-09-19T03:00:00.000Z",
   pieces: [],
   last_visit: null,
   reminder: null,
@@ -176,6 +177,14 @@ describe("the no-show wait", () => {
   it("counts from the tap when the check-in is still on the phone, and is not ours to close on yet", () => {
     const tapped = queued("check_in");
     expect(theWait(job(), [tapped], null)).toEqual({ endsAt: tapped.queued_at + 15 * 60_000, confirmed: false });
+  });
+
+  it("counts from the booked start for a tap still on the phone that came before it", () => {
+    const early = queued("check_in", { queued_at: Date.parse("2030-09-19T03:20:00.000Z") });
+    expect(theWait(job(), [early], null)).toEqual({
+      endsAt: Date.parse("2030-09-19T04:15:00.000Z"),
+      confirmed: false,
+    });
   });
 
   it("has no end before any check-in, and none from one that failed", () => {
