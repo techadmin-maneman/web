@@ -1335,6 +1335,10 @@ Blackout days are days no visit is offered, in the app or from the site. Ops add
 
 ## Restoring D1
 
+**Never run `d1 export` against a live database in working hours.** An export holds the database while it runs: on 2 October 2026 one on staging failed a queue batch and a client's request. To look at the data, use Time Travel to a copy (below), or query it.
+
+A read D1 fails for a reason that passes by itself (a lost connection, its storage reset, an export holding it) is tried twice more, a moment apart (`src/lib/d1-retry.ts`); a page that still fails answers 503 "unavailable" and is logged as `d1_unavailable`, not as an error of ours.
+
 D1 Time Travel can put the database back to any minute in the last seven days (the Workers Free plan's window); `time-travel info` hands out bookmarks older than that, but they are not promised. A restore overwrites the whole database in place, cancels the queries running at the time, and undoes everything written since that minute. D1 is the only record of much of it, and the rest is in systems that will not send it again. So take the smallest repair that will do:
 
 1. **Fix the rows by hand**, when you know what they should hold, from the logs, `audit_log` or the vendors' own records.

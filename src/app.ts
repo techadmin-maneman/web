@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { isTransientD1Error } from "./lib/d1-errors.ts";
 import type { Context, MiddlewareHandler } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
@@ -220,6 +221,11 @@ export function createApp(
     // Hono raises a 400 for a body that is not valid JSON.
     if (error instanceof HTTPException && error.status === 400) {
       return c.json(errorBody("invalid_request", c.var.requestId, ["body"]), 400);
+    }
+    // A read D1 failed for a reason that passes by itself, after its tries (src/lib/d1-retry.ts): try again shortly.
+    if (c.req.method === "GET" && isTransientD1Error(error)) {
+      c.var.log.warn("d1_unavailable", { error });
+      return c.json(errorBody("unavailable", c.var.requestId), 503);
     }
     c.var.log.error("unhandled_error", { error });
     return c.json(errorBody("internal_error", c.var.requestId), 500);

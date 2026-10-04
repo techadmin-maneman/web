@@ -119,3 +119,42 @@ describe("a metered database", () => {
 function sum(results: readonly D1Result[], field: "rows_read" | "rows_written"): number {
   return results.reduce((total, result) => total + result.meta[field], 0);
 }
+
+// PLAT-26: a lost connection failed a cron job, threw a consumer batch and answered a client 500, all seconds before
+// D1 would have answered.
+describe("a read D1 fails for a reason that passes by itself", () => {
+  /** A database whose statements fail `failures` times with `message`, then work. */
+  function flaky(failures: number, message = "D1_ERROR: Network connection lost."): D1Database {
+    let left = failures;
+    const failOrSend = <T>(send: () => Promise<T>) => {
+      if (left <= 0) return send();
+      left -= 1;
+      return Promise.reject(new Error(message));
+    };
+    const statement = (real: D1PreparedStatement): D1PreparedStatement =>
+      ({
+        bind: (...values: unknown[]) => statement(real.bind(...values)),
+        all: () => failOrSend(() => real.all()),
+        run: () => failOrSend(() => real.run()),
+      }) as unknown as D1PreparedStatement;
+    return { prepare: (query: string) => statement(env.DB.prepare(query)) } as unknown as D1Database;
+  }
+
+  it("is read again, and answers", async () => {
+    const { db } = meterDatabase(flaky(2));
+    expect((await db.prepare("SELECT id FROM people").all()).results).toHaveLength(3);
+  });
+
+  it("is not tried again for a write, nor for a failure that does not pass", async () => {
+    await expect(meterDatabase(flaky(1)).db.prepare("UPDATE people SET name = 'x'").run()).rejects.toThrow("lost");
+    await expect(
+      meterDatabase(flaky(1)).db.prepare("INSERT INTO people (id) VALUES ('p-9') RETURNING id").all(),
+    ).rejects.toThrow("lost");
+    const missing = flaky(1, "D1_ERROR: no such table: nowhere");
+    await expect(meterDatabase(missing).db.prepare("SELECT id FROM people").all()).rejects.toThrow("no such table");
+  });
+
+  it("gives up after its tries", async () => {
+    await expect(meterDatabase(flaky(5)).db.prepare("SELECT id FROM people").all()).rejects.toThrow("lost");
+  });
+});
