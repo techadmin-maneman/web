@@ -709,7 +709,7 @@ export function registerOpsClients(app: App): void {
         recordVisits(db, id, now),
         isFitted(db, id),
         paymentEntries(db, id, now),
-        paymentLinksOf(db, id),
+        paymentLinksOf(db, id, now),
         visitInvoicesOf(db, id),
         clientHistory(db, id),
         // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.

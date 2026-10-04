@@ -196,7 +196,8 @@ export const dispatch = {
     badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
       Record<string, string>
     >,
-    rows: { type: "Type", area: "Area", state: "State", referred: "Referred by" },
+    // PLACEHOLDER: the board draws no Service row; it names a first fit's hair system, say.
+    rows: { type: "Type", service: "Service", area: "Area", state: "State", referred: "Referred by" },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** "Sector 65 · 122018": the area the visit's pincode is in, and the pincode. */
@@ -732,6 +733,8 @@ export const clients = {
       service: "Service visit",
       replacement: "Replacement",
     },
+    /** "First fit · Mane Man Essential": the kind, and the service it was sold as where that says more. */
+    what: (kind: string, service: string | null) => (service === null ? kind : `${kind} · ${service}`),
     /** A visit to come, by where it stands, and one done, by how FSM closed it. */
     stages: {
       booked: "Booked",
@@ -1520,6 +1523,9 @@ export const noShows = {
   },
 } as const;
 
+/** Where a payment link still owed stands, as the Tasks board says it. */
+const PAYMENT_LINK_STATES = { sent: "link sent", unsent: "link not sent", closed: "link closed unpaid" } as const;
+
 /**
  * Board D2's queue. A task is not a record: it is a row in a queue the database
  * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
@@ -1530,6 +1536,10 @@ export const tasks = {
   title: "Tasks",
   /** The head's count, in oxblood, as the board writes "4 overdue". */
   overdue: (count: number) => `${String(count)} overdue`,
+  /** PLACEHOLDER: the head's count as a screen reader names it, with what it does. */
+  overdueJump: (count: number) => `${String(count)} overdue, go to the first`,
+  /** Each department's section, named as the navigation names it. */
+  departments: DEPARTMENT_NAMES,
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
@@ -1587,6 +1597,9 @@ export const tasks = {
   } as Readonly<Record<string, string>>,
   /** PLACEHOLDER: a group longer than the board lists: its count is all of them. */
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
+  /** PLACEHOLDER: a group shows its five longest waits until ops ask for the rest. */
+  more: (count: number) => `Show ${String(count)} more`,
+  fewer: "Show fewer",
   /** PLACEHOLDER: what a consultation asked for, a first fit to book and a replacement due are done with. */
   book: "Book a visit",
   /** A move the client has not heard of, settled from its row. */
@@ -1666,20 +1679,14 @@ export const tasks = {
     draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
     /**
      * PLACEHOLDER: "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
-     * link not sent waits for ops to send one from Razorpay's dashboard (ADR 0105).
+     * link not sent, or closed unpaid, waits for ops to send one from Razorpay's dashboard (ADR 0105).
      */
-    payment_owed: (product: string, amount: string, sent: boolean) =>
-      `${product}, ${amount}; ${sent ? "link sent" : "link not sent"}`,
+    payment_owed: (product: string, amount: string, link: "sent" | "unsent" | "closed") =>
+      `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
     // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
     erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
     unknown: "Held for review",
-  },
-  /** The last column, as the board writes it: "2 days", "1 day", "Today", "Overdue 3". */
-  sla: {
-    today: "Today",
-    left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"}`,
-    over: (days: number) => `Overdue ${String(days)}`,
   },
   /**
    * Whose each task is (docs/decisions/0092-task-owners.md). The board writes each owner in ops by their first name,
@@ -1989,11 +1996,11 @@ export const technicians = {
  * each queue is built as the boards' own queues are (C1 and D1).
  */
 
-/** How long a request has left before the time we have promised runs out, as board D2 words its column. */
+/** How long something waiting on ops has left, on Tasks and in every queue: "2 days left", "3 days overdue". */
 export const waiting = {
   left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"} left`,
   today: "Due today",
-  over: (days: number) => `Overdue ${String(days)}`,
+  over: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"} overdue`,
 } as const;
 
 export const grievances = {

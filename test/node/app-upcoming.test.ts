@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { Me, VisitSummary } from "../../apps/app/src/api.ts";
-import { bookingName } from "../../apps/app/src/lib/visit.ts";
+import { bookingName, visitTitle } from "../../apps/app/src/lib/visit.ts";
 import { upcomingEntries } from "../../apps/app/src/visits/upcoming.ts";
 
 type BeingBooked = NonNullable<Me["being_booked"]>;
@@ -64,5 +64,17 @@ describe("a visit being booked", () => {
   it("is called by its kind on a Home the phone kept from before it said whether it is one visit", () => {
     const kept = { type: "service", date: "2026-10-08", window: "morning", paid: true } as BeingBooked;
     expect(bookingName(kept)).toBe("Service visit");
+  });
+});
+
+// MON-10: Home and Visits never said which hair system a first fit was for.
+describe("a visit's title", () => {
+  it("names the service beside the kind where the API names one", () => {
+    expect(visitTitle({ type: "first_fit", service: "Mane Man Essential" })).toBe("First fit · Mane Man Essential");
+    expect(visitTitle({ type: "service", service: null })).toBe("Service visit");
+  });
+
+  it("is the kind alone on a visit the phone kept from before the API named the service", () => {
+    expect(visitTitle({ type: "first_fit" } as VisitSummary)).toBe("First fit");
   });
 });
