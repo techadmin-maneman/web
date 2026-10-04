@@ -1751,6 +1751,8 @@ export interface components {
             unlocked: boolean;
             /** Format: date-time */
             unlocks_at: string;
+            /** @description The client's name, from the day before the visit as the card's client is; null until then. */
+            client_name: string | null;
             progress: components["schemas"]["TechnicianJobState"];
         };
         /** @description When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet. */
@@ -1789,6 +1791,8 @@ export interface components {
             unlocked: boolean;
             /** Format: date-time */
             unlocks_at: string;
+            /** @description The client's name, from the day before the visit as the card's client is; null until then. */
+            client_name: string | null;
             progress: components["schemas"]["TechnicianJobProgress"];
             /** @description Null until the day before the visit; the API enforces it, not the screen. */
             address: {

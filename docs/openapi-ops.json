@@ -453,6 +453,20 @@
             },
             "description": "Payments and refunds as one list, newest first."
           },
+          "payment_links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientPaymentLink"
+            },
+            "description": "Every payment link, newest first."
+          },
+          "invoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientInvoice"
+            },
+            "description": "Each finished visit sold for a price, with its invoice; the latest visit first."
+          },
           "history": {
             "$ref": "#/components/schemas/ClientRecordHistory"
           },
@@ -492,6 +506,8 @@
           "credits",
           "visits",
           "payments",
+          "payment_links",
+          "invoices",
           "history",
           "invite",
           "held_bookings",
@@ -1499,6 +1515,152 @@
           "status",
           "destination",
           "speed"
+        ],
+        "additionalProperties": false
+      },
+      "ClientPaymentLink": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product": {
+            "type": "string",
+            "description": "The service it pays for, by its name now."
+          },
+          "visit_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "India's date of the visit it pays for; null where the visit has no start."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "In paise, GST included."
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "As the client reads it on Razorpay's page; null on a link made before links had one."
+          },
+          "short_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The address Razorpay texted the client; null until Razorpay has made the link."
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "making",
+              "open",
+              "paid",
+              "refused",
+              "lapsed"
+            ],
+            "description": "making: Razorpay has not made it yet, and it is asked again; open: sent and not paid; paid; refused: Razorpay would not make it, so ops send one by hand; lapsed: closed unpaid."
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "product",
+          "visit_date",
+          "amount",
+          "reference",
+          "short_url",
+          "sent_at",
+          "state",
+          "paid_at"
+        ],
+        "additionalProperties": false
+      },
+      "ClientInvoice": {
+        "type": "object",
+        "properties": {
+          "visit_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "to_raise",
+              "draft",
+              "issued"
+            ],
+            "description": "to_raise: Books holds none yet; draft: Books holds it unsent; issued: sent to the client."
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "visit_id",
+          "date",
+          "type",
+          "state",
+          "issued_at"
         ],
         "additionalProperties": false
       },
@@ -9555,7 +9717,7 @@
     },
     "/api/clients/{id}": {
       "get": {
-        "summary": "The client's record: who they are, their address, their visits, their payments, their history and their invite",
+        "summary": "The client's record: who they are, their address, their visits, their money, their history and their invite",
         "parameters": [
           {
             "schema": {
