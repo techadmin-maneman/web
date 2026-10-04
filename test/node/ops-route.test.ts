@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import {
   areasPath,
+  clientPath,
   dispatchAsked,
   dispatchPath,
   followsHere,
@@ -68,8 +69,16 @@ describe("the ops console's routes", () => {
     expect(routeOf("/settings/consumables")).toEqual({ page: "settings", tab: "consumables" });
     expect(routeOf("/settings/job-sheet")).toEqual({ page: "settings", tab: "job-sheet" });
     expect(routeOf("/stock")).toEqual({ page: "stock" });
-    expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "pieces" });
     expect(routeOf(`/clients/${CLIENT}/photos`)).toEqual({ page: "clients", clientId: CLIENT, tab: "photos" });
+  });
+
+  // OIA-10 of the audit, 2 October 2026: a client's page opened on an empty Pieces tab, and so did every bare link.
+  it("opens a client's page on their visits, and names the tab of every link to it", () => {
+    expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "visits" });
+    expect(routeOf(`/clients/${CLIENT}`)).toEqual({ page: "clients", clientId: CLIENT, tab: "visits" });
+    expect(clientPath(CLIENT, "visits")).toBe(`/clients/${CLIENT}/visits`);
+    expect(routeOf(clientPath(CLIENT, "referrals"))).toEqual({ page: "clients", clientId: CLIENT, tab: "referrals" });
+    expect(routeOf(clientPath(CLIENT, "payments"))).toEqual({ page: "clients", clientId: CLIENT, tab: "payments" });
   });
 
   // OIA-13 of the audit, 2 October 2026: launching an area had two homes, Waitlist and Settings › Service area.

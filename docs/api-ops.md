@@ -2393,6 +2393,14 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
+**400**: invalid_request: person is not a client's id
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required, or not_permitted: no View in any department
 
 ```json
@@ -3449,6 +3457,58 @@ Request body:
 ```json
 {
   "$ref": "#/components/schemas/ServiceRename"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/{tier}/description
+
+The line clients read under a service's name as they choose. An empty one clears it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceDescribe"
 }
 ```
 
@@ -9343,7 +9403,8 @@ Request body:
           "amount"
         ],
         "additionalProperties": false
-      }
+      },
+      "description": "Money owed back: a payment held with no visit behind it, or what a cancelled visit's refund has still to return."
     },
     "links": {
       "type": "array",
@@ -13427,6 +13488,10 @@ Request body:
     "max_minutes": {
       "type": "integer"
     },
+    "max_description": {
+      "type": "integer",
+      "description": "The most characters a description may have."
+    },
     "max_amount_ex_gst": {
       "type": "integer"
     },
@@ -13441,6 +13506,7 @@ Request body:
     "late_fees",
     "min_minutes",
     "max_minutes",
+    "max_description",
     "max_amount_ex_gst",
     "max_gst_percent"
   ],
@@ -13469,6 +13535,17 @@ Request body:
     },
     "name": {
       "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The line clients read under its name as they choose; null until ops write one."
     },
     "minutes": {
       "type": "integer",
@@ -13523,6 +13600,7 @@ Request body:
     "kind",
     "tier",
     "name",
+    "description",
     "minutes",
     "sort",
     "retired_date",
@@ -13586,6 +13664,24 @@ Request body:
   },
   "required": [
     "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceDescribe
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 160
+    }
+  },
+  "required": [
+    "description"
   ],
   "additionalProperties": false
 }

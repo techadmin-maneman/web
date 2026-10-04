@@ -46,7 +46,7 @@ test("says what confirming does before it is confirmed", async ({ page }) => {
 test("reaches the client's record from the name", async ({ page }) => {
   await open(page);
   await queue(page).getByRole("link", { name: "Rohit Malhotra" }).click();
-  expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001");
+  expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/visits");
 });
 
 test("confirms the change, and it leaves the queue", async ({ page }) => {

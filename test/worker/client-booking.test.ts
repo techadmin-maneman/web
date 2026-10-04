@@ -730,6 +730,24 @@ describe("choosing a service", () => {
       expect(me.booking.next).toMatchObject({ tier: "essential" });
     });
 
+    it("gives each hair system on Home the line ops wrote for it, and none where they wrote none", async () => {
+      const lead = await client(true);
+      await retireTheFirstFit();
+      await service("first_fit", "essential", "Mane Man Essential", 180, 3_200_000);
+      await service("first_fit", "active", "Mane Man Active", 180, 3_600_000);
+      await env.DB.prepare(
+        "UPDATE services SET description = 'Built for everyday wear.' WHERE kind = 'first_fit' AND tier = 'essential'",
+      ).run();
+
+      const me = await (
+        await request(app, "/api/me", { headers: { Cookie: lead.cookie } })
+      ).json<{ booking: { services: { tier: string; description: string | null }[] } }>();
+      expect(me.booking.services.map(({ tier, description }) => ({ tier, description }))).toEqual([
+        { tier: "active", description: null },
+        { tier: "essential", description: "Built for everyday wear." },
+      ]);
+    });
+
     it("books the hair system named, and refuses a first fit that names none", async () => {
       const lead = await client(true);
       await retireTheFirstFit();

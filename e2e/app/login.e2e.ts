@@ -132,9 +132,15 @@ test("a wrong code says so, in the design's words, and the fifth voids it", asyn
     await expect(page.getByRole("alert")).toHaveText(`That code did not match. ${left}`);
     await expect(field).toHaveAttribute("aria-invalid", "true");
   }
+  // The next code typed takes the line away; a closed code keeps it, since typing cannot help.
+  await field.fill("1");
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(field).not.toHaveAttribute("aria-invalid", "true");
   await enter(page, WRONG);
   await expect(page.getByRole("alert")).toHaveText("That code did not match. It no longer works.");
   await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
+  await field.fill("2");
+  await expect(page.getByRole("alert")).toHaveText("That code did not match. It no longer works.");
 
   await page.getByRole("button", { name: "Send a new code" }).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
@@ -179,6 +185,26 @@ test("says to use the last code when no other can be sent just now", async ({ pa
   await page.getByRole("button", { name: "Resend on WhatsApp" }).click();
   await expect(page.getByRole("alert")).toHaveText(
     "We cannot send another code just now. Use the last one we sent, or message us.",
+  );
+  await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toHaveAttribute(
+    "href",
+    "https://wa.me/919007973247",
+  );
+});
+
+test("a number out of codes for the day is told so, with WhatsApp under the line", async ({ page }) => {
+  await page.route("**/api/auth/otp", (route) =>
+    route.fulfill({ status: 429, json: { error: { code: "rate_limited", request_id: "e2e" } } }),
+  );
+  await page.goto("/");
+  await page.getByRole("textbox", { name: "Mobile number" }).fill(randomMobile());
+  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "Too many codes for this number today. Try again tomorrow, or message us.",
+  );
+  await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toHaveAttribute(
+    "href",
+    "https://wa.me/919007973247",
   );
 });
 
@@ -250,6 +276,15 @@ test("the WhatsApp resend counts down from 30 seconds, and SMS is offered after 
   await expect(page.getByRole("button", { name: "Send by SMS instead" })).toBeVisible();
   // The count is shown and not spoken; that it has run out is said once.
   await expect(page.getByRole("status")).toHaveText("You can ask for a new code now.");
+});
+
+test("the resend's count runs from when the code was sent, across the help screen and back", async ({ page }) => {
+  await page.clock.install();
+  await sendCode(page, randomMobile());
+  await page.clock.runFor(3_000);
+  await page.getByRole("button", { name: "No booking on this number?" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByText(/^Resend on WhatsApp in 27s$/)).toBeVisible();
 });
 
 test("says the code is read automatically only when it comes by SMS, the one a phone can read", async ({ page }) => {

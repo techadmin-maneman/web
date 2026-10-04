@@ -41,6 +41,8 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
 };
 
 export const login = {
+  /** Under a limit on codes, on the number and the code screens. */
+  messageUs: "Message us on WhatsApp",
   mobile: {
     title: "Your mobile number",
     prefix: "+91",

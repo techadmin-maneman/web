@@ -111,7 +111,7 @@ async function queueCrmUpdate(c: Context<AppEnv>, personId: string): Promise<voi
   const alert = {
     key: `crm_contact_update:${personId}`,
     message: `Client ${personId}'s invite could not be sent on to the CRM. By hand, ${writtenByHand()}.`,
-    link: `/clients/${personId}`,
+    link: `/clients/${personId}/referrals`,
   };
   const body = { update_person_id: personId, request_id: requestId, invite_attached: true } satisfies CrmSyncMessage;
   await enqueue(c.env.CRM_QUEUE, body, { log, ifLost: { alertOnce: deps.alertOnce, alert } });

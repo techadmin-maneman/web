@@ -3340,7 +3340,10 @@ export interface paths {
         /** What ops still have to do, by group, the longest wait first */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description One client's tasks alone, for their page; every count is then theirs. */
+                    person?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -3354,6 +3357,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Tasks"];
+                    };
+                };
+                /** @description invalid_request: person is not a client's id */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description access_required, or not_permitted: no View in any department */
@@ -4952,6 +4964,85 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": components["schemas"]["ServiceRename"];
+                };
+            };
+            responses: {
+                /** @description Every service as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsServices"];
+                    };
+                };
+                /** @description invalid_request: fields names the box refused */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no service of that kind has that code */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/services/{kind}/{tier}/description": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The line clients read under a service's name as they choose. An empty one clears it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    kind: "consultation" | "first_fit" | "service" | "replacement";
+                    tier: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ServiceDescribe"];
                 };
             };
             responses: {
@@ -7822,6 +7913,7 @@ export interface components {
                 /** @enum {string} */
                 window: "morning" | "afternoon" | "evening";
             }[];
+            /** @description Money owed back: a payment held with no visit behind it, or what a cancelled visit's refund has still to return. */
             payments: {
                 id: string;
                 reference: string | null;
@@ -8807,6 +8899,8 @@ export interface components {
             }[];
             min_minutes: number;
             max_minutes: number;
+            /** @description The most characters a description may have. */
+            max_description: number;
             max_amount_ex_gst: number;
             max_gst_percent: number;
         };
@@ -8816,6 +8910,8 @@ export interface components {
             /** @description Its code within its kind, which the price book prices it by; never changed. */
             tier: string;
             name: string;
+            /** @description The line clients read under its name as they choose; null until ops write one. */
+            description: string | null;
             /** @description How long FSM books it for, and the time the day keeps. */
             minutes: number;
             sort: number;
@@ -8842,6 +8938,9 @@ export interface components {
         };
         ServiceRename: {
             name: string;
+        };
+        ServiceDescribe: {
+            description: string;
         };
         ServiceLength: {
             minutes: number;

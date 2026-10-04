@@ -10,6 +10,7 @@ import { launchDateAfter } from "../policy/launch.ts";
 import { namedArea } from "./area-names.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { consentGiven, latestConsentSql } from "./messages.ts";
+import { joinPacedLine } from "./paced-line.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import { firstNameOf } from "../lib/names.ts";
 
@@ -117,9 +118,6 @@ export async function waitingByPincode(
   return new Map(results.map((row) => [row.pincode, { waiting: row.waiting, toAlert: row.to_alert }]));
 }
 
-/** How many alerts go out a minute, so a launch does not flood the number. */
-export const ALERTS_PER_MINUTE = 10;
-
 /** A launch alert queued, with the seconds to hold it back so the alerts leave in a paced line. */
 export interface LaunchAlert {
   readonly id: string;
@@ -140,19 +138,16 @@ async function alertStatements(
 ): Promise<{ alerts: LaunchAlert[]; statements: D1PreparedStatement[] }> {
   const at = input.now.toISOString();
   const waiting = await toAlert(db, input.pincode);
-  const alerts = waiting.map((entry, index) => ({
-    id: crypto.randomUUID(),
-    entryId: entry.id,
-    personId: entry.person_id,
-    delaySeconds: Math.floor((input.pacedAfter + index) / ALERTS_PER_MINUTE) * 60,
-  }));
+  const newAlerts = waiting.map((entry) => ({ id: crypto.randomUUID(), entryId: entry.id, personId: entry.person_id }));
+  const alerts = await joinPacedLine(db, input.now, newAlerts, input.pacedAfter);
   const statements = alerts.flatMap((alert) => [
     db
       .prepare(
-        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-         VALUES (?1, ?2, ?3, 'launch_alert', 'pincode', ?4, 'queued', ?2)`,
+        `INSERT INTO outbound_messages
+           (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at, due_at)
+         VALUES (?1, ?2, ?3, 'launch_alert', 'pincode', ?4, 'queued', ?2, ?5)`,
       )
-      .bind(alert.id, at, alert.personId, input.pincode),
+      .bind(alert.id, at, alert.personId, input.pincode, alert.dueAt),
     db.prepare("UPDATE waitlist_entries SET alerted_at = ?2 WHERE id = ?1").bind(alert.entryId, at),
   ]);
   return { alerts: alerts.map(({ id, delaySeconds }) => ({ id, delaySeconds })), statements };
@@ -162,7 +157,7 @@ async function alertStatements(
  * Everything one launch writes, for the caller's batch, from either tab of Areas: the pincode served from its launch
  * date (src/policy/launch.ts), an alert queued for each person who asked to be told, and the launch's audit entry,
  * which counts the alerts. `pacedAfter` is how many alerts the batch queues before these, so several pincodes launched
- * together still leave ALERTS_PER_MINUTE a minute.
+ * together still leave in one paced line (src/domain/paced-line.ts).
  */
 export async function launchStatements(
   db: D1Database,

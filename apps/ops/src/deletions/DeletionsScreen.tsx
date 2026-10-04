@@ -29,6 +29,7 @@ import { deletions } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
+import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./deletions.module.css";
 import { ErasureLists } from "./ErasureLists.tsx";
@@ -130,7 +131,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
   return (
     <>
       <div className={styles.head}>
-        <OpsLink className={styles.name} to={`/clients/${request.person_id}`}>
+        <OpsLink className={styles.name} to={clientPath(request.person_id, "consents")}>
           {request.name}
         </OpsLink>
         <Left due={request.due} now={now} />

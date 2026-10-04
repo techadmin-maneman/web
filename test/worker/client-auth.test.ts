@@ -532,6 +532,7 @@ describe("the session", () => {
             type: "consultation",
             tier: "standard",
             name: "Consultation",
+            description: null,
             minutes: 60,
             price: { amount_ex_gst: 0, amount: 0, gst_percent: 0 },
           },

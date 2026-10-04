@@ -286,6 +286,22 @@
   text-align: right;
 }
 
+/* The line ops wrote for a service, under its name: a row that carries one grows to hold it. */
+.window:has(.serviceLine) {
+  padding-block: var(--sp-12);
+}
+
+.serviceLine {
+  display: block;
+  margin-top: var(--sp-3);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.window:has(.radio:checked) .serviceLine {
+  color: var(--ink-soft);
+}
+
 .regular {
   display: flex;
   align-items: center;

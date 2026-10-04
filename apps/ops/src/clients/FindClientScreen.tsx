@@ -11,6 +11,7 @@ import { api, type ClientsFound } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
+import { clientPath } from "../route.ts";
 import styles from "./clients.module.css";
 
 const copy = clients.find;
@@ -35,7 +36,7 @@ function Found({ text, found }: { text: string; found: ClientsFound }) {
       <ul className={styles.foundList}>
         {found.clients.map((client) => (
           <li className={styles.foundRow} key={client.id}>
-            <OpsLink className={styles.foundName} to={`/clients/${client.id}`}>
+            <OpsLink className={styles.foundName} to={clientPath(client.id, "visits")}>
               {client.name}
             </OpsLink>
             <span className={styles.foundMobile}>{phoneWords(client.mobile)}</span>

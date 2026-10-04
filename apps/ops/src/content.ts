@@ -475,10 +475,22 @@ export const clients = {
     { tab: "visits", label: "Visits" },
     { tab: "pieces", label: "Pieces" },
     { tab: "payments", label: "Payments" },
+    { tab: "referrals", label: "Referrals" },
     { tab: "consents", label: "Consents" },
     { tab: "photos", label: "Photos" },
     { tab: "history", label: "History" },
   ],
+  /**
+   * PLACEHOLDER, all of it: what waits on Tasks for the client, under the page's head, each with how long it has left
+   * and where it is done. No board draws it.
+   */
+  openTasks: {
+    title: "Open for this client",
+    none: "Nothing open.",
+    failed: "We could not load what is open for this client.",
+    /** A task done on a tab of the client's page: "Go to Payments". */
+    toTab: (tab: string) => `Go to ${tab}`,
+  },
   failed: "We could not load this client.",
   /*
    * PLACEHOLDER, all of it: the board draws a Visits tab and nothing in it. It
@@ -922,9 +934,8 @@ export const clients = {
     } as Readonly<Record<string, string>>,
   },
   /*
-   * PLACEHOLDER, all of it: no board draws a client's invite. Who sent it heads the page; under Payments, beside the
-   * credits it grants, is what it earns, or a way to attach one for a friend who booked away from its page
-   * (POST /api/clients/{id}/referral; docs/decisions/0089-an-invite-is-not-lost.md).
+   * PLACEHOLDER, all of it: board B1 draws a Referrals tab and nothing in it. Who sent the invite heads the page; the
+   * tab says what it earns, or gives a way to attach one for a friend who booked away from its page.
    */
   invite: {
     title: "Invite",
@@ -1149,13 +1160,14 @@ export const clients = {
     /** Why nothing was erased, and what ops may do about it. */
     owed: {
       visit_booked: "They still have a visit booked, so nothing was erased. Cancel it and refund what they paid first.",
-      payment_held: "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it first.",
+      payment_held:
+        "We still owe them money back, so nothing was erased. Erase once their Payments tab shows it refunded.",
       payment_owed: "A payment link of theirs is still unpaid, so nothing was erased.",
     },
     /** To erase today all the same, when what is owed cannot be settled first. */
     settle: {
       visit_booked: "I will cancel and refund it by hand today.",
-      payment_held: "I will cancel and refund it by hand today.",
+      payment_held: "I will make sure it is refunded today.",
       payment_owed: "Their link is cancelled, and what they owe goes unpaid.",
     },
     anyway: "Erase anyway",
@@ -2263,7 +2275,7 @@ export const deletions = {
         "They still have a visit booked, so nothing was erased. Cancel it on their Visits tab, which refunds what they " +
         "paid, then delete.",
       payment_held:
-        "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it, then delete.",
+        "We still owe them money back, so nothing was erased. Delete once their Payments tab shows it refunded.",
       payment_owed: "A payment link of theirs is still unpaid, so nothing was erased. Delete once it is paid.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. The client has not been erased.",
@@ -2301,6 +2313,9 @@ export const numberChanges = {
     } as Readonly<Record<string, string>>,
   },
 } as const;
+
+/** A service's description in a check line: quoted, or "no description". */
+const descriptionWords = (line: string) => (line === "" ? "no description" : `“${line}”`);
 
 /**
  * Settings: the business inputs ops set for themselves. The design draws this
@@ -2585,10 +2600,13 @@ export const settings = {
     kinds: dispatch.typeNames,
     /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
     hairSystems:
-      "Clients book a first fit only as one of these hair systems, by its name and price here. With none offered " +
-      "and priced, first fits and the consultation and fit in one visit cannot be booked.",
+      "Clients book a first fit only as one of these hair systems, by its name, description and price here. With " +
+      "none offered and priced, first fits and the consultation and fit in one visit cannot be booked.",
     /** "180 minutes · code premium": how long it is held and booked for, and what the price book prices it by. */
     facts: (minutes: number, tier: string) => `${String(minutes)} minutes · code ${tier}`,
+    /** The line clients read under the service's name in the app as they choose. */
+    described: (line: string) => `Clients read: “${line}”`,
+    notDescribed: "No description, so clients read the name alone.",
     fsm: { linked: "In FSM's catalogue", notYet: "Not found in FSM's catalogue yet" },
     offered: "Offered",
     retiring: (from: string) => `Clients stop seeing it from ${from}`,
@@ -2616,6 +2634,7 @@ export const settings = {
       correct: "Correct",
       takeBack: "Take back",
       rename: "Rename",
+      describe: "Change description",
       length: "Change length",
       retire: "Retire",
       restore: "Restore",
@@ -2630,6 +2649,7 @@ export const settings = {
       correct: (name: string, from: string) => `Correct the ${name} price from ${from}`,
       takeBack: (name: string, from: string) => `Take back the ${name} price from ${from}`,
       rename: (name: string) => `Rename ${name}`,
+      describe: (name: string) => `Change the description of ${name}`,
       length: (name: string) => `Change the length of ${name}`,
       retire: (name: string) => `Retire ${name}`,
       restore: (name: string) => `Restore ${name}`,
@@ -2649,6 +2669,11 @@ export const settings = {
       renameTitle: (name: string) => `Rename ${name}`,
       name: "Name",
       nameHint: "What clients, ops and FSM's catalogue call it. A letter or a digit first.",
+      describeTitle: (name: string) => `The description of ${name}`,
+      description: "Description",
+      descriptionHint: (max: number) =>
+        `One line clients read under its name as they choose: what sets it apart. Up to ${String(max)} characters. ` +
+        "Leave it empty to show none.",
       lengthTitle: (name: string) => `The length of ${name}`,
       minutes: "Length, in minutes",
       minutesHint: (min: number, max: number) =>
@@ -2673,6 +2698,8 @@ export const settings = {
       sameDay: "A price is already set from that day. This replaces it.",
       rename: (was: string, now: string, tier: string) =>
         `${was} → ${now}. Its code stays ${tier}, and with it every price it has and every visit sold.`,
+      describe: (name: string, was: string, now: string) =>
+        `${name}: ${descriptionWords(was)} → ${descriptionWords(now)}`,
       length: (name: string, was: number, now: number) =>
         `${name}: ${String(was)} → ${String(now)} minutes. A visit held or booked before keeps its own length.`,
       retire: (name: string, from: string) =>
@@ -2698,6 +2725,7 @@ export const settings = {
       not_permitted: NOT_PERMITTED,
       tier: "No service of this kind has that code, or a code cannot be made from that name. Nothing was changed.",
       name: "A name starts with a letter or a digit, runs from 2 to 60 characters, and opens no formula. Nothing was changed.",
+      description: "A description is one line, up to the length under the field. Nothing was changed.",
       minutes: "A length is whole minutes, inside the range under the field. Nothing was changed.",
       retired_date:
         "A service retires from today or a day after it, and one already retired is restored first. Nothing was changed.",
