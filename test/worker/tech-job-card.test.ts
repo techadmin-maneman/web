@@ -8,8 +8,11 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
-import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 import { syntheticJpeg } from "./tryon-fixtures.ts";
+
+/** The most round trips to D1 a card may wait on in turn. It waited on 15 when each read waited for the one before. */
+const CARD_TRIPS = 7;
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const TODAY_JOB = "22222222-2222-4222-8222-222222222221";
@@ -121,8 +124,8 @@ describe("the day's list", () => {
     expect(jobs.map((job) => job.slots)).toEqual([1, 2, 1.5]);
   });
 
-  // The owner's decision of 2 October 2026: a first fit is one of the hair systems ops offer, and the card names it.
-  it("names the hair system a first fit was sold as, and none for any other visit or a one visit still to choose", async () => {
+  // MON-10, FLD-14: a client paid for Mane Man Essential, and the card said only "First fit".
+  it("names the service a visit was sold as, and none for a kind's standard one or a one visit still to choose", async () => {
     await env.DB.batch([
       env.DB.prepare(
         `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
@@ -140,10 +143,38 @@ describe("the day's list", () => {
       .run();
     await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(OLDER_VISIT).run();
 
-    const { jobs } = await (await get("/api/tech/jobs?date=2026-09-21")).json<{ jobs: { product: string | null }[] }>();
+    const { jobs } = await (await get("/api/tech/jobs?date=2026-09-21")).json<{ jobs: { service: unknown }[] }>();
 
-    expect(jobs.map((job) => job.product)).toEqual([null, "Mane Man Essential", null]);
-    expect(await card(LAST_VISIT)).toMatchObject({ product: "Mane Man Essential" });
+    const essential = { tier: "essential", name: "Mane Man Essential" };
+    expect(jobs.map((job) => job.service)).toEqual([null, essential, null]);
+    expect(await card(LAST_VISIT)).toMatchObject({ service: essential });
+  });
+
+  it("names a replacement sold as a service of its own, beside its kind's standard one", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('replacement', 'natural', 'Mane Man Natural replacement', 135, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare("UPDATE appointments SET tier = 'natural' WHERE id = ?1").bind(LATER_JOB),
+    ]);
+    await insertJob(OLDER_VISIT, { start: "2026-09-25T09:30:00.000Z", type: "replacement" });
+    await env.DB.prepare("UPDATE appointments SET tier = 'standard' WHERE id = ?1").bind(OLDER_VISIT).run();
+
+    const { jobs } = await (await get("/api/tech/jobs?date=2026-09-25")).json<{ jobs: { service: unknown }[] }>();
+
+    expect(jobs.map((job) => job.service)).toEqual([{ tier: "natural", name: "Mane Man Natural replacement" }, null]);
+  });
+
+  // FLD-42: Today names each client from the list, rather than once each card has arrived in turn.
+  it("names the client of a job once it unlocks, as its card does, and nobody before then", async () => {
+    const today = await (await get("/api/tech/jobs?date=2026-09-21")).json<{ jobs: Record<string, unknown>[] }>();
+    const later = await (await get("/api/tech/jobs?date=2026-09-25")).json<{ jobs: Record<string, unknown>[] }>();
+
+    expect(today.jobs).toEqual([
+      expect.objectContaining({ id: TODAY_JOB, unlocked: true, client_name: "Rohit Malhotra" }),
+    ]);
+    expect(later.jobs).toEqual([expect.objectContaining({ id: LATER_JOB, unlocked: false, client_name: null })]);
   });
 
   // FLD-36, UX-04: a second phone read "In progress" for a job its card had closed, while FSM held the close-out back.
@@ -282,5 +313,17 @@ describe("the card", () => {
 
     expect((await card(TODAY_JOB)).reminder).toEqual({ delivered_at: "2026-09-20T12:31:00Z" });
     expect((await card(LATER_JOB)).reminder).toBeNull();
+  });
+
+  // PLAT-15: each D1 read is a round trip to the database's region, so the card's reads that need nothing from each
+  // other go together.
+  it("waits on few round trips to D1, however much it carries", async () => {
+    await insertJob(LAST_VISIT, { start: "2026-08-22T05:00:00.000Z", technician: SAMEER, status: "completed" });
+    await afterPhoto(LAST_VISIT, "front", "last-front");
+
+    const answer = await get(`/api/tech/jobs/${TODAY_JOB}`);
+
+    expect(answer.status).toBe(200);
+    expect(d1TripsOf(answer)).toBeLessThanOrEqual(CARD_TRIPS);
   });
 });

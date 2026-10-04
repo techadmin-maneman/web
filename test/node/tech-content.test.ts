@@ -4,7 +4,9 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { badges, today, whatStopped } from "../../apps/tech/src/content.ts";
+import { badges, changed, job, today, whatStopped } from "../../apps/tech/src/content.ts";
+import { jobLabel } from "../../apps/tech/src/lib/kind.ts";
+import type { HeldJob } from "../../apps/tech/src/store/jobs.ts";
 
 const SOURCE = "apps/tech/src";
 const DESIGN = readFileSync("design/phase2/Technician App.dc.html", "utf8");
@@ -67,6 +69,73 @@ describe("a job ops gave to another technician", () => {
     expect(givenAway(null)).toBe("This job is someone else's now.");
     expect(whatStopped({ note: "superseded", fields: ["status", "technician"], moved: null }, NOW)).toBe(
       "This job was cancelled while the phone was offline.",
+    );
+  });
+});
+
+// BK-43, FLD-38, UX-25, CP-36: the banner read "4446a6e4 · Ops moved this job to another time." once the moved job
+// locked again, with no client name left on the phone and no word of where the job went.
+describe("a job ops moved to another time", () => {
+  /** 11:30 am in India on Thursday 14 January 2027. */
+  const NOW = new Date("2027-01-14T06:00:00.000Z");
+  /** 4 pm that day, the start the technician knew. */
+  const FOUR_PM = "2027-01-14T10:30:00.000Z";
+  const movedTo = (startsNow: string | null) =>
+    whatStopped({ note: "superseded", fields: ["time"], moved: null, startsAt: FOUR_PM }, NOW, startsNow);
+
+  const relocked: HeldJob = {
+    starts_at: "2027-01-15T03:30:00.000Z",
+    type: "consultation",
+    one_visit: false,
+    sector: "Gurgaon",
+    client: null,
+  };
+
+  it("says the day and time it moved to, once the card read again carries them", () => {
+    expect(movedTo("2027-01-14T12:30:00.000Z")).toBe("Ops moved this job to 6 pm today.");
+    expect(movedTo("2027-01-15T03:30:00.000Z")).toBe("Ops moved this job to 9 am tomorrow.");
+    expect(movedTo("2027-01-18T03:30:00.000Z")).toBe("Ops moved this job to 9 am on Mon 18 Jan.");
+  });
+
+  it("says only that it moved while the phone holds no newer start", () => {
+    expect(movedTo(FOUR_PM)).toBe("Ops moved this job to another time.");
+    expect(movedTo(null)).toBe("Ops moved this job to another time.");
+  });
+
+  it("is named by the time the technician knew, its kind and its area, never by its ID", () => {
+    expect(changed.line(jobLabel(relocked, FOUR_PM, NOW), movedTo(relocked.starts_at))).toBe(
+      "4 pm consultation · Gurgaon: Ops moved this job to 9 am tomorrow.",
+    );
+  });
+
+  it("names the day of a job that is not today's, and what it can when the phone holds less", () => {
+    expect(jobLabel(relocked, null, NOW)).toBe("Tomorrow 9 am consultation · Gurgaon");
+    expect(jobLabel({ ...relocked, one_visit: true }, FOUR_PM, NOW)).toBe("4 pm consultation and fit · Gurgaon");
+    expect(jobLabel({ ...relocked, starts_at: "2027-01-18T03:30:00.000Z" }, null, NOW)).toBe(
+      "Mon 18 Jan 9 am consultation · Gurgaon",
+    );
+    expect(jobLabel(undefined, FOUR_PM, NOW)).toBe("4 pm");
+    expect(jobLabel(undefined, null, NOW)).toBe("A job");
+  });
+});
+
+// FLD-56, CP-36: on the day before, a locked card said it opened "the day before"; the API's unlocks_at says when.
+describe("a locked card", () => {
+  /** 11:30 am in India on Thursday 14 January 2027. */
+  const NOW = new Date("2027-01-14T06:00:00.000Z");
+
+  it("says it opens at 6 pm today, on the day before the visit", () => {
+    expect(job.locked.opens("2027-01-14T12:30:00.000Z", NOW)).toBe("Opens at 6 pm today.");
+  });
+
+  it("names the day when it opens on another", () => {
+    expect(job.locked.opens("2027-01-15T12:30:00.000Z", NOW)).toBe("Opens at 6 pm tomorrow.");
+    expect(job.locked.opens("2027-01-17T12:30:00.000Z", NOW)).toBe("Opens at 6 pm on Sun 17 Jan.");
+  });
+
+  it("says to open the job again once the hour has passed with the screen up", () => {
+    expect(job.locked.opens("2027-01-14T05:30:00.000Z", NOW)).toBe(
+      "Open since 11 am today. Go back and open the job again.",
     );
   });
 });

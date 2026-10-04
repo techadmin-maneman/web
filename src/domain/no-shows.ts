@@ -19,6 +19,7 @@
 
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import type { PlacesReached } from "../policy/access.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
 import {
   canCloseAsNoShow,
@@ -28,6 +29,7 @@ import {
   disputeUntil,
   isDisputable,
   noShowWaitEnds,
+  waitStartsAt,
   withinDisputeWindow,
   type DisputeRuling,
   type DisputeState,
@@ -38,6 +40,7 @@ import {
 import { auditStatementIfRuled, type AuditEntry } from "./audit.ts";
 import type { Ruled } from "./after-a-ruling.ts";
 import type { LatestArrival } from "./check-ins.ts";
+import { reachBinding, withinReach } from "./places.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "./visit-changes.ts";
@@ -60,7 +63,7 @@ export interface NoShowCase {
   readonly person: { readonly id: string; readonly name: string } | null;
   readonly visit_date: string | null;
   readonly technician: string | null;
-  /** The phone's time for the arrival, held within bounds (src/policy/phone-clock.ts): what the wait ran from. */
+  /** The phone's time for the arrival, held within bounds (src/policy/phone-clock.ts). */
   readonly checked_in_at: string;
   /** What the phone itself said, before the bounds; null when it said nothing. */
   readonly phone_checked_in_at: string | null;
@@ -78,6 +81,8 @@ export interface NoShowCase {
   readonly message_state: MessageState;
   readonly message_delivered_at: string | null;
   readonly wait_ends_at: string;
+  /** The case closed before the client's own wait, from the booked start, had run: ops waive it, or give their reason to charge. */
+  readonly closed_early: boolean;
   readonly closed_at: string | null;
   /** When the case opened, which is when it started waiting for ops. */
   readonly opened_at: string;
@@ -91,6 +96,7 @@ interface CaseRow {
   person_id: string | null;
   person_name: string | null;
   checked_in_at: string;
+  wait_started_at: string;
   claimed_at: string | null;
   received_at: string;
   distance_m: number | null;
@@ -133,22 +139,22 @@ function evidenceMessage(
 }
 
 export type Readiness =
-  | { readonly kind: "ready"; readonly checkIn: LatestArrival; readonly waitEndsAt: Date }
+  | { readonly kind: "ready"; readonly checkIn: LatestArrival; readonly waitStartsAt: Date; readonly waitEndsAt: Date }
   | { readonly kind: "too_early"; readonly waitEndsAt: Date }
   | { readonly kind: "no_check_in" };
 
 /** Whether the job may close as a no-show now: a check-in, and its wait run out on both clocks. */
 export function noShowReadiness(
   checkIn: LatestArrival | null,
-  type: VisitType,
+  visit: { readonly windowStart: Date; readonly type: VisitType },
   now: Date,
   /** The waits in force, which ops set (ADR 0061). */
   wait: Waits,
 ): Readiness {
   if (checkIn === null) return { kind: "no_check_in" };
-  const waitEndsAt = noShowWaitEnds(checkIn, type, wait);
-  if (!canCloseAsNoShow(checkIn, type, now, wait)) return { kind: "too_early", waitEndsAt };
-  return { kind: "ready", checkIn, waitEndsAt };
+  const waitEndsAt = noShowWaitEnds(checkIn, visit.windowStart, visit.type, wait);
+  if (!canCloseAsNoShow(checkIn, visit.windowStart, visit.type, now, wait)) return { kind: "too_early", waitEndsAt };
+  return { kind: "ready", checkIn, waitStartsAt: waitStartsAt(checkIn.at, visit.windowStart), waitEndsAt };
 }
 
 /**
@@ -157,7 +163,7 @@ export function noShowReadiness(
  */
 export async function openNoShowCase(
   db: D1Database,
-  input: { appointmentId: string; checkIn: LatestArrival; waitEndsAt: Date; now: Date },
+  input: { appointmentId: string; checkIn: LatestArrival; waitStartsAt: Date; waitEndsAt: Date; now: Date },
 ): Promise<string> {
   const message = await evidenceMessage(db, input.appointmentId);
   const at = input.now.toISOString();
@@ -175,7 +181,7 @@ export async function openNoShowCase(
       crypto.randomUUID(),
       input.checkIn.id,
       input.appointmentId,
-      input.checkIn.at.toISOString(),
+      input.waitStartsAt.toISOString(),
       input.waitEndsAt.toISOString(),
       at,
       message?.id ?? null,
@@ -196,7 +202,7 @@ export async function openNoShowCase(
  */
 export interface NoShowNote {
   readonly decision: NoShowDecision;
-  /** From the check-in to the close: how long the technician waited at the door. */
+  /** From the wait's start to the close: how long the technician waited at the door once the visit was due. */
   readonly waited_minutes: number;
   /**
    * What a charge took: in paise, what it kept of the payment, and whether it spent the credit. Null unless ops
@@ -207,6 +213,8 @@ export interface NoShowNote {
   readonly dispute: DisputeState | null;
   /** Whether the client may dispute the charge now: one that took something, not disputed yet. */
   readonly disputable: boolean;
+  /** When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed. */
+  readonly dispute_closed_at: string | null;
 }
 
 /**
@@ -230,7 +238,10 @@ interface NoteRow {
   dispute_until: string | null;
 }
 
-function chargeTaken(row: NoteRow): NoShowNote["charge"] {
+/** What a charge took, read with CHARGE_TAKEN. */
+export type ChargeColumns = Pick<NoteRow, "decision" | "charge" | "kept_amount" | "credit_spent">;
+
+export function chargeTaken(row: ChargeColumns): NoShowNote["charge"] {
   if (row.decision !== "charged" || row.charge === null || row.kept_amount === null) return null;
   return { kept: row.kept_amount, credit_spent: row.credit_spent === 1 };
 }
@@ -240,19 +251,24 @@ function disputeOf(row: NoteRow): DisputeState | null {
   return row.dispute_ruling ?? "open";
 }
 
+/** Whether the client could ever dispute the charge: one that took something, and that they have not disputed. */
+function couldDispute(charge: NoShowNote["charge"], dispute: DisputeState | null): boolean {
+  if (charge === null || dispute !== null) return false;
+  return isDisputable({ kept: charge.kept, creditSpent: charge.credit_spent });
+}
+
 function noteOf(row: NoteRow, now: Date): NoShowNote {
   const charge = chargeTaken(row);
   const dispute = disputeOf(row);
+  const open = withinDisputeWindow(row.dispute_until, now);
+  const disputeClosed = couldDispute(charge, dispute) && !open;
   return {
     decision: row.decision,
     waited_minutes: minutesBetween(row.wait_started_at, row.ended_at),
     charge,
     dispute,
-    disputable:
-      charge !== null &&
-      dispute === null &&
-      isDisputable({ kept: charge.kept, creditSpent: charge.credit_spent }) &&
-      withinDisputeWindow(row.dispute_until, now),
+    disputable: couldDispute(charge, dispute) && open,
+    dispute_closed_at: disputeClosed ? row.dispute_until : null,
   };
 }
 
@@ -277,18 +293,26 @@ export async function noShowNotes(
   return new Map(results.map((row) => [row.appointment_id, noteOf(row, now)]));
 }
 
-/** The cases ops have still to rule on, oldest first, then the decided ones. */
+/** Whether a case closed before the same wait, counted from the booked start, would have run out. */
+function closedBeforeTheClientsWait(row: CaseRow): boolean {
+  if (row.window_start === null || row.closed_at === null) return false;
+  const waitMs = Date.parse(row.wait_ends_at) - Date.parse(row.wait_started_at);
+  return Date.parse(row.closed_at) < Date.parse(row.window_start) + waitMs;
+}
+
+/** The cases in the places reached that ops have still to rule on, oldest first, then the decided ones. */
 export async function listNoShowCases(
   db: D1Database,
   decision: NoShowDecision | "all",
   limit: number,
+  reached: PlacesReached,
 ): Promise<NoShowCase[]> {
   // The receipt is read from the message itself as well as from the case, since
   // it can arrive after the case opened.
   const { results } = await db
     .prepare(
       `SELECT n.id, n.appointment_id, pe.id AS person_id, pe.name AS person_name,
-         n.wait_started_at AS checked_in_at, c.claimed_at, c.created_at AS received_at, c.distance_m, c.radius_m,
+         c.at AS checked_in_at, n.wait_started_at, c.claimed_at, c.created_at AS received_at, c.distance_m, c.radius_m,
          n.message_id, o.state AS message_status, o.last_error AS message_error,
          COALESCE(n.message_delivered_at, o.delivered_at) AS message_delivered_at,
          n.wait_ends_at, n.closed_at, n.created_at, n.decision, n.decided_at,
@@ -299,11 +323,11 @@ export async function listNoShowCases(
        LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
        LEFT JOIN outbound_messages o ON o.id = n.message_id
        LEFT JOIN technicians t ON t.id = c.technician_id
-       WHERE (?1 = 'all' OR n.decision = ?1)
+       WHERE (?1 = 'all' OR n.decision = ?1) AND ${withinReach("no_show", "n", "?3")}
        ORDER BY n.decision = 'undecided' DESC, n.created_at
        LIMIT ?2`,
     )
-    .bind(decision, limit)
+    .bind(decision, limit, reachBinding(reached))
     .all<CaseRow>();
   return results.map((row) => ({
     id: row.id,
@@ -322,6 +346,7 @@ export async function listNoShowCases(
     message_state: messageStateOf(row),
     message_delivered_at: row.message_delivered_at,
     wait_ends_at: row.wait_ends_at,
+    closed_early: closedBeforeTheClientsWait(row),
     closed_at: row.closed_at,
     opened_at: row.created_at,
     decision: row.decision,
@@ -374,6 +399,42 @@ async function chargeOf(db: D1Database, visit: OpenCase, inForce: TermsInputs): 
   };
 }
 
+/** The case's visit while the case is still undecided; null once it is ruled on, or for no such case. */
+async function undecidedCase(db: D1Database, caseId: string): Promise<OpenCase | null> {
+  return db
+    .prepare(
+      `SELECT n.appointment_id, p.id AS person_id, a.type, a.window_start,
+         EXISTS (SELECT 1 FROM credit_ledger r WHERE r.kind = 'redeem' AND r.source_id = n.appointment_id)
+           AS paid_with_credit
+       FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
+       LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
+       WHERE n.id = ?1 AND n.decision = 'undecided'`,
+    )
+    .bind(caseId)
+    .first<OpenCase>();
+}
+
+/** What charging an undecided case would do, for ops to read before they charge. */
+export interface ChargePreview {
+  /** In paise: what was paid for the visit, and what the charge keeps of it. The rest is refunded. */
+  readonly paid: number;
+  readonly kept: number;
+  /** Whether the charge keeps the credit the visit was paid with. */
+  readonly credit_kept: boolean;
+}
+
+/** What charging the case would keep and give back, worked out as charging it does; null once it is ruled on. */
+export async function chargePreview(db: D1Database, caseId: string, terms: TermsInputs): Promise<ChargePreview | null> {
+  const open = await undecidedCase(db, caseId);
+  if (open === null) return null;
+  const charged = await chargeOf(db, open, terms);
+  return {
+    paid: charged.kept + charged.refund,
+    kept: charged.kept,
+    credit_kept: open.paid_with_credit === 1 && !charged.creditBack,
+  };
+}
+
 /** What a waiver gives back, as ops set it: the payment, all of it, and the credit. */
 async function waiverOf(db: D1Database, appointmentId: string, waiver: Waiver) {
   const refund = waiver.payment === "refunded" ? ((await visitPayment(db, appointmentId))?.paid ?? 0) : 0;
@@ -404,17 +465,7 @@ export async function decideNoShow(
     disputeWindowDays?: number;
   },
 ): Promise<Ruled | null> {
-  const open = await db
-    .prepare(
-      `SELECT n.appointment_id, p.id AS person_id, a.type, a.window_start,
-         EXISTS (SELECT 1 FROM credit_ledger r WHERE r.kind = 'redeem' AND r.source_id = n.appointment_id)
-           AS paid_with_credit
-       FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
-       LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
-       WHERE n.id = ?1 AND n.decision = 'undecided'`,
-    )
-    .bind(input.caseId)
-    .first<OpenCase>();
+  const open = await undecidedCase(db, input.caseId);
   if (open === null) return null;
   const at = input.now.toISOString();
   const ruled: RulingClaim = { table: "no_show_cases", id: input.caseId, rulingId: crypto.randomUUID() };

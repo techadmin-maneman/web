@@ -40,13 +40,16 @@ import {
   type MoveReason,
   type MoveRefusal,
 } from "../policy/dispatch.ts";
+import { reachesCity, type PlacesReached } from "../policy/access.ts";
 import { paymentBadge, type PaymentBadge } from "../policy/job-visibility.ts";
 import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { FREE_CHANGE_NOTICE_HOURS } from "../policy/moving-a-visit.ts";
+import { namesMoreThanItsKind } from "../policy/services.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { listCities } from "./cities.ts";
+import { reachBinding, withinReach } from "./places.ts";
 import { syncAppointment } from "./fsm-mirror.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
 import { leaveBetween } from "./leave.ts";
@@ -91,6 +94,8 @@ export interface BoardClient {
 interface Visit {
   readonly appointment_id: string;
   readonly type: VisitType | null;
+  /** Its service's name in the console, where it names more than the kind: a first fit's hair system, say. */
+  readonly service: string | null;
   /** "Rohit M.", as the board writes a client on a block. */
   readonly client: string | null;
   /** The area the visit's pincode is in, where the service area names it; else the address's locality or the city. */
@@ -193,8 +198,9 @@ const landed = (kind: string): string =>
  * database. A job is the standard tier's where the mirror knows no other.
  */
 const BOARD_JOBS = `
-  SELECT a.id, a.type, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
+  SELECT a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
     a.service_pincode, a.asked_window, a.person_id, d.locality, sp.area, s.minutes AS service_minutes,
+    s.name AS service_name,
     p.name AS client_name, p.mobile_e164 AS client_mobile, p.erased_at AS client_erased_at,
     t.name AS technician_name, t.active AS technician_active,
     ${LATEST_VISITS_CONSENT} AS whatsapp_visits,
@@ -217,20 +223,29 @@ const BOARD_JOBS = `
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
   LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
   WHERE a.deleted_at IS NULL AND a.status IN ${ON_THE_BOARD} AND a.window_start >= ?1 AND a.window_start < ?2
-    AND (?3 IS NULL OR a.service_city = ?3)
+    AND (?3 IS NULL OR a.service_city = ?3) AND ${withinReach("visit", "a", "?5")}
   ORDER BY a.window_start`;
 
 /** The board's seven days from `from`. */
 const weekFrom = (from: string): string[] => Array.from({ length: BOARD_DAYS }, (_, index) => addDays(from, index));
 
+/** The technicians on the board, each with whether staff access by place reaches him (1) or not (0). */
+const BOARD_TECHNICIANS = `SELECT id, name, initials, zone, ${withinReach("technician", "t", "?1")} AS reached
+  FROM technicians t WHERE active = 1 ORDER BY name`;
+
+const EVERYWHERE: PlacesReached = { kind: "everywhere" };
+
 /**
  * The board for seven days from `from`, optionally narrowed to one city. `noticeHours` is the notice in force, which a
  * visit no hold sold is changed under (src/domain/visit-changes.ts).
+ *
+ * `reach` keeps it to the caller's cities: their visits, and the technicians there or holding one of those visits.
  */
 export async function dispatchBoard(
   db: D1Database,
-  options: { from: string; city: string | null; noticeHours?: number },
+  options: { from: string; city: string | null; noticeHours?: number; reach?: PlacesReached },
 ): Promise<Board> {
+  const reach = options.reach ?? EVERYWHERE;
   const dates = weekFrom(options.from);
   const last = dates[dates.length - 1] ?? options.from;
   const fromAt = indiaInstant(options.from, "00:00").toISOString();
@@ -238,9 +253,13 @@ export async function dispatchBoard(
 
   const [technicians, scheduled, untold, cities, schedule] = await Promise.all([
     db
-      .prepare("SELECT id, name, initials, zone FROM technicians WHERE active = 1 ORDER BY name")
-      .all<{ id: string; name: string; initials: string; zone: string | null }>(),
-    db.prepare(BOARD_JOBS).bind(fromAt, toAt, options.city, FREE_CHANGE_NOTICE_HOURS).all<BoardJobRow>(),
+      .prepare(BOARD_TECHNICIANS)
+      .bind(reachBinding(reach))
+      .all<{ id: string; name: string; initials: string; zone: string | null; reached: number }>(),
+    db
+      .prepare(BOARD_JOBS)
+      .bind(fromAt, toAt, options.city, FREE_CHANGE_NOTICE_HOURS, reachBinding(reach))
+      .all<BoardJobRow>(),
     db
       .prepare(
         `SELECT m.id, m.appointment_id, m.now_start FROM appointments a
@@ -258,7 +277,9 @@ export async function dispatchBoard(
     return move === undefined ? null : { move_id: move.id, starts_at: move.now_start };
   };
 
-  const rows = technicians.results.map((technician): BoardRow => {
+  const holding = new Set(scheduled.results.map((job) => job.technician_id));
+  const shown = technicians.results.filter((technician) => technician.reached === 1 || holding.has(technician.id));
+  const rows = shown.map((technician): BoardRow => {
     const days = dates.map((date) => ({
       date,
       blocks: scheduled.results
@@ -277,7 +298,8 @@ export async function dispatchBoard(
   const unassigned = scheduled.results
     .filter((job) => isNobodys(job) && job.status !== "completed")
     .map((job) => unassignedOf(job, schedule));
-  const leave = (await leaveBetween(db, options.from, last)).map((period) => ({
+  const onTheBoard = (period: { technician_id: string }) => shown.some((row) => row.id === period.technician_id);
+  const leave = (await leaveBetween(db, options.from, last)).filter(onTheBoard).map((period) => ({
     technician_id: period.technician_id,
     // Clipped to the week, so the board draws the days it has columns for and no others.
     from: period.from < options.from ? options.from : period.from,
@@ -288,7 +310,7 @@ export async function dispatchBoard(
     from: options.from,
     dates,
     city: options.city,
-    cities: cities.map((city) => city.name),
+    cities: cities.map((city) => city.name).filter((city) => reachesCity(reach, city)),
     technicians: rows,
     unassigned,
     utilisation: utilisationOf(rows, dates, leave),
@@ -299,6 +321,9 @@ export async function dispatchBoard(
 interface BoardJobRow {
   id: string;
   type: VisitType | null;
+  /** Its service's tier; null where the mirror knows none, which is the standard tier's. */
+  tier: string | null;
+  service_name: string | null;
   status: AppointmentStatus;
   window_start: string;
   window_end: string | null;
@@ -333,6 +358,7 @@ function visitOf(job: BoardJobRow): Visit {
   return {
     appointment_id: job.id,
     type: job.type,
+    service: namesMoreThanItsKind(job.tier, job.one_visit) ? job.service_name : null,
     client: shortName(job.client_name),
     sector: job.area ?? job.locality ?? job.service_city,
     pincode: job.service_pincode,
@@ -416,8 +442,8 @@ const isAway = (leave: Board["leave"], technicianId: string, date: string): bool
  * jobs take, done or still to do, out of the slots of the technicians working
  * that day. A technician on leave has no slots that day, and a job still on him
  * counts for nothing until it is moved. The board's rows are already narrowed to
- * its city's jobs; the technicians are not, since none carries a city and any
- * may be sent anywhere (docs/decisions/0069-dispatch-under-concurrency.md).
+ * its city's jobs; the technicians only to the caller's cities, since any may be
+ * sent anywhere (docs/decisions/0069-dispatch-under-concurrency.md).
  */
 export function utilisationOf(
   rows: readonly BoardRow[],

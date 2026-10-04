@@ -181,3 +181,7 @@ Board A3's piece card and last visit's photograph, board B3's "Pick from the lis
 
 - `test/node/tech-progress.test.ts`, `tech-when.test.ts`, `tech-piece-label.test.ts` and new cases in `tech-outbox-replay.test.ts` hold the rules above; `test/node/tech-contrast.test.ts` holds the colours; `test/worker/tech-job-card.test.ts` the card's new fields and the photograph's route; `e2e/tech/job.e2e.ts`, `steps.e2e.ts`, `camera.e2e.ts` and `outbox.e2e.ts` walk them in a browser.
 - The words for what no board draws are placeholders in `apps/tech/src/content.ts`, for the owner with the rest (ADR 0025, "The technician boards").
+
+## Update, 4 October 2026: the day's list names the client
+
+From the day before the visit, when a job unlocks, the day's list carries the client's name (`client_name`), as the card does, so Today names each row without waiting for the cards. The service worker's copy of today's list now holds those names. It holds nothing the phone's store does not already hold in the cards it keeps, and it is deleted with the store at sign-out and on revocation. The service worker still keeps no card, so no mobile, address or gate code.

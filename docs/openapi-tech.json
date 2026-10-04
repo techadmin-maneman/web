@@ -48,6 +48,7 @@
                   "unauthorized",
                   "visit_booked",
                   "payment_held",
+                  "payment_owed",
                   "forbidden_origin",
                   "access_required",
                   "code_expired",
@@ -79,6 +80,7 @@
                   "fsm_partly",
                   "in_progress",
                   "too_early_to_close",
+                  "too_early_to_arrive",
                   "already_closed",
                   "no_service_area",
                   "service_exists",
@@ -136,6 +138,11 @@
                 ],
                 "additionalProperties": false,
                 "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+              },
+              "earliest_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
               }
             },
             "required": [
@@ -519,16 +526,16 @@
             "type": "boolean",
             "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
           },
-          "product": {
+          "service": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/TechnicianService"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+            "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
           },
           "sector": {
             "anyOf": [
@@ -581,6 +588,17 @@
             "type": "string",
             "format": "date-time"
           },
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The client's name, from the day before the visit as the card's client is; null until then."
+          },
           "progress": {
             "$ref": "#/components/schemas/TechnicianJobState"
           }
@@ -594,14 +612,33 @@
           "window_label",
           "type",
           "one_visit",
-          "product",
+          "service",
           "sector",
           "status",
           "badge",
           "slots",
           "unlocked",
           "unlocks_at",
+          "client_name",
           "progress"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianService": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "description": "Its code, which the hair profile names a first fit's product by."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name in the console."
+          }
+        },
+        "required": [
+          "tier",
+          "name"
         ],
         "additionalProperties": false
       },
@@ -699,16 +736,16 @@
             "type": "boolean",
             "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
           },
-          "product": {
+          "service": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/TechnicianService"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+            "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
           },
           "sector": {
             "anyOf": [
@@ -760,6 +797,17 @@
           "unlocks_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The client's name, from the day before the visit as the card's client is; null until then."
           },
           "progress": {
             "$ref": "#/components/schemas/TechnicianJobProgress"
@@ -933,6 +981,11 @@
             "type": "integer",
             "description": "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it."
           },
+          "checkin_from": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow."
+          },
           "pieces": {
             "anyOf": [
               {
@@ -1038,6 +1091,13 @@
             },
             "description": "This kind of visit's checklist, as ops set it in the console, in its order."
           },
+          "checklist_if_declined": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobSheetItem"
+            },
+            "description": "On a one visit, the checklist it runs once the client decides against the fit: the consultation's alone. Empty on any other visit."
+          },
           "partial_reasons": {
             "type": "array",
             "items": {
@@ -1121,6 +1181,42 @@
             ],
             "description": "On a one visit, the discount code already on it, so the outcome step asks for none; never what it takes off. Null on any other visit, and on a one visit with no code."
           },
+          "client_choice": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "declined": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "declined"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "product": {
+                    "type": "string",
+                    "description": "The product's tier, from the card's products."
+                  }
+                },
+                "required": [
+                  "product"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "On a one visit, what the client decided as its piece step recorded it: the product they chose, or that they decided against the fit. Null until the piece step lands, and on any other visit."
+          },
           "profile": {
             "anyOf": [
               {
@@ -1142,28 +1238,32 @@
           "window_label",
           "type",
           "one_visit",
-          "product",
+          "service",
           "sector",
           "status",
           "badge",
           "slots",
           "unlocked",
           "unlocks_at",
+          "client_name",
           "progress",
           "address",
           "access_notes",
           "client",
           "no_show_wait_min",
+          "checkin_from",
           "pieces",
           "last_visit",
           "reminder",
           "steps",
           "checklist",
+          "checklist_if_declined",
           "partial_reasons",
           "consumables",
           "products",
           "payment_link",
           "discount_code",
+          "client_choice",
           "profile"
         ],
         "additionalProperties": false
@@ -1192,7 +1292,7 @@
                 "type": "null"
               }
             ],
-            "description": "When the job may close as a no-show, from the check-in we hold; null before one landed."
+            "description": "When the job may close as a no-show, from the check-in we hold, or from the booked start for one before it; null before one landed."
           },
           "distance_m": {
             "anyOf": [
@@ -2882,7 +2982,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -2892,7 +2992,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
             "content": {
               "application/json": {
                 "schema": {
@@ -2972,7 +3072,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -2982,7 +3082,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
             "content": {
               "application/json": {
                 "schema": {
@@ -3060,7 +3160,7 @@
             }
           },
           "409": {
-            "description": "superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom",
+            "description": "superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom; already_closed: the job has closed, so it takes no more photographs",
             "content": {
               "application/json": {
                 "schema": {
@@ -3110,6 +3210,16 @@
           },
           "404": {
             "description": "not_found: the link is wrong or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "already_closed: the job has closed, so it takes no more photographs",
             "content": {
               "application/json": {
                 "schema": {
@@ -3192,7 +3302,7 @@
             }
           },
           "409": {
-            "description": "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since",
+            "description": "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since; already_closed: the job has closed, so it takes no more photographs",
             "content": {
               "application/json": {
                 "schema": {
@@ -3302,7 +3412,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3312,7 +3422,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -3402,7 +3512,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3412,7 +3522,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -3502,7 +3612,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3512,7 +3622,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -3602,7 +3712,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3612,7 +3722,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again",
             "content": {
               "application/json": {
                 "schema": {
@@ -3702,7 +3812,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3712,7 +3822,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -3802,7 +3912,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3812,7 +3922,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -3892,7 +4002,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such job",
+            "description": "not_found: no such job, or never this technician's",
             "content": {
               "application/json": {
                 "schema": {
@@ -3902,7 +4012,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home",
             "content": {
               "application/json": {
                 "schema": {

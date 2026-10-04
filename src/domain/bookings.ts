@@ -13,9 +13,10 @@
 // A hold the client has paid for, or booked free, is confirmed: it keeps its
 // time until it is booked or refunded, however long FSM takes. A payment is in
 // time if Razorpay made it before the hold ran out, give or take the grace; one
-// made later is refunded in full. A visit FSM will not take is held for ops,
-// with its time and its payment, tried again every hour for a day, and booked
-// or refunded by ops (src/domain/held-bookings.ts; docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+// made later is refunded in full, and the client told. A visit FSM will not
+// take is held for ops, with its time and its payment, tried again every hour
+// for a day, and booked or refunded by ops (src/domain/held-bookings.ts;
+// docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
 //
 // FSM is written once however often a booking is tried: one consumer at a
 // time holds the hold's lease, each ID FSM gives is kept the moment it comes,
@@ -43,8 +44,9 @@ import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { TRIES_STOPPED, triesStopped } from "../policy/held-bookings.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { auditStatement, auditStatementIfBooked, type AuditEntry } from "./audit.ts";
+import type { AutoRefundReason } from "./auto-refunds.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "./credits.ts";
 import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
@@ -76,6 +78,8 @@ interface HoldRow {
   id: string;
   person_id: string;
   person_name: string;
+  /** When the client was erased; null while they are not. */
+  person_erased_at: string | null;
   type: VisitType;
   tier: string;
   /** The length it was held for; null for a hold made before services had lengths. */
@@ -119,7 +123,8 @@ interface HoldRow {
 async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
   return db
     .prepare(
-      `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.tier, h.minutes, s.name AS service_name, h.date,
+      `SELECT h.id, h.person_id, p.name AS person_name, p.erased_at AS person_erased_at, h.type, h.tier, h.minutes,
+              s.name AS service_name, h.date,
               h.window_label, h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
               h.grace_seconds, h.confirmed_at, h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind,
               h.use_credit, h.one_visit, h.pay_by_link, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.fsm_held_at, h.queued_at,
@@ -313,6 +318,7 @@ async function retakenInTime(
  * instead. Throws when FSM fails, so the queue tries again; answers "being_booked" while another consumer is
  * writing it, which the queue tries again later. A booking held for ops writes nothing to FSM while a visit of the
  * client's that may be the one ops booked for it by hand stands in the mirror, and ops are told once to link it.
+ * A hold whose client has been erased is never booked: it is let go, and any payment for it refunded.
  * `alongside` is written with whatever the try changes: the booking, or the hold let go.
  *
  * What stops a try is read again once it holds the lease, since ops act under the same lease: tries stopped by ops,
@@ -334,6 +340,10 @@ export async function confirmBooking(
     return "already_booked";
   }
   const payment = await capturedFor(db, hold.razorpay_order_id);
+  if (hold.person_erased_at !== null) {
+    await giveBack(db, payments, hold.id, now, "the client was erased", options.alongside);
+    return payment === null ? "lapsed" : "refunded";
+  }
   if (paidInMoney(hold) && payment === null) {
     if (hold.confirmed_at === null) return "not_paid";
     // Only a capture confirms a paid hold, so this one's payment has since been refunded, by ops.
@@ -342,7 +352,7 @@ export async function confirmBooking(
   }
   const stillLetGo = hold.state === "released" && !(await retakenInTime(db, hold, payment, now));
   if (stillLetGo || (payment !== null && paidTooLate(hold, payment))) {
-    await giveBack(db, payments, hold.id, now, "the hold had lapsed", options.alongside);
+    await giveBackUnkept(db, payments, hold, now, "lapsed", options);
     return payment === null ? "lapsed" : "refunded";
   }
 
@@ -613,7 +623,7 @@ async function alertIfNoCreditPaid(
     message:
       `Booking ${booked.id} was booked on a visit credit, but the client had none left by then, ` +
       "so nothing has paid for it. Decide whether to charge for the visit.",
-    link: `/clients/${booked.person_id}`,
+    link: paymentsTab(booked.person_id),
   });
 }
 
@@ -879,7 +889,7 @@ async function moveRefused(
   now: Date,
   options: ConfirmOptions,
 ): Promise<Confirmed> {
-  await giveBack(db, payments, hold.id, now, "the visit could no longer be moved", options.alongside);
+  await giveBackUnkept(db, payments, hold, now, "not_movable", options);
   return hold.amount > 0 ? "refunded" : "lapsed";
 }
 
@@ -1006,8 +1016,8 @@ export class RefundUnanswered extends Error {
 /**
  * Lets a hold go, and refunds in full, once, any payment taken for it. Says what it did with the money; throws
  * RefundRefused, or RefundUnanswered, and keeps the hold, when Razorpay will not refund it or will not say whether it
- * did. `alongside` is written in the same batch as
- * the hold is let go: ops' audit entry, and the client's message.
+ * did. `alongside` is written in the same batch as the hold is let go: ops' audit entry, and the client's message.
+ * `ifRefunded` is written in that batch only when this call made the refund.
  */
 export async function giveBack(
   db: D1Database,
@@ -1016,6 +1026,7 @@ export async function giveBack(
   now: Date,
   reason: string,
   alongside: readonly D1PreparedStatement[] = [],
+  ifRefunded: readonly D1PreparedStatement[] = [],
 ): Promise<GivenBack> {
   const hold = await holdOf(db, holdId);
   if (hold === null) throw new Error("no such hold to give back");
@@ -1031,8 +1042,47 @@ export async function giveBack(
       .prepare("UPDATE slot_holds SET state = 'released', updated_at = ?1 WHERE id = ?2 AND state = 'held'")
       .bind(now.toISOString(), hold.id),
     ...alongside,
+    ...(given.kind === "refunded" ? ifRefunded : []),
   ]);
   return given;
+}
+
+/** Each reason as Razorpay's notes on the refund give it. */
+const AUTO_REFUND_NOTES: Readonly<Record<AutoRefundReason, string>> = {
+  lapsed: "the hold had lapsed",
+  not_movable: "the visit could no longer be moved",
+};
+
+/**
+ * Lets go a hold the booking could not keep: one paid after it lapsed, or a move whose visit has begun. A payment
+ * refunded here is marked as refunded by the booking itself, and the client is told, both in the batch that lets the
+ * hold go.
+ */
+async function giveBackUnkept(
+  db: D1Database,
+  payments: PaymentsProvider,
+  hold: HoldRow,
+  now: Date,
+  reason: AutoRefundReason,
+  options: ConfirmOptions,
+): Promise<GivenBack> {
+  const message = refundedMessage(db, { personId: hold.person_id, holdId: hold.id, now });
+  const marked = db.prepare("UPDATE slot_holds SET auto_refund_reason = ?2 WHERE id = ?1").bind(hold.id, reason);
+  const given = await giveBack(db, payments, hold.id, now, AUTO_REFUND_NOTES[reason], options.alongside, [
+    marked,
+    message.statement,
+  ]);
+  if (given.kind === "refunded") await tellOfRefund(message.id, options);
+  return given;
+}
+
+/** Queues the client's message of a refund. One the queue refuses is in the outbox, and the sweeper sends it. */
+async function tellOfRefund(messageId: string, options: ConfirmOptions): Promise<void> {
+  try {
+    await options.notify?.(messageId);
+  } catch (error) {
+    options.log?.warn("refund_message_not_queued", { message_id: messageId, error });
+  }
 }
 
 /** What letting go a hold with no captured payment did with the money: nothing, or it was refunded before, by ops. */

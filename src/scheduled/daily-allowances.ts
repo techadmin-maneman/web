@@ -51,6 +51,7 @@ export async function checkDailyAllowances(check: AllowanceCheck): Promise<void>
     accountId: CLOUDFLARE_ACCOUNT_ID,
     date: utcDay(deps.now()),
     fetch: deps.fetch,
+    log,
   });
   if ("unreadable" in reading) {
     log.warn("daily_allowances_unreadable", { reason: reading.unreadable });

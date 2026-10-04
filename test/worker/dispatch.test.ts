@@ -624,7 +624,12 @@ const agreeToVisitMessages = (granted: boolean) =>
 
 interface TaskGroupBody {
   group: string;
-  tasks: { id: string; person: { id: string; name: string } | null; detail: string | null }[];
+  tasks: {
+    id: string;
+    person: { id: string; name: string; mobile?: string } | null;
+    detail: string | null;
+    visit?: { id: string; starts_at: string };
+  }[];
 }
 
 const untoldTasks = async () => {
@@ -660,11 +665,13 @@ describe("telling the client of a move", () => {
     expect(messageQueue.sent).toEqual([]);
     const messages = await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first<{ n: number }>();
     expect(messages?.n).toBe(0);
+    // OIA-03, BK-21: the task carries the number to call and the visit, so it is settled from the task itself.
     expect(await untoldTasks()).toEqual([
       expect.objectContaining({
         id: moveId,
-        person: { id: ROHIT, name: "Rohit Malhotra" },
+        person: { id: ROHIT, name: "Rohit Malhotra", mobile: "+919810000001" },
         detail: "2026-09-23T03:30:00.000Z",
+        visit: { id: A, starts_at: "2026-09-23T03:30:00.000Z" },
       }),
     ]);
 
@@ -824,6 +831,14 @@ describe("what the board carries of each visit", () => {
     expect(week.technicians[0]?.days[0]?.blocks[0]).toMatchObject({ appointment_id: A, badge: "prepaid", slots: 1 });
     // Seven half-slots: three slots and a half.
     expect(week.technicians[1]?.days[0]?.blocks[0]).toMatchObject({ appointment_id: B, slots: 3.5 });
+    // MON-10: the drawer names what the client bought.
+    expect(week.technicians[1]?.days[0]?.blocks[0]).toMatchObject({ service: "Premium first fit" });
+  });
+
+  it("names no service for a visit of its kind's standard one", async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+    const block = (await board("from=2026-09-22")).technicians[0]?.days[0]?.blocks[0];
+    expect(block).toMatchObject({ appointment_id: A, service: null });
   });
 
   it("names the move the client was not told of on the visit it moved", async () => {

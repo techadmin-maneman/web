@@ -14,6 +14,7 @@ import type { components, paths } from "./api-schema.ts";
 import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, SUPERSEDED } from "./routes.ts";
 
 export {
+  ALREADY_CLOSED,
   DEVICE_REVOKED,
   EVENT_KINDS,
   OUT_OF_ORDER,
@@ -22,6 +23,7 @@ export {
   ROUTES_ASSUMED,
   SUPERSEDED,
   TECHNICIAN_INACTIVE,
+  TOO_EARLY_TO_ARRIVE,
   TOO_EARLY_TO_CLOSE,
   type EventKind,
 } from "./routes.ts";
@@ -48,6 +50,10 @@ export type HairProfile = Schema["HairProfile"];
 export type FitSpec = Schema["HairFitSpec"];
 export type History = Schema["HairHistory"];
 export type ProfileRequest = Schema["TechnicianProfileRequest"];
+export type ChecklistRequest = Schema["ChecklistRequest"];
+export type PieceFitted = Schema["PieceFitted"];
+export type PieceDeclined = Schema["PieceDeclined"];
+export type OutcomeRequest = Schema["OutcomeRequest"];
 
 export type VisitType = NonNullable<JobSummary["type"]>;
 /** No amount ever reaches this app: a badge only (board A1). */

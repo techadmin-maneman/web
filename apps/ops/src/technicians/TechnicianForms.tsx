@@ -12,7 +12,7 @@ import { useState } from "react";
 import { api, type ReturnedVisit, type TechnicianChange, type TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
-import { useAccess } from "../lib/access.ts";
+import { GIVING_NO_CITY, useAccess } from "../lib/access.ts";
 import { phoneWords } from "../lib/phone.ts";
 import styles from "./technicians.module.css";
 
@@ -44,6 +44,7 @@ function Fields({
   focusFirst: boolean;
 }) {
   const copy = technicians.fields;
+  const mayGiveNone = useAccess().reaches(GIVING_NO_CITY);
   return (
     <>
       <Field label={copy.name} className={styles.formField}>
@@ -101,7 +102,7 @@ function Fields({
               onType({ ...typed, city: event.target.value });
             }}
           >
-            <option value="">{copy.noCity}</option>
+            {mayGiveNone && <option value="">{copy.noCity}</option>}
             {cities.map((city) => (
               <option key={city} value={city}>
                 {city}
@@ -125,7 +126,9 @@ export function AddTechnician({
   onClose: () => void;
 }) {
   const copy = technicians.add;
-  const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "", city: "" });
+  // Staff kept to their cities give him one of theirs; national staff may leave him with none.
+  const firstCity = useAccess().reaches(GIVING_NO_CITY) ? "" : (cities[0] ?? "");
+  const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "", city: firstCity });
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
 

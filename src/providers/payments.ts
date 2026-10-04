@@ -15,7 +15,7 @@ export interface RefundAsked {
   readonly receipt: string;
 }
 
-/** A payment link to make: what it asks for, our reference for it, and whom Razorpay texts it to. */
+/** A payment link to make: what it asks for, our reference for it, whom it is for, and until when. */
 export interface PaymentLinkRequest {
   readonly amount: number;
   /** Ours, unique to the link and shown on Razorpay's page: the reference its payment will have, "MM-2026-0841". */
@@ -24,8 +24,10 @@ export interface PaymentLinkRequest {
   readonly description: string;
   readonly customer: { readonly name: string; readonly contact: string };
   readonly notes: Record<string, string>;
-  /** When it stops taking payment; left out, it stays open. */
-  readonly closesAt?: Date;
+  /** When it stops taking payment. */
+  readonly closesAt: Date;
+  /** Whether Razorpay texts the link, and reminders of it, to the customer; off, the link is only made. */
+  readonly notify: boolean;
 }
 
 export interface PaymentsProvider {
@@ -39,12 +41,14 @@ export interface PaymentsProvider {
    */
   refund(paymentId: string, refund: RefundAsked): Promise<{ id: string | null }>;
   /**
-   * A payment link, which Razorpay texts to the customer itself. Refused for a reference Razorpay already holds a
-   * link under.
+   * A payment link, which Razorpay texts to the customer itself where asked to. Refused for a reference Razorpay
+   * already holds a link under.
    */
   createPaymentLink(link: PaymentLinkRequest): Promise<MadeLink>;
   /** The link made under our reference, if there is one: what a try whose answer never came made. */
   findPaymentLink(reference: string): Promise<MadeLink | null>;
+  /** Stops a link taking payment, and Razorpay's reminders of it. Refused for a link paid, expired or cancelled. */
+  cancelPaymentLink(linkId: string): Promise<void>;
 }
 
 /** A payment link Razorpay made: its ID, and the address it texted. */
@@ -72,7 +76,14 @@ export function createPaymentsProvider(
   if (provider === "razorpay" && settings !== null) return createRazorpay(settings, deps);
   if (provider === "stub") return createStubPayments();
   const off = () => Promise.reject(new Error("payments are not connected here (PAYMENTS_PROVIDER is none)"));
-  return { createOrder: off, orderPayments: off, refund: off, createPaymentLink: off, findPaymentLink: off };
+  return {
+    createOrder: off,
+    orderPayments: off,
+    refund: off,
+    createPaymentLink: off,
+    findPaymentLink: off,
+    cancelPaymentLink: off,
+  };
 }
 
 /** The stub, and what it was asked, for tests to read. */
@@ -81,6 +92,7 @@ export interface StubPayments extends PaymentsProvider {
     readonly orders: { amount: number; receipt: string; notes: Record<string, string> }[];
     readonly refunds: { paymentId: string; amount: number }[];
     readonly links: PaymentLinkRequest[];
+    readonly cancelledLinks: string[];
   };
   /** The payments a test says were made on an order, by status; none on an order it names nothing for. */
   readonly paymentsOn: Map<string, string[]>;
@@ -96,6 +108,7 @@ export function createStubPayments(): StubPayments {
     orders: [] as { amount: number; receipt: string; notes: Record<string, string> }[],
     refunds: [] as { paymentId: string; amount: number }[],
     links: [] as PaymentLinkRequest[],
+    cancelledLinks: [] as string[],
   };
   const receipts = new Set<string>();
   const linksByReference = new Map<string, MadeLink>();
@@ -126,5 +139,9 @@ export function createStubPayments(): StubPayments {
       return Promise.resolve(madeLink);
     },
     findPaymentLink: (reference) => Promise.resolve(linksByReference.get(reference) ?? null),
+    cancelPaymentLink: (linkId) => {
+      made.cancelledLinks.push(linkId);
+      return Promise.resolve();
+    },
   };
 }

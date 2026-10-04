@@ -66,7 +66,7 @@
   --ops-waitlist-ref: 60px;
   --ops-waitlist-alerts: 62px;
   --ops-task-owner: 72px; /* a task's owner, and how long it has left, beside what it is (board D2) */
-  --ops-task-due: 84px;
+  --ops-task-due: 120px; /* "18 days overdue" on one line */
 
   /* The technician app's targets (design/phase2/Technician App.dc.html, "Targets" and "Gloved use"). */
   --tech-primary: 64px; /* the one primary action, bottom of every screen, and the fields beside it */

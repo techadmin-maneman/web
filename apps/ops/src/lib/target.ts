@@ -10,8 +10,11 @@ export const rowId = (kind: string, id: string): string => `${kind}-${id}`;
 /** A path to one row of a queue: "/no-shows#case-…". */
 export const rowPath = (page: string, kind: string, id: string): string => `${page}#${rowId(kind, id)}`;
 
-/** Once `ready`, brings the row the address names into view and focuses it; answers its id, or null. */
-export function useTargetRow(ready: boolean): string | null {
+/**
+ * Once `ready`, brings the row the address names into view and focuses it; answers its id, or null. A target taller
+ * than the screen, such as a section of Settings, is brought in at its top.
+ */
+export function useTargetRow(ready: boolean, block: ScrollLogicalPosition = "center"): string | null {
   const [target] = useState(() => {
     const named = decodeURIComponent(window.location.hash.slice(1));
     return named === "" ? null : named;
@@ -19,8 +22,8 @@ export function useTargetRow(ready: boolean): string | null {
   useEffect(() => {
     if (!ready || target === null) return;
     const row = document.getElementById(target);
-    row?.scrollIntoView({ block: "center" });
+    row?.scrollIntoView({ block });
     row?.focus();
-  }, [ready, target]);
+  }, [ready, target, block]);
   return target;
 }
