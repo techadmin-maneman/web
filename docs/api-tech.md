@@ -1020,6 +1020,8 @@ Request body:
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -1563,6 +1565,17 @@ Request body:
       ],
       "description": "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type."
     },
+    "minutes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How long the visit is booked for, in minutes. Null for an unknown type."
+    },
     "unlocked": {
       "type": "boolean"
     },
@@ -1599,6 +1612,7 @@ Request body:
     "status",
     "badge",
     "slots",
+    "minutes",
     "unlocked",
     "unlocks_at",
     "client_name",
@@ -1787,6 +1801,17 @@ Request body:
         }
       ],
       "description": "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type."
+    },
+    "minutes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How long the visit is booked for, in minutes. Null for an unknown type."
     },
     "unlocked": {
       "type": "boolean"
@@ -1982,6 +2007,10 @@ Request body:
       "type": "string",
       "format": "date-time",
       "description": "The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow."
+    },
+    "checkin_radius_m": {
+      "type": "integer",
+      "description": "How near the address a check-in must be, in metres, as ops set it."
     },
     "pieces": {
       "anyOf": [
@@ -2240,6 +2269,7 @@ Request body:
     "status",
     "badge",
     "slots",
+    "minutes",
     "unlocked",
     "unlocks_at",
     "client_name",
@@ -2249,6 +2279,7 @@ Request body:
     "client",
     "no_show_wait_min",
     "checkin_from",
+    "checkin_radius_m",
     "pieces",
     "last_visit",
     "reminder",

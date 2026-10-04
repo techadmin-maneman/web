@@ -46,6 +46,16 @@
   color: var(--text-muted);
 }
 
+.landmark {
+  margin: var(--sp-12) 0 0;
+}
+
+.landmark dd {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-150);
+}
+
 .link {
   display: inline-flex;
   align-items: center;
@@ -190,6 +200,44 @@ textarea.input {
   padding: var(--sp-12) var(--sp-15);
   line-height: var(--lh-150);
   resize: vertical;
+}
+
+/* The client's latest concerns, newest first: the day and where it stands, their words, then our answer. */
+.concerns {
+  margin: var(--sp-16) 0 0;
+  padding: 0;
+  border-top: var(--hairline) solid var(--paper-line);
+  list-style: none;
+}
+
+.concern {
+  padding: var(--sp-14) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.concernHead {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--text-muted);
+}
+
+.concernWords {
+  margin: var(--sp-8) 0 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-16);
+  line-height: var(--lh-155);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.concernAnswer {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-155);
+  color: var(--text-soft);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 /* Deletion's first step is only as wide as its words. */

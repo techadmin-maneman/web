@@ -44,12 +44,6 @@
   color: var(--text-muted);
 }
 
-.noOther {
-  font-size: var(--fs-16);
-  line-height: var(--lh-165);
-  color: var(--text-soft);
-}
-
 /* Where the credits of the invite the client came with stand, while they are not in the balance. */
 .inviteCredits {
   font-size: var(--fs-16);
@@ -315,8 +309,12 @@
   gap: var(--sp-18);
 }
 
-/* Board F2: each card drawn, with its box ticked when it is the one chosen. */
+/*
+ * Board F2: each card drawn, with its box ticked when it is the one chosen. A native radio button lies over the
+ * whole drawing, unseen: one tab stop for the pair, and the arrow keys between them.
+ */
 .choice {
+  position: relative;
   display: block;
   width: 100%;
   padding: 0;
@@ -326,6 +324,23 @@
   color: var(--text);
   text-align: left;
   cursor: pointer;
+}
+
+/* Above the card, which is positioned for its lockup. */
+.radio {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.choice:has(.radio:focus-visible) {
+  outline: var(--focus-width) solid var(--focus-colour);
+  outline-offset: var(--focus-offset);
 }
 
 .chosen {
