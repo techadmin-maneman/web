@@ -97,6 +97,8 @@ interface OpsDispute {
   credit_spent: boolean;
   distance_m: number | null;
   radius_m: number;
+  message_state: string;
+  message_delivered_at: string | null;
   due: string;
 }
 
@@ -205,6 +207,22 @@ describe("POST /api/visits/:id/dispute", () => {
     expect((await dispute("I was home all afternoon")).status).toBe(201);
   });
 
+  // A charge past its days once showed no Dispute button and no reason why (MON-17).
+  it("says when the days to dispute ended, once they have, for a charge never disputed", async () => {
+    expect(await noShowNote()).toMatchObject({ disputable: true, dispute_closed_at: null });
+
+    await env.DB.prepare("UPDATE no_show_cases SET dispute_until = ?1").bind("2026-09-21T06:29:59.000Z").run();
+    expect(await noShowNote()).toMatchObject({ disputable: false, dispute_closed_at: "2026-09-21T06:29:59.000Z" });
+
+    // One disputed in time says where the dispute stands instead.
+    await env.DB.prepare(
+      "INSERT INTO no_show_disputes (id, case_id, person_id, reason, created_at) VALUES ('d-1', ?1, ?2, 'Home', ?3)",
+    )
+      .bind(CASE, PERSON, "2026-09-20T06:00:00.000Z")
+      .run();
+    expect(await noShowNote()).toMatchObject({ dispute: "open", dispute_closed_at: null });
+  });
+
   it("refuses a no-show that was waived, or not ruled on, and another client's visit", async () => {
     const otherCookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: OTHER, deviceLabel: null, now: NOW })}`;
     expect((await dispute("Not mine", client, otherCookie)).status).toBe(404);
@@ -235,6 +253,30 @@ describe("GET /api/no-shows/disputes", () => {
       credit_spent: false,
       distance_m: 240,
       radius_m: 200,
+      message_state: "none",
+      message_delivered_at: null,
+    });
+  });
+
+  // FLD-35: a reminder that was skipped read "Not delivered" on the evidence ops rule a refund on.
+  it("says the reminder never went where it was skipped, and when it reached him where it did", async () => {
+    await raised();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, last_error)
+         VALUES ('m-1', '2026-09-18T12:30:00.000Z', ?1, 'visit_reminder', 'appointment', ?2, 'skipped', 'test record')`,
+      ).bind(PERSON, VISIT),
+      env.DB.prepare("UPDATE no_show_cases SET message_id = 'm-1'"),
+    ]);
+    const { app } = opsApp();
+    expect((await disputes(app))[0]).toMatchObject({ message_state: "not_sent", message_delivered_at: null });
+
+    await env.DB.prepare(
+      "UPDATE outbound_messages SET state = 'sent', last_error = NULL, delivered_at = '2026-09-18T12:31:00.000Z'",
+    ).run();
+    expect((await disputes(app))[0]).toMatchObject({
+      message_state: "delivered",
+      message_delivered_at: "2026-09-18T12:31:00.000Z",
     });
   });
 
@@ -336,7 +378,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     expect(deps.alerts).toEqual([
       `The visit credit for visit ${VISIT}, a no-show refunded on dispute, could not come back: its grant has ` +
         "expired or been withdrawn. The client is told so; settle it with them by hand if they are owed one. " +
-        `http://ops.localhost:4323/clients/${PERSON}`,
+        `http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     expect(await env.DB.prepare("SELECT key FROM alerts WHERE key LIKE 'no_show_credit%'").first()).toEqual({
       key: `no_show_credit_not_back:refunded on dispute:${VISIT}`,
@@ -357,7 +399,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     expect(answer.status).toBe(200);
     expect(deps.alerts).toEqual([
       `The refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute, failed (Razorpay payment ` +
-        `pay_visit). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+        `pay_visit). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     expect(await env.DB.prepare("SELECT key FROM alerts").first()).toEqual({
       key: `no_show_refund_failed:refunded on dispute:${VISIT}`,
@@ -379,7 +421,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     expect(deps.alerts).toEqual([
       `Razorpay did not answer the refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute (payment ` +
         "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
-        `refund of Rs. 4000 is there. http://ops.localhost:4323/clients/${PERSON}`,
+        `refund of Rs. 4000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -403,7 +445,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     expect(answer.status).toBe(200);
     expect(deps.alerts).toEqual([
       `The refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute, failed (its payment could not be ` +
-        `read). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+        `read). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -503,7 +545,7 @@ describe("the client's data export", () => {
     }>();
     expect(exported.no_show_disputes).toEqual([
       {
-        appointment_id: VISIT,
+        visit: "2026-09-19T03:30:00.000Z",
         reason: "I was home all morning; the bell is broken",
         created_at: NOW.toISOString(),
         ruling: null,

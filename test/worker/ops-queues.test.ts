@@ -1,7 +1,8 @@
 // Every queue on the ops console falls due on the day the Tasks board says it
 // does (OPS-08). The same request once had two deadlines: an erasure was due
 // "Today" on the Tasks board and had "5 days left" on Deletion requests, and a
-// grievance, promised an answer in thirty days, was on no board at all. NOW is
+// grievance, promised an answer in thirty days, was on no board at all, and so
+// was a disputed charge, which borrowed a no-show's allowance (OIA-07). NOW is
 // Monday 21 September 2026, 12 noon in India. Nothing here is a real person.
 
 import { env } from "cloudflare:workers";
@@ -19,6 +20,8 @@ const CASE = "33333333-3333-4333-8333-333333333332";
 const CHANGE = "33333333-3333-4333-8333-333333333333";
 const ERASURE = "33333333-3333-4333-8333-333333333334";
 const GRIEVANCE = "33333333-3333-4333-8333-333333333335";
+const CHARGED = "33333333-3333-4333-8333-333333333336";
+const DISPUTE = "33333333-3333-4333-8333-333333333337";
 
 let ops: App;
 
@@ -43,6 +46,7 @@ async function queuesDue(): Promise<Map<string, string>> {
     ...(await read("/api/number-changes", "changes")),
     ...(await read("/api/deletion-requests", "requests")),
     ...(await read("/api/grievances", "grievances")),
+    ...(await read("/api/no-shows/disputes", "disputes")),
   ];
   return new Map(rows.map((row) => [row.id, row.due]));
 }
@@ -103,6 +107,22 @@ beforeEach(async () => {
       `INSERT INTO grievances (id, person_id, text, state, created_at)
        VALUES (?1, ?2, 'Why do you keep my photographs?', 'open', '2026-09-10T06:00:00.000Z')`,
     ).bind(GRIEVANCE, ROHIT),
+    // Vikram's first fit, charged as a no-show; he disputed the charge on the 20th.
+    env.DB.prepare(
+      `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, distance_m, radius_m, passed, created_at)
+       VALUES ('checkin-2', ?1, 't1', '2026-09-16T03:40:00.000Z', 28.4, 77.0, 40, 200, 1, '2026-09-16T03:40:00.000Z')`,
+    ).bind(FIT),
+    env.DB.prepare(
+      `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, closed_at, decision,
+         decided_at, charge, kept_amount, refund_amount, created_at)
+       VALUES (?1, 'checkin-2', ?2, '2026-09-16T03:40:00.000Z', '2026-09-16T03:55:00.000Z',
+         '2026-09-16T03:56:00.000Z', 'charged', '2026-09-16T08:00:00.000Z', 'late_fee', 400000, 0,
+         '2026-09-16T03:56:00.000Z')`,
+    ).bind(CHARGED, FIT),
+    env.DB.prepare(
+      `INSERT INTO no_show_disputes (id, case_id, person_id, reason, created_at)
+       VALUES (?1, ?2, ?3, 'I was home all morning.', '2026-09-20T06:00:00.000Z')`,
+    ).bind(DISPUTE, CHARGED, VIKRAM),
   ]);
 });
 
@@ -110,12 +130,12 @@ describe("a queue's deadline", () => {
   it("is the Tasks board's, in every section that decides one", async () => {
     const onTheBoard = await tasksDue();
     const inTheQueues = await queuesDue();
-    expect([...inTheQueues.keys()].sort()).toEqual([CASE, CHANGE, ERASURE, GRIEVANCE, HELD].sort());
+    expect([...inTheQueues.keys()].sort()).toEqual([CASE, CHANGE, DISPUTE, ERASURE, GRIEVANCE, HELD].sort());
     for (const [id, due] of inTheQueues) expect(due, id).toBe(onTheBoard.get(id));
   });
 
   it("moves in every section at once when ops change an allowance", async () => {
-    const hours = { erasure_request: 24, grievance: 72 };
+    const hours = { erasure_request: 24, grievance: 72, no_show_dispute: 12 };
     const set = await request(ops, "/api/settings/task_sla_hours", {
       method: "POST",
       headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
@@ -129,8 +149,27 @@ describe("a queue's deadline", () => {
     const inTheQueues = await queuesDue();
     expect(inTheQueues.get(ERASURE)).toBe("2026-09-17T06:00:00.000Z");
     expect(inTheQueues.get(GRIEVANCE)).toBe("2026-09-13T06:00:00.000Z");
+    // A disputed charge keeps its own allowance; the no-show cases keep theirs.
+    expect(inTheQueues.get(DISPUTE)).toBe("2026-09-20T18:00:00.000Z");
+    expect(inTheQueues.get(CASE)).toBe("2026-09-21T03:56:00.000Z");
     const onTheBoard = await tasksDue();
     for (const [id, due] of inTheQueues) expect(due, id).toBe(onTheBoard.get(id));
+  });
+
+  // OIA-18 of the audit, 2 October 2026: an erased client's grievance stayed in Grievances, shown under "erased:<id>",
+  // while the Tasks board counted one fewer.
+  it("lists nothing of a client erased with it still open, in any section, as the Tasks board lists nothing", async () => {
+    await env.DB.prepare(
+      "UPDATE people SET erased_at = ?2, name = 'Erased', mobile_e164 = 'erased:' || id WHERE id = ?1",
+    )
+      .bind(ROHIT, "2026-09-20T06:00:00.000Z")
+      .run();
+
+    const inTheQueues = await queuesDue();
+    // A no-show and a disputed charge still need a ruling, on the queues as on the board.
+    expect([...inTheQueues.keys()].sort()).toEqual([CASE, DISPUTE, ERASURE, HELD].sort());
+    expect([...(await tasksDue()).keys()]).not.toContain(GRIEVANCE);
+    expect([...(await tasksDue()).keys()]).not.toContain(CHANGE);
   });
 
   it("counts a number change from when both codes were in, as the Tasks board does", async () => {

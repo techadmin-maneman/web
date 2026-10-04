@@ -1,8 +1,9 @@
-// The client's Payments tab: what they have paid and had back, from the record
-// the page already holds, their service-visit credits, which ops can put right
-// by hand (docs/decisions/0068-a-paid-hold-is-kept.md), and the invite they came
-// with, whose grant is credits (Invite.tsx). The board draws the tab and nothing
-// in it (docs/fidelity-method.md).
+// The client's Payments tab: what they have paid and had back, the payment
+// links they were sent and the invoice of each finished visit, all from the
+// record the page already holds; their service-visit credits, which ops can put
+// right by hand (docs/decisions/0068-a-paid-hold-is-kept.md); and the invite they
+// came with, whose grant is credits (Invite.tsx). The board draws the tab and
+// nothing in it (docs/fidelity-method.md).
 //
 // A credit given or taken in error once needed SQL to correct. The form sends
 // the visits and the reason, and the server writes the ledger's entry and its
@@ -10,10 +11,19 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type ClientInvite, type ClientPayment, type ClientRecord, type CreditAdjustment } from "../api.ts";
+import {
+  api,
+  type ClientInvite,
+  type ClientInvoice,
+  type ClientPayment,
+  type ClientPaymentLink,
+  type ClientRecord,
+  type CreditAdjustment,
+} from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
@@ -23,18 +33,21 @@ type Credits = ClientRecord["credits"];
 type Reason = CreditAdjustment["reason"];
 
 const copy = clients.payments;
+const linkCopy = clients.links;
+const invoiceCopy = clients.invoices;
 const creditCopy = clients.credits;
 
 /** The most visits one adjustment may add or take away, as the route allows. */
 const MOST_VISITS = 12;
 
-/** What a row was for: the visit it paid for, a late fee, or a refund. */
+/** What a row was for: the visit it paid for, or the booking that is to be one, a late fee, or a refund. */
 function whatOf(entry: ClientPayment): string {
   if (entry.kind === "refund") return copy.refund;
   if (entry.purpose === "late_fee") return copy.lateFee;
-  if (entry.visit === null) return copy.unlinked;
-  const type = entry.visit.type === null ? copy.unlinked : clients.visits.types[entry.visit.type];
-  return copy.visit(type, fullDate(entry.visit.date));
+  const paidFor = entry.visit ?? entry.booking;
+  const type = paidFor?.type ?? null;
+  if (paidFor === null || type === null) return copy.unlinked;
+  return copy.visit(clients.visits.types[type], fullDate(paidFor.date));
 }
 
 /** The discount code a visit's payment was made with, and what it took off before GST; null for none. */
@@ -78,6 +91,100 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
             </td>
             <td className={styles.figureCell}>{rupees(entry.amount)}</td>
             <td className={styles.quietCell}>{stateOf(entry)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+}
+
+/** "Natural hair system, visit of 25 Sep 2027". */
+const linkWhatOf = (link: ClientPaymentLink): string =>
+  linkCopy.what(link.product, link.visit_date === null ? null : fullDate(link.visit_date));
+
+function linkStateOf(link: ClientPaymentLink): string {
+  const state = link.paid_at === null ? linkCopy.states[link.state] : linkCopy.paidOn(longDate(link.paid_at));
+  return link.reference === null ? state : `${state} · ${linkCopy.reference(link.reference)}`;
+}
+
+/** An open link's address, to read out to the client or send them again. */
+function CopyLink({ url, what }: { url: string; what: string }) {
+  const [copied, setCopied] = useState(false);
+  const copyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+    } catch {
+      // The address stays on the row to be selected by hand.
+      setCopied(false);
+    }
+  };
+  return (
+    <span className={styles.linkLine}>
+      <span className={styles.linkUrl}>{url}</span>
+      <Button variant="outline" size="small" className={styles.copyLink} onClick={() => void copyUrl()}>
+        {copied ? linkCopy.copied : linkCopy.copy}
+        <VisuallyHidden>{` · ${what}`}</VisuallyHidden>
+      </Button>
+    </span>
+  );
+}
+
+function LinkTable({ links }: { links: readonly ClientPaymentLink[] }) {
+  if (links.length === 0) return <p className={styles.empty}>{linkCopy.none}</p>;
+  return (
+    <Table className={styles.table}>
+      <thead>
+        <tr>
+          {linkCopy.columns.map((column, index) => (
+            <th key={column} scope="col" className={index === 2 ? styles.figureCell : styles.cell}>
+              {column}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {links.map((link) => (
+          <tr key={link.id}>
+            <td className={styles.cell}>{link.sent_at === null ? linkCopy.unsent : longDate(link.sent_at)}</td>
+            <td className={styles.cell}>{linkWhatOf(link)}</td>
+            <td className={styles.figureCell}>{rupees(link.amount)}</td>
+            <td className={styles.quietCell}>
+              {linkStateOf(link)}
+              {link.state === "open" && link.short_url !== null && (
+                <CopyLink url={link.short_url} what={linkWhatOf(link)} />
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+}
+
+function invoiceStateOf(invoice: ClientInvoice): string {
+  if (invoice.issued_at !== null) return invoiceCopy.sentOn(longDate(invoice.issued_at));
+  return invoiceCopy.states[invoice.state];
+}
+
+function InvoiceTable({ invoices }: { invoices: readonly ClientInvoice[] }) {
+  if (invoices.length === 0) return <p className={styles.empty}>{invoiceCopy.none}</p>;
+  return (
+    <Table className={styles.table}>
+      <thead>
+        <tr>
+          {invoiceCopy.columns.map((column) => (
+            <th key={column} scope="col" className={styles.cell}>
+              {column}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {invoices.map((invoice) => (
+          <tr key={invoice.visit_id}>
+            <td className={styles.cell}>{copy.visit(clients.visits.types[invoice.type], fullDate(invoice.date))}</td>
+            <td className={styles.quietCell}>{invoiceStateOf(invoice)}</td>
           </tr>
         ))}
       </tbody>
@@ -217,6 +324,8 @@ function CreditForm({
 export function Payments({
   clientId,
   payments,
+  links,
+  invoices,
   credits,
   onCredits,
   invite,
@@ -225,6 +334,8 @@ export function Payments({
 }: {
   clientId: string;
   payments: readonly ClientPayment[];
+  links: readonly ClientPaymentLink[];
+  invoices: readonly ClientInvoice[];
   credits: Credits;
   onCredits: (credits: Credits) => void;
   invite: ClientInvite | null;
@@ -233,12 +344,37 @@ export function Payments({
 }) {
   return (
     <div className={styles.visits}>
+      <MoneyRecords payments={payments} links={links} invoices={invoices} />
+      <CreditForm clientId={clientId} credits={credits} onCredits={onCredits} />
+      <Invite clientId={clientId} invite={invite} news={inviteNews} onInvite={onInvite} />
+    </div>
+  );
+}
+
+/** What the client paid and had back, the payment links they were sent, and each finished visit's invoice. */
+export function MoneyRecords({
+  payments,
+  links,
+  invoices,
+}: {
+  payments: readonly ClientPayment[];
+  links: readonly ClientPaymentLink[];
+  invoices: readonly ClientInvoice[];
+}) {
+  return (
+    <>
       <section className={styles.visitList} aria-label={copy.title}>
         <h3 className={styles.sectionTitle}>{copy.title}</h3>
         <PaymentTable payments={payments} />
       </section>
-      <CreditForm clientId={clientId} credits={credits} onCredits={onCredits} />
-      <Invite clientId={clientId} invite={invite} news={inviteNews} onInvite={onInvite} />
-    </div>
+      <section className={styles.visitList} aria-label={linkCopy.title}>
+        <h3 className={styles.sectionTitle}>{linkCopy.title}</h3>
+        <LinkTable links={links} />
+      </section>
+      <section className={styles.visitList} aria-label={invoiceCopy.title}>
+        <h3 className={styles.sectionTitle}>{invoiceCopy.title}</h3>
+        <InvoiceTable invoices={invoices} />
+      </section>
+    </>
   );
 }

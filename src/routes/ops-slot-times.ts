@@ -96,8 +96,9 @@ const setSlotTimesRoute = createRoute({
   responses: {
     201: { description: "Set, from its day", ...json(z.object({ applies_from: z.iso.date() }).strict()) },
     400: errorResponse(
-      "invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order or " +
-        "outside_the_day (06:00 to 22:00)",
+      "invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order, " +
+        "half_slot_too_short (under 45 minutes, the last one to the day's end included) or outside_the_day " +
+        "(06:00 to 22:00)",
     ),
     403: errorResponse("access_required"),
     409: errorResponse("slot_times_too_soon: the day is before the earliest a change may apply from, which GET says"),

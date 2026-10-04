@@ -92,6 +92,8 @@ const SMALL_TABLES = new Set([
   "credit_expiry_cursor",
   // One row, what Phase 2's buckets hold (docs/decisions/0093-the-storage-meter.md).
   "storage_meter",
+  // One row, the dispatch board's version.
+  "board_version",
 ]);
 
 /** Statements that do read a whole table, each with why that is all right. */
@@ -134,6 +136,8 @@ const UNPLANNED = [
   { file: "src/domain/hair-profiles.ts", source: 'SELECT ${placeholders} WHERE (${latestIdQuery("?2")})' },
   // A record's city, for the console: the record by its key, its city by indexed lookups. The cron never runs it.
   { file: "src/domain/places.ts", source: "FROM ${table} record WHERE record.id = ?1" },
+  // The cities of the tasks a look at the board found: each record by its key. The cron never runs it.
+  { file: "src/domain/places.ts", source: "FROM ${RECORD_PLACES[kind].table} record WHERE record.id IN" },
 ];
 
 /** Where test/worker/cron-reads.test.ts keeps the history a cron run is measured against. */

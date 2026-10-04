@@ -12,6 +12,13 @@ export const visitName = (type: VisitSummary["type"]) => (type === null ? OTHER_
 export const oneVisitOf = (visit: { readonly one_visit?: OneVisitPrice | boolean | null }): OneVisitPrice | null =>
   typeof visit.one_visit === "object" ? visit.one_visit : null;
 
+/** The visit's kind, and its service where that says more: "First fit · Mane Man Essential". */
+export function visitTitle(visit: Pick<VisitSummary, "type" | "service">): string {
+  // A visit the phone kept from an earlier release names no service.
+  const service = visit.service ?? null;
+  return service === null ? visitName(visit.type) : `${visitName(visit.type)} · ${service}`;
+}
+
 /** A visit being booked, by its kind; a consultation and fit in one visit by that name. */
 export const bookingName = (booking: NonNullable<Me["being_booked"]>) =>
   booking.one_visit ? ONE_VISIT : VISIT_TYPES[booking.type];

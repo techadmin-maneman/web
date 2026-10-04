@@ -267,6 +267,7 @@ describe("the waitlist and a launch", () => {
         },
       ],
       more: false,
+      cities: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad", "Mumbai", "Bengaluru"],
     });
     expect(await (await launch({ confirm: false })).json()).toEqual({
       pincode: "400050",
@@ -276,13 +277,13 @@ describe("the waitlist and a launch", () => {
     });
 
     const queue = fakeQueue();
-    expect(await (await launch({ confirm: true, launch_on: "2026-10-01" }, queue)).json()).toMatchObject({
+    expect(await (await launch({ confirm: true, launch_on: "2026-09-15" }, queue)).json()).toMatchObject({
       alerts: 1,
       launched: true,
     });
     expect(queue.sent).toHaveLength(1);
     const pincode = await env.DB.prepare("SELECT served, launched_at FROM serviceable_pincodes").first();
-    expect(pincode).toEqual({ served: 1, launched_at: "2026-09-30T18:30:00.000Z" });
+    expect(pincode).toEqual({ served: 1, launched_at: "2026-09-14T18:30:00.000Z" });
     const message = await env.DB.prepare("SELECT person_id, kind, subject_id FROM outbound_messages").first();
     expect(message).toEqual({ person_id: FRIEND, kind: "launch_alert", subject_id: "400050" });
     const composed = await composeLaunchAlert(env.DB, "400050", FRIEND, "local");
@@ -334,6 +335,118 @@ describe("the waitlist and a launch", () => {
     expect(list.areas).toHaveLength(WAITLIST_AREAS);
     expect(list.areas[0]?.pincode).toBe("400001");
     expect(list.more).toBe(true);
+  });
+
+  /** `count` more people waiting in Bandra, each asking for the launch alert. */
+  async function manyWaiting(count: number) {
+    const at = NOW.toISOString();
+    const statements = Array.from({ length: count }, (_, n) => {
+      const personId = crypto.randomUUID();
+      return [
+        env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Waiting')").bind(
+          personId,
+          at,
+          `+9198200${String(n).padStart(5, "0")}`,
+        ),
+        env.DB.prepare(
+          `INSERT INTO waitlist_entries (id, pincode, person_id, contact_consent_at, launch_alert, created_at)
+           VALUES (?1, '400050', ?2, ?3, 1, ?3)`,
+        ).bind(crypto.randomUUID(), personId, at),
+        env.DB.prepare(
+          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+           VALUES (?1, ?2, 'whatsapp_launches', 'launches-v1', 1, ?3)`,
+        ).bind(crypto.randomUUID(), personId, at),
+      ];
+    });
+    await env.DB.batch(statements.flat());
+  }
+
+  // BCL-06 and PLAT-24 of the audit, 2 October 2026: over a hundred alerts went to the queue in one batch, which it
+  // refuses, and the launch answered 500 although it had been made.
+  it("queues a long waitlist's alerts in batches the queue takes, a hundred at most", async () => {
+    await waiting(true);
+    await manyWaiting(200);
+    const batchSizes: number[] = [];
+    const queue = fakeQueue();
+    const takeBatch = queue.sendBatch.bind(queue);
+    queue.sendBatch = (messages, options) => {
+      const batch = [...messages];
+      batchSizes.push(batch.length);
+      if (batch.length > 100) return Promise.reject(new Error("Too many messages in the batch"));
+      return takeBatch(batch, options);
+    };
+
+    const answer = await launch({ confirm: true }, queue);
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toMatchObject({ alerts: 201, launched: true });
+    expect(batchSizes).toEqual([100, 100, 1]);
+    expect(queue.sent).toHaveLength(201);
+  });
+
+  it("launches, and says so, when the queue refuses the alerts, which the sweeper then sends", async () => {
+    await waiting(true);
+    const down = { ...fakeQueue(), sendBatch: () => Promise.reject(new Error("queue unavailable")) };
+
+    const answer = await launch({ confirm: true }, down);
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toMatchObject({ alerts: 1, launched: true });
+    const alert = await env.DB.prepare("SELECT state FROM outbound_messages WHERE kind = 'launch_alert'").first();
+    expect(alert).toEqual({ state: "queued" });
+  });
+
+  // BK-38 of the audit, 2 October 2026: a launch dated to a later day served the pincode at once, so its alerts went
+  // out and /book took bookings before the day.
+  it("refuses a launch dated to a day still to come, and sends nothing", async () => {
+    await waiting(true);
+    const queue = fakeQueue();
+    const answer = await launch({ confirm: true, launch_on: "2026-09-22" }, queue);
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "launch_in_future", fields: ["launch_on"] } });
+    expect(queue.sent).toEqual([]);
+    const pincode = await env.DB.prepare("SELECT served, launched_at FROM serviceable_pincodes").first();
+    expect(pincode).toEqual({ served: 0, launched_at: null });
+  });
+
+  // BK-38: the waitlist kept an earlier launch date where Settings overwrote it. Both launch through one function: a
+  // pincode that begins serving is dated from the launch day, and one already live keeps its date.
+  it("dates a pincode it begins serving from the launch day, and keeps the date of one already live", async () => {
+    await waiting(true);
+    await env.DB.prepare(
+      "UPDATE serviceable_pincodes SET launched_at = '2026-01-04T18:30:00.000Z' WHERE pincode = '400050'",
+    ).run();
+    expect((await launch({ confirm: true })).status).toBe(200);
+    const launched = await env.DB.prepare("SELECT launched_at FROM serviceable_pincodes").first();
+    expect(launched).toEqual({ launched_at: "2026-09-20T18:30:00.000Z" });
+
+    expect((await launch({ confirm: true, launch_on: "2026-09-01" })).status).toBe(200);
+    const kept = await env.DB.prepare("SELECT launched_at FROM serviceable_pincodes").first();
+    expect(kept).toEqual({ launched_at: "2026-09-20T18:30:00.000Z" });
+  });
+
+  // BK-36 and OIA-13 of the audit, 2 October 2026: every pincode on staging's waitlist was outside the service area,
+  // so "Mark live" answered "We have no such pincode", and no screen could add one.
+  it("adds a pincode people wait in that the service area does not hold, then launches it and tells them", async () => {
+    await waiting(true);
+    await env.DB.prepare("DELETE FROM serviceable_pincodes WHERE pincode = '400050'").run();
+    expect(await (await request(ops(), "/api/waitlist")).json()).toMatchObject({
+      areas: [{ pincode: "400050", area: null, city: null, served: false }],
+    });
+    expect((await launch({ confirm: false })).status).toBe(404);
+
+    const added = await request(ops(), "/api/pincodes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify({ pincode: "400050", area: "Bandra West", city: "Mumbai" }),
+    });
+    expect(added.status).toBe(201);
+    expect(await added.json()).toMatchObject({ pincode: "400050", served: false, waiting: 1, to_alert: 1 });
+
+    const queue = fakeQueue();
+    expect(await (await launch({ confirm: true }, queue)).json()).toMatchObject({ alerts: 1, launched: true });
+    const composed = await composeLaunchAlert(env.DB, "400050", FRIEND, "local");
+    expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
+      "Hello Karan, we now come to Bandra West. Your free consultation can be booked here: http://localhost:4321/book",
+    );
   });
 
   it("tells nobody who did not ask, and refuses a pincode we do not know", async () => {

@@ -9,7 +9,7 @@
 // names (src/http/errors.ts).
 
 import AxeBuilder from "@axe-core/playwright";
-import type { Page } from "@playwright/test";
+import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import {
   answer,
@@ -35,13 +35,13 @@ const ROUTES: Answers = {
   "GET /api/discount-codes": json(DISCOUNT_CODES),
 };
 
-const PANELS = ["/settings", "/prices", "/discount-codes", "/service-area", "/settings/blackouts"];
+const PANELS = ["/settings", "/prices", "/discount-codes", "/areas/served", "/settings/blackouts"];
 
-/** The panels that were tabs of Settings and are now sections of their own departments, by their headings. */
+/** The panels that were tabs of Settings and are now in sections of their own departments, by their headings. */
 const OWN_SECTIONS: Readonly<Record<string, string>> = {
   "/prices": "Prices",
   "/discount-codes": "Discount codes",
-  "/service-area": "Service area",
+  "/areas/served": "Areas",
 };
 
 async function open(page: Page, path = "/settings", extra: Answers = {}): Promise<void> {
@@ -53,23 +53,36 @@ async function open(page: Page, path = "/settings", extra: Answers = {}): Promis
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
-// The storage meter (docs/decisions/0093-the-storage-meter.md): one line above the tabs, which no board draws.
-test("says what the photographs and referral cards hold in R2, and the database against its limit", async ({
+/** One subject's section of the rules, by its heading. */
+const section = (page: Page, name: string) => page.getByRole("region", { name, exact: true });
+
+type FixtureRule = (typeof SETTINGS.settings)[number];
+
+function ruleNamed(name: string): FixtureRule {
+  const rule = SETTINGS.settings.find((each) => each.name === name);
+  if (rule === undefined) throw new Error(`The fixture has no rule ${name}`);
+  return rule;
+}
+
+// The storage meter (docs/decisions/0093-the-storage-meter.md). OIA-12: it headed every tab of Settings.
+test("says what photos and referral cards hold, and the database, under The console and nowhere else", async ({
   page,
 }) => {
-  await open(page, "/settings", {
-    "GET /api/storage": json({
-      held_bytes: 1_240_000_000,
-      share_bytes: 4e9,
-      ceiling_bytes: 20e9,
-      database_bytes: 212_000_000,
-      database_limit_bytes: 500e6,
-    }),
+  const storage = json({
+    held_bytes: 1_240_000_000,
+    share_bytes: 4e9,
+    ceiling_bytes: 20e9,
+    database_bytes: 212_000_000,
+    database_limit_bytes: 500e6,
   });
-  await expect(
-    page.getByText("Photographs and referral cards hold 1.24 GB in R2, 31% of their 4 GB share."),
-  ).toBeVisible();
-  await expect(page.getByText("The database holds 212 MB, 42% of the 500 MB the free plan allows.")).toBeVisible();
+  await open(page, "/settings", { "GET /api/storage": storage });
+  const theConsole = page.getByRole("region", { name: "The console", exact: true });
+  await expect(theConsole.getByText("Photos and referral cards: 1.24 GB of 4 GB", { exact: true })).toBeVisible();
+  await expect(theConsole.getByText("Database: 212 MB of 500 MB", { exact: true })).toBeVisible();
+
+  await open(page, "/settings/blackouts", { "GET /api/storage": storage });
+  await expect(page.getByRole("heading", { name: "Blackout days" })).toBeVisible();
+  await expect(page.getByText("Photos and referral cards")).toHaveCount(0);
 });
 
 test.describe("the rules", () => {
@@ -111,7 +124,7 @@ test.describe("the rules", () => {
       },
     });
     await page.getByLabel("Check-in radius").fill("150");
-    await page.getByRole("button", { name: "Save" }).first().click();
+    await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
 
     // ADR 0071's rule for a price, followed for a rule (docs/decisions/0086-the-next-visit-is-offered.md).
     const check = page.getByRole("group", { name: "Check the change" });
@@ -128,7 +141,7 @@ test.describe("the rules", () => {
   test("goes back to the figures without sending when the change is not the one meant", async ({ page }) => {
     await open(page);
     await page.getByLabel("Check-in radius").fill("150");
-    await page.getByRole("button", { name: "Save" }).first().click();
+    await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
     await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Change it" }).click();
     await expect(page.getByRole("group", { name: "Check the change" })).toHaveCount(0);
     await expect(page.getByLabel("Check-in radius")).toHaveValue("150");
@@ -138,14 +151,12 @@ test.describe("the rules", () => {
     page,
   }) => {
     await open(page);
-    const save = page
-      .getByRole("listitem")
-      .filter({ has: page.getByLabel("Check-in radius") })
-      .getByRole("button", {
-        name: "Save",
-      });
+    const save = section(page, "Visits in the field").getByRole("button", { name: "Save" });
     await expect(save).toBeDisabled();
     await page.getByLabel("Check-in radius").fill("");
+    await expect(save).toBeDisabled();
+    // A change elsewhere in the section is not sent while a box holds what its rule cannot take.
+    await page.getByRole("group", { name: "No-show wait" }).getByLabel("First fit", { exact: true }).fill("25");
     await expect(save).toBeDisabled();
   });
 
@@ -156,11 +167,108 @@ test.describe("the rules", () => {
     });
     const wait = page.getByRole("group", { name: "No-show wait" });
     await wait.getByLabel("First fit", { exact: true }).fill("90");
-    await page.getByRole("listitem").filter({ has: wait }).getByRole("button", { name: "Save" }).click();
+    await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
     await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("alert")).toHaveText(
-      "First fit is outside what this rule allows. Nothing was changed.",
+    await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
+      "First fit is outside what this rule allows, so it was not saved.",
     );
+  });
+
+  // OIA-12 of the audit, 2 October 2026: seventeen rules on one page, each with its own Save, in no order.
+  test("groups the rules by subject, each section a link away", async ({ page }) => {
+    await open(page);
+    const jump = page.getByRole("navigation", { name: "Rules by subject" });
+    await expect(jump.getByRole("link")).toHaveText([
+      "Moves, cancels and no-shows",
+      "Booking and payment",
+      "Visits in the field",
+      "Reminders and replacements",
+      "Referrals",
+      "The console",
+    ]);
+    const field = section(page, "Visits in the field");
+    await expect(field.getByRole("group")).toHaveText([
+      /^Check-in radius/,
+      /^No-show wait/,
+      /^How far a phone is trusted about time/,
+    ]);
+    await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(6);
+
+    await jump.getByRole("link", { name: "Referrals" }).click();
+    await expect(page).toHaveURL(/\/settings#referrals$/);
+    await expect(section(page, "Referrals")).toBeInViewport();
+    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  });
+
+  test("sends a section's changes with one Save, after showing every figure that moves", async ({ page }) => {
+    const sent: string[] = [];
+    const saved = (rule: FixtureRule) => (route: Route) => {
+      sent.push(rule.name);
+      const { value } = route.request().postDataJSON() as { value: unknown };
+      return json({ ...rule, value, set_by: "ops@maneman.in", set_at: "2027-09-21T06:00:00.000Z" })(route);
+    };
+    await open(page, "/settings", {
+      "POST /api/settings/checkin_radius_m": saved(ruleNamed("checkin_radius_m")),
+      "POST /api/settings/no_show_wait_min": saved(ruleNamed("no_show_wait_min")),
+    });
+    await page.getByLabel("Check-in radius").fill("150");
+    await page.getByRole("group", { name: "No-show wait" }).getByLabel("Service visit", { exact: true }).fill("20");
+    await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
+
+    const check = page.getByRole("group", { name: "Check the change" });
+    await expect(check.getByRole("listitem")).toHaveText([
+      "Check-in radius: 200 metres → 150 metres.",
+      "No-show wait · Service visit: 15 minutes → 20 minutes.",
+    ]);
+    expect(sent).toEqual([]);
+    await check.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+    expect(sent).toEqual(["checkin_radius_m", "no_show_wait_min"]);
+    await expect(section(page, "Visits in the field").getByRole("button", { name: "Save" })).toBeDisabled();
+  });
+
+  test("says which rule was refused when one of a section's changes is, and keeps the one that saved", async ({
+    page,
+  }) => {
+    const radius = ruleNamed("checkin_radius_m");
+    await open(page, "/settings", {
+      "POST /api/settings/checkin_radius_m": json({
+        ...radius,
+        value: 150,
+        set_by: "ops@maneman.in",
+        set_at: "2027-09-21T06:00:00.000Z",
+      }),
+      "POST /api/settings/no_show_wait_min": fails(400, "invalid_request", ["no_show_wait_min.service"]),
+    });
+    await page.getByLabel("Check-in radius").fill("150");
+    const wait = page.getByRole("group", { name: "No-show wait" });
+    await wait.getByLabel("Service visit", { exact: true }).fill("20");
+    await section(page, "Visits in the field").getByRole("button", { name: "Save" }).click();
+    await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Save" }).click();
+
+    await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
+      "Service visit is outside what this rule allows, so it was not saved.",
+    );
+    const radiusItem = page.getByRole("listitem").filter({ has: page.getByLabel("Check-in radius") });
+    await expect(radiusItem).toContainText("Set by ops@maneman.in on 21 Sep 2027");
+    await expect(radiusItem.getByRole("alert")).toHaveCount(0);
+  });
+
+  test("links each late-fee rule to Prices, and Prices back to the rule", async ({ page }) => {
+    await open(page);
+    const charges = page.getByRole("listitem").filter({ has: page.getByRole("group", { name: "What a late move" }) });
+    await expect(charges.getByRole("link", { name: "Late fees are set in Prices" })).toHaveAttribute("href", "/prices");
+
+    await open(page, "/prices");
+    const fee = page
+      .getByRole("listitem")
+      .filter({ has: page.getByRole("heading", { name: "Late fee on a first fit", exact: true }) });
+    await fee.getByRole("link", { name: "Set when it applies" }).click();
+    await expect(page).toHaveURL(/\/settings#late_change_charge$/);
+    const rule = page.getByRole("listitem").filter({ has: page.getByRole("group", { name: "What a late move" }) });
+    await expect(rule).toBeFocused();
+    await expect(rule).toBeInViewport();
   });
 
   // One input for the next visit's days, each box with its own range (docs/decisions/0086-the-next-visit-is-offered.md).
@@ -181,15 +289,17 @@ test.describe("the rules", () => {
     await expect(days).not.toContainText("service_cadence");
 
     // A horizon shorter than the fortnight the strip shows is not offered.
-    const rule = page.getByRole("listitem").filter({ has: days });
+    const booking = section(page, "Booking and payment");
     await days.getByLabel("How far ahead a visit may be booked").fill("10");
-    await expect(rule.getByRole("button", { name: "Save" })).toBeDisabled();
+    await expect(booking.getByRole("button", { name: "Save" })).toBeDisabled();
     await days.getByLabel("How far ahead a visit may be booked").fill("45");
 
     await days.getByLabel("Between service visits").fill("28");
-    await rule.getByRole("button", { name: "Save" }).click();
+    await booking.getByRole("button", { name: "Save" }).click();
     const check = page.getByRole("group", { name: "Check the change" });
-    await expect(check.getByRole("listitem")).toHaveText(["Between service visits: 30 days → 28 days."]);
+    await expect(check.getByRole("listitem")).toHaveText([
+      "Booking and the next visit · Between service visits: 30 days → 28 days.",
+    ]);
     const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
     expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
@@ -228,11 +338,11 @@ test.describe("the rules", () => {
 
     await reward.getByLabel("The client who sent the invite").fill("2");
     await reward.getByLabel("The friend they invited").fill("0");
-    await page.getByRole("listitem").filter({ has: reward }).getByRole("button", { name: "Save" }).click();
+    await section(page, "Referrals").getByRole("button", { name: "Save" }).click();
     const check = page.getByRole("group", { name: "Check the change" });
     await expect(check.getByRole("listitem")).toHaveText([
-      "The client who sent the invite: 3 service visits → 2 service visits.",
-      "The friend they invited: 3 service visits → 0 service visits.",
+      "What a referral earns · The client who sent the invite: 3 service visits → 2 service visits.",
+      "What a referral earns · The friend they invited: 3 service visits → 0 service visits.",
     ]);
 
     const request = posted(page, "/api/settings/referral_reward");
@@ -274,9 +384,9 @@ test.describe("the rules", () => {
     ]);
 
     await service.selectOption("nothing");
-    await page.getByRole("listitem").filter({ has: charges }).getByRole("button", { name: "Save" }).click();
+    await section(page, "Moves, cancels and no-shows").getByRole("button", { name: "Save" }).click();
     const check = page.getByRole("group", { name: "Check the change" });
-    await expect(check).toContainText("Service visit: The visit itself → Nothing.");
+    await expect(check).toContainText("What a late move or cancel costs · Service visit: The visit itself → Nothing.");
     const request = posted(page, "/api/settings/late_change_charge");
     await check.getByRole("button", { name: "Save" }).click();
     expect((await request).postDataJSON()).toEqual({
@@ -545,11 +655,11 @@ test.describe("the services and their prices", () => {
   });
 });
 
-test.describe("the service area", () => {
+test.describe("the service area, Areas' Served tab", () => {
   const area = (page: Page, pincode: string) => page.getByRole("textbox", { name: `Area name for ${pincode}` });
 
   test("lists one city at a time, since 198 pincodes is not a page", async ({ page }) => {
-    await open(page, "/service-area");
+    await open(page, "/areas/served");
     await expect(page.getByRole("button", { name: "Delhi · 1 of 2" })).toBeVisible();
     await expect(area(page, "110017")).toHaveValue("Saket");
     // Gurgaon's pincode is not drawn until its city is chosen.
@@ -560,7 +670,7 @@ test.describe("the service area", () => {
   });
 
   test("sends only the pincodes that changed", async ({ page }) => {
-    await open(page, "/service-area", {
+    await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
     await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
@@ -576,7 +686,7 @@ test.describe("the service area", () => {
 
   // OPS-13: launch messages read "we now come to Sec91", with no way to say it better.
   test("sends a better name for an area, and refuses one a spreadsheet would run", async ({ page }) => {
-    await open(page, "/service-area", {
+    await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
     await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
@@ -593,26 +703,29 @@ test.describe("the service area", () => {
   });
 
   test("fills a whole city in one press", async ({ page }) => {
-    await open(page, "/service-area");
+    await open(page, "/areas/served");
     await page.getByRole("button", { name: "Serve all of Delhi" }).click();
     await expect(page.getByRole("button", { name: "Delhi · 2 of 2" })).toBeVisible();
     await expect(page.getByRole("checkbox", { name: "Served 110024" })).toBeChecked();
   });
 
-  // FEO-02: serving a pincode here sent none of the launch alerts the waitlist's launch sends.
+  // FEO-02: serving a pincode here sent none of the launch alerts the waitlist's launch sends. OIA-13: it had a
+  // launch panel of its own; it now opens the one Waiting uses.
   test("says who serving a pincode will message, and messages them only once ops agree", async ({ page }) => {
-    await open(page, "/service-area", {
+    await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 3 }),
     });
     await page.getByRole("checkbox", { name: "Served 110024" }).check();
     await page.getByRole("button", { name: "Save these pincodes" }).click();
 
-    const check = page.getByRole("group", { name: "This messages 3 people" });
+    const check = page.getByRole("region", { name: "Mark 110024 live" });
     await expect(check).toBeFocused();
+    await expect(check).toContainText("This messages 3 people");
     await expect(check).toContainText("110024, Lajpat Nagar: 3 waiting ask to be told.");
+    await expect(check).toContainText("The 2 who did not opt in are not messaged.");
 
     const sent = posted(page, "/api/service-area");
-    await check.getByRole("button", { name: "Save and message 3" }).click();
+    await check.getByRole("button", { name: "Save and send to 3" }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110024", served: true, launch_on: null }],
     });
@@ -620,7 +733,7 @@ test.describe("the service area", () => {
   });
 
   test("says so when a change would leave nowhere served", async ({ page }) => {
-    await open(page, "/service-area", {
+    await open(page, "/areas/served", {
       "POST /api/service-area": fails(400, "no_service_area"),
     });
     await page.getByRole("checkbox", { name: "Served 110017" }).uncheck();
@@ -637,7 +750,7 @@ test.describe("the service area", () => {
 
   // FEO-01: the table kept the old values after an upload, and the next Save put them back.
   test("puts a file's changes in the table, so the one Save sends the file's values", async ({ page }) => {
-    await open(page, "/service-area", {
+    await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 0 }),
     });
     await upload(page, "pincode,served,launch_on\n110017,yes,2026-09-01\n110024,no,2026-11-01\n");
@@ -656,9 +769,54 @@ test.describe("the service area", () => {
     await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
   });
 
+  // BK-38 of the audit, 2 October 2026: a pincode served from a later day was served at once.
+  test("will not serve a pincode from a day still to come", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-10-04T06:00:00.000Z"));
+    await open(page, "/areas/served");
+    await page.getByRole("checkbox", { name: "Served 110024" }).check();
+    await page.getByLabel("Launch date for 110024").fill("2026-10-20");
+    await expect(page.getByRole("alert")).toContainText("110024: a pincode goes live today or from a day already past");
+    await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
+  });
+
+  // BK-36 and OIA-13: no screen could add a pincode the reference file does not hold.
+  test("adds a pincode the file does not hold, unserved, in its city's list", async ({ page }) => {
+    const added = {
+      pincode: "400050",
+      area: "Bandra West",
+      city: "Mumbai",
+      served: false,
+      launch_on: null,
+      waiting: 0,
+      to_alert: 0,
+    };
+    await open(page, "/areas/served", { "POST /api/pincodes": json(added, 201) });
+    const form = page.getByRole("group", { name: "Add a pincode" });
+    await form.getByLabel("Pincode").fill("400050");
+    await form.getByLabel("Area, as messages name it").fill("Bandra West");
+    await form.getByLabel("City").selectOption("Mumbai");
+    const sent = posted(page, "/api/pincodes");
+    await form.getByRole("button", { name: "Add it" }).click();
+    expect((await sent).postDataJSON()).toEqual({ pincode: "400050", area: "Bandra West", city: "Mumbai" });
+
+    await expect(form.getByRole("status")).toHaveText(
+      "400050 is in Mumbai now, not served yet. Tick Served and save to mark it live.",
+    );
+    await expect(page.getByRole("button", { name: "Mumbai · 0 of 1" })).toHaveAttribute("aria-current", "true");
+    await expect(area(page, "400050")).toHaveValue("Bandra West");
+  });
+
+  test("refuses a pincode the API could not hold before it is sent", async ({ page }) => {
+    await open(page, "/areas/served");
+    const form = page.getByRole("group", { name: "Add a pincode" });
+    await form.getByLabel("Pincode").fill("012345");
+    await expect(form.getByRole("alert")).toHaveText("A pincode is six digits and starts with 1 to 8.");
+    await expect(form.getByRole("button", { name: "Add it" })).toBeDisabled();
+  });
+
   // FEO-03: a file without its served column switched every pincode in it off.
   test("refuses a file that leaves out one of its three columns", async ({ page }) => {
-    await open(page, "/service-area");
+    await open(page, "/areas/served");
     await upload(page, "pincode,launch_on\n110017,2026-09-01\n");
     await expect(page.getByRole("alert")).toContainText("needs a pincode, a served and a launch_on column");
     await expect(page.getByRole("button", { name: "Put these in the table" })).toHaveCount(0);
@@ -672,9 +830,15 @@ test.describe("the blackout days", () => {
     const diwali = page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Diwali" });
     await expect(diwali).toContainText("Added by ops@maneman.in on 20 Sep 2027");
     await expect(diwali).toContainText("3 visits are still booked on these days. Move them on the dispatch board.");
+    // OIA-03, BK-21: the way to those visits opens the board on the run's first day.
+    await expect(diwali.getByRole("link", { name: "Show on board: Fri 29 Oct to Sat 30 Oct" })).toHaveAttribute(
+      "href",
+      "/dispatch?from=2027-10-29",
+    );
     const training = page.getByRole("listitem").filter({ hasText: "Mon 15 Nov · Staff training" });
     await expect(training).toContainText("Added before this screen, so who added it is not recorded.");
     await expect(training).not.toContainText("still booked");
+    await expect(training.getByRole("link", { name: /Show on board/ })).toHaveCount(0);
   });
 
   test("blacks out the days from the first to the last, with the reason, and shows the list the API answers", async ({

@@ -1,11 +1,13 @@
 // POST /api/clients/:id/erasure: ops erase a client the day they ask, from the client's page
 // (docs/decisions/0019-erasure.md). A request the client made in their app is decided in Deletion requests instead
 // (src/routes/ops-profile.ts); both erase through eraseAndQueue, audited under the member of staff who did it, and
-// keep to the caller's cities. Refused while the client has a visit booked or a payment held, unless ops say they will
-// settle both by hand today (docs/decisions/0066-erasure-all-or-nothing.md).
+// keep to the caller's cities. Refused while the client has a visit or booking still to happen, a payment held or a
+// payment link unpaid, unless ops say they will settle it by hand today
+// (docs/decisions/0066-erasure-all-or-nothing.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { fieldRecord } from "../config/field-record.ts";
+import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import type { AuditEntry } from "../domain/audit.ts";
 import {
@@ -22,10 +24,23 @@ import { json } from "../http/openapi.ts";
 import { withinRouteReach } from "../http/staff-access.ts";
 import { erasureRefusal, LIVE_VISIT_STATUSES, type ErasureRefusal } from "../policy/account-deletion.ts";
 
-/** Why an erasure waits, and what ops must settle first: the visits to cancel and the payments to refund. */
+const OwedSchema = z
+  .object({
+    id: z.string(),
+    reference: z.string().nullable(),
+    amount: z.number().int().openapi({ description: "In paise." }),
+  })
+  .strict();
+
+/**
+ * Why an erasure waits, and what ops must settle first: the visits and bookings to cancel, the payments to refund, and
+ * the payment links to be paid or let go.
+ */
 export const ErasureRefusedSchema = z
   .object({
-    error: z.object({ code: z.enum(["visit_booked", "payment_held"]), request_id: z.string() }).strict(),
+    error: z
+      .object({ code: z.enum(["visit_booked", "payment_held", "payment_owed"]), request_id: z.string() })
+      .strict(),
     visits: z.array(
       z
         .object({
@@ -36,15 +51,22 @@ export const ErasureRefusedSchema = z
         })
         .strict(),
     ),
-    payments: z.array(
-      z
-        .object({
-          id: z.string(),
-          reference: z.string().nullable(),
-          amount: z.number().int().openapi({ description: "In paise." }),
-        })
-        .strict(),
-    ),
+    bookings: z
+      .array(
+        z
+          .object({
+            id: z.string(),
+            type: z.enum(VISIT_TYPES),
+            date: z.iso.date(),
+            window: z.enum(BOOKING_WINDOWS),
+          })
+          .strict(),
+      )
+      .openapi({ description: "Bookings paid for, or free, that are not yet visits." }),
+    payments: z.array(OwedSchema),
+    links: z.array(OwedSchema).openapi({
+      description: "Payment links still unpaid: a fitted visit's, or one sent for a booking and still open.",
+    }),
   })
   .strict()
   .openapi("ErasureRefused");
@@ -54,14 +76,25 @@ export function erasureRefused(
   blockers: ErasureBlockers,
   requestId: string,
 ): z.infer<typeof ErasureRefusedSchema> {
-  return { error: { code, request_id: requestId }, visits: [...blockers.visits], payments: [...blockers.payments] };
+  return {
+    error: { code, request_id: requestId },
+    visits: [...blockers.visits],
+    bookings: [...blockers.bookings],
+    payments: [...blockers.payments],
+    links: [...blockers.links],
+  };
 }
 
 const ErasureSchema = z
   .object({
-    override_open_bookings: z.boolean().optional().openapi({
-      description: "Erase even with a visit booked or a payment held: only when ops will cancel and refund them today.",
-    }),
+    override_open_bookings: z
+      .boolean()
+      .optional()
+      .openapi({
+        description:
+          "Erase even with a visit or booking still to happen, a payment held or a link unpaid: only when ops will " +
+          "settle them by hand today. Bookings not yet visits are let go, and open payment links cancelled.",
+      }),
   })
   .strict()
   .openapi("Erasure");
@@ -92,7 +125,8 @@ export const erasureRoute = createRoute({
     403: errorResponse("access_required: a service token, which names no member of staff"),
     404: errorResponse("not_found: nobody by that ID in the caller's cities, or erased already"),
     409: {
-      description: "visit_booked or payment_held: settle what it names first, or say it will be settled today",
+      description:
+        "visit_booked, payment_held or payment_owed: settle what it names first, or say it will be settled today",
       ...json(ErasureRefusedSchema),
     },
   },
@@ -120,17 +154,18 @@ export function registerOpsErasure(app: App): void {
     const erasable = (await stillToErase(c.env.DB, id)) && (await withinRouteReach(c, "client", id));
     if (!erasable) return c.json(errorBody("not_found", requestId), 404);
 
-    const blockers = await erasureBlockers(c.env.DB, id);
+    const now = c.var.deps.now();
+    const blockers = await erasureBlockers(c.env.DB, id, now);
     const refusal = erasureRefusal(blockers);
     if (refusal !== null && !override) return c.json(erasureRefused(refusal, blockers, requestId), 409);
     const settledByHand = refusal !== null;
-    if (settledByHand) {
-      log.warn("erasure_override", {
-        person_id: id,
-        visits: blockers.visits.length,
-        payments: blockers.payments.length,
-      });
-    }
+    const counts = {
+      visits: blockers.visits.length,
+      bookings: blockers.bookings.length,
+      payments: blockers.payments.length,
+      links: blockers.links.length,
+    };
+    if (settledByHand) log.warn("erasure_override", { person_id: id, ...counts });
 
     const audit: AuditEntry = {
       surface: "ops",
@@ -138,13 +173,15 @@ export function registerOpsErasure(app: App): void {
       action: "person.erase",
       subject: { kind: "person", id },
       requestId,
-      detail: { settled_by_hand: settledByHand, visits: blockers.visits.length, payments: blockers.payments.length },
+      detail: { settled_by_hand: settledByHand, ...counts },
     };
     const summary = await eraseAndQueue(c.env, id, {
       audit,
       fsmConnected: fieldRecord(c.var.config.providers) === "fsm",
+      payments: c.var.deps.payments,
+      alertOnce: c.var.deps.alertOnce,
       requestId,
-      now: c.var.deps.now(),
+      now,
       log,
     });
     if (summary === null) return c.json(errorBody("not_found", requestId), 404);

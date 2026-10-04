@@ -3,8 +3,8 @@
 // identity (docs/decisions/0031-access-and-audit.md). The console therefore
 // opens straight on a section: Tasks, or the first the person may open.
 //
-// The settings sections load the first time they open, so the console's first
-// load stays within its 150 KB budget (scripts/lib/spa-build.ts).
+// Areas, the settings sections and a technician's page load the first time they open, so
+// the console's first load stays within its 150 KB budget (scripts/lib/spa-build.ts).
 
 import { Fragment, lazy, Suspense, useEffect, type ComponentType } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
@@ -32,7 +32,6 @@ import {
 import { StockScreen } from "./stock/StockScreen.tsx";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
 import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
-import { WaitlistScreen } from "./waitlist/WaitlistScreen.tsx";
 
 /**
  * Fetches a section's code. A console left open across a release asks for a file that release removed, so the page
@@ -51,14 +50,20 @@ const SettingsScreen = lazy(() =>
 );
 const PricesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.PricesScreen })));
 const DiscountCodesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.DiscountCodesScreen })));
-const ServiceAreaScreen = lazy(() => settingsPanels().then((module) => ({ default: module.ServiceAreaScreen })));
 const StaffScreen = lazy(() => settingsPanels().then((module) => ({ default: module.StaffScreen })));
+const AreasScreen = lazy(() =>
+  loadOrReload(() => import("./areas/AreasScreen.tsx")).then((module) => ({ default: module.AreasScreen })),
+);
+const TechnicianScreen = lazy(() =>
+  loadOrReload(() => import("./technicians/TechnicianScreen.tsx")).then((module) => ({
+    default: module.TechnicianScreen,
+  })),
+);
 
 /** The screen each section of one page opens on. */
 const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   tasks: TasksScreen,
   dispatch: DispatchScreen,
-  technicians: TechniciansScreen,
   stock: StockScreen,
   grievances: GrievancesScreen,
   "number-changes": NumberChangesScreen,
@@ -67,17 +72,20 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   prices: PricesScreen,
   "discount-codes": DiscountCodesScreen,
   referrals: ReferralsScreen,
-  waitlist: WaitlistScreen,
-  "service-area": ServiceAreaScreen,
   staff: StaffScreen,
 };
 
 function Page({ route, mayCall }: { route: Route; mayCall: MayCall }) {
   if (!mayOpen(mayCall, route.page)) return <ClosedScreen page={route.page} />;
   if (route.page === "settings") return <SettingsScreen tab={route.tab} />;
+  if (route.page === "areas") return <AreasScreen tab={route.tab} />;
   if (route.page === "clients") {
     if (route.clientId === null) return <FindClientScreen />;
     return <ClientScreen clientId={route.clientId} tab={route.tab} />;
+  }
+  if (route.page === "technicians") {
+    if (route.technicianId === null) return <TechniciansScreen />;
+    return <TechnicianScreen technicianId={route.technicianId} tab={route.tab} />;
   }
   const Screen = SCREENS[route.page];
   return <Screen />;

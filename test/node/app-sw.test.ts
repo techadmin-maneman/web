@@ -28,6 +28,7 @@ describe("what the client app's service worker answers", () => {
     expect(answerFor(get("/api/photos"), ORIGIN)).toBeNull();
     expect(answerFor(get("/api/documents/a"), ORIGIN)).toBeNull();
     expect(answerFor(get("/api/me/export"), ORIGIN)).toBeNull();
+    expect(answerFor(get("/api/me/export.html"), ORIGIN)).toBeNull();
   });
 
   it("never touches a write, or another host's request", () => {

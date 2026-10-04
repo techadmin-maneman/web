@@ -58,7 +58,8 @@ test("C7: a visit more than 24 hours out moves for free, its payment carried ove
   await sheet.getByRole("button", { name: "Pick a new date" }).click();
   // The furthest day, so the visit stays more than 24 hours out for the cancel below.
   await pickAnother(page, "last");
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  // Nothing to pay for a free move, so nothing calls it a payment (MON-33, BK-16, UX-06, CP-05).
+  const pay = page.getByRole("dialog", { name: "Confirm", exact: true });
   await expect(pay.getByText("Service visit · moved")).toBeVisible();
   await expect(pay.getByText("Free", { exact: true })).toBeVisible();
   await expect(pay.getByText("Your Rs. 2,000 carries over.")).toBeVisible();

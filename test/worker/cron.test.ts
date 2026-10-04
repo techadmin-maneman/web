@@ -1,21 +1,27 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NO_GST } from "../../src/config/gst.ts";
+import { CALLS_PER_VISIT as BOOKS_CALLS_PER_VISIT } from "../../src/domain/books-invoices.ts";
 import { CUT_SHORT_ALERT, finishRun, lastCompletedAt, startRun } from "../../src/domain/cron-runs.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
 import {
-  CRON_CALLS,
   CRON_CALLS_FOR_MS,
   CRON_JOBS,
-  EVERY_MINUTE,
   booksSyncOptions,
-  isDueAt,
-  jobsDue,
   runCron,
   runCronJobs,
   type CronJob,
 } from "../../src/scheduled/cron.ts";
+import {
+  CALLS_EVERY_RUN,
+  CRON_CALLS,
+  EVERY_MINUTE,
+  callsFor,
+  isDueAt,
+  jobsDue,
+  pingsWhenWell,
+} from "../../src/scheduled/schedule.ts";
 import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies, fakeFetch } from "./helpers.ts";
 
 let logs: ReturnType<typeof captureLogs>;
@@ -111,6 +117,21 @@ describe("runCronJobs", () => {
     expect(ran).toEqual(["books"]);
     await runCronJobs(jobs, { env, deps: fakeDependencies(), config: ours, log: createLogger() });
     expect(ran).toEqual(["books", "books", "books_without_fsm"]);
+  });
+
+  it("asks Razorpay what its webhook missed only where payments are connected", async () => {
+    const { ran, job } = recorder();
+    const jobs = [job("razorpay_catch_up", "payments")];
+    const unpaid: StaticConfig = {
+      ...LOCAL_CONFIG,
+      providers: { ...LOCAL_CONFIG.providers, PAYMENTS_PROVIDER: "none" },
+    };
+
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: unpaid, log: createLogger() });
+    expect(ran).toEqual([]);
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: LOCAL_CONFIG, log: createLogger() });
+    expect(ran).toEqual(["razorpay_catch_up"]);
+    expect(CRON_JOBS.find((each) => each.name === "razorpay_catch_up")?.needs).toBe("payments");
   });
 
   // LIFE-17: the stub remembers no appointment, so locally the repair read every visit it looked at as one FSM had
@@ -324,6 +345,33 @@ describe("the heartbeat after a run", () => {
     ]);
   });
 
+  // The ping is a vendor call, which costs a run CPU time: once in five minutes is the monitor's period.
+  it("says all is well once in five minutes, and that something is wrong in any minute", async () => {
+    const { job } = recorder();
+    const outside = fakeFetch({ [CHECK]: () => new Response("OK") });
+    const run = { env, deps: fakeDependencies({ fetch: outside.fetch }), config: WITH_CHECK, log: createLogger() };
+
+    await runCron([job("first", "nothing")], run, false);
+    await runCron([job("first", "nothing"), job("second", "nothing", true)], run, false);
+    await runCron([job("first", "nothing")], run, true);
+
+    expect(outside.calls.map((call) => [call.url, call.body])).toEqual([
+      [`${CHECK}/fail`, "second"],
+      [CHECK, ""],
+    ]);
+    const minute = (at: number) => Date.UTC(2026, 9, 4, 6, at);
+    expect([0, 1, 2, 3, 4, 7, 12].map((at) => pingsWhenWell(EVERY_MINUTE, minute(at)))).toEqual([
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+    ]);
+    expect(pingsWhenWell("*/5 * * * *", minute(0))).toBe(true);
+  });
+
   it("pings nothing where no monitor is set", async () => {
     const { job } = recorder();
     const outside = fakeFetch({});
@@ -369,7 +417,15 @@ describe("the run's outside calls", () => {
   });
 
   it("leave room under the free plan's 50 for token refreshes and alerts", () => {
-    expect(CRON_CALLS).toBeLessThanOrEqual(40);
+    expect(callsFor("*/5 * * * *")).toBeLessThanOrEqual(40);
+  });
+
+  // Each call cost a staging run 3 to 5 ms of CPU: a minute's run takes one record's worth, a finished visit's invoice
+  // in Books needing the most.
+  it("give a minute's run one record's worth, and a run of every job at once as many as before", () => {
+    expect(callsFor(EVERY_MINUTE)).toBe(CRON_CALLS);
+    expect(CRON_CALLS).toBe(BOOKS_CALLS_PER_VISIT);
+    expect(callsFor("*/5 * * * *")).toBe(40);
   });
 
   // A run still waiting on a slow vendor when the next minute's starts would be taken by the next for one cut short.
@@ -427,7 +483,7 @@ describe("the schedule", () => {
         each.name,
       ).toBe(true);
     }
-    expect(runs.get("visit_reminders")).toEqual([8, 23, 38, 53]);
+    expect(runs.get("visit_reminders")).toEqual([1, 16, 31, 46]);
   });
 
   it("is due by the minute scheduled, not when the run starts", () => {
@@ -441,13 +497,23 @@ describe("the schedule", () => {
     expect(jobsDue(CRON_JOBS, "*/5 * * * *", minuteOf(3))).toEqual(CRON_JOBS);
   });
 
-  // D-01 of 4 October 2026: one run of every job took 34 to 61 ms of CPU on staging, the free plan allows 10.
-  it("gives no minute more than four jobs, and the FSM mirror's repair a minute alone", () => {
+  // D-01 of 4 October 2026: one run of every job took 34 to 61 ms of CPU on staging, the free plan allows 10. Measured
+  // a minute at a time, a job that calls a vendor cost several ms more than one that only reads D1.
+  it("gives no minute more than three jobs, a vendor's every-run caller one companion at most, and FSM's repair none", () => {
     for (const minute of HOUR) {
       const names = namesAt(minute);
-      expect(names.length, `minute ${String(minute)}: ${names.join(", ")}`).toBeLessThanOrEqual(4);
-      if (names.includes("fsm_reconcile")) expect(names, `minute ${String(minute)}`).toEqual(["fsm_reconcile"]);
+      const said = `minute ${String(minute)}: ${names.join(", ")}`;
+      expect(names.length, said).toBeLessThanOrEqual(3);
+      const callers = names.filter((name) => CALLS_EVERY_RUN.has(name));
+      expect(callers.length, said).toBeLessThanOrEqual(1);
+      if (callers.length === 1) expect(names.length, said).toBeLessThanOrEqual(2);
+      if (names.includes("fsm_reconcile")) expect(names, said).toEqual(["fsm_reconcile"]);
     }
+  });
+
+  it("names only jobs in the table as vendors' every-run callers", () => {
+    const names = new Set(CRON_JOBS.map((each) => each.name));
+    expect([...CALLS_EVERY_RUN].filter((name) => !names.has(name))).toEqual([]);
   });
 
   it("raises a finished job's invoice before the Books pass that sets the client's advance against it", () => {

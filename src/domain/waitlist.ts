@@ -5,9 +5,12 @@
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import type { EnvironmentName } from "../config/environments.ts";
 import { indiaInstant } from "../lib/india-time.ts";
+import type { PlacesReached } from "../policy/access.ts";
+import { launchDateAfter } from "../policy/launch.ts";
 import { namedArea } from "./area-names.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { consentGiven, latestConsentSql } from "./messages.ts";
+import { reachBinding, withinReach } from "./places.ts";
 import { firstNameOf } from "../lib/names.ts";
 
 export interface WaitlistArea {
@@ -25,8 +28,15 @@ export interface WaitlistArea {
   readonly alerts: number;
 }
 
-/** The pincodes with someone waiting, the longest wait first, `limit` of them at most. */
-export async function waitlistByPincode(db: D1Database, limit: number): Promise<WaitlistArea[]> {
+/**
+ * The pincodes with someone waiting within reach, the longest wait first, `limit` of them at most. A pincode we do not
+ * know is in no city, so only a national grant sees it.
+ */
+export async function waitlistByPincode(
+  db: D1Database,
+  limit: number,
+  reached: PlacesReached,
+): Promise<WaitlistArea[]> {
   const { results } = await db
     .prepare(
       `SELECT w.pincode, ${namedArea("p")} AS area, p.city, p.served, p.launched_at, COUNT(*) AS waiting,
@@ -34,9 +44,10 @@ export async function waitlistByPincode(db: D1Database, limit: number): Promise<
          SUM(CASE WHEN w.referral_code IS NOT NULL THEN 1 ELSE 0 END) AS referred,
          SUM(w.launch_alert) AS alerts
        FROM waitlist_entries w LEFT JOIN serviceable_pincodes p ON p.pincode = w.pincode
+       WHERE ${withinReach("waitlist_entry", "w", "?2")}
        GROUP BY w.pincode ORDER BY oldest, w.pincode LIMIT ?1`,
     )
-    .bind(limit)
+    .bind(limit, reachBinding(reached))
     .all<{
       pincode: string;
       area: string | null;
@@ -115,13 +126,15 @@ export interface LaunchAlert {
   readonly delaySeconds: number;
 }
 
-/**
- * The launch alerts for one pincode's waitlist, and the statements that queue
- * them and mark each entry told, for the caller's batch. `pacedAfter` is how
- * many alerts that batch queues before these, so several pincodes launched
- * together still leave ALERTS_PER_MINUTE a minute.
- */
-export async function launchAlerts(
+/** A pincode as a launch reads it: whether it is served, and the launch date it holds, as India's date. */
+export interface LaunchedPincode {
+  readonly pincode: string;
+  readonly served: boolean;
+  readonly launchOn: string | null;
+}
+
+/** The launch alerts for one pincode's waitlist, and the statements that queue them and mark each entry told. */
+async function alertStatements(
   db: D1Database,
   input: { pincode: string; now: Date; pacedAfter: number },
 ): Promise<{ alerts: LaunchAlert[]; statements: D1PreparedStatement[] }> {
@@ -146,22 +159,33 @@ export async function launchAlerts(
 }
 
 /**
- * Marks the pincode served from the day given, and queues a launch alert for each person who asked for one,
- * in one batch with the launch's audit entry, which counts the alerts (src/domain/audit.ts). Returns the
- * messages, each with the seconds to hold it back, so they leave in a paced line.
+ * Everything one launch writes, for the caller's batch, from either tab of Areas: the pincode served from its launch
+ * date (src/policy/launch.ts), an alert queued for each person who asked to be told, and the launch's audit entry,
+ * which counts the alerts. `pacedAfter` is how many alerts the batch queues before these, so several pincodes launched
+ * together still leave ALERTS_PER_MINUTE a minute.
  */
+export async function launchStatements(
+  db: D1Database,
+  input: { pincode: LaunchedPincode; launchDay: string; audit: AuditEntry; now: Date; pacedAfter: number },
+): Promise<{ launchOn: string; alerts: LaunchAlert[]; statements: D1PreparedStatement[] }> {
+  const pin = input.pincode.pincode;
+  const launchOn = launchDateAfter(input.pincode, input.launchDay);
+  const queued = await alertStatements(db, { pincode: pin, now: input.now, pacedAfter: input.pacedAfter });
+  const serve = db
+    .prepare("UPDATE serviceable_pincodes SET served = 1, launched_at = ?2 WHERE pincode = ?1")
+    // Midnight in India on the day, as every other time in the database is an instant.
+    .bind(pin, indiaInstant(launchOn, "00:00").toISOString());
+  const audited = auditStatement(db, { ...input.audit, detail: { alerts: queued.alerts.length } }, input.now);
+  return { launchOn, alerts: queued.alerts, statements: [serve, ...queued.statements, audited] };
+}
+
+/** Launches one pincode in one batch. Returns the alerts, each with the seconds to hold it back. */
 export async function launchPincode(
   db: D1Database,
-  input: { pincode: string; launchOn: string; audit: AuditEntry; now: Date },
+  input: { pincode: LaunchedPincode; launchDay: string; audit: AuditEntry; now: Date },
 ): Promise<{ alerts: LaunchAlert[] }> {
-  const { alerts, statements } = await launchAlerts(db, { pincode: input.pincode, now: input.now, pacedAfter: 0 });
-  await db.batch([
-    db
-      .prepare(`UPDATE serviceable_pincodes SET served = 1, launched_at = COALESCE(launched_at, ?2) WHERE pincode = ?1`)
-      .bind(input.pincode, indiaInstant(input.launchOn, "00:00").toISOString()),
-    ...statements,
-    auditStatement(db, { ...input.audit, detail: { alerts: alerts.length } }, input.now),
-  ]);
+  const { alerts, statements } = await launchStatements(db, { ...input, pacedAfter: 0 });
+  await db.batch(statements);
   return { alerts };
 }
 

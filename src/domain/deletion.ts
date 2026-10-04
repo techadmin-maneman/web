@@ -3,17 +3,25 @@
 // (docs/decisions/0019-erasure.md): photographs, results and details, the same day.
 // Either way the client is told on WhatsApp, as their app promises.
 
-import type { Logger } from "../log.ts";
 import type { PlacesReached } from "../policy/access.ts";
 import { DELETION_DECIDED_WITHIN_DAYS, erasureRefusal, type ErasureRefusal } from "../policy/account-deletion.ts";
+import { deletionWaitingKey } from "../policy/alerts.ts";
 import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import type { OutboundMessage } from "../providers/messaging.ts";
+import { resolveAlertStatement, type AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { eraseAndQueue, erasureBlockers, type ErasureBlockers, type ErasureQueueEnv } from "./erasure.ts";
+import {
+  eraseAndQueue,
+  erasureBlockers,
+  type EraseOptions,
+  type ErasureBlockers,
+  type ErasureQueueEnv,
+} from "./erasure.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import { liveContact } from "./profile.ts";
 import type { Composed } from "./visit-messages.ts";
 import { DAY_MS } from "../lib/durations.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
 
 export type DeletionState = "requested" | "done" | "rejected";
@@ -102,21 +110,16 @@ export type DeletionOutcome =
  * the reason, and queues the message that tells them why. The decision's audit
  * entry and the request's new state go in the erasure's own batch, so a
  * decision is recorded only if it happened. Deleting is refused while the
- * person has a visit booked or a payment held (src/policy/account-deletion.ts),
- * and the request waits.
+ * person has a visit or booking still to happen, a payment held or a link unpaid
+ * (src/policy/account-deletion.ts), and the request waits.
  */
 export async function decideDeletion(
   env: ErasureQueueEnv,
-  options: {
+  options: Omit<EraseOptions, "alongside"> & {
     id: string;
     decision: "delete" | "reject";
     staff: string;
     reason: string | null;
-    audit: AuditEntry;
-    fsmConnected: boolean;
-    requestId: string;
-    now: Date;
-    log: Logger;
   },
 ): Promise<DeletionOutcome> {
   const db = env.DB;
@@ -140,27 +143,31 @@ export async function decideDeletion(
       options.staff,
       options.reason,
     );
+  // A decided request needs nobody's hand any more.
+  const alertResolved = resolveAlertStatement(db, deletionWaitingKey(options.id), options.now);
   if (options.decision === "reject") {
     const message = rejectionMessage(db, { personId, requestId: options.id, now: options.now });
-    await db.batch([audit, decided, message.statement]);
+    await db.batch([audit, decided, alertResolved, message.statement]);
     return { kind: "rejected", personId, messageId: message.id };
   }
 
-  const blockers = await erasureBlockers(db, personId);
+  const blockers = await erasureBlockers(db, personId, options.now);
   const refusal = erasureRefusal(blockers);
   if (refusal !== null) return { kind: "refused", refusal, blockers };
   const told = await liveContact(db, personId);
   const erased = await eraseAndQueue(env, personId, {
     audit: options.audit,
-    alongside: [decided],
+    alongside: [decided, alertResolved],
     fsmConnected: options.fsmConnected,
+    payments: options.payments,
+    alertOnce: options.alertOnce,
     requestId: options.requestId,
     now: options.now,
     log: options.log,
   });
   if (erased !== null) return { kind: "deleted", personId, told };
   // Erased already, before an erasure closed the requests it found open: this one is done all the same.
-  await db.batch([audit, decided]);
+  await db.batch([audit, decided, alertResolved]);
   return { kind: "deleted", personId, told: null };
 }
 
@@ -238,27 +245,36 @@ export async function lastRejectedDeletion(
 const ALERT_AFTER_DAYS = 5;
 export const DELETION_ALERT_AFTER_MS = ALERT_AFTER_DAYS * DAY_MS;
 
-/** Alerts ops, once per request, about deletion requests nearing the end of their days, but not an erased client's. */
-export async function alertAgedDeletions(
-  db: D1Database,
-  now: Date,
-  alert: (message: string) => Promise<void>,
-): Promise<number> {
+/**
+ * Alerts ops, once per request, about each deletion request nearing the end of its days, but not an erased client's. The alert is kept, and waits
+ * on Tasks until the request is decided; a request is marked alerted only once its alert is.
+ */
+export async function alertAgedDeletions(db: D1Database, now: Date, alertOnce: AlertOnce): Promise<number> {
   const aged = await db
     .prepare(
-      `UPDATE deletion_requests SET alerted_at = ?2
-       WHERE state = 'requested' AND alerted_at IS NULL AND created_at < ?1
-         AND NOT EXISTS (SELECT 1 FROM people p WHERE p.id = deletion_requests.person_id AND p.erased_at IS NOT NULL)
-       RETURNING id`,
+      `SELECT d.id, d.created_at FROM deletion_requests d
+       WHERE d.state = 'requested' AND d.alerted_at IS NULL AND d.created_at < ?1
+         AND NOT EXISTS (SELECT 1 FROM people p WHERE p.id = d.person_id AND p.erased_at IS NOT NULL)
+       ORDER BY d.created_at`,
     )
-    .bind(new Date(now.getTime() - DELETION_ALERT_AFTER_MS).toISOString(), now.toISOString())
-    .all<{ id: string }>();
-  const count = aged.results.length;
-  if (count > 0) {
-    await alert(
-      `${String(count)} account deletion request(s) have waited ${String(ALERT_AFTER_DAYS)} days. Each must be ` +
-        `processed within ${String(DELETION_DECIDED_WITHIN_DAYS)} (ops console, deletion requests).`,
-    );
+    .bind(new Date(now.getTime() - DELETION_ALERT_AFTER_MS).toISOString())
+    .all<{ id: string; created_at: string }>();
+  for (const request of aged.results) {
+    await alertOnce({
+      key: deletionWaitingKey(request.id),
+      message:
+        `Deletion request ${request.id} has waited ${String(ALERT_AFTER_DAYS)} days. Decide it by ` +
+        `${decideBy(request.created_at)}, within ${String(DELETION_DECIDED_WITHIN_DAYS)} days of the request.`,
+      link: "/deletion-requests",
+    });
+    await db
+      .prepare("UPDATE deletion_requests SET alerted_at = ?2 WHERE id = ?1")
+      .bind(request.id, now.toISOString())
+      .run();
   }
-  return count;
+  return aged.results.length;
 }
+
+/** The day in India a request must be decided by: "2026-09-28". */
+const decideBy = (createdAt: string): string =>
+  indiaDate(new Date(Date.parse(createdAt) + DELETION_DECIDED_WITHIN_DAYS * DAY_MS));

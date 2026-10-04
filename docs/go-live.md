@@ -76,12 +76,12 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 **Before it:**
 
 - [ ] The home page's material in `site/src/assets`, each block `publish: true` (items 73 to 81), and the production build looked at (`docs/frontend.md`, "Going live in production").
-- [ ] Counsel's wording of the privacy page and the terms (items 44 and 149), and the try-on's notices approved (item 146): production's site build refuses `photo-v3` and `gate-v3` until they are (ADR 0104).
+- [ ] Counsel's wording of the privacy page and the terms (items 44 and 149), and the try-on's notices approved (item 146): production's site build refuses `photo-v4` and `gate-v4` until they are (ADR 0104).
 - [ ] The Grievance Officer on the privacy page (item 51).
 - [ ] The analytics IDs, and the consent banner they need (item 84).
 - [ ] The dedicated WhatsApp number (item 38) and `MESSAGING_ENABLED` `"true"` in production's vars (item 164): the try-on's look goes to WhatsApp only, so while it is off the try-on does not run (ADR 0104).
 - [ ] Production's AILabTools key and resources (section 1).
-- [ ] The outside watchers (RB, "The outside watchers"): production's healthchecks.io check as its `HEARTBEAT_URL`, and an uptime monitor on `https://maneman.in/api/health`. After the release and `apply-triggers`, the check shows a ping every minute and `GET /api/health` a `cron_completed_at` a minute old.
+- [ ] The outside watchers (RB, "The outside watchers"): production's healthchecks.io check as its `HEARTBEAT_URL`, and an uptime monitor on `https://maneman.in/api/health`. After the release and `apply-triggers`, the check shows a ping every five minutes and `GET /api/health` a `cron_completed_at` a minute old.
 - [ ] The daily allowances watched from production (RB, "The daily allowances"): the analytics token put on production as `CLOUDFLARE_ANALYTICS_TOKEN` and deleted from staging (`W secret delete CLOUDFLARE_ANALYTICS_TOKEN --env staging`), so the alerts come once.
 - [ ] The zone's table in "The dashboards" (section 4) walked and recorded: this release is the first to need it.
 - [ ] **`www.maneman.in` sent to `maneman.in`.** On 2 October 2026 `www` still reached GoDaddy's parked page through an old proxied record: 200 over http, 525 over https. In the Cloudflare dashboard, on `maneman.in`:

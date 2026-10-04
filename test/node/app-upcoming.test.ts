@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { Me, VisitSummary } from "../../apps/app/src/api.ts";
-import { bookingName, oneVisitOf } from "../../apps/app/src/lib/visit.ts";
+import { bookingName, oneVisitOf, visitTitle } from "../../apps/app/src/lib/visit.ts";
 import { upcomingEntries } from "../../apps/app/src/visits/upcoming.ts";
 
 type BeingBooked = NonNullable<Me["being_booked"]>;
@@ -18,12 +18,14 @@ const BOOKING: BeingBooked = {
   window: "morning",
   paid: false,
   one_visit: PRICE,
+  told: false,
 };
 const CONSULTATION = {
   date: "2026-10-06",
   window: "morning",
   window_label: "before noon",
   place: "Gurgaon",
+  requested: false,
   one_visit: null,
 } as const;
 
@@ -70,5 +72,17 @@ describe("a visit being booked", () => {
     expect(bookingName(kept)).toBe("Consultation and fit");
     expect(oneVisitOf(kept)).toBeNull();
     expect(oneVisitOf(BOOKING)).toEqual(PRICE);
+  });
+});
+
+// MON-10: Home and Visits never said which hair system a first fit was for.
+describe("a visit's title", () => {
+  it("names the service beside the kind where the API names one", () => {
+    expect(visitTitle({ type: "first_fit", service: "Mane Man Essential" })).toBe("First fit · Mane Man Essential");
+    expect(visitTitle({ type: "service", service: null })).toBe("Service visit");
+  });
+
+  it("is the kind alone on a visit the phone kept from before the API named the service", () => {
+    expect(visitTitle({ type: "first_fit" } as VisitSummary)).toBe("First fit");
   });
 });

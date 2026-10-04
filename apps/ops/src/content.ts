@@ -2,6 +2,8 @@
 // component holds no copy of its own. Lines the design does not draw are
 // marked PLACEHOLDER, pending the owner's wording.
 
+import type { LinkState } from "./tasks/payment-link.ts";
+
 /** The public site's booking page, which a launch alert sends people to, as apps/app/src/content.ts has it. */
 export const BOOKING_URL: Readonly<Record<string, string>> = {
   local: "http://127.0.0.1:4321/book",
@@ -11,6 +13,9 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
 
 /** PLACEHOLDER: the API refused a call the person's access does not reach. */
 export const NOT_PERMITTED = "Your access doesn't include this. Ask an admin.";
+
+/** PLACEHOLDER: shown wherever a number would be, for a client erased since, whose number is gone. */
+export const ERASED_MOBILE = "Erased client";
 
 /** The five departments, as the navigation heads its sections and the Staff page names a grant. */
 const DEPARTMENT_NAMES = {
@@ -38,12 +43,11 @@ export const shell = {
     grievances: "Grievances",
     "number-changes": "Number changes",
     "deletion-requests": "Deletion requests",
-    "no-shows": "No-shows",
+    "no-shows": "Payments",
     prices: "Prices",
     "discount-codes": "Discount codes",
     referrals: "Referrals",
-    waitlist: "Waitlist",
-    "service-area": "Service area",
+    areas: "Areas",
     settings: "Settings",
     staff: "Staff",
   },
@@ -193,7 +197,8 @@ export const dispatch = {
     badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
       Record<string, string>
     >,
-    rows: { type: "Type", area: "Area", state: "State", referred: "Referred by" },
+    // PLACEHOLDER: the board draws no Service row; it names a first fit's hair system, say.
+    rows: { type: "Type", service: "Service", area: "Area", state: "State", referred: "Referred by" },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** "Sector 65 · 122018": the area the visit's pincode is in, and the pincode. */
@@ -223,9 +228,13 @@ export const dispatch = {
     /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
-    /** PLACEHOLDER: a move the client has not heard of, which ops tell him of by phone (ADR 0069). */
-    untold: (when: string, mobile: string) =>
-      `Not told of the move to ${when}: no WhatsApp. Call ${mobile}, then record it here.`,
+    /** PLACEHOLDER: a move the client has not heard of, and why, which ops tell him of by phone (ADR 0069). */
+    untold: {
+      no_consent: (when: string, mobile: string) =>
+        `Not told of the move to ${when}: they have not agreed to WhatsApp. Call ${mobile}, then record it here.`,
+      not_sent: (when: string, mobile: string) =>
+        `Not told of the move to ${when}: the WhatsApp did not go. Call ${mobile}, then record it here.`,
+    },
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
     /** PLACEHOLDER: a visit ops cancel for the client, or close by hand once its technician's phone was lost. */
@@ -296,7 +305,8 @@ export const dispatch = {
     stop: "Stop moving it",
     /** What happened, from the move's own answer: a message is claimed only where one was queued. */
     moved: {
-      messaged: (job: string) => `${job} moved. The client was sent the new window on WhatsApp.`,
+      messaged: (job: string) =>
+        `Moved. We're sending ${job} the new window on WhatsApp; if it fails, a call task appears.`,
       call: (job: string, name: string, mobile: string) =>
         `${job} moved. ${name} has not agreed to WhatsApp: call ${mobile} with the new window.`,
       unchanged: (job: string, technician: string) =>
@@ -344,6 +354,8 @@ export const dispatch = {
     },
     /** PLACEHOLDER: the call's record did not go through. */
     toldFailed: "That was not recorded. Try again.",
+    /** A link asked for a visit this board does not hold. */
+    notOnBoard: "That visit is no longer on this board. It may have moved to another week, or been cancelled.",
   },
 } as const;
 
@@ -433,7 +445,15 @@ export const clients = {
    * the piece in wear's, as a month, exactly as the board writes it. The
    * mobile is ours: the board draws a WhatsApp button and no number to call.
    */
-  meta: { state: "Status", credits: "Free service visits", replacement: "Replacement due", mobile: "Mobile" },
+  meta: {
+    state: "Status",
+    credits: "Free service visits",
+    replacement: "Replacement due",
+    mobile: "Mobile",
+    // PLACEHOLDER: who invited the client, and the invite's code beside their name: "Vikram Sethi (VSAB23)".
+    invitedBy: "Invited by",
+    inviteCode: (code: string) => `(${code})`,
+  },
   /** Board B1's button beside the name, which opens a chat with the client. */
   whatsapp: "WhatsApp",
   whatsappLabel: (name: string) => `WhatsApp ${name}`,
@@ -514,6 +534,9 @@ export const clients = {
     upcoming: "To come",
     past: "Done",
     columns: ["Date", "Time", "Visit", "Technician", "State", "Discount code"],
+    onBoard: "Show on board",
+    /** The link's whole name, since every row's says the same. */
+    onBoardLabel: (visit: string) => `Show on board: the visit of ${visit}`,
     /**
      * PLACEHOLDER: a discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md).
      * Entered or taken off only while the visit is not paid for or invoiced.
@@ -549,6 +572,19 @@ export const clients = {
     },
     noUpcoming: "Nothing booked.",
     noPast: "No visit done yet.",
+    /** PLACEHOLDER: a booking that refunded its payment by itself, which no board draws. The client is told. */
+    autoRefunds: {
+      title: "Refunded bookings",
+      /** "Service visit, 24 Sep 2027 · Rs. 2,000". */
+      what: (visit: string, date: string, amount: string | null) =>
+        amount === null ? `${visit}, ${date}` : `${visit}, ${date} · ${amount}`,
+      /** "Refunded automatically on 22 Sep 2027: paid after the hold lapsed." */
+      why: (when: string, reason: string) => `Refunded automatically on ${when}: ${reason}.`,
+      reasons: {
+        lapsed: "paid after the hold lapsed",
+        not_movable: "the visit had begun, or its technician or time had changed, so it could not be moved",
+      },
+    },
     /**
      * PLACEHOLDER, all of it: booking a visit for the client from the console, which no board draws. Every kind; a
      * paid visit goes out as a payment link, and is booked once the client pays.
@@ -703,6 +739,8 @@ export const clients = {
       service: "Service visit",
       replacement: "Replacement",
     },
+    /** "First fit · Mane Man Essential": the kind, and the service it was sold as where that says more. */
+    what: (kind: string, service: string | null) => (service === null ? kind : `${kind} · ${service}`),
     /** A visit to come, by where it stands, and one done, by how FSM closed it. */
     stages: {
       booked: "Booked",
@@ -827,6 +865,34 @@ export const clients = {
     /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
     code: (applied: string) => `Code ${applied}`,
   },
+  /* PLACEHOLDER, all of it: the payment links Razorpay texted the client, and an open one's address to send again. */
+  links: {
+    title: "Payment links",
+    columns: ["Sent", "For", "Amount", "State"],
+    none: "No payment links yet.",
+    unsent: "Not sent",
+    /** "Natural hair system, visit of 25 Sep 2027". */
+    what: (product: string, day: string | null) => (day === null ? product : `${product}, visit of ${day}`),
+    states: {
+      making: "Being made: Razorpay is asked again",
+      open: "Waiting to be paid",
+      paid: "Paid",
+      refused: "Razorpay refused it: send one by hand",
+      lapsed: "Closed unpaid",
+    },
+    paidOn: (date: string) => `Paid ${date}`,
+    reference: (reference: string) => `Ref ${reference}`,
+    copy: "Copy link",
+    copied: "Copied",
+  },
+  /* PLACEHOLDER, all of it: where each finished visit's invoice stands in Books. */
+  invoices: {
+    title: "Invoices",
+    columns: ["Visit", "Invoice"],
+    none: "No finished visit to invoice yet.",
+    states: { to_raise: "Not raised yet", draft: "Draft in Books, not sent", issued: "Sent" },
+    sentOn: (date: string) => `Sent ${date}`,
+  },
   /** Putting a client's free service visits right by hand (POST /api/clients/{id}/credits). */
   credits: {
     title: "Free service visits",
@@ -856,14 +922,12 @@ export const clients = {
     } as Readonly<Record<string, string>>,
   },
   /*
-   * PLACEHOLDER, all of it: no board draws a client's invite. The invite they came with, under Payments beside the
-   * credits it grants, or a way to attach one for a friend who booked away from its page
+   * PLACEHOLDER, all of it: no board draws a client's invite. Who sent it heads the page; under Payments, beside the
+   * credits it grants, is what it earns, or a way to attach one for a friend who booked away from its page
    * (POST /api/clients/{id}/referral; docs/decisions/0089-an-invite-is-not-lost.md).
    */
   invite: {
     title: "Invite",
-    code: "Code",
-    from: "Sent by",
     erased: "A client since erased",
     grant: "What it earns",
     grants: {
@@ -1086,9 +1150,14 @@ export const clients = {
     owed: {
       visit_booked: "They still have a visit booked, so nothing was erased. Cancel it and refund what they paid first.",
       payment_held: "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it first.",
+      payment_owed: "A payment link of theirs is still unpaid, so nothing was erased.",
     },
     /** To erase today all the same, when what is owed cannot be settled first. */
-    settle: "I will cancel and refund it by hand today.",
+    settle: {
+      visit_booked: "I will cancel and refund it by hand today.",
+      payment_held: "I will cancel and refund it by hand today.",
+      payment_owed: "Their link is cancelled, and what they owe goes unpaid.",
+    },
     anyway: "Erase anyway",
     done: {
       title: "Erased",
@@ -1096,6 +1165,15 @@ export const clients = {
         "Their photographs and details are gone. Their records in the CRM, Books and FSM are blanked within a few " +
         "minutes. Tell them it is done, in the chat they asked in.",
       back: "Find another client",
+    },
+    /** PLACEHOLDER: the page of a client erased since, which keeps only their visits and money. */
+    record: {
+      title: "Erased client",
+      /** Whose visit the panels that cancel or close one name. */
+      whose: "the erased client",
+      on: (date: string) =>
+        `Erased on ${date}. Their name, number, address and photographs are gone; their visits and payments stay on ` +
+        "record.",
     },
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -1136,37 +1214,29 @@ export const clients = {
   },
 } as const;
 
-export const waitlist = {
-  title: "Waitlist",
-  columns: ["Pincode", "Area", "Count", "Oldest", "Ref", "Alerts"],
-  /** An area or a date the pincode table has nothing for, written as the design's tables write a gap. */
-  unknown: "—",
-  /** A pincode we already come to. PLACEHOLDER: the board draws only those waiting. */
-  live: "Live",
-  choose: (pincode: string, area: string) => `Mark ${pincode} live, ${area}`,
-  /**
-   * PLACEHOLDER: a pincode served without its waitlist being told, as the
-   * Settings screen served them until it launched them too (FEO-02). Choosing
-   * it asks who is still to be told.
-   */
-  tell: (pincode: string, area: string) => `Tell those waiting in ${pincode}, ${area}`,
-  // PLACEHOLDER: the board draws no empty waitlist.
-  empty: "Nobody is waiting outside the areas we serve.",
-  // PLACEHOLDER: the table lists the two hundred pincodes that have waited longest.
-  more: "More pincodes have people waiting than are listed. These are the ones who have waited longest.",
+/**
+ * Areas, under Growth: who waits in each pincode, and every pincode we hold. Both tabs mark a pincode live through
+ * one panel, which says who it messages before anything is sent.
+ */
+export const areas = {
+  title: "Areas",
+  /** PLACEHOLDER: no board draws Areas. Waiting is board C3's waitlist; Served was Settings · Service area. */
+  tabs: { waiting: "Waiting", served: "Served" },
+  /** PLACEHOLDER: Served for a person whose Growth access is not national. */
+  servedClosed: "Served lists every pincode in every city, so it needs Growth access nationally.",
+  /** The board's launch panel (C3), for a pincode chosen on Waiting and for a save on Served alike. */
   launch: {
     label: (pincode: string) => `Mark ${pincode} live`,
     /** PLACEHOLDER: the panel's head for a pincode already live. */
     tellLabel: (pincode: string) => `Tell those waiting in ${pincode}`,
+    /** PLACEHOLDER: the panel's head for a save on Served that marks several pincodes live. */
+    manyLabel: (count: number) => `Mark ${String(count)} pincodes live`,
     title: (alerts: number) =>
       alerts === 0 ? "This messages nobody" : `This messages ${String(alerts)} ${alerts === 1 ? "person" : "people"}`,
-    rows: { waiting: "On the list", alerts: "Opted in to alerts", referred: "Held referral invites" },
-    /** PLACEHOLDER: the board's launch sends today; the API takes the day a technician starts coming. */
-    date: "Launch date",
-    dateHint: "The day a technician starts coming. A held referral invite lapses twelve months from it.",
-    /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
-    named: "The message names the area once Service area gives it a name, and its city until then.",
-    rename: "Change the name",
+    rows: { waiting: "On the list", alerts: "Asked to be told", referred: "Came by referral" },
+    /** PLACEHOLDER: one line a pincode, for a save on Served. */
+    line: (pincode: string, area: string, people: number) =>
+      `${pincode}, ${area}: ${String(people)} waiting ${people === 1 ? "asks" : "ask"} to be told.`,
     /**
      * What each of them gets. The words are launch_alert_v1's in
      * src/config/message-templates.ts, which is what the queue actually sends;
@@ -1175,8 +1245,12 @@ export const waitlist = {
      */
     message: (area: string, bookingUrl: string) =>
       `Hello {first name}, we now come to ${area}. Your free consultation can be booked here: ${bookingUrl}`,
+    /** The area a message about several pincodes names, each its own. */
+    eachArea: "{area}",
     /** The board's "Send to 84"; with nobody to message, the press only marks the pincode live, and says so. */
     send: (alerts: number) => (alerts === 0 ? "Mark it live" : `Send to ${String(alerts)}`),
+    /** PLACEHOLDER: a save on Served sends every change in the table with the messages. */
+    saveAndSend: (alerts: number) => `Save and send to ${String(alerts)}`,
     sending: "Sending",
     cancel: "Not now",
     /** The board's note beneath the panel, with the figures filled in. */
@@ -1191,21 +1265,146 @@ export const waitlist = {
       alerts === 0 ? "Marked live. Nobody was messaged." : `Launched. ${String(alerts)} on their way.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "We have no such pincode.",
+      not_found: "We do not hold that pincode. Add it first.",
+      launch_in_future: "A pincode goes live today or from a day already past, never one to come.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
   },
+  /** PLACEHOLDER, every line: adding a pincode the service area does not hold, on Waiting and on Served. */
+  add: {
+    /** The panel's head on Waiting. */
+    label: (pincode: string) => `Add ${pincode}`,
+    /** Served's own way in. */
+    title: "Add a pincode",
+    note: "It goes in unserved. Marking it live comes next, and says first who it messages.",
+    pincode: "Pincode",
+    area: "Area, as messages name it",
+    city: "City",
+    chooseCity: "Choose a city",
+    noCity: "Your access reaches no city to add a pincode in.",
+    add: "Add it",
+    adding: "Adding",
+    added: (pincode: string, city: string) =>
+      `${pincode} is in ${city} now, not served yet. Tick Served and save to mark it live.`,
+    badPincode: "A pincode is six digits and starts with 1 to 8.",
+    badName: "An area's name starts with a letter or a digit and runs from 2 to 40 characters.",
+    errors: {
+      pincode_held: "We hold that pincode already.",
+      invalid_request: "Check the pincode, the area's name and the city.",
+      not_permitted: NOT_PERMITTED,
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was added.",
+    } as Readonly<Record<string, string>>,
+  },
+  served: {
+    title: "Every pincode we hold",
+    /**
+     * The file is what the owner already edits (data/pincodes/README.md), so
+     * the screen takes it back rather than asking for 198 rows to be retyped.
+     * The rows are for the one-at-a-time change, which is what a launch is.
+     */
+    note: "Change a pincode here, or download the list, edit it in a spreadsheet and upload it again.",
+    city: (city: string, served: number, all: number) => `${city} · ${String(served)} of ${String(all)}`,
+    columns: ["Pincode", "Area, as messages name it", "Served", "Launch date", "Waiting"],
+    areaLabel: (pincode: string) => `Area name for ${pincode}`,
+    served: (pincode: string) => `Served ${pincode}`,
+    launchOn: (pincode: string) => `Launch date for ${pincode}`,
+    /** Beneath the table: what the two boxes of a row mean. */
+    hint:
+      "The area's name is what a launch message, the waitlist and the dispatch board call it. " +
+      "A held referral invite for an area lapses twelve months from its launch date.",
+    /** The name a row's box holds: a letter or a digit first, as the API takes it. */
+    badName: (pincode: string) =>
+      `${pincode}: an area's name starts with a letter or a digit and runs from 2 to 40 characters.`,
+    save: "Save these pincodes",
+    saving: "Saving",
+    saved: (changed: number, alerted: number) => {
+      const pincodes = changed === 1 ? "One pincode changed." : `${String(changed)} pincodes changed.`;
+      if (alerted === 0) return pincodes;
+      return `${pincodes} ${String(alerted)} ${alerted === 1 ? "person is" : "people are"} being told on WhatsApp.`;
+    },
+    nothing: "Nothing to save: no pincode has changed.",
+    /** A row that would serve a pincode from a day still to come, which /book would take bookings for at once. */
+    later: (pincode: string) => `${pincode}: a pincode goes live today or from a day already past, never one to come.`,
+    bulk: {
+      serve: (city: string) => `Serve all of ${city}`,
+      stop: (city: string) => `Stop serving ${city}`,
+    },
+    upload: {
+      title: "Upload the file",
+      label: "The CSV you have edited",
+      hint:
+        "It needs pincode, served and launch_on columns; every other column is ignored. " +
+        "Served is yes or no, and a blank is no. A launch date is written 2026-10-01.",
+      /** What the file would change, pincode by pincode, before any of it is taken. */
+      read: (changed: number) =>
+        changed === 1 ? "The file changes one pincode:" : `The file changes ${String(changed)} pincodes:`,
+      columns: ["Pincode", "Area", "Now", "In the file"],
+      state: (served: boolean, launch: string | null) => {
+        const serving = served ? "Served" : "Not served";
+        return launch === null ? serving : `${serving}, launch ${launch}`;
+      },
+      none: "The file changes nothing. Every pincode in it already reads that way.",
+      apply: "Put these in the table",
+      applied: "The file's changes are in the table. Check them, then save.",
+      cancel: "Not now",
+      badDate: (pincode: string) => `${pincode}: a launch date has to be written as 2026-10-01.`,
+      badServed: (pincode: string) => `${pincode}: served has to be yes or no.`,
+      badHeader: "That file needs a pincode, a served and a launch_on column. Save it as CSV, with its header row.",
+    },
+    download: "Download the current list",
+    downloadName: "service-area.csv",
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      no_service_area: "That would leave no pincode served, and every client on the waitlist. Nothing was changed.",
+      launch_in_future: "A pincode goes live today or from a day already past, never one to come. Nothing was changed.",
+      /** A pincode we do not hold: one is added below, never by the file. */
+      invalid_request: "That names a pincode we do not hold. Add it first. Nothing was changed.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+  },
+} as const;
+
+/** Areas' Waiting tab, board C3: who waits in each pincode, the longest wait first. */
+export const waitlist = {
+  columns: ["Pincode", "Area", "Count", "Oldest", "Came by referral", "Asked to be told"],
+  /** An area or a date the pincode table has nothing for, written as the design's tables write a gap. */
+  unknown: "—",
+  /** PLACEHOLDER: a pincode the service area does not hold, which is added before it is marked live. */
+  notHeld: "Not in the service area",
+  /** A pincode we already come to. PLACEHOLDER: the board draws only those waiting. */
+  live: "Live",
+  choose: (pincode: string, area: string) => `Mark ${pincode} live, ${area}`,
+  /**
+   * PLACEHOLDER: a pincode served without its waitlist being told, as the
+   * Settings screen served them until it launched them too (FEO-02). Choosing
+   * it asks who is still to be told.
+   */
+  tell: (pincode: string, area: string) => `Tell those waiting in ${pincode}, ${area}`,
+  /** PLACEHOLDER: choosing a pincode the service area does not hold. */
+  add: (pincode: string) => `Add ${pincode}, then mark it live`,
+  // PLACEHOLDER: the board draws no empty waitlist.
+  empty: "Nobody is waiting outside the areas we serve.",
+  // PLACEHOLDER: the table lists the two hundred pincodes that have waited longest.
+  more: "More pincodes have people waiting than are listed. These are the ones who have waited longest.",
+  /** PLACEHOLDER: the board's launch sends today; the API takes the day a technician started coming. */
+  date: "Launch date",
+  dateHint:
+    "Today, or the day a technician started coming if earlier. A held referral invite lapses twelve months from it.",
+  /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
+  named: "The message names the area as Served names it, or its city until then.",
+  rename: "Change the name",
 } as const;
 
 /**
- * Board D1's queue. The board draws the day's money over "No-shows and late
- * cancellations", and beside it a disputed charge ruled on with Refund or
- * Uphold. Only the no-show cases and their three facts have a route, so only
- * they are here (docs/open-points.md, item 60).
+ * Board D1, the design's Payments: the day's money over "No-shows and late
+ * cancellations", a disputed charge ruled on with Refund or Uphold, and the
+ * no-show cases to rule on.
  */
 export const noShows = {
-  title: "No-shows",
+  title: "Payments",
   /**
    * Board D1's first card: the day's money, over the charges it was kept on.
    * The card carries no heading on the board and names no day, so both are
@@ -1213,12 +1412,18 @@ export const noShows = {
    * themselves (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
    */
   money: {
-    /** PLACEHOLDER: the board's card has no heading, and a panel needs a name to be read by. */
-    title: "Today",
-    /** The board's own three, in its order and its words. */
-    figures: { collected: "Collected today", processing: "Refunds processing", charged: "Charges and no-shows" },
+    /** PLACEHOLDER: the card's heading, which names its day: "Today, Wed 22 Sep", or "Mon 20 Sep". */
+    title: (day: string, today: boolean) => (today ? `Today, ${day}` : day),
+    /** PLACEHOLDER: the field that shows another day's money. */
+    pick: "Day",
+    /** The board's own three, in its order and its words; "today" only on today's card. */
+    figures: {
+      collected: (today: boolean) => (today ? "Collected today" : "Collected"),
+      processing: "Refunds processing",
+      charged: "Charges and no-shows",
+    },
     /** Under "Refunds processing", which counts what has not gone back yet. */
-    refunded: (amount: string) => `${amount} went back today`,
+    refunded: (amount: string, today: boolean) => `${amount} went back ${today ? "today" : "that day"}`,
     charges: {
       /** The board's own heading over the list. */
       title: "No-shows and late cancellations",
@@ -1247,7 +1452,7 @@ export const noShows = {
        */
       noAmount: "Amount not recorded",
       /** PLACEHOLDER: the board draws two charges and no empty day. */
-      empty: "Nothing was charged today.",
+      empty: (today: boolean) => (today ? "Nothing was charged today." : "Nothing was charged that day."),
     },
   },
   queue: {
@@ -1256,7 +1461,7 @@ export const noShows = {
      * Nothing lists a late cancellation, and what is here is a queue, as board
      * C1's "Held for review" is.
      */
-    title: "Waiting for a decision",
+    title: "No-shows waiting for a decision",
     /** The visit the case belongs to: "Visit of Sat 19 Sep". */
     visit: (date: string) => `Visit of ${date}`,
     /** PLACEHOLDER: a case whose appointment carries no date. */
@@ -1329,6 +1534,9 @@ export const noShows = {
     waitedBoth: (minutes: number, withUs: number, closed: string) =>
       `${String(minutes)} min by the phone, ${String(withUs)} since it reached us · closed ${closed}`,
     notClosed: "Not closed",
+    // PLACEHOLDER: the board draws no case closed before the booked start's wait had run.
+    closedEarly:
+      "Closed too early: the wait ran from a check-in before the booked start. Waive it, or say in your note why you charge.",
     /**
      * Board D1's field beneath the evidence, "Your note · required", which the
      * board draws on the dispute. A ruling needs its reason either way, and the
@@ -1345,8 +1553,22 @@ export const noShows = {
      */
     charge: "Charge",
     waive: "Waive",
-    /** PLACEHOLDER: a charge is asked about once more, since it cannot be taken back here. */
-    confirm: (name: string, day: string) => `Charge ${name} for the visit of ${day}? It cannot be undone here.`,
+    /**
+     * PLACEHOLDER: a charge is asked about once more, with what it keeps of what was paid and what it refunds, since it
+     * cannot be taken back here.
+     */
+    confirm: {
+      keepsAll: (paid: string) => `Keep ${paid} of the ${paid} paid?`,
+      keepsPart: (kept: string, paid: string, refund: string) =>
+        `Keep ${kept} of the ${paid} paid, and refund ${refund}?`,
+      keepsNone: (paid: string) => `Keep nothing, and refund the ${paid} paid?`,
+      keepsCredit: "Keep the free service visit it was booked with?",
+      nothingPaid: "Nothing was paid for this visit, so the charge keeps nothing. Record it?",
+      creditToo: "The free service visit it was booked with is kept too.",
+      who: (name: string, day: string) => `Charging ${name} for the visit of ${day} cannot be undone here.`,
+      working: "Working out what the charge keeps.",
+      failed: "We could not work out what the charge keeps. Go back, then try again.",
+    },
     // PLACEHOLDER: a visit that carries no date, as a charge asked about names it.
     noDay: "a day not recorded",
     confirmCharge: "Charge the visit",
@@ -1372,6 +1594,18 @@ export const noShows = {
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
   },
+  /** PLACEHOLDER: the board draws no list of the day's rulings. Each case ruled on today, the latest first. */
+  decided: {
+    title: "Decided today",
+    charged: (kept: string) => `Charged · kept ${kept}`,
+    chargedCredit: "Charged · kept a free service visit",
+    chargedNothing: "Charged · kept nothing",
+    // A charge ruled before charges recorded what they kept.
+    chargedUnrecorded: "Charged",
+    waived: "Waived",
+    at: (ruling: string, time: string) => `${ruling} · ${time}`,
+    empty: "Nothing has been decided today.",
+  },
   /**
    * Board D1's second card, a disputed charge, one card a dispute. The board
    * draws its label, its four rows of evidence, its note and its two buttons; the
@@ -1393,8 +1627,6 @@ export const noShows = {
     credit: "a free service visit",
     /** The board's four rows. */
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
-    /** PLACEHOLDER: no receipt came back for the reminder or the arrival notice. */
-    notDelivered: "Not delivered",
     /** The board's note, "Your note · required", and its placeholder. */
     reason: {
       label: "Your note · required",
@@ -1404,6 +1636,8 @@ export const noShows = {
     refund: "Refund",
     uphold: "Uphold",
     ruling: "Ruling",
+    /** PLACEHOLDER: the board draws one card, with no panel around it. A panel needs a name to be read by. */
+    queueTitle: "Disputed charges",
     /** PLACEHOLDER: the board always draws one. */
     none: "No charge is disputed.",
     errors: {
@@ -1415,6 +1649,14 @@ export const noShows = {
   },
 } as const;
 
+/** Where a payment link still owed stands, as the Tasks board says it. */
+const PAYMENT_LINK_STATES: Readonly<Record<LinkState, string>> = {
+  sent: "link sent",
+  unsent: "link not sent yet",
+  refused: "Razorpay refused the link: send one from its dashboard",
+  closed: "link closed unpaid",
+};
+
 /**
  * Board D2's queue. A task is not a record: it is a row in a queue the database
  * already keeps, read when ops look (src/policy/tasks.ts). The board draws four
@@ -1425,6 +1667,10 @@ export const tasks = {
   title: "Tasks",
   /** The head's count, in oxblood, as the board writes "4 overdue". */
   overdue: (count: number) => `${String(count)} overdue`,
+  /** PLACEHOLDER: the head's count as a screen reader names it, with what it does. */
+  overdueJump: (count: number) => `${String(count)} overdue, go to the first`,
+  /** Each department's section, named as the navigation names it. */
+  departments: DEPARTMENT_NAMES,
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
@@ -1443,6 +1689,8 @@ export const tasks = {
     partial_visit: "Visit left partly done",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
+    // PLACEHOLDER: a group the board does not draw; board D1 letters the card "Disputed charge".
+    no_show_dispute: "Disputed charge",
     number_change: "Number change",
     erasure_request: "Erasure request",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0072-ops-clients-and-queues.md).
@@ -1457,6 +1705,8 @@ export const tasks = {
   visit: (date: string) => `Visit of ${date}`,
   /** PLACEHOLDER: an erased client has no name left to show, so the line says when they were erased. */
   erased: (date: string) => `Client erased ${date}`,
+  /** PLACEHOLDER: a disputed charge whose client has since been erased. */
+  disputeErased: "A client since erased",
   /** PLACEHOLDER: a queue whose row has lost the client it was about. */
   unknown: "Client unknown",
   /** The client's page, which the board draws no way to. */
@@ -1467,24 +1717,42 @@ export const tasks = {
    * decides nothing.
    */
   decide: {
-    untold_move: "Record the call in Dispatch",
+    untold_move: "Open it in Dispatch",
     leave_conflict: "Move it in Dispatch",
     referral_review: "Decide it in Referrals",
-    no_show_decision: "Rule on it in No-shows",
+    no_show_decision: "Rule on it in Payments",
+    no_show_dispute: "Rule on it in Payments",
     number_change: "Decide it in Number changes",
     erasure_request: "Decide it in Deletion requests",
     grievance: "Answer it in Grievances",
   } as Readonly<Record<string, string>>,
   /** PLACEHOLDER: a group longer than the board lists: its count is all of them. */
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
+  /** PLACEHOLDER: a group shows its five longest waits until ops ask for the rest. */
+  more: (count: number) => `Show ${String(count)} more`,
+  fewer: "Show fewer",
   /** PLACEHOLDER: what a consultation asked for, a first fit to book and a replacement due are done with. */
   book: "Book a visit",
+  /** A move the client has not heard of, settled from its row. */
+  call: {
+    call: (mobile: string) => `Call ${mobile}`,
+    told: "Told by phone",
+    recording: "Recording…",
+    failed: "That was not recorded. Try again.",
+  },
   /** PLACEHOLDER: more were waiting than one look reads. */
   truncated: "More are waiting than one look reads, so a count here may be short.",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
-    /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the dispatch board. */
-    untold_move: (when: string) => `Moved to ${when}; not on WhatsApp`,
+    /**
+     * PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; has not agreed to WhatsApp": ops call, then say so on the row. A
+     * reason the API does not name says only that the client was not told.
+     */
+    untold_move: {
+      no_consent: (when: string) => `Moved to ${when}; has not agreed to WhatsApp`,
+      not_sent: (when: string) => `Moved to ${when}; the WhatsApp did not go`,
+      unknown: (when: string) => `Moved to ${when}; not told yet`,
+    },
     /**
      * PLACEHOLDER: "Service visit, Thu 24 Sep, afternoon; FSM refused it": booked or refunded from the client's
      * Visits tab (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
@@ -1538,6 +1806,9 @@ export const tasks = {
     /** PLACEHOLDER: a visit closed partial in FSM's own screen, with no reason from the technician. */
     noReason: "No reason recorded",
     no_show_decision: (technician: string) => `${technician} attended`,
+    /** PLACEHOLDER: "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
+    no_show_dispute: (took: string) => `Disputes the charge that kept ${took}`,
+    disputedCredit: "a free service visit",
     number_change: "Both numbers proven by code",
     erasure_request: "Asked for in the client's own app",
     // PLACEHOLDER: a concern about their data, which the app promises an answer to within 30 days.
@@ -1546,24 +1817,14 @@ export const tasks = {
     draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
     /**
      * PLACEHOLDER: "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
-     * link not sent yet is asked of Razorpay again every five minutes; one Razorpay refused is sent from its dashboard.
+     * link not sent yet is asked of Razorpay again by the cron; one Razorpay refused, or closed unpaid, is sent again
+     * from the row or from Razorpay's dashboard (ADR 0105).
      */
-    payment_owed: (product: string, amount: string, link: string) => `${product}, ${amount}; ${link}`,
-    paymentLink: {
-      sent: "link sent",
-      unsent: "link not sent yet",
-      refused: "Razorpay refused the link: send one from its dashboard",
-    } as Readonly<Record<string, string>>,
+    payment_owed: (product: string, amount: string, link: LinkState) => `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
     // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
     erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
     unknown: "Held for review",
-  },
-  /** The last column, as the board writes it: "2 days", "1 day", "Today", "Overdue 3". */
-  sla: {
-    today: "Today",
-    left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"}`,
-    over: (days: number) => `Overdue ${String(days)}`,
   },
   /**
    * Whose each task is (docs/decisions/0092-task-owners.md). The board writes each owner in ops by their first name,
@@ -1620,6 +1881,7 @@ export const tasks = {
     outcomes: {
       resent: "Texted to them again.",
       sent: "Razorpay made the link and texted it to them.",
+      not_texted: "Not texted: this number is a test record that messages never reach.",
       paid: "Already paid. The task leaves when the list is read again.",
       refused: "Razorpay refused this link. Send one from Razorpay's dashboard.",
     } as Readonly<Record<string, string>>,
@@ -1639,6 +1901,59 @@ export const tasks = {
 } as const;
 
 /**
+ * PLACEHOLDER: no board draws it. Tasks' "Needs a hand": the alerts ops were told of in the alert space, each until
+ * somebody puts right what it was about. A few words name each kind; its message says what happened and what to do.
+ */
+export const needsAHand = {
+  title: "Needs a hand",
+  kinds: {
+    message_failed: "A WhatsApp message did not go",
+    messages_unsent: "WhatsApp messages not sent within a day",
+    crm_lead: "A lead did not reach the CRM",
+    crm_erasure: "An erasure did not finish in the CRM",
+    crm_contact_update: "A CRM lead was not updated",
+    contact_sync: "A contact change did not go through",
+    deletion_waiting: "A deletion request is nearly due",
+    books_erasure: "An erasure did not finish in Books",
+    cancel_refund_failed: "A refund failed",
+    no_show_refund_failed: "A refund failed",
+    no_show_credit_not_back: "A visit credit did not come back",
+    payment_link: "A payment link was refused",
+    payment_link_failed: "A payment link did not go",
+    invoice_draft: "An invoice is still a draft",
+    invoice_unpriced: "A visit has no price to invoice",
+    invoice_refused: "Books refused an invoice",
+    invoice_failed: "An invoice did not reach Books",
+    books_unapplied: "A payment has nothing to set against",
+    razorpay_refund_unheard: "A refund came before its payment",
+    low_stock: "Stock is low",
+    technician_code_refused: "A technician was refused a login code",
+    whatsapp_bridge: "WhatsApp is disconnected",
+    login_codes_failing: "Login codes are failing",
+    cron_job: "A scheduled job keeps failing",
+  } as Readonly<Record<string, string>>,
+  /** Books refusing or failing on a customer, a payment, its application or a refund. */
+  books: "Books needs a look",
+  /** Any other kind. */
+  other: "Something needs a look",
+  /** "3 times since 21 Sep", or "Since 21 Sep" for one. */
+  seen: (times: number, since: string) => (times === 1 ? `Since ${since}` : `${String(times)} times since ${since}`),
+  open: "Open",
+  sendAgain: "Send again",
+  sending: "Sending…",
+  done: "Mark done",
+  closing: "Closing…",
+  /** Under a failed message: the bridge may not have answered in time, and the client may have it already. */
+  messageHint: "If it says delivery unconfirmed, check with the client first: it may have arrived.",
+  shown: (shown: number, count: number) => `The ${String(shown)} longest open of ${String(count)}.`,
+  errors: {
+    not_permitted: NOT_PERMITTED,
+    not_found: "This was closed meanwhile. Reload the page to see the list now.",
+    unknown: "That did not go through. Try again.",
+  } as Readonly<Record<string, string>>,
+} as const;
+
+/**
  * Board D3's roster. The board draws five columns; four are answered, and the
  * fifth, Skill, is recorded nowhere (docs/open-points.md, item 59). The phones
  * the board does not draw sit beneath each name.
@@ -1650,16 +1965,8 @@ export const technicians = {
    * records a skill, and a day off is what ops need to see down the roster.
    */
   columns: ["Technician", "Zone", "Jobs", "Avg service", "Leave"],
-  /**
-   * PLACEHOLDER: the technician's name opens his details, phones and leave,
-   * which the board's rows have no room for, in a panel over the roster.
-   */
-  open: (name: string) => `${name}: details, phones and leave`,
-  /** A technician switched off has no phone signed in and no leave to record: his name opens his details. */
-  openSwitchedOff: (name: string) => `${name}: details`,
-  close: "Close",
-  /** The Leave column: away today, the first day of leave to come, or nothing. */
-  away: "Away",
+  /** The Leave column: away today until when, the first day of leave to come, or nothing. */
+  away: (until: string) => `Away to ${until}`,
   from: (date: string) => `From ${date}`,
   /** A zone the FSM mirror has nothing for, written as the design's tables write a gap. */
   unknown: "—",
@@ -1681,8 +1988,24 @@ export const technicians = {
     /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
     skill: "Nothing records what a technician is trained for, so the board's Skill column is not drawn.",
   },
+  /** PLACEHOLDER, all of it: the board draws the roster and no page for one technician. */
+  page: {
+    back: "All technicians",
+    tabsLabel: (name: string) => `${name}: his week, leave, phones and kit`,
+    notFound: "That technician is not on the roster any more.",
+  },
+  tabs: { week: "This week", leave: "Leave", phones: "Phones", kit: "Kit" },
+  week: {
+    lead: "His jobs this week are on the dispatch board, with his row alone in view.",
+    open: "Open his week on the board",
+  },
+  kit: {
+    lead: "What his kit holds, as the stock ledger counts it.",
+    columns: ["Consumable", "Held", "Last counted"],
+    none: "Nothing in his kit on record.",
+    stock: "Record a movement in Stock",
+  },
   phones: {
-    title: "Phones",
     /** PLACEHOLDER: a phone whose browser gave no label at login. */
     unlabelled: "Phone",
     /**
@@ -1690,7 +2013,10 @@ export const technicians = {
      * app's own ID for the phone, so two phones alike can be told apart.
      */
     label: (label: string, id: string) => `${label} · ${id}`,
-    seen: (date: string) => `last used ${date}`,
+    /** "Last used 22 Sep 2027, 10:30 am". */
+    seen: (when: string) => `Last used ${when}`,
+    signedIn: "Signed in",
+    signedOut: "Signed out",
     none: "No phone logged in.",
     revoke: "Revoke",
     /** The button's whole name, since a roster holds many phones and each button says "Revoke". */
@@ -1714,7 +2040,6 @@ export const technicians = {
    * below is ours.
    */
   leave: {
-    title: "Leave",
     none: "No leave recorded.",
     /** "19 Sep to 23 Sep", and "19 Sep" for a single day. */
     period: (from: string, to: string) => (from === to ? from : `${from} to ${to}`),
@@ -1726,24 +2051,32 @@ export const technicians = {
     save: "Record it",
     saving: "Recording",
     cancel: "Cancel",
-    /** Taking leave back, which lets those days be worked again. */
+    /** Taking leave back, which lets those days be worked again, asked once more before it is sent. */
     take: "Take it back",
     takeLabel: (period: string, technician: string) => `Take back ${technician}'s leave, ${period}`,
-    taking: "Taking it back",
+    check: {
+      title: (period: string) => `Take back leave, ${period}?`,
+      line: "He can be booked again on those days.",
+      send: "Take it back",
+      sending: "Taking it back",
+      back: "Keep the leave",
+    },
+    recorded: "Leave recorded.",
     effect: "Nobody can be booked or assigned on these days until the leave is taken back.",
-    // PLACEHOLDER: leave recorded over jobs already booked moves none of them (OPS-07).
+    // PLACEHOLDER: leave recorded over jobs already booked moves none of them.
     stranded: {
       title: (count: number) =>
-        `${String(count)} ${count === 1 ? "job is" : "jobs are"} still booked on this leave. Recording it moved none.`,
+        `${String(count)} ${count === 1 ? "job is" : "jobs are"} still booked on these days. Leave moves none.`,
       job: (when: string, client: string) => `${when} · ${client}`,
       noClient: "No client on our records",
-      move: "Move them on the dispatch board",
+      show: "Show on board",
+      showLabel: (when: string, client: string) => `Show on board: ${when} · ${client}`,
     },
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request:
         "Those dates do not work: the last day cannot come before the first, and leave runs a year at most.",
-      not_found: "That technician or that leave is no longer here. Reload to see the roster as it stands.",
+      not_found: "That technician or that leave is no longer here. Reload to see it as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     },
@@ -1824,11 +2157,11 @@ export const technicians = {
  * each queue is built as the boards' own queues are (C1 and D1).
  */
 
-/** How long a request has left before the time we have promised runs out, as board D2 words its column. */
+/** How long something waiting on ops has left, on Tasks and in every queue: "2 days left", "3 days overdue". */
 export const waiting = {
   left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"} left`,
   today: "Due today",
-  over: (days: number) => `Overdue ${String(days)}`,
+  over: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"} overdue`,
 } as const;
 
 export const grievances = {
@@ -1844,14 +2177,14 @@ export const grievances = {
     /** Beneath the name: the number to answer on, and the day it was raised. */
     raised: (mobile: string, date: string) => `${mobile} · raised ${date}`,
     label: "Your answer",
-    hint: "Kept with the grievance, under your name. The audit log records that you answered it.",
+    hint: "The client sees this in their app. The audit log records that you answered it.",
     send: "Record the answer and close it",
     sending: "Closing",
     empty: "No grievance is open.",
-    /** Recording an answer sends nothing: the client hears from whoever answers them. */
+    /** Recording an answer sends nothing: the client hears from whoever answers them, and reads it in the app. */
     note: (days: number) =>
-      `The client is told in the app that we answer within ${String(days)} days, on WhatsApp. ` +
-      "Nothing here messages them: send your answer, then record it.",
+      `The client is told in the app that we answer within ${String(days)} days. ` +
+      "Nothing here messages them: answer on WhatsApp, then record the answer here. Their app shows it.",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "Someone has answered this one already. Reload to see the queue as it stands.",
@@ -1886,7 +2219,7 @@ export const deletions = {
         "Every photograph of them, their visits' and their try-ons', the files as well as the records",
         "Their referral card, so an invite they sent shows the house card from now on",
         "Their saved addresses, and any number change under way",
-        "Their name, number and e-mail on the record, and the words of any grievance",
+        "Their name, number and e-mail on the record, and the words of any grievance; one still open is closed",
         "Their sessions, so their phone is signed out at once",
       ],
     },
@@ -1912,6 +2245,11 @@ export const deletions = {
       cancel: "Leave it waiting",
     },
     rejecting: "Rejecting",
+    /** PLACEHOLDER: above the queue once a decision is made. */
+    done: {
+      delete: "Account deleted. The client is told on WhatsApp, and the CRM and Books are blanked within the hour.",
+      reject: "Request rejected. The client is told why on WhatsApp.",
+    },
     empty: "No deletion request is waiting.",
     note: (days: number) =>
       `Each request is processed within ${String(days)} days of being made. ` +
@@ -1925,6 +2263,7 @@ export const deletions = {
         "paid, then delete.",
       payment_held:
         "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it, then delete.",
+      payment_owed: "A payment link of theirs is still unpaid, so nothing was erased. Delete once it is paid.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. The client has not been erased.",
     } as Readonly<Record<string, string>>,
@@ -1974,16 +2313,13 @@ export const settings = {
   title: "Settings",
   sub: "A change takes effect within a minute. No release is needed.",
   /**
-   * PLACEHOLDER: no board draws the storage meter's line (docs/decisions/0093-the-storage-meter.md). Gigabytes as
+   * PLACEHOLDER: no board draws the storage meter's line, which Rules shows under The console. Gigabytes as
    * Cloudflare bills them, a thousand million bytes.
    */
   storage: (held: number, share: number) =>
-    `Photographs and referral cards hold ${(held / 1e9).toFixed(2)} GB in R2, ${String(Math.round((held / share) * 100))}% ` +
-    `of their ${String(share / 1e9)} GB share. Past it R2 bills, as the owner accepted; ops are told at 50%, 80% and 100%.`,
+    `Photos and referral cards: ${(held / 1e9).toFixed(2)} GB of ${String(share / 1e9)} GB`,
   /** PLACEHOLDER: no board draws this line either. Megabytes as Cloudflare counts them, a million bytes. */
-  database: (held: number, limit: number) =>
-    `The database holds ${(held / 1e6).toFixed(0)} MB, ${String(Math.round((held / limit) * 100))}% of the ` +
-    `${String(limit / 1e6)} MB the free plan allows. Past it every write fails; ops are told at 50%, 80% and 95%.`,
+  database: (held: number, limit: number) => `Database: ${(held / 1e6).toFixed(0)} MB of ${String(limit / 1e6)} MB`,
   // PLACEHOLDER: no board draws the tabs' names.
   tabs: {
     rules: "Rules",
@@ -2079,6 +2415,18 @@ export const settings = {
   },
   rules: {
     title: "Rules",
+    // PLACEHOLDER: no board draws the rules' sections, nor the links between them.
+    groups: {
+      moves: "Moves, cancels and no-shows",
+      booking: "Booking and payment",
+      field: "Visits in the field",
+      reminders: "Reminders and replacements",
+      referrals: "Referrals",
+      console: "The console",
+      other: "Other rules",
+    },
+    jump: "Rules by subject",
+    lateFees: "Late fees are set in Prices",
     allowed: (min: number, max: number, unit: string) => `${String(min)} to ${String(max)} ${unit}, a whole number`,
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
     committed: "Nobody has set this, so the standard figure stands.",
@@ -2162,17 +2510,22 @@ export const settings = {
       noFigure: "none",
       /** A base whose own figure is taken away takes the one for every other base. */
       otherBases: "the figure for every other base",
-      standard: "This puts the standard figures back.",
+      /** A box of a rule with many, named with its rule: "No-show wait · First fit". */
+      keyed: (rule: string, box: string) => `${rule} · ${box}`,
+      standard: (rule: string) => `This puts the standard figures back for ${rule}.`,
       send: "Save",
       back: "Change it",
     },
-    /** The rule's name, or one of its boxes, and what the API said of it. */
-    outside: (field: string) => `${field} is outside what this rule allows. Nothing was changed.`,
+    /**
+     * The rule's name, or one of its boxes, and what the API said of it. A section's Save sends its rules one by one,
+     * so a refusal speaks for its own rule only.
+     */
+    outside: (field: string) => `${field} is outside what this rule allows, so it was not saved.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request: "That figure is outside what this rule allows. Nothing was changed.",
+      invalid_request: "That figure is outside what this rule allows, so it was not saved.",
       offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Nothing was changed.",
+      unknown: "That did not go through, so this rule was not saved.",
     } as Readonly<Record<string, string>>,
   },
   /**
@@ -2199,6 +2552,9 @@ export const settings = {
       `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} still booked on these days. Move ${
         visits === 1 ? "it" : "them"
       } on the dispatch board.`,
+    show: "Show on board",
+    /** The link's whole name, since the list holds many and each link says the same. */
+    showLabel: (period: string) => `Show on board: ${period}`,
     remove: "Offer these days again",
     /** The button's whole name, since the list holds many and each button says the same. */
     removeLabel: (period: string) => `Offer ${period} again`,
@@ -2251,9 +2607,9 @@ export const settings = {
       late_fee_first_fit: "Late fee on a first fit",
       late_fee_replacement: "Late fee on a replacement",
     } as Readonly<Record<string, string>>,
-    lateFeeNote:
-      "Charged for moving or cancelling inside the notice set in Rules, where Rules charge the kind its late fee, " +
-      "whichever of its services it is.",
+    lateFeeNote: "Charged for a late move or cancel, where the rules charge this kind its late fee.",
+    /** The link to the rule that says when a late fee is charged. */
+    lateFeeRule: "Set when it applies",
     actions: {
       price: "Change price",
       correct: "Correct",
@@ -2362,84 +2718,6 @@ export const settings = {
     takeBackErrors: {
       not_permitted: NOT_PERMITTED,
       valid_from: "That price applies already, so it stays in the book.",
-    } as Readonly<Record<string, string>>,
-  },
-  area: {
-    title: "Service area",
-    /**
-     * The file is what the owner already edits (data/pincodes/README.md), so
-     * the screen takes it back rather than asking for 198 rows to be retyped.
-     * The rows are for the one-at-a-time change, which is what a launch is.
-     */
-    note: "Change a pincode here, or download the list, edit it in a spreadsheet and upload it again.",
-    city: (city: string, served: number, all: number) => `${city} · ${String(served)} of ${String(all)}`,
-    columns: ["Pincode", "Area, as messages name it", "Served", "Launch date", "Waiting"],
-    areaLabel: (pincode: string) => `Area name for ${pincode}`,
-    served: (pincode: string) => `Served ${pincode}`,
-    launchOn: (pincode: string) => `Launch date for ${pincode}`,
-    /** Beneath the table: what the two boxes of a row mean. */
-    hint:
-      "The area's name is what a launch message, the waitlist and the dispatch board call it. " +
-      "A held referral invite for an area lapses twelve months from its launch date.",
-    /** The name a row's box holds: a letter or a digit first, as the API takes it. */
-    badName: (pincode: string) =>
-      `${pincode}: an area's name starts with a letter or a digit and runs from 2 to 40 characters.`,
-    save: "Save these pincodes",
-    saving: "Saving",
-    saved: (changed: number, alerted: number) => {
-      const pincodes = changed === 1 ? "One pincode changed." : `${String(changed)} pincodes changed.`;
-      if (alerted === 0) return pincodes;
-      return `${pincodes} ${String(alerted)} ${alerted === 1 ? "person is" : "people are"} being told on WhatsApp.`;
-    },
-    nothing: "Nothing to save: no pincode has changed.",
-    bulk: {
-      serve: (city: string) => `Serve all of ${city}`,
-      stop: (city: string) => `Stop serving ${city}`,
-    },
-    /**
-     * Serving a pincode is a launch: whoever waits there and asked to be told
-     * is messaged when it is saved, as marking it live on the waitlist does.
-     * So the save that would message anyone says so first.
-     */
-    launch: {
-      title: (people: number) => `This messages ${String(people)} ${people === 1 ? "person" : "people"}`,
-      line: (pincode: string, area: string, people: number) =>
-        `${pincode}, ${area}: ${String(people)} waiting ${people === 1 ? "asks" : "ask"} to be told.`,
-      note: "Serving a pincode tells those on its waitlist who asked to hear from us, on WhatsApp, once.",
-      send: (people: number) => `Save and message ${String(people)}`,
-      cancel: "Not now",
-    },
-    upload: {
-      title: "Upload the file",
-      label: "The CSV you have edited",
-      hint:
-        "It needs pincode, served and launch_on columns; every other column is ignored. " +
-        "Served is yes or no, and a blank is no. A launch date is written 2026-10-01.",
-      /** What the file would change, pincode by pincode, before any of it is taken. */
-      read: (changed: number) =>
-        changed === 1 ? "The file changes one pincode:" : `The file changes ${String(changed)} pincodes:`,
-      columns: ["Pincode", "Area", "Now", "In the file"],
-      state: (served: boolean, launch: string | null) => {
-        const serving = served ? "Served" : "Not served";
-        return launch === null ? serving : `${serving}, launch ${launch}`;
-      },
-      none: "The file changes nothing. Every pincode in it already reads that way.",
-      apply: "Put these in the table",
-      applied: "The file's changes are in the table. Check them, then save.",
-      cancel: "Not now",
-      badDate: (pincode: string) => `${pincode}: a launch date has to be written as 2026-10-01.`,
-      badServed: (pincode: string) => `${pincode}: served has to be yes or no.`,
-      badHeader: "That file needs a pincode, a served and a launch_on column. Save it as CSV, with its header row.",
-    },
-    download: "Download the current list",
-    downloadName: "service-area.csv",
-    errors: {
-      not_permitted: NOT_PERMITTED,
-      no_service_area: "That would leave no pincode served, and every client on the waitlist. Nothing was changed.",
-      /** A pincode we do not hold: the file is reference data, not a way to add one. */
-      invalid_request: "That names a pincode we do not hold. Nothing was changed.",
-      offline: "You are offline. Connect, then try again.",
-      unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
   },
   /**

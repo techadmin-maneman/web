@@ -8,6 +8,7 @@
 //   POST /api/prices/correct        a price still to come, taken back and set again, in one batch
 //   GET  /api/service-area          every pincode, its city, whether we go there and who waits there
 //   POST /api/service-area          which pincodes we go to, from when, and what their areas are called
+//   POST /api/pincodes              a pincode the service area does not hold, added unserved
 //
 // A change here needs no release. Every one records the Access identity behind
 // it, what the value was and what it is now, in the same batch as the change
@@ -40,11 +41,14 @@ import {
   withdrawPrice,
   type PriceRefusal,
 } from "../domain/price-book.ts";
-import { serviceArea, setServiceArea } from "../domain/service-area.ts";
+import { listCities } from "../domain/cities.ts";
+import { addPincode, serviceArea, setServiceArea } from "../domain/service-area.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { queuePacedMessages } from "../http/queue-message.ts";
+import { routeReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
+import { reachesCity } from "../policy/access.ts";
 
 /** One number, or one per key: the two shapes a rule of numbers takes. */
 const NumberValue = z.union([z.number().int(), z.record(z.string(), z.number().int())]);
@@ -284,8 +288,45 @@ const serviceAreaRoute = createRoute({
   path: "/api/service-area",
   summary: "Every pincode we hold, its city, and whether a technician goes there",
   responses: {
-    200: { description: "Pincodes", ...json(z.object({ pincodes: z.array(AreaSchema) }).strict()) },
+    200: {
+      description: "Pincodes",
+      ...json(
+        z
+          .object({
+            pincodes: z.array(AreaSchema),
+            cities: z.array(z.string()).openapi({ description: "Our cities, which a pincode added must be in." }),
+          })
+          .strict(),
+      ),
+    },
     403: errorResponse("access_required"),
+  },
+});
+
+const addPincodeRoute = createRoute({
+  method: "post",
+  path: "/api/pincodes",
+  summary: "Add a pincode the service area does not hold, unserved, in one of our cities",
+  request: {
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({
+            pincode: z.string().regex(/^[1-8]\d{5}$/),
+            area: z.string().trim().regex(AREA_NAME).openapi({ description: "What messages call the area." }),
+            city: z.string().trim().min(1).max(60),
+          })
+          .strict()
+          .openapi("NewPincode"),
+      ),
+    },
+  },
+  responses: {
+    201: { description: "The pincode, as the service area now lists it", ...json(AreaSchema) },
+    400: errorResponse("invalid_request: fields names the box refused, city for a city that is not one of ours"),
+    403: errorResponse("access_required, or not_permitted: the city is outside the caller's Growth MANAGE"),
+    409: errorResponse("pincode_held: the service area holds that pincode already"),
   },
 });
 
@@ -337,7 +378,8 @@ const setServiceAreaRoute = createRoute({
       ),
     },
     400: errorResponse(
-      "invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served",
+      "invalid_request: fields names a pincode we do not hold. launch_in_future: fields names a pincode it would " +
+        "serve from a day still to come. no_service_area: it would leave none served",
     ),
     403: errorResponse("access_required"),
   },
@@ -500,7 +542,8 @@ export function registerOpsSettings(app: App): void {
   });
 
   app.openapi(serviceAreaRoute, async (c) => {
-    return c.json({ pincodes: await serviceArea(c.env.DB) }, 200);
+    const [pincodes, cities] = await Promise.all([serviceArea(c.env.DB), listCities(c.env.DB)]);
+    return c.json({ pincodes, cities: cities.map((city) => city.name) }, 200);
   });
 
   app.openapi(setServiceAreaRoute, async (c) => {
@@ -513,16 +556,29 @@ export function registerOpsSettings(app: App): void {
     if ("kind" in result) {
       c.var.log.warn("service_area_refused", { reason: result.kind });
       if (result.kind === "empty_area") return c.json(errorBody("no_service_area", c.var.requestId), 400);
+      if (result.kind === "launch_in_future") {
+        return c.json(errorBody("launch_in_future", c.var.requestId, result.pincodes), 400);
+      }
       return c.json(errorBody("invalid_request", c.var.requestId, result.pincodes), 400);
     }
-    if (result.alerts.length > 0) {
-      await c.env.MESSAGE_QUEUE.sendBatch(
-        result.alerts.map((alert) => ({
-          body: { message_id: alert.id, request_id: c.var.requestId } satisfies MessagingMessage,
-          delaySeconds: alert.delaySeconds,
-        })),
-      );
-    }
+    await queuePacedMessages(c, result.alerts);
     return c.json({ changed: result.changed.length, served: result.served, alerted: result.alerts.length }, 200);
+  });
+
+  app.openapi(addPincodeRoute, async (c) => {
+    const pincode = c.req.valid("json");
+    // Whether we serve a pincode is no secret, as the site says so to anyone, so one elsewhere is refused, not hidden.
+    if (!reachesCity(await routeReach(c), pincode.city)) {
+      return c.json(errorBody("not_permitted", c.var.requestId), 403);
+    }
+    const added = await addPincode(c.env.DB, {
+      pincode,
+      actor: staffOf(c),
+      requestId: c.var.requestId,
+      now: c.var.deps.now(),
+    });
+    if (added === "held") return c.json(errorBody("pincode_held", c.var.requestId), 409);
+    if (added === "unknown_city") return c.json(errorBody("invalid_request", c.var.requestId, ["city"]), 400);
+    return c.json(added, 201);
   });
 }

@@ -12,11 +12,12 @@ type Group = TaskGroup["group"];
  * the console (in FSM or Books), and reaches only the client's page.
  */
 export const DECIDED_IN: Partial<Record<Group, { readonly page: SectionPath; readonly row: string | null }>> = {
-  // The dispatch board draws a week, not a list, so the call is recorded, and the job moved, from its own block.
+  // The dispatch board draws a week, not a list: the link opens the task's visit there, in its own drawer.
   untold_move: { page: "/dispatch", row: null },
   leave_conflict: { page: "/dispatch", row: null },
   referral_review: { page: "/referrals", row: "held" },
   no_show_decision: { page: "/no-shows", row: "case" },
+  no_show_dispute: { page: "/no-shows", row: "dispute" },
   number_change: { page: "/number-changes", row: "change" },
   erasure_request: { page: "/deletion-requests", row: "request" },
   grievance: { page: "/grievances", row: "grievance" },

@@ -191,7 +191,7 @@ describe("POST /api/appointments/:id/cancel", () => {
     expect(await done.json()).toMatchObject({ cancelled: true });
     expect(deps.alerts).toEqual([
       `The refund of Rs. 2000 for visit ${VISIT}, cancelled by the client, failed (Razorpay payment pay_visit). ` +
-        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -233,7 +233,7 @@ describe("POST /api/appointments/:id/cancel", () => {
     expect(deps.alerts).toEqual([
       `Razorpay did not answer the refund of Rs. 2000 for visit ${VISIT}, cancelled by the client (payment ` +
         "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
-        `refund of Rs. 2000 is there. http://ops.localhost:4323/clients/${PERSON}`,
+        `refund of Rs. 2000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -767,6 +767,24 @@ describe("moving a visit", () => {
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_fee", amount: 400000 }]);
     expect(fsm.made.rescheduled).toEqual([]);
     expect((await visitRow())?.status).toBe("scheduled");
+  });
+
+  it("gives the late fee back, moving nothing in FSM, when the visit went to another technician before it was booked", async () => {
+    await booked("first_fit", TUESDAY_MORNING, 3000000);
+    const payments = createStubPayments();
+    const app = client({ payments });
+    const held = await hold(app, "first_fit", "2026-09-28", "morning");
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
+    await paidFor(held.id, "pay_fee");
+    await env.DB.prepare("UPDATE appointments SET technician_id = 't2' WHERE id = ?1").bind(VISIT).run();
+
+    const fsm = createStubFsm(world());
+    expect(await confirmBooking(env.DB, fsm, payments, held.id, NOW, { labelAsTest: true })).toBe("refunded");
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_fee", amount: 400000 }]);
+    expect(fsm.made.rescheduled).toEqual([]);
+    expect(await visitRow()).toMatchObject({ window_start: TUESDAY_MORNING });
+    const told = await env.DB.prepare("SELECT kind, subject_id FROM outbound_messages").all();
+    expect(told.results).toEqual([{ kind: "booking_refunded", subject_id: held.id }]);
   });
 
   it("books nothing in place of a visit the technician checked in to before a late move was confirmed", async () => {

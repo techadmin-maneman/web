@@ -29,6 +29,7 @@ const VIKRAMS_CASE = {
   message_state: "delivered",
   message_delivered_at: "2027-09-19T06:02:00.000Z",
   wait_ends_at: "2027-09-19T06:16:00.000Z",
+  closed_early: false,
   closed_at: "2027-09-19T06:17:00.000Z",
   opened_at: "2027-09-19T06:17:00.000Z",
   due: "2027-09-21T06:17:00.000Z",
@@ -57,6 +58,7 @@ export const NO_SHOWS = {
       message_state: "no_consent",
       message_delivered_at: null,
       wait_ends_at: "2027-09-20T05:05:00.000Z",
+      closed_early: false,
       closed_at: "2027-09-20T05:06:00.000Z",
       opened_at: "2027-09-20T05:06:00.000Z",
       due: "2027-09-22T05:06:00.000Z",
@@ -74,6 +76,35 @@ export const NO_SHOW_UNMEASURED = {
   waiver: { payment: "refunded", credit: "returned" },
   cases: [{ ...VIKRAMS_CASE, distance_m: null }],
 } satisfies OpsReply<"/api/no-shows">;
+
+/** What charging Vikram's visit would do: his service visit was paid Rs. 2,360, and a no-show keeps all of it. */
+export const CHARGE_PREVIEW = {
+  paid: 236_000,
+  kept: 236_000,
+  credit_kept: false,
+} satisfies OpsReply<"/api/no-shows/{id}/charge">;
+
+/** The cases ruled on today: Karan's charged at 10:30 am, keeping Rs. 2,360, and one waived at 9:05. */
+export const DECIDED = {
+  cases: [
+    {
+      id: "66000000-0000-4000-8000-000000000003",
+      person: { id: "11000000-0000-4000-8000-000000000005", name: "Karan Bose" },
+      visit_date: "2027-09-21",
+      decision: "charged",
+      decided_at: "2027-09-22T05:00:00.000Z",
+      charge: { kept: 236_000, credit_spent: false },
+    },
+    {
+      id: "66000000-0000-4000-8000-000000000004",
+      person: { id: "11000000-0000-4000-8000-000000000006", name: "Arjun Mehra" },
+      visit_date: "2027-09-20",
+      decision: "waived",
+      decided_at: "2027-09-22T03:35:00.000Z",
+      charge: null,
+    },
+  ],
+} satisfies OpsReply<"/api/no-shows/decided">;
 
 /**
  * Board D1's first card: the day's three figures, and the two charges beneath
@@ -132,6 +163,7 @@ export const DISPUTES = {
       received_at: "2027-09-18T06:01:00.000Z",
       distance_m: 240,
       radius_m: 200,
+      message_state: "delivered",
       message_delivered_at: "2027-09-18T06:02:00.000Z",
       closed_at: "2027-09-18T06:17:00.000Z",
     },
@@ -142,8 +174,8 @@ export const DISPUTES = {
  * Read against 22 September 2027 in India, the day the tests and the fidelity
  * run set their clock to. Four have run over, as the board's head writes, and
  * each task's `due` is its `since` plus the placeholder two days
- * (src/policy/tasks.ts), so the days left are the board's own: "2 days",
- * "Today", "Overdue 3". Five are Priya's or Anil's, as the board's owners are, and
+ * (src/policy/tasks.ts), so the days left are the board's own: "2 days left",
+ * "Due today", "3 days overdue". Five are Priya's or Anil's, as the board's owners are, and
  * three nobody's yet.
  */
 export const TASKS = {

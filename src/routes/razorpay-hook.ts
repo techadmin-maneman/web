@@ -15,13 +15,14 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import type { AlertOnce } from "../domain/alerts.ts";
+import { paymentsTab, type AlertOnce } from "../domain/alerts.ts";
 import { recordBookingConsents } from "../domain/booking-consents.ts";
 import { paymentStatusOf, recordPayment, recordRefund, recordRefundedPayment } from "../domain/payments.ts";
+import { afterResponse } from "../http/after-response.ts";
 import { bookHold } from "../http/book-hold.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { sha256Hex } from "../lib/hash.ts";
-import { markLinkPaid, visitOfLink } from "../domain/payment-links.ts";
+import { cancelLinkPaidElsewhere, linkPaid } from "../domain/payment-links.ts";
 import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../domain/visit-booking.ts";
 import {
   RazorpayPaymentLinkSchema,
@@ -59,30 +60,6 @@ export const razorpayHookRoute = createRoute({
 });
 
 /**
- * A one visit's payment link paid: the payment recorded as the visit's, by the link it paid, whatever notes it
- * carries, and the link marked paid where the close made one; a link ops made by hand has no row of ours. False for
- * a link that names no visit of ours.
- */
-async function linkPaid(
-  db: D1Database,
-  paid: { readonly link: RazorpayPaymentLink; readonly payment: RazorpayPayment },
-  hashSalt: string,
-  now: Date,
-): Promise<boolean> {
-  const ours = await visitOfLink(db, { razorpayLinkId: paid.link.id, reference: paid.link.reference_id ?? null });
-  if (ours === null) return false;
-  const notes =
-    ours.personId === null
-      ? { appointment_id: ours.appointmentId }
-      : { appointment_id: ours.appointmentId, person_id: ours.personId };
-  await recordPayment(db, { ...paid.payment, notes }, "captured", hashSalt, now);
-  if (ours.linkId === null) return true;
-  const paidAt = new Date(paid.payment.created_at * 1000).toISOString();
-  await markLinkPaid(db, ours.linkId, { razorpayPaymentId: paid.payment.id, paidAt }, now);
-  return true;
-}
-
-/**
  * The link a client paid for a visit ops booked: the payment is recorded on the hold the link was for, which confirms
  * it, and the hold goes to be booked, as a payment at Checkout does. A payment Razorpay names no order for is recorded
  * as the client's, and ops are told once to book or refund it.
@@ -105,7 +82,7 @@ async function holdLinkPaid(
       message:
         `The client paid the payment link for booking ${hold.id} (payment ${payment.id}), but Razorpay named no ` +
         "order for it, so the visit was not booked. Book it for them, or refund the payment in Razorpay's dashboard.",
-      link: `/clients/${hold.personId}`,
+      link: paymentsTab(hold.personId),
     });
     return;
   }
@@ -144,7 +121,7 @@ async function refundTaken(
       `Payment ${payment.id} was refunded in Razorpay before we heard it was paid. The payment and its refund ` +
       `${refund.id} are recorded now; no visit was booked for it. If no one here refunded it, Razorpay's ` +
       `payment messages are not reaching us (runbook, "Razorpay's webhook is not arriving").`,
-    ...(personId === null ? {} : { link: `/clients/${personId}` }),
+    ...(personId === null ? {} : { link: paymentsTab(personId) }),
   });
   return true;
 }
@@ -190,8 +167,11 @@ export function registerRazorpayHook(app: App): void {
       const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
       const hold = await holdOfLink(db, { razorpayLinkId: link.id, reference: link.reference_id ?? null });
       if (hold === null) {
-        const paid = await linkPaid(db, { link, payment }, config.settings.ipHashSalt, now);
-        log.info("razorpay_hook_link_paid", { ours: paid });
+        const visit = await linkPaid(db, { link, payment }, config.settings.ipHashSalt, now);
+        log.info("razorpay_hook_link_paid", { ours: visit !== null });
+        if (visit !== null) {
+          await afterResponse(c, cancelLinkPaidElsewhere({ ...deps, log }, { visit, razorpayLinkId: link.id }, now));
+        }
       } else {
         await holdLinkPaid(c, { hold, link, payment });
       }

@@ -2,8 +2,9 @@
 // docs/decisions/0031-access-and-audit.md):
 //   POST /api/clients/search               find a client by their whole mobile number
 //   POST /api/clients/find                 find clients by part of a name or of a number
-//   GET  /api/clients/:id                  who they are, their address, their visits, their payments, their history,
-//                                          the invite they came with, and any booking FSM refused, held for ops
+//   GET  /api/clients/:id                  who they are, their address, their visits, their payments, payment links
+//                                          and invoices, their history, the invite they came with, any booking FSM
+//                                          refused, held for ops, and any booking that refunded its payment by itself
 //   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
 //   POST /api/clients/:id/photos/view      open them: one audit entry, and who opened them before
 //   GET  /api/clients/:id/photos/:photoId  one photograph, served within a logged opening
@@ -15,9 +16,10 @@
 // Each route keeps to the caller's cities: a client elsewhere is not found.
 //
 // The records are the ones the client reads of themselves, through the same
-// domain functions, so the two surfaces cannot drift apart. An erased person is
-// "not found" here: their photographs, address and details are gone (ADR 0049),
-// and what is kept of them is a record for the deletion queue, not a page to read.
+// domain functions, so the two surfaces cannot drift apart. Of an erased person,
+// the record answers only what is kept: when they were erased, their visits,
+// their money and any booking still held for them. Every other route here does
+// not find them: their photographs, address and details are gone (ADR 0049).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
@@ -35,6 +37,8 @@ import {
   ownPhotoKey,
   visitOutcomes,
 } from "../domain/client-visits.ts";
+import { AUTO_REFUND_REASONS, autoRefundsOf, type AutoRefund } from "../domain/auto-refunds.ts";
+import { INVOICE_STATES, LINK_STATES, paymentLinksOf, visitInvoicesOf } from "../domain/client-billing.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { clientVisitCodes } from "../domain/discount-code-uses.ts";
 import { heldBookingsOf, type HeldBooking } from "../domain/held-bookings.ts";
@@ -51,6 +55,7 @@ import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { CONSENT_PURPOSES, CONSENT_SOURCES } from "../policy/consents.ts";
+import type { FsmRetry } from "../policy/held-bookings.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { paymentEntries } from "../domain/client-payments.ts";
 import { latestProposal } from "../domain/proposed-visits.ts";
@@ -205,6 +210,10 @@ const HeldBookingSchema = z
   .strict()
   .openapi("HeldBooking");
 
+const HeldBookingsSchema = z
+  .array(HeldBookingSchema)
+  .openapi({ description: "Bookings FSM refused, waiting for a try or for ops; the soonest visit first." });
+
 const heldBookingOf = (booking: HeldBooking) => ({
   id: booking.id,
   type: booking.type,
@@ -224,6 +233,87 @@ const heldBookingOf = (booking: HeldBooking) => ({
       : { code: booking.discountCode.code, amount_off: booking.discountCode.amountOff },
 });
 
+/** A booking that refunded its payment by itself, as the client's Visits tab says it, and the client was told. */
+const AutoRefundSchema = z
+  .object({
+    hold_id: z.uuid(),
+    type: z.enum(VISIT_TYPES),
+    service: z.string().openapi({ description: "Its service's name as it is now." }),
+    date: z.iso.date().openapi({ description: "India's day the visit was to be on." }),
+    amount: z.union([z.number().int(), z.null()]).openapi({
+      description:
+        "In paise, GST included: what Razorpay took, all of which went back; null where it is not on record.",
+    }),
+    reason: z.enum(AUTO_REFUND_REASONS).openapi({
+      description: "lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun.",
+    }),
+    refunded_at: z.iso.datetime(),
+  })
+  .strict()
+  .openapi("AutoRefund");
+
+const autoRefundOf = (refund: AutoRefund) => ({
+  hold_id: refund.holdId,
+  type: refund.type,
+  service: refund.serviceName,
+  date: refund.date,
+  amount: refund.amount,
+  reason: refund.reason,
+  refunded_at: refund.refundedAt,
+});
+
+const ClientPaymentLinkSchema = z
+  .object({
+    id: z.uuid(),
+    product: z.string().openapi({ description: "The service it pays for, by its name now." }),
+    visit_date: z
+      .union([z.iso.date(), z.null()])
+      .openapi({ description: "India's date of the visit it pays for; null where the visit has no start." }),
+    amount: z.number().int().openapi({ description: "In paise, GST included." }),
+    reference: z.union([z.string(), z.null()]).openapi({
+      description: "As the client reads it on Razorpay's page; null on a link made before links had one.",
+    }),
+    short_url: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "The address Razorpay texted the client; null until Razorpay has made the link." }),
+    sent_at: z.union([z.iso.datetime(), z.null()]),
+    state: z.enum(LINK_STATES).openapi({
+      description:
+        "making: Razorpay has not made it yet, and it is asked again; open: sent and not paid; paid; refused: " +
+        "Razorpay would not make it, so ops send one by hand; lapsed: closed unpaid.",
+    }),
+    paid_at: z.union([z.iso.datetime(), z.null()]),
+  })
+  .strict()
+  .openapi("ClientPaymentLink");
+
+const ClientInvoiceSchema = z
+  .object({
+    visit_id: z.uuid(),
+    date: z.iso.date(),
+    type: z.enum(VISIT_TYPES),
+    state: z.enum(INVOICE_STATES).openapi({
+      description: "to_raise: Books holds none yet; draft: Books holds it unsent; issued: sent to the client.",
+    }),
+    issued_at: z.union([z.iso.datetime(), z.null()]),
+  })
+  .strict()
+  .openapi("ClientInvoice");
+
+const RecordVisitsSchema = z
+  .object({ upcoming: z.array(ClientVisitSchema), past: z.array(ClientVisitSchema) })
+  .strict()
+  .openapi({ description: "Upcoming soonest first; past newest first." });
+
+/** What the client's money is on the record, kept as it is once they are erased. */
+const RECORD_MONEY = {
+  payments: z.array(EntrySchema).openapi({ description: "Payments and refunds as one list, newest first." }),
+  payment_links: z.array(ClientPaymentLinkSchema).openapi({ description: "Every payment link, newest first." }),
+  invoices: z
+    .array(ClientInvoiceSchema)
+    .openapi({ description: "Each finished visit sold for a price, with its invoice; the latest visit first." }),
+};
+
 const ClientRecordSchema = z
   .object({
     id: z.uuid(),
@@ -235,21 +325,37 @@ const ClientRecordSchema = z
     credits: z
       .union([z.object({ visits: z.number().int(), earliest_expiry: z.iso.datetime().nullable() }).strict(), z.null()])
       .openapi({ description: "Service visits left and when the soonest expires; null with none left." }),
-    visits: z
-      .object({ upcoming: z.array(ClientVisitSchema), past: z.array(ClientVisitSchema) })
-      .strict()
-      .openapi({ description: "Upcoming soonest first; past newest first." }),
-    payments: z.array(EntrySchema).openapi({ description: "Payments and refunds as one list, newest first." }),
+    visits: RecordVisitsSchema,
+    ...RECORD_MONEY,
     history: OpsHistorySchema,
     invite: z
       .union([ClientInviteSchema, z.null()])
       .openapi({ description: "The invite they came with, or ops attached; null for none." }),
-    held_bookings: z
-      .array(HeldBookingSchema)
-      .openapi({ description: "Bookings FSM refused, waiting for a try or for ops; the soonest visit first." }),
+    held_bookings: HeldBookingsSchema,
+    auto_refunds: z
+      .array(AutoRefundSchema)
+      .openapi({ description: "Bookings that refunded their payment by themselves; the latest refund first." }),
   })
   .strict()
   .openapi("ClientRecord");
+
+const ErasedClientRecordSchema = z
+  .object({
+    id: z.uuid(),
+    erased_at: z.iso.datetime(),
+    visits: RecordVisitsSchema.openapi({
+      description:
+        "Upcoming soonest first; past newest first. No discount code may be entered or taken off: price_open is false.",
+    }),
+    ...RECORD_MONEY,
+    held_bookings: HeldBookingsSchema,
+  })
+  .strict()
+  .openapi("ErasedClientRecord", {
+    description:
+      "What is kept of a client once erased: their visits, their money and any booking still held for them. " +
+      "Nothing names them.",
+  });
 
 const PhotoSchema = z
   .object({
@@ -392,9 +498,13 @@ const recordRoute = createRoute({
   method: "get",
   path: "/api/clients/{id}",
   summary:
-    "The client's record: who they are, their address, their visits, their payments, their history and their invite",
+    "The client's record: who they are, their address, their visits, their money, their history and their invite; " +
+    "of an erased client, when they were erased, their visits, their money and any booking still held for them",
   request: { params: clientId },
-  responses: { 200: { description: "The record", ...json(ClientRecordSchema) }, 404: unknownClient },
+  responses: {
+    200: { description: "The record", ...json(z.union([ClientRecordSchema, ErasedClientRecordSchema])) },
+    404: errorResponse("not_found: no such client, or the client is outside the caller's cities"),
+  },
 });
 
 const photosRoute = createRoute({
@@ -478,15 +588,68 @@ interface PersonRow {
   created_at: string;
 }
 
-/** The client by ID; null when there is no such person, they were erased, or they are outside the caller's cities. */
-export async function clientInReach(c: Context<AppEnv>, id: string): Promise<PersonRow | null> {
-  const person = await c.env.DB.prepare(
-    "SELECT id, name, mobile_e164, created_at FROM people WHERE id = ?1 AND erased_at IS NULL",
-  )
+/** The client by ID, erased or not; null when there is no such person or they are outside the caller's cities. */
+async function anyClientInReach(
+  c: Context<AppEnv>,
+  id: string,
+): Promise<(PersonRow & { erased_at: string | null }) | null> {
+  const person = await c.env.DB.prepare("SELECT id, name, mobile_e164, created_at, erased_at FROM people WHERE id = ?1")
     .bind(id)
-    .first<PersonRow>();
+    .first<PersonRow & { erased_at: string | null }>();
   if (person === null || !(await withinRouteReach(c, "client", id))) return null;
   return person;
+}
+
+/** The client by ID; null when there is no such person, they were erased, or they are outside the caller's cities. */
+export async function clientInReach(c: Context<AppEnv>, id: string): Promise<PersonRow | null> {
+  const person = await anyClientInReach(c, id);
+  return person?.erased_at === null ? person : null;
+}
+
+/** The client's visits, each with how it closed, any closing of its task by hand, and its discount code. */
+async function recordVisits(db: D1Database, personId: string, now: Date) {
+  const visits = await listVisits(db, personId, now);
+  const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
+  const [outcomes, closings, codes] = await Promise.all([
+    visitOutcomes(db, visitIds),
+    partialVisitsClosed(db, visitIds),
+    clientVisitCodes(db, personId),
+  ]);
+  const withOutcome = (list: typeof visits.upcoming) =>
+    list.map((visit) => ({
+      ...visit,
+      outcome: outcomes.get(visit.id) ?? null,
+      closed_without_follow_up: closings.get(visit.id) ?? null,
+      discount_code: codes.get(visit.id)?.code ?? null,
+      price_open: codes.get(visit.id)?.open ?? false,
+      requested_code: codes.get(visit.id)?.requested ?? null,
+    }));
+  return { upcoming: withOutcome(visits.upcoming), past: withOutcome(visits.past) };
+}
+
+/**
+ * What is kept of an erased client: their visits, none of them open to a discount code any more, their money, and any
+ * booking FSM refused that is still held for them, for ops to refund.
+ */
+async function erasedRecord(db: D1Database, person: { id: string; erasedAt: string }, now: Date, retry: FsmRetry) {
+  const personId = person.id;
+  const [visits, payments, links, invoices, held] = await Promise.all([
+    recordVisits(db, personId, now),
+    paymentEntries(db, personId, now),
+    paymentLinksOf(db, personId, now),
+    visitInvoicesOf(db, personId),
+    heldBookingsOf(db, personId, now, retry),
+  ]);
+  const closed = (list: typeof visits.upcoming) => list.map((visit) => ({ ...visit, price_open: false }));
+  return {
+    id: personId,
+    erased_at: person.erasedAt,
+    visits: { upcoming: closed(visits.upcoming), past: closed(visits.past) },
+    payments,
+    payment_links: links,
+    invoices,
+    held_bookings: held.map(heldBookingOf),
+  };
 }
 
 interface PhotoListRow {
@@ -545,38 +708,30 @@ export function registerOpsClients(app: App): void {
   app.openapi(recordRoute, async (c) => {
     const { id } = c.req.valid("param");
     const db = c.env.DB;
-    const person = await clientInReach(c, id);
+    const person = await anyClientInReach(c, id);
     if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-
     const now = c.var.deps.now();
     const retry = (await opsInputs(c)).fsmRetry;
-    const [address, credits, visits, fitted, payments, history, proposal, invite, held] = await Promise.all([
-      currentAddress(db, id),
-      creditBalance(db, id, now),
-      listVisits(db, id, now),
-      isFitted(db, id),
-      paymentEntries(db, id, now),
-      clientHistory(db, id),
-      // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.
-      latestProposal(db, id),
-      clientInviteOf(db, id),
-      heldBookingsOf(db, id, now, retry),
-    ]);
-    const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
-    const [outcomes, closings, codes] = await Promise.all([
-      visitOutcomes(db, visitIds),
-      partialVisitsClosed(db, visitIds),
-      clientVisitCodes(db, id),
-    ]);
-    const withOutcome = (list: typeof visits.upcoming) =>
-      list.map((visit) => ({
-        ...visit,
-        outcome: outcomes.get(visit.id) ?? null,
-        closed_without_follow_up: closings.get(visit.id) ?? null,
-        discount_code: codes.get(visit.id)?.code ?? null,
-        price_open: codes.get(visit.id)?.open ?? false,
-        requested_code: codes.get(visit.id)?.requested ?? null,
-      }));
+    if (person.erased_at !== null) {
+      return c.json(await erasedRecord(db, { id, erasedAt: person.erased_at }, now, retry), 200);
+    }
+
+    const [address, credits, visits, fitted, payments, links, invoices, history, proposal, invite, held, refunded] =
+      await Promise.all([
+        currentAddress(db, id),
+        creditBalance(db, id, now),
+        recordVisits(db, id, now),
+        isFitted(db, id),
+        paymentEntries(db, id, now),
+        paymentLinksOf(db, id, now),
+        visitInvoicesOf(db, id),
+        clientHistory(db, id),
+        // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.
+        latestProposal(db, id),
+        clientInviteOf(db, id),
+        heldBookingsOf(db, id, now, retry),
+        autoRefundsOf(db, id),
+      ]);
 
     return c.json(
       {
@@ -587,11 +742,14 @@ export function registerOpsClients(app: App): void {
         known_since: person.created_at,
         address: address === null ? null : clientAddressOf(address),
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
-        visits: { upcoming: withOutcome(visits.upcoming), past: withOutcome(visits.past) },
+        visits,
         payments,
+        payment_links: links,
+        invoices,
         history,
         invite,
         held_bookings: held.map(heldBookingOf),
+        auto_refunds: refunded.map(autoRefundOf),
       },
       200,
     );

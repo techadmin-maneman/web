@@ -5,26 +5,33 @@
 //
 // In order: one D1 batch blanks the person and what they left, ends their
 // sessions, cancels their unsent messages and expires their jobs, with who
-// erased them and any deletion request of theirs still open in the same batch,
-// so all of it happens or none of it does. Then their files are deleted from
-// R2, each before the row that names it. If that fails part-way, the person is
-// erased all the same and the cron's erased_files job deletes what is left. The
-// CRM and FSM are told at once, by their queues; Books by the cron's own pass
-// (src/domain/books-erasure.ts).
+// erased them, and their deletion requests, grievances and Customer Care
+// alerts still open closed, in the same batch, so all of it happens or none of
+// it does. Then their files are deleted from R2, each before the row that names
+// it. If that fails part-way, the person is erased all the same and the cron's
+// erased_files job deletes what is left. The CRM and FSM are told at once, by their queues;
+// Books by the cron's own pass (src/domain/books-erasure.ts).
 //
-// Nothing is erased while the person has a visit still to happen or a payment
-// held with no visit behind it (src/policy/account-deletion.ts): the caller
-// asks erasureBlockers first.
+// Nothing is erased while the person has a visit or booking still to happen, a
+// payment held with no visit behind it, or a payment link unpaid
+// (src/policy/account-deletion.ts): the caller asks erasureBlockers first. When
+// ops erase all the same, the batch lets go of every booking of theirs not yet a
+// visit, so none is booked for nobody, and their open payment links are then
+// cancelled at Razorpay.
 //
 // A render still running cannot store its result once its job is expired: the
 // render consumer deletes what it wrote when it finds the job has moved on.
 
 import type { NoticePurpose } from "../config/notices.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
-import type { Logger } from "../log.ts";
+import { failureReason, type Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
+import { CUSTOMER_CARE_KINDS, deletionWaitingKey } from "../policy/alerts.ts";
+import type { PaymentsProvider } from "../providers/payments.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { recordConsent } from "./consents.ts";
 import { blankProfiles } from "./hair-profiles.ts";
@@ -59,7 +66,16 @@ export interface ErasureBlockers {
     readonly status: (typeof LIVE_VISIT_STATUSES)[number];
     readonly window_start: string | null;
   }[];
+  /** Bookings paid for, or free, that are not yet visits. */
+  readonly bookings: readonly {
+    readonly id: string;
+    readonly type: VisitType;
+    readonly date: string;
+    readonly window: BookingWindow;
+  }[];
   readonly payments: readonly { readonly id: string; readonly reference: string | null; readonly amount: number }[];
+  /** Payment links still unpaid: a fitted visit's, or one ops sent for a booking, still open. */
+  readonly links: readonly { readonly id: string; readonly reference: string | null; readonly amount: number }[];
 }
 
 export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS" | "REFERRAL_CARDS">;
@@ -72,6 +88,9 @@ export interface EraseOptions {
   readonly alongside?: readonly D1PreparedStatement[];
   /** Whether FSM holds the record of field work, so the person's FSM contact is anonymised too. */
   readonly fsmConnected: boolean;
+  /** Cancels their payment links still open. */
+  readonly payments: PaymentsProvider;
+  readonly alertOnce: AlertOnce;
   readonly requestId: string;
   readonly now: Date;
   readonly log: Logger;
@@ -95,8 +114,19 @@ export async function stillToErase(db: D1Database, personId: string): Promise<bo
   return person !== null;
 }
 
-/** The visits still to happen, and the payments held with no visit behind them, that ops settle before erasing. */
-export async function erasureBlockers(db: D1Database, personId: string): Promise<ErasureBlockers> {
+/** A fitted visit's payment link not yet paid, of the person `?1`. */
+const UNPAID_VISIT_LINKS = `FROM payment_links l JOIN appointments a ON a.id = l.appointment_id
+  WHERE a.person_id = ?1 AND l.paid_at IS NULL`;
+
+/** A booking of the person `?1` that ops sent a payment link for, not yet paid, and still open at `?2`. */
+const OPEN_BOOKING_LINKS = `FROM slot_holds
+  WHERE person_id = ?1 AND state = 'held' AND pay_by_link = 1 AND confirmed_at IS NULL AND expires_at > ?2`;
+
+/**
+ * What ops settle before erasing: the visits still to happen, the bookings paid for or free that are not yet visits,
+ * the payments held with no visit behind them, and the payment links still unpaid.
+ */
+export async function erasureBlockers(db: D1Database, personId: string, now: Date): Promise<ErasureBlockers> {
   const { results: visits } = await db
     .prepare(
       `SELECT id, type, status, window_start FROM appointments
@@ -105,6 +135,15 @@ export async function erasureBlockers(db: D1Database, personId: string): Promise
     )
     .bind(personId, JSON.stringify(LIVE_VISIT_STATUSES))
     .all<ErasureBlockers["visits"][number]>();
+  // A booking that moves a visit is not counted: the visit it moves is, above.
+  const { results: bookings } = await db
+    .prepare(
+      `SELECT id, type, date, window_label AS window FROM slot_holds
+       WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
+       ORDER BY date, start_unit`,
+    )
+    .bind(personId)
+    .all<ErasureBlockers["bookings"][number]>();
   const { results: payments } = await db
     .prepare(
       `SELECT id, reference, amount FROM payments
@@ -113,7 +152,61 @@ export async function erasureBlockers(db: D1Database, personId: string): Promise
     )
     .bind(personId)
     .all<ErasureBlockers["payments"][number]>();
-  return { visits, payments };
+  const { results: links } = await db
+    .prepare(
+      `SELECT l.id, l.reference, l.amount ${UNPAID_VISIT_LINKS}
+       UNION ALL SELECT id, reference, amount ${OPEN_BOOKING_LINKS}`,
+    )
+    .bind(personId, now.toISOString())
+    .all<ErasureBlockers["links"][number]>();
+  return { visits, bookings, payments, links };
+}
+
+/** Razorpay's IDs for the person's payment links it would still take a payment on. */
+async function openLinkIds(db: D1Database, personId: string, now: Date): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT l.razorpay_link_id AS link_id ${UNPAID_VISIT_LINKS} AND l.razorpay_link_id IS NOT NULL
+       UNION ALL SELECT payment_link_id ${OPEN_BOOKING_LINKS} AND payment_link_id IS NOT NULL`,
+    )
+    .bind(personId, now.toISOString())
+    .all<{ link_id: string }>();
+  return results.map((row) => row.link_id);
+}
+
+/**
+ * Cancels each link at Razorpay, so it neither takes a payment nor reminds the erased client. One Razorpay will not
+ * cancel is left to ops, by its ID alone.
+ */
+async function cancelOpenLinks(linkIds: readonly string[], options: EraseOptions): Promise<void> {
+  for (const linkId of linkIds) {
+    try {
+      await options.payments.cancelPaymentLink(linkId);
+    } catch (error) {
+      const reason = failureReason(error);
+      options.log.warn("erased_link_not_cancelled", { link_id: linkId, reason });
+      await options.alertOnce({
+        key: `erased_link:${linkId}`,
+        message:
+          `Payment link ${linkId}, of a client erased since, could not be cancelled: ${reason}. ` +
+          "Cancel it in Razorpay's dashboard.",
+      });
+    }
+  }
+}
+
+/** Every booking of theirs not yet a visit is let go, its time freed, so that nothing books one for nobody. */
+function letGoOfBookings(db: D1Database, personId: string, at: string): D1PreparedStatement[] {
+  return [
+    db
+      .prepare(
+        "DELETE FROM slot_claims WHERE hold_id IN (SELECT id FROM slot_holds WHERE person_id = ?1 AND state = 'held')",
+      )
+      .bind(personId),
+    db
+      .prepare("UPDATE slot_holds SET state = 'released', updated_at = ?2 WHERE person_id = ?1 AND state = 'held'")
+      .bind(personId, at),
+  ];
 }
 
 /**
@@ -152,8 +245,10 @@ export async function erasePerson(
          WHERE person_id = ?1 AND state IN ('waiting', 'queued') RETURNING id`,
       )
       .bind(personId),
-    ...alongside,
+    ...letGoOfBookings(db, personId, at),
     ...(await personalDataStatements(db, personId, at)),
+    // After the blanking, so a grievance the caller closes keeps the words it is closed with.
+    ...alongside,
     recordEvent(db, "person_erased", personId, { photos: counts.photos, results: counts.results }, now),
   ]);
 
@@ -176,9 +271,9 @@ export async function erasePerson(
 }
 
 /**
- * The one way a person is erased. Who erased them, and any deletion request of theirs still open, go in the
- * erasure's batch; the CRM's and FSM's blanking is queued at once rather than left to the sweeper. Null when they are
- * already erased.
+ * The one way a person is erased. Who erased them, and what of theirs is still open for ops (a deletion request, a
+ * grievance, a Customer Care alert), go in the erasure's batch; the CRM's and FSM's blanking is queued at once rather than left to
+ * the sweeper, and their payment links still open are cancelled. Null when they are already erased.
  */
 export async function eraseAndQueue(
   env: ErasureQueueEnv,
@@ -186,9 +281,14 @@ export async function eraseAndQueue(
   options: EraseOptions,
 ): Promise<ErasureSummary | null> {
   const { audit, now, log } = options;
+  // Read before the batch, which lets go of the bookings they belong to.
+  const linkIds = await openLinkIds(env.DB, personId, now);
   const summary = await erasePerson(env, personId, now, log, [
     ...(options.alongside ?? []),
+    resolveOpenRequestAlerts(env.DB, personId, now),
     closeOpenRequests(env.DB, personId, audit.actor.id, now),
+    closeOpenGrievances(env.DB, personId, audit.actor.id, now),
+    resolveAlertsAbout(env.DB, personId, now),
     auditStatement(env.DB, audit, now),
   ]);
   if (summary === null) return null;
@@ -200,7 +300,18 @@ export async function eraseAndQueue(
     visit_photos_deleted: summary.visitPhotosDeleted,
   });
   await queueOutsideErasure(env, summary.personId, options);
+  await cancelOpenLinks(linkIds, options);
   return summary;
+}
+
+/** The alerts on Tasks for the deletion requests the erasure is about to close; before it closes them. */
+function resolveOpenRequestAlerts(db: D1Database, personId: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE alerts SET resolved_at = ?2 WHERE resolved_at IS NULL AND key IN
+         (SELECT ?3 || id FROM deletion_requests WHERE person_id = ?1 AND state = 'requested')`,
+    )
+    .bind(personId, now.toISOString(), deletionWaitingKey(""));
 }
 
 /** A deletion request the person still has open is done by their erasure, under whoever erased them. */
@@ -211,6 +322,33 @@ function closeOpenRequests(db: D1Database, personId: string, decidedBy: string, 
        WHERE person_id = ?1 AND state = 'requested'`,
     )
     .bind(personId, now.toISOString(), decidedBy);
+}
+
+/** An open grievance of theirs is closed by the erasure, under whoever erased them: nobody is left to answer. */
+function closeOpenGrievances(db: D1Database, personId: string, closedBy: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE grievances SET state = 'resolved', response = 'Client erased', resolved_by = ?2, resolved_at = ?3
+       WHERE person_id = ?1 AND state = 'open'`,
+    )
+    .bind(personId, closedBy, now.toISOString());
+}
+
+/**
+ * The person's open Customer Care alerts that link to their page are resolved: their messages, contact and notes went
+ * with the erasure. Every other alert stays open, since a visit, a booking or money may still need settling, and their
+ * page shows what is kept of those.
+ */
+function resolveAlertsAbout(db: D1Database, personId: string, now: Date): D1PreparedStatement {
+  const page = `/clients/${personId}`;
+  // An alert's kind is its key up to the first colon.
+  return db
+    .prepare(
+      `UPDATE alerts SET resolved_at = ?3
+       WHERE resolved_at IS NULL AND (link = ?1 OR instr(link, ?2) = 1)
+         AND substr(key, 1, instr(key || ':', ':') - 1) IN (SELECT value FROM json_each(?4))`,
+    )
+    .bind(page, `${page}/`, now.toISOString(), JSON.stringify(CUSTOMER_CARE_KINDS));
 }
 
 /** Both consumers do nothing for a person already done, so the sweeper finding them as well costs nothing. */
@@ -297,6 +435,14 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
       .bind(personId),
     db.prepare("DELETE FROM number_change_requests WHERE person_id = ?1").bind(personId),
     db.prepare("UPDATE grievances SET text = 'Erased', response = NULL WHERE person_id = ?1").bind(personId),
+    // How they reached us, and how much hair they had lost; the lead stays, as the record of a booking.
+    db
+      .prepare(
+        `UPDATE leads SET loss_extent = NULL, utm_source = NULL, utm_medium = NULL, utm_campaign = NULL,
+           utm_content = NULL, gclid = NULL, fbclid = NULL, referrer = NULL, landing_path = NULL
+         WHERE person_id = ?1`,
+      )
+      .bind(personId),
     ...opsWordsAbout(db, personId),
     // Their first name on a referral, which the referrer's tracker shows until now; blank, it reads "A friend",
     // which says nothing of the erasure (LIFE-13). Counsel may rule it can stay (docs/open-points.md, item 63).

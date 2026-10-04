@@ -59,6 +59,8 @@ export const AUDIT_ACTIONS = [
   "slot_times.set",
   "pincode.set",
   "pincode.rename",
+  // A pincode ops add to the service area, unserved, in one of our cities.
+  "pincode.add",
   // The days no visit is offered, which the runbook's SQL set before (docs/decisions/0088-every-policy-in-the-console.md).
   "blackout.add",
   "blackout.remove",
@@ -94,6 +96,9 @@ export const AUDIT_ACTIONS = [
   "task.hand_back",
   "task.close",
   "address.given_to_ops",
+  // An alert on Tasks' "Needs a hand" marked done, and the message, lead or CRM erasure it gave up on sent again.
+  "alert.resolve",
+  "alert.send_again",
   // A booking FSM would not take, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): FSM tried again
   // at ops' asking and taking it, the visit ops booked in FSM by hand linked to it, its refund, its hourly tries
   // stopped so ops book it in FSM by hand, and a link that let it go instead, its payment having gone back.

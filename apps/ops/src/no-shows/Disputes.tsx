@@ -1,7 +1,8 @@
-// Board D1's second card: a charge the client disputed in the app, with the evidence its no-show was ruled on, what
-// the charge took, the client's own words, and Refund or Uphold, each with a note the server refuses to go without
-// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). Refund gives back what the charge took; the client is
-// told the ruling either way, never the note.
+// Board D1's second card, one a dispute, in a queue with its count: a charge the client disputed in the app, with
+// the evidence its no-show was ruled on, what the charge took, the client's own words, and Refund or Uphold, each
+// with a note the server refuses to go without (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). Refund
+// gives back what the charge took; the client is told the ruling either way, never the note. A dispute waits on the
+// Tasks board too, whose link opens its row here.
 
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -9,6 +10,7 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type DisputeRuling, type NoShowDispute } from "../api.ts";
+import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { noShows } from "../content.ts";
 import { REFUNDING_A_DISPUTE, useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
@@ -37,16 +39,20 @@ function waitedOf(each: NoShowDispute): string {
   return noShows.queue.waited(minutesBetween(each.checked_in_at, each.closed_at), indiaClock(each.closed_at));
 }
 
+/** Whether the reminder reached the client, was sent and never delivered, or never went at all. */
+function messageOf(each: NoShowDispute): string {
+  const lines = noShows.queue.message;
+  if (each.message_delivered_at !== null) return lines.delivered(indiaClock(each.message_delivered_at));
+  if (each.message_state === "delivered") return lines.sent;
+  return lines[each.message_state];
+}
+
 /** The board's four rows, in its order. */
 function Evidence({ each }: { each: NoShowDispute }) {
-  const delivered = each.message_delivered_at;
   const rows = [
     [copy.facts.checkIn, indiaClock(each.checked_in_at)],
     [copy.facts.distance, <Distance key="distance" metres={each.distance_m} radius={each.radius_m} />],
-    [
-      copy.facts.whatsapp,
-      delivered === null ? copy.notDelivered : noShows.queue.message.delivered(indiaClock(delivered)),
-    ],
+    [copy.facts.whatsapp, messageOf(each)],
     [copy.facts.waited, waitedOf(each)],
   ] as const;
   return (
@@ -90,13 +96,15 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
 
   const sending = step.kind === "sending";
   const noReason = reason.trim() === "";
+  // Not "dispute-…", which is the queue row's own id, and the address a task links to.
+  const titleId = `dispute-title-${each.id}`;
   return (
-    <section className={styles.dispute} aria-labelledby={`dispute-${each.id}`}>
+    <section aria-labelledby={titleId}>
       <div className={styles.caseHead}>
         <p className={styles.disputeLabel}>{copy.label}</p>
         <Left due={each.due} now={now} />
       </div>
-      <h3 className={styles.disputeTitle} id={`dispute-${each.id}`}>
+      <h3 className={styles.disputeTitle} id={titleId}>
         {titleOf(each)}
       </h3>
       {each.reason === null ? (
@@ -159,22 +167,35 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
   );
 }
 
-export function Disputes() {
+/** `onRuled`: a dispute was ruled on, which may have refunded money today. */
+export function Disputes({ onRuled }: { onRuled: () => void }) {
   const [loaded, retry] = useLoad(api.disputes);
   const access = useAccess();
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
-  const { disputes } = loaded.value;
-  if (disputes.length === 0) return <p className={styles.caption}>{copy.none}</p>;
   const uphold = access.mayCall("POST /api/no-shows/disputes/{id}/ruling");
   const may: MayRule = { uphold, refund: uphold && access.reaches(REFUNDING_A_DISPUTE) };
   return (
-    <>
-      {disputes.map((each) => (
-        <Dispute key={each.id} each={each} now={now} may={may} onRuled={retry} />
-      ))}
-    </>
+    <DecisionQueue
+      titleId="disputes"
+      title={copy.queueTitle}
+      items={loaded.value.disputes}
+      rowKind="dispute"
+      empty={copy.none}
+    >
+      {(each, ruled) => (
+        <Dispute
+          each={each}
+          now={now}
+          may={may}
+          onRuled={() => {
+            ruled();
+            onRuled();
+          }}
+        />
+      )}
+    </DecisionQueue>
   );
 }

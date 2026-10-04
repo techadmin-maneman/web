@@ -11,9 +11,10 @@ import { json } from "../http/openapi.ts";
 
 const ResentSchema = z
   .object({
-    outcome: z.enum(["resent", "sent", "paid", "refused"]).openapi({
+    outcome: z.enum(["resent", "sent", "not_texted", "paid", "refused"]).openapi({
       description:
         "resent: Razorpay texted the link again; sent: the link was never made, and now is and has been texted; " +
+        "not_texted: messaging may not text this number (a staging test record), so nothing was sent; " +
         "paid: the client has paid, so nothing was sent; refused: Razorpay refused to make it, so ops send one from " +
         "Razorpay's dashboard.",
     }),
@@ -37,7 +38,8 @@ const resendRoute = createRoute({
 export function registerOpsPaymentLinks(app: App): void {
   app.openapi(resendRoute, async (c) => {
     const { deps, log, requestId } = c.var;
-    const outcome = await resendLink(c.env.DB, { ...deps, log }, c.req.valid("param").id, deps.now());
+    const linkDeps = { ...deps, log, messagingSettings: c.var.config.settings.messaging };
+    const outcome = await resendLink(c.env.DB, linkDeps, c.req.valid("param").id, deps.now());
     if (outcome === "not_found") return c.json(errorBody("not_found", requestId), 404);
     if (outcome === "unavailable") return c.json(errorBody("unavailable", requestId), 503);
     return c.json({ outcome }, 200);

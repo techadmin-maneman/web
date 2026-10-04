@@ -95,9 +95,21 @@ describe("the account of what has not reached us", () => {
           fields: ["technician"],
           moved: null,
           requestId: null,
+          startsAt: null,
         },
       },
     ]);
+  });
+
+  // BK-43: a job ops moved is named by the start the technician knew, which only the write still holds.
+  it("keeps the start the stopped write was sent with", () => {
+    const sentWith = {
+      state: "superseded",
+      note: "superseded",
+      fields: ["time"],
+      starts_at: "2027-01-14T10:30:00.000Z",
+    };
+    expect(account([event(1, "a", sentWith as Partial<Queued>)])[0]?.stopped?.startsAt).toBe(sentWith.starts_at);
   });
 
   it("keeps whom the job went to, and when, where the API said", () => {

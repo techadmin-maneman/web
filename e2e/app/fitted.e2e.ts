@@ -443,7 +443,7 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
-  const waiting = { type: "service", date: "2027-09-25", window: "morning", paid: true, one_visit: null };
+  const waiting = { type: "service", date: "2027-09-25", window: "morning", paid: true, one_visit: null, told: true };
   await page.route("**/api/me", (route) =>
     route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
   );
@@ -475,7 +475,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
   const price = { amount: 3_000_000, from: false, code: null };
-  const waiting = { type: "first_fit", date: "2027-09-25", window: "morning", paid: false, one_visit: price };
+  const waiting = { type: "first_fit", date: "2027-09-25", window: "morning", paid: false, one_visit: price, told: false };
   await page.route("**/api/me", (route) =>
     route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
   );
@@ -485,6 +485,8 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   await expect(home).toContainText(shortDate("2027-09-25"));
   await expect(home).toContainText("Rs. 30,000, only if you go ahead");
   await expect(home).not.toContainText("We are booking your visit.");
+  // MON-14: nothing paid and no consent to visit messages, so no WhatsApp is promised.
+  await expect(home).not.toContainText("We will message you on WhatsApp");
 
   await tab(page, "Visits").click();
   const card = page.getByRole("main").getByRole("listitem").first();

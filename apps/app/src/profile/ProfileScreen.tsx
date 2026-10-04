@@ -56,7 +56,7 @@ export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
           onChanged={() => void load()}
         />
         <SupportCard />
-        <DataCard />
+        <DataCard grievances={loaded.grievances} onRaised={() => void load()} />
         <DeletionCard deletion={loaded.deletion} rejected={loaded.deletion_rejected} onRequested={() => void load()} />
         <LogOut className={styles.logout} />
       </div>

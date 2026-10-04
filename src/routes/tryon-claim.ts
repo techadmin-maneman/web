@@ -25,6 +25,7 @@ import { DAY_MS } from "../lib/durations.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { LOOK_PER_NUMBER_DAYS, undelivered } from "../policy/tryon-delivery.ts";
+import { enqueue } from "../queues/enqueue.ts";
 import { heldBackByAllowlist, resultMessageCap } from "../queues/messaging.ts";
 import { NumberCodeIdSchema } from "./number-codes.ts";
 
@@ -57,7 +58,7 @@ export const ClaimRequestSchema = z
       .max(40)
       .optional()
       .openapi({
-        example: "gate-v3",
+        example: "gate-v4",
         description:
           "The gate's notice the page showed: the current one, the only one a claim may record, when left out " +
           "(docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).",
@@ -194,12 +195,7 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
   });
   log.info("tryon_claimed", { lead_id: leadId, job_id: job.id });
 
-  // Safe in D1 if sending fails: the sweeper re-enqueues pending leads.
-  try {
-    await c.env.CRM_QUEUE.send({ lead_id: leadId, request_id: requestId });
-  } catch (error) {
-    log.warn("crm_enqueue_failed", { lead_id: leadId, error });
-  }
+  await enqueue(c.env.CRM_QUEUE, { lead_id: leadId, request_id: requestId }, { log, ifLost: "sweeper" });
   return { ok: true, body: { lead_id: leadId } };
 }
 

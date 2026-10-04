@@ -36,10 +36,16 @@ export async function keptDay(date: string): Promise<readonly JobSummary[] | nul
 
 const NOTHING_LANDED: JobState = { started_at: null, outcome: null };
 
-/** A row an earlier build kept, before the day's list said where each job stood: begun and closed on neither. */
+/**
+ * A row an earlier build kept, before the day's list said where each job stood: begun and closed on neither. One kept
+ * before the list said how long each visit is says nothing of it.
+ */
 function rowInTodaysShape(job: JobSummary): JobSummary {
-  const kept = job as Omit<JobSummary, "progress"> & { readonly progress?: JobState };
-  return { ...kept, progress: kept.progress ?? NOTHING_LANDED };
+  const kept = job as Omit<JobSummary, "progress" | "minutes"> & {
+    readonly progress?: JobState;
+    readonly minutes?: JobSummary["minutes"];
+  };
+  return { ...kept, progress: kept.progress ?? NOTHING_LANDED, minutes: kept.minutes ?? null };
 }
 
 /**
@@ -82,13 +88,30 @@ export async function keptJob(id: string): Promise<Job | null> {
  * kept before the hair profile carries none, and lists no step for it
  * (docs/decisions/0106-a-clients-hair-profile.md). One kept before a one
  * visit's discount code was on the card carries none, and the outcome step asks.
+ * One kept before a one visit's choice was on the card knows none, and runs the
+ * whole checklist. One kept before the card carried the visit's length and the
+ * check-in radius says neither.
  */
 function inTodaysShape(job: Job): Job {
-  const kept = job as Omit<Job, "partial_reasons" | "consumables" | "profile" | "discount_code"> & {
+  const kept = job as Omit<
+    Job,
+    | "partial_reasons"
+    | "consumables"
+    | "profile"
+    | "discount_code"
+    | "checklist_if_declined"
+    | "client_choice"
+    | "minutes"
+    | "checkin_radius_m"
+  > & {
     readonly partial_reasons: readonly (Job["partial_reasons"][number] | string)[];
     readonly consumables?: Job["consumables"];
     readonly profile?: Job["profile"];
     readonly discount_code?: Job["discount_code"];
+    readonly checklist_if_declined?: Job["checklist_if_declined"];
+    readonly client_choice?: Job["client_choice"];
+    readonly minutes?: Job["minutes"];
+    readonly checkin_radius_m?: Job["checkin_radius_m"];
   };
   return {
     ...kept,
@@ -98,6 +121,10 @@ function inTodaysShape(job: Job): Job {
     consumables: kept.consumables ?? [],
     profile: kept.profile ?? null,
     discount_code: kept.discount_code ?? null,
+    checklist_if_declined: kept.checklist_if_declined ?? kept.checklist,
+    client_choice: kept.client_choice ?? null,
+    minutes: kept.minutes ?? null,
+    checkin_radius_m: kept.checkin_radius_m ?? null,
   };
 }
 
@@ -161,17 +188,48 @@ export async function keptDays(): Promise<string[]> {
   return (await all<Kept>("jobs")).filter((kept) => kept.kind === "day").map((kept) => kept.date);
 }
 
-/**
- * Each job whose card the phone holds, by its client's name. The day's list
- * carries no name — the API gives a client only with the card, the day before
- * the visit — so a row, the waiting screen and the close-out all read it here.
- */
+/** Each job whose card the phone holds, by its client's name: what the close-out reads. */
 export async function keptNames(): Promise<Map<string, string>> {
   const names = new Map<string, string>();
   for (const kept of await all<Kept>("jobs")) {
     if (kept.kind === "job" && kept.job.client !== null) names.set(kept.job.id, kept.job.client.name);
   }
   return names;
+}
+
+/** What the phone holds of a job whether or not its card is open: when, what and where, and the client once open. */
+export interface HeldJob {
+  readonly starts_at: string;
+  readonly type: JobSummary["type"];
+  readonly one_visit: boolean;
+  readonly sector: string | null;
+  readonly client: string | null;
+}
+
+type Listed = Pick<JobSummary, "starts_at" | "type" | "one_visit" | "sector">;
+
+const heldOf = (job: Listed, client: string | null): HeldJob => ({
+  starts_at: job.starts_at,
+  type: job.type,
+  one_visit: job.one_visit,
+  sector: job.sector,
+  client,
+});
+
+/**
+ * Each job the phone holds, from its card, else from the day's list it is on. A card read again after ops moved the
+ * job carries its new start (apps/tech/src/store/outbox.ts).
+ */
+export async function keptJobs(): Promise<Map<string, HeldJob>> {
+  const kept = await all<Kept>("jobs");
+  const jobs = new Map<string, HeldJob>();
+  for (const record of kept) {
+    if (record.kind === "day") for (const job of record.jobs) jobs.set(job.id, heldOf(job, null));
+  }
+  for (const record of kept) {
+    if (record.kind === "job") jobs.set(record.job.id, heldOf(record.job, record.job.client?.name ?? null));
+  }
+  return jobs;
 }
 
 /** The days and the clients' cards, gone; each job's arrival and close-out stay with the work not yet sent. */

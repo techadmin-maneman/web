@@ -107,20 +107,30 @@ describe("Razorpay: orders and refunds", () => {
     await expect(payments.createOrder({ amount: 1, receipt: "r", notes: {} })).rejects.toThrow();
   });
 
-  it("answers the status of each payment on an order, by a GET that sends no body", async () => {
+  it("answers each payment on an order, as the mirror reads it, by a GET that sends no body", async () => {
+    const made = { entity: "payment", amount: 200000, currency: "INR", order_id: "order_9", created_at: 1790058600 };
     const { payments, calls } = razorpay({
       [`${API}/orders/order_9/payments`]: () =>
         json({
           entity: "collection",
           count: 2,
           items: [
-            { id: "pay_1", entity: "payment", amount: 200000, status: "failed", order_id: "order_9" },
-            { id: "pay_2", entity: "payment", amount: 200000, status: "created", order_id: "order_9" },
+            { ...made, id: "pay_1", status: "failed", captured: false },
+            { ...made, id: "pay_2", status: "captured", captured: true, method: "upi", notes: { hold_id: "hold-1" } },
           ],
         }),
     });
 
-    expect(await payments.orderPayments("order_9")).toEqual(["failed", "created"]);
+    const [failed, captured] = await payments.orderPayments("order_9");
+    expect(failed).toMatchObject({ id: "pay_1", status: "failed" });
+    expect(captured).toMatchObject({
+      id: "pay_2",
+      status: "captured",
+      amount: 200000,
+      order_id: "order_9",
+      notes: { hold_id: "hold-1" },
+      created_at: 1790058600,
+    });
     expect(calls[0]?.method).toBe("GET");
     expect(calls[0]?.body).toBe("");
   });
@@ -140,22 +150,23 @@ describe("Razorpay: payment links", () => {
     description: "Mane Man Natural hair system · fitted Mon 21 Sep",
     customer: { name: "Rohit Malhotra", contact: "+919810000001" },
     notes: { appointment_id: "visit-1", person_id: "person-1" },
+    closesAt: new Date("2026-10-06T08:00:00.000Z"),
+    notify: true,
   };
 
   /** What the link was made with. */
-  async function linkMade(): Promise<Record<string, unknown>> {
+  async function linkMade(link = LINK): Promise<Record<string, unknown>> {
     const { payments, calls } = razorpay({
       [`${API}/payment_links`]: () =>
         json({ id: "plink_9", short_url: "https://rzp.io/i/abc", status: "created", reference_id: "MM-2026-0841" }),
     });
-    expect(await payments.createPaymentLink(LINK)).toEqual({ id: "plink_9", shortUrl: "https://rzp.io/i/abc" });
+    expect(await payments.createPaymentLink(link)).toEqual({ id: "plink_9", shortUrl: "https://rzp.io/i/abc" });
     expect(calls[0]?.headers.get("Authorization")).toBe(`Basic ${btoa("rzp_test_abc:key-secret")}`);
     return JSON.parse(calls[0]?.body ?? "") as Record<string, unknown>;
   }
 
   it("makes a link for the whole amount, under our reference, which Razorpay texts the client and reminds them of", async () => {
     const made = await linkMade();
-    expect(made).not.toHaveProperty("expire_by");
     expect(made).toMatchObject({
       amount: 4500000,
       currency: "INR",
@@ -177,12 +188,16 @@ describe("Razorpay: payment links", () => {
     });
   });
 
-  it("closes a link at the moment asked, in Unix seconds, where one is asked", async () => {
-    const { payments, calls } = razorpay({
-      [`${API}/payment_links`]: () => json({ id: "plink_9", short_url: "https://rzp.io/i/abc" }),
-    });
-    await payments.createPaymentLink({ ...LINK, closesAt: new Date("2026-09-22T06:30:00.000Z") });
-    expect(JSON.parse(calls[0]?.body ?? "")).toMatchObject({ expire_by: 1790058600 });
+  // MON-45, PS-47: no link ever closed.
+  it("closes every link at the moment asked, in Unix seconds", async () => {
+    const made = await linkMade({ ...LINK, closesAt: new Date("2026-09-22T06:30:00.000Z") });
+    expect(made).toMatchObject({ expire_by: 1790058600 });
+  });
+
+  // MON-45, PS-46: every link was texted, and reminded of, whoever the number belonged to.
+  it("texts neither the link nor reminders of it where asked not to", async () => {
+    const made = await linkMade({ ...LINK, notify: false });
+    expect(made).toMatchObject({ notify: { sms: false, email: false }, reminder_enable: false });
   });
 
   it("names Razorpay's refusal as a refusal, so ops are told rather than the close sent again", async () => {
@@ -228,6 +243,40 @@ describe("Razorpay: payment links", () => {
     });
     await expect(payments.resendPaymentLink("plink_9")).rejects.toThrow();
   });
+
+  it("reads a link by its ID, by a GET: how it stands, our reference, and the order its payment was made on", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/payment_links/plink_9`]: () =>
+        json({
+          id: "plink_9",
+          status: "paid",
+          reference_id: "MM-2026-0841",
+          order_id: "order_7",
+          amount_paid: 4500000,
+          payments: [{ payment_id: "pay_7", status: "captured" }],
+        }),
+    });
+
+    expect(await payments.paymentLink("plink_9")).toEqual({
+      id: "plink_9",
+      status: "paid",
+      reference_id: "MM-2026-0841",
+      order_id: "order_7",
+    });
+    expect(calls[0]?.method).toBe("GET");
+  });
+
+  it("cancels a link by its ID in the path, and names Razorpay's refusal of one already paid", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/payment_links/plink_9/cancel`]: () => json({ id: "plink_9", status: "cancelled" }),
+      [`${API}/payment_links/plink_paid/cancel`]: () =>
+        json({ error: { code: "BAD_REQUEST_ERROR", description: "Payment link cannot be cancelled" } }, 400),
+    });
+
+    await payments.cancelPaymentLink("plink_9");
+    expect(calls[0]?.method).toBe("POST");
+    await expect(payments.cancelPaymentLink("plink_paid")).rejects.toMatchObject({ status: 400, refusal: true });
+  });
 });
 
 describe("payments where none is connected", () => {
@@ -246,10 +295,14 @@ describe("payments where none is connected", () => {
         description: "d",
         customer: { name: "", contact: "" },
         notes: {},
+        closesAt: new Date("2026-10-06T08:00:00.000Z"),
+        notify: true,
       }),
     ).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     await expect(none.findPaymentLink("visit-1")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
+    await expect(none.cancelPaymentLink("plink_9")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     await expect(none.orderPayments("order_9")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
+    await expect(none.paymentLink("plink_9")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     expect(calls).toEqual([]);
   });
 });

@@ -86,8 +86,7 @@ const onceEach = (items: readonly JobSheetItem[]): JobSheetItem[] =>
 
 /**
  * The checklist a job runs: its kind's, or, for a consultation and fit in one visit, the consultation's and then the
- * first fit's, an item both hold listed once, however the visit closed
- * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+ * first fit's, an item both hold listed once (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
  */
 export function checklistOf(
   sheet: JobSheet,
@@ -101,6 +100,9 @@ export function checklistOf(
     retired: onceEach([...consultation.retired, ...fit.retired]),
   };
 }
+
+/** The checklist of a one visit whose client decided against the fit: the consultation's alone, as nothing is fitted. */
+export const declinedChecklistOf = (sheet: JobSheet): JobSheetList => sheet.checklists.consultation;
 
 /** Every code a list understands, retired ones included: what a phone's write is checked against. */
 export const knownCodes = (list: JobSheetList): Set<string> =>

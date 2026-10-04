@@ -27,7 +27,7 @@ import { STATUS_AFTER, type AppointmentTransition, type FsmProvider } from "../p
 import { allConsumables } from "./consumables.ts";
 import { statusOf } from "./visit-status.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
-import { checklistOf, jobSheet } from "./job-sheet-settings.ts";
+import { checklistOf, declinedChecklistOf, jobSheet } from "./job-sheet-settings.ts";
 import { recordFittedPiece, recordFailedPiece } from "./pieces.ts";
 import { attachPhotosToFsm } from "./tech-photos.ts";
 import { minutesBetween } from "../lib/durations.ts";
@@ -202,8 +202,11 @@ export async function summaryOf(db: D1Database, job: JobForFsm, deps: { labelAsT
 
   // The words ops gave each item; one they have since taken off is still named, and not counted against the list.
   const checklist = events.findLast((event) => event.kind === "checklist");
+  const piece = events.findLast((event) => event.kind === "piece");
   if (checklist !== undefined) {
-    const list = checklistOf(await jobSheet(db), job);
+    const sheet = await jobSheet(db);
+    const declined = job.oneVisit && piece?.body.declined === true;
+    const list = declined ? declinedChecklistOf(sheet) : checklistOf(sheet, job);
     const doneIds = new Set(asStrings(checklist.body.done));
     const ticked = [...list.items, ...list.retired].filter((item) => doneIds.has(item.id));
     const inList = list.items.filter((item) => doneIds.has(item.id)).length;
@@ -221,7 +224,6 @@ export async function summaryOf(db: D1Database, job: JobForFsm, deps: { labelAsT
     if (used.length > 0) parts.push(`Consumables: ${used.join(", ")}`);
   }
 
-  const piece = events.findLast((event) => event.kind === "piece");
   if (piece !== undefined) parts.push(...pieceLines(piece));
 
   const outcome = events.findLast((event) => event.kind === "outcome");

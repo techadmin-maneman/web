@@ -12,23 +12,28 @@
 // there. A link Razorpay refuses outright is not asked for again, and ops are told once, with the visit's ID as the
 // reference of the link they then make by hand. Until it is paid, the Tasks board lists it (src/domain/tasks.ts).
 //
-// Paid, Razorpay's webhook says so (src/routes/razorpay-hook.ts): the payment is the visit's, as a payment made
-// ahead is, and follows the same path to Books (src/domain/books-sync.ts). A link ops made by hand finds the visit
-// by its reference, the visit's ID.
+// Paid, Razorpay's webhook says so (src/routes/razorpay-hook.ts), or the cron finds it paid when the webhook never
+// came (src/domain/razorpay-catch-up.ts): the payment is the visit's, as a payment made ahead is, and follows the same
+// path to Books (src/domain/books-sync.ts), and the client gets our receipt on WhatsApp. A link ops made by hand finds
+// the visit by its reference, the visit's ID.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
+import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { firstNameOf } from "../lib/names.ts";
 import { failureReason, type Logger } from "../log.ts";
+import { closedIfSentBy, paymentLinkClosesAt } from "../policy/one-visit.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { isRefusal } from "../providers/provider-error.ts";
-import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import type { RazorpayPayment, RazorpayPaymentLink } from "../providers/razorpay.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
-import { referenceLink } from "./payments.ts";
+import { recordPayment, referenceLink } from "./payments.ts";
 import { priceOf } from "./price-book.ts";
 import { serviceOf } from "./services.ts";
-import { visitMessage } from "./visit-messages.ts";
+import { visitMessage, type Composed } from "./visit-messages.ts";
 
 /** What asking for the link came to; "free" when a discount code left nothing to pay, so no link was asked for. */
 export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free";
@@ -38,6 +43,8 @@ export interface LinkDeps {
   readonly alertOnce: AlertOnce;
   readonly resolveAlert: ResolveAlert;
   readonly log: Logger;
+  /** Whose numbers Razorpay may text the link to. */
+  readonly messagingSettings: MessagingSettings;
 }
 
 /** The visit a link is for: the client Razorpay texts it to, and the product they were fitted with. */
@@ -183,7 +190,7 @@ export async function sendPaymentLink(
     await deps.alertOnce({
       key: refusedKey(visit.appointmentId),
       message: `${notMade(visit, made.kind)} Send the client a link from Razorpay's dashboard with reference ${visit.appointmentId}.`,
-      link: `/clients/${visit.personId}`,
+      link: paymentsTab(visit.personId),
     });
     return made.kind === "unpriced" ? "unpriced" : "unavailable";
   }
@@ -210,7 +217,7 @@ interface UnsentRow extends LinkRow {
 
 /**
  * The links a close could not have made, asked of Razorpay again, oldest first: a few a run, each paid for from the
- * run's outside calls first. Answers how many were made.
+ * run's outside calls first. Never one for a client erased since. Answers how many were made.
  */
 export async function sendUnsentLinks(db: D1Database, deps: LinkDeps, now: Date, budget: CallBudget): Promise<number> {
   const { results } = await db
@@ -219,6 +226,7 @@ export async function sendUnsentLinks(db: D1Database, deps: LinkDeps, now: Date,
          a.window_start
        FROM payment_links l JOIN appointments a ON a.id = l.appointment_id
        WHERE l.sent_at IS NULL AND l.refused_at IS NULL
+         AND NOT EXISTS (SELECT 1 FROM people p WHERE p.id = a.person_id AND p.erased_at IS NOT NULL)
        ORDER BY l.created_at LIMIT ?1`,
     )
     .bind(LINKS_PER_PASS)
@@ -242,7 +250,7 @@ function fittedVisitOf(row: UnsentRow, personId: string): FittedVisit {
 }
 
 /** What ops sending a client's link again came to: texted again, made now, or why it was not sent. */
-export type Resent = "resent" | "sent" | "paid" | "refused" | "unavailable" | "not_found";
+export type Resent = "resent" | "sent" | "not_texted" | "paid" | "refused" | "unavailable" | "not_found";
 
 interface ResendRow extends UnsentRow {
   person_id: string;
@@ -253,7 +261,8 @@ interface ResendRow extends UnsentRow {
 /**
  * Ops send a client's unpaid link again: Razorpay texts the link it made once more, and a link the close could not
  * have made is asked for now rather than at the cron's next run. A link already paid is not sent, nor one Razorpay
- * refused, which ops send from Razorpay's dashboard. An erased client's link is not found.
+ * refused, which ops send from Razorpay's dashboard. A number messaging may not text (a staging test record) is not
+ * texted again. An erased client's link is not found.
  */
 export async function resendLink(db: D1Database, deps: LinkDeps, linkId: string, now: Date): Promise<Resent> {
   const row = await db
@@ -269,6 +278,13 @@ export async function resendLink(db: D1Database, deps: LinkDeps, linkId: string,
   if (row.paid_at !== null) return "paid";
   if (row.refused_at !== null) return "refused";
   if (row.razorpay_link_id === null) return askRazorpay(db, deps, row, fittedVisitOf(row, row.person_id), now);
+  const client = await db.prepare("SELECT mobile_e164 FROM people WHERE id = ?1").bind(row.person_id).first<{
+    mobile_e164: string;
+  }>();
+  if (!onAllowlist(deps.messagingSettings, client?.mobile_e164 ?? "")) {
+    deps.log.info("payment_link_not_texted", { appointment_id: row.appointment_id });
+    return "not_texted";
+  }
   try {
     await deps.payments.resendPaymentLink(row.razorpay_link_id);
   } catch (error) {
@@ -292,14 +308,19 @@ async function askRazorpay(
     .bind(visit.personId)
     .first<{ name: string; mobile_e164: string }>();
   const product = await serviceOf(db, "first_fit", visit.tier);
+  const contact = client?.mobile_e164 ?? "";
+  const notify = onAllowlist(deps.messagingSettings, contact);
   try {
     const made = await deps.payments.createPaymentLink({
       amount: link.amount,
       reference: referenceOf(link, visit),
       description: `${hairSystemName(product?.name)} · fitted ${shortDate(visit.day)}`,
-      customer: { name: client?.name ?? "", contact: client?.mobile_e164 ?? "" },
+      customer: { name: client?.name ?? "", contact },
       notes: { appointment_id: visit.appointmentId, person_id: visit.personId },
+      closesAt: paymentLinkClosesAt(now),
+      notify,
     });
+    if (!notify) deps.log.info("payment_link_not_texted", { appointment_id: visit.appointmentId });
     await keepLink(db, deps, { link, visit, made }, now);
     return "sent";
   } catch (error) {
@@ -344,7 +365,7 @@ async function refusedOrMadeBefore(
       `Razorpay would not make the payment link of ${rupees(link.amount)} for visit ${visit.appointmentId}: ` +
       `${reason}. Send the client one from Razorpay's dashboard with reference ${visit.appointmentId}, whose ` +
       "payment then finds the visit.",
-    link: `/clients/${visit.personId}`,
+    link: paymentsTab(visit.personId),
   });
   return "refused";
 }
@@ -373,22 +394,24 @@ async function tellFailure(deps: LinkDeps, visit: FittedVisit, reason: string): 
     message:
       `The payment link for visit ${visit.appointmentId} could not be asked of Razorpay ` +
       `${String(FAILURES_BEFORE_ALERT)} times: ${reason}. It is asked again every five minutes.`,
-    link: `/clients/${visit.personId}`,
+    link: paymentsTab(visit.personId),
     after: FAILURES_BEFORE_ALERT,
   });
 }
 
 /** The link a payment paid, by Razorpay's ID for it, and its reference: ours, or the visit's ID on one made by hand. */
-export interface PaidLink {
+interface PaidLink {
   readonly razorpayLinkId: string;
   readonly reference: string | null;
 }
 
 /** The visit a paid link was for, its client, and its row, where the close made one; null for a link not ours. */
-export interface PaidVisit {
+interface PaidVisit {
   readonly linkId: string | null;
   readonly appointmentId: string;
   readonly personId: string | null;
+  /** The link the close made, by Razorpay's ID for it, and when Razorpay made it; null where none was made. */
+  readonly ownLink: { readonly razorpayLinkId: string; readonly sentAt: string } | null;
 }
 
 /**
@@ -396,7 +419,7 @@ export interface PaidVisit {
  * its reference names, as a link ops made by hand in Razorpay's dashboard does. Null for a link that names no visit
  * of ours.
  */
-export async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidVisit | null> {
+async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidVisit | null> {
   const made = await db
     .prepare("SELECT appointment_id FROM payment_links WHERE razorpay_link_id = ?1 OR reference = ?2")
     .bind(link.razorpayLinkId, link.reference)
@@ -405,20 +428,65 @@ export async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidV
   if (appointmentId === null) return null;
   const visit = await db
     .prepare(
-      `SELECT a.id, a.person_id, l.id AS link_id FROM appointments a
+      `SELECT a.id, a.person_id, l.id AS link_id, l.razorpay_link_id, l.sent_at FROM appointments a
        LEFT JOIN payment_links l ON l.appointment_id = a.id
        WHERE a.id = ?1`,
     )
     .bind(appointmentId)
-    .first<{ id: string; person_id: string | null; link_id: string | null }>();
-  return visit === null ? null : { linkId: visit.link_id, appointmentId: visit.id, personId: visit.person_id };
+    .first<VisitOfLinkRow>();
+  if (visit === null) return null;
+  return { linkId: visit.link_id, appointmentId: visit.id, personId: visit.person_id, ownLink: ownLinkOf(visit) };
+}
+
+interface VisitOfLinkRow {
+  id: string;
+  person_id: string | null;
+  link_id: string | null;
+  razorpay_link_id: string | null;
+  sent_at: string | null;
+}
+
+function ownLinkOf(row: VisitOfLinkRow): PaidVisit["ownLink"] {
+  if (row.razorpay_link_id === null || row.sent_at === null) return null;
+  return { razorpayLinkId: row.razorpay_link_id, sentAt: row.sent_at };
+}
+
+/**
+ * The visit's own link, cancelled once the visit is paid by another, as one ops made by hand, so that it neither
+ * takes a second payment nor reminds the client. One closed by its time is left alone; one Razorpay will not cancel
+ * is left to ops, who check whether the client paid it too. Never throws.
+ */
+export async function cancelLinkPaidElsewhere(
+  deps: Pick<LinkDeps, "payments" | "alertOnce" | "log">,
+  paid: { readonly visit: PaidVisit; readonly razorpayLinkId: string },
+  now: Date,
+): Promise<void> {
+  const { visit } = paid;
+  const own = visit.ownLink;
+  if (own === null || own.razorpayLinkId === paid.razorpayLinkId) return;
+  if (own.sentAt <= closedIfSentBy(now).toISOString()) return;
+  try {
+    await deps.payments.cancelPaymentLink(own.razorpayLinkId);
+    deps.log.info("payment_link_cancelled", { appointment_id: visit.appointmentId });
+  } catch (error) {
+    const reason = failureReason(error);
+    deps.log.warn("payment_link_not_cancelled", { appointment_id: visit.appointmentId, reason });
+    await deps.alertOnce({
+      key: `paid_elsewhere_link:${own.razorpayLinkId}`,
+      message:
+        `Visit ${visit.appointmentId} was paid by another link, and its own payment link ${own.razorpayLinkId} ` +
+        `could not be cancelled: ${reason}. Cancel it in Razorpay's dashboard; if the client paid it too, refund one.`,
+      ...(visit.personId === null ? {} : { link: paymentsTab(visit.personId) }),
+    });
+  }
 }
 
 /**
  * The link paid, by the payment Razorpay names, once: a second word of the same payment changes nothing. The payment
- * takes the link's split before GST, as a payment made ahead takes its hold's, where the amounts agree.
+ * takes the link's split before GST, as a payment made ahead takes its hold's, where the amounts agree. The client's
+ * receipt is queued in the same batch, once, and the sweeper sends it within minutes.
  */
-export async function markLinkPaid(
+async function markLinkPaid(
   db: D1Database,
   linkId: string,
   payment: { readonly razorpayPaymentId: string; readonly paidAt: string },
@@ -439,5 +507,64 @@ export async function markLinkPaid(
          WHERE razorpay_payment_id = ?2 AND amount = (SELECT amount FROM payment_links WHERE id = ?1)`,
       )
       .bind(linkId, payment.razorpayPaymentId),
+    linkReceipt(db, linkId, now),
   ]);
+}
+
+/**
+ * A one visit's payment link paid: the payment recorded as the visit's, by the link it paid, whatever notes it
+ * carries, and the link marked paid where the close made one; a link ops made by hand has no row of ours. Answers the
+ * visit, or null for a link that names no visit of ours.
+ */
+export async function linkPaid(
+  db: D1Database,
+  paid: { readonly link: RazorpayPaymentLink; readonly payment: RazorpayPayment },
+  hashSalt: string,
+  now: Date,
+): Promise<PaidVisit | null> {
+  const ours = await visitOfLink(db, { razorpayLinkId: paid.link.id, reference: paid.link.reference_id ?? null });
+  if (ours === null) return null;
+  const notes =
+    ours.personId === null
+      ? { appointment_id: ours.appointmentId }
+      : { appointment_id: ours.appointmentId, person_id: ours.personId };
+  await recordPayment(db, { ...paid.payment, notes }, "captured", hashSalt, now);
+  if (ours.linkId === null) return ours;
+  const paidAt = new Date(paid.payment.created_at * 1000).toISOString();
+  await markLinkPaid(db, ours.linkId, { razorpayPaymentId: paid.payment.id, paidAt }, now);
+  return ours;
+}
+
+/** The client's receipt for the link's visit, written unless one already is. */
+function linkReceipt(db: D1Database, linkId: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+       SELECT ?2, ?3, a.person_id, 'link_paid', 'appointment', a.id, 'queued', ?3
+       FROM payment_links l JOIN appointments a ON a.id = l.appointment_id
+       WHERE l.id = ?1 AND a.person_id IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM outbound_messages m WHERE m.subject_id = a.id AND m.kind = 'link_paid')`,
+    )
+    .bind(linkId, crypto.randomUUID(), now.toISOString());
+}
+
+/** What the client's receipt for a link paid says: what they paid for their hair system, and its reference. */
+export async function composeLinkPaid(db: D1Database, appointmentId: string, personId: string): Promise<Composed> {
+  const paid = await db
+    .prepare(
+      `SELECT pay.amount, pay.reference, l.tier, p.name FROM payment_links l
+       JOIN payments pay ON pay.razorpay_payment_id = l.razorpay_payment_id
+       JOIN people p ON p.id = pay.person_id
+       WHERE l.appointment_id = ?1 AND pay.person_id = ?2 AND pay.status = 'captured'`,
+    )
+    .bind(appointmentId, personId)
+    .first<{ amount: number; reference: string | null; tier: string; name: string }>();
+  if (paid === null) return { skip: "no captured payment for the link" };
+  if (paid.reference === null) return { skip: "the payment has no reference yet" };
+  const product = await serviceOf(db, "first_fit", paid.tier);
+  const hairSystem = product === null ? "hair system" : hairSystemName(product.name);
+  return {
+    template: "link_paid_v1",
+    params: [firstNameOf(paid.name), hairSystem, "", "", "", rupees(paid.amount), paid.reference],
+  };
 }

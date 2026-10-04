@@ -58,6 +58,8 @@ test("a double tap on Capture keeps one frame for one angle, and moves on by one
   await page.goto(BEFORE);
   const capture = page.getByRole("button", { name: "Capture" });
   await expect(capture).toBeEnabled();
+  // FLD-61: each angle has its own guide, not Top's line for all five.
+  await expect(page.getByText("Front · face the camera, eyes level")).toBeVisible();
 
   await capture.dblclick();
   await expect(page.getByText("1 of 5")).toBeVisible();
@@ -195,7 +197,7 @@ test("a frame the phone has no room for can be taken again, and the phone says i
     });
   });
   await capture.click();
-  await expect(page.getByText("That photograph did not keep. Capture it again.")).toBeVisible();
+  await expect(page.getByText("That photo did not save. Take it again.")).toBeVisible();
   await expect(page.getByText("This phone's storage is full")).toBeVisible();
   await expect(page.getByText(/will not open its camera/)).toHaveCount(0);
   const results = await wcag(page);

@@ -73,6 +73,8 @@ export interface JobAccount {
     readonly fields: readonly string[];
     readonly moved: Moved | null;
     readonly requestId: string | null;
+    /** The job's start as the phone held it when the write was queued. */
+    readonly startsAt: string | null;
   } | null;
 }
 
@@ -93,6 +95,7 @@ export function account(queue: readonly Queued[]): JobAccount[] {
         fields: event.fields,
         moved: event.moved ?? null,
         requestId: event.request_id ?? null,
+        startsAt: event.starts_at ?? null,
       };
     }
     accounts.set(event.job_id, held);

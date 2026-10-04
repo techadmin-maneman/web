@@ -21,6 +21,7 @@ const ASSIGN = "/api/dispatch/assign";
 const TOLD = `/api/dispatch/moves/${MOVED.move_id}/told` as const;
 const READ_BOARD: Call = `GET ${BOARD_PATH}`;
 const READ_ROOM: Call = "GET /api/dispatch/room";
+const READ_VERSION: Call = "GET /api/dispatch/version";
 const MOVE_IT: Call = `POST ${MOVE}`;
 const ASSIGN_IT: Call = `POST ${ASSIGN}`;
 const TOLD_IT: Call = `POST ${TOLD}`;
@@ -221,7 +222,10 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await reason(page, "Zone rebalance");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toHaveText("Rohit M. moved. The client was sent the new window on WhatsApp.");
+  // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
+  await expect(page.getByRole("status")).toHaveText(
+    "Moved. We're sending Rohit M. the new window on WhatsApp; if it fails, a call task appears.",
+  );
   expect(sent).toEqual([
     {
       appointment_id: ROHIT_JOB?.appointment_id,
@@ -292,7 +296,7 @@ test("assigns a tray job through the assign route, with no technician expected",
   await page.getByRole("radio", { name: "Client asked to move it" }).check();
   await page.getByRole("button", { name: "Move", exact: true }).click();
 
-  await expect(page.getByRole("status")).toContainText("Vikram S. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Vikram S. the new window on WhatsApp;");
   expect(moved).toEqual([]);
   expect(assigned).toEqual([
     {
@@ -381,7 +385,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled();
 
   release();
-  await expect(page.getByRole("status")).toContainText("Rohit M. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Rohit M. the new window on WhatsApp;");
   expect(sent).toHaveLength(1);
 });
 
@@ -412,17 +416,24 @@ test("refuses a move made from a stale board, and says where the job is now", as
   await expect(page.getByText("Moving Rohit M.")).toBeHidden();
 });
 
-test("reads the board again when the tab comes back, without the loading state", async ({ page }) => {
+// PLAT-12: the board read itself in full on every focus and every minute; it now asks for its version first.
+test("reads the board again when the tab comes back to a board that has changed, without the loading state", async ({
+  page,
+}) => {
+  await page.clock.install();
   let reads = 0;
   await open(page, {
     [READ_BOARD]: (route: Route) => {
       reads += 1;
       return json(BOARD)(route);
     },
+    [READ_VERSION]: json({ version: BOARD.version + 1 }),
   });
   expect(reads).toBe(1);
 
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  // A look within half a minute of the last is skipped.
+  await page.clock.fastForward("00:31");
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   await expect.poll(() => reads).toBe(2);
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByText("Loading")).toHaveCount(0);
@@ -443,6 +454,52 @@ test("moves between weeks and cities, asking the route for each", async ({ page 
   await expect.poll(() => asked.at(-1)).toBe("?from=2025-09-26&city=Delhi");
   await page.getByRole("button", { name: "This week" }).click();
   await expect.poll(() => asked.at(-1)).toBe("?city=Delhi");
+});
+
+// A technician's page shows his days by linking here with the week and his name.
+test("opens on the week and the search a link asks for", async ({ page }) => {
+  const asked: string[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === BOARD_PATH) asked.push(url.search);
+  });
+  await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
+  await page.goto("/dispatch?from=2025-09-19&find=Sohna");
+
+  await expect(page.getByLabel("Find a technician, zone or client")).toHaveValue("Sohna");
+  await expect(page.getByRole("rowheader")).toHaveText(["Faizan AliSohna Rd"]);
+  await expect.poll(() => asked[0]).toBe("?from=2025-09-19");
+});
+
+// OIA-03, BK-21: "Move it in Dispatch" landed on this week's bare board, and Back from a client reset it.
+test("opens the visit a link names, in its drawer, on the week the link asks for", async ({ page }) => {
+  await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
+  await page.goto(`/dispatch?from=2025-09-19&visit=${ROHIT_JOB?.appointment_id ?? ""}`);
+
+  await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeFocused();
+  await expect(page).toHaveURL(/\/dispatch\?from=2025-09-19$/);
+});
+
+test("keeps its week, city, search and open visit in the address, so Back from a client finds it as it was", async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole("button", { name: "Next week" }).click();
+  await page.getByLabel("City", { exact: true }).selectOption("Delhi");
+  await page.getByLabel("Find a technician, zone or client").fill("Rohit");
+  await press(page, ROHIT_BLOCK);
+  const kept = `?from=2025-09-26&city=Delhi&find=Rohit&visit=${ROHIT_JOB?.appointment_id ?? ""}`;
+  await expect.poll(() => new URL(page.url()).search).toBe(kept);
+
+  await page.getByRole("dialog").getByRole("link", { name: "Open client" }).click();
+  await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}$`));
+  await page.goBack();
+
+  await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
+  await expect(page.getByLabel("City", { exact: true })).toHaveValue("Delhi");
+  await expect(page.getByLabel("Find a technician, zone or client")).toHaveValue("Rohit");
 });
 
 // OPS-10: 168 technicians made a board 15,000 px tall whose day headers scrolled away, with no way to find a row.

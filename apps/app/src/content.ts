@@ -199,7 +199,10 @@ export const home = {
   note: "Add a note",
   consultation: {
     label: "Your consultation",
+    labelOneVisit: "Your consultation and fit",
     free: "Free",
+    /** Asked for on the site, not yet booked. */
+    requested: "Requested · we confirm the time on WhatsApp",
   },
   /** Board B1's credit tile: "3 free service visits", and "Use by 2 Oct", or "Use by tonight" on the last day. */
   credits: freeVisitsTile,
@@ -320,6 +323,8 @@ export const visits = {
   none: "Nothing booked yet.",
   /** Board C1: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
+  /** A consultation asked for on the site, which ops have yet to confirm. */
+  requested: "Requested",
   // PLACEHOLDER: a visit that is not this client's, or no longer exists.
   notFound: "We could not find this visit.",
   // PLACEHOLDER: offline, the visits are not kept on the phone.
@@ -388,6 +393,8 @@ export const visits = {
       kept: (amount: string) => `Charged: we kept ${amount} of what you paid.`,
       creditSpent: "Charged: the free service visit it used is spent.",
       dispute: "Dispute this charge",
+      /** PLACEHOLDER: where the button stood, once the days to dispute have passed. */
+      disputeClosed: (day: string) => `The days to dispute this charge ended on ${day}.`,
       disputed: {
         open: "You disputed this charge. We are looking at it.",
         refunded: "We looked at your dispute and refunded the charge.",
@@ -435,6 +442,8 @@ export const booking = {
     title: "Pick a date",
     available: "Available",
     full: "Full",
+    // PLACEHOLDER: no board draws it. A day with a window already inside the notice is still sold, and marked.
+    within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue",
     // PLACEHOLDER: no board draws the day offered being full, nor the days past the first fortnight.
     offeredFull: (day: string) => `${day} is full. We have picked the next open day.`,
@@ -450,14 +459,32 @@ export const booking = {
     regularLine: (name: string) => `${name}, your regular technician, is free.`,
     // PLACEHOLDER: the design draws the window step with the regular technician free.
     anotherLine: (name: string) => `${name} is not free then. Another technician will come.`,
+    // PLACEHOLDER: a window already inside the notice, which no board draws.
+    within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue to payment",
+    // PLACEHOLDER: a visit that costs nothing has no payment to continue to.
+    continueFree: "Continue",
     // PLACEHOLDER
     taken: "That window has just gone. Pick another.",
   },
   pay: {
     title: "Pay and confirm",
+    // PLACEHOLDER: a visit that costs nothing to book, which no board draws.
+    titleFree: "Confirm",
     held: (time: string) => `Slot held ${time}`,
-    freeUntil: (when: string) => `Free to move until ${when}. After that it is charged.`,
+    // PLACEHOLDER: board C4 says "Free to move until"; cancelling is free until then too.
+    freeUntil: (when: string) => `Free to move or cancel until ${when}.`,
+    afterThat: " After that it is charged.",
+    /** PLACEHOLDER: no board draws it. A visit sold already inside its notice says what a change costs at once. */
+    insideNotice: {
+      /** Followed by the fee's GST split, where there is one, and a full stop. */
+      lateFee: (hours: number, amount: string) =>
+        `This visit is less than ${String(hours)} hours away: moving or cancelling it costs ${amount}`,
+      payment: (hours: number, amount: string) =>
+        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the ${amount} paid is not refunded.`,
+      credit: (hours: number) =>
+        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the free service visit is not returned.`,
+    },
     // PLACEHOLDER: a booking ops set to cost nothing when changed late (docs/decisions/0088-every-policy-in-the-console.md).
     freeAnyTime: "Free to move or cancel at any time.",
     pay: (amount: string) => `Pay ${amount}`,
@@ -612,6 +639,9 @@ export const change = {
     // PLACEHOLDER from here to the end of move: nothing paid, and the way to C8, which the design draws but does
     // not reach. A late fee's line is board C5's (booking.lateFee).
     freeNothingPaid: "Free to move.",
+    // What a move in place keeps, on its pay step.
+    carriesOver: (amount: string) => `Your ${amount} carries over.`,
+    creditCarriesOver: "Your free service visit carries over.",
     cancelInstead: "Cancel the visit instead",
     creditCharged: "Charged. The free service visit is not returned and the new visit is paid separately.",
   },
@@ -660,18 +690,38 @@ interface Reward {
 const serviceVisits = (count: number): string => (count === 1 ? "1 service visit" : `${String(count)} service visits`);
 
 /**
- * Board F1's promise, from the referrer's side. With both at 3 it is the board's; the words for unequal sides, for 0
- * and for a reward not known, which gives no count, are PLACEHOLDER, pending the owner's (docs/open-points.md, item 172).
+ * Board F1's promise, from the referrer's side, in the reward's one name. PLACEHOLDER: the words for unequal sides,
+ * for 0 and for a reward not known, which gives no count, pending the owner's (docs/open-points.md, item 172).
  */
 function promiseOf(reward: Reward | null): string {
   const fitted = "When a friend you refer is fitted,";
   if (reward === null) return `${fitted} we tell you.`;
   const { referrer_visits: mine, friend_visits: theirs } = reward;
   if (mine === 0 && theirs === 0) return `${fitted} we tell you.`;
-  if (mine === 0) return `${fitted} they get ${serviceVisits(theirs)} free.`;
-  if (theirs === mine) return `${fitted} you both get ${serviceVisits(mine)} free.`;
-  if (theirs === 0) return `${fitted} you get ${serviceVisits(mine)} free.`;
-  return `${fitted} you get ${serviceVisits(mine)} free, and your friend gets ${String(theirs)}.`;
+  if (mine === 0) return `${fitted} they get ${freeServiceVisits(theirs)}.`;
+  if (theirs === mine) return `${fitted} you both get ${freeServiceVisits(mine)}.`;
+  if (theirs === 0) return `${fitted} you get ${freeServiceVisits(mine)}.`;
+  return `${fitted} you get ${freeServiceVisits(mine)}, and your friend gets ${String(theirs)}.`;
+}
+
+/** The invite a client not yet fitted came with: who sent it, where the invite names them. */
+interface PendingInvite {
+  readonly referrer_first_name: string | null;
+}
+
+/**
+ * PLACEHOLDER: Refer for a client not yet fitted, which the board draws empty. Their own invite opens at their first
+ * fit; an invite they came with comes first, with the visits it gives them.
+ */
+function notYetFittedLines(reward: Reward | null, invite: PendingInvite | null): readonly [string, string] {
+  const theirs = reward?.friend_visits ?? 0;
+  if (invite === null || theirs === 0) return ["Your invite opens after your first fit.", promiseOf(reward)];
+  const whose = invite.referrer_first_name === null ? "Your friend's invite" : `${invite.referrer_first_name}'s invite`;
+  const arrive = theirs === 1 ? "arrives" : "arrive";
+  return [
+    `${whose}: your ${freeServiceVisits(theirs)} ${arrive} when you're fitted.`,
+    "Your own invite opens after your first fit.",
+  ];
 }
 
 /** Refer (boards F1 to F6): the invite, the card behind it, and who has been fitted. */
@@ -685,13 +735,15 @@ export const refer = {
     checking: "The free service visits from the invite you came with are being checked. We will message you.",
     refused: "We could not give the free service visits from the invite you came with. Message us to know why.",
   },
-  noOther: "No other discount applies.",
   share: "Share an invite",
   tracker: "See who has been fitted",
   card: {
     title: "Which card?",
-    what: "This is what he sees in the chat. No name on it, and no copy.",
+    // PLACEHOLDER: in place of the board's line, which said the card carries no name.
+    what: "Pick the picture your friend sees. Your name and message go with it, never on it.",
     mine: { name: "My before and after", note: "Your own photographs" },
+    // PLACEHOLDER: the board always offers their own card; it needs a before and an after from the first fit.
+    mineNotYet: "Your own before and after appears once your first-fit photographs are in.",
     house: { name: "A Mane Man example", note: "Our house sample" },
     next: "Continue to share",
   },
@@ -716,7 +768,8 @@ export const refer = {
       return `Home-fitted hair systems across Delhi NCR. ${serviceVisits(friend)} free when you're fitted.`;
     },
     domain: "maneman.in",
-    message: (link: string) => `Had my hair system fitted at home by these people. Worth a look — ${link}`,
+    // PLACEHOLDER: in place of the board's message.
+    message: (link: string) => `Got my hair system fitted at home by Mane Man. Worth a look: ${link}`,
     via: "Share via",
     whatsapp: "WhatsApp",
     other: "Other apps",
@@ -964,10 +1017,7 @@ export const empty = {
   },
   refer: {
     title: "Refer",
-    lines: (reward: Reward | null): readonly [string, string] => [
-      "Nobody you have referred has been fitted yet.",
-      promiseOf(reward),
-    ],
+    lines: notYetFittedLines,
   },
 } as const;
 
@@ -978,8 +1028,8 @@ export const profile = {
   // PLACEHOLDER: the design draws the profile with an address already given, and no form.
   noAddress: "No address yet. Add it before you book.",
   addAddress: "Add your address and access notes",
-  // PLACEHOLDER: the design draws no landmark line (ADR 0054).
-  near: (landmark: string) => `Near ${landmark}`,
+  // PLACEHOLDER: the design draws no landmark; the client types it as they like, so it shows as typed.
+  landmark: "Landmark",
   // PLACEHOLDER: an address the client gave ops on the phone, which ops saved for them (ADR 0092).
   givenToOps: (date: string) =>
     `You gave us this address on the phone on ${date}. If anything is wrong, change it here.`,
@@ -1088,8 +1138,15 @@ export const profile = {
     send: "Send",
     cancel: "Not now",
     // Beside support's "Replies within a working day": the 30 days is the most a concern can take, not the usual.
-    sent: "Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest.",
+    sent: "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
     failed: "That did not go through. Please try again.",
+    limited: "You have reached today's limit. Send it tomorrow, or message us on WhatsApp.",
+    // PLACEHOLDER: the client's latest concerns, each with our answer once given.
+    concerns: "Your concerns",
+    concern: (date: string, status: string) => `Your concern of ${date} · ${status}`,
+    waiting: "Awaiting our reply",
+    answered: (date: string) => `Answered ${date}`,
+    answer: (response: string) => `Our answer: ${response}`,
   },
   deletion: {
     label: "Delete your account",

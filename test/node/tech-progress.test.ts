@@ -5,7 +5,16 @@
 
 import { describe, expect, it } from "vitest";
 import type { CheckIn, Job } from "../../apps/tech/src/api.ts";
-import { closed, done, nextStep, rowState, stageOf, theWait } from "../../apps/tech/src/lib/progress.ts";
+import {
+  choiceOf,
+  closed,
+  declinedTheFit,
+  done,
+  nextStep,
+  rowState,
+  stageOf,
+  theWait,
+} from "../../apps/tech/src/lib/progress.ts";
 import type { Queued } from "../../apps/tech/src/store/replay.ts";
 
 const TODAY = "2030-09-19";
@@ -19,13 +28,15 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   window_label: "morning",
   type: "service",
   one_visit: false,
-  product: null,
+  service: null,
   sector: "Sector 65",
   status: "scheduled",
   badge: "prepaid",
   slots: 1,
+  minutes: 90,
   unlocked: true,
   unlocks_at: "2030-09-18T12:30:00.000Z",
+  client_name: null,
   address: null,
   access_notes: null,
   client: null,
@@ -39,16 +50,20 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
     ...progress,
   },
   no_show_wait_min: 15,
+  checkin_radius_m: 200,
+  checkin_from: "2030-09-19T03:00:00.000Z",
   pieces: [],
   last_visit: null,
   reminder: null,
   steps: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
   checklist: [],
+  checklist_if_declined: [],
   partial_reasons: [],
   consumables: [],
   products: [],
   payment_link: null,
   discount_code: null,
+  client_choice: null,
   profile: null,
   ...over,
 });
@@ -84,6 +99,36 @@ describe("what the job has done", () => {
     expect(closed(job({}, { outcome: "done" }), [])).toBe(true);
     expect(closed(job(), [queued("no_show")])).toBe(true);
     expect(closed(job(), [queued("no_show", { state: "refused" })])).toBe(false);
+  });
+});
+
+// FLD-37, MON-52: the checklist, the outcome and the close-out of a one visit follow what the client decided.
+describe("a one visit's choice", () => {
+  const oneVisit = (choice: Job["client_choice"] = null) =>
+    job({ type: "first_fit", one_visit: true, client_choice: choice });
+
+  it("is the piece step still on the phone, ahead of the one that landed", () => {
+    const held = [queued("piece", { body: { declined: true } })];
+    expect(choiceOf(oneVisit({ product: "natural" }), held)).toEqual({ declined: true });
+    expect(declinedTheFit(oneVisit(), held)).toBe(true);
+  });
+
+  it("is the product chosen, with the piece the phone still holds", () => {
+    const held = [queued("piece", { body: { piece_code: "MM-NAT-5120-A", product: "natural" } })];
+    expect(choiceOf(oneVisit(), held)).toEqual({ product: "natural" });
+    expect(declinedTheFit(oneVisit(), held)).toBe(false);
+  });
+
+  it("is the one that landed once the phone holds no piece step, and not one the API stopped", () => {
+    expect(choiceOf(oneVisit({ declined: true }), [])).toEqual({ declined: true });
+    const stopped = [queued("piece", { body: { declined: true }, state: "superseded" })];
+    expect(choiceOf(oneVisit({ product: "natural" }), stopped)).toEqual({ product: "natural" });
+  });
+
+  it("is unknown before the piece step, and never a decline on any other visit", () => {
+    expect(choiceOf(oneVisit(), [])).toBeNull();
+    expect(declinedTheFit(oneVisit(), [])).toBe(false);
+    expect(declinedTheFit(job(), [queued("piece", { body: { declined: true } })])).toBe(false);
   });
 });
 
@@ -175,6 +220,14 @@ describe("the no-show wait", () => {
   it("counts from the tap when the check-in is still on the phone, and is not ours to close on yet", () => {
     const tapped = queued("check_in");
     expect(theWait(job(), [tapped], null)).toEqual({ endsAt: tapped.queued_at + 15 * 60_000, confirmed: false });
+  });
+
+  it("counts from the booked start for a tap still on the phone that came before it", () => {
+    const early = queued("check_in", { queued_at: Date.parse("2030-09-19T03:20:00.000Z") });
+    expect(theWait(job(), [early], null)).toEqual({
+      endsAt: Date.parse("2030-09-19T04:15:00.000Z"),
+      confirmed: false,
+    });
   });
 
   it("has no end before any check-in, and none from one that failed", () => {

@@ -16,8 +16,9 @@
 // closed it, keyed by its group and its row's id
 // (docs/decisions/0092-task-owners.md).
 //
-// Every count is the whole queue's. Each group lists its longest waits and no
-// more, since past that the section that decides them is the tool.
+// Every count is the whole queue's within the caller's cities. Each group lists
+// its longest waits and no more, since past that the section that decides them
+// is the tool.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -25,7 +26,7 @@ import type { App, AppEnv } from "../http/context.ts";
 import { memberOfStaffOf } from "../http/audit.ts";
 import { closeTask } from "../domain/task-closures.ts";
 import { assignTask, handBackTask, staffSeenSince, type TaskKey } from "../domain/task-owners.ts";
-import { outstandingTasks, overdueCount, READ_CAP, type Task } from "../domain/tasks.ts";
+import { outstandingTasks, overdueCount, READ_CAP, tasksWithin, type Task } from "../domain/tasks.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -41,7 +42,8 @@ import {
   type TaskGroup,
 } from "../policy/tasks.ts";
 import { callerAccess, permits } from "../http/staff-access.ts";
-import { meetsNeed, taskNeed } from "../policy/console-routes.ts";
+import { placesReached, type Level } from "../policy/access.ts";
+import { meetsNeed, TASK_DEPARTMENTS, taskNeed } from "../policy/console-routes.ts";
 
 /** The tasks each group lists, the longest waits; its count is the whole queue's. */
 export const TASKS_SHOWN = 50;
@@ -55,12 +57,34 @@ const TaskSchema = z
   .object({
     id: z.uuid().openapi({ description: "The queued row's own id, so the task can be reached where it is decided." }),
     person: z
-      .union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()])
+      .union([
+        z
+          .object({
+            id: z.uuid(),
+            name: z.string(),
+            mobile: z.string().optional().openapi({
+              description: "On a move the client has not heard of, their mobile, for the call. Left out elsewhere.",
+            }),
+          })
+          .strict(),
+        z.null(),
+      ])
       .openapi({ description: "Null for an erased client, whose record is gone." }),
+    visit: z
+      .object({ id: z.uuid(), starts_at: z.iso.datetime() })
+      .strict()
+      .optional()
+      .openapi({
+        description:
+          "The visit to come the dispatch board settles the task on, so the task can open it there: a move the " +
+          "client has not heard of, and a job on its technician's day off. Left out for every other group.",
+      }),
     detail: z.union([z.string(), z.null()]).openapi({
       description:
         "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM " +
-        "contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, " +
+        'contact; for a move the client has not heard of, the start it moved to and why ("no_consent" or ' +
+        '"not_sent", as the dispatch board\'s untold says); for a consultation asked for, its day and window and, ' +
+        "where a first fit was asked for with it, " +
         '"first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit\'s start and ' +
         "the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; " +
         'for a payment owed, the link\'s state ("sent", "unsent" or "refused"), its amount in paise, its address ' +
@@ -90,7 +114,10 @@ const TasksSchema = z
       z
         .object({
           group: z.enum(TASK_GROUPS),
-          count: z.number().int().openapi({ description: "How many are waiting in the group, all of them." }),
+          count: z
+            .number()
+            .int()
+            .openapi({ description: "How many are waiting in the group in the caller's cities, all of them." }),
           closable: z
             .boolean()
             .openapi({ description: "Ops may close a task of the group without doing its thing, with a reason." }),
@@ -110,7 +137,8 @@ const tasksRoute = createRoute({
   summary: "What ops still have to do, by group, the longest wait first",
   responses: {
     200: {
-      description: "The groups with something in them, of the caller's own departments once the Staff list is enforced",
+      description:
+        "The groups with something in them, of the caller's own departments and cities once the Staff list is enforced",
       ...json(TasksSchema),
     },
     403: errorResponse("access_required, or not_permitted: no View in any department"),
@@ -153,7 +181,9 @@ const ownerRoute = createRoute({
       "access_required: no Access token, or a service token, which names no member of staff; or not_permitted: " +
         "it asks Act in the department that decides the task's group",
     ),
-    404: errorResponse("not_found: no such task on the board now; its thing may be done already"),
+    404: errorResponse(
+      "not_found: no such task on the board now in the caller's cities; its thing may be done already",
+    ),
   },
 });
 
@@ -182,14 +212,34 @@ const closeRoute = createRoute({
     204: { description: "Closed, under the member of staff who closed it" },
     400: errorResponse("invalid_request: no reason, or a group whose tasks close only when their thing is done"),
     403: errorResponse("access_required: no Access token, or a service token, which names no member of staff"),
-    404: errorResponse("not_found: no such task on the board now; a follow-up may be booked, or it is closed already"),
+    404: errorResponse(
+      "not_found: no such task on the board now in the caller's cities; a follow-up may be booked, or it is closed already",
+    ),
   },
 });
 
-/** Every task on the board, as a look at it reads them now. */
-async function readTheBoard(c: Context<AppEnv>) {
-  const inputs = await opsInputs(c);
-  return outstandingTasks(c.env.DB, c.var.deps.now(), inputs.taskSlaHours, inputs.nextVisitDays);
+/**
+ * Every task on the board in the caller's cities, as a look at it reads them now: each group's where their grants in
+ * its department reach at the level asked.
+ */
+async function readTheBoard(c: Context<AppEnv>, level: Level) {
+  const [inputs, access] = await Promise.all([opsInputs(c), callerAccess(c)]);
+  const board = await outstandingTasks(c.env.DB, c.var.deps.now(), inputs.taskSlaHours, inputs.nextVisitDays);
+  const reachOf = (group: TaskGroup) => placesReached(access, TASK_DEPARTMENTS[group], level);
+  return { ...board, tasks: await tasksWithin(c.env.DB, board.tasks, reachOf) };
+}
+
+/** A task as the board answers it: the visit and the client's mobile only where its group carries them. */
+function taskBody(task: Task) {
+  const { id, detail, since, due, owner, visit } = task;
+  const body = { id, person: personBody(task.person), detail, since, due, owner };
+  return visit === null ? body : { ...body, visit };
+}
+
+function personBody(person: Task["person"]) {
+  if (person === null) return null;
+  const { id, name, mobile } = person;
+  return mobile === null ? { id, name } : { id, name, mobile };
 }
 
 /** The members of staff a task may be given to: those who have used the console lately (src/policy/tasks.ts). */
@@ -199,9 +249,9 @@ const staffNow = (c: Context<AppEnv>): Promise<string[]> =>
 /** A write kept under whoever made it, asked for by a service token, which names nobody. */
 const noMemberOfStaff = (c: Context<AppEnv>) => c.json(errorBody("access_required", c.var.requestId), 403);
 
-/** The task as the board reads it now; null once its thing is done, or if there never was one. */
+/** The task as the board reads it now; null once its thing is done, if there never was one, or if it is elsewhere. */
 async function taskOnTheBoard(c: Context<AppEnv>, key: TaskKey): Promise<Task | null> {
-  const { tasks } = await readTheBoard(c);
+  const { tasks } = await readTheBoard(c, "act");
   return tasks.find((task) => task.group === key.group && task.id === key.id) ?? null;
 }
 
@@ -215,7 +265,7 @@ async function groupsSeenBy(c: Context<AppEnv>): Promise<TaskGroup[]> {
 export function registerOpsTasks(app: App): void {
   app.openapi(tasksRoute, async (c) => {
     const now = c.var.deps.now();
-    const [board, staff, seen] = await Promise.all([readTheBoard(c), staffNow(c), groupsSeenBy(c)]);
+    const [board, staff, seen] = await Promise.all([readTheBoard(c, "view"), staffNow(c), groupsSeenBy(c)]);
     const tasks = board.tasks.filter((task) => seen.includes(task.group));
     // In the policy's order, and a group with nothing in it is left out, as the board draws none.
     const groups = seen
@@ -226,7 +276,7 @@ export function registerOpsTasks(app: App): void {
           group,
           count: waiting.length,
           closable: isClosable(group),
-          tasks: shown.map(({ id, person, detail, since, due, owner }) => ({ id, person, detail, since, due, owner })),
+          tasks: shown.map(taskBody),
         };
       })
       .filter((each) => each.count > 0);

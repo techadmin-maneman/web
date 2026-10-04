@@ -11,16 +11,17 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { openDisputes, ruleOnDispute } from "../domain/no-show-disputes.ts";
+import { MESSAGE_STATES } from "../domain/no-shows.ts";
 import { afterRuling } from "../domain/after-a-ruling.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import { permits } from "../http/staff-access.ts";
+import { queueMessage } from "../http/queue-message.ts";
+import { permitsOn, routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { REFUNDING_A_DISPUTE } from "../policy/console-routes.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { DISPUTE_RULINGS } from "../policy/no-show.ts";
 import { dueAt } from "../policy/tasks.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 
 /** As many as the board can usefully hold. */
 const LIMIT = 50;
@@ -38,7 +39,7 @@ const DisputeSchema = z
       .openapi({ description: "Why the client says the charge is wrong, in their words; null once erased." }),
     raised_at: z.iso.datetime(),
     due: z.iso.datetime().openapi({
-      description: "When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at.",
+      description: "When ops should have ruled: the Tasks board's allowance for a disputed charge, from raised_at.",
     }),
     kept: z.number().int().openapi({ description: "In paise: what the charge kept of the visit's payment." }),
     credit_spent: z.boolean().openapi({ description: "Whether the charge spent the credit the visit used." }),
@@ -47,6 +48,10 @@ const DisputeSchema = z
     received_at: z.iso.datetime(),
     distance_m: z.union([z.number().int(), z.null()]),
     radius_m: z.number().int().openapi({ description: "The check-in radius in force when he checked in." }),
+    message_state: z.enum(MESSAGE_STATES).openapi({
+      description:
+        "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.",
+    }),
     message_delivered_at: z.union([z.iso.datetime(), z.null()]),
     closed_at: z.union([z.iso.datetime(), z.null()]),
   })
@@ -66,7 +71,7 @@ const RulingRequestSchema = z
 const disputesRoute = createRoute({
   method: "get",
   path: "/api/no-shows/disputes",
-  summary: "Disputed no-show charges still to rule on, oldest first, each with its evidence",
+  summary: "Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence",
   responses: {
     200: { description: "The disputes", ...json(z.object({ disputes: z.array(DisputeSchema) }).strict()) },
     403: errorResponse("access_required"),
@@ -81,15 +86,16 @@ const rulingRoute = createRoute({
   responses: {
     200: { description: "Recorded", ...json(z.object({ ruled: z.boolean() }).strict()) },
     400: errorResponse("invalid_request: a ruling needs a reason"),
-    403: errorResponse("access_required, or not_permitted: refunding asks Finance MANAGE"),
-    404: errorResponse("not_found: no such dispute, or it was ruled on already"),
+    403: errorResponse("access_required, or not_permitted: refunding asks Finance MANAGE in the dispute's city"),
+    404: errorResponse("not_found: no such dispute in the caller's cities, or it was ruled on already"),
   },
 });
 
 export function registerOpsDisputes(app: App): void {
   app.openapi(disputesRoute, async (c) => {
-    const [disputes, inputs] = await Promise.all([openDisputes(c.env.DB, LIMIT), opsInputs(c)]);
-    const due = (raisedAt: string) => dueAt(new Date(raisedAt), "no_show_decision", inputs.taskSlaHours).toISOString();
+    const reached = await routeReach(c);
+    const [disputes, inputs] = await Promise.all([openDisputes(c.env.DB, LIMIT, reached), opsInputs(c)]);
+    const due = (raisedAt: string) => dueAt(new Date(raisedAt), "no_show_dispute", inputs.taskSlaHours).toISOString();
     return c.json({ disputes: disputes.map((each) => ({ ...each, due: due(each.raised_at) })) }, 200);
   });
 
@@ -100,7 +106,8 @@ export function registerOpsDisputes(app: App): void {
     if (needsReason("no_show_dispute", ruling) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
-    if (ruling === "refunded" && !(await permits(c, REFUNDING_A_DISPUTE))) {
+    if (!(await withinRouteReach(c, "dispute", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (ruling === "refunded" && !(await permitsOn(c, REFUNDING_A_DISPUTE, "dispute", id))) {
       return c.json(errorBody("not_permitted", c.var.requestId), 403);
     }
 
@@ -120,8 +127,7 @@ export function registerOpsDisputes(app: App): void {
       now: c.var.deps.now(),
     });
     if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    const notify = (messageId: string) =>
-      c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
+    const notify = (messageId: string) => queueMessage(c, messageId);
     await afterRuling(c.env.DB, { ...c.var.deps, notify }, ruled);
     return c.json({ ruled: true }, 200);
   });

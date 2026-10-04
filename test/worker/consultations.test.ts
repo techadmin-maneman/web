@@ -3,13 +3,32 @@
 // Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { consultationBody, lastBookableDay } from "../../scripts/lib/test-booking.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, provedNumberCode, request } from "./helpers.ts";
+import { MINUTE_MS } from "../../src/lib/durations.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeFetch,
+  fakeQueue,
+  json,
+  markDatabase,
+  NOW,
+  provedNumberCode,
+  request,
+  TURNSTILE_URL,
+} from "./helpers.ts";
+
+/**
+ * The most round trips to D1 a booking from the site may wait on in turn. It waited on 14 when each read waited for the
+ * one before.
+ */
+const CONSULTATION_TRIPS = 9;
 
 const VISITOR = {
   name: "Karan Bhatia",
@@ -118,6 +137,25 @@ describe("POST /api/consultation", () => {
       first_choice_window: null,
       city: "Gurgaon",
     });
+  });
+
+  // PLAT-15: each D1 read is a round trip to the database's region, so the booking's reads that need nothing from each
+  // other go together. The request's log line says how many it waited on.
+  it("waits on few round trips to D1", async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    const logs = captureLogs();
+
+    const answer = await request(
+      site(),
+      "/api/consultation",
+      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
+    );
+    const line = logs.lines().find((each) => each.event === "request");
+    vi.restoreAllMocks();
+
+    expect(answer.status).toBe(201);
+    expect(line?.d1_trips).toBeLessThanOrEqual(CONSULTATION_TRIPS);
   });
 
   // The staging check and the load test book this way (scripts/staging-lead.ts, scripts/load-test-leads.ts).
@@ -662,6 +700,36 @@ describe("an invite the browser remembered", () => {
     ]);
   });
 
+  // BK-30 of the audit, 2 October 2026: a refused send to FSM's queue answered 500 after the hold was written, and
+  // the invite and the lead were never recorded. The cron books the hold half an hour on.
+  it("attributes the invite and leaves the lead when FSM's queue refuses the hold", async () => {
+    const crm = fakeQueue();
+    const fsmDown = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) };
+    const answer = await request(
+      site(),
+      "/api/consultation",
+      post({
+        ...VISITOR,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        address: ADDRESS,
+        invite_code: "RM4K7P",
+        invite_told: true,
+      }),
+      { FSM_QUEUE: fsmDown, CRM_QUEUE: crm, MESSAGE_QUEUE: fakeQueue() },
+    );
+
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", credits: true, invite: "valid" });
+    expect((await attributions()).results).toEqual([expect.objectContaining({ code: "RM4K7P", via: "consultation" })]);
+    expect(crm.sent).toEqual([{ lead_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
+    // Held and confirmed: what the cron books once the half hour has passed.
+    const hold = await env.DB.prepare("SELECT state, confirmed_at IS NOT NULL AS confirmed FROM slot_holds").first();
+    expect(hold).toEqual({ state: "held", confirmed: 1 });
+  });
+
   // PS-24: the friend is told who hears of their fit before /book sends the invite, or the invite is not sent.
   it("books without the invite when the form did not say who is told of the fit", async () => {
     const answer = await book("RM4K7P", {});
@@ -1185,6 +1253,17 @@ describe("GET /api/availability/public", () => {
   });
 
   it("opens every window the plan starts in while self-serve booking is off: the request waits for ops", async () => {
+    // A hair system ops offer, which the fortnight's one visits are held as once the generic first fit is retired.
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('first_fit', 'essential', 'Mane Man Essential', 180, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+         VALUES ('first_fit', 'essential', 3200000, 0, '2026-01-01')`,
+      ),
+    ]);
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
     const off = { selfServeBooking: false };
 
@@ -1289,5 +1368,104 @@ describe("the Idempotency-Key", () => {
     const again = await request(site(), "/api/consultation", keyed(outside, "key-consult-0003"), bindings());
     expect(again.status).toBe(422);
     expect(await again.json()).toMatchObject({ error: { code: "not_bookable" } });
+  });
+
+  const CONSULTATION = {
+    ...VISITOR,
+    pincode: "122018",
+    date: "2026-09-23",
+    window: "morning",
+    consent: true,
+    address: ADDRESS,
+  };
+
+  // Each press asks Turnstile for a new token, so the retry after a lost answer carries one the first press did not.
+  const turnstileRefuses = () => {
+    const fetch = fakeFetch({ [TURNSTILE_URL]: () => json({ success: false }) }).fetch;
+    return appFor("local", fakeDependencies({ fetch }), {}, "public");
+  };
+  const siteAt = (minutesAfterNow: number) => {
+    const later = new Date(NOW.getTime() + minutesAfterNow * MINUTE_MS);
+    return appFor("local", fakeDependencies({ now: () => later }), {}, "public");
+  };
+
+  it("answers a consultation pressed again with a new Turnstile token with its first answer, before checking it", async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    const firstPress = keyed({ ...CONSULTATION, turnstile_token: "first-press" }, "key-consult-0004");
+    const secondPress = keyed({ ...CONSULTATION, turnstile_token: "second-press" }, "key-consult-0004");
+
+    const first = await request(site(), "/api/consultation", firstPress, bindings());
+    const again = await request(turnstileRefuses(), "/api/consultation", secondPress, bindings());
+
+    expect(first.status).toBe(201);
+    expect(again.status).toBe(201);
+    expect(await again.json()).toEqual(await first.json());
+    expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(1);
+  });
+
+  it("answers a waitlist entry pressed again with a new Turnstile token with its first answer", async () => {
+    await pincode("400050", "Bandra", "Mumbai", false);
+    const body = { ...VISITOR, pincode: "400050", contact_consent: true, launch_alert: true };
+    const firstPress = keyed({ ...body, turnstile_token: "first-press" }, "key-waitlist-0002");
+    const secondPress = keyed({ ...body, turnstile_token: "second-press" }, "key-waitlist-0002");
+
+    await request(site(), "/api/waitlist", firstPress, bindings());
+    const again = await request(turnstileRefuses(), "/api/waitlist", secondPress, bindings());
+
+    expect(again.status).toBe(201);
+    expect(await again.json()).toEqual({ area: "Bandra", credits: false, invite: "unknown" });
+    expect(await count("SELECT COUNT(*) AS n FROM leads")).toBe(1);
+  });
+
+  /** D1 refuses one kind of write to a table, as in an outage, until the function this returns is called. */
+  async function refuseWrites(operation: "INSERT" | "UPDATE" | "DELETE", table: string) {
+    const trigger = `refuse_${operation.toLowerCase()}_${table}`;
+    await env.DB.prepare(
+      `CREATE TRIGGER ${trigger} BEFORE ${operation} ON ${table} BEGIN SELECT RAISE(ABORT, 'D1 is down'); END`,
+    ).run();
+    return async () => {
+      await env.DB.prepare(`DROP TRIGGER ${trigger}`).run();
+    };
+  }
+
+  it("answers a booking whose answer could not be kept, and logs it", async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    const logs = captureLogs();
+
+    const writesBack = await refuseWrites("UPDATE", "idempotency");
+    const booked = await request(site(), "/api/consultation", keyed(CONSULTATION, "key-consult-0005"), bindings());
+    await writesBack();
+
+    expect(booked.status).toBe(201);
+    expect(await booked.json()).toEqual(BOOKED_MORNING);
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({
+        level: "error",
+        event: "idempotency_key_not_settled",
+        route: "POST /api/consultation",
+      }),
+    );
+  });
+
+  it("lets a retry take the key of a request that died unfinished, once two minutes have passed", async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    captureLogs();
+
+    const holdsBack = await refuseWrites("INSERT", "slot_holds");
+    const keysBack = await refuseWrites("DELETE", "idempotency");
+    const died = await request(site(), "/api/consultation", keyed(CONSULTATION, "key-consult-0006"), bindings());
+    await holdsBack();
+    await keysBack();
+    expect(died.status).toBe(500);
+    expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
+
+    const soon = await request(siteAt(1), "/api/consultation", keyed(CONSULTATION, "key-consult-0006"), bindings());
+    expect(soon.status).toBe(409);
+    expect(await soon.json()).toMatchObject({ error: { code: "idempotency_in_progress" } });
+
+    const later = await request(siteAt(3), "/api/consultation", keyed(CONSULTATION, "key-consult-0006"), bindings());
+    expect(later.status).toBe(201);
+    expect(await later.json()).toEqual(BOOKED_MORNING);
+    expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(1);
   });
 });

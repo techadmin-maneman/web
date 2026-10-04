@@ -16,7 +16,7 @@ import type { OneVisitPrice, VisitSummary } from "../api.ts";
 import { home, messages, windowText } from "../content.ts";
 import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { NoteSheet } from "../booking/NoteSheet.tsx";
-import { firstName, oneVisitOf, summaryName } from "../lib/visit.ts";
+import { firstName, oneVisitOf, summaryName, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { oneVisitLines } from "./one-visit-words.ts";
@@ -208,7 +208,7 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
         )}
         <div>
           {visit.technician !== null && <p className={styles.who}>{firstName(visit.technician.name)}</p>}
-          <p className={styles.length}>{home.next.length(what, visit.length_minutes)}</p>
+          <p className={styles.length}>{home.next.length(visitTitle(visit), visit.length_minutes)}</p>
         </div>
       </div>
       {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}

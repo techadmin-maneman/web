@@ -64,6 +64,7 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
   const typeName = block.type === null ? dispatch.unknown : (dispatch.typeNames[block.type] ?? dispatch.unknown);
   const rows = [
     { key: copy.rows.type, value: copy.type(typeName, block.slots) },
+    ...(block.service === null ? [] : [{ key: copy.rows.service, value: block.service }]),
     { key: copy.rows.area, value: block.sector === null ? dispatch.unknown : copy.area(block.sector, block.pincode) },
     { key: copy.rows.state, value: stateOf(block) },
     ...(referredBy === null ? [] : [{ key: copy.rows.referred, value: referredBy }]),
@@ -98,7 +99,7 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
         </dl>
         {block.untold !== null && person !== null && (
           <div className={styles.untold}>
-            <p className={styles.untoldLine}>{copy.untold(movedTo, phoneWords(person.mobile))}</p>
+            <p className={styles.untoldLine}>{copy.untold[block.untold.reason](movedTo, phoneWords(person.mobile))}</p>
             {onTold !== null && (
               <Button
                 variant="outline"
