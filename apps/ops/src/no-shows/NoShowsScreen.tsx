@@ -203,7 +203,10 @@ function Facts({ each }: { each: NoShowCase }) {
     // The phone's own word, where the bounds would not take it (src/policy/phone-clock.ts).
     ...(claimed === null || claimed === each.checked_in_at ? [] : [[copy.facts.claimed, datedOf(claimed)] as const]),
     [copy.facts.received, datedOf(each.received_at)],
-    [copy.facts.distance, <Distance key="distance" metres={each.distance_m} radius={each.radius_m} />],
+    [
+      copy.facts.distance,
+      <Distance key="distance" metres={each.distance_m} radius={each.radius_m} letIn={each.let_in} />,
+    ],
     [copy.facts.whatsapp, messageOf(each)],
     [copy.facts.waited, waitedOf(each)],
   ];

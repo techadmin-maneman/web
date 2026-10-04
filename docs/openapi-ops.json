@@ -2986,6 +2986,20 @@
         ],
         "additionalProperties": false
       },
+      "LetIn": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Why, as ops write it: kept with the visit, and shown with the no-show's evidence."
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
       "AlreadyInvited": {
         "type": "object",
         "properties": {
@@ -5379,6 +5393,37 @@
             ],
             "description": "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured."
           },
+          "let_in": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "by": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "by",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ops let him check in past the geofence for this visit: who, and why. Null when his check-in passed on its own."
+          },
           "radius_m": {
             "type": "integer",
             "description": "The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since."
@@ -5468,6 +5513,7 @@
           "window_end",
           "minutes_late",
           "distance_m",
+          "let_in",
           "radius_m",
           "message_state",
           "message_delivered_at",
@@ -10663,6 +10709,98 @@
           },
           "425": {
             "description": "too_early_to_close: the visit's time has not come",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/visits/{id}/let-in": {
+      "post": {
+        "summary": "Let the visit's technician check in wherever his phone puts him, with why: a pin far from the door",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The visit's ID."
+            },
+            "required": true,
+            "description": "The visit's ID.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LetIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "His next check-in lands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "let_in": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "let_in"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: no reason",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such visit in the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "not_changeable: he has checked in already, or the visit is closed or cancelled",
             "content": {
               "application/json": {
                 "schema": {

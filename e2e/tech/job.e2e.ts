@@ -149,7 +149,9 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
   await page.getByRole("button", { name: "I have arrived" }).click();
   await expect(page.getByText("Check-in failed")).toBeVisible();
   await expect(page.getByText("You are 1.4 km from the address.")).toBeVisible();
-  await expect(page.getByText("Get to the door and tap again. No-show cannot be recorded from here.")).toBeVisible();
+  await expect(
+    page.getByText(/^Get to the door and tap again\. At the door and still refused\? Ask ops to let you check in\./),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Close as no-show" })).toHaveCount(0);
   // Board B5 draws the failure with its own outlined Try again, and no second gold "I have arrived" beside it.
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();

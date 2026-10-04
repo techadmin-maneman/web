@@ -337,6 +337,20 @@ test("says the distance was never measured, and shows no number, when the route 
   await expect(only).not.toContainText(/\b0\s*m\b/);
 });
 
+// FLD-24: a check-in that passed only because ops let him in says so beside its distance.
+test("says when ops let the technician check in past the fence, and why", async ({ page }) => {
+  const [first, ...rest] = NO_SHOWS.cases;
+  const letIn = { ...first, let_in: { by: "ops@maneman.test", reason: "The pin is at the society gate" } };
+  await answer(page, {
+    "GET /api/payments": json(DAY_MONEY),
+    "GET /api/no-shows": json({ ...NO_SHOWS, cases: [letIn, ...rest] }),
+  });
+  await page.goto("/no-shows");
+  await expect(fact(page, FIRST, "Distance")).toHaveText(
+    "240 m · over 200 m fence · ops let him check in: The pin is at the society gate",
+  );
+});
+
 test("reaches the client's visits from the case", async ({ page }) => {
   await open(page);
   await caseOf(page, FIRST).getByRole("link", { name: "Vikram Sethi" }).click();

@@ -10,6 +10,10 @@
 // measured against, so the check-in is accepted with no distance: the row
 // names no address and holds no distance.
 //
+// Where the address's pin is wrong, a building's pin far from its door, ops may let the technician check in to that
+// one visit wherever he is (waiveCheckIn). The distance is still measured and kept, and a check-in that passed only
+// by the waiver names who gave it, as the no-show's evidence shows.
+//
 // A check-in keeps three times (docs/decisions/0065-a-technicians-writes-reach-fsm.md):
 // `at`, the phone's time held within bounds, which the no-show wait runs from;
 // `claimed_at`, what the phone said; and `created_at`, when we received it.
@@ -18,6 +22,7 @@
 // it, and never for an event that did not land.
 
 import { checkIn, type Point } from "../policy/check-in.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
 
 /** How far the phone was from the visit's address, and whether that is near enough. */
 export interface Measured {
@@ -26,6 +31,8 @@ export interface Measured {
   readonly distanceM: number | null;
   readonly radiusM: number;
   readonly passed: boolean;
+  /** Who let him in, where the check-in passed only because ops waived the geofence for the visit; else null. */
+  readonly waivedBy: string | null;
 }
 
 export interface ArrivalInput {
@@ -68,29 +75,69 @@ export async function visitAddress(
   return { id: row.id, point: row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng } };
 }
 
-/** Measures the phone's position against the visit's address. Nothing is written. */
+/** Measures the phone's position against the visit's address, and ops' waiver of the geofence. Nothing is written. */
 export async function measureArrival(
   db: D1Database,
-  input: { personId: string | null; device: Point; radiusM: number },
+  input: { appointmentId: string; personId: string | null; device: Point; radiusM: number },
 ): Promise<Measured> {
   const address = await visitAddress(db, input.personId);
   const point = address?.point ?? null;
   if (address === null || point === null) {
-    return { addressId: null, distanceM: null, radiusM: input.radiusM, passed: true };
+    return { addressId: null, distanceM: null, radiusM: input.radiusM, passed: true, waivedBy: null };
   }
   const measured = checkIn(input.device, point, input.radiusM);
-  return { addressId: address.id, distanceM: measured.distanceM, radiusM: input.radiusM, passed: measured.passed };
+  const waivedBy = measured.passed ? null : await waiverOf(db, input.appointmentId);
+  return {
+    addressId: address.id,
+    distanceM: measured.distanceM,
+    radiusM: input.radiusM,
+    passed: measured.passed || waivedBy !== null,
+    waivedBy,
+  };
+}
+
+/** Who waived the geofence for the visit; null while nobody has. */
+async function waiverOf(db: D1Database, appointmentId: string): Promise<string | null> {
+  return db
+    .prepare("SELECT checkin_waived_by FROM appointments WHERE id = ?1 AND checkin_waived_at IS NOT NULL")
+    .bind(appointmentId)
+    .first<string>("checkin_waived_by");
+}
+
+/**
+ * Ops let the technician check in to the visit wherever he is, with their reason, while it is still to be checked in
+ * to. Audited in the same batch. False when the visit is not one he can still check in to.
+ */
+export async function waiveCheckIn(
+  db: D1Database,
+  input: { appointmentId: string; by: string; reason: string; audit: AuditEntry; now: Date },
+): Promise<boolean> {
+  const open = await db
+    .prepare("SELECT 1 FROM appointments WHERE id = ?1 AND status = 'scheduled' AND deleted_at IS NULL")
+    .bind(input.appointmentId)
+    .first();
+  if (open === null) return false;
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE appointments SET checkin_waived_at = ?2, checkin_waived_by = ?3, checkin_waived_reason = ?4
+         WHERE id = ?1`,
+      )
+      .bind(input.appointmentId, input.now.toISOString(), input.by, input.reason),
+    auditStatement(db, input.audit, input.now),
+  ]);
+  return true;
 }
 
 const CHECKIN_COLUMNS = `id, appointment_id, technician_id, job_event_id, address_id, at, claimed_at, lat, lng,
-  accuracy_m, distance_m, radius_m, passed, created_at`;
+  accuracy_m, distance_m, radius_m, passed, created_at, waived_by`;
 
 /** Records a check-in that failed the geofence. It lands no event and starts nothing. */
 export async function recordFailedArrival(db: D1Database, input: ArrivalInput): Promise<void> {
   await db
     .prepare(
       `INSERT INTO checkins (${CHECKIN_COLUMNS})
-       VALUES (?1, ?2, ?3, NULL, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0, ?12)`,
+       VALUES (?1, ?2, ?3, NULL, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0, ?12, ?13)`,
     )
     .bind(crypto.randomUUID(), ...arrivalValues(input))
     .run();
@@ -104,14 +151,14 @@ export function passedArrivalStatement(db: D1Database, input: ArrivalInput, even
   return db
     .prepare(
       `INSERT INTO checkins (${CHECKIN_COLUMNS})
-       SELECT ?1, ?2, ?3, e.id, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 1, ?12
-       FROM job_events e WHERE e.appointment_id = ?2 AND e.event_id = ?13 AND e.superseded = 0
+       SELECT ?1, ?2, ?3, e.id, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 1, ?12, ?13
+       FROM job_events e WHERE e.appointment_id = ?2 AND e.event_id = ?14 AND e.superseded = 0
        ON CONFLICT DO NOTHING`,
     )
     .bind(crypto.randomUUID(), ...arrivalValues(input), eventId);
 }
 
-/** The values ?2 to ?12 of a check-in's row. */
+/** The values ?2 to ?13 of a check-in's row. */
 function arrivalValues(input: ArrivalInput): (string | number | null)[] {
   return [
     input.appointmentId,
@@ -125,6 +172,7 @@ function arrivalValues(input: ArrivalInput): (string | number | null)[] {
     input.measured.distanceM,
     input.measured.radiusM,
     input.now.toISOString(),
+    input.measured.waivedBy,
   ];
 }
 

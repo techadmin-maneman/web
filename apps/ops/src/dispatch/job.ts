@@ -3,6 +3,7 @@
 // written by the same two routes, so the board holds them under one type.
 
 import type { Block, Board, BoardClient, BookingWindow, BoardRow, Shown, Unassigned } from "../api.ts";
+import { indiaDate } from "@maneman/web-kit/dates";
 import { dispatch } from "../content.ts";
 
 /** The three windows a day is booked in, in their order (src/config/scheduling.ts). */
@@ -125,6 +126,15 @@ export function changeOf(block: Block, now: number): VisitChange | null {
   }
   return OPEN.includes(block.status) && block.begun !== "closed" ? "close" : null;
 }
+
+/**
+ * Whether ops may let the technician check in past the geofence: a visit today he has not checked in to, as when the
+ * address's pin is far from the door.
+ */
+export const mayLetIn = (block: Block, now: number): boolean =>
+  block.status === "scheduled" &&
+  block.begun === null &&
+  indiaDate(block.starts_at) === indiaDate(new Date(now).toISOString());
 
 /** "Rohit", as the drawer's WhatsApp button names him. */
 export const firstNameOf = (person: BoardClient): string => person.name.trim().split(/\s+/)[0] ?? person.name;

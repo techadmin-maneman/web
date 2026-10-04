@@ -75,6 +75,12 @@ const NoShowCaseSchema = z
       description:
         "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured.",
     }),
+    let_in: z
+      .union([z.object({ by: z.string(), reason: z.union([z.string(), z.null()]) }).strict(), z.null()])
+      .openapi({
+        description:
+          "Ops let him check in past the geofence for this visit: who, and why. Null when his check-in passed on its own.",
+      }),
     radius_m: z.number().int().openapi({
       description:
         "The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since.",
