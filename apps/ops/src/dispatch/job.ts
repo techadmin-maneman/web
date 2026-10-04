@@ -2,7 +2,7 @@
 // or a job from the unassigned tray. The two are moved the same way and are
 // written by the same two routes, so the board holds them under one type.
 
-import type { Block, BoardClient, BookingWindow, BoardRow, Shown, Unassigned } from "../api.ts";
+import type { Block, Board, BoardClient, BookingWindow, BoardRow, Shown, Unassigned } from "../api.ts";
 import { dispatch } from "../content.ts";
 
 /** The three windows a day is booked in, in their order (src/config/scheduling.ts). */
@@ -30,6 +30,17 @@ export interface Target {
 }
 
 export const idOf = (job: Job): string => (job.kind === "block" ? job.block.appointment_id : job.job.appointment_id);
+
+/** A visit's block on a technician's day, as the grid draws it; null where the board holds it on no technician. */
+export function blockOn(board: Pick<Board, "technicians">, appointmentId: string): BlockJob | null {
+  for (const technician of board.technicians) {
+    for (const day of technician.days) {
+      const block = day.blocks.find((each) => each.appointment_id === appointmentId);
+      if (block !== undefined) return { kind: "block", block, technician, date: day.date };
+    }
+  }
+  return null;
+}
 
 /** The client the board writes on a block: "Rohit M.". */
 export const clientOf = (job: Job): string | null => (job.kind === "block" ? job.block.client : job.job.client);

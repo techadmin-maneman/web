@@ -11,9 +11,11 @@
 // they pay (src/policy/tasks.ts).
 //
 // Each task leads to where it is done: the client's page, and the row in the
-// section that decides it. A consultation asked for, a first fit to book and a
-// replacement due are booked from the row itself (BookFromTask.tsx). Each group's
-// count is the whole queue's, and a group longer than the board lists says so.
+// section that decides it; a task the dispatch board settles opens its visit's
+// drawer there. A consultation asked for, a first fit to book and a replacement
+// due are booked from the row itself (BookFromTask.tsx), and the call about a move
+// is recorded there too (CallAboutMove.tsx). Each group's count is the whole
+// queue's, and a group longer than the board lists says so.
 //
 // The board writes an owner in ops against every task, in its own column. Ops
 // take a task, give it to another member of staff or hand it back, and close a
@@ -32,9 +34,10 @@ import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { readTasks } from "../lib/waiting.ts";
 import { rowPath } from "../lib/target.ts";
-import type { ClientTab } from "../route.ts";
+import { dispatchPath, type ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
+import { CallAboutMove } from "./CallAboutMove.tsx";
 import { DECIDED_IN } from "./decided.ts";
 import { TaskActions } from "./TaskActions.tsx";
 import styles from "./tasks.module.css";
@@ -63,9 +66,16 @@ const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   payment_owed: "payments",
 };
 
+/** The board opened on the week of the task's visit, with its drawer open; this week's board for a task with none. */
+function onTheBoard(task: Task): string {
+  if (task.visit === undefined) return dispatchPath({});
+  return dispatchPath({ from: indiaDate(task.visit.starts_at), visit: task.visit.id });
+}
+
 function decidedAt(group: Group, task: Task): string | null {
   const where = DECIDED_IN[group];
   if (where === undefined) return null;
+  if (where.page === "/dispatch") return onTheBoard(task);
   return where.row === null ? where.page : rowPath(where.page, where.row, task.id);
 }
 
@@ -221,6 +231,7 @@ function Row({ group, task, now, acting }: { group: Group; task: Task; now: Date
           </span>
         )}
         <BookFromTask group={group} task={task} subject={subject} onBooked={acting.onClosed} />
+        <CallAboutMove group={group} task={task} subject={subject} onTold={acting.onClosed} />
         <TaskActions group={group} task={task} subject={subject} {...acting} />
       </div>
       <span className={styles.owner}>

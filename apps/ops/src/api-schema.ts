@@ -7783,7 +7783,16 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 name: string;
+                /** @description On a move the client has not heard of, their mobile, for the call. Left out elsewhere. */
+                mobile?: string;
             } | null;
+            /** @description The visit to come the dispatch board settles the task on, so the task can open it there: a move the client has not heard of, and a job on its technician's day off. Left out for every other group. */
+            visit?: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date-time */
+                starts_at: string;
+            };
             /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
             detail: string | null;
             /**
