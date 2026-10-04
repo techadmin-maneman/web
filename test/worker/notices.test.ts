@@ -82,9 +82,9 @@ describe("consent notices", () => {
 
   it("records the booking sheet's reminder on its own line, and every other switch on the purpose's current notice", () => {
     expect(findNotice(REMINDER_NOTICE)).toEqual({
-      version: "whatsapp-visits-booking-v1",
+      version: "whatsapp-visits-booking-v2",
       purpose: "whatsapp_visits",
-      text: ["Remind me on WhatsApp the day before"],
+      text: ["Send me visit updates on WhatsApp"],
     });
     expect(switchNotice("whatsapp_visits", "app_booking")).toBe(REMINDER_NOTICE);
     expect(switchNotice("whatsapp_visits", "app_profile")).toBe(CURRENT_NOTICE.whatsapp_visits);

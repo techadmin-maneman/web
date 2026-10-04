@@ -57,7 +57,7 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
         track({ name: "lead_submitted", page, served: false, area: props.answer.area, window: null, loss_extent });
         track({ name: "waitlist_submitted", page, area: listed.area });
         if (invite !== null) forgetInvite(invite);
-        props.onListed(listed);
+        props.onListed({ ...listed, pincode: props.answer.pincode, alerted: alert });
       },
     );
   }

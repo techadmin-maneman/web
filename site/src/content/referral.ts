@@ -325,9 +325,10 @@ export const referral = {
     label: "On the list",
     title: "You are on the {area} list",
     titleUnknown: "You are on the list",
-    body: "We message you when a technician starts working there.",
-    creditsFrom: "{name}’s invite holds for 12 months after that.",
-    credits: "The invite holds for 12 months after that.",
+    /** Only to someone who asked to be told: nobody else is messaged when we come (src/domain/waitlist.ts). */
+    alerted: "We’ll message you on WhatsApp when we start coming to {pincode}.",
+    creditsFrom: "{name}’s invite holds for 12 months from when we start coming to {pincode}.",
+    credits: "The invite holds for 12 months from when we start coming to {pincode}.",
     tryOn: "Try a new look",
     back: "Back to the site",
   },

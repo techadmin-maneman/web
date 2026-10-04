@@ -587,7 +587,9 @@ test("a friend who opened an invite joins a waitlist here with it, and is told t
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, invite_told: true });
-  await expect(page.getByText(/The invite holds for 12 months after that\./)).toBeVisible();
+  await expect(page.getByText(/The invite holds for 12 months from when we start coming to 400050\./)).toBeVisible();
+  // Nobody who left "Tell me when you launch" unticked is promised a message they will never get (BK-37).
+  await expect(page.getByText(/We’ll message you on WhatsApp/)).toHaveCount(0);
   expect(await remembered(page)).toBeNull();
 });
 

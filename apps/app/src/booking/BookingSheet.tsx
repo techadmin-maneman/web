@@ -80,7 +80,8 @@ type Step =
   /** `paidIn`: the phone saw the hold's time end, and found the payment already in. */
   | { readonly kind: "confirming"; readonly hold: Hold; readonly paidIn?: boolean }
   | { readonly kind: "confirmed"; readonly hold: Hold }
-  | { readonly kind: "slow" }
+  /** Still being booked after a minute; paid, it is told by its receipt, whatever the client's consent. */
+  | { readonly kind: "slow"; readonly paid: boolean }
   | { readonly kind: "refunded" }
   | { readonly kind: "broken" };
 
@@ -335,7 +336,7 @@ export function BookingSheet({
       if (!current) return;
       if (answer.ok && answer.body.state === "booked") setStep({ kind: "confirmed", hold: answer.body });
       else if (answer.ok && answer.body.state === "released") setStep({ kind: "refunded" });
-      else if (Date.now() - started > POLL_FOR_MS) setStep({ kind: "slow" });
+      else if (Date.now() - started > POLL_FOR_MS) setStep({ kind: "slow", paid: !paysNothing(confirming) });
       else timer = window.setTimeout(() => void ask(), POLL_MS);
     };
     let timer = window.setTimeout(() => void ask(), POLL_MS);
@@ -551,7 +552,9 @@ export function BookingSheet({
         {step.kind === "confirmed" && (
           <ConfirmedStep hold={step.hold} moved={moving !== undefined} reminded={reminders === true} onDone={close} />
         )}
-        {step.kind === "slow" && <WaitStep text={booking.slow} onClose={close} />}
+        {step.kind === "slow" && (
+          <WaitStep text={step.paid || reminders === true ? booking.slow : booking.slowQuiet} onClose={close} />
+        )}
         {step.kind === "refunded" && <WaitStep text={booking.refunded} onClose={close} />}
       </div>
     </Sheet>
