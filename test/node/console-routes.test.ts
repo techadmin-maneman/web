@@ -102,6 +102,7 @@ describe("the routes a caller's calls go ahead on", () => {
     expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([
       ...SIGNED_IN_ROUTES,
       "GET /api/tasks",
+      "GET /api/alerts",
       "GET /api/staff",
     ]);
   });
@@ -113,6 +114,9 @@ describe("the routes a caller's calls go ahead on", () => {
       expect.arrayContaining([
         "GET /api/tasks",
         "PUT /api/tasks/{group}/{id}/owner",
+        "GET /api/alerts",
+        "POST /api/alerts/{id}/resolve",
+        "POST /api/alerts/{id}/send-again",
         "GET /api/payments",
         "GET /api/no-shows",
         "POST /api/no-shows/{id}/decision",

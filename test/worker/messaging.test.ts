@@ -166,6 +166,12 @@ describe("messaging: sending a result", () => {
       last_error: "HTTP 503 [redacted]",
     });
     expect(deps.alerts).toEqual([expect.stringContaining("failed after 4 attempts") as string]);
+    // Kept for Tasks, where ops may send it again, with the client's page to act from.
+    expect(
+      await env.DB.prepare("SELECT key, link FROM alerts WHERE resolved_at IS NULL")
+        .all()
+        .then((answer) => answer.results),
+    ).toEqual([{ key: "message_failed:m1", link: "/clients/p" }]);
   });
 
   it("fails a permanent refusal at once", async () => {

@@ -2380,6 +2380,78 @@ Request body:
 }
 ```
 
+### GET /api/alerts
+
+The open alerts ops have been told of, the longest open first
+
+**200**: Of the caller's own departments once the Staff list is enforced
+
+```json
+{
+  "$ref": "#/components/schemas/OpenAlerts"
+}
+```
+
+**403**: access_required, or not_permitted: no View in any department
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/alerts/{id}/resolve
+
+Mark an alert done: what it was about is put right
+
+**204**: Closed, under the member of staff who closed it
+
+**403**: not_permitted: it asks Act in the department the alert's kind belongs to, and Manage for a CRM erasure
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such open alert; it may be closed already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/alerts/{id}/send-again
+
+Send again the message, lead or CRM erasure an alert gave up on, and close the alert
+
+**204**: Sent again, and the alert closed: a new alert follows if it fails again
+
+**400**: invalid_request: this kind of alert has nothing to send again
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: not_permitted: it asks Act in the department the alert's kind belongs to
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such open alert; it may be closed already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/payments
 
 A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on
@@ -11091,6 +11163,93 @@ Request body:
   },
   "required": [
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpenAlerts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "integer",
+      "description": "How many are open, all of them."
+    },
+    "alerts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/OpenAlert"
+      },
+      "description": "The longest open first, at most 50."
+    }
+  },
+  "required": [
+    "count",
+    "alerts"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpenAlert
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kind": {
+      "type": "string",
+      "description": "What went wrong: the alert's key up to its first colon, \"crm_lead\"."
+    },
+    "message": {
+      "type": "string",
+      "description": "What happened and what to do, with IDs only, as the chat was told."
+    },
+    "link": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where in the console to act on it, as a path: \"/clients/<personId>\"."
+    },
+    "count": {
+      "type": "integer",
+      "description": "How many times it has happened."
+    },
+    "told_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When ops were first told."
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "send_again": {
+      "type": "boolean",
+      "description": "Its work can be sent again from here: a message, a lead to the CRM, or an erasure there."
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "message",
+    "link",
+    "count",
+    "told_at",
+    "last_seen_at",
+    "send_again"
   ],
   "additionalProperties": false
 }
