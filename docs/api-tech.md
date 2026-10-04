@@ -193,7 +193,7 @@ The technician's jobs on a date. Today and tomorrow in full; later dates only ti
 }
 ```
 
-**400**: invalid_request: a date before yesterday or after tomorrow
+**400**: invalid_request: a date before yesterday
 
 ```json
 {

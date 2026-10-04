@@ -346,7 +346,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianJobs"];
                     };
                 };
-                /** @description invalid_request: a date before yesterday or after tomorrow */
+                /** @description invalid_request: a date before yesterday */
                 400: {
                     headers: {
                         [name: string]: unknown;

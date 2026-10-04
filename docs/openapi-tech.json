@@ -2825,7 +2825,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: a date before yesterday or after tomorrow",
+            "description": "invalid_request: a date before yesterday",
             "content": {
               "application/json": {
                 "schema": {
