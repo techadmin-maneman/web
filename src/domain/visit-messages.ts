@@ -8,6 +8,7 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
+import type { TemplateName } from "../config/message-templates.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
@@ -27,22 +28,7 @@ import { windowTimesOf } from "../policy/slot-times.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 import { firstNameOf } from "../lib/names.ts";
 
-export type VisitMessageKind = Extract<
-  MessageKind,
-  | "consultation_confirmation"
-  | "payment_receipt"
-  | "nothing_to_pay"
-  | "visit_reminder"
-  | "reschedule_confirmation"
-  | "cancel_confirmation"
-  | "visit_cancelled"
-  | "visit_moved"
-  | "arrival_notice"
-  | "no_show_decided"
-  | "no_show_dispute_ruled"
->;
-
-export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
+export const VISIT_MESSAGE_KINDS = [
   "consultation_confirmation",
   "payment_receipt",
   // A one visit a discount code made free, told once the client is fitted (docs/decisions/0108-discount-codes.md).
@@ -60,7 +46,9 @@ export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
   "no_show_decided",
   // Ops ruled on the client's dispute of its charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
   "no_show_dispute_ruled",
-];
+] as const satisfies readonly MessageKind[];
+
+export type VisitMessageKind = (typeof VISIT_MESSAGE_KINDS)[number];
 
 /**
  * The statuses in which each kind is still true of the visit. Most are about a visit still booked; a cancel and a
@@ -95,7 +83,7 @@ const CHARGED_TEMPLATES = {
   nothing: "no_show_missed_v1",
 } as const;
 
-function waivedTemplate(paid: PaidAhead["kind"], waiver: Waiver, credit: VisitCredit): string {
+function waivedTemplate(paid: PaidAhead["kind"], waiver: Waiver, credit: VisitCredit): TemplateName {
   if (paid === "payment") return waiver.payment === "refunded" ? "no_show_waived_refund_v1" : "no_show_waived_paid_v1";
   if (paid === "nothing") return "no_show_waived_v1";
   if (waiver.credit === "spent") return "no_show_waived_credit_v1";
@@ -283,7 +271,7 @@ const ONE_VISIT_NAME = "consultation and fit";
 /** Where a refund goes back to, by the payment's method, as a message names it. */
 export const DESTINATIONS: Readonly<Record<string, string>> = { upi: "UPI", card: "card", netbanking: "bank account" };
 
-export type Composed = { readonly template: string; readonly params: string[] } | { readonly skip: string };
+export type Composed = { readonly template: TemplateName; readonly params: string[] } | { readonly skip: string };
 
 /** Why a message about a visit was skipped when the client never agreed to them; the no-show queue reads it back. */
 export const NO_VISITS_CONSENT = "no consent to WhatsApp about visits";

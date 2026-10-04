@@ -60,7 +60,7 @@ const BOOKING_OWN_RECORD_V2 = [
 /** The booking form's line on /book and on an invite's page. */
 const CONSULTATION_LINE = "You may contact me on WhatsApp about this consultation.";
 
-export const NOTICES: readonly Notice[] = [
+export const NOTICES = [
   {
     // The booking form's consent checkbox.
     version: "booking-v1",
@@ -263,16 +263,22 @@ export const NOTICES: readonly Notice[] = [
     purpose: "contact",
     text: ["You may contact me about this request."],
   },
-];
+] as const satisfies readonly Notice[];
+
+/** A notice's version: a misspelt one is a type error, never a consent recorded on words nobody was shown. */
+export type NoticeVersion = (typeof NOTICES)[number]["version"];
 
 /** The lines the referral landing shows, by what they are given for. */
-export const LANDING_NOTICES = { consultation: "referral-consultation-v1", waitlist: "waitlist-v1" } as const;
+export const LANDING_NOTICES = {
+  consultation: "referral-consultation-v1",
+  waitlist: "waitlist-v1",
+} as const satisfies Readonly<Record<string, NoticeVersion>>;
 
 /** The booking form's agreement, by the page it is given on: the same line, named for where it was given. */
 export const CONSULTATION_NOTICES = {
   site_booking: "site-consultation-v1",
   referral_landing: LANDING_NOTICES.consultation,
-} as const;
+} as const satisfies Readonly<Record<string, NoticeVersion>>;
 
 /**
  * The line beside an invite that tells the friend their referrer hears of their fit, by the page that shows it: the
@@ -286,7 +292,7 @@ export type ToldNotice = (typeof TOLD_NOTICES)[keyof typeof TOLD_NOTICES];
  * The version shown today for each purpose. The try-on records only its current two: every earlier version says
  * something about the photograph or the look that is no longer true.
  */
-export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
+export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, NoticeVersion>> = {
   contact: "booking-v1",
   tryon_photo: "photo-v4",
   result_delivery: "gate-v4",
@@ -298,10 +304,10 @@ export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
 };
 
 /** The booking sheet's reminder box, a yes to WhatsApp about visits in words of its own. */
-export const REMINDER_NOTICE = "whatsapp-visits-booking-v2";
+export const REMINDER_NOTICE: NoticeVersion = "whatsapp-visits-booking-v2";
 
 /** The notice a switch in the app is recorded under: the words of the screen it was made on. */
-export function switchNotice(purpose: ConsentPurpose, source: ConsentSource | null): string {
+export function switchNotice(purpose: ConsentPurpose, source: ConsentSource | null): NoticeVersion {
   if (source === "app_booking" && purpose === "whatsapp_visits") return REMINDER_NOTICE;
   return CURRENT_NOTICE[purpose];
 }
@@ -319,13 +325,13 @@ export const BOOKING_NOTICES = {
     photos_own_record: "photos-own-record-booking-alone-v2",
     photos_referral_cards: "photos-referral-cards-booking-alone-v1",
   },
-} as const;
+} as const satisfies Readonly<Record<string, Readonly<Record<string, NoticeVersion>>>>;
 
 /** Every notice for referral cards that carries the naming line: an invite names its referrer only on one of these. */
 export const NAMING_NOTICES: readonly string[] = NOTICES.filter(
-  (notice) => notice.purpose === "photos_referral_cards" && notice.text.includes(NAMING_LINE),
+  (notice: Notice) => notice.purpose === "photos_referral_cards" && notice.text.includes(NAMING_LINE),
 ).map((notice) => notice.version);
 
 export function findNotice(version: string): Notice | undefined {
-  return NOTICES.find((notice) => notice.version === version);
+  return NOTICES.find((notice: Notice) => notice.version === version);
 }

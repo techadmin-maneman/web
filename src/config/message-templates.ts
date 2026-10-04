@@ -5,7 +5,7 @@
 import { MESSAGE_KINDS, type MessageKind } from "../domain/messages.ts";
 import type { MessagePurpose } from "../policy/consents.ts";
 
-export const TEMPLATES: Readonly<Record<string, string>> = {
+export const TEMPLATES = {
   // The try-on's look, to the number that claimed it: {{1}} the first name, {{2}} where to book a consultation.
   tryon_result_v1:
     "Hi {{1}}, here's your new look from Mane Man. It's a simulation: your real hair system is matched to your own hair. See it for real at a free consultation: {{2}}",
@@ -140,12 +140,14 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   stop_link_v1: "Stop these messages: {{1}}",
   // The answer to a STOP reply, once it has withdrawn something.
   messages_stopped_v1: "Done, {{1}}. We won't message you here about your visits, or when we come to a new area.",
-};
+} as const satisfies Readonly<Record<string, string>>;
+
+/** A template's name: a misspelt one is a type error, never a message that does not go. */
+export type TemplateName = keyof typeof TEMPLATES;
 
 /** The text with its params filled in, or null for an unknown template or a missing param. */
-export function renderMessage(name: string, params: readonly string[]): string | null {
-  const template = TEMPLATES[name];
-  if (template === undefined) return null;
+export function renderMessage(name: TemplateName, params: readonly string[]): string | null {
+  const template: string = TEMPLATES[name];
 
   const positions = [...template.matchAll(PARAM)].map((match) => Number(match[1]));
   if (positions.some((position) => params[position - 1] === undefined)) return null;
@@ -155,7 +157,7 @@ export function renderMessage(name: string, params: readonly string[]): string |
 const PARAM = /\{\{(\d+)\}\}/g;
 
 /** The text, ending with the line that stops it when the message carries a stop link. */
-export function renderWithStopLink(name: string, params: readonly string[], stopLink?: string): string | null {
+export function renderWithStopLink(name: TemplateName, params: readonly string[], stopLink?: string): string | null {
   const text = renderMessage(name, params);
   if (text === null || stopLink === undefined) return text;
   return `${text}\n\n${renderMessage("stop_link_v1", [stopLink]) ?? ""}`;
@@ -182,12 +184,12 @@ export function stopLinkPurpose(kind: string): MessagePurpose | null {
 export const serviceVisits = (count: number): string =>
   count === 1 ? "1 service visit" : `${String(count)} service visits`;
 
-export function isKnownTemplate(name: string): boolean {
+export function isKnownTemplate(name: string): name is TemplateName {
   return name in TEMPLATES;
 }
 
 /** The template the try-on result is sent with, in every environment. */
-export const RESULT_TEMPLATE = "tryon_result_v1";
+export const RESULT_TEMPLATE: TemplateName = "tryon_result_v1";
 
 /**
  * Whether a kind of queued message answers the person whose own action produced it, or is automatic: a scheduled

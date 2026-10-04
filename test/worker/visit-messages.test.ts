@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { renderMessage } from "../../src/config/message-templates.ts";
+import { renderMessage, type TemplateName } from "../../src/config/message-templates.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
@@ -46,7 +46,7 @@ function config(messaging: Partial<Settings["messaging"]> = {}): StaticConfig {
 }
 
 function recordingProvider() {
-  const sent: { to: string; template: string; params: readonly string[]; mediaUrl: string | undefined }[] = [];
+  const sent: { to: string; template: TemplateName; params: readonly string[]; mediaUrl: string | undefined }[] = [];
   const provider: MessagingProvider = {
     send: ({ to, template, params, mediaUrl }) => {
       sent.push({ to, template, params, mediaUrl });

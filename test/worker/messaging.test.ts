@@ -353,10 +353,12 @@ describe("Evolution API", () => {
         params: ["Arjun", "https://maneman.in/book"],
       }),
     ).toMatchObject({ ok: true });
-    expect(await evolution.send({ to: "+919810000001", template: "nope", params: ["Arjun"] })).toMatchObject({
-      ok: false,
-      transient: false,
-    });
+    expect(await evolution.send({ to: "+919810000001", template: "tryon_result_v1", params: ["Arjun"] })).toMatchObject(
+      {
+        ok: false,
+        transient: false,
+      },
+    );
     expect(http.calls).toHaveLength(1);
   });
 

@@ -29,12 +29,13 @@
 
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
-import { messageClass, RESULT_TEMPLATE, stopLinkPurpose } from "../config/message-templates.ts";
+import { messageClass, RESULT_TEMPLATE, stopLinkPurpose, type TemplateName } from "../config/message-templates.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
 import { type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { StaticConfig } from "../guard.ts";
+import type { MessageKind } from "../domain/messages.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { mobileHashOf } from "../domain/number-codes.ts";
 import { heldBack } from "../policy/staging-test-records.ts";
@@ -146,7 +147,7 @@ interface MessageRow {
   state: string;
   attempts: number;
   created_at: string;
-  kind: string;
+  kind: MessageKind;
   subject_id: string;
   person_id: string;
   mobile_e164: string;
@@ -161,7 +162,7 @@ interface MessageRow {
  * reminder or alert the link that stops them.
  */
 interface Sendable {
-  readonly template: string;
+  readonly template: TemplateName;
   readonly params: string[];
   readonly mediaUrl?: () => Promise<string>;
   readonly stopLink?: string;
@@ -219,9 +220,11 @@ async function resultContent(db: D1Database, config: StaticConfig, row: MessageR
   };
 }
 
-/** What a message of its kind says, as things stand now, or why it is not sent. */
+/**
+ * What a message of its kind says, as things stand now, or why it is not sent. Every kind is answered: one added to
+ * MESSAGE_KINDS and answered nowhere here fails to build, for the switch then has no return for it.
+ */
 async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
-  if (row.kind === "tryon_result") return resultContent(db, config, row, now);
   if (isVisitKind(row.kind)) {
     const composed = await composeVisitMessage(db, row.kind, row.subject_id, row.person_id);
     if ("skip" in composed) return composed;
@@ -229,22 +232,35 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
     if (stale !== null) return { skip: stale };
     return composed;
   }
-  if (row.kind === "next_service_reminder") {
-    const days = (await readOpsInputs(db, now)).nextVisitDays;
-    return composeNextServiceReminder(db, row.subject_id, row.person_id, days);
-  }
-  if (row.kind === "booking_refunded") return composeBookingRefunded(db, row.subject_id, row.person_id);
-  if (row.kind === "link_paid") return composeLinkPaid(db, row.subject_id, row.person_id);
-  if (row.kind === "friend_fitted") return composeFriendFitted(db, row.subject_id, row.person_id);
-  if (row.kind === "friend_credited") return composeFriendCredited(db, row.subject_id, row.person_id);
-  if (row.kind === "referral_rejected") return composeReferralRejected(db, row.subject_id, row.person_id);
-  if (row.kind === "credits_expiring") return composeCreditsExpiring(db, row.subject_id, row.person_id, now);
-  if (row.kind === "launch_alert") return composeLaunchAlert(db, row.subject_id, row.person_id, config.environment);
-  if (row.kind === "waitlist_confirmation") return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
   if (isSiteNoticeKind(row.kind)) return composeSiteNotice(db, row.kind, row.person_id);
-  if (row.kind === "deletion_rejected") return composeDeletionRejected(db, row.subject_id, row.person_id);
-  if (row.kind === "messages_stopped") return composeMessagesStopped(db, row.person_id);
-  return { skip: "unknown kind" };
+  switch (row.kind) {
+    case "tryon_result":
+      return resultContent(db, config, row, now);
+    case "next_service_reminder": {
+      const days = (await readOpsInputs(db, now)).nextVisitDays;
+      return composeNextServiceReminder(db, row.subject_id, row.person_id, days);
+    }
+    case "booking_refunded":
+      return composeBookingRefunded(db, row.subject_id, row.person_id);
+    case "link_paid":
+      return composeLinkPaid(db, row.subject_id, row.person_id);
+    case "friend_fitted":
+      return composeFriendFitted(db, row.subject_id, row.person_id);
+    case "friend_credited":
+      return composeFriendCredited(db, row.subject_id, row.person_id);
+    case "referral_rejected":
+      return composeReferralRejected(db, row.subject_id, row.person_id);
+    case "credits_expiring":
+      return composeCreditsExpiring(db, row.subject_id, row.person_id, now);
+    case "launch_alert":
+      return composeLaunchAlert(db, row.subject_id, row.person_id, config.environment);
+    case "waitlist_confirmation":
+      return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
+    case "deletion_rejected":
+      return composeDeletionRejected(db, row.subject_id, row.person_id);
+    case "messages_stopped":
+      return composeMessagesStopped(db, row.person_id);
+  }
 }
 
 /** The link a reminder or the launch alert ends with, which stops them; none on any other kind. */
