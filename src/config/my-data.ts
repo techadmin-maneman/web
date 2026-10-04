@@ -25,7 +25,7 @@ const money = (label: string): Field => ({ label, as: "money" });
 const yesNo = (label: string): Field => ({ label, as: "yesNo" });
 const words = (label: string): Field => ({ label, as: "words" });
 
-// PLACEHOLDER: no design draws the readable copy of a client's data; every word here is ours, for the owner.
+// No design draws the readable copy of a client's data; every word here is ours.
 export const MY_DATA = {
   title: "Everything Mane Man holds about you",
   downloaded: (when: string) => `Downloaded ${when}, India time.`,

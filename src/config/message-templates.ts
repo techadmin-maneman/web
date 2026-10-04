@@ -1,10 +1,10 @@
 // The WhatsApp texts we send, by template name: the bridge has no approved templates, so the texts live here.
-// {{1}}, {{2}}, … are the params, in order. PLACEHOLDER COPY, pending the owner's wording.
+// {{1}}, {{2}}, … are the params, in order. The owner approved the texts on 4 October 2026 (docs/open-points.md,
+// item 39).
 
 import { MESSAGE_KINDS, type MessageKind } from "../domain/messages.ts";
 import type { MessagePurpose } from "../policy/consents.ts";
 
-// PLACEHOLDER: every text below waits for the owner's wording (docs/open-points.md, item 39).
 export const TEMPLATES: Readonly<Record<string, string>> = {
   // The try-on's look, to the number that claimed it: {{1}} the first name, {{2}} where to book a consultation.
   tryon_result_v1:
@@ -118,8 +118,8 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hi {{1}}, we couldn't move your {{2}} to {{3}}, so it stays as booked. We've refunded {{6}} to your {{8}} (5 to 7 working days).",
   move_not_made_v1: "Hi {{1}}, we couldn't move your {{2}} to {{3}}, so it stays as booked.",
   // To a number our site's booking form was just sent for, since the page tells every number the same thing
-  // (src/domain/site-notices.ts). PLACEHOLDER COPY, pending the owner's wording: {{1}} the first name, and for a
-  // consultation still to happen {{2}} the visit, {{3}} its day and {{4}} its window.
+  // (src/domain/site-notices.ts): {{1}} the first name, and for a consultation still to happen {{2}} the visit, {{3}}
+  // its day and {{4}} its window.
   consultation_exists_v1:
     "Hi {{1}}, this number was just used to book on our site. Your {{2}} is already booked for {{3}}, {{4}}, so we haven't booked another. See or move it in the Mane Man app.",
   book_in_app_v1:
