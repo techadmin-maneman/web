@@ -1302,7 +1302,11 @@ type Refusal = Exclude<Landing, { kind: "landed" }>;
 /** The 409 of a write that may not land. */
 function refusedOf(c: Ctx, write: EventInput, refusal: Refusal): Extract<Landed, { ok: false }> {
   if (refusal.kind === "superseded") {
-    c.var.log.info("job_event_superseded", { appointment_id: write.job.id, kind: write.kind, changed: refusal.changed });
+    c.var.log.info("job_event_superseded", {
+      appointment_id: write.job.id,
+      kind: write.kind,
+      changed: refusal.changed,
+    });
     return superseded(refusal);
   }
   if (refusal.kind === "out_of_order") return { ok: false, code: "out_of_order", fields: [refusal.needs] };
