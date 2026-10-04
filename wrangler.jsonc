@@ -39,12 +39,15 @@
       { "binding": "FSM_QUEUE", "queue": "mm-fsm-sync-local" }
     ],
     // crm-sync asks for one batch at a time; Queues does not guarantee it (docs/decisions/0012-zoho-sync.md).
+    // Each max_retries leaves room for its consumer's last try (test/node/queue-ceilings.test.ts); retry_delay
+    // spaces out a redelivery the code did not time, as when a whole batch fails.
     "consumers": [
       {
         "queue": "mm-crm-sync-local",
         "max_batch_size": 10,
         "max_batch_timeout": 5,
-        "max_retries": 2,
+        "max_retries": 5,
+        "retry_delay": 30,
         "max_concurrency": 1
       },
       {
@@ -53,13 +56,15 @@
         "max_batch_timeout": 1,
         // Polling a render is a delayed retry: the 15 minutes it is followed for (RENDER_GIVE_UP_MS,
         // src/config/pipeline.ts) take about 33 polls, so 100 leaves room to spare.
-        "max_retries": 100
+        "max_retries": 100,
+        "retry_delay": 30
       },
       {
         "queue": "mm-messaging-local",
         "max_batch_size": 5,
         "max_batch_timeout": 5,
         "max_retries": 5,
+        "retry_delay": 30,
         "max_concurrency": 1
       },
       // FSM hints: each names an appointment to read afresh (docs/decisions/0032-fsm-mirror.md).
@@ -68,6 +73,7 @@
         "max_batch_size": 10,
         "max_batch_timeout": 5,
         "max_retries": 5,
+        "retry_delay": 30,
         "max_concurrency": 1
       }
     ]
@@ -157,7 +163,8 @@
             "queue": "mm-crm-sync-staging",
             "max_batch_size": 10,
             "max_batch_timeout": 5,
-            "max_retries": 2,
+            "max_retries": 5,
+            "retry_delay": 30,
             "max_concurrency": 1
           },
           {
@@ -166,13 +173,15 @@
             "max_batch_timeout": 1,
             // Polling a render is a delayed retry: the 15 minutes it is followed for (RENDER_GIVE_UP_MS,
             // src/config/pipeline.ts) take about 33 polls, so 100 leaves room to spare.
-            "max_retries": 100
+            "max_retries": 100,
+            "retry_delay": 30
           },
           {
             "queue": "mm-messaging-staging",
             "max_batch_size": 5,
             "max_batch_timeout": 5,
             "max_retries": 5,
+            "retry_delay": 30,
             "max_concurrency": 1
           },
           // FSM hints: each names an appointment to read afresh (docs/decisions/0032-fsm-mirror.md).
@@ -181,6 +190,7 @@
             "max_batch_size": 10,
             "max_batch_timeout": 5,
             "max_retries": 5,
+            "retry_delay": 30,
             "max_concurrency": 1
           }
         ]
@@ -267,7 +277,8 @@
             "queue": "mm-crm-sync-prod",
             "max_batch_size": 10,
             "max_batch_timeout": 5,
-            "max_retries": 2,
+            "max_retries": 5,
+            "retry_delay": 30,
             "max_concurrency": 1
           },
           {
@@ -276,13 +287,15 @@
             "max_batch_timeout": 1,
             // Polling a render is a delayed retry: the 15 minutes it is followed for (RENDER_GIVE_UP_MS,
             // src/config/pipeline.ts) take about 33 polls, so 100 leaves room to spare.
-            "max_retries": 100
+            "max_retries": 100,
+            "retry_delay": 30
           },
           {
             "queue": "mm-messaging-prod",
             "max_batch_size": 5,
             "max_batch_timeout": 5,
             "max_retries": 5,
+            "retry_delay": 30,
             "max_concurrency": 1
           },
           // FSM hints: each names an appointment to read afresh (docs/decisions/0032-fsm-mirror.md).
@@ -291,6 +304,7 @@
             "max_batch_size": 10,
             "max_batch_timeout": 5,
             "max_retries": 5,
+            "retry_delay": 30,
             "max_concurrency": 1
           }
         ]

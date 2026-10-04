@@ -295,7 +295,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -339,7 +339,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -1008,6 +1008,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
             "already_closed",
             "no_service_area",
             "service_exists",
@@ -1065,6 +1066,11 @@ Request body:
           ],
           "additionalProperties": false,
           "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+        },
+        "earliest_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [
@@ -1940,6 +1946,11 @@ Request body:
       "type": "integer",
       "description": "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it."
     },
+    "checkin_from": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow."
+    },
     "pieces": {
       "anyOf": [
         {
@@ -2161,6 +2172,7 @@ Request body:
     "access_notes",
     "client",
     "no_show_wait_min",
+    "checkin_from",
     "pieces",
     "last_visit",
     "reminder",
@@ -2204,7 +2216,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "When the job may close as a no-show, from the check-in we hold; null before one landed."
+      "description": "When the job may close as a no-show, from the check-in we hold, or from the booked start for one before it; null before one landed."
     },
     "distance_m": {
       "anyOf": [

@@ -22,6 +22,7 @@ export {
   ROUTES_ASSUMED,
   SUPERSEDED,
   TECHNICIAN_INACTIVE,
+  TOO_EARLY_TO_ARRIVE,
   TOO_EARLY_TO_CLOSE,
   type EventKind,
 } from "./routes.ts";

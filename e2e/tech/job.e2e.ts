@@ -253,6 +253,8 @@ test("with no signal the wait still counts down from the tap, and says what clos
   context,
 }) => {
   const fake = await fakeTech(page);
+  // Booked for an hour ago, so the wait counts from the tap whatever the time of day the test runs.
+  fake.startsAt = new Date(Date.now() - 60 * 60_000).toISOString();
   await atTheDoor(page);
   await page.goto(`/jobs/${JOB_ID}`);
   await expect(page.getByRole("button", { name: "I have arrived" })).toBeVisible();

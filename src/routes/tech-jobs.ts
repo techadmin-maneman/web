@@ -187,7 +187,9 @@ const ProgressSchema = z
   .object({
     checked_in_at: z.union([z.iso.datetime(), z.null()]),
     wait_ends_at: z.union([z.iso.datetime(), z.null()]).openapi({
-      description: "When the job may close as a no-show, from the check-in we hold; null before one landed.",
+      description:
+        "When the job may close as a no-show, from the check-in we hold, or from the booked start for one before it; " +
+        "null before one landed.",
     }),
     distance_m: z.union([z.number().int(), z.null()]).openapi({
       description: "How far from the address that check-in was; null when nothing could be measured.",
@@ -257,6 +259,10 @@ const JobDetailSchema = JobSummarySchema.extend({
   no_show_wait_min: z.number().int().openapi({
     description:
       "How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it.",
+  }),
+  checkin_from: z.iso.datetime().openapi({
+    description:
+      "The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow.",
   }),
   pieces: z
     .union([z.array(PieceSchema), z.null()])
@@ -510,9 +516,10 @@ const STEP_REFUSALS = {
   409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
 };
 
-/** A check-in's or a start's conflict, which may also be on the wrong day. */
+/** A check-in's or a start's conflict, which may also be on the wrong day or too early in it. */
 const DAY_CONFLICT = errorResponse(
-  "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
+  "superseded: FSM moved the job; out_of_order: send the step before this one first; " +
+    "not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
 );
 
 const jobsRoute = createRoute({
@@ -752,6 +759,7 @@ export function registerTechJobs(app: App): void {
       now: c.var.deps.now(),
       unlockHour: inputs.addressUnlockHour,
       waits: inputs.noShowWaitMin,
+      phoneClock: inputs.phoneClock,
     });
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const type: VisitType = job.type ?? "service";
@@ -835,7 +843,12 @@ export function registerTechJobs(app: App): void {
         distance_m: arrival.distanceM,
         radius_m: arrival.radiusM,
         checked_in_at: arrival.at,
-        wait_ends_at: noShowWaitEnds({ at, receivedAt: now }, job.type, inputs.noShowWaitMin).toISOString(),
+        wait_ends_at: noShowWaitEnds(
+          { at, receivedAt: now },
+          job.windowStart,
+          job.type,
+          inputs.noShowWaitMin,
+        ).toISOString(),
         accepted: landing.accepted,
       },
       200,
@@ -1038,7 +1051,7 @@ export function registerTechJobs(app: App): void {
 
     const readiness = noShowReadiness(
       await latestArrival(c.env.DB, job.id),
-      job.type,
+      job,
       now,
       (await opsInputs(c)).noShowWaitMin,
     );
@@ -1051,6 +1064,7 @@ export function registerTechJobs(app: App): void {
     const caseId = await openNoShowCase(c.env.DB, {
       appointmentId: job.id,
       checkIn: readiness.checkIn,
+      waitStartsAt: readiness.waitStartsAt,
       waitEndsAt: readiness.waitEndsAt,
       now,
     });
@@ -1198,10 +1212,12 @@ type Landed =
   | { readonly ok: true; readonly accepted: z.infer<typeof AcceptedSchema> }
   | {
       readonly ok: false;
-      readonly code: "superseded" | "out_of_order" | "not_today" | "already_started";
+      readonly code: "superseded" | "out_of_order" | "not_today" | "already_started" | "too_early_to_arrive";
       readonly fields?: string[];
       /** On a job given to another technician: whom, by first name, and when (docs/open-points.md, item 92). */
       readonly moved?: MovedTo;
+      /** On a check-in or a start too early: the earliest moment the job takes one. */
+      readonly earliest?: Date;
     };
 
 /** The 409 of a job that changed under the phone: what changed, and whom it went to where that is to be said. */
@@ -1211,11 +1227,15 @@ function superseded(superseding: Superseding): Extract<Landed, { ok: false }> {
   return { ok: false, code: "superseded", fields, moved: superseding.moved };
 }
 
-/** A refused write's 409: its code and fields, and, for a job given to another technician, whom and when. */
+/**
+ * A refused write's 409: its code and fields; for a job given to another technician, whom and when; and for a
+ * check-in or a start too early, when the job takes one.
+ */
 function refusalOf(c: Ctx, refused: Extract<Landed, { ok: false }>): ErrorResponse {
   const body = errorBody(refused.code, c.var.requestId, refused.fields);
-  if (refused.moved === undefined) return body;
-  return { error: { ...body.error, moved: refused.moved } };
+  if (refused.moved !== undefined) return { error: { ...body.error, moved: refused.moved } };
+  if (refused.earliest !== undefined) return { error: { ...body.error, earliest_at: refused.earliest.toISOString() } };
+  return body;
 }
 
 /**
@@ -1280,6 +1300,7 @@ async function land(
     occurredAt,
     expectedStart: heldStart === undefined ? null : new Date(heldStart),
     now,
+    phoneClock,
     recordedIn: await recordedIn(c, job, step),
   });
   if (landing.kind === "superseded") {
@@ -1288,6 +1309,7 @@ async function land(
   }
   if (landing.kind === "out_of_order") return { ok: false, code: "out_of_order", fields: [landing.needs] };
   if (landing.kind === "not_today" || landing.kind === "already_started") return { ok: false, code: landing.kind };
+  if (landing.kind === "too_early") return { ok: false, code: "too_early_to_arrive", earliest: landing.earliest };
 
   // A replay landed nothing new, so nothing new goes to FSM either; nor does a step our own database recorded.
   if (!landing.replayed && landing.event.fsmWriteState === "pending") await queueFsmWrite(c, landing.event.id);
