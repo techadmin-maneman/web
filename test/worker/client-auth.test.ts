@@ -505,10 +505,17 @@ describe("the session", () => {
       name: "Arjun Mehta",
       first_name: "Arjun",
       initials: "AM",
-      consultation: { date: "2026-09-24", window: "evening", window_label: "after four", place: "Gurgaon" },
+      consultation: {
+        date: "2026-09-24",
+        window: "evening",
+        window_label: "after four",
+        place: "Gurgaon",
+        one_visit: null,
+      },
       next_visit: null,
       // Nothing paid for or booked in the app is waiting for FSM (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
       being_booked: null,
+      payment_owed: null,
       credits: null,
       // A consultation is booked and no address given: board B1's prompt asks for one.
       prompt: { kind: "address" },
@@ -566,6 +573,7 @@ describe("the session", () => {
         window: "afternoon",
         window_label: null,
         place: "Gurgaon",
+        one_visit: null,
       });
     });
 
@@ -590,6 +598,7 @@ describe("the session", () => {
         window: "evening",
         window_label: "after four",
         place: "Gurgaon",
+        one_visit: null,
       });
     });
   });

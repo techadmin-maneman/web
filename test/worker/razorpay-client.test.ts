@@ -211,6 +211,23 @@ describe("Razorpay: payment links", () => {
     const { payments } = razorpay({ [`${API}/payment_links`]: () => json({ id: "plink_9" }) });
     await expect(payments.createPaymentLink(LINK)).rejects.toThrow();
   });
+
+  it("has Razorpay text a link again by SMS, by its ID in the path", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/payment_links/plink_9/notify_by/sms`]: () => json({ success: true }),
+    });
+
+    await payments.resendPaymentLink("plink_9");
+    expect(calls[0]?.method).toBe("POST");
+    expect(calls[0]?.headers.get("Authorization")).toBe(`Basic ${btoa("rzp_test_abc:key-secret")}`);
+  });
+
+  it("fails loudly where Razorpay does not say it texted the link", async () => {
+    const { payments } = razorpay({
+      [`${API}/payment_links/plink_9/notify_by/sms`]: () => json({ success: false }),
+    });
+    await expect(payments.resendPaymentLink("plink_9")).rejects.toThrow();
+  });
 });
 
 describe("payments where none is connected", () => {

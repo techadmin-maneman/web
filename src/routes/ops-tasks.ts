@@ -62,7 +62,9 @@ const TaskSchema = z
         "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM " +
         "contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, " +
         '"first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit\'s start and ' +
-        "the day the next service fell due; for a first fit to book, the consultation's start and the window wanted.",
+        "the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; " +
+        'for a payment owed, the link\'s state ("sent", "unsent" or "refused"), its amount in paise, its address ' +
+        '("-" until Razorpay made it) and the product.',
     }),
     since: z.iso.datetime().openapi({ description: "When it started waiting." }),
     due: z.iso.datetime().openapi({

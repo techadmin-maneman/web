@@ -42,6 +42,7 @@ import { registerOpsField } from "./routes/ops-field.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
 import { registerOpsHairProfile } from "./routes/ops-hair-profile.ts";
 import { registerOpsJobSheet } from "./routes/ops-job-sheet.ts";
+import { registerOpsPaymentLinks } from "./routes/ops-payment-links.ts";
 import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
 import { registerOpsTasks } from "./routes/ops-tasks.ts";
@@ -153,6 +154,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsDisputes,
     registerOpsTasks,
     registerOpsPayments,
+    // A one visit's payment link texted to the client again.
+    registerOpsPaymentLinks,
     registerOpsTechnicians,
     registerOpsSettings,
     // The day's half-slot times, from a day nothing is booked or bookable on (docs/decisions/0102-window-times.md).

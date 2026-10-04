@@ -194,7 +194,12 @@ describe("closing a one visit the client was fitted at", () => {
     await closeAsDone(job);
     const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(tasks.filter((task) => task.group === "payment_owed")).toMatchObject([
-      { person: { id: PERSON, name: "Rohit Malhotra" }, detail: `sent ${String(NATURAL.amount)} Mane Man Natural` },
+      {
+        person: { id: PERSON, name: "Rohit Malhotra" },
+        detail: expect.stringMatching(
+          new RegExp(`^sent ${String(NATURAL.amount)} https://rzp\\.io/i/\\S+ Mane Man Natural$`),
+        ) as string,
+      },
     ]);
   });
 
@@ -286,7 +291,7 @@ describe("closing a one visit the client was fitted at", () => {
     expect(job.deps.alerts[0]).toContain(`reference ${JOB}`);
     const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(tasks.find((task) => task.group === "payment_owed")?.detail).toBe(
-      `unsent ${String(NATURAL.amount)} Mane Man Natural`,
+      `refused ${String(NATURAL.amount)} - Mane Man Natural`,
     );
   });
 

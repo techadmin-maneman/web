@@ -15,6 +15,7 @@ function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[])
     orderPayments: notAsked,
     createPaymentLink: notAsked,
     findPaymentLink: notAsked,
+    resendPaymentLink: notAsked,
     refund: (_paymentId, refund) => {
       asked.push(refund.receipt);
       const answer = answers[asked.length - 1];

@@ -179,6 +179,7 @@ const paid = (n: number, of: (typeof PAST)[number], exGst: number, method: strin
 const SERVICE_PAID = paid(2, AUGUST, 200000, "upi", "MM-2027-0841");
 /** Board E1's entries that exist before booking (P2-M5): the charge and the credit arrive with it. */
 const ENTRIES = {
+  owed: [],
   entries: [
     {
       kind: "refund",
@@ -593,7 +594,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
 
   const lead = await openApp(browser, "/payments", {
     "/api/me": json(ME),
-    "/api/payments": json({ entries: [], credits: [] }),
+    "/api/payments": json({ owed: [], entries: [], credits: [] }),
   });
   await lead.getByText("Nothing to pay yet.").waitFor();
   await pair(OUT, WIDTH, "e3-empty", await stateFrame(design, "Empty · lead", "Payments · states"), await shot(lead));

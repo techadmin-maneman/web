@@ -4,15 +4,28 @@
 
 import { describe, expect, it } from "vitest";
 import type { Me, VisitSummary } from "../../apps/app/src/api.ts";
-import { bookingName } from "../../apps/app/src/lib/visit.ts";
+import { bookingName, oneVisitOf } from "../../apps/app/src/lib/visit.ts";
 import { upcomingEntries } from "../../apps/app/src/visits/upcoming.ts";
 
 type BeingBooked = NonNullable<Me["being_booked"]>;
 
 const visit = (id: string, date: string): VisitSummary => ({ id, date }) as VisitSummary;
 
-const BOOKING: BeingBooked = { type: "first_fit", date: "2026-10-08", window: "morning", paid: false, one_visit: true };
-const CONSULTATION = { date: "2026-10-06", window: "morning", window_label: "before noon", place: "Gurgaon" } as const;
+const PRICE = { amount: 3_000_000, from: false, code: null };
+const BOOKING: BeingBooked = {
+  type: "first_fit",
+  date: "2026-10-08",
+  window: "morning",
+  paid: false,
+  one_visit: PRICE,
+};
+const CONSULTATION = {
+  date: "2026-10-06",
+  window: "morning",
+  window_label: "before noon",
+  place: "Gurgaon",
+  one_visit: null,
+} as const;
 
 describe("Upcoming on Visits", () => {
   it("lists a visit being booked, as Home does, where FSM has nothing for the client yet", () => {
@@ -43,12 +56,19 @@ describe("Upcoming on Visits", () => {
 describe("a visit being booked", () => {
   it("is called a consultation and fit when it is one visit, else by its kind", () => {
     expect(bookingName(BOOKING)).toBe("Consultation and fit");
-    expect(bookingName({ ...BOOKING, one_visit: false })).toBe("First fit");
-    expect(bookingName({ ...BOOKING, type: "service", one_visit: false })).toBe("Service visit");
+    expect(bookingName({ ...BOOKING, one_visit: null })).toBe("First fit");
+    expect(bookingName({ ...BOOKING, type: "service", one_visit: null })).toBe("Service visit");
   });
 
   it("is called by its kind on a Home the phone kept from before it said whether it is one visit", () => {
     const kept = { type: "service", date: "2026-10-08", window: "morning", paid: true } as BeingBooked;
     expect(bookingName(kept)).toBe("Service visit");
+  });
+
+  it("has no price on a Home the phone kept from before it had one, where it said only true or false", () => {
+    const kept = { ...BOOKING, one_visit: true } as unknown as BeingBooked;
+    expect(bookingName(kept)).toBe("Consultation and fit");
+    expect(oneVisitOf(kept)).toBeNull();
+    expect(oneVisitOf(BOOKING)).toEqual(PRICE);
   });
 });

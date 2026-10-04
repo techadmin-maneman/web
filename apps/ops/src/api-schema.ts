@@ -3362,6 +3362,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payment-links/{id}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Text the client their payment link again */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The link's own ID, as the task names it. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What sending it again came to */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaymentLinkResent"];
+                    };
+                };
+                /** @description access_required, or not_permitted */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such link, or its client is erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: Razorpay did not answer; try again in a minute */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/technicians/{id}": {
         parameters: {
             query?: never;
@@ -6384,6 +6450,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
             place: string;
+            /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
+            one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description What FSM closed the visit as, a no-show being its own; null until it is closed. */
             outcome: ("done" | "partial" | "no_show") | null;
             /** @description For a visit left partly done, ops closing its task without a follow-up visit; null otherwise. */
@@ -6413,6 +6481,14 @@ export interface components {
             name: string;
             initials: string;
         };
+        OneVisitPrice: {
+            /** @description In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced. */
+            amount: number | null;
+            /** @description The hair systems differ in price, so the amount is where they start. */
+            from: boolean;
+            /** @description The discount code on the visit; null for none. */
+            code: string | null;
+        };
         VisitSummary: {
             /** Format: uuid */
             id: string;
@@ -6438,6 +6514,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
             place: string;
+            /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
+            one_visit: components["schemas"]["OneVisitPrice"] | null;
         };
         PaymentEntry: {
             /**
@@ -7655,7 +7733,7 @@ export interface components {
                 id: string;
                 name: string;
             } | null;
-            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
+            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; for a payment owed, the link's state ("sent", "unsent" or "refused"), its amount in paise, its address ("-" until Razorpay made it) and the product. */
             detail: string | null;
             /**
              * Format: date-time
@@ -7727,6 +7805,13 @@ export interface components {
             change: ("cancelled" | "moved") | null;
             /** @description Who attended and found nobody in; null on a late cancellation. */
             technician: string | null;
+        };
+        PaymentLinkResent: {
+            /**
+             * @description resent: Razorpay texted the link again; sent: the link was never made, and now is and has been texted; paid: the client has paid, so nothing was sent; refused: Razorpay refused to make it, so ops send one from Razorpay's dashboard.
+             * @enum {string}
+             */
+            outcome: "resent" | "sent" | "paid" | "refused";
         };
         TechnicianId: {
             /** Format: uuid */

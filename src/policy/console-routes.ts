@@ -101,6 +101,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/discount-codes/{id}/off": need("finance", "manage"),
   "POST /api/visits/{id}/discount-code": need("finance", "act"),
   "POST /api/visits/{id}/discount-code/remove": need("finance", "act"),
+  "POST /api/payment-links/{id}/resend": need("finance", "act"),
   "GET /api/prices": need("finance", "view"),
   "POST /api/prices": need("finance", "manage"),
   "POST /api/prices/correct": need("finance", "manage"),

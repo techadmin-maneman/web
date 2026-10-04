@@ -877,6 +877,13 @@ The client's payments and refunds, newest first
 {
   "type": "object",
   "properties": {
+    "owed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/OwedPayment"
+      },
+      "description": "Payment links not yet paid, the oldest first: a one visit's, once the client is fitted."
+    },
     "entries": {
       "type": "array",
       "items": {
@@ -906,6 +913,7 @@ The client's payments and refunds, newest first
     }
   },
   "required": [
+    "owed",
     "entries",
     "credits"
   ],
@@ -2162,13 +2170,25 @@ Request body:
         "place": {
           "type": "string",
           "description": "Where it is: the saved address (locality, city and pincode), else the booking's city."
+        },
+        "one_visit": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/OneVisitPrice"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A consultation and fit in one visit asked for on /book: what it costs once fitted, after the code typed there. Null for a consultation alone."
         }
       },
       "required": [
         "date",
         "window",
         "window_label",
-        "place"
+        "place",
+        "one_visit"
       ],
       "additionalProperties": false,
       "description": "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit."
@@ -2215,8 +2235,15 @@ Request body:
               "description": "Paid for in money, rather than free or covered by a credit."
             },
             "one_visit": {
-              "type": "boolean",
-              "description": "A consultation and fit in one visit."
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OneVisitPrice"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code entered there. Null for any other visit."
             }
           },
           "required": [
@@ -2233,6 +2260,17 @@ Request body:
         }
       ],
       "description": "The soonest visit paid for, or booked free, that FSM does not have yet: neither booked nor refunded. It is on its way, or held after FSM refused it, and becomes a visit once FSM takes it (ADR 0095)."
+    },
+    "payment_owed": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/OwedPayment"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed."
     },
     "credits": {
       "anyOf": [
@@ -2515,11 +2553,54 @@ Request body:
     "consultation",
     "next_visit",
     "being_booked",
+    "payment_owed",
     "credits",
     "prompt",
     "invoice",
     "booking",
     "referral_reward"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OneVisitPrice
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced."
+    },
+    "from": {
+      "type": "boolean",
+      "description": "The hair systems differ in price, so the amount is where they start."
+    },
+    "code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code on the visit; null for none."
+    }
+  },
+  "required": [
+    "amount",
+    "from",
+    "code"
   ],
   "additionalProperties": false
 }
@@ -2621,6 +2702,17 @@ Request body:
     "place": {
       "type": "string",
       "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+    },
+    "one_visit": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/OneVisitPrice"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
     }
   },
   "required": [
@@ -2635,7 +2727,8 @@ Request body:
     "stage",
     "prepaid",
     "technician",
-    "place"
+    "place",
+    "one_visit"
   ],
   "additionalProperties": false
 }
@@ -2660,6 +2753,52 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Display name and initials only."
+}
+```
+
+### OwedPayment
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date of the visit."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included, after any code: what the link asks for."
+    },
+    "product": {
+      "type": "string",
+      "description": "The hair system fitted: \"Mane Man Natural hair system\"."
+    },
+    "url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The payment link Razorpay texted the client; null until it has made one."
+    }
+  },
+  "required": [
+    "visit_id",
+    "date",
+    "amount",
+    "product",
+    "url"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -3588,6 +3727,17 @@ Request body:
       "type": "string",
       "description": "The saved address's area, city and pincode, else FSM's city and pincode."
     },
+    "one_visit": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/OneVisitPrice"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
+    },
     "duration_minutes": {
       "anyOf": [
         {
@@ -3688,6 +3838,7 @@ Request body:
     "prepaid",
     "technician",
     "place",
+    "one_visit",
     "duration_minutes",
     "outcome",
     "what_was_done",

@@ -1,13 +1,23 @@
 // A visit as the screens write it: its kind, its technician's first name, and how long it took.
 
-import type { Me, VisitDetail, VisitSummary } from "../api.ts";
+import type { Me, OneVisitPrice, VisitDetail, VisitSummary } from "../api.ts";
 import { ONE_VISIT, OTHER_VISIT, VISIT_TYPES } from "../content.ts";
 
 export const visitName = (type: VisitSummary["type"]) => (type === null ? OTHER_VISIT : VISIT_TYPES[type]);
 
+/**
+ * A one visit's price; null for any other visit or booking. A Home the phone kept from an earlier release has none:
+ * no field at all, or only true or false on a booking.
+ */
+export const oneVisitOf = (visit: { readonly one_visit?: OneVisitPrice | boolean | null }): OneVisitPrice | null =>
+  typeof visit.one_visit === "object" ? visit.one_visit : null;
+
 /** A visit being booked, by its kind; a consultation and fit in one visit by that name. */
 export const bookingName = (booking: NonNullable<Me["being_booked"]>) =>
   booking.one_visit ? ONE_VISIT : VISIT_TYPES[booking.type];
+
+/** A visit by its kind; a consultation and fit in one visit, still to happen, by that name. */
+export const summaryName = (visit: VisitSummary) => (oneVisitOf(visit) === null ? visitName(visit.type) : ONE_VISIT);
 
 /** "Imran Qureshi" → "Imran": the name Home and the lists use; the visit's detail gives it in full. */
 export const firstName = (name: string) => name.split(" ")[0] ?? name;

@@ -152,13 +152,14 @@ export async function releaseHold(db: D1Database, hold: { holdId: string; person
 
 /** A visit on its way to FSM, as Home shows it until FSM has it. */
 export interface BookingUnderWay {
+  readonly holdId: string;
   readonly type: VisitType;
   readonly date: string;
   readonly window: BookingWindow;
   /** Paid for in money, rather than free or covered by a credit. */
   readonly paid: boolean;
   /** A consultation and fit in one visit. */
-  readonly one_visit: boolean;
+  readonly oneVisit: boolean;
 }
 
 /**
@@ -169,12 +170,13 @@ export interface BookingUnderWay {
 export async function bookingUnderWay(db: D1Database, personId: string): Promise<BookingUnderWay | null> {
   const row = await db
     .prepare(
-      `SELECT type, date, window_label, amount, use_credit, one_visit FROM slot_holds
+      `SELECT id, type, date, window_label, amount, use_credit, one_visit FROM slot_holds
        WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
        ORDER BY date, start_unit LIMIT 1`,
     )
     .bind(personId)
     .first<{
+      id: string;
       type: VisitType;
       date: string;
       window_label: BookingWindow;
@@ -184,11 +186,12 @@ export async function bookingUnderWay(db: D1Database, personId: string): Promise
     }>();
   if (row === null) return null;
   return {
+    holdId: row.id,
     type: row.type,
     date: row.date,
     window: row.window_label,
     paid: row.amount > 0 && row.use_credit !== 1,
-    one_visit: row.one_visit === 1,
+    oneVisit: row.one_visit === 1,
   };
 }
 
