@@ -20,6 +20,7 @@ import { OpsLink, Shell } from "../components/Shell.tsx";
 import { referrals } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
+import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./referrals.module.css";
 
@@ -75,11 +76,11 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
     <>
       <div className={styles.grantHead}>
         <span className={styles.pair}>
-          <OpsLink className={styles.person} to={`/clients/${grant.referrer.person_id}`}>
+          <OpsLink className={styles.person} to={clientPath(grant.referrer.person_id, "visits")}>
             {grant.referrer.name}
           </OpsLink>{" "}
           {copy.arrow}{" "}
-          <OpsLink className={styles.person} to={`/clients/${grant.referred.person_id}`}>
+          <OpsLink className={styles.person} to={clientPath(grant.referred.person_id, "referrals")}>
             {grant.referred.name}
           </OpsLink>
         </span>

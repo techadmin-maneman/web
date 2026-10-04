@@ -237,6 +237,18 @@ describe("the client, at the app's pay step", () => {
     };
     const orderOf = (holdId: string) =>
       env.DB.prepare("SELECT razorpay_order_id FROM slot_holds WHERE id = ?1").bind(holdId).first("razorpay_order_id");
+    /** Razorpay holding a payment on the order in each status given. */
+    const paymentsMade = (orderId: string, statuses: string[]) => {
+      const made = statuses.map((status, index) => ({
+        id: `pay_${String(index)}`,
+        amount: 200_000,
+        currency: "INR",
+        status,
+        order_id: orderId,
+        created_at: Math.floor(NOW.getTime() / 1000),
+      }));
+      payments.paymentsOn.set(orderId, made);
+    };
 
     beforeEach(() => {
       payments = createStubPayments();
@@ -267,7 +279,7 @@ describe("the client, at the app's pay step", () => {
       const hold = await heldService(PERSON);
       await enter(PERSON, hold.id, "TENPC");
       const first = await pay(hold.id);
-      payments.paymentsOn.set(first.order_id, ["failed"]);
+      paymentsMade(first.order_id, ["failed"]);
 
       const removed = await withRazorpay(`/api/holds/${hold.id}/discount-code`, { method: "DELETE" });
       expect(removed.status).toBe(200);
@@ -281,7 +293,7 @@ describe("the client, at the app's pay step", () => {
       await enter(PERSON, hold.id, "TENPC");
       const first = await pay(hold.id);
       for (const statuses of [["created"], ["failed", "authorized"], ["captured"]]) {
-        payments.paymentsOn.set(first.order_id, statuses);
+        paymentsMade(first.order_id, statuses);
         const removing = await withRazorpay(`/api/holds/${hold.id}/discount-code`, { method: "DELETE" });
         expect(removing.status).toBe(409);
         expect(await removing.json()).toMatchObject({ error: { code: "price_settled" } });

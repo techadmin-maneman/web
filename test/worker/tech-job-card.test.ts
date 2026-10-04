@@ -343,6 +343,34 @@ describe("the card", () => {
     expect((await card(LATER_JOB)).reminder).toBeNull();
   });
 
+  // FLD-35, UX-26: a reminder skipped for a test record read "messaged on WhatsApp, not delivered", with a tick.
+  describe("counts only a WhatsApp that went to the client", () => {
+    async function message(id: string, kind: string, state: string, createdAt: string): Promise<void> {
+      await env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, last_error)
+         VALUES (?1, ?2, ?3, ?4, 'appointment', ?5, ?6, ?7)`,
+      )
+        .bind(id, createdAt, PERSON, kind, TODAY_JOB, state, state === "skipped" ? "test record" : null)
+        .run();
+    }
+
+    it.each(["queued", "skipped", "failed"])("has none where the reminder was %s", async (state) => {
+      await message("m1", "visit_reminder", state, "2026-09-20T12:30:00Z");
+      expect((await card(TODAY_JOB)).reminder).toBeNull();
+    });
+
+    it("has one sent and never delivered", async () => {
+      await message("m1", "visit_reminder", "sent", "2026-09-20T12:30:00Z");
+      expect((await card(TODAY_JOB)).reminder).toEqual({ delivered_at: null });
+    });
+
+    it("keeps the reminder that went when a later arrival notice did not", async () => {
+      await message("m1", "visit_reminder", "sent", "2026-09-20T12:30:00Z");
+      await message("m2", "arrival_notice", "skipped", "2026-09-21T06:00:00Z");
+      expect((await card(TODAY_JOB)).reminder).toEqual({ delivered_at: null });
+    });
+  });
+
   // PLAT-15: each D1 read is a round trip to the database's region, so the card's reads that need nothing from each
   // other go together.
   it("waits on few round trips to D1, however much it carries", async () => {

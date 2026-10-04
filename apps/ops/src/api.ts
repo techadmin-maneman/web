@@ -23,7 +23,11 @@ export type Launch = Body<paths["/api/pincodes/{pin}/launch"]["post"]>;
 export type Decision = Body<paths["/api/referrals/{id}/decision"]["post"]>;
 
 export type ClientsFound = Body<paths["/api/clients/find"]["post"]>;
-export type ClientRecord = Body<paths["/api/clients/{id}"]["get"]>;
+/** A client's page: their record, or what is kept of them once erased. */
+type ClientPage = Body<paths["/api/clients/{id}"]["get"]>;
+export type ClientRecord = components["schemas"]["ClientRecord"];
+export type ErasedClientRecord = components["schemas"]["ErasedClientRecord"];
+export const isErased = (page: ClientPage): page is ErasedClientRecord => "erased_at" in page;
 export type ClientVisit = ClientRecord["visits"]["past"][number];
 export type ClientPayment = ClientRecord["payments"][number];
 export type ClientPaymentLink = ClientRecord["payment_links"][number];
@@ -101,6 +105,7 @@ export type ServiceAdd = Sent<paths["/api/services"]["post"]>;
 export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
 export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
 export type AreaChanged = Body<paths["/api/service-area"]["post"]>;
+export type NewPincode = Sent<paths["/api/pincodes"]["post"]>;
 
 /** The consumables, each service's expected use, the job sheet, and the stock (docs/decisions/0087-consumables-and-stock.md). */
 export type Consumables = Body<paths["/api/consumables"]["get"]>;
@@ -326,6 +331,8 @@ export const api = {
     client.post("/api/clients/{id}/hair-profile", { path: { id }, body: correction }),
   /** Every queue ops still have to work through, and whose each task is. A task leaves when its row is decided. */
   tasks: () => client.get("/api/tasks"),
+  /** What waits on ops for one client alone, for the head of their page. */
+  clientTasks: (person: string) => client.get("/api/tasks", { query: { person } }),
   /** A task made a member of staff's, by their Access e-mail, or nobody's with null (ADR 0092). */
   setTaskOwner: (group: TaskGroup["group"], id: string, owner: string | null) =>
     client.put("/api/tasks/{group}/{id}/owner", { path: { group, id }, body: { owner } }),
@@ -424,6 +431,9 @@ export const api = {
   /** Its code stays, and with it every price it has and every visit sold under them. */
   renameService: (kind: Kind, tier: string, name: string) =>
     client.post("/api/services/{kind}/{tier}/name", { path: { kind, tier }, body: { name } }),
+  /** The line clients read under its name as they choose; an empty one clears it. */
+  describeService: (kind: Kind, tier: string, description: string) =>
+    client.post("/api/services/{kind}/{tier}/description", { path: { kind, tier }, body: { description } }),
   /** How long visits booked from now on are held and booked for. */
   setServiceLength: (kind: Kind, tier: string, minutes: number) =>
     client.post("/api/services/{kind}/{tier}/length", { path: { kind, tier }, body: { minutes } }),
@@ -452,15 +462,17 @@ export const api = {
   enterVisitCode: (visitId: string, code: string) =>
     client.post("/api/visits/{id}/discount-code", { path: { id: visitId }, body: { code } }),
   removeVisitCode: (visitId: string) => client.post("/api/visits/{id}/discount-code/remove", { path: { id: visitId } }),
-  /** Every pincode, with how many wait there and how many serving it would tell. */
+  /** Every pincode, with how many wait there and how many serving it would tell, and our cities. */
   serviceArea: () => client.get("/api/service-area"),
   /**
    * Only the pincodes named change. The route refuses a change that would leave
-   * none served, and launches each pincode it begins serving: `alerted` counts
-   * the WhatsApps that queues.
+   * none served, or serve one from a day to come, and launches each pincode it
+   * begins serving: `alerted` counts the WhatsApps that queues.
    */
   setServiceArea: (changes: readonly AreaChange[]) =>
     client.post("/api/service-area", { body: { changes: [...changes] } }),
+  /** A pincode the service area does not hold, added unserved in one of our cities. */
+  addPincode: (pincode: NewPincode) => client.post("/api/pincodes", { body: pincode }),
   /** Every consumable, and each service's expected use. */
   consumables: () => client.get("/api/consumables"),
   addConsumable: (added: NewConsumable) => client.post("/api/consumables", { body: added }),

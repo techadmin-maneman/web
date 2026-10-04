@@ -116,6 +116,15 @@ export function moveRefusal(
 export const CLIENT_NOTICES = ["messaged", "call", "unchanged", "no_client"] as const;
 export type ClientNotice = (typeof CLIENT_NOTICES)[number];
 
+/**
+ * Why a client has not heard of a move, so the call ops make starts from the right place:
+ *
+ *   no_consent   he has not agreed to WhatsApp about his visits, or took it back before the message went
+ *   not_sent     he had agreed, but the WhatsApp was skipped or failed
+ */
+export const UNTOLD_REASONS = ["no_consent", "not_sent"] as const;
+export type UntoldReason = (typeof UNTOLD_REASONS)[number];
+
 export function clientNotice(move: {
   readonly timeChanged: boolean;
   readonly client: { readonly agreedToWhatsApp: boolean } | null;

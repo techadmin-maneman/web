@@ -178,7 +178,10 @@ test("opens a block's drawer with the client, the badge, and both ways to reach 
     "href",
     "https://wa.me/919810000001",
   );
-  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute("href", `/clients/${ROHIT.id}`);
+  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute(
+    "href",
+    `/clients/${ROHIT.id}/visits`,
+  );
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
@@ -222,7 +225,10 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await reason(page, "Zone rebalance");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toHaveText("Rohit M. moved. The client was sent the new window on WhatsApp.");
+  // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
+  await expect(page.getByRole("status")).toHaveText(
+    "Moved. We're sending Rohit M. the new window on WhatsApp; if it fails, a call task appears.",
+  );
   expect(sent).toEqual([
     {
       appointment_id: ROHIT_JOB?.appointment_id,
@@ -293,7 +299,7 @@ test("assigns a tray job through the assign route, with no technician expected",
   await page.getByRole("radio", { name: "Client asked to move it" }).check();
   await page.getByRole("button", { name: "Move", exact: true }).click();
 
-  await expect(page.getByRole("status")).toContainText("Vikram S. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Vikram S. the new window on WhatsApp;");
   expect(moved).toEqual([]);
   expect(assigned).toEqual([
     {
@@ -382,7 +388,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled();
 
   release();
-  await expect(page.getByRole("status")).toContainText("Rohit M. moved.");
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Rohit M. the new window on WhatsApp;");
   expect(sent).toHaveLength(1);
 });
 
@@ -491,7 +497,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   await expect.poll(() => new URL(page.url()).search).toBe(kept);
 
   await page.getByRole("dialog").getByRole("link", { name: "Open client" }).click();
-  await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}/visits$`));
   await page.goBack();
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();

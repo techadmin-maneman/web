@@ -7,6 +7,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { recordUtilisation } from "../../src/domain/dispatch.ts";
+import { NO_VISITS_CONSENT } from "../../src/domain/visit-messages.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const ROHIT = "11111111-1111-4111-8111-111111111111";
@@ -434,7 +435,7 @@ describe("telling the client of a move", () => {
       expect.objectContaining({
         id: moveId,
         person: { id: ROHIT, name: "Rohit Malhotra", mobile: "+919810000001" },
-        detail: "2026-09-23T03:30:00.000Z",
+        detail: "2026-09-23T03:30:00.000Z no_consent",
         visit: { id: A, starts_at: "2026-09-23T03:30:00.000Z" },
       }),
     ]);
@@ -458,9 +459,27 @@ describe("telling the client of a move", () => {
     const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
 
     // The consumer found the consent withdrawn by the time it sent.
-    await env.DB.prepare("UPDATE outbound_messages SET state = 'skipped'").run();
+    await env.DB.prepare("UPDATE outbound_messages SET state = 'skipped', last_error = ?1")
+      .bind(NO_VISITS_CONSENT)
+      .run();
 
-    expect((await untoldTasks()).map((task) => task.id)).toEqual([moveId]);
+    expect(await untoldTasks()).toEqual([
+      expect.objectContaining({ id: moveId, detail: "2026-09-23T03:30:00.000Z no_consent" }),
+    ]);
+  });
+
+  // BK-20: a WhatsApp that failed read as "not on WhatsApp", for a client who had agreed to it.
+  it("says the WhatsApp did not go, not that the client never agreed, where it failed", async () => {
+    await agreeToVisitMessages(true);
+    const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
+
+    await env.DB.prepare("UPDATE outbound_messages SET state = 'failed', last_error = 'the bridge is down'").run();
+
+    expect(await untoldTasks()).toEqual([
+      expect.objectContaining({ id: moveId, detail: "2026-09-23T03:30:00.000Z not_sent" }),
+    ]);
+    const block = (await board("from=2026-09-22")).technicians[1]?.days[1]?.blocks[0];
+    expect(block?.untold).toEqual({ move_id: moveId, starts_at: "2026-09-23T03:30:00.000Z", reason: "not_sent" });
   });
 
   it("drops the task when a later move tells the client, or the visit has gone", async () => {
@@ -610,7 +629,7 @@ describe("what the board carries of each visit", () => {
     const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
 
     const block = (await board("from=2026-09-22")).technicians[1]?.days[1]?.blocks[0];
-    expect(block?.untold).toEqual({ move_id: moveId, starts_at: "2026-09-23T03:30:00.000Z" });
+    expect(block?.untold).toEqual({ move_id: moveId, starts_at: "2026-09-23T03:30:00.000Z", reason: "no_consent" });
   });
 
   it("carries no client for one who has been erased", async () => {

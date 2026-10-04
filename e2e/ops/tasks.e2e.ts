@@ -571,7 +571,7 @@ test("records a call about a move from its row, and opens each of the board's ta
             id: MOVE,
             person: { id: "22000000-0000-4000-8000-000000000016", name: "Vikram Sethi", mobile: "+919810004418" },
             visit: { id: MOVED_VISIT, starts_at: "2027-09-24T06:30:00.000Z" },
-            detail: "2027-09-24T06:30:00.000Z",
+            detail: "2027-09-24T06:30:00.000Z no_consent",
             since: "2027-09-22T04:00:00.000Z",
             due: "2027-09-22T08:00:00.000Z",
             owner: null,
@@ -606,6 +606,8 @@ test("records a call about a move from its row, and opens each of the board's ta
   });
 
   const vikram = row(page, "Vikram Sethi");
+  // BK-20: the row says why he was not told, so the call starts from the right place.
+  await expect(vikram).toContainText("; has not agreed to WhatsApp");
   await expect(vikram.getByRole("link", { name: "Call +91 98100 04418 · Vikram Sethi" })).toHaveAttribute(
     "href",
     "tel:+919810004418",

@@ -565,7 +565,7 @@ export const tryOnTeaser = {
   eyebrow: "Try-on",
   title: "See yourself with hair before anyone comes to your home.",
   // The look on WhatsApp only is ADR 0104's, for the owner's second round (docs/open-points.md, item 163).
-  body: "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted after thirty days.",
+  body: "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour.",
   start: "Start the try-on",
   before: "Before",
   after: "After",

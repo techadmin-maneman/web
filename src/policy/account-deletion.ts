@@ -14,7 +14,8 @@ export const DELETION_DECIDED_WITHIN_DAYS = 7;
  * Ours, not the prompt's (docs/decisions/0066-erasure-all-or-nothing.md): an
  * account is not erased while a visit of theirs is still to happen, or a booking
  * of theirs is paid for or free but not yet a visit; while we hold a payment of
- * theirs with no visit behind it; or while a payment link of theirs is unpaid.
+ * theirs with no visit behind it, or owe them a cancelled visit's refund; or
+ * while a payment link of theirs is unpaid.
  * Erasing then would send a technician to nobody, keep money owed back, or leave
  * Razorpay asking an erased client to pay. Ops settle each first.
  */

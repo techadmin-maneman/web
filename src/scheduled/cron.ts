@@ -41,6 +41,7 @@ import { pingHeartbeat } from "../providers/heartbeat.ts";
 import { enqueue, enqueueBatch } from "../queues/enqueue.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { checkDailyAllowances } from "./daily-allowances.ts";
+import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
 import {
   checkAilabCredits,
@@ -86,7 +87,7 @@ export const CRON_CALLS_FOR_MS = 30_000;
 const ALERT_AFTER_FAILED_RUNS = 3;
 
 /** What a job needs switched on in this environment before it runs. */
-type Needs = "nothing" | "books" | "messaging";
+type Needs = "nothing" | "books" | "messaging" | "payments";
 
 /** A job, and when it runs (src/scheduled/schedule.ts). */
 export interface CronJob extends Timing {
@@ -108,6 +109,8 @@ function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
       return config.providers.BOOKS_PROVIDER !== "none";
     case "messaging":
       return config.settings.messaging.enabled;
+    case "payments":
+      return config.providers.PAYMENTS_PROVIDER !== "none";
   }
 }
 
@@ -271,6 +274,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // A finished job's invoice (ADRs 0055 and 0056), before the Books pass, which sets a client's advance against the
   // invoice once it is issued.
   { name: "invoices", needs: "books", every: 15, at: 3, run: invoicesJob },
+  // A payment Razorpay's webhook never told us of, read from Razorpay, before the Books pass that records it there.
+  { name: "razorpay_catch_up", needs: "payments", every: 15, at: 3, run: razorpayCatchUpJob },
   { name: "referrals", needs: "nothing", every: 15, at: 6, run: referralsJob },
   { name: "books_sync", needs: "books", every: 15, at: 8, run: booksJob },
   { name: "delete_photos", needs: "nothing", every: 15, at: 11, run: deletePhotos },

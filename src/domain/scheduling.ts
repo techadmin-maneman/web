@@ -150,13 +150,17 @@ export function graceEndOf(hold: { readonly expires_at: string; readonly grace_s
   return new Date(Date.parse(hold.expires_at) + graceSeconds * 1000);
 }
 
-/** What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. */
+/**
+ * What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. The visit
+ * `exceptVisitId` and the claims of the hold `exceptHoldId` are left out.
+ */
 export async function occupancy(
   db: D1Database,
   from: string,
   to: string,
   now: Date,
   exceptVisitId: string | null = null,
+  exceptHoldId: string | null = null,
 ): Promise<(technicianId: string, date: string) => Day> {
   const days = new Map<string, Day>();
   const dayOf = (technicianId: string, date: string) => {
@@ -171,9 +175,10 @@ export async function occupancy(
     db
       .prepare(
         `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
-         WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR ${graceEnds("h")} > ?3)`,
+         WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR ${graceEnds("h")} > ?3)
+           AND h.id IS NOT ?4`,
       )
-      .bind(from, to, now.toISOString())
+      .bind(from, to, now.toISOString(), exceptHoldId)
       .all<{ technician_id: string; date: string; claim: string }>(),
     db
       .prepare(
@@ -605,13 +610,28 @@ interface HeldTime {
 }
 
 /**
+ * Whether a hold's own time is still free on its technician's day: he is not on leave, and nothing but the hold itself
+ * and the visit `exceptVisitId` takes its window or its half-slots.
+ */
+export async function heldTimeFree(
+  db: D1Database,
+  hold: HeldTime,
+  now: Date,
+  exceptVisitId: string | null = null,
+): Promise<boolean> {
+  const held = await occupancy(db, hold.date, hold.date, now, exceptVisitId, hold.id);
+  const day = held(hold.technician_id, hold.date);
+  const units = unitsFor(heldMinutes(hold));
+  return !day.onLeave && !clashes(day, hold.window_label) && fitsAt(day, hold.start_unit, units);
+}
+
+/**
  * Takes a hold that was let go back to held, on its own time, where nothing has taken that time since. False while it
  * stays let go; true once it is held again, here or by a try running alongside, or booked.
  */
 export async function retakeSlot(db: D1Database, hold: HeldTime, now: Date): Promise<boolean> {
+  if (!(await heldTimeFree(db, hold, now))) return false;
   const units = unitsFor(heldMinutes(hold));
-  const day = (await occupancy(db, hold.date, hold.date, now))(hold.technician_id, hold.date);
-  if (day.onLeave || clashes(day, hold.window_label) || !fitsAt(day, hold.start_unit, units)) return false;
   const isHeld = "EXISTS (SELECT 1 FROM slot_holds WHERE id = ?4 AND state = 'held')";
   try {
     await db.batch([

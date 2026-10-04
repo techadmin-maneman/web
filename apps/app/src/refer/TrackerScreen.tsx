@@ -16,7 +16,7 @@ import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { ShareButton } from "./ReferScreen.tsx";
-import { rewardOf, visitsFor } from "./reward.ts";
+import { pendingInviteOf, rewardOf, visitsFor } from "./reward.ts";
 import styles from "./refer.module.css";
 
 /** "Fitted Aug 2027", from the month the API gives as YYYY-MM. */
@@ -158,7 +158,11 @@ export function TrackerScreen() {
   const { me } = useSession();
   return (
     <Shell header={{ kind: "back", title: refer.fitted.title, to: "/refer", label: refer.fitted.back }} tab="/refer">
-      {me.state === "fitted" ? <Tracker /> : <EmptyState lines={empty.refer.lines(rewardOf(me))} />}
+      {me.state === "fitted" ? (
+        <Tracker />
+      ) : (
+        <EmptyState lines={empty.refer.lines(rewardOf(me), pendingInviteOf(me))} />
+      )}
     </Shell>
   );
 }

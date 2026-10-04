@@ -1,5 +1,5 @@
-// The invite a client came with, under their Payments, beside the credits it
-// grants: where its grant stands, and who attached it, if ops did. Who sent it,
+// The invite a client came with, on their Referrals tab: where its grant
+// stands, and who attached it, if ops did. Who sent it,
 // and its code, head the client's page. A client who came with none may have
 // one attached, for a friend who booked away from the invite's own page: the
 // code and why, under the landing's own rules
@@ -10,7 +10,7 @@ import { Button } from "@maneman/ui/Button";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type ClientInvite } from "../api.ts";
+import { api, isErased, type ClientInvite } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
@@ -80,7 +80,7 @@ function AttachForm({
     // The client came with one meanwhile: their record now says which, and the page shows it.
     if (answer.code === "already_invited") {
       const record = await api.client(clientId);
-      if (record.ok && record.body.invite !== null) {
+      if (record.ok && !isErased(record.body) && record.body.invite !== null) {
         onInvite(record.body.invite, "already_invited");
         return;
       }

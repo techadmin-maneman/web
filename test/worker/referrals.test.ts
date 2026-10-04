@@ -201,6 +201,69 @@ describe("what a referral earns, for the pages that say it", () => {
   });
 });
 
+// CP-12 of the audit, 2 October 2026: an invited friend was never reminded in the app of the visits the invite
+// promised them.
+describe("the invite a client came with, on their Home", () => {
+  const FRIEND_ID = "77777777-7777-4777-8777-777777777777";
+
+  async function invited(via: "consultation" | "waitlist" = "consultation", pin: string | null = null) {
+    const code = await codeOf();
+    await person(FRIEND_ID, "Karan Bhatia", "+919810000002");
+    await env.DB.prepare(
+      `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, pincode, created_at,
+         updated_at)
+       VALUES ('attr-home', ?1, ?2, ?3, ?4, ?5, ?3, ?3)`,
+    )
+      .bind(code, FRIEND_ID, NOW.toISOString(), via, pin)
+      .run();
+  }
+
+  async function pendingInviteOf(personId: string, settings = {}): Promise<unknown> {
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: personId, deviceLabel: null, now: NOW })}`;
+    const app = appFor("local", fakeDependencies(), settings, "client");
+    const me = await (
+      await request(app, "/api/me", { headers: { Cookie: cookie } })
+    ).json<{ pending_invite: unknown }>();
+    return me.pending_invite;
+  }
+
+  it("names who sent it exactly where the invite's own page does", async () => {
+    await invited();
+    expect(await pendingInviteOf(FRIEND_ID)).toEqual({ referrer_first_name: null });
+    await cardConsent("photos-referral-cards-v2");
+    expect(await pendingInviteOf(FRIEND_ID)).toEqual({ referrer_first_name: "Rohit" });
+    expect(await pendingInviteOf(FRIEND_ID, { referrerNameOnInvite: false })).toEqual({ referrer_first_name: null });
+    expect(await pendingInviteOf(REFERRER)).toBeNull();
+  });
+
+  it("is gone once its visits are settled", async () => {
+    await invited();
+    await env.DB.prepare("UPDATE referral_attributions SET grant_state = 'granted' WHERE id = 'attr-home'").run();
+    expect(await pendingInviteOf(FRIEND_ID)).toBeNull();
+  });
+
+  it("is gone once one held on a waitlist has lapsed, 12 months after its area launched", async () => {
+    await env.DB.prepare(
+      `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at)
+       VALUES ('122018', 'South City II', 'Gurgaon', 1, '2025-08-16T18:30:00.000Z')`,
+    ).run();
+    await invited("waitlist", "122018");
+    expect(await pendingInviteOf(FRIEND_ID)).toBeNull();
+  });
+
+  it("is gone once the client is fitted", async () => {
+    await invited();
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+         fsm_modified_at, synced_at)
+       VALUES ('fit-home', 'fsm-fit-home', ?1, 'first_fit', 'completed', 'Completed', ?2, ?2, ?2, ?2)`,
+    )
+      .bind(FRIEND_ID, new Date(NOW.getTime() - DAY).toISOString())
+      .run();
+    expect(await pendingInviteOf(FRIEND_ID)).toBeNull();
+  });
+});
+
 describe("GET /api/pincodes/:pin", () => {
   it("says whether we come there, and refuses what is not an Indian pincode", async () => {
     await pincode("122018", "Gurgaon South City II", true);

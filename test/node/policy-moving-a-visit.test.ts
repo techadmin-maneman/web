@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cancelRefund,
+  changeChargedOnBooking,
   chargesFor,
   creditOnChange,
   freeUntil,
@@ -115,6 +116,16 @@ describe("the terms ops set", () => {
 
   it("never charges for a move ops make, whatever they set", () => {
     expect(moveCost("service", "late", "ops", "visit")).toBe("free");
+  });
+
+  it("marks a visit booked inside its notice as charged to change, unless its kind costs nothing there", () => {
+    const service = { noticeHours: 24, lateCharge: "visit" } as const;
+    expect(changeChargedOnBooking(WINDOW, hoursBefore(23), service)).toBe(true);
+    expect(changeChargedOnBooking(WINDOW, hoursBefore(24), service)).toBe(true);
+    expect(changeChargedOnBooking(WINDOW, hoursBefore(25), service)).toBe(false);
+    expect(changeChargedOnBooking(WINDOW, hoursBefore(30), { ...service, noticeHours: 48 })).toBe(true);
+    expect(changeChargedOnBooking(WINDOW, hoursBefore(1), { noticeHours: 24, lateCharge: "late_fee" })).toBe(true);
+    expect(changeChargedOnBooking(WINDOW, hoursBefore(1), { noticeHours: 24, lateCharge: "nothing" })).toBe(false);
   });
 
   it("offers a late fee only to a kind of visit that has one", () => {

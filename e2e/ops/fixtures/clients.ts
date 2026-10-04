@@ -1,9 +1,10 @@
 // Boards B1, B2 and B3: one client's page, their photographs, consents and pieces.
 
 import sharp from "sharp";
+import type { components } from "../../../apps/ops/src/api-schema.ts";
 import type { OpsReply } from "../answer.ts";
 
-type ClientRecord = OpsReply<"/api/clients/{id}">;
+type ClientRecord = components["schemas"]["ClientRecord"];
 type Photos = OpsReply<"/api/clients/{id}/photos">;
 
 /** The board's client, on a number nobody holds. */

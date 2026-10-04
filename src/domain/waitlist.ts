@@ -6,9 +6,11 @@ import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import type { EnvironmentName } from "../config/environments.ts";
 import { indiaInstant } from "../lib/india-time.ts";
 import type { PlacesReached } from "../policy/access.ts";
+import { launchDateAfter } from "../policy/launch.ts";
 import { namedArea } from "./area-names.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { consentGiven, latestConsentSql } from "./messages.ts";
+import { joinPacedLine } from "./paced-line.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import { firstNameOf } from "../lib/names.ts";
 
@@ -116,62 +118,69 @@ export async function waitingByPincode(
   return new Map(results.map((row) => [row.pincode, { waiting: row.waiting, toAlert: row.to_alert }]));
 }
 
-/** How many alerts go out a minute, so a launch does not flood the number. */
-export const ALERTS_PER_MINUTE = 10;
-
 /** A launch alert queued, with the seconds to hold it back so the alerts leave in a paced line. */
 export interface LaunchAlert {
   readonly id: string;
   readonly delaySeconds: number;
 }
 
-/**
- * The launch alerts for one pincode's waitlist, and the statements that queue
- * them and mark each entry told, for the caller's batch. `pacedAfter` is how
- * many alerts that batch queues before these, so several pincodes launched
- * together still leave ALERTS_PER_MINUTE a minute.
- */
-export async function launchAlerts(
+/** A pincode as a launch reads it: whether it is served, and the launch date it holds, as India's date. */
+export interface LaunchedPincode {
+  readonly pincode: string;
+  readonly served: boolean;
+  readonly launchOn: string | null;
+}
+
+/** The launch alerts for one pincode's waitlist, and the statements that queue them and mark each entry told. */
+async function alertStatements(
   db: D1Database,
   input: { pincode: string; now: Date; pacedAfter: number },
 ): Promise<{ alerts: LaunchAlert[]; statements: D1PreparedStatement[] }> {
   const at = input.now.toISOString();
   const waiting = await toAlert(db, input.pincode);
-  const alerts = waiting.map((entry, index) => ({
-    id: crypto.randomUUID(),
-    entryId: entry.id,
-    personId: entry.person_id,
-    delaySeconds: Math.floor((input.pacedAfter + index) / ALERTS_PER_MINUTE) * 60,
-  }));
+  const newAlerts = waiting.map((entry) => ({ id: crypto.randomUUID(), entryId: entry.id, personId: entry.person_id }));
+  const alerts = await joinPacedLine(db, input.now, newAlerts, input.pacedAfter);
   const statements = alerts.flatMap((alert) => [
     db
       .prepare(
-        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-         VALUES (?1, ?2, ?3, 'launch_alert', 'pincode', ?4, 'queued', ?2)`,
+        `INSERT INTO outbound_messages
+           (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at, due_at)
+         VALUES (?1, ?2, ?3, 'launch_alert', 'pincode', ?4, 'queued', ?2, ?5)`,
       )
-      .bind(alert.id, at, alert.personId, input.pincode),
+      .bind(alert.id, at, alert.personId, input.pincode, alert.dueAt),
     db.prepare("UPDATE waitlist_entries SET alerted_at = ?2 WHERE id = ?1").bind(alert.entryId, at),
   ]);
   return { alerts: alerts.map(({ id, delaySeconds }) => ({ id, delaySeconds })), statements };
 }
 
 /**
- * Marks the pincode served from the day given, and queues a launch alert for each person who asked for one,
- * in one batch with the launch's audit entry, which counts the alerts (src/domain/audit.ts). Returns the
- * messages, each with the seconds to hold it back, so they leave in a paced line.
+ * Everything one launch writes, for the caller's batch, from either tab of Areas: the pincode served from its launch
+ * date (src/policy/launch.ts), an alert queued for each person who asked to be told, and the launch's audit entry,
+ * which counts the alerts. `pacedAfter` is how many alerts the batch queues before these, so several pincodes launched
+ * together still leave in one paced line (src/domain/paced-line.ts).
  */
+export async function launchStatements(
+  db: D1Database,
+  input: { pincode: LaunchedPincode; launchDay: string; audit: AuditEntry; now: Date; pacedAfter: number },
+): Promise<{ launchOn: string; alerts: LaunchAlert[]; statements: D1PreparedStatement[] }> {
+  const pin = input.pincode.pincode;
+  const launchOn = launchDateAfter(input.pincode, input.launchDay);
+  const queued = await alertStatements(db, { pincode: pin, now: input.now, pacedAfter: input.pacedAfter });
+  const serve = db
+    .prepare("UPDATE serviceable_pincodes SET served = 1, launched_at = ?2 WHERE pincode = ?1")
+    // Midnight in India on the day, as every other time in the database is an instant.
+    .bind(pin, indiaInstant(launchOn, "00:00").toISOString());
+  const audited = auditStatement(db, { ...input.audit, detail: { alerts: queued.alerts.length } }, input.now);
+  return { launchOn, alerts: queued.alerts, statements: [serve, ...queued.statements, audited] };
+}
+
+/** Launches one pincode in one batch. Returns the alerts, each with the seconds to hold it back. */
 export async function launchPincode(
   db: D1Database,
-  input: { pincode: string; launchOn: string; audit: AuditEntry; now: Date },
+  input: { pincode: LaunchedPincode; launchDay: string; audit: AuditEntry; now: Date },
 ): Promise<{ alerts: LaunchAlert[] }> {
-  const { alerts, statements } = await launchAlerts(db, { pincode: input.pincode, now: input.now, pacedAfter: 0 });
-  await db.batch([
-    db
-      .prepare(`UPDATE serviceable_pincodes SET served = 1, launched_at = COALESCE(launched_at, ?2) WHERE pincode = ?1`)
-      .bind(input.pincode, indiaInstant(input.launchOn, "00:00").toISOString()),
-    ...statements,
-    auditStatement(db, { ...input.audit, detail: { alerts: alerts.length } }, input.now),
-  ]);
+  const { alerts, statements } = await launchStatements(db, { ...input, pacedAfter: 0 });
+  await db.batch(statements);
   return { alerts };
 }
 

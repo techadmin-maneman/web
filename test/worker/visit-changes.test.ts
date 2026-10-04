@@ -678,6 +678,22 @@ describe("moving a visit", () => {
     expect(await visitRow()).toMatchObject({ status: "scheduled", window_start: TUESDAY_MORNING });
   });
 
+  it("gives the late fee back, moving nothing, when the visit went to another technician before it was booked", async () => {
+    await booked("first_fit", TUESDAY_MORNING, 3000000);
+    const payments = createStubPayments();
+    const app = client({ payments });
+    const held = await hold(app, "first_fit", "2026-09-28", "morning");
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
+    await paidFor(held.id, "pay_fee");
+    await env.DB.prepare("UPDATE appointments SET technician_id = 't2' WHERE id = ?1").bind(VISIT).run();
+
+    expect(await confirmBooking(env.DB, payments, held.id, NOW, {})).toBe("refunded");
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_fee", amount: 400000 }]);
+    expect(await visitRow()).toMatchObject({ window_start: TUESDAY_MORNING });
+    const told = await env.DB.prepare("SELECT kind, subject_id FROM outbound_messages").all();
+    expect(told.results).toEqual([{ kind: "booking_refunded", subject_id: held.id }]);
+  });
+
   it("books nothing in place of a visit the technician checked in to before a late move was confirmed", async () => {
     await booked("service", TUESDAY_MORNING, 200000);
     const payments = createStubPayments();

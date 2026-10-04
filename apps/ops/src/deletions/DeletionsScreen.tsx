@@ -29,6 +29,7 @@ import { deletions } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
+import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./deletions.module.css";
 import { ErasureLists } from "./ErasureLists.tsx";
@@ -103,7 +104,7 @@ interface RequestProps {
   readonly now: Date;
   /** Whether the person's access lets them delete the account or reject the request. */
   readonly mayDecide: boolean;
-  readonly onDecided: () => void;
+  readonly onDecided: (choice: Choice) => void;
 }
 
 function Request({ request, now, mayDecide, onDecided }: RequestProps) {
@@ -115,7 +116,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
     setDeciding({ step: "sending", choice });
     // Rejecting keeps the account and needs a reason; deleting sends the field as null.
     const answer = await api.decideDeletion(request.id, choice, choice === "reject" ? reason.trim() : null);
-    if (answer.ok) onDecided();
+    if (answer.ok) onDecided(choice);
     else setDeciding({ step: "failed", code: answer.code });
   };
 
@@ -130,7 +131,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
   return (
     <>
       <div className={styles.head}>
-        <OpsLink className={styles.name} to={`/clients/${request.person_id}`}>
+        <OpsLink className={styles.name} to={clientPath(request.person_id, "consents")}>
           {request.name}
         </OpsLink>
         <Left due={request.due} now={now} />
@@ -227,6 +228,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
 function Queue() {
   const [loaded, retry] = useLoad(api.deletionRequests);
   const mayDecide = useAccess().mayCall("POST /api/deletion-requests/{id}/decision");
+  const [done, setDone] = useState<string | null>(null);
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
@@ -239,8 +241,19 @@ function Queue() {
       rowKind="request"
       empty={copy.empty}
       note={copy.note(copy.processDays)}
+      done={done}
     >
-      {(request, decided) => <Request request={request} now={now} mayDecide={mayDecide} onDecided={decided} />}
+      {(request, decided) => (
+        <Request
+          request={request}
+          now={now}
+          mayDecide={mayDecide}
+          onDecided={(choice) => {
+            setDone(copy.done[choice]);
+            decided();
+          }}
+        />
+      )}
     </DecisionQueue>
   );
 }

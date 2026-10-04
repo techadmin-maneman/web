@@ -107,6 +107,21 @@ describe("runCronJobs", () => {
     expect(ran).toEqual(["always"]);
     expect(outcomes.map((outcome) => outcome.job)).toEqual(["always"]);
   });
+
+  it("asks Razorpay what its webhook missed only where payments are connected", async () => {
+    const { ran, job } = recorder();
+    const jobs = [job("razorpay_catch_up", "payments")];
+    const unpaid: StaticConfig = {
+      ...LOCAL_CONFIG,
+      providers: { ...LOCAL_CONFIG.providers, PAYMENTS_PROVIDER: "none" },
+    };
+
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: unpaid, log: createLogger() });
+    expect(ran).toEqual([]);
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: LOCAL_CONFIG, log: createLogger() });
+    expect(ran).toEqual(["razorpay_catch_up"]);
+    expect(CRON_JOBS.find((each) => each.name === "razorpay_catch_up")?.needs).toBe("payments");
+  });
 });
 
 describe("a job that keeps failing", () => {

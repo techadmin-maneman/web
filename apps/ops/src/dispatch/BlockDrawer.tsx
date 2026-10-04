@@ -23,6 +23,7 @@ import { OpsLink } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
+import { clientPath } from "../route.ts";
 import { firstNameOf, isMovable, movesIfCheckInCleared, nameOf, type BlockJob, type VisitChange } from "./job.ts";
 
 /** Each action is null when the person's access does not let them take it. */
@@ -99,7 +100,7 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
         </dl>
         {block.untold !== null && person !== null && (
           <div className={styles.untold}>
-            <p className={styles.untoldLine}>{copy.untold(movedTo, phoneWords(person.mobile))}</p>
+            <p className={styles.untoldLine}>{copy.untold[block.untold.reason](movedTo, phoneWords(person.mobile))}</p>
             {onTold !== null && (
               <Button
                 variant="outline"
@@ -129,7 +130,10 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
                 </svg>
                 {copy.whatsapp(firstNameOf(person))}
               </ButtonLink>
-              <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to={`/clients/${person.id}`}>
+              <OpsLink
+                className={buttonLook({ variant: "outline", size: "small" })}
+                to={clientPath(person.id, "visits")}
+              >
                 {copy.openClient}
               </OpsLink>
             </>

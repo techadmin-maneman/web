@@ -70,13 +70,8 @@ async function cardToSend(which: Which, state: Refer, made: Made | null): Promis
 function Choice(props: { which: Which; chosen: boolean; shown: Shown; onChoose: () => void }) {
   const { which, chosen } = props;
   return (
-    <button
-      className={chosen ? `${styles.choice} ${styles.chosen}` : styles.choice}
-      type="button"
-      role="radio"
-      aria-checked={chosen}
-      onClick={props.onChoose}
-    >
+    <label className={chosen ? `${styles.choice} ${styles.chosen}` : styles.choice}>
+      <input className={styles.radio} type="radio" name="refer-card" checked={chosen} onChange={props.onChoose} />
       <CardPreview shown={props.shown} />
       <span className={styles.choiceText}>
         <span>
@@ -87,7 +82,7 @@ function Choice(props: { which: Which; chosen: boolean; shown: Shown; onChoose: 
           {chosen && <Icon d={CHECK} size={13} />}
         </span>
       </span>
-    </button>
+    </label>
   );
 }
 
@@ -118,6 +113,8 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
   const [step, setStep] = useState<Step>("choice");
   const [which, setWhich] = useState<Which>(state.card.state === "personal" ? "mine" : "house");
   const [pair, setPair] = useState<FirstFitPair | null>(null);
+  // Known once the photos answer: their first fit has no front photograph before and after to make a card of.
+  const [noFirstFitPair, setNoFirstFitPair] = useState(false);
   const [made, setMade] = useState<Made | null>(null);
   // The card the share step sends, made ready before it shows.
   const [file, setFile] = useState<File | null>(null);
@@ -131,7 +128,10 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
   useEffect(() => {
     let current = true;
     void api.photos().then((answer) => {
-      if (current && answer.ok) setPair(firstFitPhotos(answer.body));
+      if (!current || !answer.ok) return;
+      const found = firstFitPhotos(answer.body);
+      setPair(found);
+      setNoFirstFitPair(found === null);
     });
     return () => {
       current = false;
@@ -243,6 +243,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
   };
 
   const card = which === "house" ? HOUSE : sentCard(state, made);
+  const offerTheirOwn = state.card.state === "personal" || made !== null || !noFirstFitPair;
   return (
     <Sheet
       ref={dialog}
@@ -265,17 +266,20 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
           </div>
           <div className={styles.screenBody}>
             <p className={styles.lead}>{refer.card.what}</p>
+            {!offerTheirOwn && <p className={styles.lead}>{refer.card.mineNotYet}</p>}
             <div className={styles.choices} role="radiogroup" aria-labelledby={TITLE_ID}>
-              <Choice
-                which="mine"
-                chosen={which === "mine"}
-                shown={made === null ? { kind: "mine", pair } : { kind: "made", url: made.url }}
-                onChoose={() => {
-                  // "Without consent, the first option opens F3 instead of selecting."
-                  if (agreed) setWhich("mine");
-                  else setStep("consent");
-                }}
-              />
+              {offerTheirOwn && (
+                <Choice
+                  which="mine"
+                  chosen={which === "mine"}
+                  shown={made === null ? { kind: "mine", pair } : { kind: "made", url: made.url }}
+                  onChoose={() => {
+                    // "Without consent, the first option opens F3 instead of selecting."
+                    if (agreed) setWhich("mine");
+                    else setStep("consent");
+                  }}
+                />
+              )}
               <Choice
                 which="house"
                 chosen={which === "house"}

@@ -262,38 +262,32 @@ describe("scheduled handler", () => {
     await markDatabase();
     const logs = captureLogs();
     const now = new Date().toISOString();
-    const threeMinutesAgo = new Date(Date.now() - 3 * 60_000).toISOString();
+    const ninetyMinutesAgo = new Date(Date.now() - 90 * 60_000).toISOString();
     await env.DB.batch([
       env.DB.prepare(
         "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p-1', ?1, '+919810000001', 'Rohit Malhotra')",
       ).bind(now),
-      // A lead the sweeper re-sends, onto a queue that is down: that job fails.
-      env.DB.prepare(
-        `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, request_id)
-         VALUES ('lead-1', 'p-1', ?1, 'form', 'Gurgaon', 'weekday_am', 'crown', 'r')`,
-      ).bind(threeMinutesAgo),
       env.DB.prepare(
         `INSERT INTO payments (id, person_id, razorpay_payment_id, amount, currency, status, captured_at, created_at,
            updated_at)
          VALUES ('pay-1', 'p-1', 'pay_test1', 200000, 'INR', 'captured', ?1, ?1, ?1)`,
       ).bind(now),
     ]);
-    const queueDown = {
-      send: () => Promise.reject(new Error("queue unavailable")),
-      sendBatch: () => Promise.reject(new Error("queue unavailable")),
-    } as unknown as Queue;
+    // A photo past keeping, in a bucket that will not delete it: that job fails.
+    await insertJob({ id: "job-1", state: "ready", uploaded_at: ninetyMinutesAgo, created_at: ninetyMinutesAgo });
+    const uploadsDown = { delete: () => Promise.reject(new Error("bucket unavailable")) } as unknown as R2Bucket;
 
     await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), {
       ...env,
-      CRM_QUEUE: queueDown,
+      UPLOADS: uploadsDown,
+      CRM_QUEUE: fakeQueue(),
       RENDER_QUEUE: fakeQueue(),
       MESSAGE_QUEUE: fakeQueue(),
     });
 
     expect(logs.lines().filter((line) => line.event === "cron_job_failed")).toEqual([
-      expect.objectContaining({ level: "error", job: "requeue_leads" }),
+      expect.objectContaining({ level: "error", job: "delete_photos" }),
     ]);
-    // The Books pass runs after the job that failed.
     expect(await booksPaymentOf("pay-1")).not.toBeNull();
   });
 });

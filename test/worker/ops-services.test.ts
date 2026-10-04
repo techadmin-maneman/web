@@ -39,6 +39,7 @@ interface Service {
   kind: string;
   tier: string;
   name: string;
+  description: string | null;
   minutes: number;
   sort: number;
   retired_date: string | null;
@@ -204,6 +205,45 @@ describe("changing a service", () => {
     expect((await post("/api/services/service/standard/name", { name: "+1" })).status).toBe(400);
   });
 
+  it("gives it the line clients read under its name, trimmed, and records it", async () => {
+    await post("/api/services", { kind: "first_fit", name: "Mane Man Active" });
+    expect((await serviceNamed("Mane Man Active")).description).toBeNull();
+
+    const answer = await post("/api/services/first_fit/mane_man_active/description", {
+      description: "  Made for men who sweat.  ",
+    });
+
+    expect(answer.status).toBe(200);
+    expect((await serviceNamed("Mane Man Active")).description).toBe("Made for men who sweat.");
+    const { results } = await auditFor("service.describe");
+    expect(results[0]?.subject_id).toBe("first_fit/mane_man_active");
+    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ from: null, to: "Made for men who sweat." });
+  });
+
+  it("clears the line when it is sent empty, and records nothing when it is unchanged", async () => {
+    await post("/api/services/service/standard/description", { description: "Refit, clean, trim, at home." });
+    await post("/api/services/service/standard/description", { description: "Refit, clean, trim, at home." });
+    await post("/api/services/service/standard/description", { description: " " });
+
+    expect((await serviceNamed("Service visit")).description).toBeNull();
+    const { results } = await auditFor("service.describe");
+    expect(results.map((entry) => JSON.parse(entry.detail) as unknown)).toEqual([
+      { from: null, to: "Refit, clean, trim, at home." },
+      { from: "Refit, clean, trim, at home.", to: null },
+    ]);
+  });
+
+  it.each([
+    ["a line break", "Made for men\nwho sweat."],
+    ["more than 160 characters", "A".repeat(161)],
+  ])("refuses a description with %s, naming the box, and records nothing", async (_, description) => {
+    const answer = await post("/api/services/service/standard/description", { description });
+
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["description"] } });
+    expect((await auditFor("service.describe")).results).toHaveLength(0);
+  });
+
   it("gives it another length, from now on, and records it", async () => {
     const answer = await post("/api/services/replacement/standard/length", { minutes: 150 });
 
@@ -230,6 +270,7 @@ describe("changing a service", () => {
 
   it("answers not_found for a service the console does not hold", async () => {
     expect((await post("/api/services/first_fit/lace/name", { name: "Lace" })).status).toBe(404);
+    expect((await post("/api/services/first_fit/lace/description", { description: "Lace." })).status).toBe(404);
     expect((await post("/api/services/first_fit/lace/retire", { from: "2026-09-21" })).status).toBe(404);
   });
 });

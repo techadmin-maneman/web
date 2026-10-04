@@ -140,6 +140,39 @@
   color: var(--brass-text);
 }
 
+/* What waits on Tasks for the client, beneath the head and set in as it is. */
+.open {
+  padding: var(--sp-14) var(--sp-28);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.openTasks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.openTask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-8) var(--sp-20);
+  font-size: var(--fs-14);
+}
+
+.openTaskName {
+  font-weight: var(--weight-medium);
+}
+
+.openNone {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
 /* Board B1's tabs (packages/ui/Tabs.tsx), set in from the page's edges as its head is. */
 .tabs {
   padding: 0 var(--sp-28);

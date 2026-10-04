@@ -53,4 +53,4 @@ export {
   TECHNICIANS,
   TECHNICIAN_WORK,
 } from "./fixtures/technicians.ts";
-export { AREAS, LAUNCHED, PREVIEW } from "./fixtures/waitlist.ts";
+export { ADDED, AREAS, LAUNCHED, PREVIEW, UNHELD } from "./fixtures/waitlist.ts";

@@ -18,7 +18,8 @@ export const crmErasureKey = (personId: string): string => `crm_erasure:${person
 /** A deletion request near the end of the days it must be decided in. */
 export const deletionWaitingKey = (requestId: string): string => `deletion_waiting:${requestId}`;
 
-const CUSTOMER_CARE_KINDS = [
+/** About the client themselves: their messages, contact and notes. */
+export const CUSTOMER_CARE_KINDS = [
   "message_failed",
   "messages_unsent",
   "crm_lead",
@@ -54,6 +55,8 @@ const FINANCE_KINDS = [
   "books_refund_refused",
   "books_refund_failed",
   "razorpay_refund_unheard",
+  "razorpay_payment_unheard",
+  "razorpay_catch_up_not_booked",
 ];
 
 const OPERATIONS_KINDS = [
@@ -84,6 +87,7 @@ const RETOLD_EVERY_6_HOURS = [
   "cancel_refund_failed",
   "no_show_refund_failed",
   "razorpay_refund_unheard",
+  "razorpay_catch_up_not_booked",
 ];
 
 /** How long an open alert goes untold before its next sighting tells the chat again. */

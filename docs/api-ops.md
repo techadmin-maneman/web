@@ -151,17 +151,24 @@ Request body:
 
 ### GET /api/clients/{id}
 
-The client's record: who they are, their address, their visits, their money, their history and their invite
+The client's record: who they are, their address, their visits, their money, their history and their invite; of an erased client, when they were erased, their visits and their money
 
 **200**: The record
 
 ```json
 {
-  "$ref": "#/components/schemas/ClientRecord"
+  "anyOf": [
+    {
+      "$ref": "#/components/schemas/ClientRecord"
+    },
+    {
+      "$ref": "#/components/schemas/ErasedClientRecord"
+    }
+  ]
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
+**404**: not_found: no such client, or the client is outside the caller's cities
 
 ```json
 {
@@ -1192,7 +1199,7 @@ Request body:
 
 ### GET /api/grievances
 
-Open grievances in the caller's cities, oldest first
+Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's
 
 **200**: Open grievances
 
@@ -1383,11 +1390,19 @@ Who is waiting in the caller's cities, by pincode, the longest wait first
     "more": {
       "type": "boolean",
       "description": "More than 200 pincodes have someone waiting; these are the longest waits."
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Our cities the caller may add a pincode in: those their Growth MANAGE reaches."
     }
   },
   "required": [
     "areas",
-    "more"
+    "more",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -1434,6 +1449,14 @@ Request body:
 }
 ```
 
+**400**: launch_in_future: launch_on is a day still to come
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE
 
 ```json
@@ -1442,7 +1465,7 @@ Request body:
 }
 ```
 
-**404**: not_found: we have no such pincode
+**404**: not_found: the service area holds no such pincode, so it is added first
 
 ```json
 {
@@ -2194,6 +2217,14 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
+**400**: invalid_request: person is not a client's id
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required, or not_permitted: no View in any department
 
 ```json
@@ -2828,10 +2859,18 @@ Every pincode we hold, its city, and whether a technician goes there
       "items": {
         "$ref": "#/components/schemas/ServedPincode"
       }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Our cities, which a pincode added must be in."
     }
   },
   "required": [
-    "pincodes"
+    "pincodes",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -2883,7 +2922,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served
+**400**: invalid_request: fields names a pincode we do not hold. launch_in_future: fields names a pincode it would serve from a day still to come. no_service_area: it would leave none served
 
 ```json
 {
@@ -2892,6 +2931,50 @@ Request body:
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/pincodes
+
+Add a pincode the service area does not hold, unserved, in one of our cities
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewPincode"
+}
+```
+
+**201**: The pincode, as the service area now lists it
+
+```json
+{
+  "$ref": "#/components/schemas/ServedPincode"
+}
+```
+
+**400**: invalid_request: fields names the box refused, city for a city that is not one of ours
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: the city is outside the caller's Growth MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: pincode_held: the service area holds that pincode already
 
 ```json
 {
@@ -3154,6 +3237,58 @@ Request body:
 ```json
 {
   "$ref": "#/components/schemas/ServiceRename"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/{tier}/description
+
+The line clients read under a service's name as they choose. An empty one clears it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceDescribe"
 }
 ```
 
@@ -4316,6 +4451,8 @@ Request body:
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -6253,6 +6390,92 @@ Request body:
 }
 ```
 
+### ErasedClientRecord
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "erased_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "visits": {
+      "type": "object",
+      "properties": {
+        "upcoming": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ClientVisit"
+          }
+        },
+        "past": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ClientVisit"
+          }
+        }
+      },
+      "required": [
+        "upcoming",
+        "past"
+      ],
+      "additionalProperties": false,
+      "description": "Upcoming soonest first; past newest first. No discount code may be entered or taken off: price_open is false."
+    },
+    "payments": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PaymentEntry"
+          },
+          {
+            "$ref": "#/components/schemas/RefundEntry"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "payment": "#/components/schemas/PaymentEntry",
+            "refund": "#/components/schemas/RefundEntry"
+          }
+        }
+      },
+      "description": "Payments and refunds as one list, newest first."
+    },
+    "payment_links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientPaymentLink"
+      },
+      "description": "Every payment link, newest first."
+    },
+    "invoices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientInvoice"
+      },
+      "description": "Each finished visit sold for a price, with its invoice; the latest visit first."
+    }
+  },
+  "required": [
+    "id",
+    "erased_at",
+    "visits",
+    "payments",
+    "payment_links",
+    "invoices"
+  ],
+  "additionalProperties": false,
+  "description": "What is kept of a client once erased: their visits and their money. Nothing names them."
+}
+```
+
 ### ClientPhotos
 
 ```json
@@ -7322,6 +7545,8 @@ Request body:
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -8546,7 +8771,8 @@ Request body:
           "amount"
         ],
         "additionalProperties": false
-      }
+      },
+      "description": "Money owed back: a payment held with no visit behind it, or what a cancelled visit's refund has still to return."
     },
     "links": {
       "type": "array",
@@ -8724,7 +8950,7 @@ Request body:
     "launch_on": {
       "type": "string",
       "format": "date",
-      "description": "India's date it starts; today if left out."
+      "description": "India's date it started: today if left out, and never a day to come."
     }
   },
   "required": [
@@ -9226,11 +9452,19 @@ Request body:
             "starts_at": {
               "type": "string",
               "format": "date-time"
+            },
+            "reason": {
+              "type": "string",
+              "enum": [
+                "no_consent",
+                "not_sent"
+              ]
             }
           },
           "required": [
             "move_id",
-            "starts_at"
+            "starts_at",
+            "reason"
           ],
           "additionalProperties": false
         },
@@ -9238,7 +9472,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told."
+      "description": "The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told."
     },
     "begun": {
       "anyOf": [
@@ -10607,6 +10841,17 @@ Request body:
       "type": "integer",
       "description": "The check-in radius in force when he checked in."
     },
+    "message_state": {
+      "type": "string",
+      "enum": [
+        "delivered",
+        "sent",
+        "not_sent",
+        "no_consent",
+        "none"
+      ],
+      "description": "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered."
+    },
     "message_delivered_at": {
       "anyOf": [
         {
@@ -10645,6 +10890,7 @@ Request body:
     "received_at",
     "distance_m",
     "radius_m",
+    "message_state",
     "message_delivered_at",
     "closed_at"
   ],
@@ -10835,7 +11081,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted."
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted."
     },
     "since": {
       "type": "string",
@@ -12095,6 +12341,36 @@ Request body:
 }
 ```
 
+### NewPincode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincode": {
+      "type": "string",
+      "pattern": "^[1-8]\\d{5}$"
+    },
+    "area": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&-]{1,39}$/u",
+      "description": "What messages call the area."
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    }
+  },
+  "required": [
+    "pincode",
+    "area",
+    "city"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### SlotTimes
 
 ```json
@@ -12541,6 +12817,10 @@ Request body:
     "max_minutes": {
       "type": "integer"
     },
+    "max_description": {
+      "type": "integer",
+      "description": "The most characters a description may have."
+    },
     "max_amount_ex_gst": {
       "type": "integer"
     },
@@ -12555,6 +12835,7 @@ Request body:
     "late_fees",
     "min_minutes",
     "max_minutes",
+    "max_description",
     "max_amount_ex_gst",
     "max_gst_percent"
   ],
@@ -12583,6 +12864,17 @@ Request body:
     },
     "name": {
       "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The line clients read under its name as they choose; null until ops write one."
     },
     "minutes": {
       "type": "integer",
@@ -12626,6 +12918,7 @@ Request body:
     "kind",
     "tier",
     "name",
+    "description",
     "minutes",
     "sort",
     "retired_date",
@@ -12688,6 +12981,24 @@ Request body:
   },
   "required": [
     "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceDescribe
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 160
+    }
+  },
+  "required": [
+    "description"
   ],
   "additionalProperties": false
 }

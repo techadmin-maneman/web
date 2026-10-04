@@ -39,16 +39,20 @@ function waitedOf(each: NoShowDispute): string {
   return noShows.queue.waited(minutesBetween(each.checked_in_at, each.closed_at), indiaClock(each.closed_at));
 }
 
+/** Whether the reminder reached the client, was sent and never delivered, or never went at all. */
+function messageOf(each: NoShowDispute): string {
+  const lines = noShows.queue.message;
+  if (each.message_delivered_at !== null) return lines.delivered(indiaClock(each.message_delivered_at));
+  if (each.message_state === "delivered") return lines.sent;
+  return lines[each.message_state];
+}
+
 /** The board's four rows, in its order. */
 function Evidence({ each }: { each: NoShowDispute }) {
-  const delivered = each.message_delivered_at;
   const rows = [
     [copy.facts.checkIn, indiaClock(each.checked_in_at)],
     [copy.facts.distance, <Distance key="distance" metres={each.distance_m} radius={each.radius_m} />],
-    [
-      copy.facts.whatsapp,
-      delivered === null ? copy.notDelivered : noShows.queue.message.delivered(indiaClock(delivered)),
-    ],
+    [copy.facts.whatsapp, messageOf(each)],
     [copy.facts.waited, waitedOf(each)],
   ] as const;
   return (

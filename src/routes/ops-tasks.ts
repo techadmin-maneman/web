@@ -1,7 +1,7 @@
 // What ops still have to do, behind Access (Ops Console, board D2;
 // src/policy/tasks.ts):
 //   GET /api/tasks                        the groups of the caller's departments, their counts, how many have run
-//                                         over, and whose each task is
+//                                         over, and whose each task is; ?person= narrows it to one client
 //   PUT /api/tasks/:group/:id/owner       make a task a member of staff's, or nobody's
 //   POST /api/tasks/:group/:id/close      close a visit left partly done without a follow-up, with why
 //
@@ -80,8 +80,10 @@ const TaskSchema = z
       }),
     detail: z.union([z.string(), z.null()]).openapi({
       description:
-        "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a " +
-        "consultation asked for, its day and window and, where a first fit was asked for with it, " +
+        "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; " +
+        'for a move the client has not heard of, the start it moved to and why ("no_consent" or ' +
+        '"not_sent", as the dispatch board\'s untold says); for a consultation asked for, its day and window and, ' +
+        "where a first fit was asked for with it, " +
         '"first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit\'s start and ' +
         "the day the next service fell due; for a first fit to book, the consultation's start and the window wanted.",
     }),
@@ -130,12 +132,20 @@ const tasksRoute = createRoute({
   method: "get",
   path: "/api/tasks",
   summary: "What ops still have to do, by group, the longest wait first",
+  request: {
+    query: z.object({
+      person: z.uuid().optional().openapi({
+        description: "One client's tasks alone, for their page; every count is then theirs.",
+      }),
+    }),
+  },
   responses: {
     200: {
       description:
         "The groups with something in them, of the caller's own departments and cities once the Staff list is enforced",
       ...json(TasksSchema),
     },
+    400: errorResponse("invalid_request: person is not a client's id"),
     403: errorResponse("access_required, or not_permitted: no View in any department"),
   },
 });
@@ -237,6 +247,9 @@ function personBody(person: Task["person"]) {
   return mobile === null ? { id, name } : { id, name, mobile };
 }
 
+/** Whether the task is about the client asked for; every task is, when none was. */
+const isAbout = (task: Task, person: string | undefined): boolean => person === undefined || task.person?.id === person;
+
 /** The members of staff a task may be given to: those who have used the console lately (src/policy/tasks.ts). */
 const staffNow = (c: Context<AppEnv>): Promise<string[]> =>
   staffSeenSince(c.env.DB, new Date(c.var.deps.now().getTime() - STAFF_SEEN_WITHIN_DAYS * DAY_MS));
@@ -260,8 +273,9 @@ async function groupsSeenBy(c: Context<AppEnv>): Promise<TaskGroup[]> {
 export function registerOpsTasks(app: App): void {
   app.openapi(tasksRoute, async (c) => {
     const now = c.var.deps.now();
+    const { person } = c.req.valid("query");
     const [board, staff, seen] = await Promise.all([readTheBoard(c, "view"), staffNow(c), groupsSeenBy(c)]);
-    const tasks = board.tasks.filter((task) => seen.includes(task.group));
+    const tasks = board.tasks.filter((task) => seen.includes(task.group) && isAbout(task, person));
     // In the policy's order, and a group with nothing in it is left out, as the board draws none.
     const groups = seen
       .map((group) => {

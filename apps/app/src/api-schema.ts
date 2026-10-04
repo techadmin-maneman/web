@@ -2677,7 +2677,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2890,6 +2890,11 @@ export interface components {
                 } | null;
             };
             referral_reward: components["schemas"]["ReferralReward"];
+            /** @description The invite a client not yet fitted came with, while its free service visits (referral_reward's friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it lapsed. */
+            pending_invite: {
+                /** @description Who sent it, exactly where the invite's own page names them; null where it does not. */
+                referrer_first_name: string | null;
+            } | null;
         };
         VisitSummary: {
             /** Format: uuid */
@@ -2938,6 +2943,8 @@ export interface components {
             /** @description Its code within its kind, which booking it names. */
             tier: string;
             name: string;
+            /** @description The line ops wrote to read under its name; null for none. */
+            description: string | null;
             /** @description How long the visit is booked for. */
             minutes: number;
             price: components["schemas"]["Price"];
@@ -3554,6 +3561,8 @@ export interface components {
                 name: string;
                 initials: string;
             } | null;
+            /** @description The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it. */
+            change_notice_hours: number;
             /**
              * Format: date
              * @description The last day this visit may be booked on: later days are asked for up to it.
@@ -3572,6 +3581,8 @@ export interface components {
                     end: string;
                     /** @description Who would come: the regular technician, another, or nobody (full). */
                     with: ("regular" | "another") | null;
+                    /** @description Booked now, moving or cancelling it would already cost the client: it starts inside the notice, and its kind is charged there. */
+                    change_charged: boolean;
                 }[];
             }[];
         };

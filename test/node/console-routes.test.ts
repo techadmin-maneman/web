@@ -192,6 +192,7 @@ describe("the routes a caller's calls go ahead on", () => {
       ]),
     );
     expect(routes).not.toContain("POST /api/pincodes/{pin}/launch");
+    expect(routes).not.toContain("POST /api/pincodes");
     expect(routes).not.toContain("GET /api/service-area");
 
     const managingInDelhi: Caller = {
@@ -201,6 +202,7 @@ describe("the routes a caller's calls go ahead on", () => {
     };
     const managing = routesOpenTo(managingInDelhi, true, NO_ZONES);
     expect(managing).toContain("POST /api/pincodes/{pin}/launch");
+    expect(managing).toContain("POST /api/pincodes");
     expect(managing).not.toContain("POST /api/service-area");
   });
 

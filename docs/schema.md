@@ -94,7 +94,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [referral_codes](#referral_codes): A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).
 - [refunds](#refunds): The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
 - [serviceable_pincodes](#serviceable_pincodes): Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
-- [services](#services): What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
+- [services](#services): What clients may book: each kind of visit's services, their names, the line clients read under each, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 - [slot_holds](#slot_holds): A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
@@ -1063,7 +1063,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1082,6 +1082,7 @@ Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand
 | `sent_at` | TEXT | yes |  |  |
 | `delivered_at` | TEXT | yes |  |  |
 | `read_at` | TEXT | yes |  |  |
+| `due_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1109,7 +1110,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 
-Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`.
+Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`, `0091_razorpay_catch_up.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1130,6 +1131,7 @@ Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`.
 | `reference` | TEXT | yes |  |  |
 | `reference_year` | INTEGER | yes |  |  |
 | `reference_number` | INTEGER | yes |  |  |
+| `payment_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1431,9 +1433,9 @@ Made by `0021_referrals.sql`; changed by `0043_area_names.sql`.
 
 ## services
 
-What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
+What clients may book: each kind of visit's services, their names, the line clients read under each, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
 
-Made by `0050_services.sql`; changed by `0070_field_record_ours.sql`.
+Made by `0050_services.sql`; changed by `0070_field_record_ours.sql`, `0092_service_description.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1447,6 +1449,7 @@ Made by `0050_services.sql`; changed by `0070_field_record_ours.sql`.
 | `updated_by` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
 | `books_item_id` | TEXT | yes |  |  |
+| `description` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1498,7 +1501,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`, `0091_razorpay_catch_up.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1549,6 +1552,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `reference_year` | INTEGER | yes |  |  |
 | `reference_number` | INTEGER | yes |  |  |
 | `auto_refund_reason` | TEXT | yes |  |  |
+| `payment_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1560,6 +1564,7 @@ Indexes:
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
 - `slot_holds_reference`: unique on (`reference`)
 - `slot_holds_reference_number`: unique on (`reference_year`, `reference_number`)
+- `slot_holds_unconfirmed`: on (`expires_at`), where `confirmed_at IS NULL`
 - A `UNIQUE` constraint: unique on (`razorpay_order_id`)
 
 ## slot_times

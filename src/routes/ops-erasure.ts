@@ -62,7 +62,11 @@ export const ErasureRefusedSchema = z
           .strict(),
       )
       .openapi({ description: "Bookings paid for, or free, that are not yet visits." }),
-    payments: z.array(OwedSchema),
+    payments: z.array(OwedSchema).openapi({
+      description:
+        "Money owed back: a payment held with no visit behind it, or what a cancelled visit's refund has still to " +
+        "return.",
+    }),
     links: z.array(OwedSchema).openapi({
       description: "Payment links still unpaid: a fitted visit's, or one sent for a booking and still open.",
     }),
