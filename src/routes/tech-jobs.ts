@@ -87,6 +87,7 @@ import { jobDetail, jobsOn, lastVisitPhoto, progressOf, workableJob, type Workab
 import {
   anglesHeld,
   MAX_PHOTO_BYTES,
+  MAX_THUMBNAIL_BYTES,
   slotOfLink,
   storeTechnicianPhoto,
   storeThumbnail,
@@ -94,6 +95,7 @@ import {
   type PhotoSlot,
 } from "../domain/tech-photos.ts";
 import { ANGLES, PHASES, type Phase } from "../domain/visit-photos.ts";
+import { cappedBody } from "../http/capped-body.ts";
 import { errorBody, errorResponse, type ErrorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { technicianOf } from "../http/technician-session.ts";
@@ -940,10 +942,8 @@ export function registerTechJobs(app: App): void {
     if (slot === null) return c.json(errorBody("not_found", requestId), 404);
     if (await hasClosed(c, slot.appointmentId)) return c.json(errorBody("already_closed", requestId), 409);
 
-    const bytes = new Uint8Array(await c.req.arrayBuffer());
-    if (bytes.byteLength === 0 || bytes.byteLength > MAX_PHOTO_BYTES) {
-      return c.json(errorBody("photo_invalid_file", requestId), 422);
-    }
+    const bytes = await cappedBody(c.req.raw, MAX_PHOTO_BYTES);
+    if (bytes === null || bytes.byteLength === 0) return c.json(errorBody("photo_invalid_file", requestId), 422);
     if (!(await roomFor(c.env.DB, deps.alertOnce, bytes.byteLength))) {
       return c.json(errorBody("busy", requestId), 503);
     }
@@ -959,7 +959,8 @@ export function registerTechJobs(app: App): void {
     if (slot === null) return c.json(errorBody("not_found", requestId), 404);
     if (await hasClosed(c, slot.appointmentId)) return c.json(errorBody("already_closed", requestId), 409);
 
-    const bytes = new Uint8Array(await c.req.arrayBuffer());
+    const bytes = await cappedBody(c.req.raw, MAX_THUMBNAIL_BYTES);
+    if (bytes === null) return c.json(errorBody("photo_invalid_file", requestId), 422);
     if (!(await roomFor(c.env.DB, deps.alertOnce, bytes.byteLength))) {
       return c.json(errorBody("busy", requestId), 503);
     }

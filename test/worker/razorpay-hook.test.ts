@@ -91,6 +91,14 @@ describe("Razorpay's webhook: trust", () => {
     expect(response.status).toBe(401);
     expect(await payment()).toBeNull();
   });
+
+  // Razorpay's events are a few KB; a body past a megabyte is not read, signed or not.
+  it("refuses a body over a megabyte unread, though signed, and records nothing", async () => {
+    const event = { ...paymentEvent("payment.captured"), padding: "x".repeat(1024 * 1024) };
+    const response = await deliver(event, "evt_1");
+    expect(response.status).toBe(401);
+    expect(await payment()).toBeNull();
+  });
 });
 
 describe("Razorpay's webhook: what it cannot use", () => {
