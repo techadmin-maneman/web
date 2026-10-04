@@ -13,7 +13,8 @@
 // Books by the cron's own pass (src/domain/books-erasure.ts).
 //
 // Nothing is erased while the person has a visit or booking still to happen, a
-// payment held with no visit behind it, or a payment link unpaid
+// payment held with no visit behind it, a cancelled visit's refund not yet
+// made, or a payment link unpaid
 // (src/policy/account-deletion.ts): the caller asks erasureBlockers first. When
 // ops erase all the same, the batch lets go of every booking of theirs not yet a
 // visit, so none is booked for nobody, and their open payment links are then
@@ -124,7 +125,7 @@ const OPEN_BOOKING_LINKS = `FROM slot_holds
 
 /**
  * What ops settle before erasing: the visits still to happen, the bookings paid for or free that are not yet visits,
- * the payments held with no visit behind them, and the payment links still unpaid.
+ * the payments held with no visit behind them, the refunds cancels still owe, and the payment links still unpaid.
  */
 export async function erasureBlockers(db: D1Database, personId: string, now: Date): Promise<ErasureBlockers> {
   const { results: visits } = await db
@@ -144,7 +145,7 @@ export async function erasureBlockers(db: D1Database, personId: string, now: Dat
     )
     .bind(personId)
     .all<ErasureBlockers["bookings"][number]>();
-  const { results: payments } = await db
+  const { results: held } = await db
     .prepare(
       `SELECT id, reference, amount FROM payments
        WHERE person_id = ?1 AND appointment_id IS NULL AND status = 'captured'
@@ -152,6 +153,7 @@ export async function erasureBlockers(db: D1Database, personId: string, now: Dat
     )
     .bind(personId)
     .all<ErasureBlockers["payments"][number]>();
+  const payments = [...held, ...(await cancelRefundsOwed(db, personId))];
   const { results: links } = await db
     .prepare(
       `SELECT l.id, l.reference, l.amount ${UNPAID_VISIT_LINKS}
@@ -160,6 +162,27 @@ export async function erasureBlockers(db: D1Database, personId: string, now: Dat
     .bind(personId, now.toISOString())
     .all<ErasureBlockers["links"][number]>();
   return { visits, bookings, payments, links };
+}
+
+/**
+ * What their cancelled visits' refunds still owe them: refunds not yet made, whether the cron is still asking for one
+ * or Razorpay refused it and it waits for ops. Each is owed until we hold its refund's ID or Razorpay reports refunds
+ * of the payment that leave no more than the cancel kept.
+ */
+async function cancelRefundsOwed(db: D1Database, personId: string): Promise<ErasureBlockers["payments"]> {
+  const { results } = await db
+    .prepare(
+      `SELECT p.id, p.reference, p.amount - p.refunded_amount - c.kept_amount AS amount
+       FROM appointments a
+         JOIN visit_changes c ON c.appointment_id = a.id AND c.kind = 'cancelled'
+         JOIN payments p ON p.id = c.payment_id
+       WHERE a.person_id = ?1 AND a.status = 'cancelled' AND c.refund_amount > 0 AND c.razorpay_refund_id IS NULL
+         AND p.amount - p.refunded_amount > c.kept_amount
+       ORDER BY c.created_at`,
+    )
+    .bind(personId)
+    .all<ErasureBlockers["payments"][number]>();
+  return results;
 }
 
 /** Razorpay's IDs for the person's payment links it would still take a payment on. */

@@ -7744,6 +7744,7 @@ export interface components {
                 /** @enum {string} */
                 window: "morning" | "afternoon" | "evening";
             }[];
+            /** @description Money owed back: a payment held with no visit behind it, or what a cancelled visit's refund has still to return. */
             payments: {
                 id: string;
                 reference: string | null;
