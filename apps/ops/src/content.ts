@@ -42,7 +42,7 @@ export const shell = {
     technicians: "Technicians",
     stock: "Stock",
     clients: "Clients",
-    grievances: "Grievances",
+    grievances: "Concerns",
     "number-changes": "Number changes",
     "deletion-requests": "Deletion requests",
     "no-shows": "Payments",
@@ -528,12 +528,12 @@ export const clients = {
   /** The tabs of the design's eight that the ops routes answer, in its order, and History, which it draws none of. */
   tabs: [
     { tab: "visits", label: "Visits" },
-    { tab: "pieces", label: "Pieces" },
+    { tab: "pieces", label: "Hair" },
     { tab: "payments", label: "Payments" },
     { tab: "referrals", label: "Referrals" },
     { tab: "consents", label: "Consents" },
     { tab: "photos", label: "Photos" },
-    { tab: "history", label: "History" },
+    { tab: "history", label: "Overview" },
   ],
   /**
    * PLACEHOLDER, all of it: what waits on Tasks for the client, under the page's head, each with how long it has left
@@ -1181,7 +1181,7 @@ export const clients = {
    * records is written in words, never as a dash or a zero (PR #89, PR #100).
    */
   history: {
-    title: "History",
+    title: "Overview",
     rows: {
       firstFit: "First fit",
       visits: "Visits",
@@ -1679,7 +1679,7 @@ export const tasks = {
     number_change: "Number change",
     erasure_request: "Deletion request",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0072-ops-clients-and-queues.md).
-    grievance: "Grievance",
+    grievance: "Concern",
     // PLACEHOLDER: two groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
     draft_invoice: "Draft invoice",
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
@@ -1708,7 +1708,7 @@ export const tasks = {
     no_show_dispute: "Rule on it in Payments",
     number_change: "Decide it in Number changes",
     erasure_request: "Decide it in Deletion requests",
-    grievance: "Answer it in Grievances",
+    grievance: "Answer it in Concerns",
   } as Readonly<Record<string, string>>,
   /** PLACEHOLDER: a group longer than the board lists: its count is all of them. */
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
@@ -2148,9 +2148,9 @@ export const waiting = {
 } as const;
 
 export const grievances = {
-  title: "Grievances",
+  title: "Concerns",
   queue: {
-    title: "Open grievances",
+    title: "Open concerns",
     /**
      * The days the app promises the client an answer within, which counsel has
      * still to confirm (docs/open-points.md, item 51).
@@ -2163,7 +2163,7 @@ export const grievances = {
     hint: "The client sees this in their app. The audit log records that you answered it.",
     send: "Record the answer and close it",
     sending: "Closing",
-    empty: "No grievance is open.",
+    empty: "No concern is open.",
     /** Recording an answer sends nothing: the client hears from whoever answers them, and reads it in the app. */
     note: (days: number) =>
       `The client is told in the app that we answer within ${String(days)} days. ` +
@@ -2310,8 +2310,8 @@ export const settings = {
   database: (held: number, limit: number) => `Database: ${(held / 1e6).toFixed(0)} MB of ${String(limit / 1e6)} MB`,
   // PLACEHOLDER: no board draws the tabs' names.
   tabs: {
-    rules: "Rules",
-    blackouts: "Blackout days",
+    rules: "Policies",
+    blackouts: "Closed days",
     consumables: "Consumables",
     "job-sheet": "Job sheet",
   },
@@ -2403,7 +2403,7 @@ export const settings = {
     } as Readonly<Record<string, string>>,
   },
   rules: {
-    title: "Rules",
+    title: "Policies",
     // PLACEHOLDER: no board draws the rules' sections, nor the links between them.
     groups: {
       moves: "Moves, cancels and no-shows",
@@ -2412,9 +2412,9 @@ export const settings = {
       reminders: "Reminders and replacements",
       referrals: "Referrals",
       console: "The console",
-      other: "Other rules",
+      other: "Other policies",
     },
-    jump: "Rules by subject",
+    jump: "Policies by subject",
     lateFees: "Late fees are set in Prices",
     allowed: (min: number, max: number, unit: string) => `${String(min)} to ${String(max)} ${unit}, a whole number`,
     /** An hour of the day, typed on a 24-hour clock and read as "6 pm". */
@@ -2527,7 +2527,7 @@ export const settings = {
    * (docs/decisions/0088-every-policy-in-the-console.md).
    */
   blackouts: {
-    title: "Blackout days",
+    title: "Closed days",
     /** Followed by a link to the dispatch board. */
     note:
       "Days no visit is offered, in the app or from the site. Blacking out a day moves no visit already booked on " +
