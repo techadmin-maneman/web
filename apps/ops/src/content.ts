@@ -577,7 +577,7 @@ export const clients = {
       why: (when: string, reason: string) => `Refunded automatically on ${when}: ${reason}.`,
       reasons: {
         lapsed: "paid after the hold lapsed",
-        not_movable: "the visit had begun, so it could not be moved",
+        not_movable: "the visit had begun, or its technician or time had changed, so it could not be moved",
       },
     },
     /**

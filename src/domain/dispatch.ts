@@ -21,7 +21,9 @@
 // Where our own database holds the record of a visit (src/config/field-record.ts),
 // its move is one batch, and nothing goes to FSM. A visit the technician has
 // begun is not moved on either path, unless he has only checked in and ops,
-// warned, choose to clear his check-in: he checks in again at the new time.
+// warned, choose to clear his check-in: he checks in again at the new time. Nor
+// is a visit whose client has paid for a move, or booked one free, that waits
+// to be booked: ops are told it is being moved.
 
 import { recordOfVisit, type FieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS, SLOTS_PER_DAY, type BookingWindow } from "../config/scheduling.ts";
@@ -584,7 +586,16 @@ interface LiveJob {
   begun: number;
   /** 1 once he has begun it by more than his check-in. */
   begun_past_arrival: number;
+  /** 1 while a move the client has paid for, or booked free, waits to be booked onto it. */
+  client_moving: number;
 }
+
+/**
+ * Whether a move the client has paid for, or booked free, waits to be booked onto visit `a`. It is booked onto the visit
+ * as it was when the client chose the time, so ops' move waits for it.
+ */
+const CLIENT_MOVING = `EXISTS (SELECT 1 FROM slot_holds h
+  WHERE h.moves_appointment_id = a.id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)`;
 
 /** A job still to finish; null for one done, cancelled, gone from FSM, or with no type or time. */
 function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null> {
@@ -592,7 +603,7 @@ function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null>
     .prepare(
       `SELECT a.id, a.fsm_id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.start_before_move,
          a.technician_id, s.minutes AS service_minutes, ${visitBegun("a")} AS begun,
-         ${begunPastArrival("a")} AS begun_past_arrival
+         ${begunPastArrival("a")} AS begun_past_arrival, ${CLIENT_MOVING} AS client_moving
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
        WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.type IS NOT NULL
          AND a.window_start IS NOT NULL`,
@@ -661,6 +672,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   if (job === null) return { kind: "not_found" };
   const changed = changedSince(job, input.expected);
   if (changed.length > 0) return { kind: "superseded", changed };
+  if (job.client_moving === 1) return { kind: "superseded", changed: ["moving"] };
   const clearCheckIn = input.clearCheckIn ?? null;
   if (!mayMove(job, clearCheckIn !== null)) return { kind: "in_progress" };
 
@@ -792,8 +804,8 @@ async function moveInOurRecord(db: D1Database, deps: MoveDeps, move: PlannedMove
 
 /**
  * The move, recorded as written. It names its visit only while the visit is as the move read it, not yet begun, or
- * begun by no more than the check-in it clears; otherwise its visit is empty, which the table refuses, and the batch
- * it is in writes nothing.
+ * begun by no more than the check-in it clears, and no move of the client's waits on it; otherwise its visit is empty,
+ * which the table refuses, and the batch it is in writes nothing.
  */
 function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null, at: string): D1PreparedStatement {
   const { job } = move;
@@ -805,7 +817,7 @@ function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null
        VALUES (?1,
          (SELECT a.id FROM appointments a
           WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.deleted_at IS NULL
-            AND a.status IN ('scheduled', 'dispatched') AND NOT ${begun}),
+            AND a.status IN ('scheduled', 'dispatched') AND NOT ${begun} AND NOT ${CLIENT_MOVING}),
          ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10)`,
     )
     .bind(
