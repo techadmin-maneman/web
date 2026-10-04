@@ -564,6 +564,8 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   test("takes a discount code before the link goes, asked at once, and says only that a wrong one does not apply", async ({
     page,
   }) => {
+    const fake = await atTheOutcome(page, { product: "natural" });
+    // Routed after the fake API, so this route answers the code ahead of it.
     const asked: unknown[] = [];
     await page.route(`**/api/tech/jobs/${JOB_ID}/discount-code`, (route) => {
       const body = route.request().postDataJSON() as { code: string };
@@ -571,7 +573,6 @@ test.describe("the piece of a consultation and fit in one visit", () => {
       if (body.code === "WEDDNG25") return route.fulfill({ json: { code: "WEDDNG25" } });
       return route.fulfill({ status: 422, json: { error: { code: "code_not_applicable", request_id: "test" } } });
     });
-    const fake = await atTheOutcome(page, { product: "natural" });
     const box = page.getByLabel("Discount code, if the client has one");
     await expect(box).toHaveCount(0);
     await page.getByRole("button", { name: "Done", exact: true }).click();
