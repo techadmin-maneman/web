@@ -208,7 +208,9 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
         )}
         <div>
           {visit.technician !== null && <p className={styles.who}>{firstName(visit.technician.name)}</p>}
-          <p className={styles.length}>{home.next.length(visitTitle(visit), visit.length_minutes)}</p>
+          <p className={styles.length}>
+            {home.next.length(oneVisit === null ? visitTitle(visit) : what, visit.length_minutes)}
+          </p>
         </div>
       </div>
       {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}

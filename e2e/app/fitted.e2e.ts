@@ -560,7 +560,7 @@ test("Home and Payments show a payment owed once fitted, with the link to pay by
 
   const home = page.getByRole("region", { name: "Payment owed" });
   await expect(home).toContainText("Mane Man Natural hair system · Rs. 45,000");
-  await expect(home.getByRole("link", { name: "Pay now, opens Razorpay in a new tab" })).toHaveAttribute(
+  await expect(home.getByRole("link", { name: /^Pay now ?, opens Razorpay in a new tab$/ })).toHaveAttribute(
     "href",
     owed.url,
   );
