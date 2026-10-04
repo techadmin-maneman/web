@@ -176,6 +176,9 @@ const JobSummarySchema = z
     slots: z
       .union([z.number(), z.null()])
       .openapi({ description: "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type." }),
+    minutes: z
+      .union([z.number().int(), z.null()])
+      .openapi({ description: "How long the visit is booked for, in minutes. Null for an unknown type." }),
     unlocked: z.boolean(),
     unlocks_at: z.iso.datetime(),
     client_name: z.union([z.string(), z.null()]).openapi({
@@ -280,6 +283,9 @@ const JobDetailSchema = JobSummarySchema.extend({
   checkin_from: z.iso.datetime().openapi({
     description:
       "The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow.",
+  }),
+  checkin_radius_m: z.number().int().openapi({
+    description: "How near the address a check-in must be, in metres, as ops set it.",
   }),
   pieces: z
     .union([z.array(PieceSchema), z.null()])
@@ -813,6 +819,7 @@ export function registerTechJobs(app: App): void {
     return c.json(
       {
         ...job,
+        checkin_radius_m: inputs.checkinRadiusM,
         checklist: [...checklistOf(sheet, { type, oneVisit: job.one_visit }).items],
         checklist_if_declined: job.one_visit ? [...declinedChecklistOf(sheet).items] : [],
         partial_reasons: [...sheet.partialReasons.items],

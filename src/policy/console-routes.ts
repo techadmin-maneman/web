@@ -40,6 +40,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // Operations: dispatch, today's tasks, visits, technicians, leave and stock, each kept to the caller's cities.
   // Held bookings wait on FSM, which is leaving, so they stay national.
   "GET /api/dispatch": inOwnPlaces("operations", "view"),
+  "GET /api/dispatch/version": readFromAnyPlace("operations"),
   "GET /api/dispatch/room": inOwnPlaces("operations", "view"),
   "POST /api/dispatch/assign": inOwnPlaces("operations", "act"),
   "POST /api/dispatch/move": inOwnPlaces("operations", "act"),
@@ -125,13 +126,14 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/prices/withdraw": need("finance", "manage"),
   "GET /api/services": readFromAnyPlace("finance"),
 
-  // Growth: referrals, the waitlist and launching a pincode, each kept to the caller's cities. The service area lists
-  // every pincode we know, in every city, with how many wait in each, so it stays national.
+  // Growth: referrals, the waitlist, and adding and launching a pincode, each kept to the caller's cities. The service
+  // area lists every pincode we know, in every city, with how many wait in each, so it stays national.
   "GET /api/referrals/held": inOwnPlaces("growth", "view"),
   "POST /api/referrals/{id}/decision": inOwnPlaces("growth", "act"),
   "GET /api/referrers": inOwnPlaces("growth", "view"),
   "POST /api/clients/{id}/referral": inOwnPlaces("growth", "act"),
   "GET /api/waitlist": inOwnPlaces("growth", "view"),
+  "POST /api/pincodes": inOwnPlaces("growth", "manage"),
   "POST /api/pincodes/{pin}/launch": inOwnPlaces("growth", "manage"),
   "GET /api/service-area": need("growth", "view"),
   "POST /api/service-area": need("growth", "manage"),

@@ -40,10 +40,15 @@ rmSync(join(deployed, "migrations"), { recursive: true });
 cpSync("migrations", join(deployed, "migrations"), { recursive: true });
 console.log(`${base}'s code, with this branch's migrations, in ${deployed}`);
 
-// Tests that check the code's own fixtures cover every table. A newer schema rightly fails them (the branch adds the
-// fixture row for its new table), so the deployed code skips them here; they still run on the branch's own code.
-const FIXTURE_COVERAGE_TESTS = ["starts from a row in every table"];
-const skipFixtureCoverage = `^(?!.*(${FIXTURE_COVERAGE_TESTS.join("|")})).*$`;
+// Tests a newer schema rightly fails, so the deployed code skips them here; they still run on the branch's own code.
+// Two list every table, or every table triggers write to, and the branch adds its new one. One counts the rows a
+// visit's change of status wrote, which a newer trigger adds to; the code itself tells only none from some.
+const NEWER_SCHEMA_TESTS = [
+  "starts from a row in every table",
+  "writes last the ones triggers write to",
+  "moveVisit .+ from .+ ends ",
+];
+const skipNewerSchemaTests = `^(?!.*(${NEWER_SCHEMA_TESTS.join("|")})).*$`;
 
 function mustPass(run: SpawnSyncReturns<Buffer>): void {
   if (run.status !== 0) process.exit(run.status ?? 1);
@@ -54,7 +59,7 @@ mustPass(spawnSync("npm", ["ci", "--no-audit", "--no-fund"], { cwd: deployed, st
 mustPass(
   spawnSync(
     process.execPath,
-    ["node_modules/vitest/vitest.mjs", "run", "--project", "worker", "--testNamePattern", skipFixtureCoverage],
+    ["node_modules/vitest/vitest.mjs", "run", "--project", "worker", "--testNamePattern", skipNewerSchemaTests],
     {
       cwd: deployed,
       stdio: "inherit",

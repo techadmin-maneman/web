@@ -22,14 +22,13 @@
 // replacement the piece that came off and why it failed, so the step asks for
 // them: a lookup fills the base and lot in when it knows them.
 
-import { ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, unreachable, type Job, type PieceLookup } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
-import { STROKE } from "../icons.ts";
+import { STROKE, TAG } from "../icons.ts";
 import { paidFor, profileNamesAnother } from "../job/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
@@ -258,8 +257,8 @@ function Fitting({
             <label className={styles.fieldLabel} htmlFor="piece-code">
               {copy.piece.label}
             </label>
-            <div className={styles.scan}>
-              <Icon className={styles.scanIcon} d={ICONS_P2.pieceId} size={21} stroke={STROKE} />
+            <div className={styles.labelField}>
+              <Icon className={styles.labelIcon} d={TAG} size={21} stroke={STROKE} />
               <input
                 className={styles.input}
                 id="piece-code"

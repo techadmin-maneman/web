@@ -98,7 +98,10 @@ test("finds a building, keeps the flat separately, and shows the address as writ
   await page.getByRole("button", { name: "Save" }).click();
 
   await expect(page.getByText("Flat 1203, 12, Tower C, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
-  await expect(page.getByText("Near Opposite the sector market")).toBeVisible();
+  // FLD-57: as the client typed it, under its own label, never "Near Opposite the sector market".
+  await expect(page.getByText("Landmark", { exact: true })).toBeVisible();
+  await expect(page.getByText("Opposite the sector market", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Near Opposite/)).toHaveCount(0);
 });
 
 test("the suggestion list works by keyboard alone", async ({ page }) => {
@@ -203,6 +206,7 @@ test("says an address was given to us on the phone, so the client can check it",
         number_change_decided: null,
         deletion: null,
         deletion_rejected: null,
+        grievances: [],
         address: {
           line1: "Sunrise Greens",
           line2: null,
@@ -417,7 +421,9 @@ test("raises one grievance when Send is tapped twice", async ({ page }) => {
   await send.click({ force: true });
 
   await expect(
-    page.getByText("Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest."),
+    page.getByText(
+      "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
+    ),
   ).toBeVisible();
   expect({ asked: held.asked(), liveWhileBusy }).toEqual({ asked: 1, liveWhileBusy: false });
 });
@@ -445,8 +451,47 @@ test("Your data: a download of everything held, and a concern sent to ops", asyn
   await page.getByRole("textbox", { name: "Your concern" }).fill("Please explain who sees my photographs.");
   await page.getByRole("button", { name: "Send" }).click();
   await expect(
-    page.getByText("Received. We reply on WhatsApp, usually within a working day and within 30 days at the latest."),
+    page.getByText(
+      "Received. We reply here and on WhatsApp, usually within a working day and within 30 days at the latest.",
+    ),
   ).toBeVisible();
+  const concerns = page.getByRole("list", { name: "Your concerns" });
+  await expect(concerns).toContainText("Please explain who sees my photographs.");
+  await expect(concerns).toContainText("Awaiting our reply");
+});
+
+test("shows the concerns the client raised, and our answer", async ({ page }) => {
+  await signIn(page);
+  await page.route("**/api/profile", async (route) => {
+    await route.fulfill({
+      json: {
+        name: "Rohit Malhotra",
+        mobile: "+91 98xxx x4417",
+        consents: [],
+        number_change: null,
+        number_change_decided: null,
+        deletion: null,
+        deletion_rejected: null,
+        address: null,
+        address_given_to_ops: null,
+        grievances: [
+          {
+            id: "6f1c2a4e-8b3d-4f5a-9c7e-1d2b3a4c5e6f",
+            text: "Who sees my photographs?",
+            state: "resolved",
+            raised_at: "2026-10-02T06:30:00.000Z",
+            response: "Only your technician and our care team.",
+            answered_at: "2026-10-03T06:30:00.000Z",
+          },
+        ],
+      },
+    });
+  });
+  await page.getByRole("link", { name: "Your profile" }).click();
+  const concerns = page.getByRole("list", { name: "Your concerns" });
+  await expect(concerns.getByText("Your concern of 2 Oct 2026 · Answered 3 Oct 2026")).toBeVisible();
+  await expect(concerns.getByText("Who sees my photographs?")).toBeVisible();
+  await expect(concerns.getByText("Our answer: Only your technician and our care team.")).toBeVisible();
 });
 
 test("asks before requesting deletion, then says it is requested", async ({ page }) => {
@@ -479,6 +524,7 @@ test("says when ops kept the account, and why, and still lets the client ask aga
         deletion_rejected: { decided_at: "2026-10-02T06:30:00.000Z", reason: "You still have a consultation booked" },
         address: null,
         address_given_to_ops: null,
+        grievances: [],
       },
     });
   });

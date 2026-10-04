@@ -1550,11 +1550,19 @@ Who is waiting in the caller's cities, by pincode, the longest wait first
     "more": {
       "type": "boolean",
       "description": "More than 200 pincodes have someone waiting; these are the longest waits."
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Our cities the caller may add a pincode in: those their Growth MANAGE reaches."
     }
   },
   "required": [
     "areas",
-    "more"
+    "more",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -1601,6 +1609,14 @@ Request body:
 }
 ```
 
+**400**: launch_in_future: launch_on is a day still to come
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE
 
 ```json
@@ -1609,7 +1625,7 @@ Request body:
 }
 ```
 
-**404**: not_found: we have no such pincode
+**404**: not_found: the service area holds no such pincode, so it is added first
 
 ```json
 {
@@ -1689,6 +1705,26 @@ The dispatch board: seven days of the visits and active technicians in the calle
 ```json
 {
   "$ref": "#/components/schemas/DispatchBoard"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/dispatch/version
+
+The board's version, which the open board asks for every minute: one row, where the board itself is hundreds
+
+**200**: The version now
+
+```json
+{
+  "$ref": "#/components/schemas/DispatchBoardVersion"
 }
 ```
 
@@ -2999,10 +3035,18 @@ Every pincode we hold, its city, and whether a technician goes there
       "items": {
         "$ref": "#/components/schemas/ServedPincode"
       }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Our cities, which a pincode added must be in."
     }
   },
   "required": [
-    "pincodes"
+    "pincodes",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -3054,7 +3098,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served
+**400**: invalid_request: fields names a pincode we do not hold. launch_in_future: fields names a pincode it would serve from a day still to come. no_service_area: it would leave none served
 
 ```json
 {
@@ -3063,6 +3107,50 @@ Request body:
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/pincodes
+
+Add a pincode the service area does not hold, unserved, in one of our cities
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewPincode"
+}
+```
+
+**201**: The pincode, as the service area now lists it
+
+```json
+{
+  "$ref": "#/components/schemas/ServedPincode"
+}
+```
+
+**400**: invalid_request: fields names the box refused, city for a city that is not one of ours
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: the city is outside the caller's Growth MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: pincode_held: the service area holds that pincode already
 
 ```json
 {
@@ -4490,6 +4578,8 @@ Request body:
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -7925,6 +8015,8 @@ Request body:
             "too_early_to_arrive",
             "already_closed",
             "no_service_area",
+            "launch_in_future",
+            "pincode_held",
             "service_exists",
             "last_of_kind",
             "service_retired",
@@ -9327,7 +9419,7 @@ Request body:
     "launch_on": {
       "type": "string",
       "format": "date",
-      "description": "India's date it starts; today if left out."
+      "description": "India's date it started: today if left out, and never a day to come."
     }
   },
   "required": [
@@ -9343,6 +9435,10 @@ Request body:
 {
   "type": "object",
   "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another."
+    },
     "from": {
       "type": "string",
       "format": "date"
@@ -9677,6 +9773,7 @@ Request body:
     }
   },
   "required": [
+    "version",
     "from",
     "dates",
     "city",
@@ -9916,6 +10013,24 @@ Request body:
     "mobile",
     "whatsapp_visits",
     "referred_by"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DispatchBoardVersion
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another."
+    }
+  },
+  "required": [
+    "version"
   ],
   "additionalProperties": false
 }
@@ -12684,6 +12799,36 @@ Request body:
   },
   "required": [
     "changes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NewPincode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincode": {
+      "type": "string",
+      "pattern": "^[1-8]\\d{5}$"
+    },
+    "area": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&-]{1,39}$/u",
+      "description": "What messages call the area."
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    }
+  },
+  "required": [
+    "pincode",
+    "area",
+    "city"
   ],
   "additionalProperties": false
 }

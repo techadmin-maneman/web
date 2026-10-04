@@ -23,11 +23,11 @@ function dayOf(date: string): string | null {
   return shortDate(date);
 }
 
-/** "Tomorrow · 10 am · service · 1 slot", as board A3 writes the line beneath the name. */
+/** "Tomorrow · 10 am · service · 90 min", the line beneath the name (board A3). */
 function whenOf(job: Job): string {
   const kind = kindNameLower(job);
-  const slots = job.slots === null ? null : copy.slots(job.slots);
-  const parts = [dayOf(job.date), clock(job.starts_at), kind, slots];
+  const length = job.minutes === null ? null : copy.minutes(job.minutes);
+  const parts = [dayOf(job.date), clock(job.starts_at), kind, length];
   return copy.when(parts.filter((part): part is string => part !== null));
 }
 

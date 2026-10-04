@@ -36,10 +36,16 @@ export async function keptDay(date: string): Promise<readonly JobSummary[] | nul
 
 const NOTHING_LANDED: JobState = { started_at: null, outcome: null };
 
-/** A row an earlier build kept, before the day's list said where each job stood: begun and closed on neither. */
+/**
+ * A row an earlier build kept, before the day's list said where each job stood: begun and closed on neither. One kept
+ * before the list said how long each visit is says nothing of it.
+ */
 function rowInTodaysShape(job: JobSummary): JobSummary {
-  const kept = job as Omit<JobSummary, "progress"> & { readonly progress?: JobState };
-  return { ...kept, progress: kept.progress ?? NOTHING_LANDED };
+  const kept = job as Omit<JobSummary, "progress" | "minutes"> & {
+    readonly progress?: JobState;
+    readonly minutes?: JobSummary["minutes"];
+  };
+  return { ...kept, progress: kept.progress ?? NOTHING_LANDED, minutes: kept.minutes ?? null };
 }
 
 /**
@@ -83,12 +89,20 @@ export async function keptJob(id: string): Promise<Job | null> {
  * (docs/decisions/0106-a-clients-hair-profile.md). One kept before a one
  * visit's discount code was on the card carries none, and the outcome step asks.
  * One kept before a one visit's choice was on the card knows none, and runs the
- * whole checklist.
+ * whole checklist. One kept before the card carried the visit's length and the
+ * check-in radius says neither.
  */
 function inTodaysShape(job: Job): Job {
   const kept = job as Omit<
     Job,
-    "partial_reasons" | "consumables" | "profile" | "discount_code" | "checklist_if_declined" | "client_choice"
+    | "partial_reasons"
+    | "consumables"
+    | "profile"
+    | "discount_code"
+    | "checklist_if_declined"
+    | "client_choice"
+    | "minutes"
+    | "checkin_radius_m"
   > & {
     readonly partial_reasons: readonly (Job["partial_reasons"][number] | string)[];
     readonly consumables?: Job["consumables"];
@@ -96,6 +110,8 @@ function inTodaysShape(job: Job): Job {
     readonly discount_code?: Job["discount_code"];
     readonly checklist_if_declined?: Job["checklist_if_declined"];
     readonly client_choice?: Job["client_choice"];
+    readonly minutes?: Job["minutes"];
+    readonly checkin_radius_m?: Job["checkin_radius_m"];
   };
   return {
     ...kept,
@@ -107,6 +123,8 @@ function inTodaysShape(job: Job): Job {
     discount_code: kept.discount_code ?? null,
     checklist_if_declined: kept.checklist_if_declined ?? kept.checklist,
     client_choice: kept.client_choice ?? null,
+    minutes: kept.minutes ?? null,
+    checkin_radius_m: kept.checkin_radius_m ?? null,
   };
 }
 

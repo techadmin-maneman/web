@@ -68,7 +68,12 @@ export function AddressSection({
               <p className={styles.address}>
                 {written(address)}, {address.city} {address.pincode}
               </p>
-              {given(address.landmark) && <p className={styles.muted}>{copy.near(address.landmark)}</p>}
+              {given(address.landmark) && (
+                <dl className={styles.landmark}>
+                  <dt className={styles.formLabel}>{copy.landmark}</dt>
+                  <dd>{address.landmark}</dd>
+                </dl>
+              )}
               {address.access_notes !== null && <p className={styles.muted}>{address.access_notes}</p>}
               {givenToOps !== null && <p className={styles.muted}>{copy.givenToOps(longDate(givenToOps))}</p>}
             </>

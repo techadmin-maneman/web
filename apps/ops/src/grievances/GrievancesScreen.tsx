@@ -1,6 +1,6 @@
 // Grievances: what a client has said about the way we use their data, raised
 // from their own app and answered here (docs/decisions/0049-dpdp.md). The
-// alert ops receive says "answer it in the ops console"; this is that section.
+// hourly alert ops receive says "answer it in Grievances"; this is that section.
 //
 // The design draws no board for it (docs/fidelity-method.md), so it is built as
 // board C1's review queue is: the queue, a row for each, a decision on each row.
