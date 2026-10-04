@@ -1064,6 +1064,30 @@ describe("money owed back on a hold", () => {
     ]);
   });
 
+  // A refund Razorpay never answered may have been made, so ops are asked to look before they refund it.
+  it("tells ops to check Razorpay first for a late payment whose refund went unanswered", async () => {
+    await fittedClient();
+    const ordered = await heldAndOrdered();
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM slot_claims WHERE hold_id = ?1").bind(ordered.holdId),
+      env.DB.prepare("UPDATE slot_holds SET state = 'released', updated_at = ?2 WHERE id = ?1").bind(
+        ordered.holdId,
+        at(11 * 60).toISOString(),
+      ),
+    ]);
+    const silent: PaymentsProvider = {
+      ...createStubPayments(),
+      refund: () => Promise.reject(new PaymentUnanswered("refund", new Error("The operation timed out."))),
+    };
+    const deps = fakeDependencies({ payments: silent });
+
+    await webhook("payment.captured", "evt_late", payment("pay_late", ordered, at(13 * 60)), deps);
+
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("and Razorpay did not say whether it refunded it. Check Razorpay's dashboard"),
+    ]);
+  });
+
   it("refunds what a partial refund in Razorpay's dashboard left when the hold is given back", async () => {
     await fittedClient();
     const ordered = await heldAndOrdered();

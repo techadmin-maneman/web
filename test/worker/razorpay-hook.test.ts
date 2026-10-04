@@ -54,8 +54,11 @@ function refundEvent(event: string, amount: number, id = "rfnd_1", payment?: Rec
   };
 }
 
-const deliver = (event: object, eventId: string | null, options: { secret?: string; settings?: object } = {}) =>
-  deliverRazorpay(event, { eventId, ...options });
+const deliver = (
+  event: object | string,
+  eventId: string | null,
+  options: { secret?: string | null; settings?: object } = {},
+) => deliverRazorpay(event, { eventId, ...options });
 
 const payment = () => env.DB.prepare("SELECT * FROM payments WHERE razorpay_payment_id = 'pay_1'").first();
 
@@ -81,6 +84,39 @@ describe("Razorpay's webhook: trust", () => {
     const response = await deliver(paymentEvent("payment.captured"), "evt_1", { secret: "someone-else" });
     expect(response.status).toBe(401);
     expect(await payment()).toBeNull();
+  });
+
+  it("refuses an event that carries no signature, and records nothing", async () => {
+    const response = await deliver(paymentEvent("payment.captured"), "evt_1", { secret: null });
+    expect(response.status).toBe(401);
+    expect(await payment()).toBeNull();
+  });
+});
+
+describe("Razorpay's webhook: what it cannot use", () => {
+  const seenEvents = () => env.DB.prepare("SELECT COUNT(*) AS n FROM razorpay_events").first<{ n: number }>();
+
+  it("takes a signed body that is not JSON, and does nothing with it", async () => {
+    expect((await deliver("not json", "evt_1")).status).toBe(200);
+    expect(await seenEvents()).toEqual({ n: 0 });
+  });
+
+  it("keeps an event it does not act on as seen, and does nothing else", async () => {
+    const event = { entity: "event", event: "subscription.charged", payload: {} };
+
+    expect((await deliver(event, "evt_1")).status).toBe(200);
+    expect(await seenEvents()).toEqual({ n: 1 });
+    expect(await payment()).toBeNull();
+  });
+
+  // Razorpay always names its event; a delivery that does not is known by its body, so a resend is still applied once.
+  it("knows a delivery with no event ID by its body, and applies the same body once", async () => {
+    await person("+919810000001");
+
+    expect((await deliver(paymentEvent("payment.captured"), null)).status).toBe(200);
+    expect((await deliver(paymentEvent("payment.captured"), null)).status).toBe(200);
+    expect(await seenEvents()).toEqual({ n: 1 });
+    expect(await payment()).toMatchObject({ reference: "MM-2026-0001" });
   });
 });
 

@@ -29,11 +29,18 @@ export default defineConfig({
        * recorded-reply tests.
        */
       thresholds: {
-        lines: 90,
-        branches: 80,
+        // Just under what the suite reaches, so a fall shows.
+        lines: 97,
+        branches: 87,
         "src/providers/**": { lines: 90, branches: 85 },
         "src/providers/razorpay.ts": { lines: 95, branches: 95 },
         "src/domain/payments.ts": { lines: 90, branches: 90 },
+        // Where money is taken, held, owed back or given as credit: a branch untested there is money lost unseen.
+        "src/domain/{payment-links,discount-code-holds,discount-code-uses,holds,bookings,credits,refunds,no-shows}.ts":
+          { lines: 90, branches: 90 },
+        // Its one branch untaken is a hold with no client, which every hold has.
+        "src/http/book-hold.ts": { lines: 90, branches: 85 },
+        "src/routes/razorpay-hook.ts": { lines: 90, branches: 90 },
         // What the deploy and check scripts share. A release's recovery from a lost reply first runs in an incident.
         "scripts/lib/**": { lines: 85, branches: 70 },
         "scripts/lib/release.ts": { lines: 95, branches: 90 },

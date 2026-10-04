@@ -411,23 +411,22 @@ export const RAZORPAY: RazorpaySettings = {
 export interface RazorpayDelivery {
   /** X-Razorpay-Event-Id; null sends none, as a delivery the webhook then knows by its body's hash. */
   readonly eventId?: string | null;
-  /** What the body is signed with: the settings' webhook secret, unless the test forges a delivery. */
-  readonly secret?: string;
+  /** What the body is signed with: the settings' webhook secret, unless the test forges a delivery; null signs nothing. */
+  readonly secret?: string | null;
   readonly deps?: Dependencies;
   readonly settings?: Partial<Settings>;
   readonly bindings?: Partial<Env>;
 }
 
-/** Razorpay's event, signed as Razorpay signs it, delivered to the webhook. */
-export async function deliverRazorpay(event: object, delivery: RazorpayDelivery = {}): Promise<Response> {
+/** Razorpay's event, signed as Razorpay signs it, delivered to the webhook; a string is sent as the body it is. */
+export async function deliverRazorpay(event: object | string, delivery: RazorpayDelivery = {}): Promise<Response> {
   const settings = { razorpay: RAZORPAY, ...delivery.settings };
   const app = appFor("local", delivery.deps ?? fakeDependencies(), settings, "public");
-  const body = JSON.stringify(event);
-  const secret = delivery.secret ?? settings.razorpay?.webhookSecret ?? RAZORPAY_WEBHOOK_SECRET;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "X-Razorpay-Signature": await saltedHash(secret, body),
-  };
+  const body = typeof event === "string" ? event : JSON.stringify(event);
+  const secret =
+    delivery.secret === undefined ? (settings.razorpay?.webhookSecret ?? RAZORPAY_WEBHOOK_SECRET) : delivery.secret;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (secret !== null) headers["X-Razorpay-Signature"] = await saltedHash(secret, body);
   if (delivery.eventId !== null) headers["X-Razorpay-Event-Id"] = delivery.eventId ?? `evt_${crypto.randomUUID()}`;
   return request(app, "/api/hooks/razorpay", { method: "POST", body, headers }, delivery.bindings);
 }
