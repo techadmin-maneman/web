@@ -73,7 +73,11 @@ function SectionLink({ section, current, waiting }: { section: Section; current:
       className={styles.section}
       to={section.path}
       current={current}
-      label={shell.waiting(name, waiting.count, waiting.overdue)}
+      label={
+        waiting.of === "low_places"
+          ? shell.lowPlaces(name, waiting.count)
+          : shell.waiting(name, waiting.count, waiting.overdue)
+      }
     >
       {name}
       <span className={waiting.overdue ? styles.overdue : styles.count}>{waiting.count}</span>

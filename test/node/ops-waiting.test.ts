@@ -25,7 +25,13 @@ function group(name: TaskGroup["group"], count: number, dues: readonly string[])
   };
 }
 
-const board = (groups: TaskGroup[]): Tasks => ({ overdue: 0, truncated: false, staff: [], groups });
+const board = (groups: TaskGroup[]): Tasks => ({
+  overdue: 0,
+  truncated: false,
+  low_stock_places: 0,
+  staff: [],
+  groups,
+});
 
 describe("the counts beside the console's sections", () => {
   it("counts every task in Tasks, and each group's in the section that decides it", () => {
@@ -38,9 +44,9 @@ describe("the counts beside the console's sections", () => {
       NOW,
     );
 
-    expect(waiting.get("/tasks")).toEqual({ count: 9, overdue: false });
-    expect(waiting.get("/referrals")).toEqual({ count: 3, overdue: false });
-    expect(waiting.get("/deletion-requests")).toEqual({ count: 2, overdue: false });
+    expect(waiting.get("/tasks")).toEqual({ count: 9, overdue: false, of: "tasks" });
+    expect(waiting.get("/referrals")).toEqual({ count: 3, overdue: false, of: "tasks" });
+    expect(waiting.get("/deletion-requests")).toEqual({ count: 2, overdue: false, of: "tasks" });
     expect(waiting.has("/clients")).toBe(false);
   });
 
@@ -53,8 +59,8 @@ describe("the counts beside the console's sections", () => {
       NOW,
     );
 
-    expect(waiting.get("/dispatch")).toEqual({ count: 3, overdue: true });
-    expect(waiting.get("/tasks")).toEqual({ count: 3, overdue: true });
+    expect(waiting.get("/dispatch")).toEqual({ count: 3, overdue: true, of: "tasks" });
+    expect(waiting.get("/tasks")).toEqual({ count: 3, overdue: true, of: "tasks" });
   });
 
   // A disputed charge once had no count anywhere in the navigation (OIA-07).
@@ -66,12 +72,18 @@ describe("the counts beside the console's sections", () => {
       ]),
       NOW,
     );
-    expect(waiting.get("/no-shows")).toEqual({ count: 3, overdue: true });
+    expect(waiting.get("/no-shows")).toEqual({ count: 3, overdue: true, of: "tasks" });
   });
 
   it("counts a due date of today as not yet overdue", () => {
     const waiting = waitingIn(board([group("grievance", 1, ["2027-09-22T12:00:00.000Z"])]), NOW);
-    expect(waiting.get("/grievances")).toEqual({ count: 1, overdue: false });
+    expect(waiting.get("/grievances")).toEqual({ count: 1, overdue: false, of: "tasks" });
+  });
+
+  it("badges Stock with the places low on something, never overdue and never in Tasks", () => {
+    const waiting = waitingIn({ ...board([]), low_stock_places: 2 }, NOW);
+    expect(waiting.get("/stock")).toEqual({ count: 2, overdue: false, of: "low_places" });
+    expect(waiting.has("/tasks")).toBe(false);
   });
 
   it("counts nothing on an empty board", () => {

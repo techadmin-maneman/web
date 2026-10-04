@@ -56,6 +56,8 @@ export const shell = {
   /** A section's name in the navigation, read out with the count of tasks waiting in it. */
   waiting: (section: string, count: number, overdue: boolean) =>
     overdue ? `${section}, ${String(count)} waiting, some overdue` : `${section}, ${String(count)} waiting`,
+  /** Stock's badge read out: the places low on something. */
+  lowPlaces: (section: string, count: number) => `${section}, ${String(count)} ${count === 1 ? "place" : "places"} low`,
   /** The first thing the keyboard reaches, which jumps past the navigation. */
   skip: "Skip to content",
   /** A page opened by its address that the person's access does not reach. */

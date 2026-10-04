@@ -8209,6 +8209,8 @@ export interface components {
             truncated: boolean;
             /** @description The members of staff a task may be given to: those who have used the console in the last 90 days, by e-mail. */
             staff: string[];
+            /** @description How many places, the central store and each kit, hold something at or below its level: Stock's badge. */
+            low_stock_places: number;
             groups: {
                 /** @enum {string} */
                 group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "payment_to_refund";

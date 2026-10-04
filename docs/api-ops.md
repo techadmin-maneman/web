@@ -11359,6 +11359,10 @@ Request body:
       },
       "description": "The members of staff a task may be given to: those who have used the console in the last 90 days, by e-mail."
     },
+    "low_stock_places": {
+      "type": "integer",
+      "description": "How many places, the central store and each kit, hold something at or below its level: Stock's badge."
+    },
     "groups": {
       "type": "array",
       "items": {
@@ -11416,6 +11420,7 @@ Request body:
     "overdue",
     "truncated",
     "staff",
+    "low_stock_places",
     "groups"
   ],
   "additionalProperties": false,

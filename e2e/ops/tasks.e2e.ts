@@ -119,6 +119,7 @@ test("names the day and window a consultation was asked for", async ({ page }) =
   await open(page, {
     overdue: 0,
     truncated: false,
+    low_stock_places: 0,
     staff: [],
     groups: [
       {
@@ -150,6 +151,7 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
   const body: OpsReply<"/api/tasks"> = {
     overdue: 1,
     truncated: false,
+    low_stock_places: 0,
     staff: [],
     groups: [
       {
@@ -219,6 +221,7 @@ test("names a draft invoice's visit", async ({ page }) => {
   await open(page, {
     overdue: 0,
     truncated: false,
+    low_stock_places: 0,
     staff: [],
     groups: [
       {
@@ -258,6 +261,7 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
   await open(page, {
     overdue: 0,
     truncated: false,
+    low_stock_places: 0,
     staff: [],
     groups: [
       {
@@ -323,6 +327,7 @@ test("lists each payment to refund, why, and what is owed back, and leads to the
   await open(page, {
     overdue: 0,
     truncated: false,
+    low_stock_places: 0,
     staff: [],
     groups: [
       {
@@ -373,6 +378,7 @@ test("names a disputed charge and what it kept, and leads to the dispute in Paym
   await open(page, {
     overdue: 0,
     truncated: false,
+    low_stock_places: 0,
     staff: [],
     groups: [
       {
@@ -441,6 +447,7 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
   await open(page, {
     overdue: 0,
     truncated: false,
+    low_stock_places: 0,
     staff: [],
     groups: [
       {
@@ -555,6 +562,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
   const partlyDone: OpsReply<"/api/tasks"> = {
     overdue: 1,
     truncated: false,
+    low_stock_places: 0,
     staff: ["ops@localhost"],
     groups: [
       {
@@ -616,6 +624,7 @@ test("records a call about a move from its row, and opens each of the board's ta
   const board: OpsReply<"/api/tasks"> = {
     overdue: 0,
     truncated: false,
+    low_stock_places: 0,
     staff: [],
     groups: [
       {
@@ -685,7 +694,7 @@ test("records a call about a move from its row, and opens each of the board's ta
 });
 
 test("says so when no queue holds anything", async ({ page }) => {
-  await open(page, { overdue: 0, truncated: false, staff: [], groups: [] });
+  await open(page, { overdue: 0, truncated: false, low_stock_places: 0, staff: [], groups: [] });
   await expect(page.getByText("Nothing is waiting.")).toBeVisible();
   await expect(page.getByText("0 overdue")).toBeVisible();
 });
@@ -756,7 +765,7 @@ test("meets WCAG 2.2 AA with a list, and with none", async ({ page }) => {
   const full = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(full.violations.map((violation) => violation.id)).toEqual([]);
 
-  await open(page, { overdue: 0, truncated: false, staff: [], groups: [] });
+  await open(page, { overdue: 0, truncated: false, low_stock_places: 0, staff: [], groups: [] });
   const none = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(none.violations.map((violation) => violation.id)).toEqual([]);
 });

@@ -26,6 +26,8 @@ export const DECIDED_IN: Partial<Record<Group, { readonly page: SectionPath; rea
 export interface Waiting {
   readonly count: number;
   readonly overdue: boolean;
+  /** What is counted: tasks, or for Stock the places low on something. */
+  readonly of: "tasks" | "low_places";
 }
 
 /** A group lists its longest waits first, so an overdue task in it is always among those listed. */
@@ -35,13 +37,16 @@ const hasOverdue = (group: TaskGroup, now: Date): boolean => group.tasks.some((t
 export function waitingIn(board: Tasks, now: Date): ReadonlyMap<SectionPath, Waiting> {
   const waiting = new Map<SectionPath, Waiting>();
   const add = (path: SectionPath, group: TaskGroup) => {
-    const was = waiting.get(path) ?? { count: 0, overdue: false };
-    waiting.set(path, { count: was.count + group.count, overdue: was.overdue || hasOverdue(group, now) });
+    const was = waiting.get(path) ?? { count: 0, overdue: false, of: "tasks" };
+    waiting.set(path, { count: was.count + group.count, overdue: was.overdue || hasOverdue(group, now), of: "tasks" });
   };
   for (const group of board.groups) {
     add("/tasks", group);
     const decided = DECIDED_IN[group.group];
     if (decided !== undefined) add(decided.page, group);
   }
+  // Stock's badge: the places low on something, which wait on a delivery or a transfer and are never overdue.
+  if (board.low_stock_places > 0)
+    waiting.set("/stock", { count: board.low_stock_places, overdue: false, of: "low_places" });
   return waiting;
 }
