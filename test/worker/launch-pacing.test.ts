@@ -64,11 +64,9 @@ async function waitingFor(pincode: string, count: number, firstNumber: number): 
     for (let index = start; index < Math.min(start + 50, count); index += 1) {
       const personId = `${pincode}-${String(index)}`;
       statements.push(
-        env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Karan Bhatia')").bind(
-          personId,
-          NOW.toISOString(),
-          `+91981${String(firstNumber + index).padStart(7, "0")}`,
-        ),
+        env.DB.prepare(
+          "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Karan Bhatia')",
+        ).bind(personId, NOW.toISOString(), `+91981${String(firstNumber + index).padStart(7, "0")}`),
         env.DB.prepare(
           `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
            VALUES (?1, ?2, 'whatsapp_launches', 'whatsapp-launches-v1', 1, ?3)`,

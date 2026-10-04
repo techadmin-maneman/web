@@ -52,11 +52,9 @@ export async function requeueUnsentMessages(run: UnsentMessagesRun): Promise<str
   if (!(await bridgeOpen(run))) return [];
 
   const atOnce = results.filter((message) => message.due_at === null).map((message) => ({ body: bodyOf(message) }));
-  const paced = await pacedAgain(
-    run,
-    results.filter((message) => message.due_at !== null),
-  );
-  await enqueueBatch(run.queue, [...atOnce, ...paced], { log: run.log, ifLost: "sweeper" });
+  const wasPaced = results.filter((message) => message.due_at !== null);
+  const pacedAgain = await toBackOfLine(run, wasPaced);
+  await enqueueBatch(run.queue, [...atOnce, ...pacedAgain], { log: run.log, ifLost: "sweeper" });
   return results.map((message) => message.id);
 }
 
@@ -64,7 +62,7 @@ export async function requeueUnsentMessages(run: UnsentMessagesRun): Promise<str
  * Paced messages, each given a new turn at the back of the line. The turns are saved before anything is queued, so
  * the next run leaves each one be until it is overdue again.
  */
-async function pacedAgain(run: UnsentMessagesRun, messages: readonly UnsentMessage[]): Promise<MessageSendRequest[]> {
+async function toBackOfLine(run: UnsentMessagesRun, messages: readonly UnsentMessage[]): Promise<MessageSendRequest[]> {
   if (messages.length === 0) return [];
   const turns = await joinPacedLine(run.db, run.now, messages);
   await run.db.batch(

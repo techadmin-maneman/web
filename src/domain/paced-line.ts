@@ -31,11 +31,11 @@ export async function joinPacedLine<Message>(
 
 /** The seconds from now until the next message may leave: at once when nothing waits in the line. */
 async function secondsUntilLineIsFree(db: D1Database, now: Date): Promise<number> {
-  const line = await db
+  const last = await db
     .prepare("SELECT MAX(due_at) AS last FROM outbound_messages WHERE state = 'queued' AND due_at > ?1")
     .bind(now.toISOString())
-    .first<{ last: string | null }>();
-  if (line === null || line.last === null) return 0;
-  const untilLast = Math.ceil((Date.parse(line.last) - now.getTime()) / SECOND_MS);
+    .first<string | null>("last");
+  if (last === null) return 0;
+  const untilLast = Math.ceil((Date.parse(last) - now.getTime()) / SECOND_MS);
   return untilLast + PACED_GAP_SECONDS;
 }

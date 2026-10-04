@@ -542,9 +542,6 @@ async function idsOfEach(db: D1Database, statements: D1PreparedStatement[]): Pro
 
 /** Puts the messages back on their queue. One the queue refuses is still waiting in D1, and the next run finds it. */
 async function sendAll(queue: Queue, bodies: readonly unknown[], log: Logger): Promise<void> {
-  await enqueueBatch(
-    queue,
-    bodies.map((body) => ({ body })),
-    { log, ifLost: "sweeper" },
-  );
+  const messages = bodies.map((body) => ({ body }));
+  await enqueueBatch(queue, messages, { log, ifLost: "sweeper" });
 }
