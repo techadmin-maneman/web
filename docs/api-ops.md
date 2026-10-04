@@ -2415,6 +2415,42 @@ A day's money in the caller's cities: what was collected, what went back, and ea
 }
 ```
 
+### POST /api/payment-links/{id}/resend
+
+Text the client their payment link again
+
+**200**: What sending it again came to
+
+```json
+{
+  "$ref": "#/components/schemas/PaymentLinkResent"
+}
+```
+
+**403**: access_required, or not_permitted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such link, or its client is erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Razorpay did not answer; try again in a minute
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### PATCH /api/technicians/{id}
 
 Change a technician's name, number, zone or city
@@ -5156,6 +5192,17 @@ Request body:
       "type": "string",
       "description": "The saved address's area, city and pincode, else the visit's city and pincode."
     },
+    "one_visit": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/OneVisitPrice"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
+    },
     "outcome": {
       "anyOf": [
         {
@@ -5281,6 +5328,7 @@ Request body:
     "prepaid",
     "technician",
     "place",
+    "one_visit",
     "outcome",
     "closed_without_follow_up",
     "discount_code",
@@ -5310,6 +5358,48 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Display name and initials only."
+}
+```
+
+### OneVisitPrice
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced."
+    },
+    "from": {
+      "type": "boolean",
+      "description": "The hair systems differ in price, so the amount is where they start."
+    },
+    "code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code on the visit; null for none."
+    }
+  },
+  "required": [
+    "amount",
+    "from",
+    "code"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -5420,6 +5510,17 @@ Request body:
     "place": {
       "type": "string",
       "description": "The saved address's area, city and pincode, else the visit's city and pincode."
+    },
+    "one_visit": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/OneVisitPrice"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
     }
   },
   "required": [
@@ -5435,7 +5536,8 @@ Request body:
     "stage",
     "prepaid",
     "technician",
-    "place"
+    "place",
+    "one_visit"
   ],
   "additionalProperties": false
 }
@@ -11136,7 +11238,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted."
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product."
     },
     "since": {
       "type": "string",
@@ -11491,6 +11593,31 @@ Request body:
     "visit_started_at",
     "change",
     "technician"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PaymentLinkResent
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "resent",
+        "sent",
+        "not_texted",
+        "paid",
+        "refused"
+      ],
+      "description": "resent: Razorpay texted the link again; sent: the link was never made, and now is and has been texted; not_texted: messaging may not text this number (a staging test record), so nothing was sent; paid: the client has paid, so nothing was sent; refused: Razorpay refused to make it, so ops send one from Razorpay's dashboard."
+    }
+  },
+  "required": [
+    "outcome"
   ],
   "additionalProperties": false
 }

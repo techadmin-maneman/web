@@ -25,6 +25,7 @@ const visit = (changes: Partial<ClientVisit>): ClientVisit => ({
   prepaid: true,
   technician: { name: "Imran Qureshi", initials: "IQ" },
   place: "Gurgaon 122018",
+  one_visit: null,
   outcome: "done",
   closed_without_follow_up: null,
   discount_code: null,

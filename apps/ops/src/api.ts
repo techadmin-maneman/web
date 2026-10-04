@@ -342,6 +342,8 @@ export const api = {
   /** A visit left partly done, closed without a follow-up; the reason is kept with it, under the caller's name. */
   closeTask: (group: ClosableGroup, id: string, reason: string) =>
     client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
+  /** A one visit's payment link, texted to the client again by Razorpay, or made now where it never was. */
+  resendPaymentLink: (linkId: string) => client.post("/api/payment-links/{id}/resend", { path: { id: linkId } }),
   /** The open alerts ops have been told of, of the caller's own departments. */
   alerts: () => client.get("/api/alerts"),
   /** An alert marked done, under the caller's name. */

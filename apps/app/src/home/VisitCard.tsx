@@ -1,5 +1,6 @@
 // A visit still to come, on ink, as board B1 draws Home's next one: its date and window, its technician and
 // length, where, and Reschedule and Add a note. Home shows the next; an upcoming visit's own page shows its own.
+// A consultation and fit in one visit says what it costs once fitted, and how it is paid.
 //
 // While self-serve booking is on, Reschedule opens the move sheet (C7), from which the visit can be cancelled
 // (C8), and Add a note keeps the note on the visit for the technician (NoteSheet.tsx). Until then, Reschedule and
@@ -11,13 +12,14 @@
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import type { VisitSummary } from "../api.ts";
+import type { OneVisitPrice, VisitSummary } from "../api.ts";
 import { home, messages, windowText } from "../content.ts";
 import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { NoteSheet } from "../booking/NoteSheet.tsx";
-import { firstName, visitName, visitTitle } from "../lib/visit.ts";
+import { firstName, oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
+import { oneVisitLines } from "./one-visit-words.ts";
 import styles from "./home.module.css";
 
 /** A visit the client may move or cancel in the app, while self-serve booking is on. */
@@ -174,10 +176,26 @@ export function Actions(props: {
   );
 }
 
+/** What a one visit costs once fitted, and how it is paid. */
+export function OneVisitTerms({ price }: { price: OneVisitPrice }) {
+  const [first, ...rest] = oneVisitLines(price);
+  return (
+    <div className={styles.terms}>
+      <p>{first}</p>
+      {rest.map((line) => (
+        <p key={line} className={styles.termsMore}>
+          {line}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 /** Board B1's card: the visit, its technician, and what can still be done about it. */
 export function VisitCard({ visit }: { visit: VisitSummary }) {
   const date = shortDate(visit.date);
-  const what = visitName(visit.type);
+  const what = summaryName(visit);
+  const oneVisit = oneVisitOf(visit);
   return (
     <div className={styles.card}>
       <p className={styles.date}>{date}</p>
@@ -190,10 +208,13 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
         )}
         <div>
           {visit.technician !== null && <p className={styles.who}>{firstName(visit.technician.name)}</p>}
-          <p className={styles.length}>{home.next.length(visitTitle(visit), visit.length_minutes)}</p>
+          <p className={styles.length}>
+            {home.next.length(oneVisit === null ? visitTitle(visit) : what, visit.length_minutes)}
+          </p>
         </div>
       </div>
       {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}
+      {oneVisit !== null && <OneVisitTerms price={oneVisit} />}
       {!hasBegun(visit) && (
         <Actions what={what} date={date} changing={changingOf(visit, what)} noting={notingOf(visit)} />
       )}

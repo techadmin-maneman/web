@@ -2,6 +2,8 @@
 // component holds no copy of its own. Lines the design does not draw are
 // marked PLACEHOLDER, pending the owner's wording.
 
+import type { LinkState } from "./tasks/payment-link.ts";
+
 /** The public site's booking page, which a launch alert sends people to, as apps/app/src/content.ts has it. */
 export const BOOKING_URL: Readonly<Record<string, string>> = {
   local: "http://127.0.0.1:4321/book",
@@ -1579,7 +1581,12 @@ export const noShows = {
 } as const;
 
 /** Where a payment link still owed stands, as the Tasks board says it. */
-const PAYMENT_LINK_STATES = { sent: "link sent", unsent: "link not sent", closed: "link closed unpaid" } as const;
+const PAYMENT_LINK_STATES: Readonly<Record<LinkState, string>> = {
+  sent: "link sent",
+  unsent: "link not sent yet",
+  refused: "Razorpay refused the link: send one from its dashboard",
+  closed: "link closed unpaid",
+};
 
 /**
  * Board D2's queue. A task is not a record: it is a row in a queue the database
@@ -1731,9 +1738,10 @@ export const tasks = {
     draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
     /**
      * PLACEHOLDER: "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
-     * link not sent, or closed unpaid, waits for ops to send one from Razorpay's dashboard (ADR 0105).
+     * link not sent yet is asked of Razorpay again by the cron; one Razorpay refused, or closed unpaid, is sent again
+     * from the row or from Razorpay's dashboard (ADR 0105).
      */
-    payment_owed: (product: string, amount: string, link: "sent" | "unsent" | "closed") =>
+    payment_owed: (product: string, amount: string, link: LinkState) =>
       `${product}, ${amount}; ${PAYMENT_LINK_STATES[link]}`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
     unknown: "Held for review",
@@ -1779,6 +1787,29 @@ export const tasks = {
       not_found: "This task has left the list meanwhile: a visit was booked, or it was closed. Reload the page.",
       invalid_request: "Say why no visit is booked, in a sentence or two.",
       unknown: "That did not close. Try again.",
+    } as Readonly<Record<string, string>>,
+  },
+  /**
+   * PLACEHOLDER: a one visit's payment link, copied to send by hand, or texted to the client again by Razorpay. No
+   * board draws it.
+   */
+  link: {
+    copy: "Copy link",
+    copied: "Link copied",
+    resend: "Send again",
+    sending: "Sending…",
+    outcomes: {
+      resent: "Texted to them again.",
+      sent: "Razorpay made the link and texted it to them.",
+      not_texted: "Not texted: this number is a test record that messages never reach.",
+      paid: "Already paid. The task leaves when the list is read again.",
+      refused: "Razorpay refused this link. Send one from Razorpay's dashboard.",
+    } as Readonly<Record<string, string>>,
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: "This link has gone meanwhile. Reload the page to see the list now.",
+      unavailable: "Razorpay did not answer. Try again in a minute.",
+      unknown: "That did not send. Try again.",
     } as Readonly<Record<string, string>>,
   },
   /** PLACEHOLDER: the board draws no note, and the list has to say where the work is done. */

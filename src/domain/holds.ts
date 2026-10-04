@@ -158,6 +158,7 @@ export async function releaseHold(db: D1Database, hold: { holdId: string; person
 
 /** A visit paid for and still to be booked, as Home shows it until it is. */
 export interface BookingUnderWay {
+  readonly holdId: string;
   readonly type: VisitType;
   readonly date: string;
   readonly window: BookingWindow;
@@ -179,12 +180,13 @@ export interface BookingUnderWay {
 export async function bookingUnderWay(db: D1Database, personId: string): Promise<BookingUnderWay | null> {
   const row = await db
     .prepare(
-      `SELECT type, date, window_label, amount, use_credit, one_visit FROM slot_holds
+      `SELECT id, type, date, window_label, amount, use_credit, one_visit FROM slot_holds
        WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
        ORDER BY date, start_unit LIMIT 1`,
     )
     .bind(personId)
     .first<{
+      id: string;
       type: VisitType;
       date: string;
       window_label: BookingWindow;
@@ -195,6 +197,7 @@ export async function bookingUnderWay(db: D1Database, personId: string): Promise
   if (row === null) return null;
   const paid = row.amount > 0 && row.use_credit !== 1;
   return {
+    holdId: row.id,
     type: row.type,
     date: row.date,
     window: row.window_label,

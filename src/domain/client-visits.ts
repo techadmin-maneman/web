@@ -12,6 +12,7 @@ import { namesMoreThanItsKind } from "../policy/services.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
 import { jobSheet } from "./job-sheet-settings.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
+import { oneVisitPrice, type OneVisitPrice } from "./one-visit-money.ts";
 import { priceOf } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
@@ -51,6 +52,8 @@ export interface VisitSummary {
   readonly prepaid: boolean;
   readonly technician: { readonly name: string; readonly initials: string } | null;
   readonly place: string;
+  /** A consultation and fit in one visit not yet closed: what it costs once fitted. Null for any other visit. */
+  readonly one_visit: OneVisitPrice | null;
 }
 
 interface AppointmentRow {
@@ -123,7 +126,18 @@ function stageOf(row: AppointmentRow, now: Date): VisitStage | null {
   return "booked";
 }
 
-function summaryOf(row: AppointmentRow, context: SummaryContext, now: Date): VisitSummary {
+/** What a one visit not yet closed costs once fitted; null for any other visit. */
+async function oneVisitOf(db: D1Database, row: AppointmentRow): Promise<OneVisitPrice | null> {
+  if (row.one_visit !== "booked" || !NOT_CLOSED.includes(row.status)) return null;
+  return oneVisitPrice(db, row.id, indiaDate(new Date(row.window_start)));
+}
+
+async function summaryOf(
+  db: D1Database,
+  row: AppointmentRow,
+  context: SummaryContext,
+  now: Date,
+): Promise<VisitSummary> {
   return {
     id: row.id,
     date: indiaDate(new Date(row.window_start)),
@@ -141,6 +155,7 @@ function summaryOf(row: AppointmentRow, context: SummaryContext, now: Date): Vis
         ? null
         : { name: row.technician_name, initials: row.technician_initials },
     place: context.place(row),
+    one_visit: await oneVisitOf(db, row),
   };
 }
 
@@ -160,7 +175,7 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
       .first<AppointmentRow>(),
     contextOf(db, personId),
   ]);
-  return row === null ? null : summaryOf(row, context, now);
+  return row === null ? null : summaryOf(db, row, context, now);
 }
 
 /** The three states the apps show a client in. */
@@ -209,8 +224,8 @@ export async function listVisits(
       .all<AppointmentRow>(),
   ]);
   return {
-    upcoming: upcoming.results.map((row) => summaryOf(row, context, now)),
-    past: past.results.map((row) => summaryOf(row, context, now)),
+    upcoming: await Promise.all(upcoming.results.map((row) => summaryOf(db, row, context, now))),
+    past: await Promise.all(past.results.map((row) => summaryOf(db, row, context, now))),
   };
 }
 
@@ -341,7 +356,7 @@ export async function visitDetail(
   const photos = await photoSets(db, [row.id], signingKey, now);
   const noShows = await noShowNotes(db, [row.id], now);
   return {
-    ...summaryOf(row, await contextOf(db, personId), now),
+    ...(await summaryOf(db, row, await contextOf(db, personId), now)),
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
     what_was_done: await whatWasDone(db, row.id, row.type),

@@ -13,8 +13,9 @@
 // Each task leads to where it is done: the client's page, and the row in the
 // section that decides it; a task the dispatch board settles opens its visit's
 // drawer there. A consultation asked for, a first fit to book and a replacement
-// due are booked from the row itself (BookFromTask.tsx), and the call about a move
-// is recorded there too (CallAboutMove.tsx). Each group's count is the whole
+// due are booked from the row itself (BookFromTask.tsx), a payment owed has its
+// link copied or texted again there (PaymentLinkActions.tsx), and the call about a
+// move is recorded there too (CallAboutMove.tsx). Each group's count is the whole
 // queue's, and a group longer than the board lists says so.
 //
 // The groups stand under the department that decides them, in the navigation's
@@ -47,6 +48,8 @@ import { rowId } from "../lib/target.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
+import { owedLinkOf } from "./payment-link.ts";
+import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
 import { decidedAt, taskClientPath } from "./links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
@@ -67,12 +70,6 @@ const fitWindow = (window: string | undefined): string | null =>
 
 /** Whole weeks from one instant to another. */
 const weeksBetween = (from: string, to: Date): number => Math.floor((to.getTime() - Date.parse(from)) / WEEK_MS);
-
-/** Where a payment link still owed stands; a word the board does not know reads as not sent. */
-function linkOwed(word: string): "sent" | "unsent" | "closed" {
-  if (word === "sent" || word === "closed") return word;
-  return "unsent";
-}
 
 /** The second line: the one fact the group turns on. */
 function subOf(group: Group, task: Task, now: Date): string {
@@ -125,10 +122,9 @@ function subOf(group: Group, task: Task, now: Date): string {
   if (group === "no_show_dispute") return copy.no_show_dispute(disputedTook(task.detail));
   if (group === "draft_invoice") return copy.draft_invoice(shortDate(indiaDate(task.since)));
   if (group === "payment_owed") {
-    // Whether Razorpay sent the link or it closed unpaid, what it asks for in paise, and the product, by name.
-    const [link = "", amount = "", ...product] = task.detail?.split(" ") ?? [];
-    if (amount === "") return tasks.unknown;
-    return copy.payment_owed(product.join(" "), rupees(Number(amount)), linkOwed(link));
+    const link = owedLinkOf(task.detail);
+    if (link === null) return tasks.unknown;
+    return copy.payment_owed(link.product, rupees(link.amount), link.state);
   }
   if (group === "grievance") return copy.grievance;
   return group === "number_change" ? copy.number_change : copy.erasure_request;
@@ -210,6 +206,7 @@ function Row({ group, task, now, acting, marked }: RowProps) {
           </span>
         )}
         <BookFromTask group={group} task={task} subject={subject} onBooked={acting.onClosed} />
+        {group === "payment_owed" && <PaymentLinkActions task={task} subject={subject} />}
         <CallAboutMove group={group} task={task} subject={subject} onTold={acting.onClosed} />
         <TaskActions group={group} task={task} subject={subject} {...acting} />
       </div>
