@@ -162,7 +162,7 @@ Indexes:
 
 One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 
-Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`.
+Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`, `0088_alerts_retold.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -175,6 +175,7 @@ Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`.
 | `last_seen_at` | TEXT | no |  |  |
 | `resolved_at` | TEXT | yes |  |  |
 | `told_at` | TEXT | yes |  |  |
+| `last_told_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1416,7 +1417,7 @@ Made by `0021_referrals.sql`; changed by `0043_area_names.sql`.
 
 What clients may book: each kind of visit's services, their names, the line clients read under each, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
 
-Made by `0050_services.sql`; changed by `0070_field_record_ours.sql`, `0089_service_description.sql`.
+Made by `0050_services.sql`; changed by `0070_field_record_ours.sql`, `0090_service_description.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |

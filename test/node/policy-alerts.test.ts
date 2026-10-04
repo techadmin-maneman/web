@@ -1,5 +1,5 @@
-// Who acts on each kind of alert on Tasks' "Needs a hand", and which kinds' work can be sent again
-// (src/policy/alerts.ts).
+// Who acts on each kind of alert on Tasks' "Needs a hand", which kinds' work can be sent again, and how often the
+// chat is told again of one still open (src/policy/alerts.ts).
 
 import { describe, expect, it } from "vitest";
 import {
@@ -12,6 +12,7 @@ import {
   markDoneLevel,
   maySendAgain,
   messageFailedKey,
+  retellAfterHours,
 } from "../../src/policy/alerts.ts";
 import { markDoneNeed } from "../../src/policy/console-routes.ts";
 
@@ -61,5 +62,19 @@ describe("what can be sent again", () => {
     expect(["message_failed", "crm_lead", "crm_erasure"].every(maySendAgain)).toBe(true);
     expect(maySendAgain("cancel_refund_failed")).toBe(false);
     expect(maySendAgain("deletion_waiting")).toBe(false);
+  });
+});
+
+describe("how often the chat is told again of an alert still open", () => {
+  it("is every six hours when nobody can sign in, or a client has paid and has no visit or no refund", () => {
+    for (const kind of ["whatsapp_bridge", "login_codes_failing", "unbooked_hold", "cancel_refund_failed"]) {
+      expect(retellAfterHours(kind)).toBe(6);
+    }
+  });
+
+  it("is every day for any other", () => {
+    expect(retellAfterHours("invoice_draft")).toBe(24);
+    expect(retellAfterHours("google_refused")).toBe(24);
+    expect(retellAfterHours("cron_job")).toBe(24);
   });
 });
