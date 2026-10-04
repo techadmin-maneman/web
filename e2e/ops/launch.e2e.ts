@@ -97,3 +97,23 @@ test("says where the message's name for the area comes from, and leads there", a
   await page.getByRole("link", { name: "Change the name" }).click();
   await expect(page).toHaveURL(/\/service-area$/);
 });
+
+// A launch keeps to the caller's cities, while the service area is set nationally: Growth Manage in one city is not led
+// to a page it cannot change.
+test("leads to the area's name only those whose access reaches Service area", async ({ page }) => {
+  const growthInMumbai = json({
+    signed_in_as: "growth@maneman.in",
+    sign_out: "/cdn-cgi/access/logout",
+    staff: {
+      enforced: true,
+      listed: true,
+      grants: [{ department: "growth", level: "manage", geography: "city", place: "Mumbai" }],
+      may_call: ["GET /api/health", "GET /api/whoami", "GET /api/waitlist", "POST /api/pincodes/{pin}/launch"],
+    },
+  });
+  await open(page, { "GET /api/whoami": growthInMumbai, [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
+  await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
+  const panel = page.getByRole("region", { name: "Mark 400050 live" });
+  await expect(panel).toContainText("The message names the area once Service area gives it a name");
+  await expect(panel.getByRole("link", { name: "Change the name" })).toHaveCount(0);
+});
