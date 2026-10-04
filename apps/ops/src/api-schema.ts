@@ -1201,7 +1201,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or one who has been erased */
+                /** @description not_found: no such client in the caller's cities, or one who has been erased */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1826,7 +1826,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Referral grants held for review, oldest first */
+        /** Referral grants held for review whose friend is in the caller's cities, oldest first */
         get: {
             parameters: {
                 query?: never;
@@ -1929,7 +1929,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no held grant by that ID */
+                /** @description not_found: no held grant by that ID in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2059,7 +2059,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Who is waiting, by pincode, the longest wait first */
+        /** Who is waiting in the caller's cities, by pincode, the longest wait first */
         get: {
             parameters: {
                 query?: never;
@@ -2143,6 +2143,15 @@ export interface paths {
                         };
                     };
                 };
+                /** @description access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description not_found: we have no such pincode */
                 404: {
                     headers: {
@@ -2167,7 +2176,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The referrers' figures, the busiest first, 50 at a time */
+        /** The figures of the referrers in the caller's cities, the busiest first, 50 at a time */
         get: {
             parameters: {
                 query?: {
