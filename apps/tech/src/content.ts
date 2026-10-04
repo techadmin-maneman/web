@@ -13,10 +13,10 @@ export const signIn = {
   prefix: "+91",
   mobileLabel: "Mobile number",
   mobilePlaceholder: "98110 00000",
-  mobileError: "Ten digits.",
+  mobileError: "Enter your ten-digit mobile number.",
   codeLabel: "Code",
   submit: "Sign in",
-  // PLACEHOLDER: the Prototype draws one screen and no error but "Ten digits."
+  // PLACEHOLDER: the Prototype draws one screen and no errors.
   errors: {
     mismatch: "That code did not match.",
     code_expired: "That code no longer works. Send the code again.",
