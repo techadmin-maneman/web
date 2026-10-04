@@ -24,13 +24,14 @@ The audit of 24 September 2026 (findings LIFE-01, ARCH-02, OPS-02) found three w
 
 **Nothing is erased while something is still owed.** Until the money path can cancel and refund on its own, an erasure is refused while the person has:
 
-- a visit still to happen (`scheduled`, `dispatched` or `in_progress` in the mirror): `409 visit_booked`;
-- a payment we captured with no visit behind it, and nothing refunded: `409 payment_held`.
+- a visit still to happen (`scheduled`, `dispatched` or `in_progress` in the mirror), or a booking paid for or free that is not yet a visit: `409 visit_booked`;
+- a payment we captured with no visit behind it, and nothing refunded: `409 payment_held`;
+- a payment link unpaid: a fitted visit's, or one ops sent for a booking and still open: `409 payment_owed`.
 
-The answer names each visit and payment. A payment on a visit follows its visit: a live one is refused above, a done one was earned, and a cancelled one was refunded or kept under the cancellation rules (ADR 0046).
+The answer names each visit, booking, payment and link. An erasure lets go of every booking of the person's not yet a visit, in its batch, and then cancels their open payment links at Razorpay; one Razorpay will not cancel is alerted (`erased_link:<link>`). A booking of an erased person is never booked: a payment for it that comes in afterwards is refunded. A payment on a visit follows its visit: a live one is refused above, a done one was earned, and a cancelled one was refunded or kept under the cancellation rules (ADR 0046).
 
 - In the ops console, the deletion decision refuses, the request keeps waiting, and the console says which of the two it is.
-- Erasing from a person's page in the console refuses the same way, unless ops say they will cancel and refund by hand today (`override_open_bookings: true`). The same-day promise can then still be kept. The audit entry records it with the counts, the Worker logs `erasure_override`, and the runbook's "Erasure within the day" has ops cancel and refund by hand that day. A refund needs none of the person's details. (Until 4 October 2026 this was the operators' `POST /api/erasure` and its script.)
+- Erasing from a person's page in the console refuses the same way, unless ops say they will settle it by hand today (`override_open_bookings: true`). The same-day promise can then still be kept. The audit entry records it with the counts, the Worker logs `erasure_override`, and the runbook's "Erasure within the day" has ops cancel and refund by hand that day. A refund needs none of the person's details. (Until 4 October 2026 this was the operators' `POST /api/erasure` and its script.)
 
 The rule lives in `src/policy/account-deletion.ts`. It is ours, not the prompt's.
 

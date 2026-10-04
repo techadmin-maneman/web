@@ -958,7 +958,7 @@ Request body:
 }
 ```
 
-**409**: visit_booked or payment_held: settle what it names first, or say it will be settled today
+**409**: visit_booked, payment_held or payment_owed: settle what it names first, or say it will be settled today
 
 ```json
 {
@@ -1192,7 +1192,7 @@ Request body:
 }
 ```
 
-**409**: visit_booked or payment_held: cancel the visits and refund the payments it names first
+**409**: visit_booked, payment_held or payment_owed: cancel the visits, refund the payments and settle the links it names first
 
 ```json
 {
@@ -4308,6 +4308,7 @@ Request body:
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -7611,6 +7612,7 @@ Request body:
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -8744,7 +8746,8 @@ Request body:
           "type": "string",
           "enum": [
             "visit_booked",
-            "payment_held"
+            "payment_held",
+            "payment_owed"
           ]
         },
         "request_id": {
@@ -8803,6 +8806,46 @@ Request body:
         "additionalProperties": false
       }
     },
+    "bookings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "morning",
+              "afternoon",
+              "evening"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "window"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Bookings paid for, or free, that are not yet visits."
+    },
     "payments": {
       "type": "array",
       "items": {
@@ -8829,12 +8872,42 @@ Request body:
         ],
         "additionalProperties": false
       }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "description": "In paise."
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "amount"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Payment links still unpaid: a fitted visit's, or one sent for a booking and still open."
     }
   },
   "required": [
     "error",
     "visits",
-    "payments"
+    "bookings",
+    "payments",
+    "links"
   ],
   "additionalProperties": false
 }
@@ -8848,7 +8921,7 @@ Request body:
   "properties": {
     "override_open_bookings": {
       "type": "boolean",
-      "description": "Erase even with a visit booked or a payment held: only when ops will cancel and refund them today."
+      "description": "Erase even with a visit or booking still to happen, a payment held or a link unpaid: only when ops will settle them by hand today. Bookings not yet visits are let go, and open payment links cancelled."
     }
   },
   "additionalProperties": false
