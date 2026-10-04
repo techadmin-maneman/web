@@ -29,6 +29,9 @@ export interface RaisedAlert {
 export type AlertOnce = (raised: RaisedAlert) => Promise<void>;
 export type ResolveAlert = (key: string) => Promise<void>;
 
+/** The client's Payments tab, where an alert about their money is acted on. */
+export const paymentsTab = (personId: string): string => `/clients/${personId}/payments`;
+
 /** The chat is told as the count reaches each of these multiples of `after`. */
 const TOLD_AT = [1, 10, 100, 1000];
 

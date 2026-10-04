@@ -2,7 +2,8 @@
 // the smoke's. Workers analytics counts each version's invocations and the ones
 // that errored (an uncaught exception, a limit exceeded), so while the new
 // version serves its share, its error rate is compared with the old one's.
-// What each route read from D1 is judged too, against its ceiling.
+// What each route read from D1 is judged too, against its ceiling, and how long
+// the routes clients and technicians wait on most took, against their budgets.
 //
 // Reading analytics needs Account Analytics: Read, which a CI token may not
 // have. Then the soak says so and the smoke checks stand alone, as before
@@ -133,9 +134,10 @@ export async function readInvocations(query: InvocationQuery): Promise<Reading> 
 }
 
 // ---------------------------------------------------------------------------
-// What each route read from D1 while the new version served: each request's log line carries d1_rows_read
-// (src/app.ts), and Workers Logs sums them by route. Querying Workers Logs needs Workers Observability on the token;
-// without it the soak says so and judges errors alone.
+// What each route read from D1 while the new version served, and how long it took: each request's log line carries
+// d1_rows_read and duration_ms (src/app.ts), and Workers Logs sums the one and takes the 95th percentile of the other
+// by route. Querying Workers Logs needs Workers Observability on the token; without it the soak says so and judges
+// errors alone.
 // ---------------------------------------------------------------------------
 
 export interface RouteReads {
@@ -143,8 +145,24 @@ export interface RouteReads {
   readonly rowsRead: number;
 }
 
-/** Fewer of a route's requests than this say nothing of what it reads. */
+export interface RouteLatency {
+  readonly requests: number;
+  /** How long the route took to answer, in milliseconds, for 95 of every 100 of its requests. */
+  readonly p95Ms: number;
+}
+
+/** Fewer of a route's requests than this say nothing of what it reads, or how long it takes. */
 const MIN_ROUTE_REQUESTS = 20;
+
+/**
+ * The longest the routes clients and technicians wait on most may take, at the 95th percentile, before the release is
+ * rolled back: Home, each time the app opens, and a job's card. Each D1 read is a round trip of about 95 ms from
+ * India to the database, and Home waits on four to six, a card on six to eight.
+ */
+export const ROUTE_P95_MS: Readonly<Record<string, number>> = {
+  "/api/me": 800,
+  "/api/tech/jobs/:id": 1000,
+};
 
 const ceilingOf = (route: string): number => ROUTE_ROWS_READ[route] ?? OTHER_ROUTE_ROWS_READ;
 
@@ -166,10 +184,32 @@ export function judgeRouteReads(byRoute: Readonly<Record<string, RouteReads>>): 
   return { outcome: "passed", detail: `${String(judged.length)} routes each read within their rows a request` };
 }
 
+/** Fails when a route with a budget, served often enough by the new version, took longer than it at p95. */
+export function judgeRouteLatency(byRoute: Readonly<Record<string, RouteLatency>>): Verdict {
+  const judged = Object.entries(ROUTE_P95_MS).flatMap(([route, budgetMs]) => {
+    const latency = byRoute[route];
+    if (latency === undefined || latency.requests < MIN_ROUTE_REQUESTS) return [];
+    return [{ route, budgetMs, p95Ms: latency.p95Ms }];
+  });
+  if (judged.length === 0) {
+    return { outcome: "not judged", detail: "no route with a latency budget had enough requests to judge" };
+  }
+  const took = (each: (typeof judged)[number]) => `${each.route} took ${each.p95Ms.toFixed(0)} ms at p95`;
+  const over = judged.filter((each) => each.p95Ms > each.budgetMs);
+  if (over.length > 0) {
+    return {
+      outcome: "failed",
+      detail: over.map((each) => `${took(each)}, past its ${String(each.budgetMs)}`).join("; "),
+    };
+  }
+  return { outcome: "passed", detail: judged.map(took).join("; ") };
+}
+
 /** The calculations asked of Workers Logs, in this order. */
 const CALCULATIONS = [
   { operator: "count", alias: "requests" },
   { operator: "sum", key: "d1_rows_read", keyType: "number", alias: "rows_read" },
+  { operator: "p95", key: "duration_ms", keyType: "number", alias: "p95_ms" },
 ] as const;
 
 function routeReadsQuery(query: RouteReadsQuery): unknown {
@@ -223,7 +263,8 @@ export interface RouteReadsQuery extends InvocationQuery {
   readonly version: string;
 }
 
-export type RouteReading = { readonly byRoute: Readonly<Record<string, RouteReads>> } | { readonly unreadable: string };
+export type RouteReading =
+  { readonly byRoute: Readonly<Record<string, RouteReads & RouteLatency>> } | { readonly unreadable: string };
 
 export async function readRouteReads(query: RouteReadsQuery): Promise<RouteReading> {
   let answer: ApiAnswer;
@@ -243,7 +284,10 @@ export async function readRouteReads(query: RouteReadsQuery): Promise<RouteReadi
   const calculations = parsed.data.result?.calculations ?? [];
   const requests = valuesByRoute(calculations, 0);
   const rowsRead = valuesByRoute(calculations, 1);
-  const byRoute: Record<string, RouteReads> = {};
-  for (const [route, count] of requests) byRoute[route] = { requests: count, rowsRead: rowsRead.get(route) ?? 0 };
+  const p95Ms = valuesByRoute(calculations, 2);
+  const byRoute: Record<string, RouteReads & RouteLatency> = {};
+  for (const [route, count] of requests) {
+    byRoute[route] = { requests: count, rowsRead: rowsRead.get(route) ?? 0, p95Ms: p95Ms.get(route) ?? 0 };
+  }
   return { byRoute };
 }

@@ -24,7 +24,7 @@ function clock() {
 
 /** The stub provider, counting how often it was asked to submit. */
 function countingImage(now: () => Date) {
-  const image = createImageProvider(null, { fetch, now });
+  const image = createImageProvider(null, { fetch, now, log });
   const submit = vi.fn(image.submit.bind(image));
   return { image: { ...image, submit } satisfies ImageProvider, submit };
 }
@@ -224,7 +224,7 @@ describe("render: never billed twice", () => {
 describe("render: a result that can never be used", () => {
   it("fails at once with render_failed and an alert, rather than downloading it again for a day", async () => {
     const time = clock();
-    const image = createImageProvider(null, { fetch, now: time.now });
+    const image = createImageProvider(null, { fetch, now: time.now, log });
     const tooBig: ImageProvider = {
       ...image,
       download: () => Promise.resolve({ ok: false, detail: "result is 5242881 bytes", transient: false }),
@@ -247,7 +247,7 @@ describe("render: a result that can never be used", () => {
 describe("render: a result that arrives after its job moved on", () => {
   /** The stub provider, running `during` while the result downloads. */
   function imageThat(during: () => Promise<unknown>, now: () => Date): ImageProvider {
-    const image = createImageProvider(null, { fetch, now });
+    const image = createImageProvider(null, { fetch, now, log });
     return {
       ...image,
       download: async (url) => {

@@ -92,11 +92,11 @@ describe("Zoho: a person the CRM has not seen", () => {
     });
     await crm.syncLead(crmLead(), null);
 
-    const lines = logs.lines().filter((line) => line.event === "zoho_call");
-    expect(lines.map(({ step, status, lead_id }) => ({ step, status, lead_id }))).toEqual([
-      { step: "token", status: 200, lead_id: "lead-1" },
-      { step: "search", status: 204, lead_id: "lead-1" },
-      { step: "insert", status: 201, lead_id: "lead-1" },
+    const lines = logs.lines().filter((line) => line.event === "vendor_call");
+    expect(lines.map(({ vendor, step, status, lead_id }) => ({ vendor, step, status, lead_id }))).toEqual([
+      { vendor: "zoho-crm", step: "token", status: 200, lead_id: "lead-1" },
+      { vendor: "zoho-crm", step: "search", status: 204, lead_id: "lead-1" },
+      { vendor: "zoho-crm", step: "insert", status: 201, lead_id: "lead-1" },
     ]);
     expect(lines.every((line) => typeof line.duration_ms === "number")).toBe(true);
     expect(JSON.stringify(lines)).not.toMatch(/https:|client-secret|1000\.refresh|access-1/);
@@ -277,20 +277,40 @@ describe("Zoho: access tokens", () => {
         throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
       },
     });
-    await expect(crm.syncLead(crmLead(), "z")).rejects.toThrow("Zoho 0 TIMEOUT: token got no answer within 20 s");
+    await expect(crm.syncLead(crmLead(), "z")).rejects.toThrow("Zoho CRM 0 TIMEOUT: token got no answer within 20 s");
     expect(logs.lines()).toContainEqual(
-      expect.objectContaining({ event: "zoho_call", step: "token", status: 0, reason: "TimeoutError" }),
+      expect.objectContaining({
+        event: "vendor_call",
+        vendor: "zoho-crm",
+        step: "token",
+        status: 0,
+        reason: "TimeoutError",
+      }),
     );
   });
 
-  it("passes on a network failure unchanged", async () => {
+  it("names the step that could not be reached, as a failure tried again rather than a refusal", async () => {
     const { crm } = zoho({
       [TOKEN_URL]: () => tokenIssued(),
       [LEADS_URL]: () => {
         throw new TypeError("Network connection lost.");
       },
     });
-    await expect(crm.syncLead(crmLead(), "z")).rejects.toThrow("Network connection lost.");
+    const failure = crm.syncLead(crmLead(), "z");
+    await expect(failure).rejects.toThrow("Zoho CRM 0 UNREACHABLE: update could not be reached (TypeError)");
+    await expect(failure).rejects.toMatchObject({ code: "UNREACHABLE", refusal: false });
+  });
+
+  // CQ-03: an answer that failed our schema reached ops as a bare zod dump naming neither the step nor the answer.
+  it("names where a search answer differs from what is read, and none of its values", async () => {
+    const { crm } = zoho({
+      [TOKEN_URL]: () => tokenIssued(),
+      [SEARCH_URL]: () => json({ data: [{ Last_Name: "Arjun Mehta" }] }),
+    });
+    await expect(crm.syncLead(crmLead(), null)).rejects.toThrow(
+      "Zoho 200 UNEXPECTED_ANSWER: search: data.0.id: Invalid input: expected string, received undefined; " +
+        "data.0 has keys Last_Name",
+    );
   });
 
   it("names Zoho's error code, never the record, when a call fails", async () => {
