@@ -151,7 +151,7 @@ Request body:
 
 ### GET /api/clients/{id}
 
-The client's record: who they are, their address, their visits, their payments, their history and their invite
+The client's record: who they are, their address, their visits, their money, their history and their invite
 
 **200**: The record
 
@@ -958,7 +958,7 @@ Request body:
 }
 ```
 
-**409**: visit_booked or payment_held: settle what it names first, or say it will be settled today
+**409**: visit_booked, payment_held or payment_owed: settle what it names first, or say it will be settled today
 
 ```json
 {
@@ -1192,7 +1192,7 @@ Request body:
 }
 ```
 
-**409**: visit_booked or payment_held: cancel the visits and refund the payments it names first
+**409**: visit_booked, payment_held or payment_owed: cancel the visits, refund the payments and settle the links it names first
 
 ```json
 {
@@ -2031,6 +2031,34 @@ Request body:
 ```
 
 **409**: number_in_use: another active technician signs in with that number
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/technicians/{id}/leave
+
+A technician's leave that has not ended, each with the jobs still booked on its days
+
+**200**: The leave
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianStandingLeave"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician, or he is outside the caller's cities
 
 ```json
 {
@@ -4352,6 +4380,7 @@ Request body:
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -4787,6 +4816,20 @@ Request body:
       },
       "description": "Payments and refunds as one list, newest first."
     },
+    "payment_links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientPaymentLink"
+      },
+      "description": "Every payment link, newest first."
+    },
+    "invoices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientInvoice"
+      },
+      "description": "Each finished visit sold for a price, with its invoice; the latest visit first."
+    },
     "history": {
       "$ref": "#/components/schemas/ClientRecordHistory"
     },
@@ -4819,6 +4862,8 @@ Request body:
     "credits",
     "visits",
     "payments",
+    "payment_links",
+    "invoices",
     "history",
     "invite",
     "held_bookings"
@@ -5860,6 +5905,162 @@ Request body:
     "status",
     "destination",
     "speed"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientPaymentLink
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "product": {
+      "type": "string",
+      "description": "The service it pays for, by its name now."
+    },
+    "visit_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "India's date of the visit it pays for; null where the visit has no start."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included."
+    },
+    "reference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "As the client reads it on Razorpay's page; null on a link made before links had one."
+    },
+    "short_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The address Razorpay texted the client; null until Razorpay has made the link."
+    },
+    "sent_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "making",
+        "open",
+        "paid",
+        "refused",
+        "lapsed"
+      ],
+      "description": "making: Razorpay has not made it yet, and it is asked again; open: sent and not paid; paid; refused: Razorpay would not make it, so ops send one by hand; lapsed: closed unpaid."
+    },
+    "paid_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "product",
+    "visit_date",
+    "amount",
+    "reference",
+    "short_url",
+    "sent_at",
+    "state",
+    "paid_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientInvoice
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "to_raise",
+        "draft",
+        "issued"
+      ],
+      "description": "to_raise: Books holds none yet; draft: Books holds it unsent; issued: sent to the client."
+    },
+    "issued_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "visit_id",
+    "date",
+    "type",
+    "state",
+    "issued_at"
   ],
   "additionalProperties": false
 }
@@ -7410,6 +7611,7 @@ Request body:
             "unauthorized",
             "visit_booked",
             "payment_held",
+            "payment_owed",
             "forbidden_origin",
             "access_required",
             "code_expired",
@@ -8543,7 +8745,8 @@ Request body:
           "type": "string",
           "enum": [
             "visit_booked",
-            "payment_held"
+            "payment_held",
+            "payment_owed"
           ]
         },
         "request_id": {
@@ -8602,6 +8805,46 @@ Request body:
         "additionalProperties": false
       }
     },
+    "bookings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "morning",
+              "afternoon",
+              "evening"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "window"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Bookings paid for, or free, that are not yet visits."
+    },
     "payments": {
       "type": "array",
       "items": {
@@ -8628,12 +8871,42 @@ Request body:
         ],
         "additionalProperties": false
       }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "description": "In paise."
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "amount"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Payment links still unpaid: a fitted visit's, or one sent for a booking and still open."
     }
   },
   "required": [
     "error",
     "visits",
-    "payments"
+    "bookings",
+    "payments",
+    "links"
   ],
   "additionalProperties": false
 }
@@ -8647,7 +8920,7 @@ Request body:
   "properties": {
     "override_open_bookings": {
       "type": "boolean",
-      "description": "Erase even with a visit booked or a payment held: only when ops will cancel and refund them today."
+      "description": "Erase even with a visit or booking still to happen, a payment held or a link unpaid: only when ops will settle them by hand today. Bookings not yet visits are let go, and open payment links cancelled."
     }
   },
   "additionalProperties": false
@@ -10067,13 +10340,18 @@ Request body:
                       "type": "null"
                     }
                   ]
+                },
+                "signed_in": {
+                  "type": "boolean",
+                  "description": "Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it."
                 }
               },
               "required": [
                 "device_id",
                 "label",
                 "last_seen_at",
-                "revoked_at"
+                "revoked_at",
+                "signed_in"
               ],
               "additionalProperties": false
             }
@@ -10218,6 +10496,119 @@ Request body:
 }
 ```
 
+### TechnicianStandingLeave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "leave": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "description": "Inclusive: a single day's leave has the same date twice."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TechnicianJobOnLeave"
+            },
+            "description": "The jobs still booked on its days from today on, soonest first."
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to",
+          "note",
+          "jobs"
+        ],
+        "additionalProperties": false
+      },
+      "description": "His leave that has not ended yet, soonest first."
+    }
+  },
+  "required": [
+    "leave"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianJobOnLeave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "appointment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "client": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "appointment_id",
+    "starts_at",
+    "type",
+    "client"
+  ],
+  "additionalProperties": false,
+  "description": "A job booked on a day the technician is away, which the leave moves nowhere: ops move it on the dispatch board, and it waits on the Tasks board until they do."
+}
+```
+
 ### TechnicianLeaveRecorded
 
 ```json
@@ -10231,52 +10622,9 @@ Request body:
     "jobs": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "appointment_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "starts_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "consultation",
-                  "first_fit",
-                  "service",
-                  "replacement"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "client": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "appointment_id",
-          "starts_at",
-          "type",
-          "client"
-        ],
-        "additionalProperties": false
+        "$ref": "#/components/schemas/TechnicianJobOnLeave"
       },
-      "description": "The jobs already booked on those days, which the leave moves nowhere: ops move them on the dispatch board, and each waits on the Tasks board until they do (OPS-07)."
+      "description": "The jobs already booked on those days, soonest first."
     }
   },
   "required": [

@@ -67,6 +67,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "PATCH /api/technicians/{id}": inOwnPlaces("operations", "manage"),
   "POST /api/technicians/{id}/deactivate": inOwnPlaces("operations", "manage"),
   "POST /api/technicians/{id}/reactivate": inOwnPlaces("operations", "manage"),
+  "GET /api/technicians/{id}/leave": inOwnPlaces("operations", "view"),
   "POST /api/technicians/{id}/leave": inOwnPlaces("operations", "act"),
   "POST /api/technicians/{id}/leave/{leave}/cancel": inOwnPlaces("operations", "act"),
   "POST /api/technicians/{id}/devices/{device}/revoke": inOwnPlaces("operations", "act"),

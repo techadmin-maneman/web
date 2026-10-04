@@ -26,6 +26,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   slots: 1,
   unlocked: true,
   unlocks_at: "2030-09-18T12:30:00.000Z",
+  client_name: null,
   address: null,
   access_notes: null,
   client: null,

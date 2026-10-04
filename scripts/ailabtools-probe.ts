@@ -17,6 +17,7 @@
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { PRESETS } from "../src/config/presets.ts";
+import { createLogger } from "../src/log.ts";
 import { createAilabtoolsProvider } from "../src/providers/ailabtools.ts";
 import type { ImageProvider, PollResult } from "../src/providers/image.ts";
 
@@ -62,7 +63,7 @@ async function credits(image: ImageProvider): Promise<number> {
 }
 
 const [command, ...paths] = process.argv.slice(2);
-const image = createAilabtoolsProvider({ apiKey, fetch });
+const image = createAilabtoolsProvider({ apiKey, fetch, log: createLogger() });
 
 if (command === "credits") {
   console.log(`balance: ${String(await credits(image))} credits`);
@@ -74,7 +75,7 @@ if (command === "credits") {
   console.log(`task: ${result.state} ${detail}`);
 } else if (command === "wrong-extension" && paths[0] !== undefined) {
   const photo = new Uint8Array(readFileSync(paths[0]));
-  const renamed = createAilabtoolsProvider({ apiKey, fetch: renamingFetch("portrait.avif") });
+  const renamed = createAilabtoolsProvider({ apiKey, fetch: renamingFetch("portrait.avif"), log: createLogger() });
   const before = await credits(image);
   const result = await renamed.submit(photo, preset, "original", "premium");
   console.log(

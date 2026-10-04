@@ -2,8 +2,8 @@
 // the app is decided in Deletion requests instead, which tells them when it is done, so it is not offered here then.
 //
 // As in Deletion requests, erasing takes two deliberate steps: the second says what is destroyed and what is kept,
-// and waits for ops to confirm the request came from the client's own number. The API refuses while a visit is booked
-// or a payment held; ops may then erase all the same, saying they will cancel and refund it by hand today.
+// and waits for ops to confirm the request came from the client's own number. The API refuses while a visit is booked,
+// a payment held or a payment link unpaid; ops may then erase all the same, saying they will settle it by hand today.
 
 import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
@@ -139,7 +139,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
           name={name}
           message={copy.owed[erasing.code]}
           lists={false}
-          check={copy.settle}
+          check={copy.settle[erasing.code]}
           action={copy.anyway}
           sending={sending}
           onErase={() => void erase(true)}
