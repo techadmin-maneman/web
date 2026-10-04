@@ -6,6 +6,14 @@
 import type { AccessSettings } from "../config/settings.ts";
 import { fromBase64Url } from "../lib/base64url.ts";
 import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
+import type { Logger } from "../log.ts";
+import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
+
+interface AccessDependencies {
+  readonly fetch: typeof fetch;
+  readonly now: () => Date;
+  readonly log: Logger;
+}
 
 export const ACCESS_TOKEN_HEADER = "Cf-Access-Jwt-Assertion";
 
@@ -43,10 +51,7 @@ export interface AccessVerifier {
 /** Local development only: everyone is the same member of staff. The guard refuses it elsewhere. */
 export const STUB_IDENTITY: AccessIdentity = { kind: "staff", email: "ops@localhost" };
 
-export function createAccessVerifier(
-  settings: AccessSettings | null,
-  deps: { fetch: typeof fetch; now: () => Date },
-): AccessVerifier {
+export function createAccessVerifier(settings: AccessSettings | null, deps: AccessDependencies): AccessVerifier {
   if (settings === null) return { verify: () => Promise.resolve({ ok: true, identity: STUB_IDENTITY }) };
   const { opsAudience } = settings;
   if (opsAudience === null) {
@@ -115,14 +120,16 @@ interface KeyCache {
 }
 
 /** The team's signing keys, kept for the life of the isolate and fetched again after KEY_TTL_MS. */
-function createKeyCache(url: string, deps: { fetch: typeof fetch; now: () => Date }): KeyCache {
+function createKeyCache(url: string, deps: AccessDependencies): KeyCache {
   let keys = new Map<string, CryptoKey>();
   let fetchedAt = Number.NEGATIVE_INFINITY;
 
   async function refresh(): Promise<void> {
-    const res = await deps.fetch(url, { signal: AbortSignal.timeout(KEYS_TIMEOUT_MS) });
-    if (!res.ok) throw new Error(`Access keys answered ${String(res.status)}`);
-    const body = await res.json<{ keys?: unknown }>();
+    const call = { vendor: "cloudflare-access", step: "signing_keys", timeoutMs: KEYS_TIMEOUT_MS } as const;
+    const response = await vendorFetch(deps, call, url);
+    if (response instanceof VendorUnreachable) throw response;
+    if (!response.ok) throw new Error(`Access keys answered ${String(response.status)}`);
+    const body = await response.json<{ keys?: unknown }>();
     const fresh = new Map<string, CryptoKey>();
     for (const jwk of Array.isArray(body.keys) ? (body.keys as JsonWebKey[]) : []) {
       const kid = (jwk as { kid?: unknown }).kid;

@@ -202,7 +202,9 @@ describe("Razorpay's webhook: a refund of a payment whose own events never reach
     expect(processed.status).toBe(200);
     expect(await payment()).toMatchObject({ status: "refunded", refunded_amount: 3540000 });
     expect((await seenEvents())?.n).toBe(2);
-    expect(await alertsKept()).toEqual([{ key: "razorpay_refund_unheard:pay_1", link: `/clients/${payer}`, count: 1 }]);
+    expect(await alertsKept()).toEqual([
+      { key: "razorpay_refund_unheard:pay_1", link: `/clients/${payer}/payments`, count: 1 },
+    ]);
   });
 
   it("gives no reference to a refunded payment that was never captured", async () => {

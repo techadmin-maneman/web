@@ -29,7 +29,7 @@ const later = (ms: number) => new Date(AFTER.getTime() + ms);
 
 const REGISTERED: GstRegistration = { gstin: "06AAACM0000A1Z5", stateCode: "HR", sac: "999721" };
 
-const CLIENT_LINK = `http://ops.localhost:4323/clients/${PERSON}`;
+const CLIENT_LINK = `http://ops.localhost:4323/clients/${PERSON}/payments`;
 
 /** What the pass told ops. */
 let alerted: string[];

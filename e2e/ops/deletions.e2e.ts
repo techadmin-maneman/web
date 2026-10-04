@@ -30,7 +30,9 @@ const VISIT_BOOKED = {
       window_start: "2027-09-25T03:30:00.000Z",
     },
   ],
+  bookings: [],
   payments: [],
+  links: [],
 } satisfies OpsReply<"/api/deletion-requests/{id}/decision", "post", 409>;
 const CHECKED = "I have confirmed this request with the client, on their own number.";
 

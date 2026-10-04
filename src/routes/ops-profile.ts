@@ -139,7 +139,9 @@ export const deletionDecisionRoute = createRoute({
     400: errorResponse("invalid_request: a rejection needs a reason"),
     404: errorResponse("not_found: no request waiting for ops by that ID in the caller's cities"),
     409: {
-      description: "visit_booked or payment_held: cancel the visits and refund the payments it names first",
+      description:
+        "visit_booked, payment_held or payment_owed: cancel the visits, refund the payments and settle the links it " +
+        "names first",
       ...json(ErasureRefusedSchema),
     },
   },
@@ -242,6 +244,8 @@ export function registerOpsProfile(app: App): void {
       reason,
       audit: decisionAudit(c, "deletion.decide", { kind: "deletion", id }, decision),
       fsmConnected: fieldRecord(c.var.config.providers) === "fsm",
+      payments: c.var.deps.payments,
+      alertOnce: c.var.deps.alertOnce,
       requestId: c.var.requestId,
       now,
       log: c.var.log,
