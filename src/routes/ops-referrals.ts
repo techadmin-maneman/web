@@ -11,11 +11,11 @@ import { decideHeldReferral } from "../domain/referral-grants.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { queueMessage } from "../http/queue-message.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { HOLD_REASONS } from "../policy/fraud-holds.ts";
 import { dueAt } from "../policy/tasks.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 
 const PersonRef = z.object({ person_id: z.uuid(), name: z.string() }).strict();
 
@@ -145,9 +145,7 @@ export function registerOpsReferrals(app: App): void {
       now,
     });
     if (outcome === null) return c.json(errorBody("not_found", requestId), 404);
-    for (const messageId of outcome.messageIds) {
-      await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
-    }
+    for (const messageId of outcome.messageIds) await queueMessage(c, messageId);
     return c.json({ state: outcome.state }, 200);
   });
 }
