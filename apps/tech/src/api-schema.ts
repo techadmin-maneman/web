@@ -658,6 +658,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/jobs/{id}/no-show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close the job as a no-show, once the wait has run */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
+                    "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
+                };
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Closed, with the case ops will rule on */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NoShowClose"];
+                    };
+                };
+                /** @description invalid_request: see error.fields */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description session_required; device_revoked: ops revoked this phone, so drop the cached jobs */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such job, or never this technician's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description too_early_to_close: the wait has not run out */
+                425: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/jobs/{id}/photos/upload-url": {
         parameters: {
             query?: never;
@@ -1401,94 +1489,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/tech/jobs/{id}/no-show": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Close the job as a no-show, once the wait has run */
-        post: {
-            parameters: {
-                query?: never;
-                header: {
-                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
-                    "x-client-event-id": string;
-                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
-                    "x-job-starts-at"?: string;
-                };
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Closed, with the case ops will rule on */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["NoShowClose"];
-                    };
-                };
-                /** @description invalid_request: see error.fields */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description session_required; device_revoked: ops revoked this phone, so drop the cached jobs */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description not_found: no such job, or never this technician's */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description superseded: the job changed under the phone; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description too_early_to_close: the wait has not run out */
-                425: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/tech/pieces/lookup": {
         parameters: {
             query?: never;
@@ -2081,6 +2081,13 @@ export interface components {
              */
             at?: string;
         };
+        NoShowClose: {
+            closed: boolean;
+            /** Format: date-time */
+            wait_ends_at: string;
+            case_id: string | null;
+            accepted: components["schemas"]["TechnicianWriteAccepted"] | null;
+        };
         TechnicianPhotoUrl: {
             /** @description A path on this host. PUT the photograph there. */
             upload_url: string;
@@ -2161,13 +2168,6 @@ export interface components {
             outcome: "partial";
             /** @description One of the card's partial_reasons, by its id; one ops have since taken off is still taken. */
             reason: string;
-        };
-        NoShowClose: {
-            closed: boolean;
-            /** Format: date-time */
-            wait_ends_at: string;
-            case_id: string | null;
-            accepted: components["schemas"]["TechnicianWriteAccepted"] | null;
         };
         /** @description Whether the label is one of the job's client's pieces. */
         PieceLookup: {
