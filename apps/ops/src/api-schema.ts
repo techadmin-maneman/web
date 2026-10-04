@@ -2091,6 +2091,8 @@ export interface paths {
                             }[];
                             /** @description More than 200 pincodes have someone waiting; these are the longest waits. */
                             more: boolean;
+                            /** @description Our cities the caller may add a pincode in: those their Growth MANAGE reaches. */
+                            cities: string[];
                         };
                     };
                 };
@@ -2143,6 +2145,15 @@ export interface paths {
                         };
                     };
                 };
+                /** @description launch_in_future: launch_on is a day still to come */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE */
                 403: {
                     headers: {
@@ -2152,7 +2163,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: we have no such pincode */
+                /** @description not_found: the service area holds no such pincode, so it is added first */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -4368,6 +4379,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             pincodes: components["schemas"]["ServedPincode"][];
+                            /** @description Our cities, which a pincode added must be in. */
+                            cities: string[];
                         };
                     };
                 };
@@ -4411,7 +4424,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served */
+                /** @description invalid_request: fields names a pincode we do not hold. launch_in_future: fields names a pincode it would serve from a day still to come. no_service_area: it would leave none served */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -4422,6 +4435,73 @@ export interface paths {
                 };
                 /** @description access_required */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pincodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a pincode the service area does not hold, unserved, in one of our cities */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NewPincode"];
+                };
+            };
+            responses: {
+                /** @description The pincode, as the service area now lists it */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ServedPincode"];
+                    };
+                };
+                /** @description invalid_request: fields names the box refused, city for a city that is not one of ours */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required, or not_permitted: the city is outside the caller's Growth MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description pincode_held: the service area holds that pincode already */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6607,7 +6687,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -7415,7 +7495,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -7699,7 +7779,7 @@ export interface components {
             confirm: boolean;
             /**
              * Format: date
-             * @description India's date it starts; today if left out.
+             * @description India's date it started: today if left out, and never a day to come.
              */
             launch_on?: string;
         };
@@ -8496,6 +8576,12 @@ export interface components {
                 /** @description A better name for the area than its post office's. Left out, the name stays. */
                 area?: string;
             }[];
+        };
+        NewPincode: {
+            pincode: string;
+            /** @description What messages call the area. */
+            area: string;
+            city: string;
         };
         SlotTimes: {
             in_force: {

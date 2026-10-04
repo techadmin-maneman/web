@@ -1,4 +1,4 @@
-// Where we go, and from when (docs/decisions/0061-ops-editable-inputs.md).
+// Areas' Served tab: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md).
 //
 // 198 pincodes is more than any web form should ask anybody to work through,
 // and the owner already marks them in a spreadsheet (data/pincodes/README.md).
@@ -9,24 +9,28 @@
 //
 // Everything goes through the table: a file read is shown pincode by pincode,
 // then put into the table, and the one Save sends it. Serving a pincode is a
-// launch, so a save that would message people waiting there says how many
-// first (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+// launch, so a save that would message people waiting there opens the launch
+// panel Waiting uses first (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+// A pincode the file does not hold is added beneath the table.
 
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { useEffect, useRef, useState } from "react";
+import { indiaDate } from "@maneman/web-kit/dates";
+import { useState } from "react";
 import { api, type AreaChange, type ServedPincode } from "../api.ts";
-import { settings } from "../content.ts";
+import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import styles from "../settings/settings.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { AddPincode } from "./AddPincode.tsx";
+import areaStyles from "./areas.module.css";
 import { readServiceAreaCsv, serviceAreaCsv, type CsvRead } from "./csv.ts";
-import styles from "./settings.module.css";
+import { LaunchPanel } from "./LaunchPanel.tsx";
+import { AREA_NAME } from "./rules.ts";
 
-const copy = settings.area;
-
-/** An area's name as the API takes it: a letter or a digit first, 2 to 40 characters (src/routes/ops-settings.ts). */
-const AREA_NAME = /^[\p{L}\p{N}][\p{L}\p{N} .,'()&-]{1,39}$/u;
+const copy = areas.served;
+const launch = areas.launch;
 
 /** What ops set for one pincode: the two columns that are theirs, and the area's name as they have typed it. */
 interface Row {
@@ -90,6 +94,14 @@ function launchesIn(pincodes: readonly ServedPincode[], changes: readonly AreaCh
     const change = changes.find((one) => one.pincode === each.pincode);
     return change !== undefined && change.served && !each.served && each.to_alert > 0;
   });
+}
+
+/** A change that would serve a pincode from a day still to come, which the API refuses. */
+function servesLater(pincodes: readonly ServedPincode[], change: AreaChange, today: string): boolean {
+  if (!change.served || change.launch_on === null || change.launch_on <= today) return false;
+  const held = pincodes.find((each) => each.pincode === change.pincode);
+  if (held === undefined) return true;
+  return held.served !== change.served || held.launch_on !== change.launch_on;
 }
 
 /** What a file read says, as the upload's line. */
@@ -157,7 +169,10 @@ function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProps) {
   );
 }
 
-/** Who a save would message, before it is sent: serving a pincode tells its waitlist, once. */
+/**
+ * Who a save would message, before it is sent: serving a pincode launches it, in the panel Waiting uses. The message
+ * names each area as it will be named once saved, so the preview leaves the name as a placeholder.
+ */
 function LaunchCheck({
   launching,
   busy,
@@ -169,31 +184,23 @@ function LaunchCheck({
   onSend: () => void;
   onCancel: () => void;
 }) {
-  const panel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    panel.current?.focus();
-  }, []);
   const people = launching.reduce((sum, each) => sum + each.to_alert, 0);
+  const quiet = launching.reduce((sum, each) => sum + each.waiting - each.to_alert, 0);
+  const only = launching.length === 1 ? launching[0] : undefined;
   return (
-    <div className={styles.check} ref={panel} tabIndex={-1} role="group" aria-labelledby="area-launch">
-      <p className={styles.checkTitle} id="area-launch">
-        {copy.launch.title(people)}
-      </p>
-      <ul className={styles.checkList}>
-        {launching.map((each) => (
-          <li key={each.pincode}>{copy.launch.line(each.pincode, each.area, each.to_alert)}</li>
-        ))}
-      </ul>
-      <p className={styles.checkLine}>{copy.launch.note}</p>
-      <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.save} disabled={busy} onClick={onSend}>
-          {busy ? copy.saving : copy.launch.send(people)}
-        </Button>
-        <Button variant="outline" size="small" className={styles.quiet} disabled={busy} onClick={onCancel}>
-          {copy.launch.cancel}
-        </Button>
-      </div>
-    </div>
+    <LaunchPanel
+      label={only === undefined ? launch.manyLabel(launching.length) : launch.label(only.pincode)}
+      alerts={people}
+      area={null}
+      lines={launching.map((each) => launch.line(each.pincode, each.area, each.to_alert))}
+      sendLabel={launch.saveAndSend(people)}
+      sending={busy}
+      done={null}
+      error={null}
+      note={launch.note(quiet)}
+      onSend={onSend}
+      onCancel={onCancel}
+    />
   );
 }
 
@@ -255,20 +262,33 @@ function FilePreview({
   );
 }
 
-function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[] }) {
-  const cities = [...new Set(loadedPincodes.map((each) => each.city))];
+function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedPincode[]; cities: readonly string[] }) {
   const [pincodes, setPincodes] = useState(loadedPincodes);
-  const [city, setCity] = useState(cities[0] ?? "");
+  const cityTabs = [...new Set(pincodes.map((each) => each.city))];
+  const [city, setCity] = useState(cityTabs[0] ?? "");
   const [draft, setDraft] = useState<Draft>(() => draftOf(loadedPincodes));
   const [saving, setSaving] = useState<Saving>({ step: "editing" });
   const [upload, setUpload] = useState<Upload | null>(null);
-  const mayChange = useAccess().mayCall("POST /api/service-area");
+  const [added, setAdded] = useState<ServedPincode | null>(null);
+  const access = useAccess();
+  const mayChange = access.mayCall("POST /api/service-area");
+  const mayAdd = access.mayCall("POST /api/pincodes");
+  const today = indiaDate(new Date().toISOString());
 
   const inCity = pincodes.filter((each) => each.city === city);
   const changes = changesIn(pincodes, draft);
   const badName = changes.find((change) => change.area !== undefined && !AREA_NAME.test(change.area));
+  const later = changes.find((change) => servesLater(pincodes, change, today));
   const launching = launchesIn(pincodes, changes);
   const busy = saving.step === "saving";
+
+  /** A pincode added beneath the table joins it, unserved, in its city. */
+  const addedHere = (held: ServedPincode) => {
+    setPincodes((all) => [...all, held]);
+    setDraft((now) => ({ ...now, [held.pincode]: rowOf(held) }));
+    setCity(held.city);
+    setAdded(held);
+  };
 
   const edit = (next: Draft) => {
     setDraft(next);
@@ -355,7 +375,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
       <p className={styles.note}>{copy.note}</p>
 
       <nav className={styles.cities} aria-label={copy.title}>
-        {cities.map((each) => {
+        {cityTabs.map((each) => {
           const all = pincodes.filter((one) => one.city === each);
           const served = all.filter((one) => draft[one.pincode]?.served === true).length;
           return (
@@ -421,14 +441,16 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
       <p className={styles.hint}>{copy.hint}</p>
 
       {checking && (
-        <LaunchCheck
-          launching={launching}
-          busy={busy}
-          onSend={() => void send()}
-          onCancel={() => {
-            setSaving({ step: "editing" });
-          }}
-        />
+        <div className={areaStyles.inPanel}>
+          <LaunchCheck
+            launching={launching}
+            busy={busy}
+            onSend={() => void send()}
+            onCancel={() => {
+              setSaving({ step: "editing" });
+            }}
+          />
+        </div>
       )}
       {!checking && mayChange && (
         <div className={styles.actions}>
@@ -436,7 +458,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
             variant="primary"
             size="small"
             className={styles.save}
-            disabled={busy || changes.length === 0 || badName !== undefined}
+            disabled={busy || changes.length === 0 || badName !== undefined || later !== undefined}
             onClick={pressSave}
           >
             {busy ? copy.saving : copy.save}
@@ -446,6 +468,11 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
       {badName !== undefined && (
         <p className={styles.error} role="alert">
           {copy.badName(badName.pincode)}
+        </p>
+      )}
+      {later !== undefined && (
+        <p className={styles.error} role="alert">
+          {copy.later(later.pincode)}
         </p>
       )}
       {mayChange && changes.length === 0 && saving.step === "editing" && <p className={styles.hint}>{copy.nothing}</p>}
@@ -505,13 +532,25 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
           )}
         </fieldset>
       )}
+
+      {mayAdd && (
+        <fieldset className={styles.group}>
+          <legend className={styles.ruleTitle}>{areas.add.title}</legend>
+          <AddPincode pincode={null} cities={cities} onAdded={addedHere} />
+          {added !== null && (
+            <p className={styles.saved} role="status">
+              {areas.add.added(added.pincode, added.city)}
+            </p>
+          )}
+        </fieldset>
+      )}
     </section>
   );
 }
 
-export function ServiceArea() {
+export function Served() {
   const [loaded, retry] = useLoad(api.serviceArea);
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  return <Area pincodes={loaded.value.pincodes} />;
+  return <Area pincodes={loaded.value.pincodes} cities={loaded.value.cities} />;
 }

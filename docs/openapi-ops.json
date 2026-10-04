@@ -83,6 +83,8 @@
                   "too_early_to_arrive",
                   "already_closed",
                   "no_service_area",
+                  "launch_in_future",
+                  "pincode_held",
                   "service_exists",
                   "last_of_kind",
                   "service_retired",
@@ -3199,6 +3201,8 @@
                   "too_early_to_arrive",
                   "already_closed",
                   "no_service_area",
+                  "launch_in_future",
+                  "pincode_held",
                   "service_exists",
                   "last_of_kind",
                   "service_retired",
@@ -4506,7 +4510,7 @@
           "launch_on": {
             "type": "string",
             "format": "date",
-            "description": "India's date it starts; today if left out."
+            "description": "India's date it started: today if left out, and never a day to come."
           }
         },
         "required": [
@@ -7646,6 +7650,31 @@
         },
         "required": [
           "changes"
+        ],
+        "additionalProperties": false
+      },
+      "NewPincode": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string",
+            "pattern": "^[1-8]\\d{5}$"
+          },
+          "area": {
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&-]{1,39}$/u",
+            "description": "What messages call the area."
+          },
+          "city": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          }
+        },
+        "required": [
+          "pincode",
+          "area",
+          "city"
         ],
         "additionalProperties": false
       },
@@ -12107,11 +12136,19 @@
                     "more": {
                       "type": "boolean",
                       "description": "More than 200 pincodes have someone waiting; these are the longest waits."
+                    },
+                    "cities": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Our cities the caller may add a pincode in: those their Growth MANAGE reaches."
                     }
                   },
                   "required": [
                     "areas",
-                    "more"
+                    "more",
+                    "cities"
                   ],
                   "additionalProperties": false
                 }
@@ -12177,6 +12214,16 @@
               }
             }
           },
+          "400": {
+            "description": "launch_in_future: launch_on is a day still to come",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE",
             "content": {
@@ -12188,7 +12235,7 @@
             }
           },
           "404": {
-            "description": "not_found: we have no such pincode",
+            "description": "not_found: the service area holds no such pincode, so it is added first",
             "content": {
               "application/json": {
                 "schema": {
@@ -14365,10 +14412,18 @@
                       "items": {
                         "$ref": "#/components/schemas/ServedPincode"
                       }
+                    },
+                    "cities": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Our cities, which a pincode added must be in."
                     }
                   },
                   "required": [
-                    "pincodes"
+                    "pincodes",
+                    "cities"
                   ],
                   "additionalProperties": false
                 }
@@ -14429,7 +14484,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names a pincode we do not hold. no_service_area: it would leave none served",
+            "description": "invalid_request: fields names a pincode we do not hold. launch_in_future: fields names a pincode it would serve from a day still to come. no_service_area: it would leave none served",
             "content": {
               "application/json": {
                 "schema": {
@@ -14440,6 +14495,63 @@
           },
           "403": {
             "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pincodes": {
+      "post": {
+        "summary": "Add a pincode the service area does not hold, unserved, in one of our cities",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPincode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The pincode, as the service area now lists it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServedPincode"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names the box refused, city for a city that is not one of ours",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: the city is outside the caller's Growth MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "pincode_held: the service area holds that pincode already",
             "content": {
               "application/json": {
                 "schema": {

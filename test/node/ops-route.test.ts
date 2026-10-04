@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  areasPath,
   clientPath,
   dispatchAsked,
   dispatchPath,
@@ -39,13 +40,13 @@ describe("the ops console's routes", () => {
     expect(namesIn("operations")).toEqual(["Tasks", "Dispatch", "Technicians", "Stock"]);
     expect(namesIn("customer_care")).toEqual(["Clients", "Grievances", "Number changes", "Deletion requests"]);
     expect(namesIn("finance")).toEqual(["Payments", "Prices", "Discount codes"]);
-    expect(namesIn("growth")).toEqual(["Referrals", "Waitlist", "Service area"]);
+    expect(namesIn("growth")).toEqual(["Referrals", "Areas"]);
     expect(namesIn("admin")).toEqual(["Settings", "Staff"]);
     expect(SECTIONS.map((section) => section.department)).toEqual([
       ...Array<string>(4).fill("operations"),
       ...Array<string>(4).fill("customer_care"),
       ...Array<string>(3).fill("finance"),
-      ...Array<string>(3).fill("growth"),
+      ...Array<string>(2).fill("growth"),
       ...Array<string>(2).fill("admin"),
     ]);
   });
@@ -78,6 +79,18 @@ describe("the ops console's routes", () => {
     expect(clientPath(CLIENT, "visits")).toBe(`/clients/${CLIENT}/visits`);
     expect(routeOf(clientPath(CLIENT, "referrals"))).toEqual({ page: "clients", clientId: CLIENT, tab: "referrals" });
     expect(routeOf(clientPath(CLIENT, "payments"))).toEqual({ page: "clients", clientId: CLIENT, tab: "payments" });
+  });
+
+  // OIA-13 of the audit, 2 October 2026: launching an area had two homes, Waitlist and Settings › Service area.
+  it("opens Areas on Waiting, and Served at its own path", () => {
+    expect(routeOf("/areas")).toEqual({ page: "areas", tab: "waiting" });
+    expect(routeOf(areasPath("served"))).toEqual({ page: "areas", tab: "served" });
+    expect(areasPath("waiting")).toBe("/areas");
+    expect(routeOf("/areas/nowhere")).toEqual({ page: "tasks" });
+    expect(titleOf(routeOf("/areas"))).toBe("Waiting · Areas · Mane Man operations");
+    expect(titleOf(routeOf("/areas/served"))).toBe("Served · Areas · Mane Man operations");
+    // Its tabs share one key, as Settings' do.
+    expect(keyOf(routeOf("/areas/served"))).toBe(keyOf(routeOf("/areas")));
   });
 
   it("opens a technician's page on his week, and each of its tabs at its own path", () => {
@@ -120,12 +133,14 @@ describe("the ops console's routes", () => {
     expect(dispatchAsked("?visit=not-a-visit&city=%20")).toEqual({ from: null, city: null, find: "", visit: null });
   });
 
-  it("opens the pages that were Settings' tabs at their old addresses, and moves the address to the new one", () => {
+  it("opens the pages that moved at their old addresses, and moves the address to the new one", () => {
     const moved = {
       "/settings/prices": "/prices",
       "/settings/discount-codes": "/discount-codes",
-      "/settings/area": "/service-area",
+      "/settings/area": "/areas/served",
       "/settings/staff": "/staff",
+      "/waitlist": "/areas",
+      "/service-area": "/areas/served",
     };
     for (const [old, now] of Object.entries(moved)) {
       expect(routeOf(old), old).toEqual(routeOf(now));
@@ -173,7 +188,7 @@ describe("what the console shows the person signed in", () => {
     expect(redirectOf("/", null)).toBeNull();
     expect(redirectOf("/", finance)).toBe("/no-shows");
     expect(redirectOf("/nowhere", new Set(Object.keys(ROUTE_NEEDS)))).toBe("/tasks");
-    expect(redirectOf("/waitlist", finance)).toBeNull();
+    expect(redirectOf("/areas", finance)).toBeNull();
     expect(redirectOf("/", new Set(["GET /api/whoami"]))).toBeNull();
   });
 });
