@@ -48,7 +48,7 @@ test("says plainly that recording an answer messages nobody", async ({ page }) =
 test("reaches the client's record from the name", async ({ page }) => {
   await open(page);
   await row(page, "Rohit Malhotra").getByRole("link", { name: "Rohit Malhotra" }).click();
-  expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001");
+  expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/consents");
 });
 
 test("will not close a grievance with no answer written", async ({ page }) => {

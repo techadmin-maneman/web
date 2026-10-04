@@ -60,12 +60,11 @@ export type PlainPage = Exclude<Page, "areas" | "clients" | "settings" | "techni
 /**
  * The tabs of the design's eight that a client's page carries, in its order,
  * and History last: the board draws no such tab, so it stands after the ones
- * it does draw (docs/fidelity-method.md). The page opens on Pieces, as the
- * board draws it.
+ * it does draw. The page opens on Visits.
  */
-export const CLIENT_TABS = ["visits", "pieces", "payments", "consents", "photos", "history"] as const;
+export const CLIENT_TABS = ["visits", "pieces", "payments", "referrals", "consents", "photos", "history"] as const;
 export type ClientTab = (typeof CLIENT_TABS)[number];
-const OPENING_TAB: ClientTab = "pieces";
+const OPENING_TAB: ClientTab = "visits";
 
 /** A technician's page, a tab at a time, in its order. It opens on his week. */
 export const TECHNICIAN_TABS = ["week", "leave", "phones", "kit"] as const;
@@ -87,7 +86,8 @@ export type Route =
   | { readonly page: "technicians"; readonly technicianId: string | null; readonly tab: TechnicianTab };
 
 const TASKS: Route = { page: "tasks" };
-const CLIENT_PATH = /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|photos|consents|history))?)?$/;
+const CLIENT_PATH =
+  /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|referrals|consents|photos|history))?)?$/;
 const SETTINGS_PATH = /^\/settings(?:\/(blackouts|consumables|job-sheet))?$/;
 const AREAS_PATH = /^\/areas(?:\/(served))?$/;
 const TECHNICIAN_PATH = /^\/technicians(?:\/([0-9a-f-]{36})(?:\/(week|leave|phones|kit))?)?$/;
@@ -111,7 +111,7 @@ export function movedTo(path: string): string | null {
   return MOVED[path] ?? null;
 }
 
-/** The tab a client's path names; Pieces without one, as the board draws the page. */
+/** The tab a client's path names; Visits without one. */
 const clientTabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? OPENING_TAB;
 
 const areaTabOf = (named: string | undefined): AreaTab => AREA_TABS.find((tab) => tab === named) ?? AREA_TABS[0];
@@ -148,6 +148,9 @@ export const routeOf = (path: string): Route => knownRoute(path) ?? TASKS;
 export const settingsPath = (tab: SettingsTab): string => (tab === "rules" ? "/settings" : `/settings/${tab}`);
 
 export const areasPath = (tab: AreaTab): string => (tab === "waiting" ? "/areas" : `/areas/${tab}`);
+
+/** A client's page on the tab named, so a link lands on what it is about. */
+export const clientPath = (clientId: string, tab: ClientTab): string => `/clients/${clientId}/${tab}`;
 
 /** A technician's page, on its opening tab or the one named. */
 export const technicianPath = (technicianId: string, tab: TechnicianTab = TECHNICIAN_TABS[0]): string =>

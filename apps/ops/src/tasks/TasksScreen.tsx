@@ -43,12 +43,11 @@ import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { Left } from "../lib/Left.tsx";
 import { readTasks } from "../lib/waiting.ts";
-import { rowId, rowPath } from "../lib/target.ts";
-import { dispatchPath, type ClientTab } from "../route.ts";
+import { rowId } from "../lib/target.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
-import { DECIDED_IN } from "./decided.ts";
+import { decidedAt, taskClientPath } from "./links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
 import { TaskActions } from "./TaskActions.tsx";
@@ -61,42 +60,6 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** The fraud rules, as board C1 letters them: a held grant is the same grant on both boards. */
 const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
-
-/** The tab of the client's page each group is about; the page opens on Pieces otherwise. */
-const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
-  untold_move: "visits",
-  // Booked in FSM, linked, or refunded from the Visits tab (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-  held_booking: "visits",
-  leave_conflict: "visits",
-  address_to_confirm: "visits",
-  consultation_request: "visits",
-  first_fit_to_book: "visits",
-  replacement_order: "pieces",
-  at_risk_client: "visits",
-  partial_visit: "visits",
-  no_show_decision: "visits",
-  no_show_dispute: "visits",
-  draft_invoice: "payments",
-  payment_owed: "payments",
-};
-
-/** The board opened on the week of the task's visit, with its drawer open; this week's board for a task with none. */
-function onTheBoard(task: Task): string {
-  if (task.visit === undefined) return dispatchPath({});
-  return dispatchPath({ from: indiaDate(task.visit.starts_at), visit: task.visit.id });
-}
-
-function decidedAt(group: Group, task: Task): string | null {
-  const where = DECIDED_IN[group];
-  if (where === undefined) return null;
-  if (where.page === "/dispatch") return onTheBoard(task);
-  return where.row === null ? where.page : rowPath(where.page, where.row, task.id);
-}
-
-function clientPath(group: Group, personId: string): string {
-  const tab = CLIENT_TAB[group];
-  return tab === undefined ? `/clients/${personId}` : `/clients/${personId}/${tab}`;
-}
 
 /** A window's name, as the dispatch board writes it, for the window a first fit was asked for in; null for either. */
 const fitWindow = (window: string | undefined): string | null =>
@@ -241,7 +204,7 @@ function Row({ group, task, now, acting, marked }: RowProps) {
         {task.person === null ? (
           <span className={styles.subject}>{subject}</span>
         ) : (
-          <OpsLink className={styles.subject} to={clientPath(group, task.person.id)}>
+          <OpsLink className={styles.subject} to={taskClientPath(group, task.person.id)}>
             {subject}
           </OpsLink>
         )}

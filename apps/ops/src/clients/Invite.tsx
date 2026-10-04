@@ -1,5 +1,5 @@
-// The invite a client came with, under their Payments, beside the credits it
-// grants: where its grant stands, and who attached it, if ops did. Who sent it,
+// The invite a client came with, on their Referrals tab: where its grant
+// stands, and who attached it, if ops did. Who sent it,
 // and its code, head the client's page. A client who came with none may have
 // one attached, for a friend who booked away from the invite's own page: the
 // code and why, under the landing's own rules

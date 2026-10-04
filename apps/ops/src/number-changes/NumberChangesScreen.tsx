@@ -21,6 +21,7 @@ import { numberChanges } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
+import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./number-changes.module.css";
 
@@ -62,7 +63,7 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
   return (
     <>
       <div className={styles.head}>
-        <OpsLink className={styles.name} to={`/clients/${change.person_id}`}>
+        <OpsLink className={styles.name} to={clientPath(change.person_id, "visits")}>
           {change.name}
         </OpsLink>
         <Left due={change.due} now={now} />

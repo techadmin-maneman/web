@@ -27,6 +27,7 @@ import { OpsLink, Shell } from "../components/Shell.tsx";
 import { noShows } from "../content.ts";
 import { useAccess, WAIVING_A_NO_SHOW } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
+import { clientPath } from "../route.ts";
 import { Disputes } from "./Disputes.tsx";
 import { Distance } from "./Distance.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -223,7 +224,7 @@ function Facts({ each }: { each: NoShowCase }) {
 function Client({ each }: { each: NoShowCase }) {
   if (each.person === null) return <span className={styles.visit}>{copy.erased}</span>;
   return (
-    <OpsLink className={styles.client} to={`/clients/${each.person.id}/visits`}>
+    <OpsLink className={styles.client} to={clientPath(each.person.id, "visits")}>
       {each.person.name}
     </OpsLink>
   );
