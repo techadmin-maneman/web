@@ -6,7 +6,7 @@
 
 import type { LossExtent } from "../config/booking.ts";
 
-export interface Attribution {
+export interface LeadAttribution {
   readonly utm_source?: string | undefined;
   readonly utm_medium?: string | undefined;
   readonly utm_campaign?: string | undefined;
@@ -32,7 +32,7 @@ export interface BookingLead {
   /** The public form asks; an invited friend is never asked. */
   readonly lossExtent: LossExtent | null;
   readonly proposedVisitDate: string | null;
-  readonly attribution: Attribution;
+  readonly attribution: LeadAttribution;
   readonly requestId: string;
   readonly now: Date;
 }

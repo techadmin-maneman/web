@@ -12,7 +12,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
-import { memberOfStaffOf, staffOf } from "../http/audit.ts";
+import { staffMemberOf, actorOf } from "../http/audit.ts";
 import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
 import { currentAddress } from "../domain/profile.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -78,7 +78,7 @@ export function registerOpsClientAddress(app: App): void {
     if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     // Each member of staff has a day's suggestions of their own, as each client has.
-    const answer = await suggestBuildings(c, { limitScope: "ops_address_suggest", asker: staffOf(c).id, q, session });
+    const answer = await suggestBuildings(c, { limitScope: "ops_address_suggest", asker: actorOf(c).id, q, session });
     if (!answer.ok) return c.json(errorBody(answer.code, c.var.requestId), 503);
     return c.json({ suggestions: answer.suggestions, attribution: "Google Maps" as const }, 200);
   });
@@ -88,7 +88,7 @@ export function registerOpsClientAddress(app: App): void {
     const body = c.req.valid("json");
     const { requestId } = c.var;
     const db = c.env.DB;
-    const staff = memberOfStaffOf(c);
+    const staff = staffMemberOf(c);
     if (staff === null) return c.json(errorBody("access_required", requestId), 403);
     if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", requestId), 404);
 

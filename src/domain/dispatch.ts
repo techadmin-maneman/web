@@ -62,7 +62,7 @@ import {
   visitTimes,
   type Day,
 } from "./scheduling.ts";
-import { latestConsentSql } from "./messages.ts";
+import { latestConsentSql } from "./consents.ts";
 import { begunPastArrival, visitBegun } from "./visit-begun.ts";
 import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";
 import { firstUnitAfter, unitAt, type SlotTimes } from "../policy/slot-times.ts";
@@ -918,7 +918,7 @@ export interface Rooms {
  * Null for a job no longer live, or one the technician has begun by more than
  * his check-in, which no move takes.
  */
-export async function roomFor(
+export async function dispatchRoomFor(
   db: D1Database,
   input: { readonly appointmentId: string; readonly from: string },
   now: Date,

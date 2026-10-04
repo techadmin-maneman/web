@@ -17,7 +17,7 @@ import {
 } from "../policy/moving-a-visit.ts";
 import { spendableCredits } from "./credits.ts";
 import { holdDiscount } from "./discount-code-holds.ts";
-import { consentGiven } from "./messages.ts";
+import { consentGiven } from "./consents.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
 import { graceEndOf, graceEnds, heldMinutes, visitTimes } from "./scheduling.ts";
 import { loadSlotSchedule } from "./slot-times.ts";

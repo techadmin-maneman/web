@@ -25,23 +25,24 @@ const SUBJECT_ROUTES: readonly { readonly prefix: string; readonly kind: string 
 
 const ID = z.uuid();
 
-export function actorOf(identity: AccessIdentity): AuditActor {
+/** Who Access let in, as the audit log names them: a member of staff by e-mail, or a service token by its client ID. */
+export function auditActorOf(identity: AccessIdentity): AuditActor {
   return identity.kind === "staff" ? { kind: "staff", id: identity.email } : { kind: "service", id: identity.clientId };
 }
 
-/** The member of staff behind the call; requireAccess has set it on every ops route. */
-export function staffOf(c: Context<AppEnv>): AuditActor {
+/** Who is behind the call, a member of staff or a service token; requireAccess has set it on every ops route. */
+export function actorOf(c: Context<AppEnv>): AuditActor {
   const identity = c.var.accessIdentity;
   if (identity === undefined) throw new Error("ops routes run after requireAccess");
-  return actorOf(identity);
+  return auditActorOf(identity);
 }
 
 /**
  * The member of staff behind the call, or null for a service token: Access lets one in, and it names no person for
  * a write that is kept under whoever made it, a task's owner or an address given to ops (docs/decisions/0092-task-owners.md).
  */
-export function memberOfStaffOf(c: Context<AppEnv>): AuditActor | null {
-  const actor = staffOf(c);
+export function staffMemberOf(c: Context<AppEnv>): AuditActor | null {
+  const actor = actorOf(c);
   return actor.kind === "staff" ? actor : null;
 }
 
@@ -76,7 +77,7 @@ function opsCallEntry(c: Context<AppEnv>, identity: AccessIdentity, route: strin
   const path = route.replace(/:(\w+)/g, (placeholder, name: string) => ids.get(name) ?? placeholder);
   return {
     surface: c.var.surface,
-    actor: actorOf(identity),
+    actor: auditActorOf(identity),
     action: "ops.call",
     subject: subjectOf(route, ids),
     requestId: c.var.requestId,

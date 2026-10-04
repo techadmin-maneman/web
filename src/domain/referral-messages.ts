@@ -6,7 +6,7 @@ import { fullDate } from "@maneman/web-kit/dates";
 import { serviceVisits, type TemplateName } from "../config/message-templates.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
-import { consentGiven } from "./messages.ts";
+import { consentGiven } from "./consents.ts";
 import { NO_VISITS_CONSENT, type Composed } from "./visit-messages.ts";
 
 /** The referrer's text, by what each side was given: the same, different, nothing to the friend. */

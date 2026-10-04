@@ -7,7 +7,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -106,7 +106,7 @@ const shown = (alert: OpenAlert) => ({
 function auditOf(c: Context<AppEnv>, alert: OpenAlert, action: AuditAction): AuditEntry {
   return {
     surface: "ops",
-    actor: staffOf(c),
+    actor: actorOf(c),
     action,
     subject: { kind: "alert", id: alert.id },
     requestId: c.var.requestId,

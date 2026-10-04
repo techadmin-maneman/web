@@ -5,7 +5,8 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { firstNameOf } from "../lib/names.ts";
-import { consentGiven, type MessageKind } from "./messages.ts";
+import { type MessageKind } from "./messages.ts";
+import { consentGiven } from "./consents.ts";
 import { currentAddress } from "./profile.ts";
 import { isServed } from "./service-area.ts";
 import { bookableTypes, liveVisitOf, type LiveVisit } from "./scheduling.ts";

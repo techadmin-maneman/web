@@ -26,7 +26,7 @@ import { firstNameOf } from "../lib/names.ts";
 
 /** "Karan Bhatia" → "Karan": all the messages and the tracker name a person by. */
 
-export interface Attribution {
+export interface ReferralAttribution {
   readonly id: string;
   readonly code: string;
   readonly referrerId: string;
@@ -41,7 +41,7 @@ export interface Attribution {
 }
 
 /** Which of the fraud rules a grant meets. */
-export async function fraudSignals(db: D1Database, attribution: Attribution): Promise<FraudSignal[]> {
+export async function fraudSignals(db: D1Database, attribution: ReferralAttribution): Promise<FraudSignal[]> {
   const { referrerId, referredId } = attribution;
   const met = new Set<FraudSignal>();
   const sharedAddress = await db
@@ -161,7 +161,7 @@ function referralCredits(
  */
 export function grantStatements(
   db: D1Database,
-  attribution: Attribution,
+  attribution: ReferralAttribution,
   reward: ReferralReward,
   state: "granted" | "approved",
   now: Date,
@@ -273,7 +273,7 @@ function keptRewardOf(row: AttributionRow): ReferralReward | null {
   return { referrer_visits: row.referrer_visits, friend_visits: row.friend_visits, valid_days: row.credit_valid_days };
 }
 
-const attributionFrom = (row: AttributionRow): Attribution => ({
+const attributionFrom = (row: AttributionRow): ReferralAttribution => ({
   id: row.id,
   code: row.code,
   referrerId: row.referrer_id,
@@ -350,7 +350,7 @@ export async function settleReferrals(
 }
 
 /** The sides a rejected grant is told of: each the reward would have given visits, and never an erased referrer. */
-function toldOfRejection(attribution: Attribution, reward: ReferralReward): string[] {
+function toldOfRejection(attribution: ReferralAttribution, reward: ReferralReward): string[] {
   const told: string[] = [];
   if (reward.friend_visits > 0) told.push(attribution.referredId);
   if (reward.referrer_visits > 0 && !attribution.referrerErased) told.push(attribution.referrerId);

@@ -127,7 +127,7 @@ interface Counted {
  * one attempt. The fifth wrong code voids the challenge; a right one closes it.
  * A challenge made for nobody holds no hash, so no code matches it.
  */
-export async function checkCode(
+export async function checkLoginCode(
   db: D1Database,
   options: {
     challengeId: string;

@@ -19,7 +19,7 @@
 // src/routes/ops-services.ts's (docs/decisions/0085-services-ops-can-edit.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import {
   boundsOf,
@@ -464,7 +464,7 @@ export function registerOpsSettings(app: App): void {
       await setOpsSetting(c.env.DB, {
         setting,
         value: checked.value,
-        actor: staffOf(c),
+        actor: actorOf(c),
         requestId: c.var.requestId,
         now: c.var.deps.now(),
       });
@@ -472,7 +472,7 @@ export function registerOpsSettings(app: App): void {
       await setOpsSetting(c.env.DB, {
         setting,
         value: null,
-        actor: staffOf(c),
+        actor: actorOf(c),
         requestId: c.var.requestId,
         now: c.var.deps.now(),
       });
@@ -506,7 +506,7 @@ export function registerOpsSettings(app: App): void {
       c.var.log.warn("price_refused", { item: price.item, field: refusal.field });
       return c.json(priceRefused(c.var.requestId, refusal), 400);
     }
-    await setPrice(c.env.DB, { price, actor: staffOf(c), requestId: c.var.requestId, now });
+    await setPrice(c.env.DB, { price, actor: actorOf(c), requestId: c.var.requestId, now });
     return c.json({ prices: await priceBook(c.env.DB, today) }, 200);
   });
 
@@ -520,7 +520,7 @@ export function registerOpsSettings(app: App): void {
       return c.json(priceRefused(c.var.requestId, refusal), 400);
     }
     const was = { item: price.item, tier: price.tier, valid_from: wasValidFrom };
-    const result = await correctPrice(c.env.DB, { was, price, actor: staffOf(c), requestId: c.var.requestId, now });
+    const result = await correctPrice(c.env.DB, { was, price, actor: actorOf(c), requestId: c.var.requestId, now });
     if (result === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
     if (result === "not_to_come") {
       c.var.log.warn("price_correction_refused", { item: price.item });
@@ -532,7 +532,7 @@ export function registerOpsSettings(app: App): void {
   app.openapi(withdrawPriceRoute, async (c) => {
     const now = c.var.deps.now();
     const row = c.req.valid("json");
-    const result = await withdrawPrice(c.env.DB, { row, actor: staffOf(c), requestId: c.var.requestId, now });
+    const result = await withdrawPrice(c.env.DB, { row, actor: actorOf(c), requestId: c.var.requestId, now });
     if (result === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
     if (result === "not_to_come") {
       c.var.log.warn("price_withdrawal_refused", { item: row.item });
@@ -549,7 +549,7 @@ export function registerOpsSettings(app: App): void {
   app.openapi(setServiceAreaRoute, async (c) => {
     const result = await setServiceArea(c.env.DB, {
       changes: c.req.valid("json").changes,
-      actor: staffOf(c),
+      actor: actorOf(c),
       requestId: c.var.requestId,
       now: c.var.deps.now(),
     });
@@ -573,7 +573,7 @@ export function registerOpsSettings(app: App): void {
     }
     const added = await addPincode(c.env.DB, {
       pincode,
-      actor: staffOf(c),
+      actor: actorOf(c),
       requestId: c.var.requestId,
       now: c.var.deps.now(),
     });

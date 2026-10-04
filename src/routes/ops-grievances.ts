@@ -4,7 +4,7 @@
 // Each answer is audited under the member of staff who gave it. Both keep to the caller's cities.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { auditStatement } from "../domain/audit.ts";
 import { reachBinding, withinReach } from "../domain/places.ts";
@@ -99,7 +99,7 @@ export function registerOpsGrievances(app: App): void {
 
   app.openapi(resolveRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const staff = staffOf(c);
+    const staff = actorOf(c);
     const now = c.var.deps.now();
     const db = c.env.DB;
     const open = await db.prepare("SELECT 1 FROM grievances WHERE id = ?1 AND state = 'open'").bind(id).first();

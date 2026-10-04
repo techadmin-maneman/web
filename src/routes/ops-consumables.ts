@@ -29,7 +29,7 @@ import {
   type Consumable,
 } from "../domain/consumables.ts";
 import { closeStaleLowStock } from "../domain/low-stock.ts";
-import { staffOf } from "../http/audit.ts";
+import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -270,7 +270,7 @@ async function answer(c: Context<AppEnv>) {
   };
 }
 
-const written = (c: Context<AppEnv>) => ({ actor: staffOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
+const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 export function registerOpsConsumables(app: App): void {
   app.openapi(consumablesRoute, async (c) => c.json(await answer(c), 200));

@@ -5,7 +5,7 @@ import type { CodeChannel } from "../providers/codes.ts";
 import {
   CHALLENGE_COLUMNS,
   challengeOf,
-  checkCode,
+  checkLoginCode,
   codeHashOf,
   type Challenge,
   type ChallengePurpose,
@@ -81,6 +81,6 @@ export async function verifyCode(
   db: D1Database,
   options: { challengeId: string; code: string; pepper: string; now: Date; purpose?: ChallengePurpose },
 ): Promise<Verification> {
-  const checked = await checkCode(db, { ...options, purpose: options.purpose ?? "login", holder: "person" });
+  const checked = await checkLoginCode(db, { ...options, purpose: options.purpose ?? "login", holder: "person" });
   return checked.outcome === "verified" ? { outcome: "verified", personId: checked.holderId } : checked;
 }
