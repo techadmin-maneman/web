@@ -295,7 +295,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or one who has been erased
+**404**: not_found: no such client in the caller's cities, or one who has been erased
 
 ```json
 {
@@ -1875,7 +1875,7 @@ Ops called the client about a move he had not heard of; its task leaves the boar
 
 ### GET /api/no-shows
 
-No-show cases: undecided first, each with its three facts
+No-show cases in the caller's cities: undecided first, each with its three facts
 
 **200**: The cases
 
@@ -1930,7 +1930,7 @@ Request body:
 }
 ```
 
-**403**: access_required, or not_permitted: waiving asks Finance MANAGE
+**403**: access_required, or not_permitted: waiving asks Finance MANAGE in the case's city
 
 ```json
 {
@@ -1938,7 +1938,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such case, or it was ruled on already
+**404**: not_found: no such case in the caller's cities, or it was ruled on already
 
 ```json
 {
@@ -2159,7 +2159,7 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 
 ### GET /api/no-shows/disputes
 
-Disputed no-show charges still to rule on, oldest first, each with its evidence
+Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence
 
 **200**: The disputes
 
@@ -2226,7 +2226,7 @@ Request body:
 }
 ```
 
-**403**: access_required, or not_permitted: refunding asks Finance MANAGE
+**403**: access_required, or not_permitted: refunding asks Finance MANAGE in the dispute's city
 
 ```json
 {
@@ -2234,7 +2234,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such dispute, or it was ruled on already
+**404**: not_found: no such dispute in the caller's cities, or it was ruled on already
 
 ```json
 {
@@ -2346,7 +2346,7 @@ Request body:
 
 ### GET /api/payments
 
-A day's money: what was collected, what went back, and each charge kept or ruled on
+A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on
 
 **200**: The day
 
@@ -4014,7 +4014,7 @@ Request body:
 }
 ```
 
-**404**: not_found
+**404**: not_found: no such visit in the caller's cities
 
 ```json
 {
@@ -4052,7 +4052,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
 }
 ```
 
-**404**: not_found: no such visit, or it carries no code
+**404**: not_found: no such visit in the caller's cities, or it carries no code
 
 ```json
 {
