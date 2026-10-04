@@ -308,7 +308,6 @@ describe("the cron's path, followed from cron.ts", () => {
     expect(CRON_PATH).toEqual(
       expect.arrayContaining([
         "src/scheduled/sweeper.ts",
-        "src/domain/fsm-catalogue.ts",
         "src/domain/ops-settings.ts",
         "src/domain/messages.ts",
         "src/domain/slot-times.ts",

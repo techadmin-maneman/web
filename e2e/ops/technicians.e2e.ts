@@ -1,9 +1,9 @@
 // Technicians (board D3): the roster, one row a technician, the jobs each has
 // finished and how those ran, and a panel over it with the phones each has
 // logged in on, with a revoke, and their leave. The API is answered from
-// e2e/ops/fixtures.ts, since a local database has no technician until FSM's
-// mirror has run and none has logged in. The clock is fixed to the day the
-// fixture's leave is read against.
+// e2e/ops/fixtures.ts, since a local database has no technician until ops add
+// one and none has logged in. The clock is fixed to the day the fixture's leave
+// is read against.
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
@@ -250,9 +250,8 @@ test("says so when no technician is active", async ({ page }) => {
   await expect(page.getByText("No technician is active.")).toBeVisible();
 });
 
-// Leave is recorded here because FSM has nowhere to keep it (ADR 0062), and it
-// is the same rows the dispatch board reads, so it says what it does before it
-// is sent.
+// Leave is recorded here (ADR 0062), and it is the same rows the dispatch board
+// reads, so it says what it does before it is sent.
 test("lists the leave a technician is down for, and says when there is none", async ({ page }) => {
   await open(page);
   const sandeep = await panelOf(page, "Sandeep Yadav");
@@ -480,7 +479,7 @@ test("switches a technician off only once asked, and lists the visits he no long
     ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.filter((each) => each.id !== IMRAN),
     switched_off: [
-      { id: IMRAN, name: "Imran Qureshi", zone: "Sec 40–65", city: "Gurgaon", mobile: "+919810000001", editable: true },
+      { id: IMRAN, name: "Imran Qureshi", zone: "Sec 40–65", city: "Gurgaon", mobile: "+919810000001" },
     ],
   };
   await panel.getByRole("button", { name: "Switch him off" }).click();
@@ -535,20 +534,6 @@ test("says so when the number he signs in with is another's now", async ({ page 
   await expect(panel.getByRole("alert")).toHaveText(
     "Another active technician signs in with his number now. Change one of the two numbers first.",
   );
-});
-
-// While FSM is the record of field work, its sync writes over every technician it lists.
-test("leaves a technician FSM lists to FSM: no change and no switch off here", async ({ page }) => {
-  const fsms = {
-    ...TECHNICIANS,
-    technicians: TECHNICIANS.technicians.map((each) => ({ ...each, editable: each.id !== IMRAN })),
-  };
-  await openWith(page, {}, json(fsms));
-  const panel = await panelOf(page, "Imran Qureshi");
-
-  await expect(panel.getByText("His details come from Zoho FSM. Change them there.")).toBeVisible();
-  await expect(panel.getByRole("button", { name: /^Change / })).toHaveCount(0);
-  await expect(panel.getByRole("button", { name: /^Switch off/ })).toHaveCount(0);
 });
 
 test("says plainly when the person's access does not reach a switch", async ({ page }) => {

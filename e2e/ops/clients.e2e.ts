@@ -193,7 +193,7 @@ test("opens on the pieces, as the board draws the page, and lists them in the bo
   await expect(piece).toContainText("24 Jun 2027 · base split at crown");
 });
 
-test("writes a gap where FSM's asset has no supplier lot, replacement date or failure", async ({ page }) => {
+test("writes a gap where a piece has no supplier lot, replacement date or failure", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/pieces`);
   const live = page.getByRole("row").filter({ hasText: "MM-STD-4417-C" });
   // The piece still in wear has no failure; the one rejected at the fit has no lot and no replacement due.

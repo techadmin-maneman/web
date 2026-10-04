@@ -230,8 +230,8 @@ export const DISCOUNT_CODES = {
 
 /**
  * The services, kind by kind (docs/decisions/0085-services-ops-can-edit.md): each kind's standard service, a
- * premium first fit ops added and FSM has no item for yet, a lace replacement retired, and a service visit whose new
- * price starts in October, with the one it replaced folded into its history.
+ * premium first fit ops added, a lace replacement retired, and a service visit whose new price starts in October,
+ * with the one it replaced folded into its history.
  */
 const service = (fields: {
   kind: "consultation" | "first_fit" | "service" | "replacement";
@@ -240,7 +240,6 @@ const service = (fields: {
   minutes: number;
   sort?: number;
   retired_date?: string | null;
-  fsm_item_id?: string | null;
   prices: {
     amount_ex_gst: number;
     gst_percent: number;
@@ -255,7 +254,6 @@ const service = (fields: {
   sort: fields.sort ?? 0,
   retired_date: fields.retired_date ?? null,
   offered: fields.retired_date === undefined || fields.retired_date === null || fields.retired_date > "2027-09-21",
-  fsm_item_id: fields.fsm_item_id === undefined ? `fsm-${fields.kind}-${fields.tier}` : fields.fsm_item_id,
   updated_by: "ops@maneman.in",
   updated_at: "2027-09-01T06:00:00.000Z",
   prices: fields.prices.map((price) => ({ item: fields.kind, tier: fields.tier, ...price })),
@@ -290,7 +288,6 @@ export const SERVICES = {
       name: "Premium",
       minutes: 240,
       sort: 1,
-      fsm_item_id: null,
       prices: [{ amount_ex_gst: 4_000_000, gst_percent: 0, valid_from: "2027-09-01", in_force: true }],
     }),
     service({

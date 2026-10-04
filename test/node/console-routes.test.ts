@@ -60,7 +60,6 @@ describe("what each ops route asks of its caller", () => {
       .map(([route]) => route);
     expect(manage).toEqual(
       expect.arrayContaining([
-        "POST /api/held-bookings/{id}/refund",
         "POST /api/clients/{id}/credits",
         "POST /api/prices",
         "POST /api/discount-codes",
@@ -150,7 +149,7 @@ describe("Tasks, where each department sees the groups it decides", () => {
   });
 
   it("gives each group to the department that decides it", () => {
-    expect(TASK_DEPARTMENTS.held_booking).toBe("operations");
+    expect(TASK_DEPARTMENTS.untold_move).toBe("operations");
     expect(TASK_DEPARTMENTS.grievance).toBe("customer_care");
     expect(TASK_DEPARTMENTS.no_show_decision).toBe("finance");
     expect(TASK_DEPARTMENTS.referral_review).toBe("growth");

@@ -21,7 +21,6 @@ const technician = (
   zone,
   city,
   mobile: `+9198100000${String(n).padStart(2, "0")}`,
-  editable: true,
   devices,
   leave,
 });
@@ -65,7 +64,6 @@ export const RAVI = {
   zone: "Sec 66–80",
   city: "Gurgaon",
   mobile: "+919810000004",
-  editable: true,
 } satisfies Roster["switched_off"][number];
 
 export const TECHNICIAN_ADDED = { id: "88000000-0000-4000-8000-000000000005" } satisfies OpsReply<

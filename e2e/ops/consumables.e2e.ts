@@ -1,5 +1,5 @@
 // Settings, Consumables: what a technician may record using on a job, what one
-// costs us, where each stands in FSM's catalogue, and what each service is
+// costs us, and what each service is
 // expected to use (docs/decisions/0087-consumables-and-stock.md). As every panel
 // of Settings does, it shows a change old beside new before it is sent
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md), and says of a
@@ -24,7 +24,7 @@ const posted = (page: Page, path: string) =>
 const row = (page: Page, name: string) => page.getByRole("row").filter({ has: page.getByRole("rowheader", { name }) });
 
 test.describe("the list", () => {
-  test("gives each its cost, the levels it is low at, where it stands in FSM, and whether it is offered", async ({
+  test("gives each its cost, the levels it is low at, and whether it is offered", async ({
     page,
   }) => {
     await open(page);
@@ -33,20 +33,12 @@ test.describe("the list", () => {
     const tape = row(page, "Tape strips strip");
     await expect(tape).toContainText("Rs. 12.50");
     await expect(tape).toContainText("Kit 5 · store 50");
-    await expect(tape).toContainText("In FSM");
     await expect(tape).toContainText("Offered");
-    await expect(row(page, "Bonding glue ml")).toContainText("In FSM as Glue");
-    await expect(row(page, "Solvent ml")).toContainText("Not in FSM");
     await expect(row(page, "Solvent ml")).toContainText("Offered until 1 Oct 2027");
     await expect(row(page, "Shampoo sachet sachet")).toContainText("Retired from 1 Sep 2027");
     await expect(
       row(page, "Shampoo sachet sachet").getByRole("button", { name: "Restore Shampoo sachet" }),
     ).toBeVisible();
-  });
-
-  test("says FSM's catalogue does not follow by itself while the push is off", async ({ page }) => {
-    await open(page);
-    await expect(page.getByText("FSM's catalogue does not follow by itself yet.")).toBeVisible();
   });
 });
 
@@ -77,7 +69,7 @@ test.describe("a consumable added or changed", () => {
     await expect(page.getByRole("status").filter({ hasText: "The consumable is added." })).toBeVisible();
   });
 
-  test("changed, shows each field old beside new, and says a renamed one keeps FSM's old name", async ({ page }) => {
+  test("changed, shows each field old beside new", async ({ page }) => {
     await open(page, { "POST /api/consumables/{code}": json(CONSUMABLES) });
     await page.getByRole("button", { name: "Change Tape strips" }).click();
 
@@ -90,7 +82,6 @@ test.describe("a consumable added or changed", () => {
     const check = page.getByRole("group", { name: "Check the change" });
     await expect(check).toContainText("Name: Tape strips → Contour tape");
     await expect(check).toContainText("Cost of one: Rs. 12.50 → Rs. 15");
-    await expect(check).toContainText("FSM's part keeps its old name");
     const sent = posted(page, "/api/consumables/tape_strips");
     await check.getByRole("button", { name: "Save it" }).click();
     expect((await sent).postDataJSON()).toMatchObject({ name: "Contour tape", unit_cost: 1500 });
