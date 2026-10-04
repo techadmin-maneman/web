@@ -13,7 +13,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { PRESET_IDS, findPreset } from "../config/presets.ts";
-import { FAILURE_CODES, HAIR_COLORS, JOB_STATES } from "../config/tryon.ts";
+import { FAILURE_CODES, HAIR_COLORS, JOB_STATES, UNKNOWN_COLOR_ROUTE } from "../config/tryon.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { chooseRender } from "../domain/render-choice.ts";
@@ -107,7 +107,7 @@ export function registerTryonGenerate(app: App): void {
     if (job.lead_id === null || job.stage === null) return c.json(errorBody("claim_required", requestId), 409);
     if (!tryOnRuns(settings.messaging)) return c.json(errorBody("whatsapp_unavailable", requestId), 503);
 
-    const choice = chooseRender(job.stage, preset, request.hair_color, settings.tryon.unknownColorRoute);
+    const choice = chooseRender(job.stage, preset, request.hair_color, UNKNOWN_COLOR_ROUTE);
     const outcome = job.state === "awaiting_upload" ? await startFirstLook(c, job, choice) : sameLookAgain(job, choice);
 
     if ("error" in outcome) return c.json(errorBody(outcome.error, requestId), outcome.status);
