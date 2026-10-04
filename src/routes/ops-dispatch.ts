@@ -30,12 +30,12 @@ import { isWithin, techniciansWithin } from "../domain/places.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
+import { queueMessage } from "../http/queue-message.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { BEGUN, CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
 import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 
 const ClientSchema = z
   .object({
@@ -405,8 +405,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     {
       fsm: deps.fsm,
       labelAsTest: config.environment !== "production",
-      notify: (messageId) =>
-        c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
+      notify: (messageId) => queueMessage(c, messageId),
       record: fieldRecord(config.providers),
     },
     input,

@@ -5,27 +5,27 @@ import type { Context } from "hono";
 import { fieldRecord } from "../config/field-record.ts";
 import { confirmBooking } from "../domain/bookings.ts";
 import { failureReason } from "../log.ts";
+import { enqueue } from "../queues/enqueue.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
-import type { MessagingMessage } from "../queues/messaging.ts";
 import type { AppEnv } from "./context.ts";
+import { queueMessage } from "./queue-message.ts";
 
 /**
- * Books the hold, or queues it for FSM. A booking that fails here is only logged: the hold keeps its time and its
- * payment, and the cron books it within the half hour (bookUnbookedHolds in src/domain/bookings.ts).
+ * Books the hold, or queues it for FSM. Never throws: a booking that fails here, or a hold FSM's queue refuses, keeps
+ * its time and its payment, and the cron books it within the half hour (src/scheduled/cron.ts, unbooked_holds).
  */
 export async function bookHold(c: Context<AppEnv>, holdId: string): Promise<void> {
   const { config, deps, log, requestId } = c.var;
   if (fieldRecord(config.providers) === "fsm") {
-    await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);
+    const body = { hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage;
+    await enqueue(c.env.FSM_QUEUE, body, { log, ifLost: "sweeper" });
     return;
   }
-  const notify = (messageId: string) =>
-    c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage);
   try {
     const outcome = await confirmBooking(c.env.DB, deps.fsm, deps.payments, holdId, deps.now(), {
       record: "ours",
       labelAsTest: config.environment !== "production",
-      notify,
+      notify: (messageId) => queueMessage(c, messageId),
       alertOnce: deps.alertOnce,
       log,
     });
