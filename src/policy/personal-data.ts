@@ -225,8 +225,8 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     erasure: { blanks: ["reason", "ruling_reason"], why: "Both reasons go; the ruling stays." },
   },
   number_change_requests: {
-    leftOut: ["id", "person_id", "decided_by"],
-    whyLeftOut: "Our keys, and which member of staff decided.",
+    leftOut: ["id", "person_id", "decided_by", "session_id"],
+    whyLeftOut: "Our keys, which member of staff decided, and the sign-in that asked, whose key lets a phone in.",
     erasure: { deletes: true, why: "Deleted, with their codes." },
   },
   otp_challenges: {

@@ -678,6 +678,46 @@ describe("a number change", () => {
     expect(staff).toBe("ops@localhost");
   });
 
+  // PS-14: a phone that went with the old number stayed signed in for 90 days.
+  it("signs out every other session of the client once confirmed, and keeps the one that asked", async () => {
+    const oldPhone = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p1", deviceLabel: null, now: NOW })}`;
+    const meWith = (session: string) =>
+      request(client, "/api/me", { headers: { Origin: ORIGIN, Cookie: session } }, queues);
+    const { body } = await start();
+    await verify(body.request_id, "old", codeTo(OLD));
+    await verify(body.request_id, "new", codeTo(NEW));
+    expect((await meWith(oldPhone)).status).toBe(200);
+
+    await send(ops, "POST", `/api/number-changes/${body.request_id}/decision`, { decision: "confirm", reason: null });
+
+    expect((await meWith(oldPhone)).status).toBe(401);
+    expect((await meWith(cookie)).status).toBe(200);
+  });
+
+  it("answers a number taken between the check and the change as in use, and changes nothing", async () => {
+    const { body } = await start();
+    await verify(body.request_id, "old", codeTo(OLD));
+    await verify(body.request_id, "new", codeTo(NEW));
+    // Taken as the decision is made: the check before the batch saw no holder.
+    await env.DB.prepare(
+      `CREATE TRIGGER take_the_number AFTER UPDATE OF state ON number_change_requests WHEN NEW.state = 'confirmed'
+       BEGIN INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p2', NEW.decided_at, '${NEW}', 'Someone'); END`,
+    ).run();
+
+    const decided = await send(ops, "POST", `/api/number-changes/${body.request_id}/decision`, {
+      decision: "confirm",
+      reason: null,
+    });
+    await env.DB.prepare("DROP TRIGGER take_the_number").run();
+
+    expect(decided.status).toBe(409);
+    expect(await decided.json()).toMatchObject({ error: { code: "number_in_use" } });
+    const person = await env.DB.prepare("SELECT mobile_e164 FROM people WHERE id = 'p1'").first<string>("mobile_e164");
+    expect(person).toBe(OLD);
+    const change = await env.DB.prepare("SELECT state FROM number_change_requests").first<string>("state");
+    expect(change).toBe("awaiting_ops");
+  });
+
   it("counts wrong codes as a login does, and a number change's code opens no login", async () => {
     const { body } = await start();
     const wrong = codeTo(OLD) === "000000" ? "111111" : "000000";

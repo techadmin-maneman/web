@@ -17,7 +17,7 @@ The Phase 2 backend prompt asks for the client app's routes to sit "behind the s
 
 **90 days from last use.** Each request with a live session moves its expiry on and sets the cookie again, at most once an hour, so a busy app does not write on every request. A session unused for 90 days ends.
 
-**Revocable.** Logging out sets `revoked_at` and clears the cookie. Erasing a person (ADR 0019) revokes every session they have. The profile will list and end sessions by device, from `device_label` ("Chrome on Android"), which is taken from the User-Agent at login. The full User-Agent is never kept.
+**Revocable.** Logging out sets `revoked_at` and clears the cookie. Erasing a person (ADR 0019) revokes every session they have. The app's profile lists the client's live sessions by device, from `device_label` ("Chrome on Android"), which is taken from the User-Agent at login, and signs any of them out, or every one but this (`/api/sessions`, `src/routes/client-sessions.ts`). Each is named there by the first 16 hex of its stored hash, which opens nothing. The full User-Agent is never kept. Ops' confirmation of a number change signs out every session but the one that asked for it, so a phone that went with the old number is signed in no longer.
 
 **One table for both apps.** `sessions.subject_kind` is `client` or `technician`, and `subject_id` names the person or the technician. P2-M4 adds the technician's device binding beside it.
 
@@ -31,4 +31,6 @@ The Phase 2 backend prompt asks for the client app's routes to sit "behind the s
   - the cookie's exact attributes, and only the hash being stored;
   - the hourly slide, and the end after 90 days;
   - logout, erasure, and a made-up cookie;
-  - the device label (`test/node/device-label.test.ts`).
+  - the device label (`test/node/device-label.test.ts`);
+  - the list, and signing one session or every other out (`test/worker/client-sessions.test.ts`);
+  - a confirmed number change signing out the old phone (`test/worker/client-profile.test.ts`).

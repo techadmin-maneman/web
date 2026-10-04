@@ -1863,6 +1863,62 @@
         ],
         "additionalProperties": false
       },
+      "SignedInList": {
+        "type": "object",
+        "properties": {
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SignedIn"
+            }
+          }
+        },
+        "required": [
+          "sessions"
+        ],
+        "additionalProperties": false
+      },
+      "SignedIn": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Names the session to this client, to sign it out; it opens nothing."
+          },
+          "device": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The browser and system it signed in from, \"Chrome on Android\"; null where they could not be told."
+          },
+          "signed_in_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_used_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Kept to the hour: a session is touched at most hourly."
+          },
+          "this_device": {
+            "type": "boolean",
+            "description": "Whether it is the session this request came with."
+          }
+        },
+        "required": [
+          "id",
+          "device",
+          "signed_in_at",
+          "last_used_at",
+          "this_device"
+        ],
+        "additionalProperties": false
+      },
       "Visits": {
         "type": "object",
         "properties": {
@@ -5335,6 +5391,94 @@
           },
           "401": {
             "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions": {
+      "get": {
+        "summary": "The browsers this client is signed in on, the one used last first",
+        "responses": {
+          "200": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedInList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/others": {
+      "delete": {
+        "summary": "Sign out every browser but this one",
+        "responses": {
+          "204": {
+            "description": "Signed out, or there were none"
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}": {
+      "delete": {
+        "summary": "Sign one browser out; this one's own signs out here",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{16}$"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Signed out"
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no live session of this client's by that ID",
             "content": {
               "application/json": {
                 "schema": {

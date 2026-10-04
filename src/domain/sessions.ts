@@ -107,3 +107,76 @@ export function deviceLabel(userAgent: string | undefined): string | null {
   const parts = [named(BROWSERS), named(SYSTEMS)].filter((part) => part !== null);
   return parts.length === 0 ? null : parts.join(" on ");
 }
+
+/** A session as its own client sees it: never the token, nor the hash the cookie is looked up by. */
+export interface SignedIn {
+  /** The session's handle (sessionHandle). */
+  readonly id: string;
+  readonly device: string | null;
+  readonly signedInAt: string;
+  readonly lastUsedAt: string;
+}
+
+/** The first 16 hex of a session's stored hash: it names the session to its own client, and opens nothing. */
+export const sessionHandle = (sessionId: string): string => sessionId.slice(0, 16);
+
+/** Most sessions a list shows: a client signed in on more than this many browsers sees the latest. */
+const LISTED_SESSIONS = 20;
+
+/** The subject's live sessions, the one used last first. */
+export async function liveSessions(
+  db: D1Database,
+  subject: { kind: SessionKind; id: string },
+  now: Date,
+): Promise<{ readonly sessionId: string; readonly signedIn: SignedIn }[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT id, device_label, created_at, last_seen_at FROM sessions
+       WHERE subject_kind = ?1 AND subject_id = ?2 AND revoked_at IS NULL AND expires_at > ?3
+       ORDER BY last_seen_at DESC LIMIT ?4`,
+    )
+    .bind(subject.kind, subject.id, now.toISOString(), LISTED_SESSIONS)
+    .all<{ id: string; device_label: string | null; created_at: string; last_seen_at: string }>();
+  return results.map((row) => ({
+    sessionId: row.id,
+    signedIn: {
+      id: sessionHandle(row.id),
+      device: row.device_label,
+      signedInAt: row.created_at,
+      lastUsedAt: row.last_seen_at,
+    },
+  }));
+}
+
+/** Ends the subject's live session with this handle. Whether there was one. */
+export async function revokeByHandle(
+  db: D1Database,
+  subject: { kind: SessionKind; id: string },
+  handle: string,
+  now: Date,
+): Promise<boolean> {
+  const revoked = await db
+    .prepare(
+      `UPDATE sessions SET revoked_at = ?4
+       WHERE subject_kind = ?1 AND subject_id = ?2 AND substr(id, 1, 16) = ?3 AND revoked_at IS NULL AND expires_at > ?4
+       RETURNING id`,
+    )
+    .bind(subject.kind, subject.id, handle, now.toISOString())
+    .all();
+  return revoked.results.length > 0;
+}
+
+/** Ends every live session of the subject but `keep`, or every one where `keep` is null. */
+export function revokeOthersStatement(
+  db: D1Database,
+  subject: { kind: SessionKind; id: string },
+  keep: string | null,
+  now: Date,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE sessions SET revoked_at = ?4
+       WHERE subject_kind = ?1 AND subject_id = ?2 AND id IS NOT ?3 AND revoked_at IS NULL AND expires_at > ?4`,
+    )
+    .bind(subject.kind, subject.id, keep, now.toISOString());
+}

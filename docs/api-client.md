@@ -645,6 +645,62 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
 }
 ```
 
+### GET /api/sessions
+
+The browsers this client is signed in on, the one used last first
+
+**200**: Signed in
+
+```json
+{
+  "$ref": "#/components/schemas/SignedInList"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### DELETE /api/sessions/others
+
+Sign out every browser but this one
+
+**204**: Signed out, or there were none
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### DELETE /api/sessions/{id}
+
+Sign one browser out; this one's own signs out here
+
+**204**: Signed out
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no live session of this client's by that ID
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/visits
 
 The client's visits, upcoming and past
@@ -3677,6 +3733,72 @@ Request body:
     "request_id",
     "number",
     "code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SignedInList
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "sessions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/SignedIn"
+      }
+    }
+  },
+  "required": [
+    "sessions"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SignedIn
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Names the session to this client, to sign it out; it opens nothing."
+    },
+    "device": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The browser and system it signed in from, \"Chrome on Android\"; null where they could not be told."
+    },
+    "signed_in_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_used_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Kept to the hour: a session is touched at most hourly."
+    },
+    "this_device": {
+      "type": "boolean",
+      "description": "Whether it is the session this request came with."
+    }
+  },
+  "required": [
+    "id",
+    "device",
+    "signed_in_at",
+    "last_used_at",
+    "this_device"
   ],
   "additionalProperties": false
 }

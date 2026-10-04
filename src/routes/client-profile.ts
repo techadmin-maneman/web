@@ -564,6 +564,7 @@ export function registerClientProfile(app: App): void {
     const testRecord = contact?.testRecord ?? false;
     const started = await startNumberChange(db, {
       personId,
+      sessionId: clientOf(c).id,
       newMobileE164: newMobile,
       pepper: config.settings.login.codePepper,
       audit: audit(personId, requestId, { action: "number_change.request" }),

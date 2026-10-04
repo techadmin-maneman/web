@@ -968,7 +968,7 @@ Indexes:
 
 A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
 
-Made by `0008_profile.sql`; changed by `0041_vendor_correctness.sql`.
+Made by `0008_profile.sql`; changed by `0041_vendor_correctness.sql`, `0102_number_change_session.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -983,6 +983,7 @@ Made by `0008_profile.sql`; changed by `0041_vendor_correctness.sql`.
 | `decided_by` | TEXT | yes |  |  |
 | `reason` | TEXT | yes |  |  |
 | `replaced_mobile_e164` | TEXT | yes |  |  |
+| `session_id` | TEXT | yes |  |  |
 
 Indexes:
 
