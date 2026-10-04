@@ -104,6 +104,35 @@ export async function inviteOf(db: D1Database, code: string, nameOnInvite: boole
   };
 }
 
+/** The invite a client came with, while its free service visits still wait on their first fit. */
+export interface PendingInvite {
+  /** As the invite's landing names them: null where it does not. */
+  readonly referrerFirstName: string | null;
+}
+
+/** The invite a client came with, while it is pending and has not lapsed on a waitlist; else null. */
+export async function pendingInviteOf(
+  db: D1Database,
+  personId: string,
+  now: Date,
+  nameOnInvite: boolean,
+): Promise<PendingInvite | null> {
+  const row = await db
+    .prepare(
+      `SELECT r.code, r.via, pin.launched_at FROM referral_attributions r
+       LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode
+       WHERE r.referred_person_id = ?1 AND r.grant_state = 'pending'`,
+    )
+    .bind(personId)
+    .first<{ code: string; via: Via; launched_at: string | null }>();
+  if (row === null) return null;
+  const lapsed = row.via === "waitlist" && row.launched_at !== null && inviteLapsed(new Date(row.launched_at), now);
+  if (lapsed) return null;
+  const invite = await inviteOf(db, row.code, nameOnInvite);
+  if (invite === null) return null;
+  return { referrerFirstName: invite.referrerFirstName };
+}
+
 /**
  * An invite as it stands for the person who used it: valid; expired, when the one they were held under on a
  * waitlist lapsed (src/policy/invites.ts); or unknown, a code we do not have.
