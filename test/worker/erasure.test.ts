@@ -4,6 +4,7 @@ import { confirmBooking } from "../../src/domain/bookings.ts";
 import { alertAgedDeletions, deletionsWaiting } from "../../src/domain/deletion.ts";
 import { erasePerson } from "../../src/domain/erasure.ts";
 import { sendUnsentLinks } from "../../src/domain/payment-links.ts";
+import { recordRefund } from "../../src/domain/payments.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { putCounted, readMeter } from "../../src/domain/storage-meter.ts";
 import type { Providers } from "../../src/config/environments.ts";
@@ -805,6 +806,46 @@ async function paymentHeld(personId: string): Promise<void> {
     .run();
 }
 
+interface CancelOwing {
+  /** In paise, of the Rs. 30,000 paid: what the cancel gives back, and what it keeps. */
+  readonly refund: number;
+  readonly kept: number;
+  /** Whether the cancel's refund is settled: made, or refused by Razorpay and left to ops. */
+  readonly settled: boolean;
+  /** Our refund's ID, once Razorpay made it. */
+  readonly refundId: string | null;
+}
+
+/** A first fit paid Rs. 30,000 and cancelled since, with the cancel's refund as given. */
+async function cancelledFirstFit(personId: string, cancel: CancelOwing): Promise<void> {
+  const at = NOW.toISOString();
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
+       VALUES ('visit-cancelled', 'visit-cancelled', ?1, 'first_fit', 'cancelled', '2026-09-22T03:30:00.000Z', ?2)`,
+    ).bind(personId, at),
+    env.DB.prepare(
+      `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, status,
+         captured_at, created_at, updated_at)
+       VALUES ('payment-fit', 'MM-2026-0004', ?1, 'visit-cancelled', 'pay_fit', 3000000, 'INR', 'captured', ?2, ?2, ?2)`,
+    ).bind(personId, at),
+    env.DB.prepare(
+      `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, kept_amount,
+         payment_id, created_at, refund_settled_at, razorpay_refund_id)
+       VALUES ('change-1', 'visit-cancelled', ?1, 'cancelled', 'late', '2026-09-22T03:30:00.000Z', ?2, ?3,
+         'payment-fit', ?4, ?5, ?6)`,
+    ).bind(personId, cancel.refund, cancel.kept, at, cancel.settled ? at : null, cancel.refundId),
+  ]);
+}
+
+/** Razorpay's webhook reporting a refund of the first fit's payment processed. */
+const refundReported = (amount: number) =>
+  recordRefund(
+    env.DB,
+    { id: "rfnd_fit", payment_id: "pay_fit", amount, status: "processed", created_at: NOW.getTime() / 1000 },
+    NOW,
+  );
+
 describe("erasure while something is still owed", () => {
   it("refuses a client with a visit booked, and names the visit", async () => {
     const personId = await book();
@@ -837,6 +878,44 @@ describe("erasure while something is still owed", () => {
       visits: [],
       payments: [{ id: "payment-1", reference: "MM-2026-0001", amount: 200000 }],
     });
+  });
+
+  it("refuses a client whose cancelled visit's refund is not yet made, names what it owes, and erases once made", async () => {
+    const personId = await book();
+    // A late cancel keeps the first fit's Rs. 4,000 late fee, and the cron is still asking for the rest.
+    await cancelledFirstFit(personId, { refund: 2600000, kept: 400000, settled: false, refundId: null });
+    const owed = {
+      error: { code: "payment_held" },
+      visits: [],
+      payments: [{ id: "payment-fit", reference: "MM-2026-0004", amount: 2600000 }],
+    };
+
+    const pending = await erase(personId);
+    expect(pending.status).toBe(409);
+    expect(await pending.json()).toMatchObject(owed);
+
+    // Razorpay refused it, so it waits for ops to refund by hand.
+    await env.DB.prepare("UPDATE visit_changes SET refund_settled_at = ?1").bind(NOW.toISOString()).run();
+    const leftToOps = await erase(personId);
+    expect(leftToOps.status).toBe(409);
+    expect(await leftToOps.json()).toMatchObject(owed);
+
+    expect(await refundReported(2600000)).toBe(true);
+    expect(await statusOf(personId)).toBe(200);
+  });
+
+  it("is not held up by a cancel that kept what was paid", async () => {
+    const personId = await book();
+    await cancelledFirstFit(personId, { refund: 0, kept: 3000000, settled: true, refundId: null });
+
+    expect(await statusOf(personId)).toBe(200);
+  });
+
+  it("is not held up by a cancel's refund Razorpay made, before it reports the refund processed", async () => {
+    const personId = await book();
+    await cancelledFirstFit(personId, { refund: 3000000, kept: 0, settled: true, refundId: "rfnd_fit" });
+
+    expect(await statusOf(personId)).toBe(200);
   });
 
   it("erases anyway when ops say they will settle both by hand today, and the log says so", async () => {

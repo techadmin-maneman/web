@@ -9,7 +9,14 @@ import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/cred
 import { resolveAskedWindows } from "../../src/domain/asked-windows.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { settleOwedRefunds } from "../../src/domain/cancel-refunds.ts";
-import { cancelVisit, changeableVisit, changeTerms, termsInForce } from "../../src/domain/visit-changes.ts";
+import {
+  cancelVisit,
+  changeableVisit,
+  changeTerms,
+  opsCancelTerms,
+  termsInForce,
+  type OpsCancel,
+} from "../../src/domain/visit-changes.ts";
 import { readOpsInputs } from "../../src/domain/ops-settings.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
@@ -491,6 +498,64 @@ describe("a visit booked without FSM, cancelled by the client", () => {
     expect((await changes()).results).toEqual([]);
     expect((await messagesOf(PERSON)).results).toEqual([]);
     expect(payments.made.refunds).toEqual([]);
+  });
+});
+
+describe("a visit the client and ops cancel at the same moment, without FSM", () => {
+  const options = { labelAsTest: true, log: createLogger(), record: "ours" } as const;
+  const byOps: OpsCancel = {
+    staff: "ops@localhost",
+    reason: "Client phoned to cancel",
+    terms: "free",
+    audit: {
+      surface: "ops",
+      actor: { kind: "staff", id: "ops@localhost" },
+      action: "visit.cancel",
+      subject: { kind: "appointment", id: VISIT },
+      requestId: null,
+    },
+  };
+
+  /** Both read the terms before either cancels, as two requests at the same moment do; then both cancel. */
+  async function cancelledByBoth(deps: TestDependencies) {
+    const visit = await changeableVisit(env.DB, PERSON, VISIT, NOW);
+    if (visit === null) throw new Error("the visit should be changeable");
+    const terms = await changeTerms(env.DB, visit, NOW, termsInForce(await readOpsInputs(env.DB, NOW), "service"));
+    const outcomes = await Promise.all([
+      cancelVisit(env.DB, deps, terms, NOW, options),
+      cancelVisit(env.DB, deps, opsCancelTerms(terms, false), NOW, { ...options, ops: byOps }),
+    ]);
+    return outcomes.map((outcome) => outcome.kind).sort();
+  }
+
+  const restores = async () =>
+    (await env.DB.prepare("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'restore'").first<{ n: number }>())?.n;
+
+  beforeEach(async () => {
+    await fittedClient();
+    await bookedWithoutFsm(THURSDAY_NOON);
+  });
+
+  it("is cancelled once, refunded once and the client told once", async () => {
+    const payments = createStubPayments();
+
+    expect(await cancelledByBoth(withoutFsm({ payments }))).toEqual(["cancelled", "not_changeable"]);
+
+    expect((await visitOf(VISIT))?.status).toBe("cancelled");
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 200000 }]);
+    expect((await changes()).results).toHaveLength(1);
+    expect((await messagesOf(PERSON)).results).toHaveLength(1);
+  });
+
+  it("gives its credit back once", async () => {
+    await env.DB.prepare("DELETE FROM payments").run();
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "referral", sourceId: "attr-1", now: NOW }).run();
+    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
+
+    expect(await cancelledByBoth(withoutFsm())).toEqual(["cancelled", "not_changeable"]);
+
+    expect(await restores()).toBe(1);
+    expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(1);
   });
 });
 

@@ -9024,7 +9024,8 @@ Request body:
           "amount"
         ],
         "additionalProperties": false
-      }
+      },
+      "description": "Money owed back: a payment held with no visit behind it, or what a cancelled visit's refund has still to return."
     },
     "links": {
       "type": "array",
