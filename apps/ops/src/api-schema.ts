@@ -6650,6 +6650,8 @@ export interface components {
             invite: components["schemas"]["ClientInvite"] | null;
             /** @description Bookings FSM refused, waiting for a try or for ops; the soonest visit first. */
             held_bookings: components["schemas"]["HeldBooking"][];
+            /** @description Bookings that refunded their payment by themselves; the latest refund first. */
+            auto_refunds: components["schemas"]["AutoRefund"][];
         };
         ClientAddress: {
             line1: string;
@@ -7023,6 +7025,28 @@ export interface components {
                 /** @description In paise before GST; null until the visit's price is known. */
                 amount_off: number | null;
             } | null;
+        };
+        AutoRefund: {
+            /** Format: uuid */
+            hold_id: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description Its service's name as it is now. */
+            service: string;
+            /**
+             * Format: date
+             * @description India's day the visit was to be on.
+             */
+            date: string;
+            /** @description In paise, GST included: what Razorpay took, all of which went back; null where it is not on record. */
+            amount: number | null;
+            /**
+             * @description lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun.
+             * @enum {string}
+             */
+            reason: "lapsed" | "not_movable";
+            /** Format: date-time */
+            refunded_at: string;
         };
         ClientPhotos: {
             visits: {

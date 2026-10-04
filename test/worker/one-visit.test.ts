@@ -10,7 +10,9 @@ import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts"
 import { raiseInvoices } from "../../src/domain/fsm-invoices.ts";
 import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { summaryOf } from "../../src/domain/job-sheet.ts";
+import { composeLinkPaid } from "../../src/domain/payment-links.ts";
 import { recordPayment } from "../../src/domain/payments.ts";
+import { renderMessage } from "../../src/config/message-templates.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
@@ -450,6 +452,27 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     expect(await linkRow()).toMatchObject({ paid_at: "2026-09-22T08:57:15.000Z" });
     const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(tasks.filter((task) => task.group === "payment_owed")).toEqual([]);
+  });
+
+  // CP-54: the largest payment in the product was the only one we never confirmed.
+  it("queues the client's receipt once, however often the payment is told of, whatever their consent", async () => {
+    const linkId = await fittedAndClosed(createStubPayments());
+    await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-1");
+    await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-2");
+
+    const { results } = await env.DB.prepare(
+      "SELECT kind, subject_kind, subject_id, state FROM outbound_messages WHERE kind = 'link_paid'",
+    ).all();
+    expect(results).toEqual([{ kind: "link_paid", subject_kind: "appointment", subject_id: JOB, state: "queued" }]);
+    const composed = await composeLinkPaid(env.DB, JOB, PERSON);
+    expect(composed).toEqual({
+      template: "link_paid_v1",
+      params: ["Rohit", "Mane Man Natural hair system", "", "", "", "Rs. 45,000", LINK_REFERENCE],
+    });
+    expect("template" in composed && renderMessage(composed.template, composed.params)).toBe(
+      "Hello Rohit, thank you for your payment of Rs. 45,000 for your Mane Man Natural hair system, reference " +
+        `${LINK_REFERENCE}. Welcome to Mane Man. The receipt is in the app.`,
+    );
   });
 
   it("numbers a payment captured while the link waits after the link, never with the link's number", async () => {

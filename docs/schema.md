@@ -162,7 +162,7 @@ Indexes:
 
 One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 
-Made by `0038_alerts.sql`; changed by `0086_alerts_told.sql`.
+Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1481,7 +1481,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1531,6 +1531,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `reference` | TEXT | yes |  |  |
 | `reference_year` | INTEGER | yes |  |  |
 | `reference_number` | INTEGER | yes |  |  |
+| `auto_refund_reason` | TEXT | yes |  |  |
 
 Indexes:
 
