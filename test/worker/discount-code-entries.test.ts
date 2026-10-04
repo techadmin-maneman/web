@@ -717,6 +717,36 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     ]);
   });
 
+  /** GET /api/me as the person the site's booking made. */
+  async function homeOfBooker() {
+    const person = await env.DB.prepare("SELECT id FROM people").first<string>("id");
+    const session = await openSession(env.DB, { kind: "client", subjectId: person ?? "", deviceLabel: null, now: NOW });
+    const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me", {
+      headers: { Cookie: `mm_app=${session}` },
+    });
+    return answer.json<{ consultation: { one_visit: unknown } | null; being_booked: { one_visit: unknown } | null }>();
+  }
+
+  // BK-15 and CP-01: Home said "We are booking your visit", with no price, while the site had said it was booked, and
+  // every Home logged consultation_window_unknown.
+  it("shows Home the one visit on its way as itself, priced after the code on its hold", async () => {
+    await make();
+    await book({ discount_code: "TENPC" });
+    const logs = captureLogs();
+    const me = await homeOfBooker();
+    expect(me.being_booked?.one_visit).toEqual({ amount: 2_700_000, from: false, code: "TENPC" });
+    expect(me.consultation).toBeNull();
+    expect(logs.lines().filter((line) => line.event === "consultation_window_unknown")).toEqual([]);
+  });
+
+  it("shows Home the one visit asked for while booking is off, priced after the code typed", async () => {
+    await make();
+    await book({ discount_code: "TENPC" }, { selfServeBooking: false });
+    const me = await homeOfBooker();
+    expect(me.consultation?.one_visit).toEqual({ amount: 2_700_000, from: false, code: "TENPC" });
+    expect(me.being_booked).toBeNull();
+  });
+
   it("refuses the booking for a code that does not apply, naming the box, and writes nothing", async () => {
     await make({ code: "SVC25", covers: ["service"] });
     for (const body of [

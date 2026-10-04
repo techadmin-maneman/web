@@ -26,6 +26,7 @@
     "test/node/app-payments.test.ts",
     "test/node/app-money.test.ts",
     "test/node/app-next-visit-words.test.ts",
+    "test/node/app-one-visit-words.test.ts",
     "test/node/app-referral-card.test.ts",
     "test/node/app-route.test.ts",
     "test/node/app-upcoming.test.ts",

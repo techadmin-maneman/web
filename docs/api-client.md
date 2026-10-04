@@ -2170,13 +2170,25 @@ Request body:
         "place": {
           "type": "string",
           "description": "Where it is: the saved address (locality, city and pincode), else the booking's city."
+        },
+        "one_visit": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/OneVisitPrice"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A consultation and fit in one visit asked for on /book: what it costs once fitted, after the code typed there. Null for a consultation alone."
         }
       },
       "required": [
         "date",
         "window",
         "window_label",
-        "place"
+        "place",
+        "one_visit"
       ],
       "additionalProperties": false,
       "description": "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit."
@@ -2223,8 +2235,15 @@ Request body:
               "description": "Paid for in money, rather than free or covered by a credit."
             },
             "one_visit": {
-              "type": "boolean",
-              "description": "A consultation and fit in one visit."
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OneVisitPrice"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code entered there. Null for any other visit."
             }
           },
           "required": [
@@ -2545,6 +2564,48 @@ Request body:
 }
 ```
 
+### OneVisitPrice
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced."
+    },
+    "from": {
+      "type": "boolean",
+      "description": "The hair systems differ in price, so the amount is where they start."
+    },
+    "code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code on the visit; null for none."
+    }
+  },
+  "required": [
+    "amount",
+    "from",
+    "code"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### VisitSummary
 
 ```json
@@ -2692,48 +2753,6 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Display name and initials only."
-}
-```
-
-### OneVisitPrice
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "amount": {
-      "anyOf": [
-        {
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced."
-    },
-    "from": {
-      "type": "boolean",
-      "description": "The hair systems differ in price, so the amount is where they start."
-    },
-    "code": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "The discount code on the visit; null for none."
-    }
-  },
-  "required": [
-    "amount",
-    "from",
-    "code"
-  ],
-  "additionalProperties": false
 }
 ```
 

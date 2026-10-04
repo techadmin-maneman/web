@@ -1446,7 +1446,7 @@ describe("where it waits for ops, and what the client sees meanwhile", () => {
       date: "2026-09-24",
       window: "afternoon",
       paid: true,
-      one_visit: false,
+      one_visit: null,
     });
   });
 });

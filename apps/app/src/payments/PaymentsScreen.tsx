@@ -130,10 +130,15 @@ function Owed({ owed, thisYear }: { owed: readonly OwedPayment[]; thisYear: numb
 }
 
 /** Board E3's lines for a lead, a one visit's while one is booked, or a fitted client's. */
+/** A consultation and fit in one visit booked: as a visit, as asked for on /book, or on its way to FSM. */
+function oneVisitBooked(me: Me): boolean {
+  const booked = [me.next_visit, me.consultation, me.being_booked];
+  return booked.some((each) => each !== null && oneVisitOf(each) !== null);
+}
+
 function emptyLines(me: Me): readonly [string, string] {
   if (me.state === "fitted") return empty.paymentsFitted.lines;
-  const next = me.next_visit;
-  if (next !== null && oneVisitOf(next) !== null) return empty.paymentsOneVisit.lines;
+  if (oneVisitBooked(me)) return empty.paymentsOneVisit.lines;
   return empty.payments.lines;
 }
 

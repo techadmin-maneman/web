@@ -2,10 +2,8 @@
 // only if the client goes ahead, then the code on it, then that a link comes by text.
 
 import { rupees } from "@maneman/web-kit/money";
-import type { VisitSummary } from "../api.ts";
+import type { OneVisitPrice } from "../api.ts";
 import { home } from "../content.ts";
-
-export type OneVisitPrice = NonNullable<VisitSummary["one_visit"]>;
 
 function priceLine(price: OneVisitPrice): string {
   const copy = home.oneVisit;

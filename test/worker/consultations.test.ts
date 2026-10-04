@@ -998,7 +998,14 @@ describe("a consultation and fit in one visit", () => {
     const client = appFor("local", fakeDependencies(), {}, "client");
     const me = await (await request(client, "/api/me", { headers: { Cookie: `mm_app=${session}` } })).json();
     expect(me).toMatchObject({
-      being_booked: { type: "first_fit", date: "2026-09-23", window: "morning", paid: false, one_visit: true },
+      consultation: null,
+      being_booked: {
+        type: "first_fit",
+        date: "2026-09-23",
+        window: "morning",
+        paid: false,
+        one_visit: { amount: 3_000_000, from: false, code: null },
+      },
     });
   });
 

@@ -33,29 +33,36 @@ export async function hasFsmVisit(db: D1Database, personId: string): Promise<boo
   return visit !== null;
 }
 
+/** What a booking asked for: its window and, from a request, whether it is a consultation and fit in one visit. */
+export interface AskedFor {
+  readonly window: BookingWindow;
+  readonly oneVisit: boolean;
+  /** The discount code typed on /book for a one visit; null for none. */
+  readonly code: string | null;
+}
+
 /**
- * The window a booking asked for. A Phase 1 lead carries its own rough choice.
- * A booking from the site's form carries none: its window is on the slot it
- * held or, while self-serve booking is off, on the request ops confirm
- * (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
+ * What a booking asked for. A Phase 1 lead carries its own rough choice of
+ * window. A booking from the site's form carries none: its window is on the
+ * consultation slot it held or, while self-serve booking is off, on the request
+ * ops confirm (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
  */
-export async function windowAskedFor(
-  db: D1Database,
-  personId: string,
-  booking: ProposedBooking,
-): Promise<BookingWindow | null> {
-  if (booking.first_choice_window !== null) return askedWindowOf(booking.first_choice_window);
+export async function askedFor(db: D1Database, personId: string, booking: ProposedBooking): Promise<AskedFor | null> {
+  if (booking.first_choice_window !== null) {
+    return { window: askedWindowOf(booking.first_choice_window), oneVisit: false, code: null };
+  }
   const asked = await db
     .prepare(
-      `SELECT asked FROM (
-         SELECT requested_window AS asked, created_at FROM consultation_requests
+      `SELECT asked, one_visit, code FROM (
+         SELECT requested_window AS asked, one_visit, discount_code AS code, created_at FROM consultation_requests
          WHERE person_id = ?1 AND requested_date = ?2
          UNION ALL
-         SELECT window_label AS asked, created_at FROM slot_holds
+         SELECT window_label AS asked, 0 AS one_visit, NULL AS code, created_at FROM slot_holds
          WHERE person_id = ?1 AND date = ?2 AND type = 'consultation'
        ) ORDER BY created_at DESC LIMIT 1`,
     )
     .bind(personId, booking.proposed_visit_date)
-    .first<{ asked: BookingWindow }>();
-  return asked?.asked ?? null;
+    .first<{ asked: BookingWindow; one_visit: number; code: string | null }>();
+  if (asked === null) return null;
+  return { window: asked.asked, oneVisit: asked.one_visit === 1, code: asked.code };
 }

@@ -2736,6 +2736,8 @@ export interface components {
                 window_label: "before noon" | "after four" | null;
                 /** @description Where it is: the saved address (locality, city and pincode), else the booking's city. */
                 place: string;
+                /** @description A consultation and fit in one visit asked for on /book: what it costs once fitted, after the code typed there. Null for a consultation alone. */
+                one_visit: components["schemas"]["OneVisitPrice"] | null;
             } | null;
             /** @description The next visit that has not happened, from FSM: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;
@@ -2749,8 +2751,8 @@ export interface components {
                 window: "morning" | "afternoon" | "evening";
                 /** @description Paid for in money, rather than free or covered by a credit. */
                 paid: boolean;
-                /** @description A consultation and fit in one visit. */
-                one_visit: boolean;
+                /** @description A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code entered there. Null for any other visit. */
+                one_visit: components["schemas"]["OneVisitPrice"] | null;
             } | null;
             /** @description The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed. */
             payment_owed: components["schemas"]["OwedPayment"] | null;
@@ -2830,6 +2832,14 @@ export interface components {
             };
             referral_reward: components["schemas"]["ReferralReward"];
         };
+        OneVisitPrice: {
+            /** @description In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced. */
+            amount: number | null;
+            /** @description The hair systems differ in price, so the amount is where they start. */
+            from: boolean;
+            /** @description The discount code on the visit; null for none. */
+            code: string | null;
+        };
         VisitSummary: {
             /** Format: uuid */
             id: string;
@@ -2862,14 +2872,6 @@ export interface components {
         Technician: {
             name: string;
             initials: string;
-        };
-        OneVisitPrice: {
-            /** @description In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced. */
-            amount: number | null;
-            /** @description The hair systems differ in price, so the amount is where they start. */
-            from: boolean;
-            /** @description The discount code on the visit; null for none. */
-            code: string | null;
         };
         OwedPayment: {
             /** Format: uuid */

@@ -12,14 +12,14 @@
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import type { VisitSummary } from "../api.ts";
+import type { OneVisitPrice, VisitSummary } from "../api.ts";
 import { home, messages, windowText } from "../content.ts";
 import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { NoteSheet } from "../booking/NoteSheet.tsx";
 import { firstName, oneVisitOf, summaryName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
-import { oneVisitLines, type OneVisitPrice } from "./one-visit-words.ts";
+import { oneVisitLines } from "./one-visit-words.ts";
 import styles from "./home.module.css";
 
 /** A visit from FSM the client may move or cancel in the app, while self-serve booking is on. */
@@ -177,7 +177,7 @@ export function Actions(props: {
 }
 
 /** What a one visit costs once fitted, and how it is paid. */
-function OneVisitTerms({ price }: { price: OneVisitPrice }) {
+export function OneVisitTerms({ price }: { price: OneVisitPrice }) {
   const [first, ...rest] = oneVisitLines(price);
   return (
     <div className={styles.terms}>

@@ -22,15 +22,21 @@ import { WINDOW_LABELS, type WindowLabel } from "../config/booking.ts";
 import { BOOKING_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
-import { bookingUnderWay } from "../domain/holds.ts";
+import { bookingUnderWay, type BookingUnderWay } from "../domain/holds.ts";
 import { spendableCredits } from "../domain/credits.ts";
 import { homePrompts } from "../domain/home-prompt.ts";
 import { nextVisitFacts } from "../domain/next-visit.ts";
-import { owedPayments } from "../domain/one-visit-money.ts";
+import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../domain/one-visit-money.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { offeredServices } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
-import { hasFsmVisit, latestProposal, windowAskedFor } from "../domain/proposed-visits.ts";
+import {
+  askedFor,
+  hasFsmVisit,
+  latestProposal,
+  type AskedFor,
+  type ProposedBooking,
+} from "../domain/proposed-visits.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -39,7 +45,7 @@ import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { PriceSchema } from "./client-booking.ts";
 import { OwedPaymentSchema } from "./client-payments.ts";
 import { creditsBody, CreditsSchema } from "./client-refer.ts";
-import { VisitSummarySchema } from "./client-visits.ts";
+import { OneVisitPriceSchema, VisitSummarySchema } from "./client-visits.ts";
 import { ReferralRewardSchema } from "./referral-reward.ts";
 
 export const MeSchema = z
@@ -65,6 +71,11 @@ export const MeSchema = z
         place: z.string().openapi({
           description: "Where it is: the saved address (locality, city and pincode), else the booking's city.",
         }),
+        one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
+          description:
+            "A consultation and fit in one visit asked for on /book: what it costs once fitted, after the code typed " +
+            "there. Null for a consultation alone.",
+        }),
       })
       .strict()
       .nullable()
@@ -83,7 +94,11 @@ export const MeSchema = z
             date: z.iso.date(),
             window: z.enum(BOOKING_WINDOWS),
             paid: z.boolean().openapi({ description: "Paid for in money, rather than free or covered by a credit." }),
-            one_visit: z.boolean().openapi({ description: "A consultation and fit in one visit." }),
+            one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
+              description:
+                "A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code " +
+                "entered there. Null for any other visit.",
+            }),
           })
           .strict(),
         z.null(),
@@ -240,6 +255,20 @@ export const MeSchema = z
 /** The words the Phase 1 booked page had for a window. It had none for the afternoon. */
 const PHASE1_WORDS: Partial<Record<BookingWindow, WindowLabel>> = { morning: "before noon", evening: "after four" };
 
+/** A booking's consultation before FSM has the visit; a one visit asked for says what it costs once fitted. */
+async function consultationBody(db: D1Database, proposal: ProposedBooking, asked: AskedFor, place: string) {
+  const date = proposal.proposed_visit_date;
+  const oneVisit = asked.oneVisit ? await requestedOneVisitPrice(db, date, asked.code) : null;
+  return { date, window: asked.window, window_label: PHASE1_WORDS[asked.window] ?? null, place, one_visit: oneVisit };
+}
+
+/** A visit on its way to FSM; a one visit says what it costs once fitted. */
+async function beingBookedBody(db: D1Database, underWay: BookingUnderWay | null) {
+  if (underWay === null) return null;
+  const { holdId, oneVisit, ...booking } = underWay;
+  return { ...booking, one_visit: oneVisit ? await heldOneVisitPrice(db, holdId, booking.date) : null };
+}
+
 export const meRoute = createRoute({
   method: "get",
   path: "/api/me",
@@ -267,10 +296,11 @@ export function registerClientMe(app: App): void {
     const [owed = null] = await owedPayments(db, session.subjectId);
     const fitted = await isFitted(db, session.subjectId);
     const booking = await latestProposal(db, session.subjectId);
-    // A booking's proposal stands only until FSM has any visit for the person.
-    const proposal = (await hasFsmVisit(db, session.subjectId)) ? null : booking;
-    const window = proposal === null ? null : await windowAskedFor(db, session.subjectId, proposal);
-    if (proposal !== null && window === null) {
+    // A booking's proposal stands only until FSM has any visit for the person. A one visit on its way to FSM is shown
+    // as itself.
+    const proposal = (await hasFsmVisit(db, session.subjectId)) || underWay?.oneVisit === true ? null : booking;
+    const asked = proposal === null ? null : await askedFor(db, session.subjectId, proposal);
+    if (proposal !== null && asked === null) {
       c.var.log.warn("consultation_window_unknown", { person_id: session.subjectId });
     }
     const address = proposal === null ? null : await currentAddress(db, session.subjectId);
@@ -297,12 +327,9 @@ export function registerClientMe(app: App): void {
         name,
         first_name: firstNameOf(name),
         initials: initialsOf(name),
-        consultation:
-          proposal === null || window === null
-            ? null
-            : { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place },
+        consultation: proposal === null || asked === null ? null : await consultationBody(db, proposal, asked, place),
         next_visit: upcoming,
-        being_booked: underWay,
+        being_booked: await beingBookedBody(db, underWay),
         payment_owed: owed,
         credits: credits.visits > 0 ? creditsBody(credits) : null,
         prompt,

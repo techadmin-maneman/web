@@ -3,7 +3,8 @@
 // booking's consultation, not yet in FSM, shows as B2. A visit FSM has not closed stays here until it is, so Home
 // never says nothing is booked, nor offers the booking again, while one is under way. Nor while a visit paid for, or
 // booked free, waits for FSM to take it: Home says it is being booked, and that the payment is in (ADR 0095). A
-// consultation and fit in one visit has a card of its own, with what it costs once fitted and what to expect.
+// consultation and fit in one visit has a card of its own, with what it costs once fitted and what to expect; one
+// booked on /book shows as booked before FSM has it, as the site's consultation does.
 //
 // Beneath the card, a one visit's payment while the client owes it, B1's credit tile while there is a balance, its
 // one prompt, and an invoice just issued as a line beneath that (src/domain/home-prompt.ts). Where the prompt offers
@@ -14,8 +15,8 @@ import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { documentUrl, type Me } from "../api.ts";
-import { BOOKING_URL, home, messages, VISIT_TYPES, visits, windowText } from "../content.ts";
+import { documentUrl, type BookingWindow, type Me, type OneVisitPrice } from "../api.ts";
+import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
 import { BookNext } from "../booking/BookNext.tsx";
 import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
@@ -24,7 +25,16 @@ import { bookingName, oneVisitOf, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
 import { monthNow, nextVisitWords, replacementLine } from "./next-visit-words.ts";
-import { Actions, changingOf, hasBegun, notingOf, VisitCard, whenText, type NotingVisit } from "./VisitCard.tsx";
+import {
+  Actions,
+  changingOf,
+  hasBegun,
+  notingOf,
+  OneVisitTerms,
+  VisitCard,
+  whenText,
+  type NotingVisit,
+} from "./VisitCard.tsx";
 import styles from "./home.module.css";
 
 export function HomeScreen() {
@@ -71,12 +81,17 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
     );
   }
   if (me.consultation !== null) {
-    const { date, place } = me.consultation;
-    return (
-      <Consultation date={date} when={windowText(me.consultation.window)} place={place} changing={null} noting={null} />
-    );
+    const { date, window, place } = me.consultation;
+    const price = oneVisitOf(me.consultation);
+    if (price !== null) return <OneVisitBooked date={date} window={window} place={place} price={price} />;
+    return <Consultation date={date} when={windowText(window)} place={place} changing={null} noting={null} />;
   }
-  if (me.being_booked !== null) return <BeingBooked booking={me.being_booked} />;
+  if (me.being_booked !== null) {
+    const { date, window } = me.being_booked;
+    const price = oneVisitOf(me.being_booked);
+    if (price !== null) return <OneVisitBooked date={date} window={window} place="" price={price} />;
+    return <BeingBooked booking={me.being_booked} />;
+  }
   if (me.state === "fitted" || me.booking.types.includes("first_fit")) {
     return <NothingNext promptBooks={me.prompt?.kind === "next_visit"} />;
   }
@@ -129,6 +144,31 @@ function OneVisit({ visit }: { visit: NonNullable<Me["next_visit"]> }) {
         <VisitCard visit={visit} />
       </section>
       {!hasBegun(visit) && <WhatToExpect steps={home.oneVisit.expect} />}
+    </>
+  );
+}
+
+/**
+ * A one visit booked on /book that FSM does not have yet: booked, as the site told the client, with what it costs once
+ * fitted. Ops move it, so Reschedule and Add a note open WhatsApp.
+ */
+function OneVisitBooked(props: { date: string; window: BookingWindow; place: string; price: OneVisitPrice }) {
+  const date = shortDate(props.date);
+  return (
+    <>
+      <section aria-labelledby="next">
+        <h1 className={styles.label} id="next">
+          {home.oneVisit.label}
+        </h1>
+        <div className={styles.card}>
+          <p className={styles.date}>{date}</p>
+          <p className={styles.window}>{windowText(props.window)}</p>
+          {props.place !== "" && <p className={styles.place}>{props.place}</p>}
+          <OneVisitTerms price={props.price} />
+          <Actions what={ONE_VISIT} date={date} changing={null} noting={null} />
+        </div>
+      </section>
+      <WhatToExpect steps={home.oneVisit.expect} />
     </>
   );
 }
