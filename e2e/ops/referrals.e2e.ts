@@ -102,6 +102,17 @@ test("says so when someone else has decided the grant already", async ({ page })
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
+// PS-60: a grant held for a consultation and fit not yet paid can be rejected, and approved once it is paid.
+test("says an approval waits for the friend's payment, and keeps the grant held", async ({ page }) => {
+  await open(page, fails(409, "not_paid"));
+  const grant = page.getByRole("listitem").filter({ hasText: FIRST });
+  await grant.getByRole("button", { name: "Approve", exact: true }).click();
+  await grant.getByLabel("Why you are approving it").fill("Two households at one address");
+  await grant.getByRole("button", { name: "Approve the grant" }).click();
+  await expect(page.getByRole("alert")).toContainText("has not paid for their consultation and fit yet");
+  await expect(page.getByText(FIRST)).toBeVisible();
+});
+
 // The Tasks board links a referral review to its row here (OPS-05).
 test("brings the grant a task named into view, and gives it the keyboard", async ({ page }) => {
   await open(page, undefined, `/referrals#held-${GRANT}`);

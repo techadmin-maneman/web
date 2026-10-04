@@ -77,7 +77,10 @@ const decisionRoute = createRoute({
   responses: {
     200: { description: "Decided", ...json(z.object({ state: z.enum(["approved", "rejected"]) }).strict()) },
     400: errorResponse("invalid_request: a decision needs a reason"),
-    404: errorResponse("not_found: no held grant by that ID in the caller's cities"),
+    404: errorResponse("not_found: no held grant by that ID in the caller's cities, or another decision came first"),
+    409: errorResponse(
+      "not_paid: the friend's consultation and fit is not paid yet, so the grant can be rejected but not approved",
+    ),
   },
 });
 
@@ -151,6 +154,7 @@ export function registerOpsReferrals(app: App): void {
       now,
     });
     if (outcome === null) return c.json(errorBody("not_found", requestId), 404);
+    if (outcome === "not_paid") return c.json(errorBody("not_paid", requestId), 409);
     for (const messageId of outcome.messageIds) await queueMessage(c, messageId);
     return c.json({ state: outcome.state }, 200);
   });

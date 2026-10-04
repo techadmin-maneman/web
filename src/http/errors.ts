@@ -63,6 +63,10 @@ export const ERROR_CODES = [
   "terms_changed",
   // A referral card without the client's consent to photographs on referral cards (docs/decisions/0048-referrals.md).
   "consent_required",
+  // Refer is a fitted client's, since the invite says they were fitted (docs/decisions/0048-referrals.md); and a
+  // held referral whose friend's consultation and fit is not paid yet cannot be approved.
+  "not_fitted",
+  "not_paid",
   // The technician app (docs/decisions/0052-technician-sessions.md, 0038-offline-writes.md):
   // ops revoked this phone, so it drops its cached jobs; the job moved under it while it
   // was offline; the step before this one has not been sent; a check-in or start on a day

@@ -432,3 +432,30 @@ export async function deliverRazorpay(event: object | string, delivery: Razorpay
   if (delivery.eventId !== null) headers["X-Razorpay-Event-Id"] = delivery.eventId ?? `evt_${crypto.randomUUID()}`;
   return request(app, "/api/hooks/razorpay", { method: "POST", body, headers }, delivery.bindings);
 }
+
+/**
+ * A first fit of the client's, done and photographed a month before NOW: what Refer opens on, and what their own
+ * card is made from (src/routes/client-refer.ts). Its ID.
+ */
+export async function fittedAndPhotographed(personId: string): Promise<string> {
+  const id = crypto.randomUUID();
+  const start = new Date(NOW.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const set = crypto.randomUUID();
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+         fsm_modified_at, synced_at, first_seen_at)
+       VALUES (?1, ?2, ?3, 'first_fit', ?4, ?4, 'completed', 'Completed', ?4, ?4, ?4)`,
+    ).bind(id, `fsm-${id}`, personId, start),
+    env.DB.prepare("INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES (?1, ?2, 'after', ?3)").bind(
+      set,
+      id,
+      start,
+    ),
+    env.DB.prepare(
+      `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, taken_at, created_at)
+       VALUES (?1, ?2, 'front', ?3, 'image/jpeg', 1000, ?4, ?4)`,
+    ).bind(crypto.randomUUID(), set, `visits/${id}/after-front.jpg`, start),
+  ]);
+  return id;
+}

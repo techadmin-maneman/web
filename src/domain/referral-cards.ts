@@ -1,7 +1,8 @@
 // A client's referral card (design/phase2/Referral and Waitlist, A1 and A2; docs/decisions/0048-referrals.md): a
 // 1200 x 630 JPEG the app composes on the phone from their first fit's before and after photographs, with no
-// name and no words on it. It needs their consent to photographs on referral cards, and each upload or revoke is a
-// new version, since WhatsApp caches a link's preview by its URL: a revoke only reaches new shares.
+// name and no words on it. It needs their consent to photographs on referral cards, and a completed first fit with
+// photographs of it stored, which is all a card can be made from. Each upload or revoke is a new version, since
+// WhatsApp caches a link's preview by its URL: a revoke only reaches new shares.
 
 import { inspectImage } from "../lib/image-bytes.ts";
 import { consentGiven } from "./messages.ts";
@@ -18,7 +19,21 @@ const cardKey = (code: string, version: number) => `cards/${code}/v${String(vers
 const cardConsent = (db: D1Database, personId: string): Promise<boolean> =>
   consentGiven(db, personId, "photos_referral_cards");
 
-export type Stored = { readonly version: number } | { readonly problem: "no_consent" | "not_a_card" };
+export type Stored =
+  { readonly version: number } | { readonly problem: "no_consent" | "not_photographed" | "not_a_card" };
+
+/** Whether the person's first fit is done and photographed: what their card is made from (ADR 0048). */
+async function firstFitPhotographed(db: D1Database, personId: string): Promise<boolean> {
+  const row = await db
+    .prepare(
+      `SELECT 1 AS found FROM appointments a
+       JOIN photo_sets s ON s.appointment_id = a.id JOIN photos p ON p.photo_set_id = s.id
+       WHERE a.person_id = ?1 AND a.type = 'first_fit' AND a.status = 'completed' AND a.deleted_at IS NULL LIMIT 1`,
+    )
+    .bind(personId)
+    .first();
+  return row !== null;
+}
 
 /** Stores the client's card as their code's next version. */
 export async function storeCard(
@@ -27,6 +42,7 @@ export async function storeCard(
   input: { personId: string; code: string; bytes: Uint8Array; now: Date },
 ): Promise<Stored> {
   if (!(await cardConsent(db, input.personId))) return { problem: "no_consent" };
+  if (!(await firstFitPhotographed(db, input.personId))) return { problem: "not_photographed" };
   const info = inspectImage(input.bytes);
   if (
     info?.type !== "image/jpeg" ||

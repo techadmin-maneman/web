@@ -228,7 +228,8 @@ export function auditStatementIfStamped(
   now: Date,
   stamped:
     | { readonly table: "discount_codes"; readonly column: "switched_off_at"; readonly id: string }
-    | { readonly table: "discount_code_uses"; readonly column: "removed_at"; readonly id: string },
+    | { readonly table: "discount_code_uses"; readonly column: "removed_at"; readonly id: string }
+    | { readonly table: "referral_attributions"; readonly column: "updated_at"; readonly id: string },
 ): D1PreparedStatement {
   return db
     .prepare(

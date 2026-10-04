@@ -65,6 +65,8 @@
                   "not_changeable",
                   "terms_changed",
                   "consent_required",
+                  "not_fitted",
+                  "not_paid",
                   "device_revoked",
                   "sign_in_stopped",
                   "superseded",
@@ -3095,6 +3097,8 @@
                   "not_changeable",
                   "terms_changed",
                   "consent_required",
+                  "not_fitted",
+                  "not_paid",
                   "device_revoked",
                   "sign_in_stopped",
                   "superseded",
@@ -11797,7 +11801,17 @@
             }
           },
           "404": {
-            "description": "not_found: no held grant by that ID in the caller's cities",
+            "description": "not_found: no held grant by that ID in the caller's cities, or another decision came first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "not_paid: the friend's consultation and fit is not paid yet, so the grant can be rejected but not approved",
             "content": {
               "application/json": {
                 "schema": {

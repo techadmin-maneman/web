@@ -65,6 +65,8 @@
                   "not_changeable",
                   "terms_changed",
                   "consent_required",
+                  "not_fitted",
+                  "not_paid",
                   "device_revoked",
                   "sign_in_stopped",
                   "superseded",
@@ -6958,6 +6960,16 @@
               }
             }
           },
+          "403": {
+            "description": "not_fitted: Refer opens once the client's first fit is done, or no photograph of their first fit is stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "consent_required: the client has not agreed to photographs on referral cards",
             "content": {
@@ -7015,6 +7027,16 @@
               }
             }
           },
+          "403": {
+            "description": "not_fitted: Refer opens once the client's first fit is done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "not_found: no card of theirs is live: none made, taken down, the consent off, or erased",
             "content": {
@@ -7062,6 +7084,16 @@
           },
           "401": {
             "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "not_fitted: Refer opens once the client's first fit is done",
             "content": {
               "application/json": {
                 "schema": {

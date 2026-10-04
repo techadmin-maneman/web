@@ -20,6 +20,7 @@ import {
   markDatabase,
   NOW,
   request,
+  fittedAndPhotographed,
 } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -73,6 +74,7 @@ beforeEach(async () => {
   )
     .bind(PERSON, NOW.toISOString())
     .run();
+  await fittedAndPhotographed(PERSON);
   await env.DB.prepare("INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)")
     .bind(CODE, PERSON, NOW.toISOString())
     .run();
@@ -123,6 +125,16 @@ describe("the referral card", () => {
     expect(refused.status).toBe(302);
     expect(refused.headers.get("Location")).toBe(HOUSE_CARD);
     expect((await preview(CODE, "198.51.100.4")).status).toBe(200);
+  });
+
+  // PS-63: any 1200 x 630 JPEG became a client's public card; a card is made from their first fit's photographs.
+  it("refuses a card until a photograph of the client's first fit is stored", async () => {
+    await consent("photos_referral_cards", true);
+    await env.DB.prepare("DELETE FROM photos").run();
+    const refused = await put(jpegOf(1200, 630));
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toMatchObject({ error: { code: "not_fitted" } });
+    expect(await card()).toMatchObject({ card_state: "house", card_version: 1 });
   });
 
   it("refuses anything that is not a 1200 by 630 JPEG", async () => {
