@@ -203,7 +203,7 @@ describe("how long a call may take, as the Worker builds its providers", () => {
   it("gives Books 8 s inside a request someone waits on, and 20 s in a queue or the cron", async () => {
     const make = productionDependencies(connected);
     await expect(make(env, createLogger(), "request").books.invoice("inv-1")).rejects.toThrow("within 8 s");
-    await expect(make(env, createLogger()).books.invoice("inv-1")).rejects.toThrow("within 20 s");
+    await expect(make(env, createLogger(), "background").books.invoice("inv-1")).rejects.toThrow("within 20 s");
   });
 });
 
@@ -233,7 +233,7 @@ describe("Books' own client, as the Worker builds its providers", () => {
       return Promise.resolve(json({ invoice }));
     });
 
-    const books = productionDependencies(connected)(env, createLogger()).books;
+    const books = productionDependencies(connected)(env, createLogger(), "background").books;
     expect((await books.invoice("inv-1"))?.number).toBe("INV-000041");
 
     expect(minted).toEqual([{ clientId: "1000.BOOKSCLIENT", refreshToken: "1000.books-refresh" }]);

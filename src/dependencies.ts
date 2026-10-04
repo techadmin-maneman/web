@@ -48,7 +48,7 @@ export interface Dependencies {
  */
 export type Caller = "request" | "background";
 
-export type DependencyFactory = (env: Env, log: Logger, caller?: Caller) => Dependencies;
+export type DependencyFactory = (env: Env, log: Logger, caller: Caller) => Dependencies;
 
 /** Makes a value the first time it is asked for, and answers the same one after. */
 function lazily<T>(make: () => T): () => T {
@@ -68,7 +68,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
   const access = createAccessVerifier(settings.access, { fetch: httpFetch, now, log: createLogger() });
   // Each provider is made the first time it is used. Making every one on every invocation was half the CPU time of a
   // cron run that had nothing to do (docs/decisions/0009, "the cron's CPU time").
-  return (env, log, caller = "background") => {
+  return (env, log, caller) => {
     const zoho = {
       db: env.DB,
       fetch: httpFetch,

@@ -30,13 +30,13 @@ import type { RenderFailure } from "../providers/image.ts";
 import { enqueue } from "../domain/enqueue.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
+import { DONE, runConsumer, type Settle } from "./consumer.ts";
 
 export const RenderMessageSchema = z.object({ job_id: z.uuid(), request_id: z.string() });
 export type RenderMessage = z.infer<typeof RenderMessageSchema>;
 
 const SUBMIT_RETRY_DELAY_SECONDS = 10;
 const DOWNLOAD_RETRY_DELAY_SECONDS = 60;
-const ERROR_RETRY_DELAY_SECONDS = 30;
 
 export type RenderEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "MESSAGE_QUEUE">;
 
@@ -45,37 +45,23 @@ export interface RenderOptions {
   readonly resultRetentionDays: number;
 }
 
-/** What the queue should do with the message: nothing more, or deliver it again after a delay. */
-type Next = { readonly retryAfterSeconds?: number };
-const DONE: Next = {};
+type Next = Settle;
 
-export async function handleRenderBatch(
+/** Each job's next step; one that D1 or R2 fails is tried again shortly. */
+export function handleRenderBatch(
   batch: MessageBatch,
   env: RenderEnv,
   deps: Dependencies,
   log: Logger,
   options: RenderOptions,
 ): Promise<void> {
-  for (const message of batch.messages) {
-    const parsed = RenderMessageSchema.safeParse(message.body);
-    if (!parsed.success) {
-      log.error("render_bad_message", { message_id: message.id });
-      message.ack();
-      continue;
-    }
-    const jobLog = log.child({ request_id: parsed.data.request_id, job_id: parsed.data.job_id });
-
-    let next: Next;
-    try {
-      next = await advanceJob(env, deps, jobLog, parsed.data.job_id, options);
-    } catch (error) {
-      // D1 or R2 failed us: try the same step again shortly.
-      jobLog.error("render_step_error", { error });
-      next = { retryAfterSeconds: ERROR_RETRY_DELAY_SECONDS };
-    }
-    if (next.retryAfterSeconds === undefined) message.ack();
-    else message.retry({ delaySeconds: next.retryAfterSeconds });
-  }
+  return runConsumer(batch, {
+    name: "render",
+    schema: RenderMessageSchema,
+    log,
+    logFor: (data) => log.child({ request_id: data.request_id, job_id: data.job_id }),
+    handle: (data, _attempts, jobLog) => advanceJob(env, deps, jobLog, data.job_id, options),
+  });
 }
 
 export async function advanceJob(
