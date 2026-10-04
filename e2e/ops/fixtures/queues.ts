@@ -183,6 +183,7 @@ export const DISPUTES = {
 export const TASKS = {
   overdue: 4,
   truncated: false,
+  low_stock_places: 0,
   staff: ["anil@maneman.in", "ops@localhost", "priya@maneman.in"],
   groups: [
     {

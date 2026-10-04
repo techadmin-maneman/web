@@ -81,3 +81,13 @@ export async function closeStaleLowStock(
   const places = results.map(({ key }) => (key === lowStockKey(null) ? null : key.slice("low_stock:kit:".length)));
   await tellOfLowStock(db, deps, { touched: places, lowered: [] });
 }
+
+/** How many places hold something at or below its level, by their open low-stock alerts: the console's Stock badge. */
+export async function lowStockPlaces(db: D1Database): Promise<number> {
+  const row = await db
+    .prepare(
+      "SELECT COUNT(*) AS places FROM alerts WHERE resolved_at IS NULL AND key >= 'low_stock:' AND key < 'low_stock;'",
+    )
+    .first<{ places: number }>();
+  return row?.places ?? 0;
+}

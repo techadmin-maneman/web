@@ -27,6 +27,7 @@ import { memberOfStaffOf } from "../http/audit.ts";
 import { closeTask } from "../domain/task-closures.ts";
 import { assignTask, handBackTask, staffSeenSince, type TaskKey } from "../domain/task-owners.ts";
 import { outstandingTasks, overdueCount, READ_CAP, tasksWithin, type Task } from "../domain/tasks.ts";
+import { lowStockPlaces } from "../domain/low-stock.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -114,6 +115,10 @@ const TasksSchema = z
       description:
         "The members of staff a task may be given to: those who have used the console in the last " +
         `${String(STAFF_SEEN_WITHIN_DAYS)} days, by e-mail.`,
+    }),
+    low_stock_places: z.number().int().openapi({
+      description:
+        "How many places, the central store and each kit, hold something at or below its level: Stock's badge.",
     }),
     groups: z.array(
       z
@@ -282,7 +287,12 @@ export function registerOpsTasks(app: App): void {
   app.openapi(tasksRoute, async (c) => {
     const now = c.var.deps.now();
     const { person } = c.req.valid("query");
-    const [board, staff, seen] = await Promise.all([readTheBoard(c, "view"), staffNow(c), groupsSeenBy(c)]);
+    const [board, staff, seen, lowStock] = await Promise.all([
+      readTheBoard(c, "view"),
+      staffNow(c),
+      groupsSeenBy(c),
+      lowStockPlaces(c.env.DB),
+    ]);
     const tasks = board.tasks.filter((task) => seen.includes(task.group) && isAbout(task, person));
     // In the policy's order, and a group with nothing in it is left out, as the board draws none.
     const groups = seen
@@ -298,7 +308,8 @@ export function registerOpsTasks(app: App): void {
       })
       .filter((each) => each.count > 0);
 
-    return c.json({ overdue: overdueCount(tasks, now), truncated: board.truncated, staff, groups }, 200);
+    const overdue = overdueCount(tasks, now);
+    return c.json({ overdue, truncated: board.truncated, staff, low_stock_places: lowStock, groups }, 200);
   });
 
   app.openapi(ownerRoute, async (c) => {

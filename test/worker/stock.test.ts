@@ -35,6 +35,10 @@ let job: Working;
 
 const stock = async (): Promise<Stock> => (await request(job.ops, "/api/stock")).json<Stock>();
 
+/** The places the console's Stock badge counts low, as the task board answers. */
+const lowPlaces = async (): Promise<number> =>
+  (await (await request(job.ops, "/api/tasks")).json<{ low_stock_places: number }>()).low_stock_places;
+
 /** What a place holds of a consumable, as the Stock screen reads it. */
 async function held(code: string, place: string | null): Promise<{ quantity: number; low: boolean }> {
   const holding = (await stock()).holdings.find(
@@ -545,9 +549,11 @@ describe("low stock", () => {
     await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 10 });
     await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 2, from: null, to: IMRAN });
     expect(job.deps.alerts).toEqual([expect.stringContaining("Stock is low in the central store")]);
+    expect(await lowPlaces()).toBe(1);
 
     const retired = await job.opsPost("/api/consumables/tape_strips/retire", { from: "2026-09-21" });
     expect(retired.status).toBe(200);
+    expect(await lowPlaces()).toBe(0);
     const open = await env.DB.prepare(
       "SELECT key FROM alerts WHERE key >= 'low_stock:' AND key < 'low_stock;' AND resolved_at IS NULL",
     ).all();

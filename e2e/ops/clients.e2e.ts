@@ -249,6 +249,7 @@ test("heads the page with who invited the client, a way to their page, and the i
 const OPEN_FOR_ROHIT = {
   overdue: 1,
   truncated: false,
+  low_stock_places: 0,
   staff: [],
   groups: [
     {
@@ -315,7 +316,7 @@ test("lists what waits on Tasks for the client under the head, each with a way t
 
 test("says when nothing waits on Tasks for the client", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, {
-    "GET /api/tasks": json({ overdue: 0, truncated: false, staff: [], groups: [] }),
+    "GET /api/tasks": json({ overdue: 0, truncated: false, low_stock_places: 0, staff: [], groups: [] }),
   });
   await expect(openForClient(page)).toContainText("Nothing open.");
 });
