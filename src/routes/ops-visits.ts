@@ -360,7 +360,7 @@ export function registerOpsVisits(app: App): void {
     c.var.log.info("visit_booked_by_ops", { hold_id: hold.id, kind: asked.kind, pays: sale.pays });
 
     if (closesAt !== null) {
-      const deps = { payments: c.var.deps.payments, log: c.var.log };
+      const deps = { ...c.var.deps, log: c.var.log, messagingSettings: c.var.config.settings.messaging };
       const made = await sendHoldLink(db, deps, { hold, asked, sale, closesAt }, now);
       if (made === null) {
         await letGo(c, hold.id, "link_not_made");

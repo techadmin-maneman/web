@@ -291,11 +291,12 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
       },
       {
         group: "payment_owed",
-        count: 2,
+        count: 3,
         closable: false,
         tasks: [
           task("96000000-0000-4000-8000-000000000021", "Nikhil Suri", "sent 3500000 Mane Man Natural"),
           task("96000000-0000-4000-8000-000000000022", "Manoj Iyer", "unsent 2500000 Mane Man Essential"),
+          task("96000000-0000-4000-8000-000000000023", "Kabir Sethi", "closed 3500000 Mane Man Natural"),
         ],
       },
     ],
@@ -304,6 +305,7 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
   await expect(row(page, "Arjun Kapoor")).toContainText("+ consultation and fit in one visit");
   await expect(row(page, "Nikhil Suri")).toContainText("Mane Man Natural, Rs. 35,000; link sent");
   await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000; link not sent");
+  await expect(row(page, "Kabir Sethi")).toContainText("Mane Man Natural, Rs. 35,000; link closed unpaid");
   await expect(row(page, "Nikhil Suri").getByRole("link", { name: "Nikhil Suri", exact: true })).toHaveAttribute(
     "href",
     "/clients/22000000-0000-4000-8000-000000000020/payments",
