@@ -49,6 +49,7 @@ import { bookedMinutes } from "./scheduling.ts";
 import { offeredProducts } from "./services.ts";
 import { firstNameOf } from "../lib/names.ts";
 import { isOneOf } from "../lib/one-of.ts";
+import { storedOutcomeOf } from "./job-event-bodies.ts";
 
 /** The statuses of a job in the list: still live, or closed today so the technician can see what he did. */
 const SHOWN = ["scheduled", "dispatched", "in_progress", "completed", "terminated"] as const;
@@ -645,7 +646,4 @@ function stepsDone(
   return steps.sort((a, b) => a.at.localeCompare(b.at)).map((taken) => taken.step);
 }
 
-function outcomeOf(body: string): string | null {
-  const parsed = JSON.parse(body) as { outcome?: unknown };
-  return typeof parsed.outcome === "string" ? parsed.outcome : null;
-}
+const outcomeOf = (body: string): string | null => storedOutcomeOf(JSON.parse(body))?.outcome ?? null;

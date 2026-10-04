@@ -29,6 +29,12 @@ serveTheShell(
   home,
 );
 
+// A Home kept by an earlier release can lack what this one reads, so a new release starts with none: the next Home
+// that reaches the phone is kept again.
+self.addEventListener("activate", (event) => {
+  event.waitUntil(caches.delete(HOME));
+});
+
 /** Home from the network, and kept whenever it comes, even after the kept copy has been shown in its place. */
 async function fetchHome(request: Request): Promise<Response> {
   const response = await fetch(request);

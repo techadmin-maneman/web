@@ -6673,8 +6673,56 @@
       }
     },
     "/api/appointments/{id}/reschedule": {
+      "get": {
+        "summary": "What moving a visit costs now",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The visit's ID."
+            },
+            "required": true,
+            "description": "The visit's ID.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The terms",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoveTerms"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "not_changeable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
-        "summary": "What moving a visit costs, or start the move a hold makes",
+        "summary": "Start the move a hold makes",
         "parameters": [
           {
             "schema": {
@@ -6697,25 +6745,18 @@
                   "hold_id": {
                     "type": "string",
                     "format": "uuid",
-                    "description": "A hold made with `moving` for this visit; left out, the terms only."
+                    "description": "A hold made with `moving` for this visit."
                   }
                 },
+                "required": [
+                  "hold_id"
+                ],
                 "additionalProperties": false
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "The terms",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MoveTerms"
-                }
-              }
-            }
-          },
           "201": {
             "description": "The move is started",
             "content": {

@@ -8,34 +8,16 @@
 import type { VisitType } from "../config/visit-types.ts";
 import { useStillToRecord } from "../policy/stock.ts";
 import { allConsumables, serviceOfJob, type Consumable } from "./consumables.ts";
-
-/** One line of a consumables step, as a phone sent it: by code, or by name from before the codes. */
-interface Line {
-  readonly code: string | null;
-  readonly name: string | null;
-  readonly quantity: number;
-}
-
-function linesOf(body: Record<string, unknown>): Line[] {
-  const items = body.items;
-  if (!Array.isArray(items)) return [];
-  return items.flatMap((item: unknown) => {
-    const row = item as { code?: unknown; name?: unknown; quantity?: unknown };
-    if (typeof row.quantity !== "number") return [];
-    const code = typeof row.code === "string" ? row.code : null;
-    const name = typeof row.name === "string" ? row.name : null;
-    return code === null && name === null ? [] : [{ code, name, quantity: row.quantity }];
-  });
-}
+import { usedLinesOf, type UsedLine } from "./job-event-bodies.ts";
 
 /**
  * The consumable each line names: by its code, or, for a step a phone queued
  * before codes, by its name, whatever the case. A name that matches none is
  * kept as the technician entered it, and moves no stock.
  */
-function resolve(line: Line, consumables: readonly Consumable[]): Consumable | null {
-  if (line.code !== null) return consumables.find((each) => each.code === line.code) ?? null;
-  const name = (line.name ?? "").trim().toLowerCase();
+function resolve(line: UsedLine, consumables: readonly Consumable[]): Consumable | null {
+  if ("code" in line) return consumables.find((each) => each.code === line.code) ?? null;
+  const name = line.name.trim().toLowerCase();
   return consumables.find((each) => each.name.toLowerCase() === name) ?? null;
 }
 
@@ -47,11 +29,11 @@ interface Used {
 }
 
 /** What a step says was used, each consumable once however many lines named it. */
-function usedIn(body: Record<string, unknown>, consumables: readonly Consumable[]): Used[] {
+function usedIn(body: unknown, consumables: readonly Consumable[]): Used[] {
   const used = new Map<string, Used>();
-  for (const line of linesOf(body)) {
+  for (const line of usedLinesOf(body)) {
     const consumable = resolve(line, consumables);
-    const name = consumable?.name ?? (line.name ?? "").trim();
+    const name = consumable?.name ?? ("name" in line ? line.name.trim() : "");
     const key = consumable?.code ?? `name:${name}`;
     used.set(key, { consumable, name, quantity: (used.get(key)?.quantity ?? 0) + line.quantity });
   }
@@ -124,7 +106,7 @@ export async function recordJobUse(
     .first<{ id: string; body: string }>();
   if (latest === null) return { lowered: false };
 
-  const used = usedIn(JSON.parse(latest.body) as Record<string, unknown>, await allConsumables(db));
+  const used = usedIn(JSON.parse(latest.body), await allConsumables(db));
   const expected = await expectedOf(db, job);
   const byCode = new Map(
     used.flatMap((line) => (line.consumable === null ? [] : [[line.consumable.code, line.quantity] as const])),
