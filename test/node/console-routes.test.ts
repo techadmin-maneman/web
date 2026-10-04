@@ -102,6 +102,7 @@ describe("the routes a caller's calls go ahead on", () => {
     expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([
       ...SIGNED_IN_ROUTES,
       "GET /api/tasks",
+      "GET /api/alerts",
       "GET /api/staff",
     ]);
   });
@@ -113,9 +114,14 @@ describe("the routes a caller's calls go ahead on", () => {
       expect.arrayContaining([
         "GET /api/tasks",
         "PUT /api/tasks/{group}/{id}/owner",
+        "GET /api/alerts",
+        "POST /api/alerts/{id}/resolve",
+        "POST /api/alerts/{id}/send-again",
         "GET /api/payments",
         "GET /api/no-shows",
         "POST /api/no-shows/{id}/decision",
+        "GET /api/no-shows/{id}/charge",
+        "GET /api/no-shows/decided",
         "GET /api/no-shows/disputes",
         "POST /api/no-shows/disputes/{id}/ruling",
         "POST /api/clients/{id}/credits",
@@ -236,6 +242,7 @@ describe("Tasks, where each department sees the groups it decides", () => {
     expect(TASK_DEPARTMENTS.held_booking).toBe("operations");
     expect(TASK_DEPARTMENTS.grievance).toBe("customer_care");
     expect(TASK_DEPARTMENTS.no_show_decision).toBe("finance");
+    expect(TASK_DEPARTMENTS.no_show_dispute).toBe("finance");
     expect(TASK_DEPARTMENTS.referral_review).toBe("growth");
   });
 

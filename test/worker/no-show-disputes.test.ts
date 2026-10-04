@@ -205,6 +205,22 @@ describe("POST /api/visits/:id/dispute", () => {
     expect((await dispute("I was home all afternoon")).status).toBe(201);
   });
 
+  // A charge past its days once showed no Dispute button and no reason why (MON-17).
+  it("says when the days to dispute ended, once they have, for a charge never disputed", async () => {
+    expect(await noShowNote()).toMatchObject({ disputable: true, dispute_closed_at: null });
+
+    await env.DB.prepare("UPDATE no_show_cases SET dispute_until = ?1").bind("2026-09-21T06:29:59.000Z").run();
+    expect(await noShowNote()).toMatchObject({ disputable: false, dispute_closed_at: "2026-09-21T06:29:59.000Z" });
+
+    // One disputed in time says where the dispute stands instead.
+    await env.DB.prepare(
+      "INSERT INTO no_show_disputes (id, case_id, person_id, reason, created_at) VALUES ('d-1', ?1, ?2, 'Home', ?3)",
+    )
+      .bind(CASE, PERSON, "2026-09-20T06:00:00.000Z")
+      .run();
+    expect(await noShowNote()).toMatchObject({ dispute: "open", dispute_closed_at: null });
+  });
+
   it("refuses a no-show that was waived, or not ruled on, and another client's visit", async () => {
     const otherCookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: OTHER, deviceLabel: null, now: NOW })}`;
     expect((await dispute("Not mine", client, otherCookie)).status).toBe(404);

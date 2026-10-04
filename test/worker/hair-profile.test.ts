@@ -224,9 +224,9 @@ describe("the technician's profile step", () => {
     await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(JOB).run();
     expect((await card(job)).steps).toEqual([
       "before_photos",
+      "piece",
       "checklist",
       "consumables",
-      "piece",
       "profile",
       "after_photos",
       "outcome",
