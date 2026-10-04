@@ -67,11 +67,12 @@ async function oneVisit(vendors: { payments?: PaymentsProvider } = {}): Promise<
   return job;
 }
 
-/** Works the visit to its piece step, sends it, then the after photographs; answers the piece step. */
+/** Works the visit to its piece step, sends it, then the rest up to the outcome; answers the piece step. */
 async function toThePiece(job: Working, piece: object): Promise<Response> {
-  await job.workTo("consumables");
-  await job.post(path("consumables"), { items: [] }, "event-consumables-01");
+  await job.workTo("piece");
   const answer = await job.post(path("piece"), piece, "event-piece-01");
+  await job.post(path("checklist"), { done: [] }, "event-checklist-01");
+  await job.post(path("consumables"), { items: [] }, "event-consumables-01");
   await job.post(path("photos"), { phase: "after" }, "event-afterphotos-01");
   return answer;
 }
@@ -100,32 +101,57 @@ describe("the technician's card", () => {
       type: "first_fit",
       one_visit: true,
       badge: "at_visit",
-      // The first fit's, with the client's hair profile once the product is chosen and fitted (ADR 0106).
-      steps: ["before_photos", "checklist", "consumables", "piece", "profile", "after_photos", "outcome"],
+      // The first fit's, the client's choice first, with their hair profile once the product is fitted (ADR 0106).
+      steps: ["before_photos", "piece", "checklist", "consumables", "profile", "after_photos", "outcome"],
       products: [
         { tier: "standard", name: "First fit" },
         { tier: "natural", name: "Mane Man Natural" },
       ],
       payment_link: null,
+      client_choice: null,
     });
     // The consultation's checklist, then the fit's: measure and explain, then fit.
     const checklist = (card.checklist as { id: string }[]).map((item) => item.id);
     expect(checklist.slice(0, 3)).toEqual(["scalp_checked", "measurements_taken", "options_shown"]);
     expect(checklist).toContain("piece_set");
+    // FLD-37: the consultation's alone, for a client who decides against the fit.
+    const ifDeclined = (card.checklist_if_declined as { id: string }[]).map((item) => item.id);
+    expect(ifDeclined).toEqual(["scalp_checked", "measurements_taken", "options_shown"]);
     expect(JSON.stringify(card)).not.toContain("4500000");
   });
 
   it("takes the consultation's items on the checklist step, as well as the fit's", async () => {
     const job = await oneVisit();
-    await job.workTo("checklist");
+    await job.workTo("piece");
+    await job.post(path("piece"), { ...A_PIECE, product: NATURAL.tier }, "event-piece-01");
     const answer = await job.post(path("checklist"), { done: ["measurements_taken", "piece_set"] }, "event-cl-01");
     expect(answer.status).toBe(202);
+  });
+
+  // FLD-37: the choice comes first, so the checklist after it knows whether anything is fitted.
+  it("takes the client's choice before the checklist, and says on the card what they chose", async () => {
+    const job = await oneVisit();
+    await job.workTo("piece");
+    const early = await job.post(path("checklist"), { done: ["scalp_checked"] }, "event-cl-early");
+    expect(early.status).toBe(409);
+    expect(await early.json()).toMatchObject({ error: { code: "out_of_order", fields: ["piece"] } });
+
+    await job.post(path("piece"), { declined: true }, "event-piece-01");
+    expect(await (await job.get(`/api/tech/jobs/${JOB}`)).json()).toMatchObject({ client_choice: { declined: true } });
+    expect((await job.post(path("checklist"), { done: ["scalp_checked"] }, "event-cl-01")).status).toBe(202);
   });
 
   it("calls any other first fit by its own steps, with no products and its own badge", async () => {
     const job = await working("first_fit");
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json();
-    expect(card).toMatchObject({ one_visit: false, badge: "prepaid", products: [], payment_link: null });
+    expect(card).toMatchObject({
+      one_visit: false,
+      badge: "prepaid",
+      products: [],
+      payment_link: null,
+      client_choice: null,
+      checklist_if_declined: [],
+    });
   });
 });
 
@@ -139,8 +165,7 @@ describe("the piece step of a one visit", () => {
 
   it("refuses a product not offered on the visit's day, and a piece with none", async () => {
     const job = await oneVisit();
-    await job.workTo("consumables");
-    await job.post(path("consumables"), { items: [] }, "event-consumables-01");
+    await job.workTo("piece");
     for (const [body, field] of [
       [{ ...A_PIECE, product: "platinum" }, "product"],
       [A_PIECE, "product"],
@@ -371,6 +396,20 @@ describe("closing a one visit the client decided against", () => {
     const summary = await summaryOf(env.DB, visit, { labelAsTest: false });
     expect(summary.startsWith("Consultation and fit · ")).toBe(true);
     expect(summary).toContain("No piece: the client decided against the fit");
+  });
+
+  // FLD-37: FSM's record read "Checklist 9/9: … Adhesive applied, Piece set and pressed … · No piece".
+  it("counts FSM's checklist against the consultation's alone, and names nothing of the fit", async () => {
+    const job = await oneVisit();
+    await job.workTo("piece");
+    await job.post(path("piece"), { declined: true }, "event-piece-01");
+    const ticked = ["scalp_checked", "measurements_taken", "options_shown", "piece_set"];
+    expect((await job.post(path("checklist"), { done: ticked }, "event-checklist-01")).status).toBe(202);
+
+    const visit = { id: JOB, fsmId: "ap-today", type: "first_fit" as const, oneVisit: true, personId: PERSON };
+    const summary = await summaryOf(env.DB, { ...visit, fsmContactId: "contact-1" }, { labelAsTest: false });
+    expect(summary).toContain("Checklist 3/3: ");
+    expect(summary).not.toContain("Piece set");
   });
 });
 

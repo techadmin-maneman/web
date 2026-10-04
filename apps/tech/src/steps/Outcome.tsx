@@ -12,15 +12,17 @@
 // time: the phone records the instant this screen's action was taken
 // (apps/tech/src/store/jobs.ts).
 //
-// On a consultation and fit in one visit, Done says what closing it does, which
-// no board draws: the client is texted a payment link for the product they
-// chose, or the visit ends as a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md), and
-// takes a discount code the client gives, before the link goes, unless one is on the visit already
-// (docs/decisions/0108-discount-codes.md).
+// On a consultation and fit in one visit, Done says what closing it does, by
+// the client's choice at the piece step, which no board draws: a client who
+// decided against the fit ends with a free consultation and is asked for no
+// code; one fitted is texted a payment link for their product, and a discount
+// code they give is taken first, unless one is on the visit already
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md, 0108-discount-codes.md).
 
 import { useState } from "react";
 import type { Job, PartialReason } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
+import { choiceOf, type ClientChoice } from "../lib/progress.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { DiscountCode } from "./DiscountCode.tsx";
 import { StepFrame } from "./StepFrame.tsx";
@@ -39,8 +41,41 @@ function codeSaid(code: NonNullable<Job["discount_code"]>): string {
   return code.given_by === "technician" ? oneVisit.code.applied(code.code) : oneVisit.code.appliedAtBooking(code.code);
 }
 
+/** The payment link's line: for the product the client chose, by name, or in general where the phone has no choice. */
+function linkNote(job: Job, chosen: Extract<ClientChoice, { product: string }> | null): string {
+  if (chosen === null) return oneVisit.closeNote;
+  const product = job.products.find((one) => one.tier === chosen.product);
+  return oneVisit.linkFor(product?.name ?? oneVisit.chosenProduct);
+}
+
+/** What closing a one visit as done does: ends it as a free consultation, or texts the client a payment link. */
+function OneVisitClose({
+  job,
+  clientChoice,
+  onChecking,
+}: {
+  job: Job;
+  clientChoice: ClientChoice | null;
+  onChecking: (checking: boolean) => void;
+}) {
+  if (clientChoice !== null && "declined" in clientChoice) {
+    return <p className={styles.note}>{oneVisit.endsAsConsultation}</p>;
+  }
+  const standingCode = job.discount_code;
+  return (
+    <>
+      <p className={styles.note}>{linkNote(job, clientChoice)}</p>
+      {standingCode === null ? (
+        <DiscountCode jobId={job.id} onChecking={onChecking} />
+      ) : (
+        <p className={styles.note}>{codeSaid(standingCode)}</p>
+      )}
+    </>
+  );
+}
+
 export function Outcome({ id }: { id: string }) {
-  const { loaded, retry, refused, finish, back } = useStep(id, "outcome");
+  const { loaded, retry, refused, queued, finish, back } = useStep(id, "outcome");
   const [choice, setChoice] = useState<Choice>(null);
   const [reason, setReason] = useState<PartialReason["id"] | null>(null);
   const [codeChecking, setCodeChecking] = useState(false);
@@ -50,9 +85,9 @@ export function Outcome({ id }: { id: string }) {
     return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
   }
 
-  const reasons = loaded.value.partial_reasons;
-  const closesOneVisit = loaded.value.one_visit && choice === "done";
-  const standingCode = loaded.value.discount_code;
+  const job = loaded.value;
+  const reasons = job.partial_reasons;
+  const closesOneVisit = job.one_visit && choice === "done";
   // A code being checked would change the link closing the visit sends: Next waits for it.
   const ready = !codeChecking && (choice === "done" || (choice === "partial" && reason !== null));
 
@@ -92,9 +127,7 @@ export function Outcome({ id }: { id: string }) {
         </button>
       </div>
 
-      {closesOneVisit && <p className={styles.note}>{oneVisit.closeNote}</p>}
-      {closesOneVisit && standingCode === null && <DiscountCode jobId={id} onChecking={setCodeChecking} />}
-      {closesOneVisit && standingCode !== null && <p className={styles.note}>{codeSaid(standingCode)}</p>}
+      {closesOneVisit && <OneVisitClose job={job} clientChoice={choiceOf(job, queued)} onChecking={setCodeChecking} />}
 
       {choice === "partial" && (
         <ul className={styles.reasons}>

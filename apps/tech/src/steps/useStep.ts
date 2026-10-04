@@ -23,6 +23,8 @@ export interface Standing {
   readonly retry: () => void;
   /** This step as it was sent and refused, when the technician is putting it right. */
   readonly refused: Queued | null;
+  /** Every write still on the phone, of every job. */
+  readonly queued: readonly Queued[];
   /** Queues this step's write, once however often it is tapped, and opens the next screen. */
   readonly finish: (body: unknown) => Promise<void>;
   readonly back: () => void;
@@ -56,5 +58,5 @@ export function useStep(id: string, step: InJobStep): Standing {
     go(`/jobs/${id}`);
   };
 
-  return { loaded, retry, refused, finish, back };
+  return { loaded, retry, refused, queued: waiting.events, finish, back };
 }

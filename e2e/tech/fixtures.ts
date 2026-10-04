@@ -176,11 +176,16 @@ const CHECKLIST: Card["checklist"] = [
   { id: "piece_cleaned", label: "PLACEHOLDER Piece cleaned" },
 ];
 
-/** A consultation and fit in one visit: the consultation's three items, then the first fit's six (src/config/job-sheet.ts). */
-export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
+/** A consultation's checklist, which a one visit runs alone once the client decides against the fit. */
+const CONSULTATION_CHECKLIST: Card["checklist"] = [
   { id: "scalp_checked", label: "PLACEHOLDER Scalp and hairline checked" },
   { id: "measurements_taken", label: "PLACEHOLDER Measurements taken" },
   { id: "options_shown", label: "PLACEHOLDER Options and prices shown" },
+];
+
+/** A consultation and fit in one visit: the consultation's three items, then the first fit's six (src/config/job-sheet.ts). */
+export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
+  ...CONSULTATION_CHECKLIST,
   { id: "template_checked", label: "PLACEHOLDER Template checked against the head" },
   { id: "base_trimmed", label: "PLACEHOLDER Base trimmed and shaped" },
   { id: "adhesive_applied", label: "PLACEHOLDER Adhesive applied" },
@@ -263,12 +268,15 @@ export const ROHITS_PROFILE: HairProfile = {
 
 /**
  * The API's steps (src/policy/in-job-steps.ts): a consultation and a one visit take the profile, and a consultation
- * takes no after photographs.
+ * takes no after photographs. A one visit takes the piece, with the client's choice, before the checklist.
  */
 function stepsFor(type: VisitType, oneVisit = false): Step[] {
-  const takesPiece = oneVisit || type === "replacement" || type === "first_fit";
-  const takesProfile = oneVisit || type === "consultation";
-  const takesAfterPhotos = oneVisit || type !== "consultation";
+  if (oneVisit) {
+    return ["before_photos", "piece", "checklist", "consumables", "profile", "after_photos", "outcome"];
+  }
+  const takesPiece = type === "replacement" || type === "first_fit";
+  const takesProfile = type === "consultation";
+  const takesAfterPhotos = type !== "consultation";
   return [
     "before_photos",
     "checklist",
@@ -301,6 +309,8 @@ export interface CardOptions {
   readonly checklist?: Card["checklist"];
   /** A one visit's discount code already on it; none unless a test gives one. */
   readonly discountCode?: Card["discount_code"];
+  /** What a one visit's client decided at the piece step that landed; none unless a test gives it. */
+  readonly clientChoice?: Card["client_choice"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -339,11 +349,13 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     reminder: options.reminderDelivered === undefined ? null : { delivered_at: options.reminderDelivered },
     steps: stepsFor(oneVisit ? "first_fit" : type, oneVisit),
     checklist: options.checklist ?? CHECKLIST,
+    checklist_if_declined: oneVisit ? CONSULTATION_CHECKLIST : [],
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
     payment_link: null,
     discount_code: options.discountCode ?? null,
+    client_choice: oneVisit ? (options.clientChoice ?? null) : null,
     profile: options.profile ?? null,
   };
 }
@@ -363,11 +375,13 @@ export function lockedCard(date: string): Card {
     reminder: null,
     steps: stepsFor("first_fit"),
     checklist: CHECKLIST,
+    checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
     products: [],
     payment_link: null,
     discount_code: null,
+    client_choice: null,
     profile: null,
   };
 }
@@ -439,6 +453,8 @@ export interface Fake {
   oneVisit: boolean;
   /** The discount code already on the one visit, or none. */
   discountCode: Card["discount_code"];
+  /** What the one visit's client decided, as its piece step landed; the fake records it as the step lands. */
+  clientChoice: Card["client_choice"];
   /** The client's pieces on the card. */
   pieces: Piece[];
   /** The client's hair profile on the card, or none recorded. */
@@ -525,6 +541,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     type: "service",
     oneVisit: false,
     discountCode: null,
+    clientChoice: null,
     pieces: [],
     profile: null,
     checklist: CHECKLIST,
@@ -552,6 +569,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       profile: fake.profile,
       checklist: fake.checklist,
       discountCode: fake.discountCode,
+      clientChoice: fake.clientChoice,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -613,12 +631,19 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 425, "too_early_to_close");
 
       // A one visit's client may decide against the fit, when the piece step carries no label.
-      const body = route.request().postDataJSON() as { piece_code?: string; declined?: boolean } | null;
+      const body = route.request().postDataJSON() as {
+        piece_code?: string;
+        declined?: boolean;
+        product?: string;
+      } | null;
       const declined = body?.declined === true;
       if (path.endsWith("/piece") && !declined && !PIECE_LABEL.test(body?.piece_code ?? "")) {
         return refuse(route, 400, "invalid_request", ["piece_code"]);
       }
       fake.writes.push({ path, eventId, startsAt, body });
+      if (path.endsWith("/piece") && fake.oneVisit) {
+        fake.clientChoice = declined ? { declined: true } : { product: body?.product ?? "" };
+      }
 
       if (path.endsWith("/checkin")) {
         const now = new Date();

@@ -94,11 +94,13 @@ const card = (id: string, date: string) =>
     reminder: null,
     steps: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
     checklist: [],
+    checklist_if_declined: [],
     partial_reasons: [],
     consumables: [],
     products: [],
     payment_link: null,
     discount_code: null,
+    client_choice: null,
     profile: null,
   }) as Job;
 
@@ -322,6 +324,19 @@ describe("a job's card", () => {
     const { discount_code: _none, ...earlier } = card("a", TODAY);
     await keepJob(earlier as unknown as Job);
     expect((await keptJob("a"))?.discount_code).toBeNull();
+  });
+
+  it("kept before a one visit's choice was on the card, knows none, and runs the whole checklist", async () => {
+    const whole = [{ id: "scalp_checked", label: "Scalp checked" }];
+    const {
+      checklist_if_declined: _list,
+      client_choice: _choice,
+      ...earlier
+    } = { ...card("a", TODAY), checklist: whole };
+    await keepJob(earlier as unknown as Job);
+    const kept = await keptJob("a");
+    expect(kept?.client_choice).toBeNull();
+    expect(kept?.checklist_if_declined).toEqual(whole);
   });
 });
 
