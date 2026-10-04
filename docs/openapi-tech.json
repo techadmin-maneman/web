@@ -528,16 +528,16 @@
             "type": "boolean",
             "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
           },
-          "product": {
+          "service": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/TechnicianService"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+            "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
           },
           "sector": {
             "anyOf": [
@@ -614,7 +614,7 @@
           "window_label",
           "type",
           "one_visit",
-          "product",
+          "service",
           "sector",
           "status",
           "badge",
@@ -623,6 +623,24 @@
           "unlocks_at",
           "client_name",
           "progress"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianService": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "description": "Its code, which the hair profile names a first fit's product by."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name in the console."
+          }
+        },
+        "required": [
+          "tier",
+          "name"
         ],
         "additionalProperties": false
       },
@@ -720,16 +738,16 @@
             "type": "boolean",
             "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
           },
-          "product": {
+          "service": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/TechnicianService"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+            "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
           },
           "sector": {
             "anyOf": [
@@ -1222,7 +1240,7 @@
           "window_label",
           "type",
           "one_visit",
-          "product",
+          "service",
           "sector",
           "status",
           "badge",
@@ -2976,7 +2994,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
             "content": {
               "application/json": {
                 "schema": {
@@ -3066,7 +3084,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
             "content": {
               "application/json": {
                 "schema": {
@@ -3144,7 +3162,7 @@
             }
           },
           "409": {
-            "description": "superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom",
+            "description": "superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom; already_closed: the job has closed, so it takes no more photographs",
             "content": {
               "application/json": {
                 "schema": {
@@ -3194,6 +3212,16 @@
           },
           "404": {
             "description": "not_found: the link is wrong or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "already_closed: the job has closed, so it takes no more photographs",
             "content": {
               "application/json": {
                 "schema": {
@@ -3276,7 +3304,7 @@
             }
           },
           "409": {
-            "description": "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since",
+            "description": "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since; already_closed: the job has closed, so it takes no more photographs",
             "content": {
               "application/json": {
                 "schema": {
@@ -3396,7 +3424,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -3496,7 +3524,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -3596,7 +3624,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -3696,7 +3724,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again",
             "content": {
               "application/json": {
                 "schema": {
@@ -3796,7 +3824,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -3896,7 +3924,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -3986,7 +4014,7 @@
             }
           },
           "409": {
-            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_started: the job was started, so the client was home",
+            "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; already_closed: the job has closed; only its checklist and consumables may be corrected, for an hour; already_started: the job was started, so the client was home",
             "content": {
               "application/json": {
                 "schema": {
