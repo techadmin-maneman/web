@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { profile } from "../../apps/app/src/content.ts";
+import * as ops from "../../apps/ops/src/content.ts";
 import { areas, BOOKING_URL, deletions, dispatch, grievances } from "../../apps/ops/src/content.ts";
 import { DELETION_ALERT_AFTER_MS } from "../../src/domain/deletion.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
@@ -69,5 +70,41 @@ describe("the dispatch board's words", () => {
 
   it("writes every window the API answers with", () => {
     for (const window of BOOKING_WINDOWS) expect(dispatch.windows[window], window).toBeTruthy();
+  });
+});
+
+// OIA-21 and CP-28: ops read "0.00 GB in R2", "Set by 5ef59a45….access" and the board's design notes.
+describe("what the console shows ops", () => {
+  /** Every string content.ts can put on screen: its strings, and what its functions write for sample values. */
+  function shown(value: unknown, out: string[]): string[] {
+    if (typeof value === "string") out.push(value);
+    else if (typeof value === "function") {
+      const write = value as (...args: unknown[]) => unknown;
+      for (const sample of ["x", 2]) {
+        try {
+          shown(write(...Array.from({ length: write.length }, () => sample)), out);
+        } catch {
+          // A function that needs a value of another kind writes nothing for this one.
+        }
+      }
+    } else if (Array.isArray(value)) value.forEach((each) => shown(each, out));
+    else if (typeof value === "object" && value !== null) Object.values(value).forEach((each) => shown(each, out));
+    return out;
+  }
+
+  const strings = shown(Object.values(ops), []);
+
+  it("reads every line of it", () => {
+    expect(strings.length).toBeGreaterThan(1500);
+    expect(strings).toContain("Signed in as x");
+  });
+
+  it.each([
+    ["the storage's own name", /\bR2\b/],
+    ["an environment variable", /\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/],
+    ["a path in the repository", /\b(?:src|apps|docs|packages|scripts|migrations)\/\w/],
+    ["a design board's own words", /\bthe board's\b/i],
+  ])("carries no %s", (_, pattern) => {
+    expect(strings.filter((each) => pattern.test(each))).toEqual([]);
   });
 });

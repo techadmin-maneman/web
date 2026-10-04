@@ -11,6 +11,7 @@ import { useState } from "react";
 import { api, type StaffBook, type StaffToken } from "../api.ts";
 import { settings } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { whoWords } from "../lib/who.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { grantWords } from "./grants.ts";
@@ -55,7 +56,9 @@ function Enforcement({ book, onChanged }: PanelProps) {
         </h2>
       </div>
       <p className={styles.note}>{on ? words.on : words.off}</p>
-      {setBy !== null && setAt !== null && <p className={styles.note}>{words.setBy(setBy, longDate(setAt))}</p>}
+      {setBy !== null && setAt !== null && (
+        <p className={styles.note}>{words.setBy(whoWords(setBy), longDate(setAt))}</p>
+      )}
       {!book.may_run_access && <p className={styles.note}>{words.onlyNational}</p>}
       {book.may_run_access && isChecking(step) && (
         <div className={styles.group}>

@@ -5,6 +5,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { shell } from "../content.ts";
 import { whoami } from "../lib/access.ts";
 import { forgetClients } from "../lib/client-search.ts";
+import { whoWords } from "../lib/who.ts";
 import styles from "./shell.module.css";
 
 /** "aditya.kumar@maneman.in" reads "AK", and "ops@maneman.in" "OP", as the board's box holds two letters. */
@@ -21,7 +22,7 @@ export function Account() {
   const { signed_in_as: who, sign_out: signOut } = loaded.value;
   return (
     <div className={styles.account}>
-      <span>{shell.account.signedInAs(who)}</span>
+      <span>{shell.account.signedInAs(whoWords(who))}</span>
       <span className={styles.initials} aria-hidden="true">
         {initialsOf(who)}
       </span>

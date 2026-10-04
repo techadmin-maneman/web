@@ -14,6 +14,7 @@ import { useCallback, useState } from "react";
 import { api, type DiscountCode } from "../api.ts";
 import { settings } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { whoWords } from "../lib/who.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { DiscountCodeForm } from "./DiscountCodeForm.tsx";
@@ -66,7 +67,9 @@ function CodeRow({ code, maySwitchOff, onSwitched }: CodeRowProps) {
       <p className={styles.set}>{factsOf(code)}</p>
       <p className={styles.set}>{copy.madeBy(code.created_by, longDate(code.created_at))}</p>
       {code.switched_off !== null && (
-        <p className={styles.set}>{copy.switchedOffBy(code.switched_off.by, longDate(code.switched_off.at))}</p>
+        <p className={styles.set}>
+          {copy.switchedOffBy(whoWords(code.switched_off.by), longDate(code.switched_off.at))}
+        </p>
       )}
       {code.switched_off === null && (switching === "checking" || switching === "sending") && (
         <CheckPanel
