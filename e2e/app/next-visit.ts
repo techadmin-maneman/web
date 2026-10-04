@@ -5,7 +5,7 @@
 //   due:          fitted, their last service done 25 days ago in the morning, so the next falls due in five days;
 //   replacement:  fitted, their last service done 25 days ago in the evening, and their piece falls due in three
 //                 days, before the next service would, so a replacement is offered on that day, in no window;
-//   firstFit:     their consultation done two days ago, with the first fit asked for in the afternoon on the site.
+//   firstFit:     their consultation done two days ago in the afternoon, so the first fit is offered then too.
 //
 // e2e/global-setup.ts seeds them once, after the fitted client, whose technician their visits name.
 
@@ -71,13 +71,9 @@ export async function seedNextVisit(): Promise<void> {
     `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, fitted_at, replacement_due_at, synced_at) VALUES
        ${row(crypto.randomUUID(), `e2e-piece-${replacement.person}`, replacement.person, "MM-STD-4417-D", "Mono", indiaDay(-177), indiaDay(3), now)};`,
   );
-  // A consultation done two days ago, and the first fit the site's form asked for with it, in the afternoon.
+  // A consultation done two days ago at 1:30 pm in India, an afternoon.
   const consulted = indiaDay(-2);
-  const firstFit = client("consultation", `${consulted}T04:30:00.000Z`, `${consulted}T05:30:00.000Z`);
-  sql.push(
-    `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES
-       ${row(crypto.randomUUID(), firstFit.person, "afternoon", now)};`,
-  );
+  const firstFit = client("consultation", `${consulted}T08:00:00.000Z`, `${consulted}T09:00:00.000Z`);
   // A first fit is sold only as a hair system set up in the console, so the local database offers one.
   sql.push(
     `INSERT OR IGNORE INTO services (kind, tier, name, minutes, sort, updated_by, updated_at) VALUES

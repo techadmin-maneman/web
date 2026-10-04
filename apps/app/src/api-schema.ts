@@ -2874,7 +2874,7 @@ export interface components {
                 types: ("consultation" | "first_fit" | "service" | "replacement")[];
                 /** @description Every service of those kinds offered and priced now, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; with none, a first fit cannot be booked yet. */
                 services: components["schemas"]["OfferedService"][];
-                /** @description What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first, on the earlier of its own due day and the service's (ADR 0086). */
+                /** @description What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the consultation's window; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first, on the earlier of its own due day and the service's (ADR 0086). */
                 next: {
                     /** @enum {string} */
                     type: "first_fit" | "service" | "replacement";

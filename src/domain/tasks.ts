@@ -15,11 +15,13 @@ import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { UNTOLD_MOVE, UNTOLD_REASON } from "./dispatch.ts";
 import { LEAVE_ON_THE_DAY } from "./leave.ts";
 import { citiesOf, type PlacedId, type PlacedRecord } from "./places.ts";
+import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { reachesCity, type PlacesReached } from "../policy/access.ts";
 import {
   atRiskIfDoneBy,
   firstFitToBookIfConsultedBy,
   NEXT_VISIT_DAYS,
+  offeredWindow,
   type NextVisitDays,
 } from "../policy/next-visit.ts";
 import { closedIfSentBy } from "../policy/one-visit.ts";
@@ -46,8 +48,8 @@ export interface Task {
    * window asked for (and the first fit asked for with them, or the one visit),
    * the piece's label, the fraud rule met, the technician who attended, the
    * invoice in Books, the last visit and the day its next
-   * service fell due, the consultation and the window a first fit was asked
-   * for in, a payment link's state, amount and product, what a disputed charge kept.
+   * service fell due, the consultation and the window its first fit is offered
+   * in, a payment link's state, amount and product, what a disputed charge kept.
    */
   readonly detail: string | null;
   readonly since: string;
@@ -103,11 +105,14 @@ const withOwners = (arms: string) => `SELECT t.*, o.owner,
 const LEAVE_CONFLICT_EPISODE = `(SELECT l.id FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY}
   ORDER BY l.created_at, l.id LIMIT 1)`;
 
-/**
- * A first fit to book is a new task when a later consultation follows the same request, and the same one when the
- * request is asked for again while it waits: the consultation it follows.
- */
+/** A first fit to book is a new task after each later consultation: the consultation it follows. */
 const FIRST_FIT_EPISODE = "s.consulted_start";
+
+/**
+ * A client with no first fit, service or replacement done since their last consultation. Written exactly as the
+ * partial index `last_visits_unfitted` is, so a look reads only those clients.
+ */
+const NOT_FITTED_SINCE_CONSULTED = "(s.visit_start IS NULL OR s.visit_start < s.consulted_start)";
 
 /**
  * Every queue, in three statements sent together. D1 takes at most five arms in one
@@ -213,15 +218,16 @@ const OUTSTANDING = [
   // from that day (?4 on from the visit's own), names the visit and the day the service fell due (?7 on), and goes
   // as soon as a visit is booked, paid for, or done after it (docs/decisions/0086-the-next-visit-is-offered.md).
   //
-  // A First fit to book is a fit asked for on the site's form whose consultation was done on or before ?5's day,
-  // with nothing booked since. It waits from `first_fit_to_book` days after the consultation (?6 on from it), names
-  // the consultation's start and the window asked for, and goes as the at-risk task does.
+  // A First fit to book is a client whose last consultation was done on or before ?5's day, with no first fit,
+  // service or replacement done since, and nothing booked since. A one visit the client declined ends as a
+  // consultation, so it counts too. It waits from `first_fit_to_book` days after the consultation (?6 on from it),
+  // names the consultation's start, and goes as the at-risk task does.
   //
   // Both read each client's last visits from last_visits, which the database keeps as each visit closes (migration
   // 0053), and look for a visit booked since along indexes that hold only the visits to come or those after it: so a
-  // look reads about a row a client, however many visits each has had. A First fit to book reads only the requests
-  // of clients not fitted since their consultation, `fitted_since`, kept from last_visits (migration 0056), and not
-  // every request a client who has long since been fitted once made.
+  // look reads about a row a client, however many visits each has had. A First fit to book reads only the clients
+  // not fitted since their consultation, along the partial index `last_visits_unfitted`, and not every client who
+  // has long since been fitted.
   withOwners(`
   SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
          a.window_start || ' ' || t.name AS detail,
@@ -264,21 +270,20 @@ const OUTSTANDING = [
      AND NOT EXISTS (
        SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
   UNION ALL
-  SELECT 'first_fit_to_book', r.id, r.person_id, pe.name,
-         s.consulted_start || ' ' || COALESCE(r.preferred_window, 'any'),
+  SELECT 'first_fit_to_book', s.person_id, s.person_id, pe.name, s.consulted_start,
          date(s.consulted_start, '+330 minutes', ?6), NULL, ${FIRST_FIT_EPISODE}
-    FROM first_fit_requests r JOIN last_visits s ON s.person_id = r.person_id JOIN people pe ON pe.id = r.person_id
-   WHERE r.fitted_since = 0 AND s.consulted_start < ?5 AND pe.erased_at IS NULL
+    FROM last_visits s JOIN people pe ON pe.id = s.person_id
+   WHERE s.consulted_start < ?5 AND ${NOT_FITTED_SINCE_CONSULTED} AND pe.erased_at IS NULL
      AND NOT EXISTS (
        SELECT 1 FROM appointments live
-        WHERE live.person_id = r.person_id AND live.status IN ('scheduled', 'dispatched', 'in_progress')
+        WHERE live.person_id = s.person_id AND live.status IN ('scheduled', 'dispatched', 'in_progress')
           AND live.deleted_at IS NULL)
      AND NOT EXISTS (
        SELECT 1 FROM appointments later
-        WHERE later.person_id = r.person_id AND later.window_start > s.consulted_start AND later.deleted_at IS NULL
+        WHERE later.person_id = s.person_id AND later.window_start > s.consulted_start AND later.deleted_at IS NULL
           AND later.status NOT IN ('cancelled', 'terminated'))
      AND NOT EXISTS (
-       SELECT 1 FROM slot_holds h WHERE h.person_id = r.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
+       SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
 `),
 
   // A one visit's payment link still unpaid (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): whether
@@ -349,14 +354,21 @@ function firstSignal(signals: string | null): string | null {
   return Array.isArray(parsed) && typeof parsed[0] === "string" ? parsed[0] : null;
 }
 
+/** A First fit to book's consultation start, then the window its fit is offered in, or "any" where there is none. */
+function consultedWithWindow(consultedStart: string, schedule: SlotSchedule): string {
+  const window = offeredWindow("first_fit", schedule.at(consultedStart).window);
+  return `${consultedStart} ${window ?? "any"}`;
+}
+
 /**
  * The one fact a task turns on, as ops read it. A partial visit's is the
  * technician's reason in the words ops gave it: the statement reads them from
  * the reasons ops saved, and a reason from the committed list, which stands
  * until they save one, is named here (docs/decisions/0087-consumables-and-stock.md).
  */
-function detailOf(row: Row): string | null {
+function detailOf(row: Row, schedule: SlotSchedule): string | null {
   if (row.group === "referral_review") return firstSignal(row.detail);
+  if (row.group === "first_fit_to_book" && row.detail !== null) return consultedWithWindow(row.detail, schedule);
   if (row.group !== "partial_visit") return row.detail;
   return PARTIAL_REASONS.find((reason) => reason.id === row.detail)?.label ?? row.detail;
 }
@@ -388,27 +400,30 @@ export async function outstandingTasks(
   // The first moment after each last day, as the instants the visits' starts are compared with.
   const atRiskBefore = indiaInstant(addDays(atRiskIfDoneBy(today, days), 1), "00:00").toISOString();
   const toBookBefore = indiaInstant(addDays(firstFitToBookIfConsultedBy(today, days), 1), "00:00").toISOString();
-  const answers = await db.batch<Row>([
-    db.prepare(OUTSTANDING[0]).bind(today, READ_CAP),
-    // Its one number is READ_CAP, which every statement takes as ?2.
-    db.prepare(OUTSTANDING[1]).bind(null, READ_CAP),
-    db
-      .prepare(OUTSTANDING[2])
-      .bind(
-        now.toISOString(),
-        READ_CAP,
-        atRiskBefore,
-        daysOn(days.service_cadence + days.at_risk_after_due),
-        toBookBefore,
-        daysOn(days.first_fit_to_book),
-        daysOn(days.service_cadence),
-      ),
-    db.prepare(OUTSTANDING[3]).bind(closedIfSentBy(now).toISOString(), READ_CAP),
+  const [answers, schedule] = await Promise.all([
+    db.batch<Row>([
+      db.prepare(OUTSTANDING[0]).bind(today, READ_CAP),
+      // Its one number is READ_CAP, which every statement takes as ?2.
+      db.prepare(OUTSTANDING[1]).bind(null, READ_CAP),
+      db
+        .prepare(OUTSTANDING[2])
+        .bind(
+          now.toISOString(),
+          READ_CAP,
+          atRiskBefore,
+          daysOn(days.service_cadence + days.at_risk_after_due),
+          toBookBefore,
+          daysOn(days.first_fit_to_book),
+          daysOn(days.service_cadence),
+        ),
+      db.prepare(OUTSTANDING[3]).bind(closedIfSentBy(now).toISOString(), READ_CAP),
+    ]),
+    loadSlotSchedule(db),
   ]);
   const truncated = answers.some((answer) => answer.results.length >= READ_CAP);
   // Each statement sorted its own rows; the board wants one list, so they are merged on the same column.
   const results = answers.flatMap((answer) => answer.results).sort((a, b) => a.since.localeCompare(b.since));
-  return { tasks: results.map((row) => taskOf(row, sla)), truncated };
+  return { tasks: results.map((row) => taskOf(row, sla, schedule)), truncated };
 }
 
 /** The group's allowance from when it started waiting, or the visit it is about, whichever comes first. */
@@ -429,14 +444,14 @@ function visitOf(row: Row): TaskVisit | null {
   return { id: row.visit_id, starts_at: row.visit_start };
 }
 
-function taskOf(row: Row, sla: Slas): Task {
+function taskOf(row: Row, sla: Slas, schedule: SlotSchedule): Task {
   const since = instantOf(row.since);
   return {
     id: row.id,
     group: row.group,
     person: personOf(row),
     visit: visitOf(row),
-    detail: detailOf(row),
+    detail: detailOf(row, schedule),
     since,
     due: dueOf(row, since, sla).toISOString(),
     episode: row.episode,
@@ -450,7 +465,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   leave_conflict: "visit",
   address_to_confirm: "visit",
   consultation_request: "consultation_request",
-  first_fit_to_book: "first_fit_request",
+  first_fit_to_book: "client",
   replacement_order: "piece",
   at_risk_client: "visit",
   partial_visit: "visit",
