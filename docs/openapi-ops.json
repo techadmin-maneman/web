@@ -488,6 +488,13 @@
               "$ref": "#/components/schemas/HeldBooking"
             },
             "description": "Bookings FSM refused, waiting for a try or for ops; the soonest visit first."
+          },
+          "auto_refunds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AutoRefund"
+            },
+            "description": "Bookings that refunded their payment by themselves; the latest refund first."
           }
         },
         "required": [
@@ -504,7 +511,8 @@
           "invoices",
           "history",
           "invite",
-          "held_bookings"
+          "held_bookings",
+          "auto_refunds"
         ],
         "additionalProperties": false
       },
@@ -1961,6 +1969,66 @@
           "retries_end",
           "retrying",
           "discount_code"
+        ],
+        "additionalProperties": false
+      },
+      "AutoRefund": {
+        "type": "object",
+        "properties": {
+          "hold_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "description": "Its service's name as it is now."
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "India's day the visit was to be on."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "In paise, GST included: what Razorpay took, all of which went back; null where it is not on record."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "lapsed",
+              "not_movable"
+            ],
+            "description": "lapsed: paid after the hold and its grace ran out; not_movable: a move whose visit had begun."
+          },
+          "refunded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "hold_id",
+          "type",
+          "service",
+          "date",
+          "amount",
+          "reason",
+          "refunded_at"
         ],
         "additionalProperties": false
       },
@@ -10808,7 +10876,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such client, or one who has been erased",
+            "description": "not_found: no such client in the caller's cities, or one who has been erased",
             "content": {
               "application/json": {
                 "schema": {
@@ -11479,7 +11547,7 @@
     },
     "/api/referrals/held": {
       "get": {
-        "summary": "Referral grants held for review, oldest first",
+        "summary": "Referral grants held for review whose friend is in the caller's cities, oldest first",
         "responses": {
           "200": {
             "description": "Held grants",
@@ -11642,7 +11710,7 @@
             }
           },
           "404": {
-            "description": "not_found: no held grant by that ID",
+            "description": "not_found: no held grant by that ID in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -11782,7 +11850,7 @@
     },
     "/api/waitlist": {
       "get": {
-        "summary": "Who is waiting, by pincode, the longest wait first",
+        "summary": "Who is waiting in the caller's cities, by pincode, the longest wait first",
         "responses": {
           "200": {
             "description": "Areas with someone waiting",
@@ -11943,6 +12011,16 @@
               }
             }
           },
+          "403": {
+            "description": "access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "not_found: we have no such pincode",
             "content": {
@@ -11958,7 +12036,7 @@
     },
     "/api/referrers": {
       "get": {
-        "summary": "The referrers' figures, the busiest first, 50 at a time",
+        "summary": "The figures of the referrers in the caller's cities, the busiest first, 50 at a time",
         "parameters": [
           {
             "schema": {
@@ -14098,7 +14176,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order or outside_the_day (06:00 to 22:00)",
+            "description": "invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order, half_slot_too_short (under 45 minutes, the last one to the day's end included) or outside_the_day (06:00 to 22:00)",
             "content": {
               "application/json": {
                 "schema": {

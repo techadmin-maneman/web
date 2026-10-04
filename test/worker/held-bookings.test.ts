@@ -1319,9 +1319,16 @@ describe("what the client is told when ops refund it", () => {
     });
   });
 
-  it("is not sent without their consent to WhatsApp about their visits", async () => {
+  // MON-14: a refund is transactional, so it goes without their consent to WhatsApp about visits.
+  it("tells of a refund without their consent to WhatsApp about their visits", async () => {
     const { holdId } = await paidHold();
     await refusedFiveTimes(holdId);
+    await refund(fakeDependencies({ now: () => afterHeld(HOUR) }), holdId).answer;
+    expect(await composeBookingRefunded(env.DB, holdId, PERSON)).toMatchObject({ template: "booking_refunded_v1" });
+  });
+
+  it("says nothing without that consent when nothing was paid, so nothing goes back", async () => {
+    const holdId = await heldMove("move");
     await refund(fakeDependencies({ now: () => afterHeld(HOUR) }), holdId).answer;
     expect(await composeBookingRefunded(env.DB, holdId, PERSON)).toEqual({
       skip: "no consent to WhatsApp about visits",
@@ -1441,12 +1448,14 @@ describe("where it waits for ops, and what the client sees meanwhile", () => {
       being_booked: unknown;
     }>();
     expect(me.next_visit).toBeNull();
+    // Told once booked without any consent to visit messages: its receipt is transactional.
     expect(me.being_booked).toEqual({
       type: "service",
       date: "2026-09-24",
       window: "afternoon",
       paid: true,
       one_visit: false,
+      told: true,
     });
   });
 });

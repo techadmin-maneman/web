@@ -48,6 +48,8 @@ export interface Frame {
   readonly small?: Blob;
   /** The take the API answered once the photograph was up; only its thumbnail is still to go. */
   readonly take?: string;
+  /** True once the API refused the file itself. The angle is taken again, which replaces this frame. */
+  readonly refused?: true;
   readonly kept_at: number;
 }
 
@@ -271,18 +273,24 @@ export function replay(): Promise<Replayed> {
  * A photograph set is not one call. Each frame still on the phone is PUT to a
  * link the API hands out, with its thumbnail, and only then does the set itself
  * go. The frames are dropped one by one as they land, so a replay interrupted
- * halfway does not send any of them twice.
+ * halfway does not send any of them twice. A frame the API refuses does not
+ * hold back the others: they go up, so only the refused ones are taken again.
  */
 async function uploadFrames(event: Queued, phase: Phase): Promise<Trouble | null> {
   const inTheOrderTaken = (await frames()).sort((a, b) => a.kept_at - b.kept_at);
+  let firstRefusal: Rejected | null = null;
   for (const frame of inTheOrderTaken) {
     if (frame.job_id !== event.job_id || frame.phase !== phase) continue;
     const trouble = await uploadFrame(frame);
-    if (trouble !== null) return trouble;
-    await remove("frames", frame.id);
-    changed();
+    if (trouble === null) {
+      await remove("frames", frame.id);
+      changed();
+      continue;
+    }
+    if (!isRejected(trouble)) return trouble;
+    firstRefusal ??= trouble;
   }
-  return null;
+  return firstRefusal;
 }
 
 /**
@@ -299,7 +307,7 @@ async function uploadFrame(frame: Frame): Promise<Trouble | null> {
   let take = frame.take;
   if (take === undefined) {
     const sent = await api.upload(link.body.upload_url, frame.frame);
-    if (!sent.ok) return failureOf(sent);
+    if (!sent.ok) return markIfRefused(frame, failureOf(sent));
     // An API from before thumbnails names no take: the photograph goes alone.
     take = sent.body?.take;
     if (take === undefined) return null;
@@ -314,6 +322,12 @@ async function uploadFrame(frame: Frame): Promise<Trouble | null> {
 
 const isRejected = (trouble: Trouble): trouble is Rejected =>
   typeof trouble === "object" && trouble.kind === "rejected";
+
+/** A photograph the API would not take is marked, so the capture screen asks for its angle again. */
+async function markIfRefused(frame: Frame, trouble: Trouble): Promise<Trouble> {
+  if (isRejected(trouble)) await put("frames", { ...frame, refused: true } satisfies Frame);
+  return trouble;
+}
 
 /**
  * What a failed call on the way to a write means for the round: wait, sign out,
