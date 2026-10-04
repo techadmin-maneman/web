@@ -32,11 +32,35 @@ test("lists the day's jobs in order, with no amount anywhere (board A1)", async 
   await expect(rows.first()).toContainText("Sector 65");
   await expect(rows.first()).toContainText("Prepaid");
   await expect(rows.nth(1)).toContainText("Credit");
+  // FLD-58, FLD-61: the clock the heading uses, never "2:00", and how long each visit is, never "2 slots".
+  await expect(rows.first().getByText("9:30 am", { exact: true })).toBeVisible();
+  await expect(rows.first().getByText("90 min", { exact: true })).toBeVisible();
+  await expect(rows.nth(2).getByText("2 pm", { exact: true })).toBeVisible();
+  await expect(rows.nth(2).getByText("180 min", { exact: true })).toBeVisible();
 
   // "No money anywhere in the technician app": a badge only.
   await expect(page.locator("body")).not.toContainText("₹");
   const results = await wcag(page);
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+// FLD-58, UX-34: "CONSULTATION AND FIT · PAYS ONCE FITTED" broke into two ragged columns at 375 and 390 px.
+test("keeps a row's type and its badge each on one line on a narrow phone", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  const fake = await fakeTech(page);
+  fake.type = "first_fit";
+  fake.oneVisit = true;
+  await page.goto("/");
+
+  const row = page.getByRole("listitem").first();
+  for (const words of ["Consultation and fit", "Pays once fitted"]) {
+    const lines = await row.getByText(words).evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+    });
+    expect(lines, words).toBe(1);
+  }
 });
 
 test("a job closed out on another phone reads as closed on Today, as its card says", async ({ page }) => {

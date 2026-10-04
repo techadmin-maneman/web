@@ -128,6 +128,7 @@ const tray = (
  * different windows, because a technician cannot hold two in one (ADR 0034).
  */
 export const BOARD = {
+  version: 1,
   from: DATES[0],
   dates: [...DATES],
   city: null,

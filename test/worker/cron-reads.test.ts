@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   BOARD_ROWS_READ_FIXED,
   BOARD_ROWS_READ_PER_VISIT,
+  BOARD_VERSION_ROWS_READ,
   CRON_ROWS_READ_PER_QUIET_RUN,
   CRON_STATEMENTS_PER_RUN,
   TASKS_ROWS_READ_PER_LOOK,
@@ -603,11 +604,13 @@ describe("a look at the Tasks board or the Stock page", () => {
   });
 });
 
-// The dispatch board reads itself again every minute it is open, so what one load reads, for the visits in its week,
-// is what scripts/lib/free-tier-budget.ts counts the day's reads by.
+// The open dispatch board asks for its version every minute and reads itself again when it has moved, so what one load
+// reads, for the visits in its week, and what one look at the version reads, are what scripts/lib/free-tier-budget.ts
+// counts the day's reads by.
 describe("a load of the dispatch board", () => {
   const ops = appFor("local", fakeDependencies(), {}, "ops");
   const board = () => request(ops, "/api/dispatch");
+  const version = () => request(ops, "/api/dispatch/version");
   const TECHNICIAN = "'55555555-5555-4555-8555-' || printf('%012d', 1 + i % 2)";
   /** Within the board's week from NOW's day: ?3 days and an hour on from NOW. */
   const IN_THE_WEEK = `strftime('%Y-%m-%dT%H:%M:%fZ', '${NOW.toISOString()}', '+' || (i % 7) || ' days', '+1 hour')`;
@@ -621,9 +624,9 @@ describe("a load of the dispatch board", () => {
   ];
 
   /**
-   * The clients numbered ?1 to ?2, each with a service in the board's week and all its card reads of them: an
-   * address, two answers on WhatsApp messages, the invite they came by, the hold it was booked with and, for every
-   * other one, the credit that paid for it.
+   * The clients numbered ?1 to ?2, each with a service in the board's week, worked through, and all its card reads of
+   * them: an address, two answers on each kind of message and photograph, the invite they came by, the hold it was
+   * booked with, every step of the technician's and, for every other one, the credit that paid for it.
    */
   const WEEK_SQL = [
     `INSERT INTO people (id, created_at, mobile_e164, name) SELECT 'b-' || i, '${AGO}', '+9177' || printf('%08d', i),
@@ -631,8 +634,11 @@ describe("a load of the dispatch board", () => {
     `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
      SELECT 'b-ad-' || i, 'b-' || i, '${AGO}', 'House ' || i, 'Sector 49', 'Gurgaon', '122018' FROM n`,
     `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
-     SELECT 'b-co-' || i || '-' || v, 'b-' || i, 'whatsapp_visits', 'v' || v, v - 1, '${AGO}'
-     FROM n CROSS JOIN (SELECT 1 AS v UNION ALL SELECT 2)`,
+     SELECT 'b-co-' || i || '-' || purpose.value || '-' || v, 'b-' || i, purpose.value, 'v' || v, v - 1, '${AGO}'
+     FROM n
+     CROSS JOIN json_each('["photos_own_record","photos_referral_cards","photos_marketing","whatsapp_visits",
+       "whatsapp_launches"]') purpose
+     CROSS JOIN (SELECT 1 AS v UNION ALL SELECT 2)`,
     `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, grant_state, created_at,
        updated_at)
      SELECT 'b-ra-' || i, 'BINVITE', 'b-' || i, '${AGO}', 'consultation', 'granted', '${AGO}', '${AGO}' FROM n`,
@@ -650,6 +656,12 @@ describe("a load of the dispatch board", () => {
     `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
      SELECT 'b-r-' || i, 'b-' || i, 'redeem', -1, 'b-g-' || i, 'appointment', 'b-v-' || i, '${AGO}' FROM n
      WHERE i % 2 = 0`,
+    `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+       fsm_write_state, updated_at)
+     SELECT 'b-je-' || i || '-' || step.value, 'b-v-' || i, 'b-ev-' || i || '-' || step.value, ${TECHNICIAN},
+       step.value, '{}', '${AGO}', '${AGO}', 'written', '${AGO}'
+     FROM n CROSS JOIN json_each('["check_in","start","before_photos","checklist","consumables","piece",
+       "after_photos","outcome"]') step`,
   ];
 
   it("reads no more than its budget for the visits in its week", async () => {
@@ -679,5 +691,13 @@ describe("a load of the dispatch board", () => {
     const after = await rowsReadBy(board);
 
     expect({ before, after }).toEqual({ before, after: before });
+  });
+
+  it("reads one look at its version in a few rows, however many visits its week holds", async () => {
+    await env.DB.batch(TEAM_SQL.map((sql) => over(sql, 1, 2)));
+    await env.DB.batch(WEEK_SQL.map((sql) => over(sql, 1, 30)));
+    await rowsReadBy(version); // the console's settings, read once and kept
+
+    expect(await rowsReadBy(version)).toBeLessThanOrEqual(BOARD_VERSION_ROWS_READ);
   });
 });

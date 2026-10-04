@@ -37,6 +37,7 @@ import {
   type Asked,
   type ProposedBooking,
 } from "../domain/proposed-visits.ts";
+import { pendingInviteOf } from "../domain/referrals.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -245,6 +246,23 @@ export const MeSchema = z
         "What a referral earns now, as ops set it: the Refer tab's promise, for a lead as for a fitted client, and " +
         "the invite's preview say it (docs/decisions/0107-referral-rewards-in-the-console.md).",
     }),
+    pending_invite: z
+      .union([
+        z
+          .object({
+            referrer_first_name: z.string().nullable().openapi({
+              description: "Who sent it, exactly where the invite's own page names them; null where it does not.",
+            }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "The invite a client not yet fitted came with, while its free service visits (referral_reward's " +
+          "friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it " +
+          "lapsed.",
+      }),
   })
   .strict()
   .openapi("Me");
@@ -319,7 +337,8 @@ export function registerClientMe(app: App): void {
     const tomorrow = addDays(today, 1);
 
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
-    const [person, upcoming, underWay, credits, fitted, form, types, services, home] = await Promise.all([
+    const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
+    const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite] = await Promise.all([
       liveContact(db, personId),
       nextVisit(db, personId, now),
       bookingUnderWay(db, personId),
@@ -329,6 +348,7 @@ export function registerClientMe(app: App): void {
       bookableTypes(db, personId),
       servicesOnDay(db, tomorrow),
       homeFactsOf(c, personId, now),
+      pendingInviteOf(db, personId, now, nameOnInvite),
     ]);
     if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
 
@@ -345,6 +365,7 @@ export function registerClientMe(app: App): void {
       price: service.price,
     }));
     const { prompt, invoice } = await homePrompts(db, personId, home.prompt, { booked, offer }, now, home.days);
+    const pendingInvite = fitted ? null : invite;
 
     return c.json(
       {
@@ -360,6 +381,7 @@ export function registerClientMe(app: App): void {
         invoice,
         booking: { self_serve: c.var.config.settings.selfServeBooking, types, services: offered, next: offer },
         referral_reward: home.referralReward,
+        pending_invite: pendingInvite === null ? null : { referrer_first_name: pendingInvite.referrerFirstName },
       },
       200,
     );

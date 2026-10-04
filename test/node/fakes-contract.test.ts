@@ -102,6 +102,12 @@ describe("the ops console's fakes", () => {
   it.each(OPS_FIXTURES)("%s %s answers as the document says: %s", (method, path, _name, body) => {
     expect(contractErrors("ops", method, path, 200, body)).toEqual([]);
   });
+
+  it("answers a pincode added, and the waitlist's row for one we do not hold, as the document says", () => {
+    expect(contractErrors("ops", "POST", "/api/pincodes", 201, ops.ADDED)).toEqual([]);
+    const unheld = { ...ops.AREAS, areas: [...ops.AREAS.areas, ops.UNHELD] };
+    expect(contractErrors("ops", "GET", "/api/waitlist", 200, unheld)).toEqual([]);
+  });
 });
 
 describe("the technician app's fakes", () => {

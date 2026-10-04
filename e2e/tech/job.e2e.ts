@@ -58,7 +58,10 @@ test("shows the flat, floor, tower, building and landmark, and a way to reach th
 
   // As the client app writes it, narrowest first (apps/app/src/profile/AddressSection.tsx).
   await expect(page.getByText("1402, 14th floor, C, Emerald Heights, Sector 65, Gurgaon 122018")).toBeVisible();
-  await expect(page.getByText("Near Opposite the water tank")).toBeVisible();
+  // FLD-57: as the client typed it, under its own label, never "Near Opposite the water tank".
+  await expect(page.getByText("Landmark", { exact: true })).toBeVisible();
+  await expect(page.getByText("Opposite the water tank", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Near Opposite/)).toHaveCount(0);
   // A map finds the building, not the flat.
   await expect(page.getByRole("link", { name: "Navigate" })).toHaveAttribute("href", /destination=28\.39/);
 
@@ -120,7 +123,8 @@ test("checks in at the door, and records the time and the distance (board B5)", 
   await page.goto(`/jobs/${JOB_ID}`);
 
   await expect(page.getByText("1 · Arrived")).toBeVisible();
-  await expect(page.getByText("Tap at the door. We record the time and check you are within 200 m.")).toBeVisible();
+  // FLD-61: the radius ops set, not a fixed 200 m.
+  await expect(page.getByText("Tap at the door. We record the time and check you are within 150 m.")).toBeVisible();
   // The one action sits at the foot of the card, where every screen keeps it.
   await expect(foot(page)).toHaveText("I have arrived");
   await foot(page).click();
@@ -186,6 +190,8 @@ test("asks before closing as a no-show, since ops may charge the client", async 
   const sheet = page.getByRole("dialog", { name: "Close as a no-show?" });
   await expect(sheet).toBeVisible();
   await expect(sheet).toContainText("Ops may charge the client");
+  // FLD-62, UX-30: it opens on the safe answer, so one stray Enter charges nobody.
+  await expect(sheet.getByRole("button", { name: "Not yet" })).toBeFocused();
   const asked = await wcag(page);
   expect(asked.violations.map((violation) => violation.id)).toEqual([]);
 
@@ -316,7 +322,7 @@ test("tomorrow's job shows its day, and cannot be checked in to today", async ({
   await atTheDoor(page);
   await page.goto(`/jobs/${TOMORROW_JOB_ID}`);
 
-  await expect(page.getByText(/^Tomorrow · 10 am · service · 1 slot$/)).toBeVisible();
+  await expect(page.getByText(/^Tomorrow · 10 am · service · 90 min$/)).toBeVisible();
   await expect(page.getByText("This job is tomorrow. Arrive and start it on the day.")).toBeVisible();
   await expect(page.getByRole("button", { name: "I have arrived" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Start job" })).toHaveCount(0);

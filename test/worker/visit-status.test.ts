@@ -66,7 +66,8 @@ describe("moveVisit", () => {
     const result = await moveVisit(env.DB, id, step, AT).run();
 
     const moved = expected !== from;
-    expect(result.meta.changes).toBe(moved ? 1 : 0);
+    // The count takes in what the appointments' triggers write as well, so it tells only none from some.
+    expect(result.meta.changes > 0).toBe(moved);
     expect(await visitRow(id)).toEqual({ status: expected, synced_at: moved ? AT : BOOKED_AT });
   });
 
