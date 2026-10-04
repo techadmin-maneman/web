@@ -1,6 +1,7 @@
 // The dispatch board on the ops console, behind Access (Ops Console, board A;
 // src/policy/dispatch.ts):
 //   GET  /api/dispatch?from=&city=   the grid, blocks, unassigned tray, leave and utilisation
+//   GET  /api/dispatch/version       whether anything the board draws has changed since it was read
 //   GET  /api/dispatch/room?appointment_id=&from=   where a job in hand would land this week
 //   POST /api/dispatch/assign        put an unassigned job on a technician
 //   POST /api/dispatch/move          move a job, with a reason from the design's list
@@ -25,7 +26,15 @@ import { fieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import type { AuditEntry } from "../domain/audit.ts";
-import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, roomFor, type MoveInput } from "../domain/dispatch.ts";
+import {
+  BOARD_DAYS,
+  boardVersion,
+  dispatchBoard,
+  moveJob,
+  recordToldByPhone,
+  roomFor,
+  type MoveInput,
+} from "../domain/dispatch.ts";
 import { isWithin, techniciansWithin } from "../domain/places.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -94,8 +103,14 @@ const BlockSchema = z
   .strict()
   .openapi("DispatchBlock");
 
+const VERSION = z.number().int().openapi({
+  description:
+    "Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another.",
+});
+
 const BoardSchema = z
   .object({
+    version: VERSION,
     from: z.iso.date(),
     dates: z.array(z.iso.date()).openapi({ description: `${String(BOARD_DAYS)} days, the board's columns.` }),
     city: z.union([z.string(), z.null()]).openapi({ description: "The city the jobs are narrowed to; null for all." }),
@@ -214,6 +229,20 @@ const boardRoute = createRoute({
   },
 });
 
+const versionRoute = createRoute({
+  method: "get",
+  path: "/api/dispatch/version",
+  summary:
+    "The board's version, which the open board asks for every minute: one row, where the board itself is hundreds",
+  responses: {
+    200: {
+      description: "The version now",
+      ...json(z.object({ version: VERSION }).strict().openapi("DispatchBoardVersion")),
+    },
+    403: errorResponse("access_required"),
+  },
+});
+
 const assignRoute = createRoute({
   method: "post",
   path: "/api/dispatch/assign",
@@ -308,6 +337,8 @@ export function registerOpsDispatch(app: App): void {
       200,
     );
   });
+
+  app.openapi(versionRoute, async (c) => c.json({ version: await boardVersion(c.env.DB) }, 200));
 
   app.openapi(roomRoute, async (c) => {
     const now = c.var.deps.now();

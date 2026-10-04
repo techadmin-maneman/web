@@ -964,3 +964,91 @@ describe("leave recorded over jobs already booked", () => {
     expect(await tasksOf("leave_conflict")).toEqual([]);
   });
 });
+
+// PLAT-12: the open board read itself in full every minute, hundreds of rows each time, and so spent D1's day of
+// reads at a few hundred clients. It now asks for this number every minute and reads itself only when it has moved.
+describe("the board's version", () => {
+  const version = async (): Promise<number> => {
+    const answer = await request(ops, "/api/dispatch/version");
+    expect(answer.status).toBe(200);
+    return (await answer.json<{ version: number }>()).version;
+  };
+  const write =
+    (sql: string, ...values: unknown[]) =>
+    async (): Promise<void> => {
+      await env.DB.prepare(sql)
+        .bind(...values)
+        .run();
+    };
+
+  it("is the one the board was read at, until something on it changes", async () => {
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+    const before = await version();
+
+    const board = await (await request(ops, "/api/dispatch")).json<{ version: number }>();
+
+    expect(board.version).toBe(before);
+    expect(await version()).toBe(before);
+  });
+
+  it("moves for a visit booked, moved or cancelled, leave, a technician changed and new slot times", async () => {
+    const changes: [string, () => Promise<unknown>][] = [
+      ["visit booked", () => insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN })],
+      ["visit moved", () => move({ appointment_id: FIT, technician_id: SAMEER, reason: "zone_rebalance" })],
+      ["leave given", () => opsPost(`/api/technicians/${SAMEER}/leave`, { from: WEDNESDAY, to: WEDNESDAY })],
+      [
+        "leave taken back",
+        write("UPDATE technician_leave SET cancelled_at = ?1, cancelled_by = 'ops'", NOW.toISOString()),
+      ],
+      ["technician renamed", write("UPDATE technicians SET name = 'Imran Q.' WHERE id = ?1", IMRAN)],
+      ["technician switched off", write("UPDATE technicians SET active = 0 WHERE id = ?1", IMRAN)],
+      [
+        "slot times set",
+        write(
+          `INSERT INTO slot_times (id, applies_from, unit_starts, day_end, set_by, set_at)
+           VALUES ('st-1', '2026-10-01', '["09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00"]', '19:00',
+             'ops', ?1)`,
+          NOW.toISOString(),
+        ),
+      ],
+      ["visit cancelled", write("UPDATE appointments SET status = 'cancelled' WHERE id = ?1", FIT)],
+    ];
+
+    const unmoved: string[] = [];
+    for (const [change, make] of changes) {
+      const before = await version();
+      await make();
+      if ((await version()) <= before) unmoved.push(change);
+    }
+
+    expect(unmoved).toEqual([]);
+  });
+
+  it("stays where it is when the sync or the invoice passes write what the board does not draw", async () => {
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+    const before = await version();
+
+    await env.DB.batch([
+      env.DB.prepare(
+        `UPDATE appointments SET synced_at = ?2, fsm_modified_at = ?2, invoice_checked_at = ?2, client_note = 'Gate 2',
+           status = status, technician_id = technician_id, window_start = window_start
+         WHERE id = ?1`,
+      ).bind(FIT, NOW.toISOString()),
+      env.DB.prepare("UPDATE technicians SET updated_at = ?2, name = name, active = active WHERE id = ?1").bind(
+        IMRAN,
+        NOW.toISOString(),
+      ),
+    ]);
+
+    expect(await version()).toBe(before);
+  });
+
+  it("is asked for without a line in the audit log, since it names nobody", async () => {
+    const entries = async () => (await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log").first<{ n: number }>())?.n;
+    const before = await entries();
+
+    await version();
+
+    expect(await entries()).toBe(before);
+  });
+});
