@@ -8,7 +8,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { listMonth, shortDate, weekdayDate } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
-import { nextVisitClients } from "./next-visit.ts";
+import { firstFitDay, nextVisitClients } from "./next-visit.ts";
 import { logIn } from "./signed-in.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -174,7 +174,7 @@ test("Home offers the first fit once the consultation is done, in the consultati
 
   await page.getByRole("button", { name: "Book your first fit" }).click();
   const dates = page.getByRole("dialog", { name: "Pick a date" });
-  await expect(dates.getByRole("radio", { checked: true })).toHaveAccessibleName(weekdayDate(firstFit.date));
+  await expect(dates.getByRole("radio", { checked: true })).toHaveAccessibleName(weekdayDate(firstFitDay()));
   expect(asked[0]?.searchParams.get("type")).toBe("first_fit");
   await dates.getByRole("button", { name: "Continue" }).click();
   const windows = page.getByRole("dialog", { name: "Pick a time" });
