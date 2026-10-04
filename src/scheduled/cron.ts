@@ -44,6 +44,7 @@ import { scrubString, type Logger } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { checkDailyAllowances } from "./daily-allowances.ts";
+import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
 import {
@@ -105,7 +106,7 @@ const ALERT_AFTER_FAILED_RUNS = 3;
  * no appointment, so a job that trusts FSM's word on what exists would take it that every visit had been deleted.
  * "books_without_fsm" is Books where D1, not FSM, is the record of field work (src/config/field-record.ts).
  */
-type Needs = "nothing" | "fsm" | "fsm_record" | "books" | "books_without_fsm" | "messaging";
+type Needs = "nothing" | "fsm" | "fsm_record" | "books" | "books_without_fsm" | "messaging" | "payments";
 
 /** How often a job runs, in minutes. Each divides an hour, so a job runs in the same minutes every hour. */
 export type Every = 5 | 15 | 60;
@@ -140,6 +141,8 @@ function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
       return books && fieldRecord(config.providers) === "ours";
     case "messaging":
       return config.settings.messaging.enabled;
+    case "payments":
+      return config.providers.PAYMENTS_PROVIDER !== "none";
   }
 }
 
@@ -378,6 +381,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // Free service visits running out: a month, then a week, before their last day.
   { name: "credit_reminders", needs: "messaging", every: 15, at: 7, run: creditRemindersJob },
   { name: "visit_reminders", needs: "messaging", every: 15, at: 8, run: remindersJob },
+  // A payment Razorpay's webhook never told us of, read from Razorpay.
+  { name: "razorpay_catch_up", needs: "payments", every: 15, at: 8, run: razorpayCatchUpJob },
   // What the client asked for, beside what the board offers them (ADR 0063).
   { name: "asked_windows", needs: "nothing", every: 15, at: 9, run: askedWindowsJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).

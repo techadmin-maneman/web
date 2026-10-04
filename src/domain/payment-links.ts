@@ -12,9 +12,9 @@
 // there. A link Razorpay refuses outright is not asked for again, and ops are told once, with the visit's ID as the
 // reference of the link they then make by hand. Until it is paid, the Tasks board lists it (src/domain/tasks.ts).
 //
-// Paid, Razorpay's webhook says so (src/routes/razorpay-hook.ts): the payment is the visit's, as a payment made
-// ahead is, and follows the same path to Books (src/domain/books-sync.ts). A link ops made by hand finds the visit
-// by its reference, the visit's ID.
+// Paid, Razorpay's webhook says so (src/routes/razorpay-hook.ts), or the cron finds it paid when the webhook never
+// came (src/domain/razorpay-catch-up.ts): the payment is the visit's, as a payment made ahead is, and follows the same
+// path to Books (src/domain/books-sync.ts). A link ops made by hand finds the visit by its reference, the visit's ID.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -23,9 +23,10 @@ import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { isRefusal } from "../providers/provider-error.ts";
+import type { RazorpayPayment, RazorpayPaymentLink } from "../providers/razorpay.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
-import { referenceLink } from "./payments.ts";
+import { recordPayment, referenceLink } from "./payments.ts";
 import { priceOf } from "./price-book.ts";
 import { serviceOf } from "./services.ts";
 import { visitMessage } from "./visit-messages.ts";
@@ -338,13 +339,13 @@ async function tellFailure(deps: LinkDeps, visit: FittedVisit, reason: string): 
 }
 
 /** The link a payment paid, by Razorpay's ID for it, and its reference: ours, or the visit's ID on one made by hand. */
-export interface PaidLink {
+interface PaidLink {
   readonly razorpayLinkId: string;
   readonly reference: string | null;
 }
 
 /** The visit a paid link was for, its client, and its row, where the close made one; null for a link not ours. */
-export interface PaidVisit {
+interface PaidVisit {
   readonly linkId: string | null;
   readonly appointmentId: string;
   readonly personId: string | null;
@@ -355,7 +356,7 @@ export interface PaidVisit {
  * its reference names, as a link ops made by hand in Razorpay's dashboard does. Null for a link that names no visit
  * of ours.
  */
-export async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidVisit | null> {
+async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidVisit | null> {
   const made = await db
     .prepare("SELECT appointment_id FROM payment_links WHERE razorpay_link_id = ?1 OR reference = ?2")
     .bind(link.razorpayLinkId, link.reference)
@@ -377,7 +378,7 @@ export async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidV
  * The link paid, by the payment Razorpay names, once: a second word of the same payment changes nothing. The payment
  * takes the link's split before GST, as a payment made ahead takes its hold's, where the amounts agree.
  */
-export async function markLinkPaid(
+async function markLinkPaid(
   db: D1Database,
   linkId: string,
   payment: { readonly razorpayPaymentId: string; readonly paidAt: string },
@@ -399,4 +400,28 @@ export async function markLinkPaid(
       )
       .bind(linkId, payment.razorpayPaymentId),
   ]);
+}
+
+/**
+ * A one visit's payment link paid: the payment recorded as the visit's, by the link it paid, whatever notes it
+ * carries, and the link marked paid where the close made one; a link ops made by hand has no row of ours. False for
+ * a link that names no visit of ours.
+ */
+export async function linkPaid(
+  db: D1Database,
+  paid: { readonly link: RazorpayPaymentLink; readonly payment: RazorpayPayment },
+  hashSalt: string,
+  now: Date,
+): Promise<boolean> {
+  const ours = await visitOfLink(db, { razorpayLinkId: paid.link.id, reference: paid.link.reference_id ?? null });
+  if (ours === null) return false;
+  const notes =
+    ours.personId === null
+      ? { appointment_id: ours.appointmentId }
+      : { appointment_id: ours.appointmentId, person_id: ours.personId };
+  await recordPayment(db, { ...paid.payment, notes }, "captured", hashSalt, now);
+  if (ours.linkId === null) return true;
+  const paidAt = new Date(paid.payment.created_at * 1000).toISOString();
+  await markLinkPaid(db, ours.linkId, { razorpayPaymentId: paid.payment.id, paidAt }, now);
+  return true;
 }
