@@ -257,10 +257,13 @@ test("says which job moved to another time, and to when", async ({ page }) => {
   fake.movedTo = new Date(Date.parse(fake.writes[0]?.startsAt ?? "") + 3_600_000).toISOString();
   await page.getByRole("button", { name: "Start job" }).click();
 
+  // Start job has gone on to the before photos, where the banner says it.
   const movedLine = "Ops moved this job to 10:30 am today.";
+  await expect(page.getByRole("alert").filter({ hasText: `9:30 am service · Sector 65: ${movedLine}` })).toBeVisible();
+
+  await page.goto(`/jobs/${JOB_ID}`);
   const changed = page.getByRole("alert").filter({ has: page.getByRole("heading", { name: "This job changed" }) });
   await expect(changed).toContainText(movedLine);
-  await expect(page.getByRole("alert").filter({ hasText: `9:30 am service · Sector 65: ${movedLine}` })).toBeVisible();
 });
 
 test("a job ops gave away while its photographs waited says whom to, and asks before deleting them", async ({
