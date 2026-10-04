@@ -227,6 +227,23 @@ describe("Razorpay: payment links", () => {
     await expect(payments.createPaymentLink(LINK)).rejects.toThrow();
   });
 
+  it("has Razorpay text a link again by SMS, by its ID in the path", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/payment_links/plink_9/notify_by/sms`]: () => json({ success: true }),
+    });
+
+    await payments.resendPaymentLink("plink_9");
+    expect(calls[0]?.method).toBe("POST");
+    expect(calls[0]?.headers.get("Authorization")).toBe(`Basic ${btoa("rzp_test_abc:key-secret")}`);
+  });
+
+  it("fails loudly where Razorpay does not say it texted the link", async () => {
+    const { payments } = razorpay({
+      [`${API}/payment_links/plink_9/notify_by/sms`]: () => json({ success: false }),
+    });
+    await expect(payments.resendPaymentLink("plink_9")).rejects.toThrow();
+  });
+
   it("reads a link by its ID, by a GET: how it stands, our reference, and the order its payment was made on", async () => {
     const { payments, calls } = razorpay({
       [`${API}/payment_links/plink_9`]: () =>

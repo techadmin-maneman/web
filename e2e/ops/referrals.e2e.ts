@@ -48,7 +48,7 @@ test("reaches either client's page from the pair", async ({ page }) => {
   await open(page);
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
   await grant.getByRole("link", { name: "Vikram Sethi" }).click();
-  expect(new URL(page.url()).pathname).toBe(`/clients/${HELD.held[0]?.referred.person_id ?? ""}`);
+  expect(new URL(page.url()).pathname).toBe(`/clients/${HELD.held[0]?.referred.person_id ?? ""}/referrals`);
 });
 
 test("asks why before it approves one, and sends the reason with the approval", async ({ page }) => {

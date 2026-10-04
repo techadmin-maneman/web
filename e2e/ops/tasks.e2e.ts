@@ -214,10 +214,8 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
-// Two more groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
-test("names a draft invoice's visit, and heads an unfinished erasure with the day, never a client", async ({
-  page,
-}) => {
+// Another group the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
+test("names a draft invoice's visit", async ({ page }) => {
   await open(page, {
     overdue: 0,
     truncated: false,
@@ -238,29 +236,10 @@ test("names a draft invoice's visit, and heads an unfinished erasure with the da
           },
         ],
       },
-      {
-        group: "erasure_unfinished",
-        count: 1,
-        closable: false,
-        tasks: [
-          {
-            id: "22000000-0000-4000-8000-000000000009",
-            person: null,
-            detail: "8229000000500123",
-            since: "2027-09-20T06:00:00.000Z",
-            due: "2027-09-22T06:00:00.000Z",
-            owner: null,
-          },
-        ],
-      },
     ],
   });
-  // Customer Care's before Finance's, as the navigation orders the departments.
-  await expect(groupNames(page)).toHaveText(["Erasure left in FSM", "Draft invoice"]);
+  await expect(groupNames(page)).toHaveText(["Draft invoice"]);
   await expect(row(page, "Sanjay Arora")).toContainText("Visit of Mon 20 Sep, still a draft in Books");
-  const erased = row(page, "FSM contact 8229000000500123 still holds their details");
-  await expect(erased).toContainText("Client erased Mon 20 Sep");
-  await expect(erased.getByRole("link")).toHaveCount(0);
 });
 
 // A consultation and fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): the request ops
@@ -292,9 +271,14 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
         count: 3,
         closable: false,
         tasks: [
-          task("96000000-0000-4000-8000-000000000021", "Nikhil Suri", "sent 3500000 Mane Man Natural"),
-          task("96000000-0000-4000-8000-000000000022", "Manoj Iyer", "unsent 2500000 Mane Man Essential"),
-          task("96000000-0000-4000-8000-000000000023", "Kabir Sethi", "closed 3500000 Mane Man Natural"),
+          task(
+            "96000000-0000-4000-8000-000000000021",
+            "Nikhil Suri",
+            "sent 3500000 https://rzp.io/i/nat Mane Man Natural",
+          ),
+          task("96000000-0000-4000-8000-000000000022", "Manoj Iyer", "unsent 2500000 - Mane Man Essential"),
+          task("96000000-0000-4000-8000-000000000023", "Ravi Menon", "refused 2500000 - Mane Man Essential"),
+          task("96000000-0000-4000-8000-000000000024", "Kabir Sethi", "closed 3500000 - Mane Man Natural"),
         ],
       },
     ],
@@ -302,14 +286,26 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
   await expect(groupNames(page)).toHaveText(["Consultation request", "Payment owed"]);
   await expect(row(page, "Arjun Kapoor")).toContainText("+ consultation and fit in one visit");
   await expect(row(page, "Nikhil Suri")).toContainText("Mane Man Natural, Rs. 35,000; link sent");
-  await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000; link not sent");
+  await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000; link not sent yet");
+  await expect(row(page, "Ravi Menon")).toContainText("Razorpay refused the link: send one from its dashboard");
+  // A link Razorpay made can be copied; one not made yet can only be asked for again; a refused one, neither.
+  await expect(row(page, "Nikhil Suri").getByRole("button", { name: "Copy link · Nikhil Suri" })).toBeVisible();
+  await expect(row(page, "Manoj Iyer").getByRole("button", { name: /^Copy link/ })).toHaveCount(0);
+  await expect(row(page, "Manoj Iyer").getByRole("button", { name: "Send again · Manoj Iyer" })).toBeVisible();
+  await expect(row(page, "Ravi Menon").getByRole("button", { name: /^(Copy link|Send again)/ })).toHaveCount(0);
   await expect(row(page, "Kabir Sethi")).toContainText("Mane Man Natural, Rs. 35,000; link closed unpaid");
+  await expect(row(page, "Kabir Sethi").getByRole("button", { name: /^(Copy link|Send again)/ })).toHaveCount(0);
   await expect(row(page, "Nikhil Suri").getByRole("link", { name: "Nikhil Suri", exact: true })).toHaveAttribute(
     "href",
     "/clients/22000000-0000-4000-8000-000000000020/payments",
   );
   const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  // MON-21: a client who lost the SMS is texted the link again from the row.
+  await answer(page, { "POST /api/payment-links/{id}/resend": json({ outcome: "resent" }) });
+  await row(page, "Nikhil Suri").getByRole("button", { name: "Send again · Nikhil Suri" }).click();
+  await expect(row(page, "Nikhil Suri").getByRole("status")).toHaveText("Texted to them again.");
 });
 
 // A no-show once named its technician alone and led nowhere (OPS-05).
@@ -397,7 +393,7 @@ test("leads each task to the row it is decided on, in the section that decides i
   for (const [heading, name, path] of links) {
     await expect(row(page, heading).getByRole("link", { name, exact: true })).toHaveAttribute("href", path);
   }
-  // A replacement is ordered in FSM, so it leads to the client's pieces and nowhere else.
+  // A replacement leads to the client's pieces and nowhere else.
   await expect(row(page, "Kunal Mehta").getByRole("link")).toHaveCount(1);
 });
 

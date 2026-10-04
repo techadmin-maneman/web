@@ -12,25 +12,25 @@ Five Workers make up each environment: `mm-api` (every `/api/*` route, the datab
 
 An alert in the alert space names what went wrong with IDs only; "What each alert means", under "Alerts and the cron", says where each one leads. Otherwise, start from the symptom:
 
-| Symptom                                                     | Section                                                             |
-| ----------------------------------------------------------- | ------------------------------------------------------------------- |
-| Nobody can sign in, or messages stop                        | "WhatsApp (Evolution) is down", and "The WhatsApp number is banned" |
-| Visits stop reaching FSM, or FSM's changes stop reaching us | "FSM is down", "FSM's webhook has stopped"                          |
-| A paid booking is waiting for FSM, or a refund failed       | "A booking FSM would not take", "A refund that failed"              |
-| Clients pay and their bookings never confirm                | "Razorpay's webhook is not arriving"                                |
-| An invoice is still a draft, or Books refuses something     | "Invoices and Books"                                                |
-| Leads stop reaching the CRM                                 | "Leads and Zoho"                                                    |
-| Try-ons fail                                                | "Try-on and WhatsApp"                                               |
-| A technician lost a phone, or his work is stuck on it       | "A technician's lost phone", "Work stuck on a technician's phone"   |
-| Ops cannot get into the console                             | "Locked out of the ops console"                                     |
-| Someone says a screen failed, or quotes a Ref               | "Someone says a screen failed"                                      |
-| R2 storage is growing, or a usage e-mail came               | "Staying on the free tier"                                          |
-| A daily allowance is 70% used                               | "The daily allowances"                                              |
-| Every host answers Cloudflare's error 1027                  | "Workers daily limit reached (1027)"                                |
-| Data is wrong or gone in D1                                 | "Restoring D1"                                                      |
-| The heartbeat or the uptime monitor says mm-api is down     | "The outside watchers", "A cron run cut short"                      |
-| A release is misbehaving                                    | "Rolling back a Worker version"                                     |
-| Personal data may have leaked                               | "A personal data breach"                                            |
+| Symptom                                                 | Section                                                             |
+| ------------------------------------------------------- | ------------------------------------------------------------------- |
+| Nobody can sign in, or messages stop                    | "WhatsApp (Evolution) is down", and "The WhatsApp number is banned" |
+| Invoices or payments stop reaching Books                | "Books is down", "Invoices and Books"                               |
+| A paid booking is not booked, or a refund failed        | "A booking left unbooked", "A refund that failed"                   |
+| Clients pay and their bookings never confirm            | "Razorpay's webhook is not arriving"                                |
+| An invoice is still a draft, or Books refuses something | "Invoices and Books"                                                |
+| Leads stop reaching the CRM                             | "Leads and Zoho"                                                    |
+| Try-ons fail                                            | "Try-on and WhatsApp"                                               |
+| A technician lost a phone, or his work is stuck on it   | "A technician's lost phone", "Work stuck on a technician's phone"   |
+| Ops cannot get into the console                         | "Locked out of the ops console"                                     |
+| Someone says a screen failed, or quotes a Ref           | "Someone says a screen failed"                                      |
+| R2 storage is growing, or a usage e-mail came           | "Staying on the free tier"                                          |
+| A daily allowance is 70% used                           | "The daily allowances"                                              |
+| Every host answers Cloudflare's error 1027              | "Workers daily limit reached (1027)"                                |
+| Data is wrong or gone in D1                             | "Restoring D1"                                                      |
+| The heartbeat or the uptime monitor says mm-api is down | "The outside watchers", "A cron run cut short"                      |
+| A release is misbehaving                                | "Rolling back a Worker version"                                     |
+| Personal data may have leaked                           | "A personal data breach"                                            |
 
 ---
 
@@ -40,41 +40,40 @@ An alert in the alert space names what went wrong with IDs only; "What each aler
 
 Staging's column is as its deploy of 27 September 2026 found it: all five Workers took commit 16fde86 and passed the smoke tests. Production's is as last recorded: its last release was 268eaa4 on 21 September 2026, which deployed mm-api and mm-site. Nothing here was read from production for this table; "Before the first production release of Phase 2", below the steps, is how to check.
 
-| Step                                           | staging                                                | production                                                                                |
-| ---------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| 1. D1 database                                 | done                                                   | done                                                                                      |
-| 1. Queues: render, crm-sync, messaging         | done                                                   | done                                                                                      |
-| 1. Queue: fsm-sync                             | done                                                   | not yet (open point 85)                                                                   |
-| 1. R2 buckets, 30-day expiry                   | done                                                   | done                                                                                      |
-| 1. R2 buckets: photographs, referral cards     | done                                                   | not yet (open point 86)                                                                   |
-| 2. DNS record                                  | done                                                   | exists (the apex record)                                                                  |
-| 3. Access application and service token        | done                                                   | not applicable                                                                            |
-| 4. Migrations and identity mark                | done                                                   | done, to the migrations of 268eaa4                                                        |
-| 5. Bootstrap deploy of mm-api and mm-site      | done                                                   | done                                                                                      |
-| 6. CI tokens and GitHub secrets, checked       | done                                                   | done                                                                                      |
-| 7. Worker secrets: Turnstile, IP salt          | done                                                   | done                                                                                      |
-| 7. Worker secrets: alert webhook               | done (Google Chat)                                     | done (the same Google Chat space)                                                         |
-| 7. Worker secrets: AILabTools, link signing    | done                                                   | done (staging's AILabTools key, for now)                                                  |
-| 7. Worker secrets: Evolution, allowlist        | done (poker-settle's bridge, for now)                  | Evolution done (the same bridge; messaging off)                                           |
-| 7. Worker secrets: erasure                     | retired: delete `ERASURE_SECRET` once this lands       | retired: delete `ERASURE_SECRET` with the release that carries it                         |
-| 7. Worker secrets: login code pepper           | done (22 September 2026)                               | not yet: with the client surface                                                          |
-| 7. Worker secrets: the cron's heartbeat        | not yet ("The outside watchers")                       | not yet ("The outside watchers")                                                          |
-| 7. Worker secrets: the analytics token         | not yet ("The daily allowances")                       | not yet: moves here from staging at go-live                                               |
-| 8. Zoho org, fields, secrets                   | done: the real org (ADR 0050)                          | done: the real org (ADR 0050)                                                             |
-| 9. Triggers: the cron                          | done, and checked by the deploy                        | done                                                                                      |
-| 9. Triggers: the queue consumers               | done (all four); CI cannot read them, so check by hand | three; fsm-sync's once its queue exists                                                   |
-| 10. Access bypass for result links             | done                                                   | not applicable                                                                            |
-| 10b. Access bypass for invite previews         | not yet: the owner's (27 September 2026)               | not applicable                                                                            |
-| 11. Phase 2 hosts: DNS, Access                 | done                                                   | done (all three behind Access until go-live)                                              |
-| 11. Phase 2 surfaces switched on               | done (22 September 2026)                               | not yet: waits for the production go-ahead                                                |
-| 11. The apps' Workers: mm-app, mm-ops, mm-tech | done: each deploys with every merge                    | mm-app recorded as bootstrapped with no route (open point 83); mm-ops and mm-tech not yet |
-| 11b. FSM and Books                             | done                                                   | not yet: `FSM_PROVIDER` and `BOOKS_PROVIDER` are `none`                                   |
-| 11c. Razorpay                                  | done, test keys                                        | not yet: `PAYMENTS_PROVIDER` is `none`                                                    |
-| 12. Evolution receipts: token, bypass          | done                                                   | not yet                                                                                   |
-| 12. Evolution receipts: the webhook            | open: the shared instance's webhook                    | not yet                                                                                   |
-| 13. The address search (Google)                | `google`, and Google refuses the key (open point 54)   | not yet: `none`                                                                           |
-| 14. Cloudflare's edge scripts                  | owed: both reach every host (step 14)                  | owed: the same zone settings (step 14)                                                    |
-| 15. The rate-limiting rule                     | owed: the owner's (step 15)                            | the same rule: it is the zone's                                                           |
+| Step                                           | staging                                                 | production                                                                                |
+| ---------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1. D1 database                                 | done                                                    | done                                                                                      |
+| 1. Queues: render, crm-sync, messaging         | done                                                    | done                                                                                      |
+| 1. R2 buckets, 30-day expiry                   | done                                                    | done                                                                                      |
+| 1. R2 buckets: photographs, referral cards     | done                                                    | not yet (open point 86)                                                                   |
+| 2. DNS record                                  | done                                                    | exists (the apex record)                                                                  |
+| 3. Access application and service token        | done                                                    | not applicable                                                                            |
+| 4. Migrations and identity mark                | done                                                    | done, to the migrations of 268eaa4                                                        |
+| 5. Bootstrap deploy of mm-api and mm-site      | done                                                    | done                                                                                      |
+| 6. CI tokens and GitHub secrets, checked       | done                                                    | done                                                                                      |
+| 7. Worker secrets: Turnstile, IP salt          | done                                                    | done                                                                                      |
+| 7. Worker secrets: alert webhook               | done (Google Chat)                                      | done (the same Google Chat space)                                                         |
+| 7. Worker secrets: AILabTools, link signing    | done                                                    | done (staging's AILabTools key, for now)                                                  |
+| 7. Worker secrets: Evolution, allowlist        | done (poker-settle's bridge, for now)                   | Evolution done (the same bridge; messaging off)                                           |
+| 7. Worker secrets: erasure                     | retired: delete `ERASURE_SECRET` once this lands        | retired: delete `ERASURE_SECRET` with the release that carries it                         |
+| 7. Worker secrets: login code pepper           | done (22 September 2026)                                | not yet: with the client surface                                                          |
+| 7. Worker secrets: the cron's heartbeat        | not yet ("The outside watchers")                        | not yet ("The outside watchers")                                                          |
+| 7. Worker secrets: the analytics token         | not yet ("The daily allowances")                        | not yet: moves here from staging at go-live                                               |
+| 8. Zoho org, fields, secrets                   | done: the real org (ADR 0050)                           | done: the real org (ADR 0050)                                                             |
+| 9. Triggers: the cron                          | done, and checked by the deploy                         | done                                                                                      |
+| 9. Triggers: the queue consumers               | done (all three); CI cannot read them, so check by hand | done (all three)                                                                          |
+| 10. Access bypass for result links             | done                                                    | not applicable                                                                            |
+| 10b. Access bypass for invite previews         | not yet: the owner's (27 September 2026)                | not applicable                                                                            |
+| 11. Phase 2 hosts: DNS, Access                 | done                                                    | done (all three behind Access until go-live)                                              |
+| 11. Phase 2 surfaces switched on               | done (22 September 2026)                                | not yet: waits for the production go-ahead                                                |
+| 11. The apps' Workers: mm-app, mm-ops, mm-tech | done: each deploys with every merge                     | mm-app recorded as bootstrapped with no route (open point 83); mm-ops and mm-tech not yet |
+| 11b. Books                                     | done                                                    | not yet: `BOOKS_PROVIDER` is `none`                                                       |
+| 11c. Razorpay                                  | done, test keys                                         | not yet: `PAYMENTS_PROVIDER` is `none`                                                    |
+| 12. Evolution receipts: token, bypass          | done                                                    | not yet                                                                                   |
+| 12. Evolution receipts: the webhook            | open: the shared instance's webhook                     | not yet                                                                                   |
+| 13. The address search (Google)                | `google`, and Google refuses the key (open point 54)    | not yet: `none`                                                                           |
+| 14. Cloudflare's edge scripts                  | owed: both reach every host (step 14)                   | owed: the same zone settings (step 14)                                                    |
+| 15. The rate-limiting rule                     | owed: the owner's (step 15)                             | the same rule: it is the zone's                                                           |
 
 ### 1. Resources
 
@@ -83,11 +82,10 @@ W d1 create maneman-<env> --location apac      # put the ID in wrangler.jsonc, e
 W queues create mm-render-<t>
 W queues create mm-crm-sync-<t>
 W queues create mm-messaging-<t>
-W queues create mm-fsm-sync-<t>
 npm run check:config -- --require-provisioned  # must pass before anything deploys
 ```
 
-`wrangler.jsonc` binds all four queues and all four buckets below in every environment, so an upload of mm-api fails until each exists. The release uploads before it migrates (ADR 0006), so a missing one stops it with the database untouched.
+`wrangler.jsonc` binds all three queues and all four buckets below in every environment, so an upload of mm-api fails until each exists. The release uploads before it migrates (ADR 0006), so a missing one stops it with the database untouched.
 
 R2 must be enabled on the account first (dashboard → Storage & databases → R2; it needs a payment method). Try-on photos and results must not outlive 30 days, so each bucket gets an expiry rule:
 
@@ -251,7 +249,7 @@ The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-p
 
 ### 8. Zoho
 
-Both environments use the real org (`docs/decisions/0050-crm-in-the-real-org.md`), which also holds FSM and Books. Do this once per org.
+Both environments use the real org (`docs/decisions/0050-crm-in-the-real-org.md`), which also holds Books. Do this once per org.
 
 Steps 1 and 2 are what `scripts/setup-crm.ts` does, where the refresh token's scope includes `ZohoCRM.settings.fields.ALL`:
 
@@ -314,18 +312,17 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
    It confirms every field, type and pick-list value the sync writes, and lists the Leads assignment rules with their IDs. Fill in `ZOHO_LAR_ID`, run it again until it passes, then `W secret bulk` the file and delete it. The next lead proves the setup end to end: it should reach Zoho within a minute, assigned and with its proposed date.
 
-7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need. For the CRM, exactly:
+7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took the Worker's Zoho calls down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need. For the CRM, exactly:
 
    ```
    ZohoCRM.settings.fields.ALL,ZohoCRM.settings.assignment_rules.READ,ZohoCRM.modules.leads.READ,ZohoCRM.modules.leads.DELETE,ZohoCRM.modules.contacts.READ,ZohoCRM.modules.contacts.DELETE,ZohoSearch.securesearch.READ
    ```
 
-   The settings scopes are for `scripts/setup-crm.ts` and `scripts/check-zoho-setup.ts`, the lead read and the search for the contract probe, and the lead and contact reads and deletes for "Staging's records in the org". For FSM and for Books, use the same scopes as the Worker's FSM and Books tokens (step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
+   The settings scopes are for `scripts/setup-crm.ts` and `scripts/check-zoho-setup.ts`, the lead read and the search for the contract probe, and the lead and contact reads and deletes for "Staging's records in the org". For Books, use the same scopes as the Worker's Books token (step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
    - the CRM's as `ZOHO_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET` and the hosts, in `.env.crm-scripts`;
-   - FSM's as `ZOHO_FSM_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and the hosts;
    - Books' as `ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, the hosts and `ZOHO_BOOKS_ORG_ID`, in `.env.books-scripts`.
 
-   `scripts/check-zoho-setup.ts`, `scripts/setup-crm.ts` and `scripts/setup-fsm.ts` stop, naming this step, when theirs is missing (`scripts/lib/zoho-script-token.ts`). In an emergency, with the scripts' token lost, `--use-worker-token` runs one on the Worker's token on purpose; every token it mints is one the Worker cannot for ten minutes.
+   `scripts/check-zoho-setup.ts`, `scripts/setup-crm.ts` and the Books scripts stop, naming this step, when theirs is missing (`scripts/lib/zoho-script-token.ts`). In an emergency, with the scripts' token lost, `--use-worker-token` runs one on the Worker's token on purpose; every token it mints is one the Worker cannot for ten minutes.
 
 ### 9. Triggers
 
@@ -428,28 +425,19 @@ openssl rand -hex 32 | W secret put OTP_PEPPER --env <env>
 
 Changing it later voids every code in flight; sessions are unaffected. SMS stays off (`SMS_PROVIDER` is `none`) until a DLT-registered provider is set up.
 
-### 11b. Zoho FSM and Books
+### 11b. Zoho Books
 
-The client surface reads visits from Zoho FSM and documents from Zoho Books (docs/decisions/0032-fsm-mirror.md). Both are in the real org (ADR 0025, item 26), each on a refresh token of its own.
+Our own database is the record of visits (docs/decisions/0110-field-work-without-fsm.md). Zoho Books holds each client's customer, each visit's invoice and the money against it, in the real org (ADR 0025, item 26), on a refresh token of its own. Books' own CRM integration carries customers into CRM Contacts.
 
-1. **The refresh tokens.** Zoho allows one Self Client per account, so FSM and Books use the CRM's (step 8.5): the same client ID and secret, and a new code for each. In `https://api-console.zoho.in`, as an administrator of the org, open that Self Client. On **Generate Code**, use FSM's scopes in `docs/phase2-inputs.md`, section 3, and for Books `ZohoBooks.contacts.ALL`, `ZohoBooks.invoices.ALL`, `ZohoBooks.customerpayments.ALL`, `ZohoBooks.creditnotes.ALL`, `ZohoBooks.settings.READ`, `ZohoBooks.settings.CREATE` and `ZohoBooks.settings.UPDATE`. Exchange each code for a refresh token within its 10 minutes:
+1. **The refresh token.** Zoho allows one Self Client per account, so Books uses the CRM's (step 8.5): the same client ID and secret, and a code of its own. In `https://api-console.zoho.in`, as an administrator of the org, open that Self Client. On **Generate Code**, use `ZohoBooks.contacts.ALL`, `ZohoBooks.invoices.ALL`, `ZohoBooks.customerpayments.ALL`, `ZohoBooks.creditnotes.ALL`, `ZohoBooks.settings.READ`, `ZohoBooks.settings.CREATE` and `ZohoBooks.settings.UPDATE`. Exchange the code for a refresh token within its 10 minutes:
 
    ```sh
    curl -X POST "https://accounts.zoho.in/oauth/v2/token?grant_type=authorization_code&client_id=<id>&client_secret=<secret>&code=<code>"
    ```
 
-   FSM's and Books' secrets hold the same client ID and secret, and a refresh token each. Each keeps its own access token.
+   The scripts take a second code, exchanged the same way, for a refresh token of their own (step 8.7).
 
-2. **The files.** Put FSM's values in `.env.fsm-<env>` and Books' in `.env.books-<env>`. Git ignores both.
-
-   ```sh
-   ZOHO_FSM_CLIENT_ID=...
-   ZOHO_FSM_CLIENT_SECRET=...
-   ZOHO_FSM_REFRESH_TOKEN=...
-   ZOHO_FSM_ACCOUNTS_HOST=accounts.zoho.in
-   ZOHO_FSM_API_HOST=www.zohoapis.in
-   ZOHO_BOOKS_ORG_ID=...
-   ```
+2. **The file.** Put Books' values in `.env.books-<env>`. Git ignores it.
 
    ```sh
    ZOHO_BOOKS_CLIENT_ID=...
@@ -459,60 +447,35 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
 
    The Books organisation ID is on Books → Settings → Organisation Profile.
 
-3. **The org.** Check it, then create what is missing: a service item for the consultation, the service visit and the replacement, and the base part. A new visit item takes the price book's own figure of 22 September 2026; from then on the cron's hourly check compares each item with the book (step 8). A first fit has no item of its own: each hair system ops add in the console needs one, named exactly as the console names it, and a first fit is not booked into FSM until it has one.
-
-   ```sh
-   node --env-file=.env.fsm-<env> scripts/setup-fsm.ts --check
-   node --env-file=.env.fsm-<env> scripts/setup-fsm.ts
-   ```
-
-   Books also needs a custom field on Customers and Vendors, **"MM person ID"**: Text, unique values, API name `cf_mm_person_id`. It is what finds a client's customer again. Then prove Books' calls on "Staging test" records the script removes again (about 20 calls; it keeps one item, "Staging test: proof item", which the scripts' scopes cannot delete):
+3. **The org.** Books needs a custom field on Customers and Vendors, **"MM person ID"**: Text, unique values, API name `cf_mm_person_id`. It is what finds a client's customer again. Then prove Books' calls on "Staging test" records the script removes again (about 20 calls; it keeps one item, "Staging test: proof item", which the scripts' scopes cannot delete), and check the org's settings:
 
    ```sh
    node --env-file=.env.books-scripts scripts/books-proof.ts
+   node --env-file=.env.books-scripts scripts/check-books-setup.ts --env <env>
    ```
 
-4. **The Worker.** Set the secrets, then set the hosts (`ZOHO_FSM_*_HOST`, `ZOHO_BOOKS_*_HOST`) and `ZOHO_BOOKS_ORG_ID` in `wrangler.jsonc`, with `FSM_PROVIDER` and `BOOKS_PROVIDER` as `zoho`.
+4. **The Worker.** Set the secrets, then set the hosts (`ZOHO_BOOKS_*_HOST`) and `ZOHO_BOOKS_ORG_ID` in `wrangler.jsonc`, with `BOOKS_PROVIDER` as `zoho`.
 
    ```sh
-   W secret put ZOHO_FSM_CLIENT_ID --env <env>
-   W secret put ZOHO_FSM_CLIENT_SECRET --env <env>
-   W secret put ZOHO_FSM_REFRESH_TOKEN --env <env>
    W secret bulk .env.books-<env> --env <env>    # ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN, nothing else
    ```
 
-   Set the secrets before deploying with the providers switched on: the guard refuses a Worker without them. FSM's are needed while `FSM_PROVIDER` is `zoho`, and Books' while `BOOKS_PROVIDER` is. Check `/api/health` after: a secret change deploys by itself, and an empty required secret stops the Worker (step 7).
+   Set the secrets before deploying with the provider switched on: the guard refuses a Worker without them. Check `/api/health` after: a secret change deploys by itself, and an empty required secret stops the Worker (step 7).
 
-5. **The buckets and the queue.** `mm-<t>-client-photos`, `mm-<t>-referral-cards` and `mm-fsm-sync-<t>` are step 1's, and must exist before any deploy, since `wrangler.jsonc` binds them whether FSM is on or not. Neither bucket gets a lifecycle rule: a client's photograph is only deleted on purpose. Once the code that consumes the queue is live, attach its consumer (step 9):
+5. **The buckets.** `mm-<t>-client-photos` and `mm-<t>-referral-cards` are step 1's, and must exist before any deploy, since `wrangler.jsonc` binds them. Neither gets a lifecycle rule: a client's photograph is only deleted on purpose.
 
-   ```sh
-   npm run apply-triggers -- --env <env>
-   ```
-
-6. **FSM's webhook** keeps the mirror current within seconds. Without it, the mirror waits for the reconciliation.
-   - **The token.** Make one with `openssl rand -hex 24`, keep it in the password manager, and set it with `W secret put FSM_WEBHOOK_TOKEN --env <env>`: the webhook's URL below needs the same value, and a secret cannot be read back (corrected 27 September 2026; piping it straight into `secret put` lost it).
-   - **The webhook.** In FSM, Setup → Automation → Webhooks → New Webhook:
-     - URL: `https://<public host>/api/hooks/fsm/<token>`;
-     - method: POST;
-     - body: form data, with three parameters from the Service Appointment: `module` (the value `Service_Appointments`), `id` (the appointment's ID), and `modified_time` (its Modified Time).
-   - **Photographs.** Until the technician app arrives, technicians attach a visit's photographs to its appointment in FSM, named for their phase and angle: `before-front.jpg`, `before-top.jpg`, `before-left.jpg`, `before-right.jpg`, `before-hair.jpg`, and the same with `after-`. Other attachments are not copied.
-   - **The workflow rule.** Setup → Automation → Workflow Rules → Service Appointments → New Rule:
-     - when a record is created or edited, and when it is deleted;
-     - action: the webhook.
-   - **The deletion's own webhook.** A deleted appointment keeps the modified time of its last edit, so its hint reads as a repeat of that edit and is dropped. Make a second webhook like the first, with a fourth parameter `event` of value `delete`, and a second workflow rule that runs it when a record is deleted; take deletion out of the first rule. Until this is done, the reconciliation still finds a deletion: each run reads two upcoming visits afresh, the longest unread first, so an upcoming visit deleted in FSM leaves the mirror within a few hours rather than the next night.
-   - **On staging,** the hooks path already has the Access bypass (step 12, point 3).
-
-7. **The refund account.** Payments go to Books by themselves (docs/decisions/0044-payments-mirror.md, "Receipts in Books"). Refunds need the account Books pays them from, which must be a bank account: Books refuses Undeposited Funds.
+6. **The refund account.** Payments go to Books by themselves (docs/decisions/0044-payments-mirror.md, "Receipts in Books"). Refunds need the account Books pays them from, which must be a bank account: Books refuses Undeposited Funds.
    - In Books: Banking → Add Bank or Credit Card → Bank, named "Razorpay", in INR.
    - Open it; its ID is the number at the end of the address.
    - Set it as `BOOKS_REFUND_ACCOUNT_ID` in the environment's vars in `wrangler.jsonc`, then deploy. It is not a secret.
 
-8. **FSM's catalogue and the price book.** FSM prices a visit's tax invoice from its catalogue item, so each item must hold the price book's price before GST (docs/decisions/0073-prices-from-the-price-book.md).
-   - **The check.** Once an hour the cron's `fsm_catalogue` job reads the catalogue and compares it with the book. An item that differs, or is missing, is an alert `fsm_catalogue:<visit type>` naming the item's ID and both figures, closed when the two agree. Until the push is on, set the item's price in FSM by hand as the alert says (Setup → Service and Parts).
-   - **The push** writes each price ops set in the console to the catalogue, and a price from a later day on its day. `FSM_CATALOGUE_PUSH` in `src/config/environments.ts` is off in every environment. **Only the owner switches it on, and only in production,** once production's price book holds the owner's prices and production connects FSM: set its `production` to `true`, and release. Staging's stays off for as long as it shares the owner's real org; a test refuses it on.
-   - **After switching it on,** set any price in the console and look for `fsm_catalogue_pushed` in the logs; the next hour's check should raise no `fsm_catalogue` alert. The write, `PUT /fsm/v1/Products/{id}`, has never been tried on the org (`docs/open-points.md`, item 25): if FSM refuses it, `fsm_catalogue_push_failed` is logged with FSM's answer, and the check tells ops an hour later.
+7. **Each service's item.** A visit is invoiced on its service's Books item, at the price book's price on the day (docs/decisions/0073-prices-from-the-price-book.md). Once an hour the cron's `books_items` job matches each service offered today to its item: the one kept on it, else the active one Books holds under its name.
+   - **With the push on,** an item Books lacks is made, and one that differs is written with the console's name, today's price and the SAC code, a few a pass. Ops hear, as `books_item:<kind>/<tier>`, only of one still unsettled an hour on.
+   - **With the push off,** ops are told of each at once, and set the item in Books by hand as the alert says.
+   - `BOOKS_ITEM_PUSH` in `src/config/environments.ts` names the one environment that writes, since staging and production share one Books organisation: staging today. **Only the owner moves it to production,** once production's price book holds the owner's prices.
+   - An invoice carries its own name and price, so an item that differs never changes what a client is billed.
 
-9. **Discounts at line-item level.** A discount code on a visit is written onto its draft invoice as the visit line's discount, before tax (docs/decisions/0108-discount-codes.md). In Books: Settings → Preferences → Invoices (or General, "Do you give discounts?"), choose discounts at line-item level, before tax. Until it is set, and until the first discounted visit is invoiced on staging, a draft Books will not discount is held and ops told (`docs/open-points.md`, item 181).
+8. **Discounts at line-item level.** A discount code on a visit is written onto its draft invoice as the visit line's discount, before tax (docs/decisions/0108-discount-codes.md). In Books: Settings → Preferences → Invoices (or General, "Do you give discounts?"), choose discounts at line-item level, before tax. Until it is set, and until the first discounted visit is invoiced on staging, a draft Books will not discount is held and ops told (`docs/open-points.md`, item 181).
 
 ### 11c. Razorpay
 
@@ -673,7 +636,7 @@ Anything that sends more than 50 API requests in 10 seconds from one address is 
 
 Production runs 268eaa4, of 21 September 2026. The next release carries every migration since, and a Worker that binds what production has never had. Before starting `deploy-production.yml`:
 
-1. **What mm-api binds.** Create what step 1 lists and production lacks: `mm-fsm-sync-prod`, `mm-prod-client-photos` and `mm-prod-referral-cards` (open points 85 and 86). Then check every bucket with `node --env-file=.env.cf-read scripts/check-buckets.ts production --strict`, and every queue with `W queues list`. A missing one stops the release at its upload, before any migration.
+1. **What mm-api binds.** Create what step 1 lists and production lacks: `mm-prod-client-photos` and `mm-prod-referral-cards` (open point 86). Then check every bucket with `node --env-file=.env.cf-read scripts/check-buckets.ts production --strict`, and every queue with `W queues list`. A missing one stops the release at its upload, before any migration.
 2. **Vars and secrets.** `npm run check:config` holds each environment to 64 vars and secrets together (ADR 0009, rule 6). A secret the switched-on providers need must be set before the release (step 7): the Worker refuses to start without it, and Cloudflare refuses the upload.
 3. **The apps.** The release passes over an app whose surface is off in production, whether or not it has a Worker there: `mm-app-production` was bootstrapped on 22 September 2026, and until 27 September 2026 the release shipped it and its production build refused the copy still owed (`docs/open-points.md`, item 152). An app is shipped from the release that switches its surface on (step 11).
 4. **After the release.** Attach the new consumer with `npm run apply-triggers -- --env production` and check it (step 9). Then the contract step ADR 0070 holds back, dropping the old Zoho token tables, may be merged (`docs/migrations.md`).
@@ -749,13 +712,13 @@ Workers requests, 100,000 a day, are the account's too, staging and production t
 
 R2's 10 GB a month is the account's, both environments together, and past it R2 bills. What fills it:
 
-| Bucket                            | What                                                                                                                       | Kept                                                                                                                             |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `mm-<t>-tryon-uploads`            | Try-on photographs                                                                                                         | Deleted within the hour; the bucket's 30-day rule behind that                                                                    |
-| `mm-<t>-tryon-results`            | Try-on results                                                                                                             | `RESULT_RETENTION_DAYS`: 3 on staging, 14 in production; the 30-day rule behind that                                             |
-| `mm-<t>-client-photos`            | Visit photographs, ten a visit, each with its thumbnail from the technician app, or copied from FSM without one (ADR 0093) | For good: deleted only by an erasure, which deletes everything under the visit                                                   |
-| `mm-<t>-client-photos`, `tryons/` | A try-on photograph's small copy, and a client's kept look (ADR 0084)                                                      | The copy as long as its look; a client's for good, and their look until their first fit is photographed; an erasure deletes both |
-| `mm-<t>-referral-cards`           | One card for each referrer who made one                                                                                    | Until its referrer revokes it or is erased                                                                                       |
+| Bucket                            | What                                                                                       | Kept                                                                                                                             |
+| --------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `mm-<t>-tryon-uploads`            | Try-on photographs                                                                         | Deleted within the hour; the bucket's 30-day rule behind that                                                                    |
+| `mm-<t>-tryon-results`            | Try-on results                                                                             | `RESULT_RETENTION_DAYS`: 3 on staging, 14 in production; the 30-day rule behind that                                             |
+| `mm-<t>-client-photos`            | Visit photographs, ten a visit, each with its thumbnail from the technician app (ADR 0093) | For good: deleted only by an erasure, which deletes everything under the visit                                                   |
+| `mm-<t>-client-photos`, `tryons/` | A try-on photograph's small copy, and a client's kept look (ADR 0084)                      | The copy as long as its look; a client's for good, and their look until their first fit is photographed; an erasure deletes both |
+| `mm-<t>-referral-cards`           | One card for each referrer who made one                                                    | Until its referrer revokes it or is erased                                                                                       |
 
 ADR 0039 gives the photographs and the cards 4 GB. At 250 KB a photograph and 32 KB its thumbnail, which is what the technician app sends, that is about 1,312 visits. A client's kept try-on is paid from the same share, and while its look is kept at full size, the share holds about 444 visits at worst (ADR 0084, ADR 0093). A photograph copied from FSM keeps FSM's size, several MB (open point 125), and spends it faster. One from the technician app is at most 2 MB.
 
@@ -810,7 +773,7 @@ Every alert says what went wrong with IDs only, and most link to the place in th
 
 What is still open is at the top of the console's **Tasks**, under **Needs a hand**: each alert ops were told of, with its message, a link to where to act, and how often it has happened. Each department sees its own kinds; Admin sees those about the system itself (ADR 0067, "Alerts on Tasks").
 
-A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept charge, an FSM erasure) stay open once dealt with: **Mark done** closes it, under your name. A failed message, a lead the CRM gave up on and a CRM erasure have **Send again**, which puts it back on its queue and closes the alert; if it fails again, a new alert says so.
+A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept charge) stay open once dealt with: **Mark done** closes it, under your name. A failed message, a lead the CRM gave up on and a CRM erasure have **Send again**, which puts it back on its queue and closes the alert; if it fails again, a new alert says so.
 
 **A cron job keeps failing.** The alert names the job and its last error. Where each job stands:
 
@@ -820,7 +783,7 @@ SELECT job, failed_runs, last_failed_at, last_error FROM cron_jobs WHERE failed_
 
 The other jobs run regardless. The cron runs every minute, and each run only the jobs due in that minute: the table in `src/scheduled/cron.ts` gives each how often it runs (`every`: 5, 15 or 60 minutes) and in which minute (`at`). A minute's run shares 6 outside calls between its jobs, one record's worth, since each call costs it CPU time (a run of every job at once, as `npm run tick` asks for, has 40), and starts none after 30 seconds, so it ends before the next minute's; a job that finds them spent stops and leaves the rest to its next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
 
-Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
+Some jobs run only where what they need is switched on: the invoices and Books need Books, the Razorpay catch-up needs payments, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
 
 **The cron and the queue consumers have stood still for maintenance.** The switch a restore runs under has been on for an hour ("Restoring D1"). Once the restore is done, switch it off; the next run does its jobs, and the queues deliver what they hold. Then close the alert by hand.
 
@@ -857,51 +820,38 @@ Every alert is sent from inside mm-api, so a cron that stops altogether, or an A
 
 The chat shows the message; the `alerts` table keeps it under its key. Most alerts say what to do; this is where each leads. An alert whose "closes" is "by hand" stays open until you close it as above.
 
-| The alert says                                                                           | Key                                                                                                       | Closes                               | See                                                                     |
-| ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------- |
-| The cron's _job_ job has failed _n_ runs in a row                                        | `cron_job:<job>`                                                                                          | when a run works                     | the job's own section; `cron_jobs` above                                |
-| The cron run started at _time_ never finished                                            | `cron_run_cut_short`                                                                                      | after an hour of finished runs       | "A cron run cut short"                                                  |
-| Cloudflare's free _allowance_ are _n_% used today                                        | `daily_allowance:<allowance>`                                                                             | when a new day starts the figures    | "The daily allowances"                                                  |
-| Cloudflare's usage figures could not be read three hours running                         | `daily_allowances_unreadable`                                                                             | when they are read                   | "The daily allowances"                                                  |
-| The WhatsApp bridge is not connected                                                     | `whatsapp_bridge`                                                                                         | when it is open                      | "WhatsApp (Evolution) is down"                                          |
-| _n_ login codes failed to send in the last hour                                          | `login_codes_failing`                                                                                     | when a code goes                     | "WhatsApp (Evolution) is down"                                          |
-| Message _id_ (_kind_) failed after _n_ attempts                                          | `message_failed:<message>`                                                                                | on Send again, or by hand            | "Replaying a failed message"                                            |
-| Messages queued over a day ago were never sent, and are now failed                       | `messages_unsent:<date>`                                                                                  | by hand                              | "WhatsApp (Evolution) is down", then "Replaying a failed message"       |
-| Lead _id_ did not reach the CRM                                                          | `crm_lead:<lead>`                                                                                         | when it reaches the CRM              | "Replaying failed leads"                                                |
-| Erasing person _id_ in the CRM failed                                                    | `crm_erasure:<person>`                                                                                    | when it is blanked, or by hand       | "Erasure within the day", step 3                                        |
-| FSM would not anonymise contact _id_                                                     | `fsm_erasure:<person>`                                                                                    | by hand                              | "Erasure within the day"                                                |
-| Payment link _id_, of a client erased since, could not be cancelled                      | `erased_link:<link>`                                                                                      | by hand                              | cancel it in Razorpay's dashboard                                       |
-| Visit _id_ was paid by another link, and its own payment link could not be cancelled     | `paid_elsewhere_link:<link>`                                                                              | by hand                              | "A payment link"                                                        |
-| FSM sync gave up on appointment _id_                                                     | `fsm_sync:<fsm id>`                                                                                       | when it syncs                        | "FSM is down"                                                           |
-| FSM reconciliation repaired _n_ appointment(s) tonight                                   | none                                                                                                      | not kept                             | "FSM's webhook has stopped"                                             |
-| Lead _id_ did not reach FSM                                                              | none                                                                                                      | not kept                             | "FSM is down"                                                           |
-| A technician's _step_ … has waited over an hour to reach FSM                             | `job_event_pending:<job event>`                                                                           | when it is written or given up       | "FSM is down"                                                           |
-| A technician's _step_ did not reach FSM after _n_ attempts                               | none                                                                                                      | not kept                             | "FSM is down"                                                           |
-| A technician's steps on visit _id_ were never written to FSM, which is now switched off  | `job_event_unwritten:<visit>`                                                                             | by hand                              | "Switching staging off FSM"                                             |
-| Booking _id_ was paid for … and is neither booked in FSM nor refunded                    | `unbooked_hold:<hold>`                                                                                    | when booked or given back            | "A booking FSM would not take"                                          |
-| Booking _id_ could not be written to FSM after _n_ attempts. Nothing is refunded …       | `booking_held:<hold>`                                                                                     | when booked or refunded              | "A booking FSM would not take"                                          |
-| Booking _id_ was not written to FSM: visit _id_ … reached FSM after the booking was held | `booking_to_link:<hold>`                                                                                  | when booked or refunded              | "A booking FSM would not take"                                          |
-| Booking _id_: an earlier try may have made its work order in FSM                         | `work_order_lookup_failed:<hold>`                                                                         | by hand                              | cancel all but one work order, as it says                               |
-| The client moved visit _id_ … and FSM would not cancel its work order                    | `replaced_not_cancelled:<visit>`                                                                          | by hand                              | cancel it in FSM, as it says                                            |
-| The refund … for visit _id_, cancelled by the client or ops (or a no-show's), failed     | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<why>:<visit>`                                     | by hand                              | "A refund that failed"                                                  |
-| The visit credit for visit _id_, a no-show _why_, could not come back                    | `no_show_credit_not_back:<why>:<visit>`                                                                   | by hand                              | "A credit that could not come back"                                     |
-| Invoice _id_ of visit _id_ is held as a draft, or is still a draft                       | `invoice_draft:<visit>`                                                                                   | when the invoice is issued           | "Invoices and Books"                                                    |
-| FSM refused to invoice, or the invoice pass has failed                                   | `invoice_refused:<visit>`, `invoice_failed:<visit>`                                                       | when the invoice is issued           | "Invoices and Books"                                                    |
-| Books refused, or has failed on, a payment, its application or a refund                  | `books_payment_…`, `books_apply_…`, `books_refund_…` (`_refused:` or `_failed:` and an ID)                | when it goes through                 | "Invoices and Books"                                                    |
-| Payment _id_ … has nothing to be set against                                             | `books_unapplied:<payment>`                                                                               | by hand                              | "Invoices and Books"                                                    |
-| FSM's catalogue item … and the price book has …                                          | `fsm_catalogue:<kind>`, or `fsm_catalogue:<kind>/<tier>` for a service other than the kind's standard one | when the two agree                   | step 11b, point 8                                                       |
-| FSM's catalogue has no item for the service _name_, so its bookings go on item _id_      | `fsm_item_fallback:<kind>/<tier>`                                                                         | when the hourly check finds the item | make the item in FSM, named as the console names the service (ADR 0085) |
-| FSM's catalogue does not hold _n_ of the consumables as ours                             | `fsm_catalogue:consumables`                                                                               | when each is linked                  | add or rename each part in FSM at Rs. 0, as it says (ADR 0087)          |
-| Stock is low in the central store, or in technician _id_'s kit                           | `low_stock:central`, `low_stock:kit:<technician>`                                                         | when the place is no longer low      | record a delivery or a transfer on the Stock page                       |
-| Client _id_'s new number, address or invite did not reach FSM (or the CRM)               | `fsm_contact_update:<person>`, `crm_contact_update:<person>`, `contact_sync:<person>`                     | when a later update goes through     | update the contact or lead by hand, as it says                          |
-| The database holds _n_ MB, _p_% of the 500 MB Cloudflare's free plan allows it           | `d1_size:<mark>`                                                                                          | not closed; told once a mark         | "D1 growing"                                                            |
-| AILabTools credits are down to _n_                                                       | `ailab_credits_low`                                                                                       | when topped up                       | "Credits are low"                                                       |
-| Try-on job _id_ failed, or its result was billed but never downloaded                    | none                                                                                                      | not kept                             | "Try-on and WhatsApp"                                                   |
-| The daily _name_ ceiling is reached                                                      | none: told once a day                                                                                     | not kept                             | "A ceiling was reached"; section 13 for geocode                         |
-| Google refused the address search                                                        | `google_refused`                                                                                          | when Google answers a search         | section 13                                                              |
-| Turnstile could not check _n_ visitors                                                   | `turnstile_unavailable`                                                                                   | when Turnstile answers again         | Cloudflare's status, and `TURNSTILE_SECRET`                             |
-| Deletion request _id_ has waited 5 days                                                  | `deletion_waiting:<request>`                                                                              | when it is decided                   | the console's Deletion requests                                         |
-| _n_ grievances were raised in the last hour (one message an hour, at :24)                | none                                                                                                      | not kept                             | the console's Grievances                                                |
+| The alert says                                                                                | Key                                                                                        | Closes                                 | See                                                               |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------- | ----------------------------------------------------------------- |
+| The cron's _job_ job has failed _n_ runs in a row                                             | `cron_job:<job>`                                                                           | when a run works                       | the job's own section; `cron_jobs` above                          |
+| The cron run started at _time_ never finished                                                 | `cron_run_cut_short`                                                                       | after an hour of finished runs         | "A cron run cut short"                                            |
+| Cloudflare's free _allowance_ are _n_% used today                                             | `daily_allowance:<allowance>`                                                              | when a new day starts the figures      | "The daily allowances"                                            |
+| Cloudflare's usage figures could not be read three hours running                              | `daily_allowances_unreadable`                                                              | when they are read                     | "The daily allowances"                                            |
+| The WhatsApp bridge is not connected                                                          | `whatsapp_bridge`                                                                          | when it is open                        | "WhatsApp (Evolution) is down"                                    |
+| _n_ login codes failed to send in the last hour                                               | `login_codes_failing`                                                                      | when a code goes                       | "WhatsApp (Evolution) is down"                                    |
+| Message _id_ (_kind_) failed after _n_ attempts                                               | `message_failed:<message>`                                                                 | on Send again, or by hand              | "Replaying a failed message"                                      |
+| Messages queued over a day ago were never sent, and are now failed                            | `messages_unsent:<date>`                                                                   | by hand                                | "WhatsApp (Evolution) is down", then "Replaying a failed message" |
+| Lead _id_ did not reach the CRM                                                               | `crm_lead:<lead>`                                                                          | when it reaches the CRM                | "Replaying failed leads"                                          |
+| Erasing person _id_ in the CRM failed                                                         | `crm_erasure:<person>`                                                                     | when it is blanked, or by hand         | "Erasure within the day", step 3                                  |
+| Payment link _id_, of a client erased since, could not be cancelled                           | `erased_link:<link>`                                                                       | by hand                                | cancel it in Razorpay's dashboard                                 |
+| Visit _id_ was paid by another link, and its own payment link could not be cancelled          | `paid_elsewhere_link:<link>`                                                               | by hand                                | "A payment link"                                                  |
+| Booking _id_ was paid for … and is neither booked nor refunded half an hour on                | `unbooked_hold:<hold>`                                                                     | when booked or given back              | "A booking left unbooked"                                         |
+| The refund … for visit _id_, cancelled by the client or ops (or a no-show's), failed          | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<why>:<visit>`                      | by hand                                | "A refund that failed"                                            |
+| The visit credit for visit _id_, a no-show _why_, could not come back                         | `no_show_credit_not_back:<why>:<visit>`                                                    | by hand                                | "A credit that could not come back"                               |
+| Invoice _id_ of visit _id_ is held as a draft, or is still a draft                            | `invoice_draft:<visit>`                                                                    | when the invoice is issued             | "Invoices and Books"                                              |
+| Books refused the invoice, the visit has no price for its day, or the invoice pass has failed | `invoice_refused:<visit>`, `invoice_unpriced:<visit>`, `invoice_failed:<visit>`            | when the invoice is issued             | "Invoices and Books"                                              |
+| Books refused, or has failed on, a payment, its application or a refund                       | `books_payment_…`, `books_apply_…`, `books_refund_…` (`_refused:` or `_failed:` and an ID) | when it goes through                   | "Invoices and Books"                                              |
+| Payment _id_ … has nothing to be set against                                                  | `books_unapplied:<payment>`                                                                | by hand                                | "Invoices and Books"                                              |
+| Books has no item for the service _name_, or its item differs from the console                | `books_item:<kind>/<tier>`                                                                 | when the hourly check finds them alike | step 11b, point 7                                                 |
+| Stock is low in the central store, or in technician _id_'s kit                                | `low_stock:central`, `low_stock:kit:<technician>`                                          | when the place is no longer low        | record a delivery or a transfer on the Stock page                 |
+| Client _id_'s new number, address or invite did not reach the CRM                             | `crm_contact_update:<person>`, `contact_sync:<person>`                                     | when a later update goes through       | update the lead by hand, as it says                               |
+| The database holds _n_ MB, _p_% of the 500 MB Cloudflare's free plan allows it                | `d1_size:<mark>`                                                                           | not closed; told once a mark           | "D1 growing"                                                      |
+| AILabTools credits are down to _n_                                                            | `ailab_credits_low`                                                                        | when topped up                         | "Credits are low"                                                 |
+| Try-on job _id_ failed, or its result was billed but never downloaded                         | none                                                                                       | not kept                               | "Try-on and WhatsApp"                                             |
+| The daily _name_ ceiling is reached                                                           | none: told once a day                                                                      | not kept                               | "A ceiling was reached"; section 13 for geocode                   |
+| Google refused the address search                                                             | `google_refused`                                                                           | when Google answers a search           | section 13                                                        |
+| Turnstile could not check _n_ visitors                                                        | `turnstile_unavailable`                                                                    | when Turnstile answers again           | Cloudflare's status, and `TURNSTILE_SECRET`                       |
+| Deletion request _id_ has waited 5 days                                                       | `deletion_waiting:<request>`                                                               | when it is decided                     | the console's Deletion requests                                   |
+| _n_ grievances were raised in the last hour (one message an hour, at :24)                     | none                                                                                       | not kept                               | the console's Grievances                                          |
 
 ---
 
@@ -909,7 +859,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 
 ### Checking the booking path on staging
 
-Actions → **staging-lead** → Run workflow, with a pincode staging serves and a window. It books a test consultation through the site's form, `POST /api/consultation` (`scripts/staging-lead.ts`), on the last day the form offers. The name is "Staging test", the mobile number is random, and the address is made up. Within a minute the lead should be in the real Zoho org (ADR 0050), with the day booked, and the consultation in FSM as a work order and an appointment, each "Staging test: Consultation for Staging test": staging shares the owner's org, and its records are the owner's to clear before go-live (`docs/open-points.md`, item 19). Cancel the appointment in FSM once it is seen, so no technician keeps it. A `409` means the window has gone: run it again with another. In D1:
+Actions → **staging-lead** → Run workflow, with a pincode staging serves and a window. It books a test consultation through the site's form, `POST /api/consultation` (`scripts/staging-lead.ts`), on the last day the form offers. The name is "Staging test", the mobile number is random, and the address is made up. Within a minute the lead should be in the real Zoho org (ADR 0050), with the day booked, and the consultation on the console's Tasks board as a consultation asked for: staging shares the owner's org, and its records are the owner's to clear before go-live (`docs/open-points.md`, item 19). A `409` means the window has gone: run it again with another. In D1:
 
 ```sql
 SELECT id, sync_state, sync_attempts, last_sync_error, created_at, synced_at FROM leads ORDER BY created_at DESC LIMIT 5;
@@ -939,8 +889,8 @@ Nothing to do at first. A lead's first failure is retried by the queue 30 second
 Symptoms: every sync fails with `invalid_code` or `INVALID_TOKEN`.
 
 1. Make a new refresh token (Zoho, step 5 of "Provisioning an environment").
-2. `W secret put ZOHO_REFRESH_TOKEN --env <env>` (`ZOHO_FSM_REFRESH_TOKEN` for FSM, `ZOHO_BOOKS_REFRESH_TOKEN` for Books).
-3. Drop the cached access token: `DELETE FROM zoho_access_tokens WHERE client = 'crm';` (`'fsm'` for FSM, `'books'` for Books).
+2. `W secret put ZOHO_REFRESH_TOKEN --env <env>` (`ZOHO_BOOKS_REFRESH_TOKEN` for Books).
+3. Drop the cached access token: `DELETE FROM zoho_access_tokens WHERE client = 'crm';` (`'books'` for Books).
 4. The sweeper delivers the waiting leads within five minutes. Replay any that already gave up.
 
 ### Zoho refused a new token ("Access Denied")
@@ -969,95 +919,35 @@ Each read prints `PASS`, `SKIP` when the org holds nothing for it to read (no in
 
 ---
 
-## FSM and Books
+## Bookings and Books
 
-FSM is the record of field work; D1 keeps a mirror of its appointments (ADR 0032). Everything mm-api writes to FSM goes through the fsm-sync queue, which tries each write five times, 30 seconds, 1, 2 and 4 minutes apart: about eight minutes, then it gives up, but for a booking, which is held for ops (ADR 0095). Books is written by the cron, once an hour for each record. Production has both switched off today (`FSM_PROVIDER` and `BOOKS_PROVIDER` are `none`).
+Our own database is the record of field work (ADR 0110): a booking, a move, a cancel, a technician's steps, pieces and photographs are written there in the request that makes them. Books is written by the cron's Books pass: each client's customer, each finished visit's invoice, and each payment and refund, once an hour for each record. Books is never on the booking path. Production has Books switched off today (`BOOKS_PROVIDER` is `none`).
 
-### FSM is down
+### A booking left unbooked
 
-Symptoms: `fsm_sync_failed`, `booking_failed` and `job_event_write_failed` in Workers Logs with FSM's status (a 5xx, a timeout), then the alerts below, and `cron_job:fsm_reconcile` once the reconciliation has failed three runs. If calls fail with `Access Denied` or `TOKEN_COOLING_DOWN`, it is the token rather than FSM: "Zoho refused a new token", above, with `'fsm'` for the client. What follows is the same either way.
+A paid booking is written in the request that confirms it: Razorpay's webhook, or the request for a free one (ADR 0068). If that request fails part-way, the hold keeps its time and its payment, and the cron books it half an hour on.
 
-What happens while it lasts, each once its eight minutes are spent:
+- **"Booking _id_ was paid for, or booked free, and is neither booked nor refunded half an hour on: …"** (`unbooked_hold`), once, with the reason. The cron tries it again every half hour and closes the alert when it is booked or refunded.
+- A reason from Razorpay ("Razorpay refused the refund of …", "Razorpay did not answer …") is a payment made too late, or for a client erased since, that is owed back and could not be refunded. Refund it once in Razorpay's dashboard: the next try finds it refunded, lets the hold go and closes the alert.
+- Any other reason is usually D1 failing; it passes by itself. If it is still there after a few tries, book the visit for the client from the console, then refund the payment in Razorpay's dashboard.
 
-- **A booking** is held: it keeps its slot and its payment, nothing is refunded, ops are told once (`booking_held`, "A booking FSM would not take"), and the cron tries it again every hour for 24 hours. So every booking made during the outage waits, holding its slot, and is booked by the first try after FSM answers. For an outage longer than a day, stop taking them: set `SELF_SERVE_BOOKING` to `"false"` in `wrangler.jsonc` and deploy, and the app says booking goes through ops.
-- **A technician's step** is marked `rejected`, with every later step of the same job held back behind it, and ops are told to enter them in FSM by hand. (A step whose queue message was lost is a different thing: the sweeper sends it again after 15 minutes, and tells ops once if it has waited an hour, `job_event_pending`.)
-- **A lead from the site** is told to ops, to enter in FSM by hand.
-- **The mirror** stays as FSM last answered. FSM's webhook hints fail too, and a hint given up on is told (`fsm_sync`); the reconciliation catches up afterwards.
-- **Invoices and Books** wait: each visit or payment is tried again an hour later.
+### Books is down
 
-Once FSM answers again:
+Symptoms: `books_…_failed` and `invoice_failed` alerts, each on its third failure, and `cron_job:books_sync` once the pass has failed three runs. If calls fail with `Access Denied` or `TOKEN_COOLING_DOWN`, it is the token rather than Books: "Zoho refused a new token", above, with `'books'` for the client.
 
-1. **Bookings held** are booked by the next hourly try. Those past their 24 hours, or whose visit's time came while FSM was down, wait on the Tasks board's "Booking not in FSM": try FSM again from the client's Visits tab, or, for a visit whose time has passed, agree another time with the client, book it in FSM and link it there, or refund it.
-2. **Technicians' steps** rejected because FSM could not be reached can be sent again instead of typed in. List them:
-
-   ```sql
-   SELECT id, appointment_id, kind, fsm_error, received_at FROM job_events
-   WHERE fsm_write_state = 'rejected' AND received_at > '<the outage began, ISO>' ORDER BY appointment_id, received_at;
-   ```
-
-   Where the first of each job's errors is FSM's unavailability (a 5xx, a timeout, `TOKEN_COOLING_DOWN`), those after it say "the … before it did not reach FSM", and ops have not entered them by hand already, put them back:
-
-   ```sql
-   UPDATE job_events SET fsm_write_state = 'pending', fsm_error = NULL, updated_at = '2000-01-01T00:00:00Z'
-   WHERE fsm_write_state = 'rejected' AND received_at > '<the outage began, ISO>';
-   ```
-
-   The sweeper sends each job's earliest step at its next run, and each step written sends the next. Sending one again sets FSM's fields to the same values, and finds photographs and pieces already attached rather than adding them (ADR 0070). A step FSM refused, with a 4xx, is entered in FSM by hand instead.
-
-3. **Leads** that did not reach FSM go again if they are under a day old: `UPDATE leads SET fsm_queued_at = NULL WHERE id = '<lead id>';`, and the sweeper sends each within five minutes. An older one, enter by hand.
-
-### FSM's webhook has stopped
-
-FSM calls `POST /api/hooks/fsm/<token>` for each appointment created, edited or deleted (step 11b, point 6). Without it the mirror still follows FSM, only more slowly: every cron run reads the 50 latest changes, two upcoming visits are read again each run, and the whole list is read between 1 and 5 am India time. That night's pass then alerts "FSM reconciliation repaired _n_ appointment(s) tonight that the webhook missed or FSM deleted". An occasional repair is FSM missing a call; one every night, or no hint for hours while FSM is busy, is the webhook.
-
-```sql
-SELECT COUNT(*) AS hints, MAX(received_at) AS last FROM webhook_inbox WHERE source = 'fsm';
-SELECT record_id, attempts, last_error, received_at FROM webhook_inbox WHERE processed_at IS NULL ORDER BY received_at DESC LIMIT 20;
-```
-
-In Workers Logs:
-
-- `fsm_hook_unauthorized`: the token in FSM's webhook URL is not `FSM_WEBHOOK_TOKEN`.
-- `fsm_hook_unreadable` or `fsm_hook_ignored`: the webhook's parameters are not the three step 11b names.
-- Nothing at all: FSM is not calling. Its workflow rule may be off, or, on staging, Access is stopping `/api/hooks/` (step 12, point 3). If `FSM_WEBHOOK_TOKEN` is not set, the route answers 404.
-- Hints taken but `last_error` filled: they reached us and reading the appointment failed; "FSM is down".
-
-### A booking FSM would not take
-
-A booking is written to FSM from the queue once Razorpay says the client paid, or at once for a free one (ADR 0068). FSM's fifth refusal running holds it for ops rather than refunding it (ADR 0095): its slot and its payment are kept, and the cron tries it again every hour for 24 hours, as often and as long as Settings · Rules says ("Trying again a booking FSM refused"). Three alerts follow a booking FSM will not take:
-
-- **"… is neither booked in FSM nor refunded half an hour on"** (`unbooked_hold`): the queue lost it, and the cron has put it back. Nothing to do; if FSM still refuses it, the next alert follows.
-- **"Booking _id_ could not be written to FSM after _n_ attempts. Nothing is refunded …"** (`booking_held`), once. It gives FSM's reason and links to the client's Visits tab, where the booking heads the page until it is booked or refunded; the Tasks board lists it as "Booking not in FSM".
-- **"Booking _id_ was not written to FSM: visit _id_ … reached FSM after the booking was held"** (`booking_to_link`), once. A try found a visit of the client's, of the booking's kind, that came into FSM after the booking was held and is no booking's, most likely one you booked by hand, and wrote nothing. If it is this booking's, link it (below); if not, refund the booking. Nothing more is written to FSM for the booking while that visit stands.
-
-Read FSM's reason first. A 5xx, a timeout, `Access Denied` or `TOKEN_COOLING_DOWN` is FSM or its token being down ("FSM is down"): the hourly tries book it once FSM answers, so wait. A 4xx about the booking itself (`INVALID_DATA`, `MANDATORY_NOT_FOUND`) will not pass on a try: put what FSM names right (the service's item, the client's contact), then use **Try FSM again**, or book it by hand. From the client's Visits tab:
-
-- **Try FSM again** tries now, as the hourly try would, and says whether FSM took it, or that a visit to link stands. It is not offered once the visit's time has passed.
-- **To book it by hand**, press **Stop trying — I'll book it in FSM** first, so that no hourly try books a second visit while you do. The booking keeps its slot and its payment, and is no longer tried by itself. Then book the visit in FSM's own screens, at the booked time or another agreed with the client, wait a minute for it to reach the console (reload the page), press **Link the visit I booked in FSM** and choose it. The booking becomes that visit, with its payment, and the client gets the booking's message. A work order an earlier try left for the booking is cancelled in FSM; if FSM would not cancel it, the answer says to cancel it by hand. Only a visit booked in FSM since the client paid can be linked, and never the visit a move replaces.
-- **Refund it** cancels what FSM holds for the booking, refunds the payment in full, lets the slot go and tells the client on WhatsApp. The answer says what happened to each:
-
-  | The answer says                                           | Do                                                                                                                                                                      |
-  | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | Refunded … in full                                        | Nothing                                                                                                                                                                 |
-  | Razorpay payment … was refunded before                    | Nothing if you refunded it in Razorpay's dashboard; else check there that it went back in full                                                                          |
-  | Nothing was paid for it                                   | Nothing: a free or credit booking; the credit was never spent                                                                                                           |
-  | A try booked it in FSM meanwhile                          | Nothing is refunded: check the visit in the console                                                                                                                     |
-  | Razorpay refused to refund …                              | The booking still waits. Try again later, or refund it once in Razorpay's dashboard and then press **Refund it** here again, so the booking goes and the client is told |
-  | FSM would not cancel its work order _id_                  | Cancel it in FSM by hand, so no technician goes                                                                                                                         |
-  | FSM may hold a work order for it: look for "(booking … )" | Look in FSM's work orders for "(booking _id_)" and cancel it                                                                                                            |
-
-  Whenever a held booking's payment is refunded in Razorpay's dashboard, press **Refund it** here afterwards. A try or a link would let the booking go too, but without cancelling what FSM holds for it or telling the client.
+Nothing a client or a technician does waits on Books. Customers, invoices, payments and refunds wait, and each is tried again an hour later; once Books answers, the pass catches up and the alerts close.
 
 ### Invoices and Books
 
-The cron raises each finished visit's invoice through FSM, which puts it in Books as a draft, and marks it sent once it totals what the client was sold the visit for (ADRs 0056 and 0070). Only then can the client open it. It records each payment and refund in Books and sets a visit's payment against its invoice. Nothing here ever sends a draft that already exists, so a draft ops correct is sent by ops.
+The cron makes each finished visit's invoice in Books from our own figures: one line on its service's item, at the price book's price on the day, with a discount code as the line's discount before tax, under the visit's ID as its reference (ADR 0110). It sends the invoice once Books' total equals what the client was sold the visit for; only then can the client open it. It records each payment and refund in Books and sets a visit's payment against its invoice. Nothing here ever sends a draft made by hand, so a draft ops correct is sent by ops.
 
-- **Held as a draft** (`invoice_draft`), the alert says why. The price differs: correct the draft in Books and send it there, and set FSM's catalogue price right (step 11b, point 8). Nothing says what the visit was sold for: check the draft and send it. Paid with a referral credit: leave it until the CA rules (open point 14). Books would not take a discount code's discount: set the discount the alert names on the visit's line, before tax, and send it there (step 11b, point 9).
+- **Held as a draft** (`invoice_draft`), the alert says why. The price differs: correct the draft in Books and send it there, and set the service's item right (step 11b, point 7). Nothing says what the visit was sold for: check the draft and send it. Paid with a referral credit: leave it until the CA rules (open point 14). Books would not take a discount code's discount: set the discount the alert names on the visit's line, before tax, and send it there (step 11b, point 8).
 - **Still a draft an hour after the visit, or Books would not mark it sent** (`invoice_draft`, and `invoice_not_issued` in the logs): send it in Books. Within the hour the pass sees it sent, the client can open it, and the alert closes.
-- **FSM refused to invoice** (`invoice_refused`): raise it in FSM by hand, then send it in Books; the pass finds it, since FSM gives a work order one invoice however often it is asked.
+- **Books refused the invoice** (`invoice_refused`): the message gives Books' reason. Put it right, and the next hour's pass makes it; or raise it in Books by hand.
+- **No price for the visit's day** (`invoice_unpriced`): raise the invoice in Books by hand, and set the price in the console for the days to come.
 - **Books refused a payment, its application or a refund** (`books_…_refused`): the message says what; put it right in Books. It is asked again every hour, and the alert closes when it goes through. `books_…_failed` is Books failing three times in some other way, usually Books being down; nothing to do.
 - **Nothing to set a payment against** (`books_unapplied`): it stays in Books as the client's credit. Settle it by hand in Books; how a kept charge is invoiced waits for the CA (open point 16).
-- Refunds are recorded in Books only while `BOOKS_REFUND_ACCOUNT_ID` is set (step 11b, point 7).
+- Refunds are recorded in Books only while `BOOKS_REFUND_ACCOUNT_ID` is set (step 11b, point 6).
 
 The console's Tasks board lists every draft invoice. From SQL:
 
@@ -1067,6 +957,8 @@ WHERE status = 'completed' AND invoice_issued_at IS NULL AND deleted_at IS NULL 
 SELECT id, razorpay_payment_id, captured_at FROM payments WHERE captured_at IS NOT NULL AND books_payment_id IS NULL;
 SELECT id, razorpay_refund_id, created_at FROM refunds WHERE status = 'processed' AND books_refund_id IS NULL;
 ```
+
+`fsm_invoice_id` holds the Books invoice's ID: the column keeps its old name (ADR 0110, rule 1).
 
 ### Staging's records in the org
 
@@ -1078,57 +970,22 @@ Staging writes to the owner's real Books and CRM, which production shares (open 
    node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/staging-records.ts
    ```
 
-   It lists every Books payment whose description starts "Staging test: ", with its refunds; every Books invoice of a staging contact; every Books contact, CRM lead and CRM contact named "Staging test" or "Load test"; and every Books customer, payment and invoice and CRM lead whose ID staging's database keeps, read one by one, so an erased or inactive one is listed too. It writes them to `private/staging-records-<date>.json`. It names apart any record that looks like a test but carries neither mark, which it never deletes, and any ID staging's database keeps of a record the org no longer holds. While staging still has FSM, add `--env-file=.env.fsm-scripts` to take in FSM's appointments, work orders and Requests whose summary starts "Staging test: ", and its contacts named "Staging test" or "Load test".
+   It lists every Books payment whose description starts "Staging test: ", with its refunds; every Books invoice of a staging contact; every Books contact, CRM lead and CRM contact named "Staging test" or "Load test"; and every Books customer, payment and invoice and CRM lead whose ID staging's database keeps, read one by one, so an erased or inactive one is listed too. It writes them to `private/staging-records-<date>.json`. It names apart any record that looks like a test but carries neither mark, which it never deletes, and any ID staging's database keeps of a record the org no longer holds.
 
 2. The owner reads the list. To keep a record, take its entry out of the file.
-3. Delete: the same command with `--delete private/staging-records-<date>.json`. It reads the org and staging's database again and deletes only what the file keeps and they still hold as staging's, what points at a record before it: Books' refunds and payments, FSM's appointments, Books' invoices, FSM's work orders and Requests, the contacts, then the CRM's contacts and leads. Each line says `deleted`, `already gone` or `refused` with the reason. Then it clears staging's database's links to each customer, invoice and lead now gone, so the Books pass makes a client a new customer when they next need one. A payment's and a refund's IDs stay: cleared, the pass would record staging's old payments again, without their refunds.
-4. A refusal is usually a record another still points at: run the delete again, and anything freed by the first run goes. What stays refused is put right by hand in Books, the CRM or FSM.
+3. Delete: the same command with `--delete private/staging-records-<date>.json`. It reads the org and staging's database again and deletes only what the file keeps and they still hold as staging's, what points at a record before it: Books' refunds and payments, its invoices, its contacts, then the CRM's contacts and leads. Each line says `deleted`, `already gone` or `refused` with the reason. Then it clears staging's database's links to each customer, invoice and lead now gone, so the Books pass makes a client a new customer when they next need one. A payment's and a refund's IDs stay: cleared, the pass would record staging's old payments again, without their refunds.
+4. A refusal is usually a record another still points at: run the delete again, and anything freed by the first run goes. What stays refused is put right by hand in Books or the CRM.
 
-FSM's API deletes no invoice, so the list names FSM's invoices of staging's work orders apart: delete them in FSM's Invoices screen, if it still shows them, once the run has deleted their work orders and Books' invoices. On 1 October 2026 it showed none: FSM's API went on listing the three invoices as links of no work order, which neither FSM's screens nor anything of ours reads. Nothing of production reads them, since its invoice pass reads each of its own work orders' invoice.
+### Staging left FSM
 
-FSM keeps a deleted record in its recycle bin, out of every list the API gives, so production's reconciliation never sees it.
+Staging switched to our own database on 4 October 2026 (FSM-PR10), and FSM's code was deleted the same day (FSM-PR11). Production never used FSM. Once FSM-PR11 was live on staging, the old queue's consumer was taken off and the queue deleted (4 October 2026):
 
-### Switching staging off FSM
+```sh
+W queues consumer remove mm-fsm-sync-staging mm-api-staging
+W queues delete mm-fsm-sync-staging
+```
 
-Production has never used FSM. Staging leaves it in the order below, once every pull request of the FSM removal before this one is live. From the switch, our own database is the record of field work: a booking, a move, a cancel, a technician's steps, pieces and photographs are written there in the request that makes them, and the Books pass makes each client's customer and each finished visit's invoice itself. Steps 2 and 4 read FSM's API, so finish them before FSM's trial ends (about 7 October 2026).
-
-1. **Empty what is in flight.** Each of these should come back empty:
-
-   ```sql
-   SELECT id, person_id, fsm_held_at FROM slot_holds WHERE state = 'held' AND fsm_held_at IS NOT NULL;
-   SELECT appointment_id, COUNT(*) AS steps FROM job_events
-   WHERE fsm_write_state = 'pending' AND superseded = 0 GROUP BY appointment_id;
-   SELECT id, technician_id, status FROM appointments
-   WHERE status IN ('dispatched', 'in_progress') AND deleted_at IS NULL;
-   ```
-
-   - A **held booking** (the Tasks board's "Booking not in FSM"): **Refund it** from the client's Visits tab ("A booking FSM would not take", above).
-   - A **technician's step still waiting for FSM**: wait for it to be written, or let the switch give it up (below).
-   - A **visit under way**: let the technician finish it before the switch, or close it afterwards from the console.
-   - The `mm-fsm-sync-staging` queue: its backlog on Cloudflare's dashboard (Queues) at 0. What is left in it at the switch is acknowledged without reaching FSM, and a booking in it is booked in our own database.
-
-2. **Clear staging's records from the org**: "Staging's records in the org", above. A client whose FSM contact the owner keeps is linked in step 4; the rest get a Books customer of their own after the switch.
-3. **The owner, in Zoho.**
-   - FSM, Setup → Automation → Workflow Rules: switch off the rules on Service Appointments that call our webhook (step 11b, point 6). Setup → Automation → Webhooks: delete the webhooks they ran.
-   - FSM, Setup → Marketplace (or Integrations): switch off the **Zoho Books** and **Zoho CRM** integrations.
-   - Books → Settings → Zoho Apps → Zoho CRM, already switched on: two-way sync, Contacts only, transaction sync off, duplicates "Skip", and Books' "MM person ID" mapped to a CRM Contacts field of the same name.
-4. **Link each client to the Books customer FSM made for them**, or the Books pass makes them a second one. With `.env.fsm-scripts` (the scripts' FSM token, step 8.7):
-
-   ```sh
-   node --env-file=.env.fsm-scripts scripts/link-books-customers.ts           # lists each link, and why a client is skipped
-   node --env-file=.env.fsm-scripts scripts/link-books-customers.ts --write   # writes them
-   ```
-
-   It prints IDs only. A client FSM made no customer for, or whose contact is gone, is skipped and gets a new customer from the Books pass after the switch. Each linked client is marked for that pass to write their details and ID over the customer, so Books' sync takes "MM person ID" to the CRM.
-
-5. **Switch.** Land the one-line pull request that sets `FSM_PROVIDER` to `"none"` under `env.staging.vars` in `wrangler.jsonc`; the push deploys staging. Check `/api/health`. FSM's secrets may stay set: nothing reads them. From then on:
-   - the fsm-sync consumer acknowledges what is left for FSM and logs `fsm_message_dropped`;
-   - the cron's `requeue_job_events` marks a technician's step still waiting for FSM `rejected`, with the steps behind it, and tells ops once a visit, `job_event_unwritten`: check the visit, and close it from the console if the work was done;
-   - the cron's `fsm_reconcile`, `fsm_catalogue` and `requeue_fsm_erasures` stop, and `books_items` starts.
-
-6. **Prove it** as a real user, with staging's test records and backdating rather than waiting (the live-testing rules), and write each check in `docs/verification.md`, "FSM removal, PR 10".
-
-**Rolling back.** Set `FSM_PROVIDER` back to `"zoho"` for staging and deploy, and the owner switches FSM's workflow rules, webhooks and integrations back on. Visits booked meanwhile stay in our database, with no FSM record. A client given a Books customer meanwhile has none in FSM, so their payments wait until FSM's own integration makes one.
+FSM's trial lapses around 7 October 2026 with whatever test records it still holds; nothing of ours reads them. The only way back to FSM is to revert FSM-PR11 and FSM-PR10.
 
 ---
 
@@ -1287,8 +1144,8 @@ A technician signs in on his phone with his number and a WhatsApp code; the sess
 
 1. **Revoke it.** In the ops console, Technicians, under Phones: each phone he has signed in on, and when it was last used. Revoke the lost one; its session ends at once. A technician who installed the app on an iPhone has two rows for one handset, the browser's copy and the installed app's (ADR 0053): revoke both.
 2. **What it still holds.** The phone keeps its jobs until it next reaches us: each client's name, number, address and gate code, and any photographs and steps not yet sent. At its next contact it wipes all of it, and `technician_devices.wiped_at` records that it has. A phone that never comes back online keeps it, and that is personal data on a lost device: follow "A personal data breach" to judge it.
-3. **What was only on the phone** is lost with it. What did reach us is in `job_events` ("Work stuck on a technician's phone", below). A visit he finished whose close never reached us is closed by hand in the console: on the client's Visits tab or the visit's drawer on the dispatch board, **Close by hand**, with how it went, when the work began and ended, and how you know. While FSM holds the record (`FSM_PROVIDER` is `zoho`), the console refuses and the visit is entered in FSM by hand instead.
-4. **A new phone.** He signs in on it with his number, and it enrols itself. If the number went with the phone, change it in FSM: a number we do not know is looked up in FSM at sign-in.
+3. **What was only on the phone** is lost with it. What did reach us is in `job_events` ("Work stuck on a technician's phone", below). A visit he finished whose close never reached us is closed by hand in the console: on the client's Visits tab or the visit's drawer on the dispatch board, **Close by hand**, with how it went, when the work began and ended, and how you know.
+4. **A new phone.** He signs in on it with his number, and it enrols itself. If the number went with the phone, change it first in the console's Technicians: the code goes only to the number on his record.
 
 ```sql
 SELECT d.device_id, d.label, d.last_seen_at, d.revoked_at, d.wiped_at
@@ -1301,16 +1158,16 @@ WHERE t.name LIKE '%<name>%' ORDER BY d.last_seen_at DESC;
 The app sends the outbox one step at a time, oldest first, whenever it has signal and whenever it comes to the front. Its "Waiting to reach us" screen (`/waiting`) lists, for each job, the photo sets and steps still on the phone, since when, and what stopped the job's queue.
 
 - **No signal.** Nothing is wrong. Get to signal and open the app. The app warns when the phone has not promised to keep its store: an iPhone keeps it only with the app on its home screen (ADR 0053), so a technician on an iPhone should not leave work waiting for days.
-- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to 9 am tomorrow" or, before the phone has read the card again, "to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops close the visit by hand in the console (in FSM while FSM holds the record); then he taps "Delete this job's work", which asks first and deletes that job's queue from the phone.
+- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to 9 am tomorrow" or, before the phone has read the card again, "to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops close the visit by hand in the console; then he taps "Delete this job's work", which asks first and deletes that job's queue from the phone.
 - **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step, filled in as he sent it. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
 - **A photograph refused** ("The photographs would not upload"): "Retake photos" opens the camera for that set with only the refused angles to take again; the photographs that reached us stay, and the rest of the job follows once the set lands.
 - **Photographs waiting**: "Retry".
 - **Never sign out or delete the app while work is waiting**: signing out wipes the phone. The app asks first, and offers "Send first".
 
-A step that reached us and not FSM is on the server side: "FSM is down". What reached us for a visit:
+What reached us for a visit:
 
 ```sql
-SELECT kind, occurred_at, received_at, fsm_write_state, fsm_error FROM job_events
+SELECT kind, occurred_at, received_at FROM job_events
 WHERE appointment_id = '<visit id>' ORDER BY received_at;
 ```
 
@@ -1361,10 +1218,10 @@ The console has two doors, and both run the same erasure, written to `audit_log`
 
    The files (photos, results, visit photographs, the referral card) are deleted just after the rest. If R2 fails, the person is erased all the same and the cron finishes the files within five minutes; `files_erased_at` on the person is set once they are gone. A deletion request of theirs still open is closed by the erasure, under your name, so it neither waits in the queue nor alerts.
 
-3. **Check Zoho within a few minutes.** The erasure queues the CRM's blanking at once, and FSM's while FSM is connected: in the CRM the last name becomes "Erased", mobile and e-mail are emptied, and Contact Consent is unticked. Books' customer is erased by the cron's own pass: deleted where no invoice or payment names it, otherwise renamed "Erased client", blanked and made inactive. That pass waits up to a day for a payment of theirs still on its way to Books. The person's ID is in the address of their page: in the CRM, search Leads by **D1 Person ID** with it and check the lead.
+3. **Check Zoho within a few minutes.** The erasure queues the CRM's blanking at once: in the CRM the last name becomes "Erased", mobile and e-mail are emptied, and Contact Consent is unticked. Books' customer is erased by the cron's own pass: deleted where no invoice or payment names it, otherwise renamed "Erased client", blanked and made inactive. That pass waits up to a day for a payment of theirs still on its way to Books. The person's ID is in the address of their page: in the CRM, search Leads by **D1 Person ID** with it and check the lead.
 
    ```sql
-   SELECT erased_at, crm_erased_at, crm_erasure_attempts, crm_erasure_error, fsm_erased_at, books_erased_at
+   SELECT erased_at, crm_erased_at, crm_erasure_attempts, crm_erasure_error, books_erased_at
    FROM people WHERE id = '<person_id>';
    ```
 
@@ -1380,14 +1237,6 @@ Someone who used the try-on but never passed the gate never gave a number, and t
 **A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) after it.
 
 Rejecting a request sends the client your reason on WhatsApp (`deletion_rejected_v1`), and their app shows it for 30 days, so write it for them to read.
-
-While FSM is connected, check it as you check Zoho:
-
-```sql
-SELECT erased_at, fsm_erased_at, fsm_erasure_attempts FROM people WHERE id = '<person_id>';
-```
-
-After 10 failed attempts the sweeper stops asking, ops are alerted with the FSM contact's ID, and the console's Tasks board lists it under "Erasure left in FSM". Anonymise the contact in FSM by hand (name, mobile, phone, e-mail and street blanked, last name "Erased"), then run `UPDATE people SET fsm_erased_at = '<now, ISO>' WHERE id = '<person_id>';`, and the task leaves the board.
 
 A request waiting 5 days alerts ops: process it before its 7 days run out. The console counts the days left against each request. Invoices stay in Books for 8 years, by law.
 
@@ -1501,8 +1350,8 @@ Both run the Workers on the earlier database for a minute or two, so:
 - **Pause the queues** as well, and resume them at the end. Paused, a message waits; handed back, it spends one of its few retries.
 
   ```sh
-  for queue in render crm-sync messaging fsm-sync; do W queues pause-delivery mm-$queue-<t>; done
-  for queue in render crm-sync messaging fsm-sync; do W queues resume-delivery mm-$queue-<t>; done
+  for queue in render crm-sync messaging; do W queues pause-delivery mm-$queue-<t>; done
+  for queue in render crm-sync messaging; do W queues resume-delivery mm-$queue-<t>; done
   ```
 
 - **Start just after a cron run.** The cron runs at every minute that ends in 0 or 5; start at one ending in 1 or 6, so no run falls in the seconds between going back and the switch coming on again.

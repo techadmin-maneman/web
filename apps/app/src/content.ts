@@ -41,6 +41,8 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
 };
 
 export const login = {
+  /** Under a limit on codes, on the number and the code screens. */
+  messageUs: "Message us on WhatsApp",
   mobile: {
     title: "Your mobile number",
     prefix: "+91",
@@ -132,10 +134,21 @@ export const VISIT_TYPES = {
   service: "Service visit",
   replacement: "Replacement piece",
 } as const;
-// PLACEHOLDER: a visit whose FSM service item is none of the four.
+// PLACEHOLDER: a visit of none of the four kinds.
 export const OTHER_VISIT = "Visit";
 // PLACEHOLDER: a consultation and fit in one visit, as the site and the technician's phone call it.
 export const ONE_VISIT = "Consultation and fit";
+
+/** How long a visit takes: "3 hours", "1 hour 30 minutes". */
+export function visitLength(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  const parts = [
+    hours === 0 ? "" : `${String(hours)} ${hours === 1 ? "hour" : "hours"}`,
+    rest === 0 ? "" : `${String(rest)} minutes`,
+  ];
+  return parts.filter((part) => part !== "").join(" ");
+}
 
 /** A price's GST, beneath the amount charged once GST applies: "Rs. 30,000 + Rs. 5,400 GST". */
 export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
@@ -177,7 +190,7 @@ const freeVisitsTile = {
   tonight: "tonight",
 };
 
-/** The booking sheet's words for a paid visit still being written to FSM, which Home repeats while it waits. */
+/** The booking sheet's words for a paid visit still being booked, which Home repeats while it waits. */
 const PAID_IN = "Your payment is in. We are booking your visit.";
 const TOLD_WHEN_BOOKED = "We will message you on WhatsApp when the visit is booked.";
 
@@ -220,11 +233,12 @@ export const home = {
     invoice: (what: string, date: string) => `The invoice for your ${what.toLowerCase()} on ${date} is ready.`,
     openInvoice: "Open the invoice",
   },
-  /** A visit FSM has not closed, once it has begun (LIFE-03). PLACEHOLDER: the design draws neither. */
+  /** A visit not yet closed, once it has begun (LIFE-03). PLACEHOLDER: the design draws neither. */
   stages: { in_progress: "Today · in progress", done: "Done · notes on the way", closing: "Wrapping up" },
   next: {
     label: "Your next visit",
-    length: (what: string, minutes: number) => `${what} · ${String(minutes)} minutes`,
+    /** "Service visit · 1 hour 30 minutes". */
+    length: (what: string, minutes: number) => `${what} · ${visitLength(minutes)}`,
     // PLACEHOLDER: the design draws no Home for a fitted client with nothing booked.
     none: "Nothing booked yet.",
     /** Board C1's button, which Home's card and Visits both show. */
@@ -246,8 +260,35 @@ export const home = {
     ],
   },
   /**
-   * A visit paid for, or booked free, that FSM does not have yet (docs/decisions/0095-a-booking-fsm-refuses-is-held.md):
-   * the booking sheet's own words for a booking being written. PLACEHOLDER: the free line, and the design draws none.
+   * PLACEHOLDER, every word: a consultation and fit in one visit, on its card and beneath it. No board draws it; the
+   * owner's words are owed. Its price is GST included, after any discount code.
+   */
+  oneVisit: {
+    label: "Your consultation and fit",
+    price: (amount: string) => `${amount}, only if you go ahead`,
+    /** The hair systems differ in price: what the least of them costs. */
+    from: (amount: string) => `From ${amount}, only if you go ahead`,
+    unpriced: "You pay only if you go ahead",
+    covered: (code: string) => `Nothing to pay: code ${code} covers it`,
+    code: (code: string) => `Code ${code} applied`,
+    paidBy: "Paid once fitted, by a link we text you",
+    expect: [
+      "Your scalp measured and your colour matched.",
+      "Choose your hair system, fitted there and then.",
+      "Go ahead and pay by the link we text you. Decide against it and pay nothing.",
+    ],
+  },
+  /** PLACEHOLDER: no board draws it. A one visit the client was fitted at and has not paid for yet. */
+  owed: {
+    label: "Payment owed",
+    line: (product: string, amount: string) => `${product} · ${amount}`,
+    pay: "Pay now",
+    newTab: "opens Razorpay in a new tab",
+    onItsWay: "Your payment link is on its way by text.",
+  },
+  /**
+   * A visit paid for, or booked free, that is not booked yet (docs/decisions/0068-a-paid-hold-is-kept.md): the booking
+   * sheet's own words for a booking being written. PLACEHOLDER: the free line, and the design draws none.
    */
   beingBooked: {
     paid: PAID_IN,
@@ -298,9 +339,7 @@ export const visits = {
    * one sentence about a replacement, "Your replacement piece is due in
    * March.", and that sentence is kept word for word.
    *
-   * A month and never a day: `syncPieces` works the date out afresh from FSM's
-   * install date on every sync, so a day shown here could move under the client
-   * who read it (ADR 0059). Nothing here is shown at all until there is
+   * A month and never a day (ADR 0059). Nothing here is shown at all until there is
    * something true to say.
    */
   record: {
@@ -309,7 +348,7 @@ export const visits = {
     /** Past its month, the same fact in the tense it is now true in. */
     overdue: (month: string) => `Your replacement piece was due in ${month}.`,
     rows: { firstFit: "First fit", services: "Service visits", replacements: "Replacements", spend: "Total paid" },
-    /** A client fitted before FSM held their visits has no first fit to name, which is not the same as none. */
+    /** A client fitted before their visits were recorded has no first fit to name, which is not the same as none. */
     noFirstFit: "Not on record",
     /** Beside the total, so a figure that includes tax is not read as one that does not. */
     gst: "GST included",
@@ -368,16 +407,8 @@ export const visits = {
 /** Booking in the app (boards C2 to C6), while self-serve booking is on. */
 export const booking = {
   step: (n: number, of: number) => `Step ${String(n)} of ${String(of)}`,
-  /** How long a visit takes, as the choice of visit and the pay step say it: "3 hours", "1 hour 30 minutes". */
-  length: (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const rest = minutes % 60;
-    const parts = [
-      hours === 0 ? "" : `${String(hours)} ${hours === 1 ? "hour" : "hours"}`,
-      rest === 0 ? "" : `${String(rest)} minutes`,
-    ];
-    return parts.filter((part) => part !== "").join(" ");
-  },
+  /** How long a visit takes, as the choice of visit and the pay step say it. */
+  length: visitLength,
   /**
    * PLACEHOLDER: no board draws it. With more than one service open to them, the client chooses first: every one
    * ops offer, a kind at a time, with how long it takes and what it costs (the owner's ruling of 27 September 2026,
@@ -855,6 +886,14 @@ export const payments = {
     /** "AUDTEST: Rs. 1,000 off", before GST; the code alone where what it took off is not known. */
     fact: (code: string, off: string | null) => (off === null ? code : `${code}: ${off} off`),
   },
+  /** PLACEHOLDER: no board draws it. A one visit's payment still owed, above the payments made. */
+  owed: {
+    label: "To pay",
+    meta: (date: string) => `Fitted ${date}`,
+    pay: "Pay now",
+    newTab: "opens Razorpay in a new tab",
+    onItsWay: "Link on its way by text",
+  },
   /**
    * The free service visits among the payments (LIFE-14). Board E1 draws a visit one covered: "Service visit ·
    * 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". PLACEHOLDER: all of it, in the reward's
@@ -965,6 +1004,11 @@ export const empty = {
   payments: {
     title: "Payments",
     lines: ["Nothing to pay yet.", "Your consultation is free. Later payments appear here with their invoices."],
+  },
+  // PLACEHOLDER: a consultation and fit in one visit, booked with nothing paid.
+  paymentsOneVisit: {
+    title: "Payments",
+    lines: ["Nothing to pay yet.", "You pay once fitted, by a link we text you."],
   },
   // PLACEHOLDER: the design draws the empty list for a lead only.
   paymentsFitted: {

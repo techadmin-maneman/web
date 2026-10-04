@@ -2,10 +2,8 @@
 // done. The board draws the tab and nothing in it, so it is built as board
 // B1's own table is. The record already holds all of it, so the tab asks the
 // API for nothing (docs/fidelity-method.md), but to save an address the client
-// gives ops on the phone (GivenAddress.tsx; docs/decisions/0092-task-owners.md)
-// and to act on a booking FSM refused, which heads the tab while it waits
-// (HeldBookings.tsx; docs/decisions/0095-a-booking-fsm-refuses-is-held.md),
-// and to enter a discount code on a visit or take it off (VisitCode.tsx;
+// gives ops on the phone (GivenAddress.tsx; docs/decisions/0092-task-owners.md),
+// to enter a discount code on a visit or take it off (VisitCode.tsx;
 // docs/decisions/0108-discount-codes.md), to book the client a visit (BookVisit.tsx), and to cancel a visit to come
 // (CancelVisit.tsx) or close by hand one whose technician's phone was lost (CloseVisit.tsx). Each visit to come links
 // to its place on the dispatch board. Beneath the visits, any booking that refunded its payment by itself, and why.
@@ -25,14 +23,13 @@ import { BookVisit } from "./BookVisit.tsx";
 import { CancelVisit } from "./CancelVisit.tsx";
 import { CloseVisit } from "./CloseVisit.tsx";
 import { GivenAddressForm } from "./GivenAddress.tsx";
-import { HeldBookings } from "./HeldBookings.tsx";
 import { VisitCode } from "./VisitCode.tsx";
 
 type SavedAddress = NonNullable<ClientRecord["address"]>;
 
 const copy = clients.visits;
 
-/** Where a visit stands: to come, by its stage; done, by how FSM closed it; else its status. */
+/** Where a visit stands: to come, by its stage; done, by how it was closed; else its status. */
 function stateOf(visit: ClientVisit): string {
   const paid = visit.prepaid ? ` · ${copy.prepaid}` : "";
   if (visit.stage !== null) return `${copy.stages[visit.stage]}${paid}`;
@@ -277,17 +274,17 @@ function AutoRefunds({ refunds }: { refunds: readonly AutoRefund[] }) {
       <h3 className={styles.sectionTitle} id="auto-refunds">
         {words.title}
       </h3>
-      <ul className={styles.heldList}>
+      <ul className={styles.refundList}>
         {refunds.map((refund) => (
-          <li key={refund.hold_id} className={styles.heldItem}>
-            <p className={styles.heldWhat}>
+          <li key={refund.hold_id} className={styles.refundItem}>
+            <p className={styles.refundWhat}>
               {words.what(
                 copy.types[refund.type],
                 fullDate(refund.date),
                 refund.amount === null ? null : rupees(refund.amount),
               )}
             </p>
-            <p className={styles.heldLine}>{words.why(longDate(refund.refunded_at), words.reasons[refund.reason])}</p>
+            <p className={styles.refundLine}>{words.why(longDate(refund.refunded_at), words.reasons[refund.reason])}</p>
           </li>
         ))}
       </ul>
@@ -348,7 +345,6 @@ export function Visits({
   return (
     <div className={styles.visits}>
       <BookOne clientId={clientId} record={record} onBooked={onChanged} />
-      <HeldBookings bookings={record.held_bookings} upcoming={record.visits.upcoming} />
       <Address clientId={clientId} address={address} onAddress={onAddress} />
       <VisitRecords visits={record.visits} name={record.name} onChanged={onChanged} />
       <AutoRefunds refunds={record.auto_refunds} />

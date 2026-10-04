@@ -49,6 +49,7 @@ export const RECORD = {
         prepaid: true,
         technician: TECHNICIAN,
         place: "Sector 65, Gurgaon 122018",
+        one_visit: null,
         outcome: null,
         closed_without_follow_up: null,
         discount_code: null,
@@ -71,6 +72,7 @@ export const RECORD = {
         prepaid: false,
         technician: TECHNICIAN,
         place: "Sector 65, Gurgaon 122018",
+        one_visit: null,
         outcome: "done",
         closed_without_follow_up: null,
         discount_code: null,
@@ -149,30 +151,8 @@ export const RECORD = {
     since: "2026-10-20T06:00:00.000Z",
     attached: null,
   },
-  held_bookings: [],
   auto_refunds: [],
 } satisfies ClientRecord;
-
-/**
- * A service visit he paid Rs. 2,000 for, on Saturday 25 September at 9 am, which FSM refused five times running at
- * 11:30 on the 22nd: held with its slot and its payment, and tried every hour until the 23rd
- * (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
- */
-export const HELD_BOOKING = {
-  id: "66000000-0000-4000-8000-000000000001",
-  type: "service",
-  service: "Service visit",
-  starts_at: "2027-09-25T03:30:00.000Z",
-  window: "morning",
-  paid: 200_000,
-  uses_credit: false,
-  moves_visit: false,
-  held_at: "2027-09-22T06:00:00.000Z",
-  refusal: "Zoho 400 INVALID_DATA",
-  retries_end: "2027-09-23T06:00:00.000Z",
-  retrying: true,
-  discount_code: null,
-} satisfies ClientRecord["held_bookings"][number];
 
 /** The same client before any of it: no visit done, no piece in wear, nothing paid. */
 export const NEW_RECORD = {

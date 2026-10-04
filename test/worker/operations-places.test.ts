@@ -5,17 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
-import {
-  appFor,
-  captureLogs,
-  fakeDependencies,
-  fakeQueue,
-  fsmSwitchedOff,
-  markDatabase,
-  NOW,
-  PROVIDERS_FOR,
-  request,
-} from "./helpers.ts";
+import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 import { enforce, listStaff, person, type GrantCode } from "./staff-fixtures.ts";
 
 const DELHI_TECH = "33333333-3333-4333-8333-333333333331";
@@ -39,7 +29,7 @@ const WEDNESDAY = "2026-09-23";
 const ORIGIN = { Origin: "https://maneman.test", "Content-Type": "application/json" };
 
 /** The queues a booking or a move writes to, kept rather than delivered. */
-const bindings = () => ({ FSM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() }) as unknown as Partial<Env>;
+const bindings = () => ({ MESSAGE_QUEUE: fakeQueue() }) as unknown as Partial<Env>;
 
 const get = (app: App, path: string) => request(app, path, undefined, bindings());
 const send = (app: App, method: string, path: string, body: unknown = {}) =>
@@ -52,7 +42,7 @@ const errorOf = async (res: Response) => (await res.json<{ error: { code: string
 function opsAs(email: string): App {
   const identity = person(email);
   const access = { verify: () => Promise.resolve({ ok: true as const, identity }) };
-  return appFor("local", fakeDependencies({ access, fsm: fsmSwitchedOff() }), {}, "ops", PROVIDERS_FOR.ours);
+  return appFor("local", fakeDependencies({ access }), {}, "ops");
 }
 
 /** The ops console as a member of staff holding these grants, with the Staff list enforced. */
@@ -64,9 +54,9 @@ async function staffWith(...grants: GrantCode[]): Promise<App> {
 
 async function insertVisit(id: string, client: string, technician: string, pincode: string): Promise<void> {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
-       technician_id, service_pincode, fsm_modified_at, synced_at)
-     VALUES (?1, ?1, ?2, 'service', 'scheduled', 'scheduled', ?3, ?4, ?5, ?6, ?7, ?7)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id,
+       service_pincode, synced_at)
+     VALUES (?1, ?1, ?2, 'service', 'scheduled', ?3, ?4, ?5, ?6, ?7)`,
   )
     .bind(id, client, TUESDAY_MORNING, "2026-09-22T05:00:00.000Z", technician, pincode, AT)
     .run();

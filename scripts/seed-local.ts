@@ -119,10 +119,8 @@ async function seedTechnician(): Promise<void> {
       `${date}T${WINDOWS[window].end}:00.000Z`,
       TECHNICIAN.id,
       "scheduled",
-      "Scheduled",
       "Gurgaon",
       "122018",
-      now,
       now,
     );
   };
@@ -136,10 +134,10 @@ async function seedTechnician(): Promise<void> {
     // which a laptop needs, having no position to give (src/domain/check-ins.ts).
     `INSERT OR IGNORE INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes,
        lat, lng) VALUES ${row(CLIENT.addressId, CLIENT.id, now, "Tower C, 14th floor", null, "Sector 65", "Gurgaon", "122018", "Gate code 4417", null, null)};`,
-    `UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = '${now}'
+    `UPDATE appointments SET status = 'cancelled', synced_at = '${now}'
        WHERE technician_id = '${TECHNICIAN.id}' AND fsm_id LIKE 'local-%' AND status = 'scheduled';`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
-       fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
+       service_city, service_pincode, synced_at) VALUES
        ${visit(indiaDate(0), "morning")}, ${visit(indiaDate(0), "afternoon")}, ${visit(indiaDate(1), "morning")};`,
     ...consumables(now),
     ...products(now),

@@ -15,7 +15,6 @@ const OTHER = "11111111-1111-4111-8111-111111111112";
 const UNKNOWN = "99999999-9999-4999-8999-999999999999";
 const VISIT = "22222222-2222-4222-8222-222222222222";
 const UPCOMING = "22222222-2222-4222-8222-222222222229";
-const HELD = "66666666-6666-4666-8666-666666666666";
 const SET = "33333333-3333-4333-8333-333333333333";
 const FRONT = "44444444-4444-4444-8444-444444444441";
 const TOP = "44444444-4444-4444-8444-444444444442";
@@ -223,6 +222,28 @@ describe("GET /api/clients/{id}", () => {
     });
   });
 
+  // A live test, 4 October 2026: a client whose booking was refunded read "Booked" with nothing booked.
+  it("reads booked only while a visit is to come, not for a booking the site's form left that booked nothing", async () => {
+    await env.DB.prepare(
+      `INSERT INTO leads (id, person_id, created_at, source, city, proposed_visit_date, request_id)
+       VALUES ('l-1', ?1, ?2, 'form', 'Gurgaon', '2026-09-24', 'r')`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    const stateNow = async () => (await (await request(ops, `/api/clients/${PERSON}`)).json<{ state: string }>()).state;
+    expect(await stateNow()).toBe("nothing_booked");
+
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+         service_city, service_pincode, fsm_modified_at, synced_at)
+       VALUES (?1, 'fsm-2', ?2, 'consultation', 'scheduled', 'Scheduled', '2026-09-24T04:30:00.000Z',
+         '2026-09-24T05:30:00.000Z', 'Gurgaon', '122018', ?3, ?3)`,
+    )
+      .bind(VISIT, PERSON, NOW.toISOString())
+      .run();
+    expect(await stateNow()).toBe("lead");
+  });
+
   it("answers 404 for a client we do not have", async () => {
     const answer = await request(ops, `/api/clients/${UNKNOWN}`);
     expect(answer.status).toBe(404);
@@ -244,22 +265,14 @@ describe("GET /api/clients/{id}", () => {
         headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
         body: JSON.stringify({ override_open_bookings: true }),
       },
-      { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() },
+      { CRM_QUEUE: fakeQueue() },
     );
     expect(erased.status).toBe(200);
 
     const answer = await request(ops, `/api/clients/${PERSON}`);
     expect(answer.status).toBe(200);
     const body = await answer.json<Record<string, unknown>>();
-    expect(Object.keys(body).sort()).toEqual([
-      "erased_at",
-      "held_bookings",
-      "id",
-      "invoices",
-      "payment_links",
-      "payments",
-      "visits",
-    ]);
+    expect(Object.keys(body).sort()).toEqual(["erased_at", "id", "invoices", "payment_links", "payments", "visits"]);
     expect(body).toMatchObject({
       id: PERSON,
       erased_at: NOW.toISOString(),
@@ -274,36 +287,6 @@ describe("GET /api/clients/{id}", () => {
     for (const personal of ["Rohit", MOBILE, "House 7", "Gate 4417", "erased:"]) {
       expect(written, personal).not.toContain(personal);
     }
-  });
-
-  // A live finding of 4 October 2026: a booking FSM held for a client erased before an erasure let their bookings go
-  // kept its slot, and the alert about it sent ops to their page, which could not load.
-  it("lists a booking still held for a client erased since, for ops to refund and so let go", async () => {
-    await record();
-    await env.DB.batch([
-      env.DB.prepare(
-        `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
-           amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, confirmed_at, queued_at, fsm_held_at)
-         VALUES (?1, ?2, 'service', '2026-09-24', 'afternoon', 't1', 2, 0, 0, 0, 'held', ?3, ?3, ?3, ?3, ?3, ?3)`,
-      ).bind(HELD, PERSON, NOW.toISOString()),
-      env.DB.prepare(
-        "UPDATE people SET erased_at = ?2, name = 'Erased', mobile_e164 = 'erased:' || id WHERE id = ?1",
-      ).bind(PERSON, NOW.toISOString()),
-    ]);
-
-    const before = await (await request(ops, `/api/clients/${PERSON}`)).json<{ held_bookings: unknown[] }>();
-    expect(before.held_bookings).toEqual([expect.objectContaining({ id: HELD, paid: 0 })]);
-
-    const refunded = await request(
-      ops,
-      `/api/held-bookings/${HELD}/refund`,
-      { method: "POST", headers: { Origin: "https://maneman.test" } },
-      { MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() },
-    );
-    expect(refunded.status).toBe(200);
-    const after = await (await request(ops, `/api/clients/${PERSON}`)).json<{ held_bookings: unknown[] }>();
-    expect(after.held_bookings).toEqual([]);
-    expect(await env.DB.prepare("SELECT state FROM slot_holds").first()).toEqual({ state: "released" });
   });
 
   it("still finds no photographs or consents of a client once erased", async () => {

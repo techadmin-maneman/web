@@ -81,6 +81,8 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
     "Faizan AliSohna Rd",
   ]);
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("Sec 65 · service");
+  // BK-17: each block says when it starts, not only its window.
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("9:00");
   await expect(page.getByRole("button", { name: "Sanjay B., Sat 20 Sep, morning" })).toContainText(
     "Sec 43 · first fit",
   );
@@ -178,7 +180,10 @@ test("opens a block's drawer with the client, the badge, and both ways to reach 
     "href",
     "https://wa.me/919810000001",
   );
-  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute("href", `/clients/${ROHIT.id}`);
+  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute(
+    "href",
+    `/clients/${ROHIT.id}/visits`,
+  );
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
@@ -213,7 +218,8 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await press(page, "Choose");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("Fri 19 Sep, morning → Sat 20 Sep, morning");
+  // BK-17: the exact start the move takes, not the window alone.
+  await expect(picker).toContainText("Fri 19 Sep, 9 am → Sat 20 Sep, 9 am");
   await expect(picker).toContainText("Rohit M. is messaged on WhatsApp with the new window.");
   // Nothing has gone out, and nothing can until a reason is chosen.
   expect(sent).toEqual([]);
@@ -283,6 +289,40 @@ test("says a window has no room for the visit, rather than naming a clash", asyn
   await expect(page.getByRole("alert")).toHaveText(
     "Service visit has no room in Sandeep Yadav's morning on Sat 20 Sep: its time is taken, or it would run past the day's end. Nothing was moved.",
   );
+});
+
+// BK-17, FLD-23: a move lands only at a start still ahead, and the server names a window already over.
+test("says a window's starts have all passed, and keeps the job in hand", async ({ page }) => {
+  await open(page, { [MOVE_IT]: fails(409, "window_passed") });
+  await press(page, ROHIT_BLOCK);
+  await press(page, "Move this visit");
+  await press(page, TO_SANDEEP);
+  await reason(page, "Client asked to move it");
+  await press(page, "Move and notify");
+
+  await expect(page.getByRole("alert")).toHaveText(
+    "Too late for Sat 20 Sep, morning. Choose a later window. Nothing was moved.",
+  );
+  await expect(page.getByText("Moving Rohit M.")).toBeVisible();
+});
+
+// Owner decision 16: a move onto a blacked-out day goes ahead with a warning and a typed reason.
+test("asks why before a move onto a blacked-out day, and sends the reason with it", async ({ page }) => {
+  await open(page, { [READ_ROOM]: json({ ...ROOM, blackouts: ["2025-09-20"] }), [MOVE_IT]: json(MOVED) });
+  const sent = sentTo(page, MOVE);
+  await press(page, ROHIT_BLOCK);
+  await press(page, "Move this visit");
+  await press(page, TO_SANDEEP);
+
+  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
+  await expect(picker).toContainText("Sat 20 Sep is blacked out, so nothing is booked that day.");
+  await reason(page, "Client asked to move it");
+  await expect(picker.getByRole("button", { name: "Move and notify" })).toBeDisabled();
+  await picker.getByLabel("Why it goes ahead that day").fill("His only free day before he travels");
+  await press(page, "Move and notify");
+
+  await expect(page.getByRole("status")).toContainText("Moved. We're sending Rohit M. the new window on WhatsApp;");
+  expect(sent).toEqual([expect.objectContaining({ blackout_reason: "His only free day before he travels" })]);
 });
 
 test("assigns a tray job through the assign route, with no technician expected", async ({ page }) => {
@@ -494,7 +534,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   await expect.poll(() => new URL(page.url()).search).toBe(kept);
 
   await page.getByRole("dialog").getByRole("link", { name: "Open client" }).click();
-  await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}/visits$`));
   await page.goBack();
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();

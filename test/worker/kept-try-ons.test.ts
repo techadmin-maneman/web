@@ -53,7 +53,6 @@ async function sweepNow(): Promise<void> {
     CRM_QUEUE: fakeQueue(),
     RENDER_QUEUE: fakeQueue(),
     MESSAGE_QUEUE: fakeQueue(),
-    FSM_QUEUE: fakeQueue(),
   };
   await sweep(bindings, fakeDependencies(), createLogger(), { budget: createCallBudget(Infinity) });
 }

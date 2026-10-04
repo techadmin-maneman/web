@@ -1,7 +1,7 @@
 // How long a visit takes, and how much of a technician's day it holds: the owner's ruling of 27 September 2026, in
 // the owner's words as docs/owner-answers-2026-09-27.md records it ("Services, as the console will hold them"). Each
-// service carries its own length (the services table, docs/decisions/0085-services-ops-can-edit.md). FSM books the
-// visit for that long, and the day, counted in half-slots (docs/decisions/0035-window-slot-map.md), keeps the
+// service carries its own length (the services table, docs/decisions/0085-services-ops-can-edit.md). A visit is
+// booked for that long, and the day, counted in half-slots (docs/decisions/0035-window-slot-map.md), keeps the
 // half-slots that length needs. src/domain/scheduling.ts places a visit by them, for booking and dispatch alike.
 
 import { UNITS_PER_DAY } from "../config/scheduling.ts";
@@ -36,8 +36,8 @@ export const isServiceLength = (minutes: number): boolean =>
 
 /**
  * How long a visit already booked takes, as the day keeps it and a move carries it: the longer of its service's
- * length and the time FSM books it for, where FSM gives one. So neither a length ops shorten later nor a visit ops
- * lengthened in FSM by hand leaves room for a clash, and a visit whose service is unknown keeps its kind's length.
+ * length and its booked window, where it has one. So a length ops shorten later leaves no room for a clash, and a
+ * visit whose service is unknown keeps its kind's length.
  */
-export const bookedLength = (serviceMinutes: number, fsmMinutes: number | null): number =>
-  Math.max(serviceMinutes, fsmMinutes ?? 0);
+export const bookedLength = (serviceMinutes: number, windowMinutes: number | null): number =>
+  Math.max(serviceMinutes, windowMinutes ?? 0);

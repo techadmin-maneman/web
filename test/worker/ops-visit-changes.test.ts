@@ -4,21 +4,17 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { FieldRecord } from "../../src/config/field-record.ts";
 import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
-import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubPayments, type PaymentsProvider, type StubPayments } from "../../src/providers/payments.ts";
 import {
   appFor,
   captureLogs,
   fakeDependencies,
   fakeQueue,
-  fsmSwitchedOff,
   markDatabase,
   NOW,
-  PROVIDERS_FOR,
   request,
   savedAddress,
 } from "./helpers.ts";
@@ -43,39 +39,28 @@ beforeEach(async () => {
   payments = createStubPayments();
   messages = fakeQueue();
   await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
   )
     .bind(NOW.toISOString())
     .run();
   await env.DB.prepare(
-    `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id)
-     VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra', 'contact-1')`,
+    `INSERT INTO people (id, created_at, mobile_e164, name)
+     VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')`,
   )
     .bind(PERSON, NOW.toISOString())
     .run();
   await savedAddress(PERSON);
 });
 
-/** FSM's catalogue, for the work order FSM's path cancels. */
-const fsmWorld = () =>
-  createStubFsm({ ...EMPTY_FSM, items: [{ id: "item-service", name: "Service visit", type: "Service", price: null }] });
-
-/**
- * A visit with Imran, as each record of field work books it: FSM's with its work order, or our own with its own ID
- * in fsm_id and no work order.
- */
-async function visit(record: FieldRecord, type: string, start: string, status = "scheduled") {
+/** A visit with Imran: its own ID in fsm_id. */
+async function visit(type: string, start: string, status = "scheduled") {
   const minutes = type === "first_fit" ? 180 : 90;
   const end = new Date(new Date(start).getTime() + minutes * 60_000).toISOString();
-  const fsmId = record === "fsm" ? "fsm-visit-1" : VISIT;
-  const workOrder = record === "fsm" ? "fsm-order-1" : null;
-  const fsmStatus = record === "fsm" ? "Scheduled" : null;
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
-       window_end, technician_id, fsm_modified_at, synced_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 't1', ?10, ?10)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+     VALUES (?1, ?1, ?2, ?3, ?4, ?5, ?6, 't1', ?7)`,
   )
-    .bind(VISIT, fsmId, workOrder, PERSON, type, status, fsmStatus, start, end, NOW.toISOString())
+    .bind(VISIT, PERSON, type, status, start, end, NOW.toISOString())
     .run();
 }
 
@@ -96,17 +81,12 @@ async function paidWithCredit() {
 }
 
 interface Vendors {
-  readonly record: FieldRecord;
-  readonly fsm?: FsmProvider;
   readonly payments?: PaymentsProvider;
 }
 
 function opsApp(vendors: Vendors) {
-  const deps = fakeDependencies({
-    payments: vendors.payments ?? payments,
-    fsm: vendors.fsm ?? (vendors.record === "ours" ? fsmSwitchedOff() : fsmWorld()),
-  });
-  return { deps, app: appFor("local", deps, {}, "ops", PROVIDERS_FOR[vendors.record]) };
+  const deps = fakeDependencies({ payments: vendors.payments ?? payments });
+  return { deps, app: appFor("local", deps, {}, "ops") };
 }
 
 const post = (vendors: Vendors, path: string, body: object) =>
@@ -151,10 +131,10 @@ const restores = async () =>
 
 describe("POST /api/visits/:id/cancel: what it gives back", () => {
   it("shows what a cancel gives back free to the client, and on the client's own late terms, and changes nothing", async () => {
-    await visit("ours", "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     await paid(200000);
 
-    const answer = await cancel({ record: "ours" }, { confirm: false });
+    const answer = await cancel({}, { confirm: false });
     expect(answer.status).toBe(200);
     expect(await answer.json()).toEqual({
       visit_id: VISIT,
@@ -173,11 +153,11 @@ describe("POST /api/visits/:id/cancel: what it gives back", () => {
   });
 
   it("shows a first fit's late fee kept on the client's terms, and the rest refunded", async () => {
-    await visit("ours", "first_fit", TUESDAY_MORNING);
+    await visit("first_fit", TUESDAY_MORNING);
     await paid(3000000);
 
     // The price book's late fee for a first fit on the 22nd is Rs. 4,000.
-    const shown = await (await cancel({ record: "ours" }, { confirm: false })).json();
+    const shown = await (await cancel({}, { confirm: false })).json();
     expect(shown).toMatchObject({
       free: { refund: 3000000, kept: 0 },
       client_terms: { refund: 2600000, kept: 400000 },
@@ -185,14 +165,11 @@ describe("POST /api/visits/:id/cancel: what it gives back", () => {
   });
 });
 
-describe.each(["fsm", "ours"] as const)("POST /api/visits/:id/cancel, with %s holding the record", (record) => {
+describe("POST /api/visits/:id/cancel", () => {
   it("cancels free to the client by default: the whole payment refunded, the client told, and audited", async () => {
-    await visit(record, "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     await paid(200000);
-    const fsm = fsmWorld();
-    const vendors = { record, ...(record === "fsm" ? { fsm } : {}) };
-
-    const answer = await cancel(vendors, { confirm: true, notice: "late", reason: REASON });
+    const answer = await cancel({}, { confirm: true, notice: "late", reason: REASON });
     expect(answer.status).toBe(200);
     expect(await answer.json()).toMatchObject({ cancelled: true, free: { refund: 200000, kept: 0 } });
 
@@ -219,16 +196,14 @@ describe.each(["fsm", "ours"] as const)("POST /api/visits/:id/cancel, with %s ho
       subject_id: VISIT,
       detail: { terms: "free", refund: 200000, kept: 0 },
     });
-    const cancelledInFsm = record === "fsm" ? [{ workOrderId: "fsm-order-1", note: expect.any(String) as string }] : [];
-    expect(fsm.made.cancelled).toEqual(cancelledInFsm);
   });
 
   it("keeps what the client's late terms keep, when ops apply them", async () => {
-    await visit(record, "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     await paid(200000);
 
     const answer = await cancel(
-      { record },
+      {},
       { confirm: true, notice: "late", on_client_terms: true, reason: "Cancelled an hour before; no reason given" },
     );
     expect(answer.status).toBe(200);
@@ -239,39 +214,39 @@ describe.each(["fsm", "ours"] as const)("POST /api/visits/:id/cancel, with %s ho
   });
 
   it("gives a credit back free to the client", async () => {
-    await visit(record, "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     await paidWithCredit();
 
-    const shown = await (await cancel({ record }, { confirm: false })).json();
+    const shown = await (await cancel({}, { confirm: false })).json();
     expect(shown).toMatchObject({ free: { credit: "restored" }, client_terms: { credit: "lost" } });
-    await cancel({ record }, { confirm: true, notice: "late", reason: REASON });
+    await cancel({}, { confirm: true, notice: "late", reason: REASON });
     expect(await restores()).toBe(1);
     expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(3);
   });
 
   it("spends the credit on the client's late terms", async () => {
-    await visit(record, "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     await paidWithCredit();
 
-    await cancel({ record }, { confirm: true, notice: "late", on_client_terms: true, reason: REASON });
+    await cancel({}, { confirm: true, notice: "late", on_client_terms: true, reason: REASON });
     expect(await statusOf()).toBe("cancelled");
     expect(await restores()).toBe(0);
     expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(2);
   });
 
   it("cancels once: a second cancel is refused, and nothing is refunded twice", async () => {
-    await visit(record, "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     await paid(200000);
 
-    await cancel({ record }, { confirm: true, notice: "late", reason: REASON });
-    const again = await cancel({ record }, { confirm: true, notice: "late", reason: REASON });
+    await cancel({}, { confirm: true, notice: "late", reason: REASON });
+    const again = await cancel({}, { confirm: true, notice: "late", reason: REASON });
     expect(again.status).toBe(409);
     expect(await again.json()).toMatchObject({ error: { code: "not_changeable" } });
     expect(payments.made.refunds).toHaveLength(1);
   });
 
   it("never cancels a visit the technician has begun", async () => {
-    await visit(record, "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     await paid(200000);
     await env.DB.prepare(
       `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
@@ -281,7 +256,7 @@ describe.each(["fsm", "ours"] as const)("POST /api/visits/:id/cancel, with %s ho
       .bind(VISIT, NOW.toISOString())
       .run();
 
-    const answer = await cancel({ record }, { confirm: true, notice: "late", reason: REASON });
+    const answer = await cancel({}, { confirm: true, notice: "late", reason: REASON });
     expect(answer.status).toBe(409);
     expect(await statusOf()).toBe("scheduled");
     expect(payments.made.refunds).toEqual([]);
@@ -290,11 +265,11 @@ describe.each(["fsm", "ours"] as const)("POST /api/visits/:id/cancel, with %s ho
 
 describe("POST /api/visits/:id/cancel: what it refuses", () => {
   it("refuses a cancel with no reason, and changes nothing", async () => {
-    await visit("ours", "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     await paid(200000);
 
     for (const reason of [undefined, "   "]) {
-      const answer = await cancel({ record: "ours" }, { confirm: true, notice: "late", reason });
+      const answer = await cancel({}, { confirm: true, notice: "late", reason });
       expect(answer.status).toBe(400);
       expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["reason"] } });
     }
@@ -302,41 +277,29 @@ describe("POST /api/visits/:id/cancel: what it refuses", () => {
   });
 
   it("refuses to cancel on a notice ops were not shown", async () => {
-    await visit("ours", "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     await paid(200000);
 
-    const answer = await cancel({ record: "ours" }, { confirm: true, notice: "free", reason: REASON });
+    const answer = await cancel({}, { confirm: true, notice: "free", reason: REASON });
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "terms_changed" } });
     expect(await statusOf()).toBe("scheduled");
   });
 
   it("refuses a visit that has passed or is no client's", async () => {
-    await visit("ours", "service", THIS_MORNING);
-    expect((await cancel({ record: "ours" }, { confirm: false })).status).toBe(409);
+    await visit("service", THIS_MORNING);
+    expect((await cancel({}, { confirm: false })).status).toBe(409);
     await env.DB.prepare("UPDATE appointments SET window_start = ?2, person_id = NULL WHERE id = ?1")
       .bind(VISIT, TUESDAY_MORNING)
       .run();
-    expect((await cancel({ record: "ours" }, { confirm: false })).status).toBe(409);
-  });
-
-  it("changes nothing when FSM does not answer, so ops can try again", async () => {
-    await visit("fsm", "service", TUESDAY_MORNING);
-    await paid(200000);
-    const failing: FsmProvider = { ...fsmWorld(), cancelVisit: () => Promise.reject(new Error("Zoho 503")) };
-
-    const answer = await cancel({ record: "fsm", fsm: failing }, { confirm: true, notice: "late", reason: REASON });
-    expect(answer.status).toBe(503);
-    expect(await statusOf()).toBe("scheduled");
-    expect(await changes()).toEqual([]);
-    expect(payments.made.refunds).toEqual([]);
+    expect((await cancel({}, { confirm: false })).status).toBe(409);
   });
 
   it("tells ops the refund Razorpay refused is theirs to make by hand, once", async () => {
-    await visit("ours", "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     await paid(200000);
     const refusing: PaymentsProvider = { ...payments, refund: () => Promise.reject(new Error("Razorpay 502")) };
-    const { deps, app } = opsApp({ record: "ours", payments: refusing });
+    const { deps, app } = opsApp({ payments: refusing });
 
     const answer = await request(
       app,
@@ -370,13 +333,10 @@ const visitsRow = () =>
 
 describe("POST /api/visits/:id/close", () => {
   it("closes a visit as done by hand: completed, its visit row with the times, who closed it and why, and audited", async () => {
-    await visit("ours", "service", THIS_MORNING);
+    await visit("service", THIS_MORNING);
     const reason = "Imran's phone was stolen; the client confirmed the visit by phone";
 
-    const answer = await close(
-      { record: "ours" },
-      { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason },
-    );
+    const answer = await close({}, { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason });
     expect(answer.status).toBe(200);
     expect(await answer.json()).toEqual({ visit_id: VISIT, status: "completed", duration_minutes: 90 });
     expect(await statusOf()).toBe("completed");
@@ -398,11 +358,11 @@ describe("POST /api/visits/:id/close", () => {
   });
 
   it("closes a visit as partly done, which leaves it terminated and waiting for a follow-up", async () => {
-    await visit("ours", "service", THIS_MORNING, "in_progress");
+    await visit("service", THIS_MORNING, "in_progress");
     const reason = "Phone lost mid-visit; Imran says the client had to leave";
 
     const answer = await close(
-      { record: "ours" },
+      {},
       { outcome: "partial", started_at: today("09:20"), ended_at: today("10:00"), reason },
     );
     expect(answer.status).toBe(200);
@@ -415,7 +375,7 @@ describe("POST /api/visits/:id/close", () => {
   });
 
   it("closes a one visit as done on the product chosen at its piece step, and sends its payment link", async () => {
-    await visit("ours", "first_fit", THIS_MORNING, "in_progress");
+    await visit("first_fit", THIS_MORNING, "in_progress");
     const piece = { piece_code: "MM-NAT-4417-A", base: "Lace", supplier_lot: "L-22", product: "natural" };
     await env.DB.batch([
       env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(VISIT),
@@ -435,7 +395,7 @@ describe("POST /api/visits/:id/close", () => {
     ]);
 
     const answer = await close(
-      { record: "ours" },
+      {},
       { outcome: "done", started_at: today("09:20"), ended_at: today("11:50"), reason: "Phone lost after the fit" },
     );
     expect(answer.status).toBe(200);
@@ -445,12 +405,12 @@ describe("POST /api/visits/:id/close", () => {
   });
 
   it("closes a visit once: a second close is refused, and the first stands", async () => {
-    await visit("ours", "service", THIS_MORNING);
+    await visit("service", THIS_MORNING);
     const first = { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason: "Phone lost" };
-    expect((await close({ record: "ours" }, first)).status).toBe(200);
+    expect((await close({}, first)).status).toBe(200);
 
     const second = await close(
-      { record: "ours" },
+      {},
       { outcome: "partial", started_at: today("09:30"), ended_at: today("10:00"), reason: "Again" },
     );
     expect(second.status).toBe(409);
@@ -459,7 +419,7 @@ describe("POST /api/visits/:id/close", () => {
   });
 
   it("refuses a visit the technician's phone already closed, and one that was cancelled", async () => {
-    await visit("ours", "service", THIS_MORNING);
+    await visit("service", THIS_MORNING);
     await env.DB.prepare(
       `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
          updated_at)
@@ -469,17 +429,17 @@ describe("POST /api/visits/:id/close", () => {
       .run();
     const body = { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason: "Phone lost" };
 
-    expect(await (await close({ record: "ours" }, body)).json()).toMatchObject({ error: { code: "already_closed" } });
+    expect(await (await close({}, body)).json()).toMatchObject({ error: { code: "already_closed" } });
     await env.DB.prepare("DELETE FROM job_events").run();
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(VISIT).run();
-    expect(await (await close({ record: "ours" }, body)).json()).toMatchObject({ error: { code: "already_closed" } });
+    expect(await (await close({}, body)).json()).toMatchObject({ error: { code: "already_closed" } });
     expect(await visitsRow()).toBeNull();
   });
 
   it("refuses a visit whose time has not come", async () => {
-    await visit("ours", "service", TUESDAY_MORNING);
+    await visit("service", TUESDAY_MORNING);
     const answer = await close(
-      { record: "ours" },
+      {},
       { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason: "Phone lost" },
     );
     expect(answer.status).toBe(425);
@@ -487,39 +447,28 @@ describe("POST /api/visits/:id/close", () => {
   });
 
   it("refuses times that end before they start, end after now, or fall on another day than the visit's", async () => {
-    await visit("ours", "service", THIS_MORNING);
+    await visit("service", THIS_MORNING);
     const sent = [
       { started_at: today("10:50"), ended_at: today("09:20") },
       { started_at: today("11:00"), ended_at: today("12:30") },
       { started_at: "2026-09-20T04:00:00.000Z", ended_at: "2026-09-20T05:00:00.000Z" },
     ];
     for (const times of sent) {
-      const answer = await close({ record: "ours" }, { outcome: "done", ...times, reason: "Phone lost" });
+      const answer = await close({}, { outcome: "done", ...times, reason: "Phone lost" });
       expect(answer.status).toBe(400);
       expect(await answer.json()).toMatchObject({ error: { code: "invalid_request" } });
     }
     const unreasoned = await close(
-      { record: "ours" },
+      {},
       { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason: " " },
     );
     expect(await unreasoned.json()).toMatchObject({ error: { code: "invalid_request", fields: ["reason"] } });
     expect(await statusOf()).toBe("scheduled");
   });
 
-  it("leaves a visit to FSM while FSM holds the record", async () => {
-    await visit("fsm", "service", THIS_MORNING);
-    const answer = await close(
-      { record: "fsm" },
-      { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason: "Phone lost" },
-    );
-    expect(answer.status).toBe(409);
-    expect(await answer.json()).toMatchObject({ error: { code: "managed_in_fsm" } });
-    expect(await statusOf()).toBe("scheduled");
-  });
-
   it("answers not_found for no such visit", async () => {
     const answer = await close(
-      { record: "ours" },
+      {},
       { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason: "Phone lost" },
     );
     expect(answer.status).toBe(404);

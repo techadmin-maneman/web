@@ -29,7 +29,6 @@ import { registerClientDisputes } from "./routes/client-disputes.ts";
 import { registerClientErrors } from "./routes/client-errors.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsBlackouts } from "./routes/ops-blackouts.ts";
-import { registerOpsBookings } from "./routes/ops-bookings.ts";
 import { registerOpsClientAddress } from "./routes/ops-client-address.ts";
 import { registerOpsClientReferral } from "./routes/ops-client-referral.ts";
 import { registerOpsClients } from "./routes/ops-clients.ts";
@@ -42,6 +41,7 @@ import { registerOpsField } from "./routes/ops-field.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
 import { registerOpsHairProfile } from "./routes/ops-hair-profile.ts";
 import { registerOpsJobSheet } from "./routes/ops-job-sheet.ts";
+import { registerOpsPaymentLinks } from "./routes/ops-payment-links.ts";
 import { registerOpsNoShowRulings } from "./routes/ops-no-show-rulings.ts";
 import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
@@ -59,9 +59,8 @@ import { registerNumberCodes } from "./routes/number-codes.ts";
 import { registerReferralLanding } from "./routes/referral-landing.ts";
 import { registerClientPayments } from "./routes/client-payments.ts";
 import { registerClientVisits } from "./routes/client-visits.ts";
-import { registerDevFsm } from "./routes/dev-fsm.ts";
+import { registerDevVisits } from "./routes/dev-visits.ts";
 import { registerEvolutionHook } from "./routes/evolution-hook.ts";
-import { registerFsmHook } from "./routes/fsm-hook.ts";
 import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
 import { registerStopMessages } from "./routes/stop-messages.ts";
 import { registerHealth } from "./routes/health.ts";
@@ -105,7 +104,6 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerStopMessages,
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
-    registerFsmHook,
     registerRazorpayHook,
   ],
   client: [
@@ -133,8 +131,6 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientErrors,
     registerOpsClients,
     registerOpsCredits,
-    // A booking FSM refused, held for ops to book or refund (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-    registerOpsBookings,
     // A visit ops book for a client: at once, or by a payment link.
     registerOpsVisits,
     // A visit ops cancel for a client, or close by hand for a technician whose phone was lost.
@@ -158,6 +154,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // The alerts on Tasks' "Needs a hand".
     registerOpsAlerts,
     registerOpsPayments,
+    // A one visit's payment link texted to the client again.
+    registerOpsPaymentLinks,
     registerOpsTechnicians,
     registerOpsSettings,
     // The day's half-slot times, from a day nothing is booked or bookable on (docs/decisions/0102-window-times.md).
@@ -214,8 +212,8 @@ export function createApp(
 
   app.openAPIRegistry.register("ErrorResponse", ErrorResponseSchema);
   for (const register of SURFACE_ROUTES[surface]) register(app);
-  // Locally only, and only when switched on: what stands in for FSM on a laptop (src/routes/dev-fsm.ts).
-  if (surface === "public" && config.environment === "local" && config.settings.devRoutes) registerDevFsm(app);
+  // Locally only, and only when switched on: what stands in for a technician's phone on a laptop (src/routes/dev-visits.ts).
+  if (surface === "public" && config.environment === "local" && config.settings.devRoutes) registerDevVisits(app);
 
   app.notFound((c) => c.json(errorBody("not_found", c.var.requestId), 404));
   app.onError((error, c) => {

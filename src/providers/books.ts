@@ -127,12 +127,6 @@ export interface BooksProvider {
    * just raised: an issued invoice can be undone only with a credit note.
    */
   issueInvoice(id: string): Promise<void>;
-  /**
-   * Takes a discount code's amount, in paise, off a draft's visit line before tax, so the invoice shows the price,
-   * the discount and the total; answers the invoice as it now stands. Only `raiseInvoices` calls it, on an invoice it
-   * has just raised and not yet sent.
-   */
-  discountInvoice(id: string, amountOff: number): Promise<BooksInvoice>;
   /** Null while Books has no such invoice, which the app shows as "Document unavailable". */
   invoicePdf(id: string): Promise<BooksPdf | null>;
   /** The payment Books holds for this customer under our reference; null if it holds none. */
@@ -178,7 +172,6 @@ export function createBooksProvider(
   return {
     invoice: off,
     issueInvoice: off,
-    discountInvoice: off,
     invoicePdf: off,
     findPayment: off,
     recordPayment: off,
@@ -221,8 +214,6 @@ export interface StubBooks extends BooksProvider {
     readonly refunds: (NewBooksRefund & { paymentId: string })[];
     /** The invoices marked sent, in the order they were. */
     readonly issued: string[];
-    /** The discounts written onto drafts, in paise before GST. */
-    readonly discounts: { invoiceId: string; amountOff: number }[];
     /** Each customer written by person ID, in order, a second write of a person's as well. */
     readonly customers: NewBooksCustomer[];
     readonly customerUpdates: ({ customerId: string } & NewBooksCustomer)[];
@@ -239,13 +230,8 @@ export interface StubBooks extends BooksProvider {
   loseAnswer(step: StubBooksCreate): void;
 }
 
-/**
- * What the stub's drafts that FSM raised total before a discount, in paise: the work order's figure, which the stub
- * cannot know. A discount then leaves that figure less the discount, as Books leaves it with GST at 0%. And the
- * items Books holds before a test adds any.
- */
+/** The items Books holds before a test adds any. */
 interface StubBooksWorld {
-  readonly draftTotal: number;
   readonly items?: readonly BooksItem[];
 }
 
@@ -288,13 +274,12 @@ function createStubControls() {
  * it records. Its IDs are unique, as a new stub answers each local request. An invoice is a draft until it is
  * issued, as Books has it. A customer is found again by its person ID, an invoice by its reference.
  */
-export function createStubBooks(world: StubBooksWorld = { draftTotal: 0 }): StubBooks {
+export function createStubBooks(world: StubBooksWorld = {}): StubBooks {
   const made = {
     payments: [] as NewBooksPayment[],
     applied: [] as { paymentId: string; invoiceId: string; amount: number }[],
     refunds: [] as (NewBooksRefund & { paymentId: string })[],
     issued: [] as string[],
-    discounts: [] as { invoiceId: string; amountOff: number }[],
     customers: [] as NewBooksCustomer[],
     customerUpdates: [] as ({ customerId: string } & NewBooksCustomer)[],
     erased: [] as { customerId: string; outcome: BooksErasure }[],
@@ -352,12 +337,6 @@ function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, control
     issueInvoice: (id) => {
       made.issued.push(id);
       return Promise.resolve();
-    },
-    discountInvoice: (id, amountOff) => {
-      made.discounts.push({ invoiceId: id, amountOff });
-      const total = world.draftTotal - amountOff;
-      const draft = { id, number: "INV-000001", date: "2026-09-22", total, balance: total, status: "draft" };
-      return Promise.resolve({ ...draft, reference: null });
     },
     invoice: (id) => {
       const raised = invoicesById.get(id);

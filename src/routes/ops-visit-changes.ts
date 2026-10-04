@@ -11,7 +11,6 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { fieldRecord } from "../config/field-record.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import type { AuditEntry } from "../domain/audit.ts";
 import { closeByHand } from "../domain/hand-close.ts";
@@ -96,7 +95,7 @@ const cancelRoute = createRoute({
       "not_changeable: the visit has begun, passed or gone, is no client's, or is not in the caller's cities; " +
         "terms_changed: the notice is not the one shown, so show the terms again",
     ),
-    503: errorResponse("unavailable: FSM did not answer; nothing changed"),
+    503: errorResponse("unavailable: the cancel could not be written; nothing changed"),
   },
 });
 
@@ -134,10 +133,7 @@ const closeRoute = createRoute({
     400: errorResponse("invalid_request: no reason, or times that do not fit the visit's day or end after now"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such visit in the caller's cities"),
-    409: errorResponse(
-      "already_closed: the visit is closed or cancelled, or the technician's phone closed it; managed_in_fsm: FSM " +
-        "holds the record, so the visit is closed there",
-    ),
+    409: errorResponse("already_closed: the visit is closed or cancelled, or the technician's phone closed it"),
     425: errorResponse("too_early_to_close: the visit's time has not come"),
   },
 });
@@ -201,7 +197,7 @@ function opsCancelOf(c: Context<AppEnv>, terms: ChangeTerms, onClientTerms: bool
 
 /**
  * A client's visit cancelled for them: the terms each choice gives, or, confirmed with a reason, the cancel itself, on
- * the terms ops chose. FSM's failure to answer changes nothing.
+ * the terms ops chose.
  */
 async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: CancelAsked) {
   const db = c.env.DB;
@@ -221,12 +217,7 @@ async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: Cance
   const notify = (messageId: string) => queueMessage(c, messageId);
   let outcome;
   try {
-    outcome = await cancelVisit(db, { ...deps, notify }, applied, now, {
-      labelAsTest: c.var.config.environment !== "production",
-      log,
-      record: fieldRecord(c.var.config.providers),
-      ops,
-    });
+    outcome = await cancelVisit(db, { ...deps, notify }, applied, now, { log, ops });
   } catch (error) {
     log.error("cancel_failed", { appointment_id: visit.id, error });
     return c.json(errorBody("unavailable", requestId), 503);
@@ -241,14 +232,10 @@ async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: Cance
   return c.json({ ...shown, cancelled: true }, 200);
 }
 
-/**
- * A visit closed by hand for its technician, whose phone was lost before it sent anything. While FSM holds the
- * record, the visit is closed there.
- */
+/** A visit closed by hand for its technician, whose phone was lost before it sent anything. */
 async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.infer<typeof HandCloseSchema>) {
   const { requestId, deps, log } = c.var;
   if (asked.reason === "") return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
-  if (fieldRecord(c.var.config.providers) === "fsm") return c.json(errorBody("managed_in_fsm", requestId), 409);
   if (!(await withinRouteReach(c, "visit", visitId))) return c.json(errorBody("not_found", requestId), 404);
 
   const close = {

@@ -17,7 +17,6 @@ import { ErasureLists } from "../deletions/ErasureLists.tsx";
 import deletionStyles from "../deletions/deletions.module.css";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
-import { HeldBookings } from "./HeldBookings.tsx";
 import { MoneyRecords } from "./Payments.tsx";
 import { VisitRecords } from "./Visits.tsx";
 
@@ -190,8 +189,7 @@ export function Erased() {
 
 /**
  * The page of a client erased since: their visits and money, as records, under the day they were erased. A visit still
- * to come may be cancelled or closed by hand, as ops who erase despite one promise to, and a booking still held for
- * them refunded.
+ * to come may be cancelled or closed by hand, as ops who erase despite one promise to.
  */
 export function ErasedRecord({ record, onChanged }: { record: ErasedClientRecord; onChanged: () => void }) {
   return (
@@ -201,7 +199,6 @@ export function ErasedRecord({ record, onChanged }: { record: ErasedClientRecord
         <p className={styles.note}>{copy.record.on(longDate(record.erased_at))}</p>
       </div>
       <div className={`${styles.panel ?? ""} ${styles.visits ?? ""}`}>
-        <HeldBookings bookings={record.held_bookings} upcoming={record.visits.upcoming} />
         <VisitRecords visits={record.visits} name={copy.record.whose} onChanged={onChanged} />
         <MoneyRecords payments={record.payments} links={record.payment_links} invoices={record.invoices} />
       </div>

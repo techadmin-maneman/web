@@ -261,10 +261,6 @@ describe("one cron run", () => {
 // D-01 of 4 October 2026: one run of every job took 34 to 61 ms of CPU on staging, past the free plan's 10, and
 // Cloudflare stopped every run for ten hours. Most of a run's CPU time goes on its calls to D1.
 describe("each minute's run", () => {
-  /** Where FSM is the record, as on staging, so the FSM mirror's repair runs; and without FSM, Books' items. */
-  const WITH_FSM: StaticConfig = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "zoho" } };
-  const WITHOUT_FSM: StaticConfig = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "none" } };
-
   async function statementsAt(minute: number, config: StaticConfig): Promise<number> {
     const scheduled = Date.UTC(2026, 8, 21, 6, minute);
     const meter = meterDatabase(env.DB);
@@ -282,15 +278,9 @@ describe("each minute's run", () => {
     await history(1, 400);
     await rowsReadByOneRun(); // the day's once-only work: the reconciliation's pass, the utilisation
     const overBudget: string[] = [];
-    for (const [name, config] of [
-      ["with FSM", WITH_FSM],
-      ["without FSM", WITHOUT_FSM],
-    ] as const) {
-      for (let minute = 0; minute < 60; minute += 1) {
-        const statements = await statementsAt(minute, config);
-        if (statements > CRON_STATEMENTS_PER_RUN)
-          overBudget.push(`${name}, minute ${String(minute)}: ${String(statements)}`);
-      }
+    for (let minute = 0; minute < 60; minute += 1) {
+      const statements = await statementsAt(minute, LOCAL_CONFIG);
+      if (statements > CRON_STATEMENTS_PER_RUN) overBudget.push(`minute ${String(minute)}: ${String(statements)}`);
     }
     expect(overBudget).toEqual([]);
   });

@@ -2,7 +2,7 @@
 // codes to be generated and used before invoicing", and answered each question in turn; the rules below are those
 // answers. Ops generate the codes in the console, and the client, the technician or ops enter one on a booking
 // (src/domain/discount-codes.ts). The invoice then shows the price, the discount and the total
-// (src/domain/fsm-invoices.ts).
+// (src/domain/books-invoices.ts).
 
 import { withGst } from "../config/gst.ts";
 import type { VisitType } from "../config/visit-types.ts";

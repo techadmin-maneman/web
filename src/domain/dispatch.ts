@@ -3,42 +3,39 @@
 // docs/decisions/0069-dispatch-under-concurrency.md).
 //
 // "Rows are technicians; columns are seven days; each day has config
-// SLOTS_PER_DAY (4) slots." The blocks come from the FSM mirror, the holds from
+// SLOTS_PER_DAY (4) slots." The blocks come from the visits, the holds from
 // slot_claims, and the clash check is the same one self-serve booking runs, so
-// the two cannot disagree. A job is as long as its service, or as FSM books it
-// where that is longer, and is sized, placed and moved by that length
+// the two cannot disagree. A job is as long as its service, or as its booked
+// window where that is longer, and is sized, placed and moved by that length
 // (docs/decisions/0085-services-ops-can-edit.md).
 //
-// "A technician cannot hold two live jobs in one window on one date. This check
-// runs on the server before any write to FSM": the refusal below happens before
-// anything is written anywhere. A technician on leave is refused the same way,
-// and named as away rather than busy (ADR 0062); a free window with no room for
-// the visit is named as that. Then the new time is claimed, then FSM, then the
-// mirror, then the client's message. "The client's payment carries over and he
-// is never charged for a move ops make", so no amount is read or written here
-// at all: a visit carries a badge, never a figure.
-//
-// Where our own database holds the record of a visit (src/config/field-record.ts),
-// its move is one batch, and nothing goes to FSM. A visit the technician has
-// begun is not moved on either path, unless he has only checked in and ops,
-// warned, choose to clear his check-in: he checks in again at the new time. Nor
-// is a visit whose client has paid for a move, or booked one free, that waits
-// to be booked: ops are told it is being moved.
+// "A technician cannot hold two live jobs in one window on one date": the
+// refusal below happens before anything is written. A technician on leave is
+// refused the same way, and named as away rather than busy (ADR 0062); a free
+// window with no room for the visit is named as that. A move is one batch: its
+// claim on the new time, the visit and the client's message. "The client's
+// payment carries over and he is never charged for a move ops make", so no
+// amount is read or written here at all: a visit carries a badge, never a
+// figure. A visit the technician has begun is not moved, unless he has only
+// checked in and ops, warned, choose to clear his check-in: he checks in again
+// at the new time. Nor is a visit whose client has paid for a move, or booked
+// one free, that waits to be booked: ops are told it is being moved.
 
-import { recordOfVisit, type FieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS, SLOTS_PER_DAY, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
-import { addDays, indiaDate, indiaInstant, indiaIso, indiaTime } from "../lib/india-time.ts";
+import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import {
   begunFrom,
   clientNotice,
   keepsTheClientsNotice,
   moveRefusal,
   slotsFor,
+  targetTime,
   type Begun,
   type ClientNotice,
   type MoveReason,
   type MoveRefusal,
+  type TargetTime,
   type UntoldReason,
 } from "../policy/dispatch.ts";
 import { reachesCity, type PlacesReached } from "../policy/access.ts";
@@ -47,11 +44,9 @@ import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { FREE_CHANGE_NOTICE_HOURS } from "../policy/moving-a-visit.ts";
 import { namesMoreThanItsKind } from "../policy/services.ts";
 import { unitsFor } from "../policy/visit-length.ts";
-import type { FsmProvider } from "../providers/fsm.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { listCities } from "./cities.ts";
 import { reachBinding, withinReach } from "./places.ts";
-import { syncAppointment } from "./fsm-mirror.ts";
 import type { AppointmentStatus } from "./visit-status.ts";
 import { leaveBetween } from "./leave.ts";
 import {
@@ -60,7 +55,7 @@ import {
   claimsOf,
   fitsAt,
   lettingGo,
-  movesOpenSince,
+  loadBlackouts,
   occupancy,
   placement,
   visitTimes,
@@ -69,9 +64,8 @@ import {
 import { latestConsentSql } from "./messages.ts";
 import { begunPastArrival, visitBegun } from "./visit-begun.ts";
 import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";
-import { unitAt, type SlotTimes } from "../policy/slot-times.ts";
+import { firstUnitAfter, unitAt, type SlotTimes } from "../policy/slot-times.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
-import { failureReason } from "../log.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
 /** Seven days, as the board shows them. */
@@ -157,8 +151,7 @@ export interface Board {
   readonly utilisation: { date: string; percent: number }[];
   /**
    * Leave ops recorded, clipped to the board's own week, so a column is drawn
-   * away for exactly the days it is (ADR 0062). It does not come from FSM:
-   * FSM's availability answers free time, never the reason for it.
+   * away for exactly the days it is (ADR 0062).
    */
   readonly leave: { technician_id: string; from: string; to: string; note: string | null }[];
 }
@@ -207,7 +200,7 @@ const landed = (kind: string): string =>
  * length, and its badge: Credit where a service-visit credit paid for it, Free
  * where the price book charges nothing for its own service on its day, as the
  * technician's card reads them (src/domain/tech-jobs.ts). No amount leaves the
- * database. A job is the standard tier's where the mirror knows no other.
+ * database. A job is the standard tier's where it names no other.
  */
 const BOARD_JOBS = `
   SELECT a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
@@ -423,8 +416,8 @@ function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: numbe
 }
 
 /**
- * A job no technician on the board holds: none was given it, or the one it is on was switched off, as FSM's sync
- * or ops may do with visits still on him. Either way it waits in the tray.
+ * A job no technician on the board holds: none was given it, or the one it is on was switched off with visits still
+ * on him. Either way it waits in the tray.
  */
 const isNobodys = (job: BoardJobRow): boolean => job.technician_id === null || job.technician_active !== 1;
 
@@ -501,6 +494,8 @@ export interface MoveInput {
    * entry records who chose it. Absent for an ordinary move.
    */
   readonly clearCheckIn?: AuditEntry | null;
+  /** Why ops move the visit onto a day they blacked out, as they typed it; absent for any other day. */
+  readonly blackoutReason?: string | null;
 }
 
 /**
@@ -520,21 +515,20 @@ export type MoveOutcome =
   /** The move names the technician, day and window the job already has. */
   | { readonly kind: "nothing_to_move" }
   /** The technician has begun the visit, so it stays where it is; nothing was written. */
-  | { readonly kind: "in_progress" }
-  /** FSM would not take it: nothing moved, and the refusal is on the record. */
-  | { readonly kind: "fsm_refused"; readonly moveId: string }
-  /** FSM took the new technician and not the new time; the mirror now holds what FSM does. */
-  | { readonly kind: "fsm_partly"; readonly moveId: string };
+  | { readonly kind: "in_progress" };
 
 /** Where a move puts a job, and whether it keeps the time it has. */
 interface Target {
   readonly technicianId: string;
   readonly date: string;
   readonly window: BookingWindow;
-  /** Only the technician changes: the visit keeps its own start, and its half-slots are checked there. */
+  /** Only the technician changes: the visit keeps its own start, still ahead, and its half-slots are checked there. */
   readonly keepsTime: boolean;
   /** The target day's times, which its half-slots are read by. */
   readonly times: SlotTimes;
+  /** The first half-slot the visit may start in there: any on a day ahead, only one still to start today. */
+  readonly earliest: number;
+  readonly time: TargetTime;
 }
 
 type Landing =
@@ -549,31 +543,32 @@ interface Placing {
 /** The half-slot a job would start in on the target's day, or null where it has no room. */
 function startOn(day: Day, job: Placing, target: Target): number | null {
   const units = unitsFor(job.minutes);
-  if (!target.keepsTime) return placement(day, target.window, units);
+  if (!target.keepsTime) return placement(day, target.window, units, target.earliest);
   const start = unitAt(indiaTime(job.start), target.times);
   return fitsAt(day, start, units) ? start : null;
 }
 
 /** Where the job lands on the target's day, or why it cannot. */
-function landingOf(day: Day, job: Placing, target: Target): Landing {
+function landingOf(day: Day, job: Placing, target: Target, blackoutWithoutReason = false): Landing {
   const start = startOn(day, job, target);
-  const refusal = moveRefusal(day, target.window, { fits: start !== null });
+  const refusal = moveRefusal(day, target.window, { time: target.time, fits: start !== null, blackoutWithoutReason });
   if (refusal !== null) return { kind: "refused", reason: refusal };
   return start === null ? { kind: "refused", reason: "does_not_fit" } : { kind: "lands", start };
 }
 
+/** When the job starts and ends where it lands: its own times where it keeps them, else from its half-slot there. */
+function timesAt(target: Target, startUnit: number, job: Placing, schedule: SlotSchedule): { start: Date; end: Date } {
+  if (!target.keepsTime) return visitTimes(target.date, startUnit, job.minutes, schedule);
+  return { start: job.start, end: new Date(job.start.getTime() + job.minutes * MINUTE_MS) };
+}
+
 export interface MoveDeps {
-  readonly fsm: FsmProvider;
-  readonly labelAsTest: boolean;
   /** Queues the client's "your visit is now …" message. */
   readonly notify?: (messageId: string) => Promise<unknown>;
-  /** Who holds the record of field work: FSM, the default while its path stands, or our own database. */
-  readonly record?: FieldRecord;
 }
 
 interface LiveJob {
   id: string;
-  fsm_id: string;
   person_id: string | null;
   type: VisitType;
   status: AppointmentStatus;
@@ -597,11 +592,11 @@ interface LiveJob {
 const CLIENT_MOVING = `EXISTS (SELECT 1 FROM slot_holds h
   WHERE h.moves_appointment_id = a.id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)`;
 
-/** A job still to finish; null for one done, cancelled, gone from FSM, or with no type or time. */
+/** A job still to finish; null for one done, cancelled, deleted, or with no type or time. */
 function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null> {
   return db
     .prepare(
-      `SELECT a.id, a.fsm_id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.start_before_move,
+      `SELECT a.id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.start_before_move,
          a.technician_id, s.minutes AS service_minutes, ${visitBegun("a")} AS begun,
          ${begunPastArrival("a")} AS begun_past_arrival, ${CLIENT_MOVING} AS client_moving
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
@@ -613,8 +608,8 @@ function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null>
 }
 
 /**
- * A job the technician has begun, by his phone's steps or FSM's status, stays where he is working it: moved, his
- * phone would carry on with a visit now on another day or another technician's.
+ * A job the technician has begun, by his phone's steps or its status, stays where he is working it: moved, his phone
+ * would carry on with a visit now on another day or another technician's.
  */
 const isUnderWay = (job: LiveJob): boolean => job.status === "in_progress" || job.begun === 1;
 
@@ -626,17 +621,32 @@ const isOnlyCheckedIn = (job: LiveJob): boolean =>
 const mayMove = (job: LiveJob, clearingCheckIn: boolean): boolean =>
   !isUnderWay(job) || (clearingCheckIn && isOnlyCheckedIn(job));
 
-/** Where a move puts the job. A day and window that are the job's own keep its start: only the technician changes. */
+/**
+ * Where a move puts the job. A day and window that are the job's own keep its start while that start is still ahead:
+ * only the technician changes. Otherwise the job takes the window's first free half-slot still to start.
+ */
 function targetOf(
   job: LiveJob,
   technicianId: string,
-  date: string,
-  window: BookingWindow,
+  place: { readonly date: string; readonly window: BookingWindow },
   schedule: SlotSchedule,
+  now: Date,
 ): Target {
-  const now = schedule.at(job.window_start);
-  const keepsTime = date === now.date && window === now.window;
-  return { technicianId, date, window, keepsTime, times: schedule.on(date) };
+  const { date, window } = place;
+  const was = schedule.at(job.window_start);
+  const today = schedule.at(now);
+  const times = schedule.on(date);
+  const startIsAhead = Date.parse(job.window_start) > now.getTime();
+  const keepsTime = date === was.date && window === was.window && startIsAhead;
+  const earliest = date === today.date ? firstUnitAfter(today.time, times) : 0;
+  const time = keepsTime ? "ahead" : targetTime(place, { date: today.date, firstUnitAhead: earliest });
+  return { technicianId, date, window, keepsTime, times, earliest, time };
+}
+
+/** Whether the move puts the job onto a day ops blacked out, from another day. */
+async function movesOntoBlackout(db: D1Database, job: LiveJob, date: string): Promise<boolean> {
+  if (date === indiaDate(new Date(job.window_start))) return false;
+  return (await loadBlackouts(db, date, date)).has(date);
 }
 
 /** Where the job already is: no move at all. */
@@ -661,11 +671,13 @@ interface PlannedMove {
   readonly claims: readonly string[];
   /** The audit entry for clearing the technician's check-in; null when he had not checked in. */
   readonly clearCheckIn: AuditEntry | null;
+  /** Why ops moved it onto a day they blacked out; null for any other day. */
+  readonly blackoutReason: string | null;
 }
 
 /**
- * Assigns or moves one job: the checks, then the move written, in FSM and then the mirror, or in our own database
- * alone where it holds the visit. Assigning and moving are the same write; only what the caller changes differs.
+ * Assigns or moves one job: the checks, then the move written. Assigning and moving are the same write; only what the
+ * caller changes differs.
  */
 export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, now: Date): Promise<MoveOutcome> {
   const job = await liveJob(db, input.appointmentId);
@@ -683,107 +695,48 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   // What ops left out keeps what the job has.
   const date = input.date ?? indiaDate(wasStart);
   const window = input.window ?? schedule.at(wasStart).window;
-  const target = targetOf(job, technicianId, date, window, schedule);
+  const target = targetOf(job, technicianId, { date, window }, schedule, now);
   if (isWhereItIs(job, target)) return { kind: "nothing_to_move" };
 
-  // The check runs on the server before any write to FSM. The job's own time
-  // does not count against its own move.
-  const held = await occupancy(db, date, date, now, job.id);
-  const minutes = bookedMinutes(job);
-  const landing = landingOf(held(technicianId, date), { minutes, start: wasStart }, target);
+  // The check runs before anything is written. The job's own time does not
+  // count against its own move.
+  const [held, ontoBlackout] = await Promise.all([
+    occupancy(db, date, date, now, job.id),
+    movesOntoBlackout(db, job, date),
+  ]);
+  const blackoutReason = ontoBlackout ? (input.blackoutReason ?? null) : null;
+  const placing = { minutes: bookedMinutes(job), start: wasStart };
+  const landing = landingOf(held(technicianId, date), placing, target, ontoBlackout && blackoutReason === null);
   if (landing.kind === "refused") return landing;
 
-  const times = target.keepsTime ? null : visitTimes(date, landing.start, minutes, schedule);
-  const start = times?.start ?? wasStart;
+  const times = timesAt(target, landing.start, placing, schedule);
   const move: PlannedMove = {
     id: crypto.randomUUID(),
     job,
     technicianId,
     reason: input.reason,
     actor: input.actor,
-    start,
-    end: times?.end ?? new Date(start.getTime() + minutes * MINUTE_MS),
+    start: times.start,
+    end: times.end,
     keepsTime: target.keepsTime,
     date,
-    claims: claimsOf(landing.start, unitsFor(minutes), window),
+    claims: claimsOf(landing.start, unitsFor(placing.minutes), window),
     clearCheckIn: isUnderWay(job) ? clearCheckIn : null,
+    blackoutReason,
   };
-  if (recordOfVisit(deps.record ?? "fsm", { id: job.id, fsmId: job.fsm_id }) === "ours") {
-    return moveInOurRecord(db, deps, move, now);
-  }
-  return moveInFsm(db, deps, move, now);
+  return writeMove(db, deps, move, now);
 }
 
 /**
- * Moves a job FSM holds: the new time claimed, then FSM, then the mirror and the client's message, with the claim let
- * go in the same batch.
- */
-async function moveInFsm(db: D1Database, deps: MoveDeps, move: PlannedMove, now: Date): Promise<MoveOutcome> {
-  const { job } = move;
-  const opened = await openMove(db, move, now);
-  if (opened === "moving") return { kind: "superseded", changed: ["moving"] };
-  if (opened === "taken") return { kind: "refused", reason: "clash" };
-
-  // FSM takes a move in two writes, the technician and then the time, so one can land without the other.
-  let assigned = false;
-  try {
-    if (move.technicianId !== job.technician_id) {
-      await deps.fsm.assignVisit(job.fsm_id, await fsmResourceId(db, move.technicianId));
-      assigned = true;
-    }
-    if (!move.keepsTime) {
-      await deps.fsm.rescheduleVisit(job.fsm_id, { start: indiaIso(move.start), end: indiaIso(move.end) });
-    }
-  } catch (error) {
-    const reason = failureReason(error);
-    await db.batch([
-      releasingClaims(db, move.id),
-      db
-        .prepare(
-          "UPDATE dispatch_moves SET fsm_write_state = 'rejected', fsm_error = ?2, updated_at = ?3 WHERE id = ?1",
-        )
-        .bind(
-          move.id,
-          assigned ? `the technician was changed, the time was not: ${reason}` : reason,
-          now.toISOString(),
-        ),
-    ]);
-    if (!assigned) return { kind: "fsm_refused", moveId: move.id };
-    // Half a move is not a refusal: the job is read again from FSM, so the board shows where it now is.
-    await syncAppointment(db, deps.fsm, job.fsm_id, now).catch(() => null);
-    return { kind: "fsm_partly", moveId: move.id };
-  }
-
-  // FSM took it: the mirror follows, and the client is told his new window, if he has one.
-  const at = now.toISOString();
-  const told = await clientToldOf(db, move, now);
-  await db.batch([
-    movedVisit(db, move, at),
-    // The mirror now holds the new time, so the claim on it goes in the same batch.
-    releasingClaims(db, move.id),
-    ...checkInCleared(db, move, now),
-    // The message row is written before the move points at it.
-    ...(told.message === null ? [] : [told.message.statement]),
-    db
-      .prepare("UPDATE dispatch_moves SET fsm_write_state = 'written', message_id = ?2, updated_at = ?3 WHERE id = ?1")
-      .bind(move.id, told.message?.id ?? null, at),
-  ]);
-  if (told.message !== null) await deps.notify?.(told.message.id);
-  return { kind: "moved", moveId: move.id, clientNotice: told.notice };
-}
-
-/**
- * Moves a job our own database holds, in one batch: the move, its claim on the new time, the visit and the client's
- * message. The claim is the clash test: a hold or another move that took the time since it was checked fails the
+ * Moves a job in one batch: the move, its claim on the new time, the visit and the client's message. The claim is the clash test: a hold or another move that took the time since it was checked fails the
  * batch. It is let go in the same batch, since the visit's own row now holds the time. A visit changed or begun since
  * it was read fails the batch as well, and nothing is written.
  */
-async function moveInOurRecord(db: D1Database, deps: MoveDeps, move: PlannedMove, now: Date): Promise<MoveOutcome> {
+async function writeMove(db: D1Database, deps: MoveDeps, move: PlannedMove, now: Date): Promise<MoveOutcome> {
   const at = now.toISOString();
   const told = await clientToldOf(db, move, now);
   try {
     await db.batch([
-      ...unfinishedMovesLetGo(db, now),
       ...lettingGo(db, now),
       // The message row is written before the move points at it.
       ...(told.message === null ? [] : [told.message.statement]),
@@ -813,12 +766,12 @@ function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null
   return db
     .prepare(
       `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
-         reason, actor, fsm_write_state, message_id, created_at, updated_at)
+         reason, actor, fsm_write_state, message_id, created_at, updated_at, blackout_reason)
        VALUES (?1,
          (SELECT a.id FROM appointments a
           WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.deleted_at IS NULL
             AND a.status IN ('scheduled', 'dispatched') AND NOT ${begun} AND NOT ${CLIENT_MOVING}),
-         ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10)`,
+         ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10, ?11)`,
     )
     .bind(
       move.id,
@@ -831,6 +784,7 @@ function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null
       move.actor,
       messageId,
       at,
+      move.blackoutReason,
     );
 }
 
@@ -922,48 +876,6 @@ async function agreedToVisitMessages(db: D1Database, appointmentId: string): Pro
   return latest?.granted === 1;
 }
 
-/**
- * Opens the move and claims its new time on the technician's day, in one
- * batch, before FSM is written. The claims' key is the one holds use, so a
- * hold or another move cannot take the time until the move lets it go. What
- * stands in the way: another move of the same job still open ("moving"), or a
- * hold or move that took the time since it was checked ("taken"). A paid hold's
- * claims are never let go here; only a hold nobody is paying for, or a move
- * that never finished.
- */
-async function openMove(db: D1Database, move: PlannedMove, now: Date): Promise<"open" | "moving" | "taken"> {
-  const at = now.toISOString();
-  try {
-    await db.batch([
-      ...unfinishedMovesLetGo(db, now),
-      ...lettingGo(db, now),
-      db
-        .prepare(
-          `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
-             reason, actor, fsm_write_state, created_at, updated_at)
-           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'pending', ?9, ?9)`,
-        )
-        .bind(
-          move.id,
-          move.job.id,
-          move.job.technician_id,
-          move.technicianId,
-          move.job.window_start,
-          move.start.toISOString(),
-          move.reason,
-          move.actor,
-          at,
-        ),
-      ...move.claims.map((claim) => claimOf(db, move, claim)),
-    ]);
-    return "open";
-  } catch (error) {
-    if (failedUniqueOn(error, "dispatch_moves")) return "moving";
-    if (failedUniqueOn(error, "slot_claims")) return "taken";
-    throw error;
-  }
-}
-
 /** One half-slot of the technician's day, claimed for the move under the key holds use. */
 const claimOf = (db: D1Database, move: PlannedMove, claim: string): D1PreparedStatement =>
   db
@@ -981,24 +893,10 @@ const failedNotNullOn = (error: unknown, column: string): boolean =>
 const releasingClaims = (db: D1Database, moveId: string): D1PreparedStatement =>
   db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId);
 
-/** Moves opened too long ago to finish now. */
-const UNFINISHED = "SELECT id FROM dispatch_moves WHERE fsm_write_state = 'pending' AND created_at <= ?1";
-
-/**
- * Lets go of the time claimed by moves that never finished, and closes them.
- * Whether FSM took such a move is FSM's to say: the mirror follows FSM's own
- * record of it, as it follows every change FSM makes.
- */
-export function unfinishedMovesLetGo(db: D1Database, now: Date): D1PreparedStatement[] {
-  const since = movesOpenSince(now);
-  return [
-    db.prepare(`DELETE FROM slot_claims WHERE move_id IN (${UNFINISHED})`).bind(since),
-    db
-      .prepare(
-        `UPDATE dispatch_moves SET fsm_write_state = 'rejected', fsm_error = ?2, updated_at = ?3 WHERE id IN (${UNFINISHED})`,
-      )
-      .bind(since, "never finished: FSM may hold it, and its own record says", now.toISOString()),
-  ];
+/** A window the job would land in, and when it would start there. */
+export interface RoomStart {
+  readonly window: BookingWindow;
+  readonly starts_at: string;
 }
 
 export interface Room {
@@ -1006,6 +904,13 @@ export interface Room {
   readonly date: string;
   /** The windows the job would land in, by the check a move runs. */
   readonly windows: BookingWindow[];
+  readonly starts: RoomStart[];
+}
+
+export interface Rooms {
+  readonly rooms: Room[];
+  /** The days of the week ops blacked out, other than the job's own: a move onto one needs a reason. */
+  readonly blackouts: string[];
 }
 
 /**
@@ -1019,26 +924,37 @@ export async function roomFor(
   db: D1Database,
   input: { readonly appointmentId: string; readonly from: string },
   now: Date,
-): Promise<Room[] | null> {
+): Promise<Rooms | null> {
   const job = await liveJob(db, input.appointmentId);
   if (job === null || !mayMove(job, true)) return null;
   const dates = weekFrom(input.from);
-  const [technicians, held, schedule] = await Promise.all([
+  const to = dates[dates.length - 1] ?? input.from;
+  const [technicians, held, schedule, blackouts] = await Promise.all([
     activeTechnicians(db),
-    occupancy(db, input.from, dates[dates.length - 1] ?? input.from, now, job.id),
+    occupancy(db, input.from, to, now, job.id),
     loadSlotSchedule(db),
+    loadBlackouts(db, input.from, to),
   ]);
   const visit = { minutes: bookedMinutes(job), start: new Date(job.window_start) };
-  const windowsFor = (technicianId: string, date: string) =>
-    BOOKING_WINDOWS.filter((window) => {
-      const target = targetOf(job, technicianId, date, window, schedule);
-      return !isWhereItIs(job, target) && landingOf(held(technicianId, date), visit, target).kind === "lands";
+  const startsFor = (technicianId: string, date: string): RoomStart[] =>
+    BOOKING_WINDOWS.flatMap((window) => {
+      const target = targetOf(job, technicianId, { date, window }, schedule, now);
+      if (isWhereItIs(job, target)) return [];
+      const landing = landingOf(held(technicianId, date), visit, target);
+      if (landing.kind === "refused") return [];
+      return [{ window, starts_at: timesAt(target, landing.start, visit, schedule).start.toISOString() }];
     });
-  return technicians
-    .flatMap((technician) =>
-      dates.map((date) => ({ technician_id: technician.id, date, windows: windowsFor(technician.id, date) })),
-    )
-    .filter((room) => room.windows.length > 0);
+  const roomOn = (technicianId: string, date: string): Room => {
+    const starts = startsFor(technicianId, date);
+    return { technician_id: technicianId, date, windows: starts.map((each) => each.window), starts };
+  };
+  const ownDate = indiaDate(visit.start);
+  return {
+    rooms: technicians
+      .flatMap((technician) => dates.map((date) => roomOn(technician.id, date)))
+      .filter((room) => room.starts.length > 0),
+    blackouts: dates.filter((date) => blackouts.has(date) && date !== ownDate),
+  };
 }
 
 /**
@@ -1100,14 +1016,4 @@ export async function recordUtilisation(db: D1Database, now: Date): Promise<stri
     )
     .run();
   return date;
-}
-
-/** FSM's service resource for one of our technicians. */
-async function fsmResourceId(db: D1Database, technicianId: string): Promise<string> {
-  const row = await db
-    .prepare("SELECT fsm_id FROM technicians WHERE id = ?1")
-    .bind(technicianId)
-    .first<{ fsm_id: string }>();
-  if (row === null) throw new Error("the technician is not in FSM");
-  return row.fsm_id;
 }

@@ -277,6 +277,25 @@
   overflow-wrap: anywhere;
 }
 
+/* The client's name and the block's start share one line, so a block stays as tall as its slots. */
+.who {
+  display: flex;
+  gap: var(--sp-4);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.at {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
 .svc .what,
 .repl .what {
   color: var(--text-muted);
@@ -614,6 +633,10 @@
   border-left: var(--rule-strong) solid var(--brass);
   font-size: var(--fs-15);
   line-height: var(--lh-160);
+}
+
+.blackoutReason {
+  margin-top: var(--sp-14);
 }
 
 .actions {

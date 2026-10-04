@@ -1,6 +1,6 @@
 // The consumables ops keep, and what each service is expected to use, behind Access
 // (docs/decisions/0087-consumables-and-stock.md):
-//   GET  /api/consumables                   every consumable, where each stands in FSM, and each service's expected use
+//   GET  /api/consumables                   every consumable, and each service's expected use
 //   POST /api/consumables                   add one
 //   POST /api/consumables/:code             rename it, or change its unit, its cost or its reorder levels
 //   POST /api/consumables/:code/retire      no longer offered, from a day
@@ -10,8 +10,7 @@
 // A change here needs no release. Each records the Access identity behind it,
 // with what it changed, in the same batch as the change (ADR 0031). Every
 // write answers the whole of GET's answer, so the screen follows it without
-// reading again. FSM's catalogue follows at the hourly check, as parts at
-// Rs. 0, only while the owner has FSM_CATALOGUE_PUSH on (src/domain/fsm-catalogue.ts).
+// reading again.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -23,7 +22,6 @@ import {
   allConsumables,
   changeConsumable,
   expectedUse,
-  fsmLinkOf,
   isOffered,
   retireConsumable,
   servicesForUse,
@@ -63,17 +61,6 @@ const ConsumableSchema = z
       description: "The day in India it is no longer offered from; null while it is.",
     }),
     offered: z.boolean().openapi({ description: "Whether the technician app offers it today." }),
-    fsm: z
-      .object({
-        state: z.enum(["linked", "renamed", "missing", "unchecked"]).openapi({
-          description:
-            "A part by this name; a part still under another name; no part by this name; or not read yet. " +
-            "The hourly check reads FSM's catalogue.",
-        }),
-        item_id: z.union([z.string(), z.null()]),
-        name: z.union([z.string(), z.null()]).openapi({ description: "What FSM calls the part." }),
-      })
-      .strict(),
   })
   .strict()
   .openapi("Consumable");
@@ -103,9 +90,6 @@ const ConsumablesSchema = z
     consumables: z.array(ConsumableSchema).openapi({ description: "Every consumable, retired ones too, by name." }),
     services: z.array(ServiceUseSchema),
     today: z.iso.date(),
-    fsm_push: z.boolean().openapi({
-      description: "Whether FSM's catalogue follows by itself (FSM_CATALOGUE_PUSH); off, ops set it there by hand.",
-    }),
     max_unit_cost: z.number().int(),
     max_expected: z.number().int(),
     max_reorder_level: z.number().int(),
@@ -119,7 +103,7 @@ const REFUSED = errorResponse("invalid_request: fields names what was refused, s
 const consumablesRoute = createRoute({
   method: "get",
   path: "/api/consumables",
-  summary: "Every consumable, where each stands in FSM's catalogue, and what each service is expected to use",
+  summary: "Every consumable, and what each service is expected to use",
   responses: { 200: CONSUMABLES, 403: errorResponse("access_required") },
 });
 
@@ -255,7 +239,6 @@ function consumableBody(consumable: Consumable, today: string) {
     reorder_central: consumable.reorderCentral,
     retired_from: consumable.retiredDate,
     offered: isOffered(consumable, today),
-    fsm: { state: fsmLinkOf(consumable), item_id: consumable.fsmItemId, name: consumable.fsmName },
   };
 }
 
@@ -280,7 +263,6 @@ async function answer(c: Context<AppEnv>) {
         .map((each) => ({ code: each.code, quantity: each.quantity })),
     })),
     today,
-    fsm_push: c.var.config.settings.fsmCataloguePush,
     max_unit_cost: CONSUMABLE_BOUNDS.maxUnitCost,
     max_expected: CONSUMABLE_BOUNDS.maxExpected,
     max_reorder_level: CONSUMABLE_BOUNDS.maxReorderLevel,

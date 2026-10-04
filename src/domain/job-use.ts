@@ -1,9 +1,7 @@
 // A job's use of consumables, as the technician's step records it
 // (docs/decisions/0087-consumables-and-stock.md; the rules are src/policy/stock.ts).
 //
-// It lands in our own records the moment the step does, not when FSM has taken
-// the summary: stock is ours, and a job whose FSM write waits or fails still
-// used what it used. The row of consumables_used keeps the consumable, what the
+// It lands in our own records the moment the step does: a job used what it used. The row of consumables_used keeps the consumable, what the
 // job's service expected of it and what one cost that day; the ledger takes it
 // out of the technician's kit.
 

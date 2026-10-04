@@ -1,6 +1,6 @@
 # 0056. The invoice is issued, and shown beside the visit
 
-- Status: accepted
+- Status: accepted. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a Books draft of ours is sent when its total matches what was paid; FSM issues nothing.
 - Date: 2026-09-23
 
 ## Context

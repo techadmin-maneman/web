@@ -3,7 +3,7 @@
 
 import { minutesBetween } from "../lib/durations.ts";
 
-/** The seven statuses the schema allows. "other" is an FSM status we have no word for, and our own steps never write it. */
+/** The seven statuses the schema allows. Our own steps never write "other". */
 export const APPOINTMENT_STATUSES = [
   "scheduled",
   "dispatched",
@@ -14,21 +14,6 @@ export const APPOINTMENT_STATUSES = [
   "other",
 ] as const;
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
-
-/** FSM's status words, as the mirror stores them. */
-const FSM_STATUSES: Readonly<Record<string, AppointmentStatus>> = {
-  Scheduled: "scheduled",
-  Dispatched: "dispatched",
-  "In Progress": "in_progress",
-  Completed: "completed",
-  Cancelled: "cancelled",
-  Terminated: "terminated",
-};
-
-/** Our status for FSM's word; any word we do not know is "other". */
-export function statusOf(fsmStatus: string): AppointmentStatus {
-  return FSM_STATUSES[fsmStatus] ?? "other";
-}
 
 /** How a closed visit ended: done, partly done with the technician's reason, or not at all, the client not home. */
 export const VISIT_OUTCOMES = ["done", "partial", "no_show"] as const;
@@ -122,24 +107,4 @@ export function closeVisit(
 export function durationOf(times: VisitTimes): number | null {
   if (times.startedAt === null || times.endedAt === null) return null;
   return minutesBetween(times.startedAt, times.endedAt);
-}
-
-/**
- * How a terminated visit ended: a no-show where the technician closed it as one, else partial, with the reason he
- * chose from the app's list (src/config/job-sheet.ts). A visit closed in FSM's own screen has no outcome of his, and
- * is partial with no reason.
- */
-export async function terminatedAs(
-  db: D1Database,
-  appointmentId: string,
-): Promise<{ outcome: VisitOutcome; partialReason: string | null }> {
-  const row = await db
-    .prepare(
-      `SELECT json_extract(body, '$.outcome') AS outcome, json_extract(body, '$.reason') AS reason FROM job_events
-       WHERE appointment_id = ?1 AND kind = 'outcome' AND superseded = 0 ORDER BY received_at DESC LIMIT 1`,
-    )
-    .bind(appointmentId)
-    .first<{ outcome: unknown; reason: unknown }>();
-  if (row?.outcome === "no_show") return { outcome: "no_show", partialReason: null };
-  return { outcome: "partial", partialReason: typeof row?.reason === "string" ? row.reason : null };
 }

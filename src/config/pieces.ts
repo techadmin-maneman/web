@@ -1,6 +1,5 @@
 // Pieces, as the pieces tab reads them (docs/prompts/phase2-backend.md,
-// "Pieces tab"). A piece is an asset in FSM; these are the figures our own
-// side computes from it.
+// "Pieces tab"). These are the figures computed from a piece as it is recorded.
 //
 // A piece falls due for replacement 180 days after it is fitted, whatever its
 // base, as the owner ruled (docs/open-points.md, "The per-base replacement

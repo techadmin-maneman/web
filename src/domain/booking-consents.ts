@@ -49,7 +49,7 @@ export async function keepShownConsents(db: D1Database, tap: BookingTap): Promis
 
 /**
  * The hold, once confirmed in time, while it has not been let go. A payment made after the hold and its grace ran out
- * is refunded and books nothing, even while the hold waits on FSM's queue to find that out.
+ * is refunded and books nothing.
  */
 async function confirmedHold(db: D1Database, holdId: string): Promise<ConfirmedHold | null> {
   return db

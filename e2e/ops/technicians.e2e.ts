@@ -350,9 +350,8 @@ test("says so when his kit holds nothing on record", async ({ page }) => {
 
 // ---- Leave ------------------------------------------------------------------------------------------------------
 
-// Leave is recorded here because FSM has nowhere to keep it (ADR 0062), and it
-// is the same rows the dispatch board reads, so it says what it does before it
-// is sent.
+// Leave is recorded here (ADR 0062), and it is the same rows the dispatch board
+// reads, so it says what it does before it is sent.
 test("lists the leave a technician is down for, and says when there is none", async ({ page }) => {
   await open(page);
   const sandeep = await pageOf(page, "Sandeep Yadav", "Leave");
@@ -608,9 +607,7 @@ test("switches a technician off only once asked, and lists the visits he no long
   roster.current = {
     ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.filter((each) => each.id !== IMRAN),
-    switched_off: [
-      { id: IMRAN, name: "Imran Qureshi", zone: "Sec 40–65", city: "Gurgaon", mobile: "+919810000001", editable: true },
-    ],
+    switched_off: [{ id: IMRAN, name: "Imran Qureshi", zone: "Sec 40–65", city: "Gurgaon", mobile: "+919810000001" }],
   };
   await main.getByRole("button", { name: "Switch him off" }).click();
 
@@ -665,20 +662,6 @@ test("says so when the number he signs in with is another's now", async ({ page 
   await expect(main.getByRole("alert")).toHaveText(
     "Another active technician signs in with his number now. Change one of the two numbers first.",
   );
-});
-
-// While FSM is the record of field work, its sync writes over every technician it lists.
-test("leaves a technician FSM lists to FSM: no change and no switch off here", async ({ page }) => {
-  const fsms = {
-    ...TECHNICIANS,
-    technicians: TECHNICIANS.technicians.map((each) => ({ ...each, editable: each.id !== IMRAN })),
-  };
-  await openWith(page, {}, json(fsms));
-  const main = await pageOf(page, "Imran Qureshi");
-
-  await expect(main.getByText("His details come from Zoho FSM. Change them there.")).toBeVisible();
-  await expect(main.getByRole("button", { name: /^Change / })).toHaveCount(0);
-  await expect(main.getByRole("button", { name: /^Switch off/ })).toHaveCount(0);
 });
 
 test("says plainly when the person's access does not reach a switch", async ({ page }) => {

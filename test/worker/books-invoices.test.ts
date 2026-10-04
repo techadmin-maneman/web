@@ -15,7 +15,6 @@ import { syncBooks } from "../../src/domain/books-sync.ts";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubBooks, type BooksInvoice, type BooksProvider, type StubBooks } from "../../src/providers/books.ts";
-import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { ZohoError } from "../../src/providers/zoho-http.ts";
 import { captureLogs, NOW } from "./helpers.ts";
 
@@ -187,8 +186,8 @@ describe("the invoice a finished visit gets", () => {
     expect(books.made.issued).toEqual([billed?.fsm_invoice_id]);
     expect(billed?.invoice_issued_at).toBe(AFTER.toISOString());
 
-    const options = { refundAccountId: null, labelAsTest: true, fieldRecord: "ours", gst: NO_GST } as const;
-    const deps = { ...depsAt(books, AFTER), fsm: createStubFsm(EMPTY_FSM) };
+    const options = { refundAccountId: null, labelAsTest: true, gst: NO_GST } as const;
+    const deps = depsAt(books, AFTER);
     await syncBooks(env.DB, deps, options, AFTER, createLogger(), createCallBudget(Infinity));
     expect(books.made.customers).toHaveLength(1);
     expect(books.made.applied).toEqual([

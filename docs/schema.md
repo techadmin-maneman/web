@@ -636,7 +636,7 @@ Indexes:
 
 Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 
-Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0090_board_version.sql`.
+Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0090_board_version.sql`, `0094_dispatch_move_blackout_reason.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -655,6 +655,7 @@ Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `006
 | `updated_at` | TEXT | no |  |  |
 | `told_at` | TEXT | yes |  |  |
 | `told_by` | TEXT | yes |  |  |
+| `blackout_reason` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1064,7 +1065,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1083,6 +1084,7 @@ Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand
 | `sent_at` | TEXT | yes |  |  |
 | `delivered_at` | TEXT | yes |  |  |
 | `read_at` | TEXT | yes |  |  |
+| `due_at` | TEXT | yes |  |  |
 
 Indexes:
 

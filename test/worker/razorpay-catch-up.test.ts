@@ -14,11 +14,9 @@ import {
   captureLogs,
   fakeDependencies,
   fakeQueue,
-  fsmSwitchedOff,
   LOCAL_CONFIG,
   markDatabase,
   NOW,
-  PROVIDERS_FOR,
   request,
   savedAddress,
   type TestDependencies,
@@ -37,7 +35,6 @@ const at = (seconds: number) => new Date(NOW.getTime() + seconds * SECOND);
 const WEBHOOK_GIVEN_UP = 12 * MINUTE + 15 * MINUTE;
 
 let cookie = "";
-let fsmQueue: ReturnType<typeof fakeQueue>;
 let messageQueue: ReturnType<typeof fakeQueue>;
 let payments: StubPayments;
 /** Each order whose payments the job read from Razorpay, in turn. */
@@ -45,14 +42,8 @@ let ordersRead: string[];
 /** Each payment link the job read from Razorpay, in turn. */
 let linksRead: string[];
 
-const configFor = (record: "fsm" | "ours") => ({
-  ...LOCAL_CONFIG,
-  providers: { ...LOCAL_CONFIG.providers, ...PROVIDERS_FOR[record] },
-});
-
 const dependencies = (seconds: number): TestDependencies =>
   fakeDependencies({
-    fsm: fsmSwitchedOff(),
     now: () => at(seconds),
     payments: {
       ...payments,
@@ -70,14 +61,14 @@ const dependencies = (seconds: number): TestDependencies =>
 const job = CRON_JOBS.filter((each) => each.name === "razorpay_catch_up");
 
 /** One run of the job, `seconds` after NOW. */
-function runAt(deps: TestDependencies, record: "fsm" | "ours" = "ours") {
-  const bindings = { ...env, FSM_QUEUE: fsmQueue, MESSAGE_QUEUE: messageQueue };
-  return runCronJobs(job, { env: bindings, deps, config: configFor(record), log: createLogger() });
+function runAt(deps: TestDependencies) {
+  const bindings = { ...env, MESSAGE_QUEUE: messageQueue };
+  return runCronJobs(job, { env: bindings, deps, config: LOCAL_CONFIG, log: createLogger() });
 }
 
 /** A hold for a service visit, and the Razorpay order the app opened Checkout with. */
 async function heldAndOrdered() {
-  const app = appFor("local", fakeDependencies({ fsm: fsmSwitchedOff(), payments }), {}, "client", PROVIDERS_FOR.ours);
+  const app = appFor("local", fakeDependencies({ payments }), {}, "client");
   const call = (path: string, body: object) =>
     request(app, path, {
       method: "POST",
@@ -125,7 +116,6 @@ const messagesOf = (personId: string) =>
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
-  fsmQueue = fakeQueue();
   messageQueue = fakeQueue();
   payments = createStubPayments();
   ordersRead = [];
@@ -176,7 +166,6 @@ describe("a hold paid at Checkout whose webhook never came", () => {
         "recorded now, and the visit is booked, or refunded if its time has gone. Razorpay's payment messages may " +
         `not be reaching us (runbook, "Razorpay's webhook is not arriving"). ${CLIENT_PAGE}`,
     ]);
-    expect(fsmQueue.sent).toEqual([]);
   });
 
   it("does nothing twice: a booked hold is not asked about again, and nothing is recorded or told again", async () => {
@@ -224,7 +213,6 @@ describe("a hold paid at Checkout whose webhook never came", () => {
     const ordered = await heldAndOrdered();
     payments.paymentsOn.set(ordered.orderId, [captured("pay_stuck", ordered.orderId, 12 * MINUTE + 5)]);
     const deps = fakeDependencies({
-      fsm: fsmSwitchedOff(),
       now: () => at(WEBHOOK_GIVEN_UP),
       payments: { ...payments, refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")) },
     });
@@ -248,17 +236,6 @@ describe("a hold paid at Checkout whose webhook never came", () => {
 
     expect(ordersRead).toEqual([ordered.orderId, ordered.orderId]);
     expect((await holdRow(ordered.holdId))?.confirmed_at).toBeNull();
-  });
-
-  it("sends the hold to FSM's queue on FSM's path, which books or refunds it", async () => {
-    const ordered = await heldAndOrdered();
-    payments.paymentsOn.set(ordered.orderId, [captured("pay_fsm", ordered.orderId, 30)]);
-
-    await runAt(dependencies(WEBHOOK_GIVEN_UP), "fsm");
-
-    expect(fsmQueue.sent).toEqual([{ hold_id: ordered.holdId, request_id: "razorpay-catch-up" }]);
-    expect((await holdRow(ordered.holdId))?.confirmed_at).not.toBeNull();
-    expect(await paymentRow("pay_fsm")).toMatchObject({ status: "captured" });
   });
 });
 

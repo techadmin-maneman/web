@@ -125,6 +125,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A payment owed, above the payments made. */
+.owedLabel {
+  margin: var(--sp-26) var(--sp-20) 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-regular);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  color: var(--text-muted);
+}
+
 .label {
   margin: var(--sp-26) 0 0;
   font-family: var(--font-serif);

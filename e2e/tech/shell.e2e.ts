@@ -173,6 +173,25 @@ test("a number pasted with +91 or 0 in front becomes its own ten digits, and the
   expect(fake.codesSent).toEqual(["9811000000"]);
 });
 
+test("a number one digit short, or not a mobile, says why Send stays off once the field is left", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.signedIn = false;
+  await page.goto("/");
+
+  const number = page.getByRole("textbox", { name: "Mobile number" });
+  const send = page.getByRole("button", { name: "Send the code" });
+  for (const typed of ["981100000", "5123456789"]) {
+    await number.fill(typed);
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await number.blur();
+    await expect(page.getByRole("alert")).toHaveText("Enter your ten-digit mobile number.");
+    await expect(send).toBeDisabled();
+  }
+  await number.fill("9811000000");
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(send).toBeEnabled();
+});
+
 test("a code the API has closed takes the sign-in back to sending one, not to a dead end", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.signedIn = false;

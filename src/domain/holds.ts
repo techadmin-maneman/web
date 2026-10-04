@@ -140,7 +140,7 @@ export async function clientHold(db: D1Database, holdId: string, personId: strin
 }
 
 /**
- * Lets a client's hold go, with the time it held. Once paid for, or booked free, it is on its way to FSM, and only
+ * Lets a client's hold go, with the time it held. Once paid for, or booked free, it is still to be booked, and only
  * a booking or a refund ends it. Once it has a Razorpay order, it keeps its time until its grace ends, since a payment
  * on that order may still land; the next hold anyone makes after that lets it go.
  */
@@ -156,8 +156,9 @@ export async function releaseHold(db: D1Database, hold: { holdId: string; person
   ]);
 }
 
-/** A visit on its way to FSM, as Home shows it until FSM has it. */
+/** A visit paid for and still to be booked, as Home shows it until it is. */
 export interface BookingUnderWay {
+  readonly holdId: string;
   readonly type: VisitType;
   readonly date: string;
   readonly window: BookingWindow;
@@ -173,19 +174,19 @@ export interface BookingUnderWay {
 }
 
 /**
- * The client's soonest visit paid for, or booked free, that FSM does not have yet: on its way, or held after FSM
- * refused it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). It is neither booked nor refunded, and Home says
- * so. A move is not one: the visit it moves is booked, and Home shows that. Null with none.
+ * The client's soonest visit paid for, or booked free, that is not booked yet. It is neither booked nor refunded, and
+ * Home says so. A move is not one: the visit it moves is booked, and Home shows that. Null with none.
  */
 export async function bookingUnderWay(db: D1Database, personId: string): Promise<BookingUnderWay | null> {
   const row = await db
     .prepare(
-      `SELECT type, date, window_label, amount, use_credit, one_visit FROM slot_holds
+      `SELECT id, type, date, window_label, amount, use_credit, one_visit FROM slot_holds
        WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
        ORDER BY date, start_unit LIMIT 1`,
     )
     .bind(personId)
     .first<{
+      id: string;
       type: VisitType;
       date: string;
       window_label: BookingWindow;
@@ -196,6 +197,7 @@ export async function bookingUnderWay(db: D1Database, personId: string): Promise
   if (row === null) return null;
   const paid = row.amount > 0 && row.use_credit !== 1;
   return {
+    holdId: row.id,
     type: row.type,
     date: row.date,
     window: row.window_label,

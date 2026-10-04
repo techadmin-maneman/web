@@ -1,5 +1,5 @@
 // Board A2: the reason a move must carry, asked for before anything is
-// written. The clash check runs on the server before any write to FSM
+// written. The clash check runs on the server before anything is written
 // (docs/decisions/0034-clash-check.md), so this panel sends nothing until a
 // reason is chosen, and the server may still refuse what it sends.
 //
@@ -15,16 +15,20 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
+import { Field, TextArea } from "@maneman/ui/Field";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { MoveReason } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
-import { changesTime, nameOf, personOf, whenOf, type Job, type Target } from "./job.ts";
+import { changesTime, nameOf, personOf, startOf, whenOf, type Job, type Target } from "./job.ts";
 
 const AN_HOUR = 60 * 60 * 1000;
+
+/** The longest blackout reason the server keeps. */
+const REASON_MAX_CHARS = 300;
 
 /** The notice the visit was sold under, in hours, when the visit is inside it: the board answers with one more line. */
 function noticeInside(job: Job, now: Date): number | null {
@@ -34,10 +38,10 @@ function noticeInside(job: Job, now: Date): number | null {
 }
 
 /** What the client hears of this move, in the panel's words, and whether the button may promise a message. */
-function noticeOf(job: Job, to: Target): { readonly line: string; readonly messaged: boolean } {
+function noticeOf(job: Job, to: Target, landsAt: string | null): { readonly line: string; readonly messaged: boolean } {
   const copy = dispatch.move;
   const person = personOf(job);
-  if (!changesTime(job, to)) return { line: copy.sameTime(nameOf(job)), messaged: false };
+  if (!changesTime(job, to, landsAt)) return { line: copy.sameTime(nameOf(job)), messaged: false };
   if (person === null) return { line: copy.noClient, messaged: false };
   if (person.whatsapp_visits) return { line: copy.note(nameOf(job)), messaged: true };
   return { line: copy.call(person.name, phoneWords(person.mobile)), messaged: false };
@@ -49,28 +53,43 @@ function sendLabel(sending: boolean, messaged: boolean): string {
   return messaged ? dispatch.move.send : dispatch.move.sendQuietly;
 }
 
+/** "Sat 20 Sep, 10:30 am" where the board knows the start the move takes; else "Sat 20 Sep, morning". */
+function landsWords(to: Target, landsAt: string | null): string {
+  if (landsAt !== null) return `${shortDate(to.date)}, ${indiaClock(landsAt)}`;
+  return `${shortDate(to.date)}, ${dispatch.windows[to.window] ?? to.window}`;
+}
+
+/** Where the job stands now, by its start: "Fri 19 Sep, 9 am". */
+function stoodWords(job: Job): string | null {
+  const { date } = whenOf(job);
+  return date === null ? null : `${shortDate(date)}, ${indiaClock(startOf(job))}`;
+}
+
 interface Props {
   readonly job: Job;
   readonly to: Target;
+  /** The start the move takes there, as the server answered; null where it could not say. */
+  readonly landsAt: string | null;
+  /** Ops blacked out the day the move goes to, so it goes only with a reason. */
+  readonly blackout: boolean;
   readonly sending: boolean;
   /** Ops chose, after the drawer's warning, to clear the technician's check-in. */
   readonly clearingCheckIn: boolean;
-  readonly onSend: (reason: MoveReason) => void;
+  readonly onSend: (reason: MoveReason, blackoutReason: string | null) => void;
   readonly onCancel: () => void;
 }
 
-export function MovePicker({ job, to, sending, clearingCheckIn, onSend, onCancel }: Props) {
+export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckIn, onSend, onCancel }: Props) {
   const [reason, setReason] = useState<MoveReason | null>(null);
+  const [blackoutReason, setBlackoutReason] = useState("");
   const copy = dispatch.move;
 
-  const was = whenOf(job);
-  const lands = `${shortDate(to.date)}, ${dispatch.windows[to.window] ?? to.window}`;
-  const stood =
-    was.date === null || was.window === null
-      ? null
-      : `${shortDate(was.date)}, ${dispatch.windows[was.window] ?? was.window}`;
-  const notice = noticeOf(job, to);
+  const lands = landsWords(to, landsAt);
+  const stood = stoodWords(job);
+  const notice = noticeOf(job, to, landsAt);
   const inside = noticeInside(job, new Date());
+  const typed = blackoutReason.trim();
+  const ready = reason !== null && (!blackout || typed !== "");
 
   return (
     <Dialog
@@ -101,6 +120,24 @@ export function MovePicker({ job, to, sending, clearingCheckIn, onSend, onCancel
           </label>
         ))}
       </fieldset>
+      {blackout && (
+        <>
+          <p className={styles.consequence}>{copy.blackout(shortDate(to.date))}</p>
+          <Field className={styles.blackoutReason} label={copy.blackoutReason}>
+            {(control) => (
+              <TextArea
+                {...control}
+                maxLength={REASON_MAX_CHARS}
+                value={blackoutReason}
+                disabled={sending}
+                onChange={(event) => {
+                  setBlackoutReason(event.target.value);
+                }}
+              />
+            )}
+          </Field>
+        </>
+      )}
       <p className={styles.consequence}>{notice.line}</p>
       {inside !== null && <p className={styles.consequence}>{copy.soon(inside)}</p>}
       {clearingCheckIn && <p className={styles.consequence}>{copy.checkInCleared}</p>}
@@ -108,10 +145,10 @@ export function MovePicker({ job, to, sending, clearingCheckIn, onSend, onCancel
         <Button
           variant="primary"
           size="small"
-          disabled={reason === null || sending}
+          disabled={!ready || sending}
           busy={sending}
           onClick={() => {
-            if (reason !== null) onSend(reason);
+            if (reason !== null) onSend(reason, blackout ? typed : null);
           }}
         >
           {sendLabel(sending, notice.messaged)}

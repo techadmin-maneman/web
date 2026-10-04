@@ -17,14 +17,11 @@
 // signs in himself, and the first sign-in enrols the phone it is made from
 // (`openTechnicianSession`, src/domain/technicians.ts).
 //
-// Nothing is written to FSM, and nothing needs to be: the login reads
-// `technicians` in D1 and nowhere else (docs/decisions/0052-technician-sessions.md).
-// FSM's list never names this technician, so his row is marked `hand_written`,
-// and the sync, which makes inactive every technician FSM leaves out, leaves him
-// alone (migration 0046). Before that mark it switched him off within a night.
-// The jobs are mirror rows with no Zoho record behind them, so each job event's
-// write to FSM will fail; docs/technician-test-setup.md says what that looks
-// like and who sees it.
+// The login reads `technicians` in D1 and nowhere else
+// (docs/decisions/0052-technician-sessions.md). His row is marked
+// `hand_written`, as every technician a script writes is (migration 0046), and
+// his jobs are visits like any other: each step he sends lands as it would on a
+// real job.
 
 import { execFile } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -41,13 +38,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const INDIA_OFFSET_MS = 330 * 60 * 1000;
 
 /**
- * The mark on every row this script writes. The FSM mirror writes a technician
- * under FSM's own ID, so a row whose `fsm_id` begins with this is one of ours
- * and no mirror row can be mistaken for it — which is what lets --clear delete.
+ * The mark on every row this script writes: a row whose `fsm_id` begins with this
+ * is one of its own, and no other row can be mistaken for it, which is what lets
+ * --clear delete.
  */
 const FSM_ID_PREFIX = "tech-tester-";
 
-/** Gurgaon, where the serviceable pincodes are: FSM's territory, as the dispatch board groups by it. */
+/** Gurgaon, where the serviceable pincodes are: the zone the dispatch board groups him by. */
 const ZONE = "Gurgaon";
 /** A served Gurgaon pincode (`serviceable_pincodes`), so the job sits inside the area we cover. */
 const PINCODE = "122003";
@@ -168,10 +165,8 @@ const appointment = (jobId: string, date: string) => {
     when.end,
     technicianId,
     "scheduled",
-    "Scheduled",
     "Gurgaon",
     PINCODE,
-    now,
     now,
   );
 };
@@ -188,7 +183,7 @@ await execute([
   `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes, lat, lng)
      VALUES ${row(addressId, personId, now, "Tower C, 14th floor", null, SECTOR, "Gurgaon", PINCODE, "PLACEHOLDER Gate code on the test fixture", null, null)};`,
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
-     fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
+     service_city, service_pincode, synced_at) VALUES
      ${appointment(jobs.today, dates.today)},
      ${appointment(jobs.tomorrow, dates.tomorrow)},
      ${appointment(jobs.later, dates.later)};`,

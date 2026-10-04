@@ -3,7 +3,7 @@
 
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { CONSENT_PURPOSES, type ConsentPurpose, type ConsentSource } from "../policy/consents.ts";
-import { FSM_STREET_MAX, fsmText } from "../lib/fsm-text.ts";
+import { STREET_MAX, zohoText } from "../lib/zoho-text.ts";
 
 /** Where a coordinate came from; the licence and the trust differ by source (ADR 0054). */
 export type GeocodeSource = "google_geocoding" | "device" | "checkin";
@@ -67,7 +67,7 @@ interface AddressRow {
   created_at: string;
 }
 
-/** The parts of an address FSM's service address holds; one saved before migration 0028 has no flat, floor or tower. */
+/** The parts of an address's street; one saved before migration 0028 has no flat, floor or tower. */
 interface StreetParts {
   readonly flat: string | null;
   readonly floor: string | null;
@@ -92,9 +92,8 @@ const joined = (parts: readonly (string | null)[]): string =>
     .join(", ");
 
 /**
- * An address's street as FSM's service address holds it, so a work order names the door (docs/open-points.md,
- * item 150): the flat, floor, tower and building, then the street, the area and the landmark, each line cut to
- * what FSM takes.
+ * An address's street in two lines, as the client's Books customer holds it: the flat, floor, tower and building,
+ * then the street, the area and the landmark, each line cut to what Zoho takes.
  */
 export function streetOf(address: StreetParts): { street1: string; street2: string | null } {
   const door = joined([
@@ -104,7 +103,7 @@ export function streetOf(address: StreetParts): { street1: string; street2: stri
     address.line1,
   ]);
   const rest = joined([address.line2, address.locality, named("Landmark:", /\blandmark\b/i, address.landmark)]);
-  return { street1: fsmText(door, FSM_STREET_MAX), street2: rest === "" ? null : fsmText(rest, FSM_STREET_MAX) };
+  return { street1: zohoText(door, STREET_MAX), street2: rest === "" ? null : zohoText(rest, STREET_MAX) };
 }
 
 /** An address saved before migration 0028 has nulls in the new columns and reads unchanged. */

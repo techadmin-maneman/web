@@ -6,6 +6,7 @@ import { WINDOW_TIMES } from "../../src/config/scheduling.ts";
 import {
   DEFAULT_SLOT_TIMES,
   earliestAppliesFrom,
+  firstUnitAfter,
   RULES,
   slotTimesProblems,
   unitAt,
@@ -33,6 +34,14 @@ describe("a day's times", () => {
       "evening",
     ]);
     expect([unitAt("10:59", LATER), unitAt("11:00", LATER), unitAt("20:00", LATER)]).toEqual([0, 1, 7]);
+  });
+
+  it("names the first half-slot still to start after a time of day: none once the last has started", () => {
+    expect(firstUnitAfter("09:58", DEFAULT_SLOT_TIMES)).toBe(1);
+    // A half-slot starting at this very minute has started.
+    expect(firstUnitAfter("10:30", DEFAULT_SLOT_TIMES)).toBe(2);
+    expect(firstUnitAfter("06:00", LATER)).toBe(0);
+    expect(firstUnitAfter("18:30", LATER)).toBe(8);
   });
 
   it("may be set only as eight starts in order, a day's end after them, all inside the day", () => {
