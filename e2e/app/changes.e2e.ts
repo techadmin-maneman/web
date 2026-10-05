@@ -10,8 +10,9 @@ import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fa
 import { continueToPayment } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 
-// Each client's visit is moved, then cancelled, so these run one after another.
-test.describe.configure({ mode: "serial" });
+// Each client's visit is moved, then cancelled, so these run one after another, in order. One failing leaves the
+// rest to run.
+test.describe.configure({ mode: "default" });
 
 test.beforeEach(async ({ page }) => {
   await noRealCheckout(page);
