@@ -1,5 +1,5 @@
 // The client app's build (docs/decisions/0043-client-app.md). One build per
-// environment, into dist/<environment>; scripts/build-app.ts adds _headers.
+// environment, into dist/<environment>; scripts/build/build-app.ts adds _headers.
 // The service worker is a second entry, served as /sw.js so its scope is the
 // whole app.
 

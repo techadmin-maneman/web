@@ -1,6 +1,6 @@
 // A consultation a script books on staging through the site's form, POST /api/consultation, as the house's test
 // people do: "Staging test" or "Load test", with a made-up number and a made-up address. It carries Cloudflare's
-// dummy Turnstile token, which only staging accepts (scripts/staging-lead.ts, scripts/load-test-leads.ts).
+// dummy Turnstile token, which only staging accepts (scripts/staging/staging-lead.ts, scripts/staging/load-test-leads.ts).
 
 import { BOOKING_DAYS, type BookingWindow } from "../../src/config/scheduling.ts";
 import { addDays, indiaDate } from "../../src/lib/india-time.ts";

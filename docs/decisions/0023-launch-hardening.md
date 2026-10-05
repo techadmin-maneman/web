@@ -59,7 +59,7 @@ Staging runs as (b) until the owner decides.
 
 ### 4. Budgets in CI
 
-The prompt names Lighthouse CI. Its latest release, `@lhci/cli` 0.15.1, pins an older Lighthouse and `inquirer`, which bring seven high-severity advisories that the CI audit refuses. So `scripts/lighthouse.ts` drives `lighthouse` 13.5 directly (`npm run lighthouse`).
+The prompt names Lighthouse CI. Its latest release, `@lhci/cli` 0.15.1, pins an older Lighthouse and `inquirer`, which bring seven high-severity advisories that the CI audit refuses. So `scripts/ci/lighthouse.ts` drives `lighthouse` 13.5 directly (`npm run lighthouse`).
 
 - **The run.** It builds nothing itself. It starts the local API and serves the local build, then audits `/`, `/try` and `/book` on Lighthouse's mobile profile.
 - **The budgets.**

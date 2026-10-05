@@ -3,7 +3,7 @@
   // these .ts files directly (type stripping), hence erasableSyntaxOnly and
   // explicit .ts import extensions.
   //
-  // Workers types are included because scripts/generate-openapi.ts imports the
+  // Workers types are included because scripts/build/generate-openapi.ts imports the
   // Worker's route modules to read their zod schemas.
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
@@ -38,13 +38,13 @@
     "packages/web-kit/client-errors.ts",
     "packages/web-kit/small-jpeg.ts",
     "packages/web-kit/turnstile.ts",
-    "scripts/seed-local.ts",
-    "scripts/fidelity*.ts",
+    "scripts/dev/seed-local.ts",
+    "scripts/fidelity/*.ts",
     "scripts/lib/fidelity.ts",
-    "scripts/serve-*.ts",
-    "scripts/lighthouse.ts",
+    "scripts/dev/serve-*.ts",
+    "scripts/ci/lighthouse.ts",
     "scripts/lib/static-server.ts",
-    "scripts/smoke-csp.ts",
+    "scripts/release/smoke-csp.ts",
     "scripts/lib/csp-refusals.ts"
   ]
 }

@@ -1,4 +1,4 @@
-// The gate the CI workflow's last jobs decide (scripts/ci-gate.ts): a skipped job had nothing it could affect, or had
+// The gate the CI workflow's last jobs decide (scripts/ci/ci-gate.ts): a skipped job had nothing it could affect, or had
 // passed on these files already, so it passes; anything else a job can end as fails the gate.
 
 import { spawnSync } from "node:child_process";
@@ -26,7 +26,7 @@ describe("the CI gate", () => {
 
   it("fails the job, naming what did not pass, and passes it otherwise", () => {
     const run = (results: string) =>
-      spawnSync(process.execPath, ["scripts/ci-gate.ts", "checks"], {
+      spawnSync(process.execPath, ["scripts/ci/ci-gate.ts", "checks"], {
         encoding: "utf8",
         env: { ...process.env, RESULTS: results },
       });

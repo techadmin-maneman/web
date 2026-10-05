@@ -1,4 +1,4 @@
-// Which pages the deployed content security policy check opens (scripts/smoke-csp.ts), and which hosts it sends the
+// Which pages the deployed content security policy check opens (scripts/release/smoke-csp.ts), and which hosts it sends the
 // Access token to. Cloudflare adds scripts to pages at its edge, such as its bot checks and Web Analytics' beacon,
 // which no local run can see; only a page loaded from the deployed host shows whether its policy refuses one.
 

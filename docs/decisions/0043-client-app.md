@@ -23,7 +23,7 @@ The API it calls is mm-api's client surface on the same host (ADR 0026). Only th
 - **Styles are CSS modules on the brand's tokens** (`packages/brand`). `test/node/app-tokens.test.ts` refuses a raw colour or size, an undefined token, and an inline `style`. Since 2 October 2026 the policy allows inline styles, for Razorpay Checkout's own; the app writes none.
 - **Every word is in `apps/app/src/content.ts`,** from the design.
 
-**One build per environment.** `npm run build:app -- --env <env>` writes `apps/app/dist/<env>` (`scripts/build-app.ts`), with a `_headers` file from `packages/web-kit`:
+**One build per environment.** `npm run build:app -- --env <env>` writes `apps/app/dist/<env>` (`scripts/build/build-app.ts`), with a `_headers` file from `packages/web-kit`:
 
 - **The content security policy:**
   - `default-src 'none'`;
@@ -44,7 +44,7 @@ The API it calls is mm-api's client surface on the same host (ADR 0026). Only th
 - **The config check** holds `mm-app` to the same rules as `mm-site`: no bindings, no code, every inheritable key explicit, and the routes exactly those of the switched-on surface (`checkSpaConfig`).
 - **The Worker registry** lists it (`kind: "spa"`, `surface: "client"`). The build, the release script and both deploy workflows therefore include it.
 
-**Tested as it will be served.** `scripts/serve-app.ts` serves the build on `app.localhost:4322` with the Worker's own rules:
+**Tested as it will be served.** `scripts/dev/serve-app.ts` serves the build on `app.localhost:4322` with the Worker's own rules:
 
 - index.html for any page path;
 - `/api/*` passed to the local mm-api with the browser's own `Host`, as Cloudflare's routing keeps it.
@@ -93,7 +93,7 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
 
 ## Fidelity pairs (P2-F1.5)
 
-- **`npm run fidelity:app` pairs each frame P2-F1 builds with the app in the same state** (`scripts/fidelity-app.ts`, method in `docs/fidelity-method.md`). The API is answered with the design's own example, so no mm-api is needed. The Phase 1 harness now shares its library routing and pairing (`scripts/lib/fidelity.ts`), and its screenshots are unchanged.
+- **`npm run fidelity:app` pairs each frame P2-F1 builds with the app in the same state** (`scripts/fidelity/fidelity-app.ts`, method in `docs/fidelity-method.md`). The API is answered with the design's own example, so no mm-api is needed. The Phase 1 harness now shares its library routing and pairing (`scripts/lib/fidelity.ts`), and its screenshots are unchanged.
 - **Defects the pairs found, now fixed:**
   - the tab bar scrolled away on a long page (fixed in P2-F1.4);
   - A2's automatic-reading line used the WhatsApp glyph where the design draws its bubble alone;
@@ -163,7 +163,7 @@ The audit of 24 September found Home going quiet while a visit was still open, t
 - **Visits.** Each upcoming visit opens its own page, with Home's card and its ways to change it (`home/VisitCard.tsx`), and C1's Prepaid marks one paid for ahead or covered by a credit. A past visit says what was done: the checklist its technician ticked. A visit or payment that is not the client's says it could not be found (`states/NotFound.tsx`).
 - **Documents speak of time.** An invoice still missing a day after its visit is late, with a message ready; one for a visit not yet done is raised once it is; a charge and a late fee offer the receipt alone; a refund past ten days says it is late.
 - **Refer is F1 to F6 as drawn.** F2 draws both cards with their boxes, and their own opens F3 until the cards' current lines are agreed to (`GET /api/refer` now says so, and whether the invite names them). F4 is the chat's bubble on the dark ground, in WhatsApp's own colours (`--wa-*`, ADR 0037 amended), with the card itself, the landing's own title and line (held to `site/src/content/referral.ts` by `test/node/app-invite-preview.test.ts`), and the three ways to share; one that fails is F6's "Share failed". F5 has its two figures, and F6's empty tracker offers the invite. A client not yet fitted sees Refer's empty state, as B2 says.
-- **The card is composed in a Worker** (`refer/compose.worker.ts`, OffscreenCanvas), to board A1: a 2 px gilt rule and the mark and wordmark in the corner, from `refer/card-layout.ts`, which `scripts/make-house-card.ts` draws the house card from as well, into the site and the app. Its colours are read from the brand's tokens. The card is made before the consent is recorded, then stored; a phone without OffscreenCanvas falls back to the house example and says so.
+- **The card is composed in a Worker** (`refer/compose.worker.ts`, OffscreenCanvas), to board A1: a 2 px gilt rule and the mark and wordmark in the corner, from `refer/card-layout.ts`, which `scripts/build/make-house-card.ts` draws the house card from as well, into the site and the app. Its colours are read from the brand's tokens. The card is made before the consent is recorded, then stored; a phone without OffscreenCanvas falls back to the house example and says so.
 - **Privacy actions wait for the API's word.** A consent switch, the card's revoke, the example taking a card down and a deletion request each say so when the API does not answer, and change nothing on the screen until it does. A number change waiting for us can be withdrawn (`DELETE /api/number-change`).
 - **The address form** marks its required fields; one left out is marked, named by the error and given the focus; the form closes on its heading. The building search asks by `POST`, so a link from another site cannot spend Google's budget.
 - **Thumbnails** load as they near the screen and say their size. They are still the whole photograph: no smaller copy exists yet (`docs/open-points.md`, item 66).

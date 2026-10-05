@@ -1,4 +1,4 @@
-// The deployed content security policy check (scripts/smoke-csp.ts): which pages it opens, and that the Access
+// The deployed content security policy check (scripts/release/smoke-csp.ts): which pages it opens, and that the Access
 // token goes to our own hosts only, never to Turnstile, Razorpay or Cloudflare's beacon.
 
 import { describe, expect, it } from "vitest";

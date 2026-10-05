@@ -6,7 +6,7 @@
 // console on ops.localhost and the technician app on tech.localhost, so mm-api
 // answers each as its own surface.
 //
-//   node scripts/ensure-dev-vars.ts && npm run db:local
+//   node scripts/dev/ensure-dev-vars.ts && npm run db:local
 //   npm run build:site -- --env local && npm run build:app -- --env local
 //   npm run build:ops -- --env local && npm run build:tech -- --env local
 //   npm run test:e2e
@@ -45,22 +45,22 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: `node scripts/serve-site.ts --env local --port ${String(PORTS.site)} --api ${API_ORIGIN}`,
+      command: `node scripts/dev/serve-site.ts --env local --port ${String(PORTS.site)} --api ${API_ORIGIN}`,
       url: `http://127.0.0.1:${String(PORTS.site)}/`,
       reuseExistingServer: local,
     },
     {
-      command: `node scripts/serve-app.ts --env local --port ${String(PORTS.app)} --api ${API_ORIGIN}`,
+      command: `node scripts/dev/serve-app.ts --env local --port ${String(PORTS.app)} --api ${API_ORIGIN}`,
       url: `http://127.0.0.1:${String(PORTS.app)}/`,
       reuseExistingServer: local,
     },
     {
-      command: `node scripts/serve-ops.ts --env local --port ${String(PORTS.ops)} --api ${API_ORIGIN}`,
+      command: `node scripts/dev/serve-ops.ts --env local --port ${String(PORTS.ops)} --api ${API_ORIGIN}`,
       url: `http://127.0.0.1:${String(PORTS.ops)}/`,
       reuseExistingServer: local,
     },
     {
-      command: `node scripts/serve-tech.ts --env local --port ${String(PORTS.tech)} --api ${API_ORIGIN}`,
+      command: `node scripts/dev/serve-tech.ts --env local --port ${String(PORTS.tech)} --api ${API_ORIGIN}`,
       url: `http://127.0.0.1:${String(PORTS.tech)}/`,
       reuseExistingServer: local,
     },

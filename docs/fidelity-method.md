@@ -4,7 +4,7 @@ How `npm run fidelity` pairs the design with the build. Its screenshots are in `
 
 ## Phase 1
 
-`scripts/fidelity.ts` opens the design and the local build in Chromium and shoots them side by side, section by section.
+`scripts/fidelity/fidelity.ts` opens the design and the local build in Chromium and shoots them side by side, section by section.
 
 - **The design's libraries** are React 18.3.1, ReactDOM 18.3.1 and `@babel/standalone` 7.29.0. The design fetches them from unpkg; the run answers those requests with the same versions from `node_modules`. React 18.3.1 stays at the repository root for this reason, whatever version an app uses.
 - **Fonts.** The design loads its fonts from Google, and the build self-hosts the same families (`packages/brand/fonts.css`). Both wait for `document.fonts.ready`.

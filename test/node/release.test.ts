@@ -1,4 +1,4 @@
-// What the deploy workflows ask of scripts/release.ts, against a fake wrangler
+// What the deploy workflows ask of scripts/release/release.ts, against a fake wrangler
 // that answers as Cloudflare does. The workflows' shell only ever calls these,
 // so a failure here is a deploy that would have gone wrong.
 

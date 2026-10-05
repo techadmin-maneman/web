@@ -69,9 +69,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           if [ -z "$HEAD_SHA" ]; then
-            node scripts/already-checked.ts --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            node scripts/ci/already-checked.ts --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
           elif [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse "$HEAD_SHA^{tree}")" ]; then
-            node scripts/already-checked.ts --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --head "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+            node scripts/ci/already-checked.ts --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --head "$HEAD_SHA" >> "$GITHUB_OUTPUT"
           else
             echo "::notice::The pull request does not hold all of main, so these files are new to CI: every check runs."
           fi
@@ -99,7 +99,7 @@ jobs:
             echo "::notice::Only documentation changed: the build, the browser tests, Lighthouse and the local smoke have nothing to do."
           fi
           # A change to the check itself runs it too.
-          if grep -qE '^(migrations/|scripts/old-code-on-new-schema\.ts$)' changed.txt; then
+          if grep -qE '^(migrations/|scripts/ci/old-code-on-new-schema\.ts$)' changed.txt; then
             echo "migrations=true" >> "$GITHUB_OUTPUT"
           else
             echo "migrations=false" >> "$GITHUB_OUTPUT"
@@ -115,7 +115,7 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE: origin/${{ github.base_ref }}
-        run: git diff --numstat "$BASE...HEAD" | node scripts/pr-size.ts
+        run: git diff --numstat "$BASE...HEAD" | node scripts/ci/pr-size.ts
 
   static:
     name: static checks
@@ -159,7 +159,7 @@ jobs:
         run: npm run check:config
       - name: A deliberately broken config is rejected
         run: >-
-          node scripts/check-wrangler-config.ts
+          node scripts/ci/check-wrangler-config.ts
           --api test/fixtures/wrangler/broken-staging-inherits-bindings.jsonc
           --expect-problem "env.staging: queues.producers is not redeclared"
       - name: Migrations are forward-only and applied ones are unchanged
@@ -231,7 +231,7 @@ jobs:
       - name: The base branch's Worker tests, on this branch's migrations
         env:
           BASE: origin/${{ github.base_ref }}
-        run: node scripts/old-code-on-new-schema.ts --base "$BASE"
+        run: node scripts/ci/old-code-on-new-schema.ts --base "$BASE"
 
   build:
     name: build
@@ -284,7 +284,7 @@ jobs:
         run: npx playwright install-deps chromium webkit
       - name: Local secrets, and every migration applied to an empty D1
         run: |
-          node scripts/ensure-dev-vars.ts
+          node scripts/dev/ensure-dev-vars.ts
           npm run db:local
       - name: Build the site and the Phase 2 apps (local)
         run: |
@@ -330,7 +330,7 @@ jobs:
 
       - name: Local secrets, and every migration applied to an empty D1
         run: |
-          node scripts/ensure-dev-vars.ts
+          node scripts/dev/ensure-dev-vars.ts
           npm run db:local
       - name: Nothing is left unapplied
         run: |
@@ -389,7 +389,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             .nvmrc
-            scripts/ci-gate.ts
+            scripts/ci/ci-gate.ts
             scripts/lib/ci-gate.ts
           sparse-checkout-cone-mode: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -402,7 +402,7 @@ jobs:
             build ${{ needs.build.result }}
             browser ${{ needs.browser.result }}
             smoke ${{ needs.smoke.result }}
-        run: node scripts/ci-gate.ts "jobs of the full suite"
+        run: node scripts/ci/ci-gate.ts "jobs of the full suite"
 
   # The gate: deploy-staging.yml waits for this workflow, and main's protection
   # waits for this job's name (docs/decisions/0008, when the plan allows it).
@@ -419,7 +419,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             .nvmrc
-            scripts/ci-gate.ts
+            scripts/ci/ci-gate.ts
             scripts/lib/ci-gate.ts
           sparse-checkout-cone-mode: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -436,4 +436,4 @@ jobs:
             browser ${{ needs.browser.result }}
             smoke ${{ needs.smoke.result }}
             full-suite ${{ needs.full-suite.result }}
-        run: node scripts/ci-gate.ts "checks"
+        run: node scripts/ci/ci-gate.ts "checks"

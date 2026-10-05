@@ -13,7 +13,7 @@ The owner asked on 22 September 2026 to move the CRM across as well, and issued 
 
 Both environments' CRM secrets point at the real org, on `www.zohoapis.in`.
 
-- `scripts/setup-crm.ts` creates the nine custom fields on Leads and adds the pick-list values the sync writes, from the same constants the sync uses. It creates only what is missing, so it is safe to run again, and `scripts/check-zoho-setup.ts` proves the result.
+- `scripts/ops/setup-crm.ts` creates the nine custom fields on Leads and adds the pick-list values the sync writes, from the same constants the sync uses. It creates only what is missing, so it is safe to run again, and `scripts/ops/check-zoho-setup.ts` proves the result.
 - **`ZOHO_LAR_ID` is optional.** An org with no Leads assignment rule is a working org: Zoho leaves the record with the API user. It was required before, and an empty value stopped the Worker from starting at all.
 - Staging's `people.zoho_lead_id` values were cleared: they pointed into the Developer Edition org, and a sync updates a stored ID without searching first, so every returning person's sync would have failed. (Since 25 September 2026 a write to an ID the CRM no longer has falls back to the search, then a new record, so a stale ID no longer blocks a person: [ADR 0070](0070-vendor-correctness.md).) Production's database was empty, so it needed nothing.
 

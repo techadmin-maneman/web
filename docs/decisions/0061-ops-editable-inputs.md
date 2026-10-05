@@ -109,7 +109,7 @@ PRs #89 and #100 were both a fabricated nought. Three things here refuse to make
 - A launch date is only taken as `2026-10-01`. Excel likes to save `01-10-2026`, and the import already refuses to guess which is the month (`data/pincodes/README.md`); the console refuses the same way and names the pincode.
 - **A change that would leave no pincode served is refused** (`no_service_area`). It would put every client on the waitlist, and no single form press should be able to do that.
 
-`scripts/import-pincodes.ts` is unchanged and still the way the file is loaded wholesale; the console is the way it is edited afterwards.
+`scripts/ops/import-pincodes.ts` is unchanged and still the way the file is loaded wholesale; the console is the way it is edited afterwards.
 
 ### Message texts and app copy
 

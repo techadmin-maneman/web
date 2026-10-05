@@ -24,7 +24,7 @@ Nothing here needs a release. The first two have dates.
 - [ ] **Fix staging's Google key** (item 54; RB 13): in Google Cloud, on the key's project, enable the **Places API (New)** and the **Geocoding API**; link billing; restrict the key to those two APIs and give it **no application restriction by website**, since our server calls it; set the quotas RB 13 lists. Then save an address on app-staging with a building chosen from the list and check it carries a pin (RB 13, "If the address search misbehaves").
 - [ ] **Buy GitHub Team** (items 88 and 89), then require every `ci.yml` job on `main`, limit the `production` environment to `main`, and delete merged branches. Check whether required reviewers on a private repository's environment need a higher plan.
 - [ ] **Zoho tokens** (RB 8 and 11b.1): a Self Client refresh token for scripts and proofs alone (item 32); the CRM token again with `ZohoCRM.modules.contacts.ALL` (item 21); and every token with only the scopes its sync uses (item 36).
-- [ ] **The CRM** (RB 8): `node --env-file=.env.crm-<env> scripts/setup-crm.ts --check`, then without `--check`, then `node --env-file=.env.worker-<env> scripts/check-zoho-setup.ts` (item 34); and, by hand, the one workflow rule: contact consent becoming true assigns an owner, nothing firing for "Try-on — delivery only" (item 35).
+- [ ] **The CRM** (RB 8): `node --env-file=.env.crm-<env> scripts/ops/setup-crm.ts --check`, then without `--check`, then `node --env-file=.env.worker-<env> scripts/ops/check-zoho-setup.ts` (item 34); and, by hand, the one workflow rule: contact consent becoming true assigns an owner, nothing firing for "Try-on — delivery only" (item 35).
 - [ ] **The technicians:** each one added in the console's Technicians with his mobile number, his city and his zone; your own as well, to sign in to the technician app yourself.
 - [ ] **Books:** delete the receipt `4242595000000065003`, which a proof seeded for a payment that never happened (item 19); add a bank account "Razorpay – staging test" and give its ID to ops for staging's `BOOKS_REFUND_ACCOUNT_ID` (item 10).
 - [ ] **Staging's invite previews:** in Cloudflare Zero Trust, an Access application for `staging.maneman.in` with a Bypass / Everyone policy on the paths `r/`, `images/` and `api/og/`, so WhatsApp can fetch an invite's page and card (RB 10b, with the check that WhatsApp's crawler gets through; RB 10 has the same for `api/result/`).
@@ -38,7 +38,7 @@ Nothing here needs a release. The first two have dates.
   ```sh
   W r2 bucket create mm-prod-client-photos --location apac
   W r2 bucket create mm-prod-referral-cards --location apac
-  node --env-file=.env.cf-read scripts/check-buckets.ts production --strict
+  node --env-file=.env.cf-read scripts/release/check-buckets.ts production --strict
   W queues list
   ```
 
@@ -91,10 +91,10 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 
 **The release:**
 
-- [ ] **Pre-flight** (RB, "Rolling back a Worker version"; RB, "Restoring D1"): `node scripts/release.ts current --worker <mm-api|mm-site> --env production` for each (none mid-rollout), and the D1 bookmark written down: `W d1 time-travel info maneman-prod --env production --timestamp <now>`.
-- [ ] **Zoho's answers** (RB, "Checking Zoho's answers before a release"): `node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/zoho-contract-probe.ts` ends with no FAIL, and its date and lines are in `docs/verification.md`.
+- [ ] **Pre-flight** (RB, "Rolling back a Worker version"; RB, "Restoring D1"): `node scripts/release/release.ts current --worker <mm-api|mm-site> --env production` for each (none mid-rollout), and the D1 bookmark written down: `W d1 time-travel info maneman-prod --env production --timestamp <now>`.
+- [ ] **Zoho's answers** (RB, "Checking Zoho's answers before a release"): `node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/release/zoho-contract-probe.ts` ends with no FAIL, and its date and lines are in `docs/verification.md`.
 - [ ] **Run `deploy-production.yml`** on the commit that passed staging, with the full 40-character SHA, a canary of 10% and a soak of 300 seconds (ADR 0006). It records every Worker's version, checks the database is production's, uploads mm-api with no traffic, migrates, sends the canary its share and smokes it, soaks, promotes, then ships mm-site. A failure after the canary starts rolls every Worker back; migrations are never rolled back.
-- [ ] **After it:** `npm run apply-triggers -- --env production`, then `node --env-file=.env.cf-read scripts/check-triggers.ts production --strict` and the bucket check again (RB 9).
+- [ ] **After it:** `npm run apply-triggers -- --env production`, then `node --env-file=.env.cf-read scripts/release/check-triggers.ts production --strict` and the bucket check again (RB 9).
 - [ ] **Proofs:** `GET https://maneman.in/api/health` answers production and the release's SHA; `npm run smoke -- --base https://maneman.in --environment production`; a consultation booked on `/book` reaches the CRM as a lead, assigned (RB 8); Web Analytics counts the first day (item 144; RB 14).
 
 With self-serve booking off, a consultation booked on the site is a request: the person, their consent, their address and a CRM lead, which ops answer from the CRM until the console is live (settled item 120).
@@ -173,4 +173,4 @@ These settings live only in each vendor's dashboard, where no test can read them
 
 ## Rolling back
 
-The release rolls every Worker back by itself when a check fails after the canary starts. By hand: `node scripts/release.ts restore --env production --message "rollback: <reason>" --to mm-api=<id> …` with the versions the release recorded, then the smoke again (RB, "Rolling back a Worker version"). Migrations are never rolled back; the first release carries every migration since 0004, so a rollback to 268eaa4 runs old code on the new schema, and D1's time travel to the bookmark is the way back for the data (RB, "Restoring D1").
+The release rolls every Worker back by itself when a check fails after the canary starts. By hand: `node scripts/release/release.ts restore --env production --message "rollback: <reason>" --to mm-api=<id> …` with the versions the release recorded, then the smoke again (RB, "Rolling back a Worker version"). Migrations are never rolled back; the first release carries every migration since 0004, so a rollback to 268eaa4 runs old code on the new schema, and D1's time travel to the bookmark is the way back for the data (RB, "Restoring D1").

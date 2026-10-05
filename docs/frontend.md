@@ -82,7 +82,7 @@ The site calls `mm-api` on its own host, `/api/*`. The request and response type
 
 - **The try-on.** `site/src/lib/tryon.ts` chains the calls. On arrival the page asks whether this browser has had its look and whether the try-on runs (`GET /api/tryon/look` and `GET /api/tryon/availability`). Continue on the consent screen prepares the photograph (`photo.ts`: resize, re-encode and the hair colour from `hair-colour.ts`) and uploads it, then, under the notice that keeps a client's try-on, its small copy (`@maneman/web-kit/small-jpeg`, ADR 0084). The look goes to WhatsApp only (ADR 0104): the gate's _Send my look_ claims the try-on with the name and number, then asks for the render, and the sent screen watches it every 3 seconds until it is ready, in case it fails. The page never asks for the look. A browser that has had its look is told it was sent. `tryon-errors.ts` decides which error the visitor sees.
 
-The browser tests run the site against a local `mm-api` with stub providers (`playwright.config.ts`). Run `node scripts/ensure-dev-vars.ts && npm run db:local` once first.
+The browser tests run the site against a local `mm-api` with stub providers (`playwright.config.ts`). Run `node scripts/dev/ensure-dev-vars.ts && npm run db:local` once first.
 
 ## Rules the tests enforce
 
@@ -103,8 +103,8 @@ The IDs go in `site/src/lib/analytics-ids.ts`, one set for each environment: a G
 ## Headers, budgets and fonts
 
 - **Headers.** The build writes `_headers`: the content security policy, HSTS, the referrer policy, and the camera allowed on `/try` only. Inline scripts and styles are allowed by hash, computed from the built pages, so nothing needs listing by hand. Never add a `style` attribute or a `data:` URL: the policy refuses both, and the browser tests fail.
-- **Lighthouse.** `npm run lighthouse` audits the local build's `/`, `/try`, `/book` and an invite (`/r/PREVIEW1`), and the client app's Home, against their budgets (`scripts/lighthouse.ts`), and CI runs it after the browser tests. Reports go to `lighthouse/`.
-- **Fonts.** ₹ is drawn from a one-glyph file. If the site starts using another character outside latin, add it in `scripts/subset-fonts.ts`, run `npm run fonts`, and take it out of the latin-ext ranges in `packages/brand/fonts.css`.
+- **Lighthouse.** `npm run lighthouse` audits the local build's `/`, `/try`, `/book` and an invite (`/r/PREVIEW1`), and the client app's Home, against their budgets (`scripts/ci/lighthouse.ts`), and CI runs it after the browser tests. Reports go to `lighthouse/`.
+- **Fonts.** ₹ is drawn from a one-glyph file. If the site starts using another character outside latin, add it in `scripts/build/subset-fonts.ts`, run `npm run fonts`, and take it out of the latin-ext ranges in `packages/brand/fonts.css`.
 
 ## Going live in production
 

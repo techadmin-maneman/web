@@ -18,7 +18,7 @@ Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` se
 
 ## How a front end reaches the API
 
-- **On its own host.** Cloudflare sends `<host>/api/*` to mm-api and everything else on the host to the front end's Worker, since mm-api's route is the more specific. mm-api answers each host with its own surface's routes, and a route asked for on another host is a 404 (ADR 0026). Locally, the Vite dev servers and `scripts/serve-*.ts` pass `/api/*` to mm-api and keep the host, as Cloudflare does, which is why each app must be opened on its own `*.localhost` host.
+- **On its own host.** Cloudflare sends `<host>/api/*` to mm-api and everything else on the host to the front end's Worker, since mm-api's route is the more specific. mm-api answers each host with its own surface's routes, and a route asked for on another host is a 404 (ADR 0026). Locally, the Vite dev servers and `scripts/dev/serve-*.ts` pass `/api/*` to mm-api and keep the host, as Cloudflare does, which is why each app must be opened on its own `*.localhost` host.
 - **Through one client.** `packages/web-kit/api.ts` is the only API client (ADR 0076). Each app makes its own from its surface's document in `src/api.ts`, so every path, query, body, answer and error code is checked against the API as it is. An answer is a success with its body, a refusal with the API's code and the fields it names, or "offline" for a call that never reached the API. A test fails any app that calls `/api/` another way (`test/node/dom/ui-package.test.ts`). The public site keeps its few calls in `site/src/lib/api.ts`.
 - **With types written from the API.** `npm run openapi` writes each front end's `api-schema.ts` from the zod schemas that serve the routes. Never edit one by hand: change the route, run `npm run openapi`, and the compiler shows every screen the change reaches.
 - **Signed in by cookie, or by Access.** A client's or a technician's session is an HttpOnly cookie mm-api sets; the app holds no token, and any 401 ends the session wherever the person is. The console has no login of its own: Cloudflare Access decides who reaches the host, mm-api checks Access's token on every call and audits it (ADR 0031), and a call Access turned away reads as `signed_out`. Locally Access is a stub, and the console is signed in as `ops@localhost`.
@@ -62,7 +62,7 @@ What a client does after booking: Home, Visits, Photos, Payments, Refer and Prof
 
 - **Booking and paying.** A visit is held for ten minutes while the client pays through Razorpay's Checkout, whose hosts the app's policy allows (`apps/app/headers.ts`). The visit is booked once Razorpay's webhook says the money came, in that request (ADR 0110). Where `SELF_SERVE_BOOKING` is off, the API answers `ops_assisted` and the app says booking goes through ops.
 - **Installable, and open offline.** `packages/web-kit/pwa.ts` draws the manifest and icons from the brand kit, with the app's names in `apps/app/pwa.ts`; `apps/app/sw/sw.ts` keeps the app's files and the last Home it was sent, which Home shows offline (board B3).
-- **Its budget.** A build over 150 KB of gzipped JavaScript fails (`scripts/lib/spa-build.ts`), and Lighthouse holds its first screen to the budgets in `scripts/lighthouse.ts`.
+- **Its budget.** A build over 150 KB of gzipped JavaScript fails (`scripts/lib/spa-build.ts`), and Lighthouse holds its first screen to the budgets in `scripts/ci/lighthouse.ts`.
 
 ## The ops console
 
@@ -101,7 +101,7 @@ To work on one app alone, run mm-api with `npm run dev` and the app with `npm ru
 
 ## Deploying them
 
-A merge to `main` builds each front end for staging and deploys it with `scripts/release.ts ship`. A production release deploys the site, then each app that has a Worker in production, after mm-api. Each app's build writes its Worker, environment and commit into its page (`mm-worker`, `mm-environment`, `mm-version`; the site's pages carry the first two), and the smoke tests require each Phase 2 host to serve its own app, built from the commit just deployed: a blank or stale app fails the deploy (ADR 0006).
+A merge to `main` builds each front end for staging and deploys it with `scripts/release/release.ts ship`. A production release deploys the site, then each app that has a Worker in production, after mm-api. Each app's build writes its Worker, environment and commit into its page (`mm-worker`, `mm-environment`, `mm-version`; the site's pages carry the first two), and the smoke tests require each Phase 2 host to serve its own app, built from the commit just deployed: a blank or stale app fails the deploy (ADR 0006).
 
 A production build refuses copy still marked `PLACEHOLDER` in an app's `content.ts`, or in the referral landing's (`scripts/lib/content-gate.ts`); staging ships it by the owner's ruling (ADR 0025, item 27). `npm run build` passes `--allow-placeholders` only to prove production bundles, and ships nothing.
 

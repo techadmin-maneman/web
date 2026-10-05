@@ -1,5 +1,5 @@
 // The vendors' real answers the adapter tests load (test/fixtures/vendors), recorded from the org by
-// scripts/zoho-contract-probe.ts --record: what a test reads stays as the vendor sent it, and nothing of a person's
+// scripts/release/zoho-contract-probe.ts --record: what a test reads stays as the vendor sent it, and nothing of a person's
 // is committed.
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -15,7 +15,7 @@ function textsIn(value: unknown): string[] {
   return [];
 }
 
-/** The made-up number the fixtures recorded by scripts/books-proof.ts carry. */
+/** The made-up number the fixtures recorded by scripts/staging/books-proof.ts carry. */
 const MADE_UP_MOBILE = "+919000000001";
 /** A text that is an Indian mobile number, or holds one written with +91. */
 function looksLikeAMobile(text: string): boolean {

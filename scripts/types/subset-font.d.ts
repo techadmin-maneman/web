@@ -1,4 +1,4 @@
-// subset-font ships no types; this is the one call scripts/subset-fonts.ts makes.
+// subset-font ships no types; this is the one call scripts/build/subset-fonts.ts makes.
 declare module "subset-font" {
   export default function subsetFont(
     font: Buffer,

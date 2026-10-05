@@ -4,7 +4,7 @@
 
 ## The columns
 
-One row per pincode. The header names the columns and `scripts/import-pincodes.ts` finds them by name, so the order does not matter and the names have to match exactly.
+One row per pincode. The header names the columns and `scripts/ops/import-pincodes.ts` finds them by name, so the order does not matter and the names have to match exactly.
 
 | Column                  | What it holds                                                                                                                                                                |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

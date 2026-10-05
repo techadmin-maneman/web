@@ -11,7 +11,7 @@ npm run dev:all         # the whole stack; Ctrl+C stops it
 
 What each front end is, and how they reach mm-api: `docs/front-ends.md`.
 
-`dev:all` (scripts/dev-all.ts) creates `.dev.vars`, migrates and marks the local database, builds the public site once if it has never been built, then starts:
+`dev:all` (scripts/dev/dev-all.ts) creates `.dev.vars`, migrates and marks the local database, builds the public site once if it has never been built, then starts:
 
 | What           | Where                      | Notes                                                               |
 | -------------- | -------------------------- | ------------------------------------------------------------------- |
@@ -79,6 +79,6 @@ If no test reports for three minutes while a file is still open, the run stops w
 
 ## Troubleshooting
 
-- **The webhook answers 404, or `pay:local` says the secret is empty.** A `.dev.vars` made before the local webhook secret existed has it empty. `node scripts/ensure-dev-vars.ts` (which `dev:all` runs) fills it from `.dev.vars.example`; restart `dev:all`.
+- **The webhook answers 404, or `pay:local` says the secret is empty.** A `.dev.vars` made before the local webhook secret existed has it empty. `node scripts/dev/ensure-dev-vars.ts` (which `dev:all` runs) fills it from `.dev.vars.example`; restart `dev:all`.
 - **An app answers 404 for every call.** It was opened on `localhost` rather than its own host.
 - **`wrangler d1 execute` fails with a lock.** Stop `dev:all`, or wait until mm-api is idle, and run the seed again.

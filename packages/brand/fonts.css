@@ -5,7 +5,7 @@
  * range.
  *
  * ₹ (U+20B9) is taken out of the latin-ext ranges. EB Garamond draws it from a
- * file holding that one glyph (scripts/subset-fonts.ts), which a browser fetches
+ * file holding that one glyph (scripts/build/subset-fonts.ts), which a browser fetches
  * only for a page that writes ₹; the pages write rupees "Rs." since the owner's
  * ruling of 27 September 2026 (ADR 0025, item 51). Instrument Sans has no ₹ in
  * any subset, so its ₹ would come from the system font, as it does in the design.

@@ -1,4 +1,4 @@
-// What scripts/verify-ci-token.ts reports about the other environment's
+// What scripts/release/verify-ci-token.ts reports about the other environment's
 // database. D1 Edit is account-wide (docs/decisions/0008, #3), so each
 // environment's CI token can write the other's database; the report says so in
 // as many words.

@@ -43,6 +43,6 @@ When the plan changes: require every `ci.yml` job on `main`, and add reviewers t
 
 ## Update, 27 September 2026
 
-- **Each CI token reaches its environment's five Workers**, not two: Phase 2 added `mm-app`, `mm-ops` and `mm-tech` beside `mm-api` and `mm-site` (`scripts/lib/workers.ts`). `scripts/verify-ci-token.ts` checks each one, and D1 Edit is still account-wide, as decision 3 accepts.
+- **Each CI token reaches its environment's five Workers**, not two: Phase 2 added `mm-app`, `mm-ops` and `mm-tech` beside `mm-api` and `mm-site` (`scripts/lib/workers.ts`). `scripts/release/verify-ci-token.ts` checks each one, and D1 Edit is still account-wide, as decision 3 accepts.
 - **Production has its own Access service token** since 22 September 2026, for the smoke suite behind Access on production's app, ops and technician hosts (`docs/open-points.md`, "Settled").
 - **The GitHub gates are still deferred** (decision 2): `main` requires no checks and `production` has no reviewers.

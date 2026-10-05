@@ -113,11 +113,11 @@ jobs:
       - name: Record the versions serving now
         id: before
         run: |
-          api=$(node scripts/release.ts current --worker mm-api --env production)
-          site=$(node scripts/release.ts current --worker mm-site --env production)
-          app=$(node scripts/release.ts current --worker mm-app --env production)
-          ops=$(node scripts/release.ts current --worker mm-ops --env production)
-          tech=$(node scripts/release.ts current --worker mm-tech --env production)
+          api=$(node scripts/release/release.ts current --worker mm-api --env production)
+          site=$(node scripts/release/release.ts current --worker mm-site --env production)
+          app=$(node scripts/release/release.ts current --worker mm-app --env production)
+          ops=$(node scripts/release/release.ts current --worker mm-ops --env production)
+          tech=$(node scripts/release/release.ts current --worker mm-tech --env production)
           {
             echo "api=$api"
             echo "site=$site"
@@ -127,17 +127,17 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Check the database is production's, before anything touches it
-        run: node scripts/mark-database.ts production --check
+        run: node scripts/release/mark-database.ts production --check
 
       - name: Refuse the release while the API's copy waits for the owner's wording
-        run: node scripts/check-copy.ts api
+        run: node scripts/release/check-copy.ts api
 
       # An upload sends no traffic, and fails on a binding whose bucket, queue or database is missing:
       # so a missing resource stops the release here, before any migration runs.
       - name: Upload the new mm-api version (no traffic yet)
         id: api
         run: |
-          version=$(node scripts/release.ts upload --worker mm-api --env production --tag "$SHA")
+          version=$(node scripts/release/release.ts upload --worker mm-api --env production --tag "$SHA")
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Migrate the production database
@@ -150,12 +150,12 @@ jobs:
           exit 1
 
       - name: Mark the database as production's
-        run: node scripts/mark-database.ts production
+        run: node scripts/release/mark-database.ts production
 
       - name: Send the new version ${{ inputs.canary_percent }}% of traffic
         id: canary
         run: >-
-          node scripts/release.ts deploy --worker mm-api --env production
+          node scripts/release/release.ts deploy --worker mm-api --env production
           --split "${{ steps.api.outputs.version }}@$CANARY"
           --split "${{ steps.before.outputs.api }}@$((100 - CANARY))"
           --message "canary $SHA"
@@ -171,7 +171,7 @@ jobs:
       # much more than the old one's, where the token can read Workers analytics (scripts/lib/soak.ts).
       - name: Let it serve for a while, watching its errors
         run: >-
-          node scripts/soak.ts --worker mm-api --env production --seconds "$SOAK"
+          node scripts/release/soak.ts --worker mm-api --env production --seconds "$SOAK"
           --new "${{ steps.api.outputs.version }}" --old "${{ steps.before.outputs.api }}"
 
       - name: Smoke the new version again
@@ -182,7 +182,7 @@ jobs:
 
       - name: Send the new version all traffic
         run: >-
-          node scripts/release.ts deploy --worker mm-api --env production
+          node scripts/release/release.ts deploy --worker mm-api --env production
           --split "${{ steps.api.outputs.version }}@100" --message "release $SHA"
 
       - name: Smoke mm-api at 100%
@@ -191,7 +191,7 @@ jobs:
           --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
       - name: Deploy mm-site
-        run: node scripts/release.ts ship --worker mm-site --env production --tag "$SHA" --message "release $SHA"
+        run: node scripts/release/release.ts ship --worker mm-site --env production --tag "$SHA" --message "release $SHA"
 
       # mm-app, mm-ops and mm-tech have no route in production until their surface is switched on there
       # (docs/decisions/0026), and their first deploy is a bootstrap (docs/runbook.md, step 11). Until then
@@ -200,19 +200,19 @@ jobs:
         if: steps.before.outputs.app != ''
         run: |
           npm run build:app -- --env production
-          node scripts/release.ts ship --worker mm-app --env production --tag "$SHA" --message "release $SHA"
+          node scripts/release/release.ts ship --worker mm-app --env production --tag "$SHA" --message "release $SHA"
 
       - name: Deploy mm-ops
         if: steps.before.outputs.ops != ''
         run: |
           npm run build:ops -- --env production
-          node scripts/release.ts ship --worker mm-ops --env production --tag "$SHA" --message "release $SHA"
+          node scripts/release/release.ts ship --worker mm-ops --env production --tag "$SHA" --message "release $SHA"
 
       - name: Deploy mm-tech
         if: steps.before.outputs.tech != ''
         run: |
           npm run build:tech -- --env production
-          node scripts/release.ts ship --worker mm-tech --env production --tag "$SHA" --message "release $SHA"
+          node scripts/release/release.ts ship --worker mm-tech --env production --tag "$SHA" --message "release $SHA"
 
       - name: Final smoke
         run: npm run smoke -- --base https://maneman.in --environment production --version-tag "$SHA"
@@ -238,11 +238,11 @@ jobs:
           TECH: ${{ steps.before.outputs.tech }}
         run: |
           echo "::error::Release $SHA failed. Restoring the versions that were serving before it."
-          node scripts/release.ts restore --env production --message "rollback of $SHA" \
+          node scripts/release/release.ts restore --env production --message "rollback of $SHA" \
             --to "mm-api=$API" --to "mm-site=$SITE" --to "mm-app=$APP" --to "mm-ops=$OPS" --to "mm-tech=$TECH"
           npm run smoke -- --base https://maneman.in --environment production --version-id "$API"
 
       # Read-only, and a warning at most: CI cannot apply triggers (docs/decisions/0010-applying-triggers.md).
       - name: The cron schedules and queue consumers live match every Worker's config
         continue-on-error: true
-        run: node scripts/check-triggers.ts production
+        run: node scripts/release/check-triggers.ts production

@@ -16,7 +16,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 
 ## Decision
 
-**Pincodes decide where we go.** `serviceable_pincodes` (migration 0021) is loaded from `data/pincodes/ncr-pincodes.csv` by `scripts/import-pincodes.ts`.
+**Pincodes decide where we go.** `serviceable_pincodes` (migration 0021) is loaded from `data/pincodes/ncr-pincodes.csv` by `scripts/ops/import-pincodes.ts`.
 
 - Each pincode's area is the shortest name among its sub and head post offices, until ops give better ones. **Amended 26 September 2026:** ops name an area in Settings · Service area, and the import keeps a name they gave (ADR 0071).
 - Staging runs with every pincode served (`--all-served-from`, open point 48).
@@ -86,7 +86,7 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 - `GET /api/referrers` gives ops each referrer's figures: opens, consultations, fits, grants and the credits spent. Opens are counted on the invite; the referrer never sees them (the tracker shows fits only).
   - **No "sent".** The front-end prompt's funnel for board C2 starts with it ("Sent, opens, consults, fits, granted, redeemed"), and nothing can count it: a client shares their link from their own phone, through WhatsApp or the share sheet, and nothing reaches us until a friend opens it. The console leaves the column out rather than show a count that is not one (recorded 27 September 2026; ADR 0025, item 57).
 
-**The pre-January log** is imported by `scripts/import-referrals.ts` from ops' CSV, into people, codes, attributions and the ledger. Credits imported expire 365 days after the import (ruling 6). Running it again writes nothing twice: a person and a referral keep the same IDs, from their numbers.
+**The pre-January log** is imported by `scripts/ops/import-referrals.ts` from ops' CSV, into people, codes, attributions and the ledger. Credits imported expire 365 days after the import (ruling 6). Running it again writes nothing twice: a person and a referral keep the same IDs, from their numbers.
 
 **Afterwards, on the same cron:**
 

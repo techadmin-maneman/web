@@ -1,5 +1,5 @@
 // The read-only check that the triggers Cloudflare has attached are the ones
-// each Worker's config asks for (scripts/check-triggers.ts,
+// each Worker's config asks for (scripts/release/check-triggers.ts,
 // docs/decisions/0010-applying-triggers.md), against a fake account.
 
 import { describe, expect, it } from "vitest";
@@ -194,7 +194,7 @@ describe("the live account against the configs", () => {
     const consumers = findings.find((finding) => finding.subject === "mm-api-staging queue consumers");
     expect(consumers?.outcome).toBe("not read");
     expect(consumers?.detail).toContain("HTTP 403");
-    expect(consumers?.detail).toContain("scripts/check-triggers.ts staging");
+    expect(consumers?.detail).toContain("scripts/release/check-triggers.ts staging");
     const settings = findings.find((finding) => finding.subject === "mm-api-staging queue consumer settings");
     expect(settings?.outcome).toBe("not read");
   });

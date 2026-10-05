@@ -1,5 +1,5 @@
 // The local stack: the port each server takes, and what mm-api runs with there.
-// npm run dev:all (scripts/dev-all.ts) and the browser tests
+// npm run dev:all (scripts/dev/dev-all.ts) and the browser tests
 // (playwright.config.ts) both read them from here, so the two cannot drift. A
 // port another program already holds can be moved with its variable, e.g.
 // MM_API_PORT=8797 npm run dev:all (docs/getting-started.md).

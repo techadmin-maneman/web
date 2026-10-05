@@ -1,4 +1,4 @@
-// .dev.vars kept up with .dev.vars.example (scripts/ensure-dev-vars.ts), without ever overwriting a value.
+// .dev.vars kept up with .dev.vars.example (scripts/dev/ensure-dev-vars.ts), without ever overwriting a value.
 
 import { describe, expect, it } from "vitest";
 import { updatedDevVars } from "../../scripts/lib/dev-vars.ts";

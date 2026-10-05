@@ -39,10 +39,10 @@ describe("a script's Zoho refresh token", () => {
 
   it("is what every script that talks to Zoho reads, through the one client that mints a script's tokens", () => {
     const scripts = [
-      "scripts/check-zoho-setup.ts",
-      "scripts/setup-crm.ts",
-      "scripts/check-books-setup.ts",
-      "scripts/staging-records.ts",
+      "scripts/ops/check-zoho-setup.ts",
+      "scripts/ops/setup-crm.ts",
+      "scripts/release/check-books-setup.ts",
+      "scripts/staging/staging-records.ts",
     ];
     for (const script of scripts) expect(readFileSync(script, "utf8"), script).toContain("zohoScriptClient(");
     expect(readFileSync("scripts/lib/zoho-script-client.ts", "utf8")).toContain("refreshTokenForScript(");
@@ -58,8 +58,8 @@ describe("a script's Zoho refresh token", () => {
     const env = { ...process.env };
     for (const name of Object.keys(env)) if (name.startsWith("ZOHO_")) env[name] = undefined;
     const runs = [
-      ["scripts/setup-crm.ts", "--check"],
-      ["scripts/check-books-setup.ts", "--env", "staging"],
+      ["scripts/ops/setup-crm.ts", "--check"],
+      ["scripts/release/check-books-setup.ts", "--env", "staging"],
     ] as const;
     for (const [script, ...flags] of runs) {
       const run = spawnSync(process.execPath, [script, ...flags, USE_WORKER_TOKEN], { env, encoding: "utf8" });
