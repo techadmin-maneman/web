@@ -464,7 +464,7 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
       .bind(personId),
     ...opsWordsAbout(db, personId),
     // Their first name on a referral, which the referrer's tracker shows until now; blank, it reads "A friend",
-    // which says nothing of the erasure (LIFE-13). Counsel may rule it can stay (docs/open-points.md, item 63).
+    // which says nothing of the erasure. Counsel may rule it can stay (docs/open-points.md, item 63).
     db
       .prepare("UPDATE referral_attributions SET friend_first_name = NULL WHERE referred_person_id = ?1")
       .bind(personId),

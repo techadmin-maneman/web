@@ -218,7 +218,7 @@ export async function openNoShowCase(
 }
 
 /**
- * What the client is told of a visit they were not home for (LIFE-07): that we waited, how long, and what ops
+ * What the client is told of a visit they were not home for: that we waited, how long, and what ops
  * ruled. The reason ops gave is theirs, and stays with the ruling.
  */
 export interface NoShowNote {
