@@ -11,8 +11,8 @@ import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type Stock } from "../api.ts";
 import { stock as copy } from "../content.ts";
-import { CheckPanel } from "../settings/CheckPanel.tsx";
-import form from "../settings/settings.module.css";
+import { CheckPanel } from "../components/CheckPanel.tsx";
+import form from "../components/forms.module.css";
 import styles from "./stock.module.css";
 
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;

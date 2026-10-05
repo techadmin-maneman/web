@@ -5,7 +5,7 @@
 
 import { errorText } from "@maneman/web-kit/refusal";
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
-import { CheckPanel } from "./CheckPanel.tsx";
+import { CheckPanel } from "../components/CheckPanel.tsx";
 import { Button } from "@maneman/ui/Button";
 import { addDays, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -13,7 +13,7 @@ import { useState, type ReactNode } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { settings } from "../content.ts";
 import { PRICE_TIER, tierCodeOf } from "../../../../src/policy/services.ts";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 const copy = settings.services;
 const form = copy.form;

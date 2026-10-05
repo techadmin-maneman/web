@@ -22,7 +22,7 @@ import {
 } from "react";
 import { api, type PhotoLink, type PhotoTimeline } from "../api.ts";
 import { photos } from "../content.ts";
-import { AppLink, Shell } from "../home/Shell.tsx";
+import { AppLink, Shell } from "../components/Shell.tsx";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { shownPhase } from "./PhotoRow.tsx";

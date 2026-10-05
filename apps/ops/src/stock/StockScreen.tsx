@@ -18,7 +18,7 @@ import { OpsLink, Shell } from "../components/Shell.tsx";
 import { stock as copy } from "../content.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { settingsPath } from "../route.ts";
-import form from "../settings/settings.module.css";
+import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import styles from "./stock.module.css";

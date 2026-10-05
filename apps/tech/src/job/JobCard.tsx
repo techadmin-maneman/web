@@ -21,7 +21,7 @@ import { job as copy, profile as profileCopy } from "../content.ts";
 import { PIN, STROKE } from "../icons.ts";
 import { callLink, wayTo } from "../lib/navigate.ts";
 import { dayMonth, where } from "../lib/when.ts";
-import { paidFor, profileNamesAnother } from "./paid-for.ts";
+import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import styles from "./job.module.css";
 import { firstNameOf } from "../../../../src/lib/names.ts";
 

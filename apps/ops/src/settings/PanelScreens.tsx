@@ -9,7 +9,7 @@ import { sectionOf, SECTION_NAMES, type Page } from "../route.ts";
 import { DiscountCodes } from "./DiscountCodes.tsx";
 import { Services } from "./Services.tsx";
 import { Staff } from "./Staff.tsx";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 function PanelScreen({ page, children }: { page: Page; children: ReactNode }) {
   return (

@@ -9,13 +9,12 @@
 // visit has begun, or its window has passed while it is still open, its card says where it stands, and offers
 // nothing more.
 
+import { ChangeSheet, type ChangingVisit, NoteSheet } from "../booking/index.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { OneVisitPrice, VisitSummary } from "../api.ts";
 import { home, messages, note, windowText } from "../content.ts";
-import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
-import { NoteSheet } from "../booking/NoteSheet.tsx";
 import { oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";

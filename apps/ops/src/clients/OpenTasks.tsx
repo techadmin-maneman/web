@@ -10,7 +10,7 @@ import { OpsLink } from "../components/Shell.tsx";
 import { clients, tasks as taskCopy } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
-import { decidedAt, taskClientPath, taskTabOf } from "../tasks/links.ts";
+import { decidedAt, taskClientPath, taskTabOf } from "../lib/task-links.ts";
 import styles from "./clients.module.css";
 
 const copy = clients.openTasks;

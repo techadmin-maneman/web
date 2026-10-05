@@ -51,7 +51,7 @@ import { BookFromTask } from "./BookFromTask.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
 import { owedLinkOf } from "./payment-link.ts";
 import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
-import { decidedAt, taskClientPath } from "./links.ts";
+import { decidedAt, taskClientPath } from "../lib/task-links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
 import { TaskActions } from "./TaskActions.tsx";

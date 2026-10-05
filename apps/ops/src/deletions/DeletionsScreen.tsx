@@ -35,8 +35,8 @@ import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "./deletions.module.css";
-import { ErasureLists } from "./ErasureLists.tsx";
+import styles from "../components/erasure.module.css";
+import { ErasureLists } from "../components/ErasureLists.tsx";
 
 type Choice = "delete" | "reject";
 

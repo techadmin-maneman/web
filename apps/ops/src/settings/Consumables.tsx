@@ -22,7 +22,7 @@ import { ConsumableForm } from "./ConsumableForm.tsx";
 import { Restoring, Retiring } from "./Retirement.tsx";
 import { ServiceUsage } from "./ServiceUsage.tsx";
 import own from "./consumables.module.css";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 const copy = settings.consumables;
 

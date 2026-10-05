@@ -12,7 +12,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { api, type CancelOutcome, type CancelTerms } from "../api.ts";
 import { clients } from "../content.ts";
-import styles from "./book.module.css";
+import styles from "../components/visit-dialog.module.css";
 
 const copy = clients.visits.cancel;
 

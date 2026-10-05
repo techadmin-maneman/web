@@ -16,7 +16,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api, documentUrl, receiptUrl, type EntryDetail } from "../api.ts";
 import { messages, payments } from "../content.ts";
-import { Shell } from "../home/Shell.tsx";
+import { Shell } from "../components/Shell.tsx";
 import { apiNow } from "../lib/clock.ts";
 import { priceFigures } from "../lib/money.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";

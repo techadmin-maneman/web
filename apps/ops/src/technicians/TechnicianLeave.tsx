@@ -12,7 +12,7 @@ import { OpsLink } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { dispatchPath } from "../route.ts";
-import { CheckPanel } from "../settings/CheckPanel.tsx";
+import { CheckPanel } from "../components/CheckPanel.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./technicians.module.css";
 

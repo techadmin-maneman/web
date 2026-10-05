@@ -22,7 +22,7 @@ import { useState } from "react";
 import { api, type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import styles from "../settings/settings.module.css";
+import styles from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { AddPincode } from "./AddPincode.tsx";
 import areaStyles from "./areas.module.css";

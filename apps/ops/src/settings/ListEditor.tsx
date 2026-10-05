@@ -13,9 +13,9 @@ import { useRef, useState } from "react";
 import type { Answer, JobSheet, JobSheetItemSent, JobSheetList } from "../api.ts";
 import { settings } from "../content.ts";
 import { whoWords } from "../lib/who.ts";
-import { CheckPanel } from "./CheckPanel.tsx";
+import { CheckPanel } from "../components/CheckPanel.tsx";
 import own from "./consumables.module.css";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 const copy = settings.jobSheet;
 

@@ -16,7 +16,7 @@ import { dispatch, settings } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ListEditor, ListRead } from "./ListEditor.tsx";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 const copy = settings.jobSheet;
 

@@ -1,13 +1,13 @@
 // The profile (boards G1 and G2): where we come, what the client has agreed
 // to, and their account: a change of number, support, and deletion.
 
+import { LogOut } from "../login/index.ts";
 import { Button } from "@maneman/ui/Button";
 import { classes } from "@maneman/ui/classes";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, type Profile } from "../api.ts";
 import { errors, profile } from "../content.ts";
-import { Shell } from "../home/Shell.tsx";
-import { LogOut } from "../login/LogOut.tsx";
+import { Shell } from "../components/Shell.tsx";
 import { useSession } from "../session.ts";
 import { AddressSection } from "./AddressSection.tsx";
 import { Loading } from "../states/Loading.tsx";

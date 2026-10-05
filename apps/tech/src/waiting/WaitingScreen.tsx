@@ -27,7 +27,7 @@ import { go, STEP_PATHS, stepPath, type InJobStep } from "../route.ts";
 import { useSession } from "../session.ts";
 import { account, forget, replay, type EventKind, type JobAccount } from "../store/outbox.ts";
 import { Progress } from "./Progress.tsx";
-import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "./sets.ts";
+import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "../lib/sets.ts";
 import frame from "../components/frame.module.css";
 import styles from "./waiting.module.css";
 

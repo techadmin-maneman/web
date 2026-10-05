@@ -18,9 +18,9 @@ import { settings } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { CheckPanel } from "./CheckPanel.tsx";
+import { CheckPanel } from "../components/CheckPanel.tsx";
 import { DiscountCodeForm } from "./DiscountCodeForm.tsx";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 const copy = settings.discountCodes;
 

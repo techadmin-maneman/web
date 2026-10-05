@@ -2,7 +2,7 @@
  * Stock (docs/decisions/0087-consumables-and-stock.md). No board draws it, so
  * it is built from what the console draws elsewhere: the queues' panel with
  * its head on a rule, board C2's table at 34 px a row, and Settings' form and
- * its check before a change (apps/ops/src/settings/settings.module.css).
+ * its check before a change (apps/ops/src/components/forms.module.css).
  *
  * The table carries a column for the central store and one for each kit, so
  * it scrolls sideways inside its panel rather than past it when a team grows.

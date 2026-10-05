@@ -20,7 +20,7 @@ import {
   type VisitType,
 } from "../api.ts";
 import { clients, dispatch } from "../content.ts";
-import styles from "./book.module.css";
+import styles from "../components/visit-dialog.module.css";
 
 const copy = clients.visits.book;
 

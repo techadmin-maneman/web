@@ -36,7 +36,7 @@ import {
   type Priced,
   type Written,
 } from "./ServiceForms.tsx";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 const copy = settings.services;
 

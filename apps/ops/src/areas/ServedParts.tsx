@@ -6,7 +6,7 @@ import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import type { AreaChange, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
-import styles from "../settings/settings.module.css";
+import styles from "../components/forms.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import type { Draft, FileChange, Row } from "./served-draft.ts";
 

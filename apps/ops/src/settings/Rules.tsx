@@ -14,7 +14,7 @@
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
-import { CheckPanel } from "./CheckPanel.tsx";
+import { CheckPanel } from "../components/CheckPanel.tsx";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
@@ -29,7 +29,7 @@ import { whoWords } from "../lib/who.ts";
 import type { SectionPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CHARGES_A_LATE_FEE, CONSOLE_GROUP, sectionsOf, type RuleGroupId, type RuleSection } from "./rule-groups.ts";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 const copy = settings.rules;
 

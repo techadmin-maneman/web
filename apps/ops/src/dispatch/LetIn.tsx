@@ -10,7 +10,7 @@ import { Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api } from "../api.ts";
-import styles from "../clients/book.module.css";
+import styles from "../components/visit-dialog.module.css";
 import { dispatch } from "../content.ts";
 
 const copy = dispatch.letIn;

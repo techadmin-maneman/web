@@ -20,7 +20,7 @@ import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 const copy = settings.blackouts;
 

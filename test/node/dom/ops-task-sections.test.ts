@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { TaskGroup } from "../../../apps/ops/src/api.ts";
-import { DEPARTMENTS } from "../../../apps/ops/src/settings/grants.ts";
+import { DEPARTMENTS } from "../../../apps/ops/src/lib/grants.ts";
 import { firstOverdue, ROWS_FOLDED, sectionsOf } from "../../../apps/ops/src/tasks/sections.ts";
 import { TASK_DEPARTMENTS } from "../../../src/policy/console-routes.ts";
 import { TASK_GROUPS } from "../../../src/policy/tasks.ts";

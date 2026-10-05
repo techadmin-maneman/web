@@ -9,8 +9,8 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Answer, type Consumable, type Consumables } from "../api.ts";
 import { settings } from "../content.ts";
-import { CheckPanel } from "./CheckPanel.tsx";
-import styles from "./settings.module.css";
+import { CheckPanel } from "../components/CheckPanel.tsx";
+import styles from "../components/forms.module.css";
 
 const copy = settings.consumables;
 const words = copy.retiring;

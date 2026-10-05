@@ -3,6 +3,7 @@
 // sheet's date and window, then pays whatever the move costs. Cancelling is confirmed on the terms shown; if the
 // 24 hours ran out meanwhile, the new terms are shown instead.
 
+import { methodName } from "../payments/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { fullDate, indiaDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -14,7 +15,6 @@ import { api, type BookableType, type CancelTerms, type Me, type MoveTerms } fro
 import { booking, change, states } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { whatsappWith } from "../lib/whatsapp.ts";
-import { methodName } from "../payments/entry.ts";
 import { useSession } from "../session.ts";
 import { BookingSheet } from "./BookingSheet.tsx";
 import { moveButton } from "./late-change.ts";
