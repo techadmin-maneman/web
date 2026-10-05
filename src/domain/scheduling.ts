@@ -3,6 +3,7 @@
 // taking the same time, and a booked visit then holds it itself. Days ops black out are never offered.
 
 import { failedUniqueOn } from "../lib/d1-errors.ts";
+import { graceEnds, ownUnpaid } from "./unpaid-holds.ts";
 import {
   PAYMENT_GRACE_SECONDS,
   UNITS_PER_DAY,
@@ -120,22 +121,12 @@ export interface Moving {
   readonly technicianId: string;
 }
 
-/**
- * When an unpaid hold stops keeping its time: its countdown, then the grace it was made with, or the committed two
- * minutes for a hold made before holds kept one. `hold` names the slot_holds row in the query it goes into.
- */
-export const graceEnds = (hold: string): string =>
-  `strftime('%Y-%m-%dT%H:%M:%fZ', ${hold}.expires_at, '+' || COALESCE(${hold}.grace_seconds, ${String(PAYMENT_GRACE_SECONDS)}) || ' seconds')`;
-
-/** graceEnds, for a hold already read: the last moment a payment for it counts as made in time. */
-export function graceEndOf(hold: { readonly expires_at: string; readonly grace_seconds: number | null }): Date {
-  const graceSeconds = hold.grace_seconds ?? PAYMENT_GRACE_SECONDS;
-  return new Date(Date.parse(hold.expires_at) + graceSeconds * 1000);
-}
+export { graceEndOf, graceEnds } from "./unpaid-holds.ts";
 
 /**
  * What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. The visit
- * `exceptVisitId` and the claims of the hold `exceptHoldId` are left out.
+ * `exceptVisitId` and the claims of the hold `exceptHoldId` are left out, and so are the claims of the client
+ * `ownUnpaidOf`'s own unpaid holds, which the hold they are asking for lets go.
  */
 export async function occupancy(
   db: D1Database,
@@ -144,6 +135,7 @@ export async function occupancy(
   now: Date,
   exceptVisitId: string | null = null,
   exceptHoldId: string | null = null,
+  ownUnpaidOf: string | null = null,
 ): Promise<(technicianId: string, date: string) => Day> {
   const days = new Map<string, Day>();
   const dayOf = (technicianId: string, date: string) => {
@@ -159,9 +151,9 @@ export async function occupancy(
       .prepare(
         `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
          WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR ${graceEnds("h")} > ?3)
-           AND h.id IS NOT ?4`,
+           AND h.id IS NOT ?4 AND NOT (?5 IS NOT NULL AND ${ownUnpaid("h", "?5")})`,
       )
-      .bind(from, to, now.toISOString(), exceptHoldId)
+      .bind(from, to, now.toISOString(), exceptHoldId, ownUnpaidOf)
       .all<{ technician_id: string; date: string; claim: string }>(),
     db
       .prepare(
@@ -336,13 +328,14 @@ async function windowsOf(
   range: { readonly from: string; readonly days: number },
   now: Date,
   moving: Moving | null,
+  ownUnpaidOf: string | null = null,
 ): Promise<{ regular: string | null; days: { date: string; windows: WindowTechnicians[] }[] }> {
   const units = unitsFor(visit.minutes);
   const to = addDays(range.from, range.days - 1);
   const [technicians, regular, held, closed] = await Promise.all([
     techniciansFor(db, moving),
     firstChoice(db, personId, moving),
-    occupancy(db, range.from, to, now, moving?.visitId ?? null),
+    occupancy(db, range.from, to, now, moving?.visitId ?? null, null, ownUnpaidOf),
     loadBlackouts(db, range.from, to),
   ]);
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
@@ -364,7 +357,7 @@ async function windowsOf(
  * Each window of each day from `from` that a visit of this many minutes can start in: who could take it, the regular
  * technician first. A window the visit is too long to start in, as a first fit's evening, is left out. A day from
  * `until` on, the day a service is retired from, is offered to nobody. With no person, as for the site's form, nobody
- * is anyone's regular.
+ * is anyone's regular. `forTheApp` leaves out the client's own unpaid holds, which the app's hold would let go.
  */
 export async function availability(
   db: D1Database,
@@ -374,8 +367,9 @@ export async function availability(
   days: number,
   now: Date,
   moving: Moving | null = null,
+  forTheApp = false,
 ): Promise<{ date: string; windows: WindowOffer[] }[]> {
-  const offered = await windowsOf(db, personId, visit, { from, days }, now, moving);
+  const offered = await windowsOf(db, personId, visit, { from, days }, now, moving, forTheApp ? personId : null);
   const whoComes = (free: readonly Technician[]): WindowOffer["with"] => {
     if (free.some((technician) => technician.id === offered.regular)) return "regular";
     return free.length > 0 ? "another" : null;
@@ -431,7 +425,7 @@ export interface Hold {
  */
 const LET_GO = `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at IS NULL
   AND ((expires_at <= ?1 AND ${graceEnds("slot_holds")} <= ?1)
-    OR (?3 = 1 AND person_id = ?2 AND razorpay_order_id IS NULL AND pay_by_link = 0))`;
+    OR (?3 = 1 AND ${ownUnpaid("slot_holds", "?2")}))`;
 
 /**
  * Lets go of the holds nobody is paying for, and, given a client, that client's own other unpaid holds too. For
@@ -502,7 +496,7 @@ export async function holdSlot(
     loadBlackouts(db, date, date),
     techniciansFor(db, moving),
     moving === null ? regularTechnician(db, personId) : moving.technicianId,
-    occupancy(db, date, date, now, moving?.visitId ?? null),
+    occupancy(db, date, date, now, moving?.visitId ?? null, null, from === "app" ? personId : null),
   ]);
   if (blackouts.has(date)) return null;
   const chosen =
