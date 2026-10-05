@@ -127,14 +127,14 @@ interface NewUse {
   readonly typedAt?: Date;
 }
 
-/** What must still be true of the booking a use is written on, in the use's own statement. */
+/** What must still be true of the booking a use is written on, given its hold's and its visit's IDs in SQL. */
 const STILL_OPEN = {
   // The client's hold at the pay step.
-  unpaid_hold: unpaidHold("?4"),
+  unpaid_hold: (hold: string) => unpaidHold(hold),
   // The hold the site's form makes in the same batch, which nothing has priced yet.
-  new_hold: "1 = 1",
+  new_hold: () => "1 = 1",
   // A visit, entered on by the technician or ops.
-  open_visit: openVisit("?5"),
+  open_visit: (_hold: string, visit: string) => openVisit(visit),
 } as const;
 
 /**
@@ -153,7 +153,7 @@ export function useStatement(
       `INSERT INTO discount_code_uses (id, code_id, person_id, hold_id, appointment_id, amount_off, given_by,
          given_by_id, created_at)
        SELECT ?1, c.id, ?3, ?4, ?5, ?6, ?7, ?8, ?9 FROM discount_codes c
-       WHERE c.id = ?2 AND (c.switched_off_at IS NULL OR c.switched_off_at > ?10) AND ${STILL_OPEN[onto]}
+       WHERE c.id = ?2 AND (c.switched_off_at IS NULL OR c.switched_off_at > ?10) AND ${STILL_OPEN[onto]("?4", "?5")}
          AND (c.max_uses IS NULL OR c.max_uses > (SELECT COUNT(*) FROM discount_code_uses u
            WHERE u.code_id = c.id AND ${standing("u", "?9")}))
          AND (c.once_per_client = 0 OR NOT EXISTS (SELECT 1 FROM discount_code_uses u
