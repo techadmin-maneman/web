@@ -80,7 +80,7 @@
   min-height: var(--sp-48);
   margin-top: var(--sp-6);
   padding: var(--sp-8) var(--sp-10);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
   background: var(--paper-light);
   color: var(--text);
   font: inherit;

@@ -36,7 +36,7 @@
   height: var(--field-h);
   margin-top: var(--sp-8);
   padding: 0 var(--sp-14);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   font: inherit;
   font-size: var(--fs-15);

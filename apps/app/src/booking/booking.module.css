@@ -105,7 +105,7 @@
   gap: var(--sp-3);
   aspect-ratio: 1 / 1.15;
   padding: 0;
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   font: inherit;
   color: var(--text);
@@ -223,7 +223,7 @@
   width: 100%;
   min-height: var(--tap-row);
   padding: 0 var(--sp-18);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
   background: var(--white);
   font: inherit;
   color: var(--text);

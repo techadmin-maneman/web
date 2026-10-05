@@ -306,7 +306,7 @@
   display: block;
   width: 100%;
   padding: 0;
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
   background: none;
   font: inherit;
   color: var(--text);
@@ -365,7 +365,7 @@
   justify-content: center;
   width: var(--sp-20);
   height: var(--sp-20);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--paper-control);
 }
 
 .chosen .box {
