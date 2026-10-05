@@ -17,6 +17,7 @@ const SURFACES: Readonly<Record<string, Surface>> = {
   ops: "ops",
   tech: "tech",
   "tech-ios": "tech",
+  "tech-live": "tech",
 };
 
 const OUTSIDE_CONTRACT = "outside-contract";
