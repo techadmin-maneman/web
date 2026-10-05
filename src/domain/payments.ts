@@ -11,10 +11,11 @@ import { indiaDate } from "../lib/india-time.ts";
 import { toE164 } from "../lib/mobile.ts";
 import type { RazorpayPayment, RazorpayRefund } from "../providers/payments/razorpay.ts";
 import { confirmPaidHold } from "./bookings.ts";
+import { PAYMENT_TAKEN, statusIn } from "../config/statuses.ts";
 
 type PaymentStatus = "authorized" | "captured" | "failed" | "refunded" | "partially_refunded";
 
-/** How far along each state is. A later event with an earlier state changes nothing. recordPayment's SQL repeats it. */
+/** How far along each state is. A later event with an earlier state changes nothing. */
 const RANK: Readonly<Record<PaymentStatus, number>> = {
   failed: 0,
   authorized: 1,
@@ -22,6 +23,12 @@ const RANK: Readonly<Record<PaymentStatus, number>> = {
   partially_refunded: 3,
   refunded: 4,
 };
+
+/** RANK of a stored state, in SQL; null for a state RANK does not know, which nothing then overwrites. */
+const rankOf = (column: string): string =>
+  `CASE ${column} ${Object.entries(RANK)
+    .map(([status, rank]) => `WHEN '${status}' THEN ${String(rank)}`)
+    .join(" ")} END`;
 
 /** A payment event's state: from the event's name where it says, else from the payment. */
 export function paymentStatusOf(event: string, payment: RazorpayPayment): PaymentStatus | null {
@@ -110,10 +117,7 @@ async function writePayment(
          method = COALESCE(excluded.method, payments.method),
          vpa_hash = COALESCE(excluded.vpa_hash, payments.vpa_hash),
          card_network = COALESCE(excluded.card_network, payments.card_network),
-         status = CASE WHEN ?15 > (CASE payments.status
-             WHEN 'failed' THEN 0 WHEN 'authorized' THEN 1 WHEN 'captured' THEN 2
-             WHEN 'partially_refunded' THEN 3 ELSE 4 END)
-           THEN excluded.status ELSE payments.status END,
+         status = CASE WHEN ?15 > (${rankOf("payments.status")}) THEN excluded.status ELSE payments.status END,
          captured_at = COALESCE(payments.captured_at, excluded.captured_at),
          amount_ex_gst = COALESCE(payments.amount_ex_gst, excluded.amount_ex_gst),
          gst_percent = COALESCE(payments.gst_percent, excluded.gst_percent),
@@ -308,7 +312,7 @@ export async function otherCaptureOf(db: D1Database, payment: RazorpayPayment): 
     .prepare(
       `SELECT razorpay_payment_id FROM payments
        WHERE razorpay_order_id = ?1 AND razorpay_payment_id <> ?2
-         AND status IN ('captured', 'partially_refunded', 'refunded')
+         AND ${statusIn("status", PAYMENT_TAKEN)}
        ORDER BY created_at LIMIT 1`,
     )
     .bind(payment.order_id, payment.id)

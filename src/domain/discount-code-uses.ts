@@ -28,6 +28,8 @@ import { spendableCredits } from "./credits.ts";
 import { CODE_COLUMNS, coversOf, standing, termsOf, type CodeRow } from "./discount-codes.ts";
 import { priceOf, type Price } from "./price-book.ts";
 import { requestedCode, typedForVisit } from "./requested-codes.ts";
+import { PAYMENT_TAKEN, statusIn } from "../config/statuses.ts";
+import { creditSpentOn } from "./visit-facts.ts";
 
 /** Who entered a code on a booking. */
 type GivenBy = "client" | "technician" | "ops";
@@ -59,7 +61,7 @@ const openVisit = (visit: string): string =>
      AND open_visit.fsm_invoice_id IS NULL AND open_visit.invoice_issued_at IS NULL
      AND open_visit.one_visit IS NOT 'fitted')
    AND NOT EXISTS (SELECT 1 FROM payments paid WHERE paid.appointment_id = ${visit} AND paid.kind = 'visit'
-     AND paid.status IN ('captured', 'refunded', 'partially_refunded'))
+     AND ${statusIn("paid.status", PAYMENT_TAKEN)})
    AND NOT EXISTS (SELECT 1 FROM payment_links link WHERE link.appointment_id = ${visit})`;
 
 // ---------------------------------------------------------------------------
@@ -222,9 +224,7 @@ async function visitOf(db: D1Database, visitId: string): Promise<VisitRow | null
     .prepare(
       `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.one_visit, a.status,
          (${openVisit("a.id")}) AS open,
-         (EXISTS (SELECT 1 FROM slot_holds h WHERE h.appointment_id = a.id AND h.use_credit = 1)
-           OR EXISTS (SELECT 1 FROM credit_ledger l
-             WHERE l.kind = 'redeem' AND l.source_kind = 'appointment' AND l.source_id = a.id)) AS on_credit
+         ${creditSpentOn("a.id")} AS on_credit
        FROM appointments a WHERE a.id = ?1 AND a.deleted_at IS NULL`,
     )
     .bind(visitId)

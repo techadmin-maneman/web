@@ -46,6 +46,7 @@ import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts"
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "./visit-changes.ts";
 import { NO_VISITS_CONSENT } from "./visit-messages.ts";
 import { minutesBetween } from "../lib/durations.ts";
+import { creditSpentOn } from "./visit-facts.ts";
 
 /**
  * What became of the WhatsApp ops read the receipt of. A reminder that was never
@@ -243,8 +244,7 @@ export interface NoShowNote {
  * was paid with, which a charge of nothing gives back (src/policy/no-show.ts).
  */
 export const CHARGE_TAKEN = `n.kept_amount AS kept_amount,
-  (n.charge <> 'nothing' AND EXISTS (
-    SELECT 1 FROM credit_ledger r WHERE r.kind = 'redeem' AND r.source_id = n.appointment_id)) AS credit_spent`;
+  (n.charge <> 'nothing' AND ${creditSpentOn("n.appointment_id")}) AS credit_spent`;
 
 interface NoteRow {
   appointment_id: string;
@@ -427,8 +427,7 @@ async function undecidedCase(db: D1Database, caseId: string): Promise<OpenCase |
   return db
     .prepare(
       `SELECT n.appointment_id, p.id AS person_id, a.type, a.window_start,
-         EXISTS (SELECT 1 FROM credit_ledger r WHERE r.kind = 'redeem' AND r.source_id = n.appointment_id)
-           AS paid_with_credit
+         ${creditSpentOn("n.appointment_id")} AS paid_with_credit
        FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
        LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
        WHERE n.id = ?1 AND n.decision = 'undecided'`,

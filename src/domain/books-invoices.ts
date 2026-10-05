@@ -25,6 +25,8 @@ import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { customerFor } from "./books-customers.ts";
 import { codeOnVisit, priceAfterCode } from "./discount-code-uses.ts";
 import { priceOf, type Price } from "./price-book.ts";
+import { PAYMENT_HELD, statusIn } from "../config/statuses.ts";
+import { creditSpentOn } from "./visit-facts.ts";
 
 /** How many a pass bills at most. */
 const PER_PASS = 5;
@@ -298,9 +300,8 @@ async function soldVisit(db: D1Database, visit: PricedVisit, off: number): Promi
     .prepare(
       `SELECT
          (SELECT SUM(amount) FROM payments
-           WHERE appointment_id = ?1 AND kind = 'visit' AND status IN ('captured', 'partially_refunded')) AS paid,
-         EXISTS (SELECT 1 FROM credit_ledger WHERE kind = 'redeem' AND source_kind = 'appointment' AND source_id = ?1)
-           OR EXISTS (SELECT 1 FROM slot_holds WHERE appointment_id = ?1 AND use_credit = 1) AS with_credit`,
+           WHERE appointment_id = ?1 AND kind = 'visit' AND ${statusIn("status", PAYMENT_HELD)}) AS paid,
+         ${creditSpentOn("?1")} AS with_credit`,
     )
     .bind(visit.id)
     .first<{ paid: number | null; with_credit: number }>();
