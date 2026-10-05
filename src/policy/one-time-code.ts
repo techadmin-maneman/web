@@ -1,16 +1,9 @@
 // The login code (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them, and the numbers they turn on (docs/decisions/0030-one-time-codes.md). A code is
+// The numbers it turns on (docs/decisions/0030-one-time-codes.md). A code is
 // asked for and sent through src/http/send-code.ts, and checked, for a client and a technician alike, by
 // src/domain/one-time-codes.ts.
 
 import { MINUTE_MS } from "../lib/durations.ts";
-
-export const RULES = [
-  "Six digits, sent on WhatsApp.",
-  "After 30 seconds the client may choose SMS instead.",
-  "Five wrong attempts void the code.",
-  "WhatsApp resend has a 30-second cooldown.",
-] as const;
 
 export const ONE_TIME_CODE = {
   digits: 6,

@@ -31,7 +31,7 @@ const tomorrow = () => daysAfter(new Date(Date.now() + 330 * 60 * 1000).toISOStr
 /**
  * The sheet's days, a fortnight from the day asked for and never before tomorrow, as the API gives them, with every
  * window open, so the day and window offered are free whatever the other tests hold on them. It is answered in the
- * API's place, since only the browser resolves app.localhost; the API's own days are test/worker/next-visit.test.ts's.
+ * API's place, since only the browser resolves app.localhost; the API's own days are test/worker/booking/next-visit.test.ts's.
  * Returns what the sheet asked for.
  */
 async function everyWindowOpen(page: Page): Promise<URL[]> {

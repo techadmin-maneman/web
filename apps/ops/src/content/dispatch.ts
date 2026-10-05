@@ -35,7 +35,7 @@ export const dispatch = {
   /**
    * Each window's hours, which the drawer writes as the board does
    * ("12 to 4 pm"). They are src/config/scheduling.ts's WINDOW_TIMES, still the
-   * owner's to rule (docs/open-points.md, item 53); test/node/ops-content.test.ts
+   * owner's to rule (docs/open-points.md, item 53); test/node/apps/ops/ops-content.test.ts
    * holds the two together.
    */
   windowHours: {

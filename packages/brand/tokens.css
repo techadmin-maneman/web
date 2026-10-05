@@ -1,7 +1,7 @@
 /*
  * Every colour, size and space on the site, taken from the design
  * (design/Mane Man Site v2.dc.html) and design/brand/README.md. Components use
- * these through var(); test/node/site-tokens.test.ts fails on a raw colour,
+ * these through var(); test/node/site/site-tokens.test.ts fails on a raw colour,
  * px or vw value anywhere else, and on a token that is not defined here.
  *
  * Fluid values are the design's own clamp() expressions, named for what they
@@ -9,7 +9,7 @@
  * type size (--fs-15), a leading (--lh-155 is 1.55). Each value is written
  * once in its scale; a name for what a value is for, such as tokens-phase2.css's
  * --fs-app-title, points at the scale's token rather than repeating the value
- * (test/node/brand-package.test.ts). Weights, focus rings and motion are named
+ * (test/node/packages/brand-package.test.ts). Weights, focus rings and motion are named
  * for what they do.
  */
 

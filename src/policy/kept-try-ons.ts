@@ -1,15 +1,13 @@
-// A client's try-on, kept (docs/decisions/0084-a-clients-try-on-is-kept.md): the owner's ruling of 27 September 2026,
-// in the owner's words, and which of a person's try-ons it keeps. The small copy of the photograph comes up with the
-// photograph (src/routes/public/tryon-upload.ts); the sweeper keeps a try-on, and lets its look go once the first fit is
-// photographed (src/domain/kept-try-ons.ts); the app shows it (src/domain/client-try-ons.ts).
+// A client's try-on, kept (docs/decisions/0084-a-clients-try-on-is-kept.md): the before photograph always, and the look
+// until the first fit is photographed (ADR 0025, item 65), and which of a person's try-ons is kept. The small copy of
+// the photograph comes up with the photograph (src/routes/public/tryon-upload.ts); the sweeper keeps a try-on, and lets
+// its look go once the first fit is photographed (src/domain/kept-try-ons.ts); the app shows it
+// (src/domain/client-try-ons.ts).
 //
 // A client is someone who has booked a visit, of any kind. Their try-on is kept only if its photograph was agreed to
 // under a notice that says so, and only if its look is still held when they are a client: before then the try-on
 // keeps the published notices' rules. A client keeps one try-on, the oldest, so what R2 holds for good grows with the
 // clients and not with the try-ons each makes (scripts/lib/free-tier-budget.ts).
-
-/** The owner's ruling of 27 September 2026 (ADR 0025, item 65), in the owner's words. */
-export const RULING = "Show the before photo always, keep the generated image till the photos for first fit are taken.";
 
 /** Where a kept try-on lives, as the prompt gives the bucket for clients' photographs: what is kept stays until deleted. */
 // Its rules, as the brief states them:

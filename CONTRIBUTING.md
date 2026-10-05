@@ -10,10 +10,16 @@ One page on getting a change from your laptop to staging. `README.md` says what 
 4. **Keep the comments true.** When you change code, read the comment beside it and fix it or delete it (below, "Comments").
 5. **Check before you push:**
    - `npm run typecheck && npm run lint && npm run format:check`;
-   - the tests beside what you changed: `npx vitest run test/worker/bookings.test.ts`;
+   - the tests beside what you changed: `npx vitest run test/worker/booking/bookings.test.ts`;
    - for a screen you changed, its browser tests, after building it: `npm run build:app -- --env local && npx playwright test e2e/app/booking.e2e.ts`;
    - after changing a route's schema, a migration, a binding or an ADR's status, `npm run gen`. CI fails until the generated files match.
 6. **Mark it ready.** CI runs every check on each push. A ready pull request from this repository merges itself once CI passes, and its merge deploys to staging.
+
+## Where a test goes
+
+- By where it runs first, then by the part of the product it checks: `test/worker/<area>/` runs against the API in workerd (`booking`, `money`, `field`, `ops`, `site`, `app`, `referrals`, `messages`, `vendors`, `privacy`, `jobs`, `platform`), and `test/node/<area>/` in plain Node (`policy`, `api`, `database`, `apps/<app>`, `site`, `packages`, `architecture`, `tooling`).
+- A test of an app's code that needs the DOM's types goes in `test/node/dom/`; one of a component on a page, in `test/dom/`; a browser test, in `e2e/<surface>/`.
+- A file past 500 lines is warned of: split it by what each part checks, with its shared setup in a `-fixtures.ts` beside it.
 
 ## Comments
 

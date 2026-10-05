@@ -7,11 +7,6 @@
 import { hasStandardService, STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import type { OneVisitState } from "./one-visit.ts";
 
-export const RULES = [
-  "every service belongs to one of four kinds (consultation, first fit, service visit, replacement), and the kind decides the technician's steps, the booking rules and which fees apply; within a kind ops add, rename, describe, price, reorder and retire services from the console, each synced to Books; a new kind needs a release.",
-  "Retiring a service stops clients seeing it from a date and changes nothing already sold; prices stay dated rows.",
-] as const;
-
 /**
  * Whether a service is offered on a day (India's date): it is, until the day it is retired from. A visit on that day
  * or after is sold to nobody; one sold before stays as it was sold.

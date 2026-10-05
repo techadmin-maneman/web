@@ -1,29 +1,18 @@
 // The dispatch board (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
-// The rules as the prompt states them, the clash check they turn on, and the
-// reasons a move must carry (docs/decisions/0034-clash-check.md).
+// The clash check, and the reasons a move must carry (docs/decisions/0034-clash-check.md).
 //
 // The board counts in slots and the day in half-slots, so a replacement's slot
 // and a half is a whole number (docs/decisions/0035-window-slot-map.md). Where a
-// visit fits inside a window is src/domain/scheduling.ts; the rule below is the
-// one the prompt states, and both booking and dispatch answer to it. A block's
+// visit fits inside a window is src/domain/scheduling.ts; the clash check below
+// is the prompt's, and both booking and dispatch answer to it. A block's
 // size now comes from its service's length rather than its kind's alone, by the
 // one rule in src/policy/visit-length.ts, which gives the prompt's four sizes for
 // the four kinds' own lengths (docs/decisions/0085-services-ops-can-edit.md).
 //
-// The rules are quoted as the prompt writes them, and two are not kept as
-// written: a move is written to our own database, not FSM, and ops record leave
-// in the console, where the same clash check reads it (ADR 0062).
+// A move is written to our own database, and ops record leave in the console, where the same clash check reads it
+// (ADR 0062).
 
 import { WINDOW_SLOT_MAP, type BookingWindow } from "../config/scheduling.ts";
-
-export const RULES = [
-  "Rows are technicians; columns are seven days; each day has config SLOTS_PER_DAY (4) slots.",
-  "Blocks are sized in slots: consultation 1, service 1, replacement 1.5, first fit 2. Sizes come from the price book's visit types.",
-  "A technician cannot hold two live jobs in one window on one date. This check runs on the server before any write to FSM.",
-  "A move requires a reason from the design's list (technician unavailable, client asked to move it, zone rebalance, skill needed · first-fit certified, running over on an earlier job). It then updates FSM and messages the client with the new window.",
-  "The client's payment carries over and he is never charged for a move ops make, including inside 24 hours.",
-  "Leave periods come from FSM technician availability.",
-] as const;
 
 /** A block's size on the board, in slots, from the half-slots it holds: 1, 1, 1.5 and 2 for the kinds' own lengths. */
 export const slotsFor = (units: number): number => units / 2;

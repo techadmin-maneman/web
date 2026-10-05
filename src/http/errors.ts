@@ -190,7 +190,7 @@ export function errorBody(code: ErrorCode, requestId: string, fields?: readonly 
 
 /**
  * The status each code is answered with, the same wherever it is answered: a route lists the code under this status
- * in its OpenAPI responses (test/node/contract.test.ts holds the two together).
+ * in its OpenAPI responses (test/worker/platform/contract.test.ts holds the two together).
  */
 export const ERROR_STATUS = {
   not_found: 404,

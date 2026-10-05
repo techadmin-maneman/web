@@ -5,7 +5,7 @@
 
 ## Context
 
-The owner kept Phase 2 on Cloudflare's free plan with hard caps (22 September 2026), so ADR 0009 stands: nothing may bill. Everything on Workers Free stops at its limit, except R2, which bills past 10 GB. `test/node/free-tier-budget.test.ts` already holds the try-on's worst case under 80% of each allowance.
+The owner kept Phase 2 on Cloudflare's free plan with hard caps (22 September 2026), so ADR 0009 stands: nothing may bill. Everything on Workers Free stops at its limit, except R2, which bills past 10 GB. `test/node/tooling/free-tier-budget.test.ts` already holds the try-on's worst case under 80% of each allowance.
 
 That worst case was already at the line. Production kept each try-on result for thirty days, and staging and production together could hold 7.96 GB of results, **79.6% of R2's 10 GB**. Phase 2 has to fit into what is left:
 

@@ -1,5 +1,5 @@
 // What a stylesheet may not write for itself, for the token tests of the site and of the apps
-// (test/node/site-tokens.test.ts, test/node/app-tokens.test.ts): every colour, size, space, weight, leading,
+// (test/node/site/site-tokens.test.ts, test/node/apps/app/app-tokens.test.ts): every colour, size, space, weight, leading,
 // duration and curve comes from packages/brand.
 
 /** The colours CSS knows by name. `transparent` and `currentColor` are not among them: they name no colour. */

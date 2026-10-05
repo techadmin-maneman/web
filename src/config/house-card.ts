@@ -5,7 +5,7 @@
 //
 // Chats cache a link's preview by its address, so every address of the card
 // carries its version, the API's redirect to it as well as the site's pages: a
-// new card needs a new version here. test/node/site-content.test.ts fails if
+// new card needs a new version here. test/node/site/site-content.test.ts fails if
 // the file changes and this does not.
 
 export const HOUSE_CARD_VERSION = 2;

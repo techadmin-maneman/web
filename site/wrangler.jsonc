@@ -6,7 +6,7 @@
 // to /book, and on the built films, which it gives a byte range at a time, as iOS
 // Safari needs. While the site gives no prices (PRICES_SHOWN, site/src/lib/flags.ts),
 // / is left to the assets, and /book is the Worker's for what a referral earns;
-// test/node/site-prices.test.ts keeps the list in step. Local and staging serve
+// test/node/site/site-prices.test.ts keeps the list in step. Local and staging serve
 // the Astro build (site/dist/<environment>, from npm run build:site). Production
 // keeps its placeholder page until the site goes live there, which the owner
 // will do in one release with the backend.

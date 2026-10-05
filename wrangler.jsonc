@@ -38,7 +38,7 @@
       { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" }
     ],
     // crm-sync asks for one batch at a time; Queues does not guarantee it (docs/decisions/0012-zoho-sync.md).
-    // Each max_retries leaves room for its consumer's last try (test/node/queue-ceilings.test.ts); retry_delay
+    // Each max_retries leaves room for its consumer's last try (test/node/api/queue-ceilings.test.ts); retry_delay
     // spaces out a redelivery the code did not time, as when a whole batch fails.
     "consumers": [
       {
@@ -95,7 +95,7 @@
     "SELF_SERVE_BOOKING": "true",
     "REFERRER_NAME_ON_INVITE": "true",
     "RAZORPAY_KEY_ID": "",
-    // Daily ceilings; test/node/free-tier-budget.test.ts proves they fit the free tier.
+    // Daily ceilings; test/node/tooling/free-tier-budget.test.ts proves they fit the free tier.
     "RENDER_DAILY_CEILING": "20",
     "UPLOAD_DAILY_CEILING": "40",
     "RESULT_READ_DAILY_CEILING": "400",
@@ -201,7 +201,7 @@
         "SELF_SERVE_BOOKING": "true",
         "REFERRER_NAME_ON_INVITE": "true",
         "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",
-        // Daily ceilings; test/node/free-tier-budget.test.ts proves they fit the free tier.
+        // Daily ceilings; test/node/tooling/free-tier-budget.test.ts proves they fit the free tier.
         "RENDER_DAILY_CEILING": "20",
         "UPLOAD_DAILY_CEILING": "40",
         "RESULT_READ_DAILY_CEILING": "400",
@@ -299,7 +299,7 @@
         "SELF_SERVE_BOOKING": "false",
         "REFERRER_NAME_ON_INVITE": "true",
         "RAZORPAY_KEY_ID": "",
-        // Daily ceilings; test/node/free-tier-budget.test.ts proves they fit the free tier.
+        // Daily ceilings; test/node/tooling/free-tier-budget.test.ts proves they fit the free tier.
         "RENDER_DAILY_CEILING": "40",
         "UPLOAD_DAILY_CEILING": "80",
         "RESULT_READ_DAILY_CEILING": "800",

@@ -33,7 +33,7 @@ A production build stops (`site/src/lib/publish-gate.ts`) while:
 - any consent notice is unapproved;
 - the privacy or terms page has no text, since the try-on's consent screen links to `/privacy`.
 
-`test/node/site-content.test.ts` ("the publish gate") checks that the gate stops for exactly those reasons, and lets through a block whose material is replaced. `test/node/site-production-gate.test.ts` runs the production build as it stands and checks that it passes the gate and ships none of the design's placeholder text, photographs or footage. (Corrected 27 September 2026: this said the second test checks that the build fails; since the terms and the business number were published on 22 September 2026, the build passes, and the refusals are the first test's.)
+`test/node/site/site-content.test.ts` ("the publish gate") checks that the gate stops for exactly those reasons, and lets through a block whose material is replaced. `test/node/site/site-production-gate.test.ts` runs the production build as it stands and checks that it passes the gate and ships none of the design's placeholder text, photographs or footage. (Corrected 27 September 2026: this said the second test checks that the build fails; since the terms and the business number were published on 22 September 2026, the build passes, and the refusals are the first test's.)
 
 The prompt lists six placeholder blocks. v2 tags more of its images "Placeholder" (the hero footage, the plate opening "What it is", the how-it-works photographs and the base photographs), so each of those is a placeholder block too, as are the two legal pages. That leaves production with nothing to tag. An unpublished block renders nothing in production: its section, or its image, collapses.
 
@@ -44,7 +44,7 @@ The prompt lists six placeholder blocks. v2 tags more of its images "Placeholder
 
 ### Styling and type
 
-- Plain CSS, scoped per component, with every colour, size and space taken from `site/src/styles/tokens.css` (now `packages/brand/tokens.css`, ADR 0037). `test/node/site-tokens.test.ts` fails on a raw colour, `px`, `vw` or `em` value anywhere else, and on an undefined token.
+- Plain CSS, scoped per component, with every colour, size and space taken from `site/src/styles/tokens.css` (now `packages/brand/tokens.css`, ADR 0037). `test/node/site/site-tokens.test.ts` fails on a raw colour, `px`, `vw` or `em` value anywhere else, and on an undefined token.
 - The fonts are self-hosted from `@fontsource`: EB Garamond 400 and Instrument Sans 400 and 500, the only weights v2 uses. Each ships Google's latin and latin-ext subsets, with `unicode-range`, so latin-ext loads only for a character such as ₹.
 - No inline `style` attribute is rendered, so F4's content security policy can stay strict. The only inline script is the hash-route redirect, which F4 allows by its hash.
 

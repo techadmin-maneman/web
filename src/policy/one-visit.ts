@@ -11,14 +11,7 @@ import { FIRST_FIT_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { DAY_MS } from "../lib/durations.ts";
 import { FREE_CHANGE_NOTICE_HOURS, type SoldTerms } from "./moving-a-visit.ts";
 
-export const RULES = [
-  "Clients can choose one vs. two visits. If they choose consultation, the technician can measure and explain the product with the fit coming in later. If they choose consultation + fit, the technician can fit them their chosen product during the first visit itself",
-  "once the client has agreed and been fitted, the technician sends a Razorpay payment link, and nothing is paid if the client decides against it.",
-  "a one-visit booking holds no payment, so no no-show charge and no late fee apply to it, and moving or cancelling it is free.",
-  "The payment link takes payment for 14 days. After that, ops send a new one from Razorpay's dashboard with the visit's ID as its reference.",
-] as const;
-
-/** How long a one visit's payment link takes payment, from when Razorpay makes it (RULES[3]). */
+/** How long a one visit's payment link takes payment, from when Razorpay makes it. */
 const PAYMENT_LINK_OPEN_DAYS = 14;
 
 /** When a payment link Razorpay makes at this moment stops taking payment. */
@@ -44,7 +37,7 @@ export function planStartsIn(plan: Plan, window: BookingWindow): boolean {
   return (ONE_VISIT_WINDOWS as readonly BookingWindow[]).includes(window);
 }
 
-/** What a one visit is sold under (RULES[2]): nothing is charged for missing it or for changing it late. */
+/** What a one visit is sold under: nothing is charged for missing it or for changing it late. */
 export const ONE_VISIT_TERMS: SoldTerms = {
   noticeHours: FREE_CHANGE_NOTICE_HOURS,
   lateCharge: "nothing",
@@ -59,7 +52,7 @@ export type OneVisitState = "booked" | "fitted" | "declined";
 
 /**
  * What the client decided at the visit, as the technician's piece step records it: the product they chose and were
- * fitted with, whose payment link closing the visit sends (RULES[1]), or that they decided against it, which makes
+ * fitted with, whose payment link closing the visit sends, or that they decided against it, which makes
  * the visit a consultation, with nothing to pay.
  */
 export type Decision = { readonly declined: true } | { readonly product: string };

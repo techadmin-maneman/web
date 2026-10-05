@@ -1,6 +1,6 @@
 // docs/open-points.md is read by people deciding whether production can go
 // out, so its numbers have to mean one thing each. The rules, checked by
-// scripts/ci/check-open-points.ts and test/node/open-points.test.ts:
+// scripts/ci/check-open-points.ts and test/node/tooling/open-points.test.ts:
 //
 // - every point has a number of its own, and a number is never reused;
 // - an open table holds only what is still owed: a point that is settled,
