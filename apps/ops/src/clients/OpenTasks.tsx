@@ -29,7 +29,7 @@ function wayTo(group: Group, task: Task, clientId: string): { readonly to: strin
 }
 
 function Row({ group, task, clientId, now }: { group: Group; task: Task; clientId: string; now: Date }) {
-  const name = taskCopy.groups[group] ?? group;
+  const name = taskCopy.groups[group];
   const way = wayTo(group, task, clientId);
   return (
     <li className={styles.openTask}>
