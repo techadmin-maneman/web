@@ -8,6 +8,7 @@
 // where it stands, a refused photograph set retaken; deleting the job's work asks
 // a second time, since what it deletes never reaches us.
 
+import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
@@ -89,16 +90,16 @@ export function WaitingScreen() {
   return (
     <main className={styles.screen}>
       <header className={styles.head}>
-        <button
+        <IconButton
           className={styles.back}
-          type="button"
-          aria-label={copy.back}
+          d={ICONS.back}
+          size={24}
+          stroke={STROKE}
+          label={copy.back}
           onClick={() => {
             go("/");
           }}
-        >
-          <Icon d={ICONS.back} size={24} stroke={STROKE} />
-        </button>
+        />
         <h1 className={styles.title} ref={heading} tabIndex={-1}>
           {copy.title}
         </h1>

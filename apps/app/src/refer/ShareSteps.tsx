@@ -1,6 +1,7 @@
 // The share sheet's three steps (boards F2 to F4), drawn from its flow (./share-flow.ts): which card, the lines its own
 // photographs need agreeing to, and the invite's preview with the ways to send it.
 
+import { IconButton } from "@maneman/ui/IconButton";
 import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -58,9 +59,7 @@ export function ChoiceStep({ flow, onClose }: StepProps) {
   return (
     <div className={styles.screen}>
       <div className={styles.screenHead}>
-        <button className={styles.back} type="button" aria-label={refer.close} onClick={onClose}>
-          <Icon d={ICONS.back} size={22} />
-        </button>
+        <IconButton className={styles.back} d={ICONS.back} size={22} label={refer.close} onClick={onClose} />
         <h2 className={styles.screenTitle} id={TITLE_ID}>
           {refer.card.title}
         </h2>

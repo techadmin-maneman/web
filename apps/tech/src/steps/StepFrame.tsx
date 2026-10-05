@@ -7,9 +7,9 @@
 // capturing. A tap that lands while a step is still arriving was aimed at the
 // screen before it, so the action takes none until the slide is done.
 
+import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
-import { Icon } from "@maneman/ui/Icon";
 import { useEffect, useState, type ReactNode } from "react";
 import { steps as copy } from "../content.ts";
 import { STROKE } from "../icons.ts";
@@ -76,9 +76,14 @@ export function StepFrame({
   return (
     <main className={still ? styles.screen : styles.sliding}>
       <header className={styles.head}>
-        <button className={styles.back} type="button" aria-label={copy.back} onClick={onBack}>
-          <Icon d={ICONS.back} size={24} stroke={STROKE} />
-        </button>
+        <IconButton
+          className={styles.back}
+          d={ICONS.back}
+          size={24}
+          stroke={STROKE}
+          label={copy.back}
+          onClick={onBack}
+        />
         <h1 className={styles.title} ref={heading} tabIndex={-1}>
           {title}
         </h1>

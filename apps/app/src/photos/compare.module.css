@@ -20,11 +20,6 @@
 }
 
 .back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--tap);
-  height: var(--tap);
   margin-left: calc(-1 * var(--sp-11));
   color: var(--ink-soft);
 }

@@ -6,6 +6,7 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | ---------------------------- | -------------------------------------------------------------------------------------------------- |
 | `@maneman/ui/base.css`       | The page every app starts from: the box model, the serif's one weight, keyboard focus, less motion |
 | `@maneman/ui/Icon`           | A line icon from `@maneman/brand/icons`, at the set's stroke or a heavier one                      |
+| `@maneman/ui/IconButton`     | A control that is only its icon, named for a screen reader, and `iconButtonLook()` for such a link |
 | `@maneman/ui/Mark`           | The brand's mark, in the surrounding text colour                                                   |
 | `@maneman/ui/VisuallyHidden` | Words for a screen reader alone                                                                    |
 | `@maneman/ui/Caps`           | The boards' small-caps serif label                                                                 |

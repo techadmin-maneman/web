@@ -1,0 +1,22 @@
+/* A control that is only its icon (./IconButton.tsx), the tap's size; its colour and its margin are the screen's. */
+
+@layer base, ui;
+
+@layer ui {
+  /* The client app's tap, which the technician app's own class replaces with its board's. */
+  .iconButton {
+    --icon-button-size: var(--tap);
+
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--icon-button-size);
+    height: var(--icon-button-size);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+}

@@ -2,8 +2,8 @@
 // badge — a body that scrolls, and the one action fixed at the foot, where a
 // gloved thumb finds it on every screen.
 
+import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
-import { Icon } from "@maneman/ui/Icon";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
@@ -42,16 +42,16 @@ export function CardFrame({ job, foot, children }: { job: Job; foot: ReactNode; 
   return (
     <main className={styles.screen}>
       <header className={styles.head}>
-        <button
+        <IconButton
           className={styles.back}
-          type="button"
-          aria-label={copy.back}
+          d={ICONS.back}
+          size={24}
+          stroke={STROKE}
+          label={copy.back}
           onClick={() => {
             go("/");
           }}
-        >
-          <Icon d={ICONS.back} size={24} stroke={STROKE} />
-        </button>
+        />
         <div className={styles.headWho}>
           <h1 className={styles.name} ref={heading} tabIndex={-1}>
             {nameOf(job)}
