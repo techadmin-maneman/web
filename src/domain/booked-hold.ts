@@ -4,6 +4,7 @@ import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { type Logger } from "../log.ts";
 import { type AlertOnce } from "./alerts.ts";
+import { PAYMENT_HELD, statusIn } from "../config/statuses.ts";
 
 export interface ConfirmOptions {
   /** Queues a message about the visit once its row is written (src/domain/visit-messages.ts). */
@@ -93,7 +94,7 @@ export async function refundableFor(db: D1Database, orderId: string | null): Pro
   return db
     .prepare(
       `SELECT razorpay_payment_id, amount - refunded_amount AS amount, created_at AS paid_at FROM payments
-       WHERE razorpay_order_id = ?1 AND status IN ('captured', 'partially_refunded') AND amount > refunded_amount
+       WHERE razorpay_order_id = ?1 AND ${statusIn("status", PAYMENT_HELD)} AND amount > refunded_amount
        ORDER BY created_at LIMIT 1`,
     )
     .bind(orderId)

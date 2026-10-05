@@ -5,6 +5,8 @@
 // (src/domain/tech-jobs.ts). A visit already under way still takes one; one
 // closed, cancelled or gone does not.
 
+import { statusIn, VISIT_LIVE } from "../config/statuses.ts";
+
 type NoteSaved =
   | { readonly kind: "saved"; readonly note: string; readonly notedAt: string }
   | { readonly kind: "not_found" }
@@ -24,7 +26,7 @@ export async function saveClientNote(
   const saved = await db
     .prepare(
       `UPDATE appointments SET client_note = ?3, client_note_at = ?4
-       WHERE id = ?1 AND person_id = ?2 AND status IN ('scheduled', 'dispatched', 'in_progress')`,
+       WHERE id = ?1 AND person_id = ?2 AND ${statusIn("status", VISIT_LIVE)}`,
     )
     .bind(input.visitId, input.personId, input.note, at)
     .run();

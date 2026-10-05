@@ -27,6 +27,7 @@ import {
 import { closedIfSentBy } from "../policy/one-visit.ts";
 import { dueAt, type Slas, type TaskGroup } from "../policy/tasks.ts";
 import { paidNotBooked } from "./hold-stages.ts";
+import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE, VISIT_NOT_BEGUN } from "../config/statuses.ts";
 
 /** A visit to come, by its id and its start. */
 export interface TaskVisit {
@@ -150,7 +151,7 @@ const OUTSTANDING = [
   SELECT 'untold_move' AS "group", m.id AS id, a.person_id AS person_id, pe.name AS person_name,
          m.now_start || ' ' || ${UNTOLD_REASON} AS detail, m.created_at AS since, NULL AS due_by, '' AS episode
     FROM appointments a JOIN dispatch_moves m ON m.appointment_id = a.id JOIN people pe ON pe.id = a.person_id
-   WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
+   WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.window_start >= ?1
      AND m.now_start >= ?1 AND pe.erased_at IS NULL AND ${UNTOLD_MOVE}
   UNION ALL
   SELECT 'consultation_request', r.id, r.person_id, pe.name,
@@ -165,7 +166,7 @@ const OUTSTANDING = [
      AND NOT (r.one_visit = 1 AND EXISTS (
        SELECT 1 FROM appointments fit
         WHERE fit.person_id = r.person_id AND fit.type = 'first_fit' AND fit.deleted_at IS NULL
-          AND fit.status NOT IN ('cancelled', 'terminated')))
+          AND ${statusNotIn("fit.status", VISIT_CALLED_OFF)}))
   UNION ALL
   SELECT 'replacement_order', p.id, p.person_id, pe.name, p.piece_code || ' ' || p.replacement_due_at,
          date(p.replacement_due_at, ?3), p.replacement_due_at, ''
@@ -239,13 +240,13 @@ const OUTSTANDING = [
          a.window_start AS due_by, ${LEAVE_CONFLICT_EPISODE} AS episode
     FROM appointments a JOIN technicians t ON t.id = a.technician_id
     LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
-   WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
+   WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.window_start >= ?1
      AND EXISTS (SELECT 1 FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY})
   UNION ALL
   SELECT 'address_to_confirm', a.id, a.person_id, pe.name, a.window_start,
          COALESCE(a.first_seen_at, a.synced_at), a.window_start, ''
     FROM appointments a JOIN people pe ON pe.id = a.person_id
-   WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
+   WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.window_start >= ?1
      AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM addresses d WHERE d.person_id = a.person_id AND d.replaced_at IS NULL)
   UNION ALL
@@ -265,12 +266,12 @@ const OUTSTANDING = [
    WHERE s.visit_start < ?3 AND pe.erased_at IS NULL
      AND NOT EXISTS (
        SELECT 1 FROM appointments live
-        WHERE live.person_id = s.person_id AND live.status IN ('scheduled', 'dispatched', 'in_progress')
+        WHERE live.person_id = s.person_id AND ${statusIn("live.status", VISIT_LIVE)}
           AND live.deleted_at IS NULL)
      AND NOT EXISTS (
        SELECT 1 FROM appointments later
         WHERE later.person_id = s.person_id AND later.window_start > s.visit_start AND later.deleted_at IS NULL
-          AND later.status NOT IN ('cancelled', 'terminated'))
+          AND ${statusNotIn("later.status", VISIT_CALLED_OFF)})
      AND NOT EXISTS (
        SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND ${paidNotBooked("h")})
   UNION ALL
@@ -280,12 +281,12 @@ const OUTSTANDING = [
    WHERE s.consulted_start < ?5 AND ${NOT_FITTED_SINCE_CONSULTED} AND pe.erased_at IS NULL
      AND NOT EXISTS (
        SELECT 1 FROM appointments live
-        WHERE live.person_id = s.person_id AND live.status IN ('scheduled', 'dispatched', 'in_progress')
+        WHERE live.person_id = s.person_id AND ${statusIn("live.status", VISIT_LIVE)}
           AND live.deleted_at IS NULL)
      AND NOT EXISTS (
        SELECT 1 FROM appointments later
         WHERE later.person_id = s.person_id AND later.window_start > s.consulted_start AND later.deleted_at IS NULL
-          AND later.status NOT IN ('cancelled', 'terminated'))
+          AND ${statusNotIn("later.status", VISIT_CALLED_OFF)})
      AND NOT EXISTS (
        SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND ${paidNotBooked("h")})
 `),

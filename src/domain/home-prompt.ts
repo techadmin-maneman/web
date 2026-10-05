@@ -19,6 +19,7 @@ import type { NextOffer } from "./next-visit.ts";
 import { serviceToOffer } from "./services.ts";
 import { DAY_MS } from "../lib/durations.ts";
 import { paidNotBooked } from "./hold-stages.ts";
+import { statusIn, VISIT_LIVE } from "../config/statuses.ts";
 
 type HomePrompt =
   | { readonly kind: "address" }
@@ -61,7 +62,7 @@ const PROMPT = `SELECT
   (SELECT MIN(replacement_due_at) FROM pieces
      WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL AND replacement_due_at IS NOT NULL) AS due_on,
   (EXISTS (SELECT 1 FROM appointments r WHERE r.person_id = ?1 AND r.deleted_at IS NULL AND r.type = 'replacement'
-      AND r.status IN ('scheduled', 'dispatched', 'in_progress'))
+      AND ${statusIn("r.status", VISIT_LIVE)})
     OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = ?1 AND h.type = 'replacement' AND ${paidNotBooked("h")}))
     AS replacement_booked,
   invoiced.id AS invoiced_id, invoiced.type AS invoiced_type, invoiced.window_start AS invoiced_start

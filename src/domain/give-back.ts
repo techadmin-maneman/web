@@ -10,6 +10,7 @@ import {
   type CapturedPayment,
   refundableFor,
 } from "./booked-hold.ts";
+import { PAYMENT_REFUNDED, statusIn } from "../config/statuses.ts";
 
 /** What giving a hold back did with the money. */
 type GivenBack =
@@ -131,7 +132,7 @@ async function nothingToRefund(db: D1Database, orderId: string | null): Promise<
   const refunded = await db
     .prepare(
       `SELECT razorpay_payment_id FROM payments
-       WHERE razorpay_order_id = ?1 AND status IN ('refunded', 'partially_refunded') ORDER BY created_at LIMIT 1`,
+       WHERE razorpay_order_id = ?1 AND ${statusIn("status", PAYMENT_REFUNDED)} ORDER BY created_at LIMIT 1`,
     )
     .bind(orderId)
     .first<{ razorpay_payment_id: string }>();

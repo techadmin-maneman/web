@@ -3,13 +3,14 @@
 import { addressRefusal, type AddressRefusal } from "../policy/address-change.ts";
 import { pincodeOf } from "./service-area.ts";
 import { paidNotBooked } from "./hold-stages.ts";
+import { statusIn, VISIT_LIVE } from "../config/statuses.ts";
 
 /** The cities of the client's visits still to come: booked, or paid for and on their way to being booked. */
 async function citiesOfVisitsToCome(db: D1Database, personId: string): Promise<string[]> {
   const { results } = await db
     .prepare(
       `SELECT sp.city FROM appointments a JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
-       WHERE a.person_id = ?1 AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched', 'in_progress')
+       WHERE a.person_id = ?1 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_LIVE)}
        UNION
        SELECT sp.city FROM slot_holds h JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
        WHERE h.person_id = ?1 AND ${paidNotBooked("h")}`,

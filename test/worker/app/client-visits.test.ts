@@ -4,6 +4,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { VisitType } from "../../../src/config/visit-types.ts";
 import type { App } from "../../../src/http/context.ts";
+import { grantCredits, redeemCredit } from "../../../src/domain/credits.ts";
 import { findEligiblePerson } from "../../../src/domain/login.ts";
 import { openSession } from "../../../src/domain/sessions.ts";
 import type { Angle, Phase } from "../../../src/domain/visit-photos.ts";
@@ -602,6 +603,15 @@ describe("a visit paid for ahead (board C1's Prepaid)", () => {
     )
       .bind(person?.id, ids["ap-credit"], NOW.toISOString())
       .run();
+    // The credit it spent, as booking writes it in the batch that writes the visit.
+    await grantCredits(env.DB, {
+      personId: person?.id ?? "",
+      visits: 1,
+      source: "ops",
+      sourceId: "o1",
+      now: NOW,
+    }).run();
+    await redeemCredit(env.DB, person?.id ?? "", ids["ap-credit"] ?? "", NOW).run();
 
     const visits = await (await get("/api/visits")).json<{ upcoming: { id: string; prepaid: boolean }[] }>();
     const prepaid = Object.fromEntries(visits.upcoming.map((visit) => [visit.id, visit.prepaid]));

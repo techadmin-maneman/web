@@ -10,6 +10,7 @@ import { bookedLength, unitsFor } from "../policy/visit-length.ts";
 import { unitAt } from "../policy/slot-times.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { minutesBetween } from "../lib/durations.ts";
+import { statusIn, VISIT_LIVE } from "../config/statuses.ts";
 
 /** What one technician's day already holds. */
 export interface Day {
@@ -154,7 +155,7 @@ export async function occupancy(
         `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes FROM appointments a
          LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
          WHERE a.deleted_at IS NULL AND a.technician_id IS NOT NULL
-           AND a.status IN ('scheduled', 'dispatched', 'in_progress')
+           AND ${statusIn("a.status", VISIT_LIVE)}
            AND a.window_start >= ?1 AND a.window_start < ?2 AND a.id IS NOT ?3`,
       )
       .bind(
