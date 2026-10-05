@@ -11,9 +11,10 @@ import { readFileSync } from "node:fs";
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
-export type Surface = "client" | "ops" | "tech";
+export type Surface = "public" | "client" | "ops" | "tech";
 
 const DOCUMENTS: Readonly<Record<Surface, string>> = {
+  public: "docs/openapi.json",
   client: "docs/openapi-client.json",
   ops: "docs/openapi-ops.json",
   tech: "docs/openapi-tech.json",

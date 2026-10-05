@@ -5,10 +5,71 @@
 import { test as base, expect, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { drawnHead, HEAD_HEIGHT, HEAD_WIDTH, type Rgb } from "../test/node/drawn-head.ts";
+import { contractErrors, type Surface } from "./contract.ts";
 
 export { expect };
 
-export const test = base.extend<{ contentSecurityPolicy: undefined; appTurnstile: undefined }>({
+/** The API document each project's pages are answered under. */
+const SURFACES: Readonly<Record<string, Surface>> = {
+  "390": "public",
+  "1440": "public",
+  app: "client",
+  ops: "ops",
+  tech: "tech",
+  "tech-ios": "tech",
+};
+
+const OUTSIDE_CONTRACT = "outside-contract";
+const BODY_WAIT_MS = 5_000;
+
+/**
+ * Lets the running test answer each route ("GET /api/payments 200") outside the API's contract, on purpose: a body the
+ * page cannot draw, or an older API's answer.
+ */
+export function outsideContract(...routes: string[]): void {
+  for (const route of routes) test.info().annotations.push({ type: OUTSIDE_CONTRACT, description: route });
+}
+
+export const test = base.extend<{ contentSecurityPolicy: undefined; appTurnstile: undefined; apiContract: undefined }>({
+  // Every JSON answer the page had from /api/*, a fake's or the local mm-api's, held to the committed OpenAPI
+  // document (e2e/contract.ts): a fake that drifts from the API, or a route that answers what it never documented,
+  // fails the test it shows in (CQ-54).
+  apiContract: [
+    async ({ page }, use, testInfo) => {
+      const surface = SURFACES[testInfo.project.name];
+      const answers: Promise<string[]>[] = [];
+      if (surface !== undefined) {
+        // Only answers that arrived whole. Even then Chromium can lose a body the page has finished with, and never
+        // hand it over: one not read within BODY_WAIT_MS is let go.
+        page.on("requestfinished", (request) => {
+          const { pathname } = new URL(request.url());
+          if (!pathname.startsWith("/api/")) return;
+          const read = request.response().then(async (response) => {
+            if (response === null) return [];
+            if (!(response.headers()["content-type"] ?? "").includes("application/json")) return [];
+            const body: unknown = await response.json().catch(() => undefined);
+            if (body === undefined) return [];
+            return contractErrors(surface, request.method(), pathname, response.status(), body);
+          });
+          const lost = new Promise<string[]>((resolve) =>
+            setTimeout(() => {
+              resolve([]);
+            }, BODY_WAIT_MS),
+          );
+          answers.push(Promise.race([read, lost]));
+        });
+      }
+      await use(undefined);
+      const meant = testInfo.annotations
+        .filter(({ type }) => type === OUTSIDE_CONTRACT)
+        .map(({ description }) => `${description ?? ""}:`);
+      const errors = (await Promise.all(answers))
+        .flat()
+        .filter((error) => !meant.some((route) => error.startsWith(route)));
+      expect(errors, "the page was answered outside the API's contract").toEqual([]);
+    },
+    { auto: true },
+  ],
   contentSecurityPolicy: [
     async ({ page }, use) => {
       const violations: string[] = [];

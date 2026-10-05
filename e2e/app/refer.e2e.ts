@@ -10,7 +10,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import sharp from "sharp";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
-import { expect, test } from "../support.ts";
+import { expect, outsideContract, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
 import { holdOpen } from "./one-tap.ts";
 import { logIn, signIn } from "./signed-in.ts";
@@ -291,6 +291,7 @@ async function firstFitPair(page: Page, before: string, after: string) {
             photos: { before: [front(before)], after: [front(after)] },
           },
         ],
+        try_ons: [],
       },
     }),
   );
@@ -395,6 +396,7 @@ async function changed(page: Page, path: string, change: (answer: Record<string,
       url: `http://127.0.0.1:${String(PORTS.app)}${path}`,
       headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
     });
+    if (!answer.ok()) return route.fulfill({ response: answer });
     await route.fulfill({ response: answer, json: change((await answer.json()) as Record<string, unknown>) });
   });
 }
@@ -438,6 +440,7 @@ test("says what ops set each side gets, and beside each friend what the client e
 // The Home the service worker kept from before mm-api answered the reward, and an mm-api rolled back, carry none,
 // nor each friend's visits (apps/app/src/refer/reward.ts): Refer still draws, and gives no count.
 test("draws Refer, its preview and its tracker, with no count, where the answers carry no reward", async ({ page }) => {
+  outsideContract("GET /api/me 200", "GET /api/refer 200");
   await changed(page, "/api/me", ({ referral_reward: _gone, ...me }) => me);
   await changed(page, "/api/refer", (refer) => ({ ...refer, fitted: [{ first_name: "Karan", month: "2026-09" }] }));
   await toRefer(page);
@@ -459,6 +462,7 @@ test("draws Refer, its preview and its tracker, with no count, where the answers
 });
 
 test("draws a lead's empty Refer, with no count, where the Home carries no reward", async ({ page }) => {
+  outsideContract("GET /api/me 200");
   await changed(page, "/api/me", ({ referral_reward: _gone, ...me }) => me);
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();

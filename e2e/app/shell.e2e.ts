@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 import sharp from "sharp";
-import { expect, test } from "../support.ts";
+import { expect, outsideContract, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 
@@ -145,6 +145,7 @@ test("opens Home, not a blank page, at a path every JavaScript object answers to
 test("offers a way on, not a blank page, when a page fails to draw", async ({ page }) => {
   await home(page);
   // An answer the page cannot draw.
+  outsideContract("GET /api/payments 200");
   await page.route("**/api/payments", (route) => route.fulfill({ json: { entries: null } }));
   await page.getByRole("navigation").getByRole("link", { name: "Payments" }).click();
   await expect(page.getByRole("alert")).toContainText("This page didn’t open.");

@@ -621,7 +621,8 @@ test("a browser that blocks storage books on the invite's page and here, and sen
   const requests = await mockApi(page);
   await page.route(`**/api/r/${CODE}/consultation`, (route) => {
     requests.push(route.request());
-    return route.fulfill({ status: 201, json: { ...BOOKED, credits: true, invite: "valid" } });
+    const { discount_code: _none, ...booked } = BOOKED;
+    return route.fulfill({ status: 201, json: { ...booked, credits: true, invite: "valid" } });
   });
   await page.addInitScript(() => {
     Object.defineProperty(window, "localStorage", {
@@ -655,7 +656,7 @@ test("booking through WhatsApp for now is confirmed as a request, not refused", 
   await mockApi(page, {
     consultation: {
       status: 201,
-      body: { state: "requested", date: "2026-09-25", window: "morning", area: SERVED.area },
+      body: { ...BOOKED, state: "requested" },
     },
   });
   await visit(page, "/book");
