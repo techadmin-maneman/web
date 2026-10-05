@@ -1,5 +1,6 @@
 // Board C3: the window.
 
+import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { weekdayDate } from "@maneman/web-kit/dates";
 import type { Availability, BookingWindow } from "../../api.ts";
@@ -52,7 +53,7 @@ export function WindowStep(props: {
                 <span className={styles.windowName}>{WINDOW_NAMES[window]}</span>
                 <span className={styles.windowTime}>{WINDOW_HOURS[window]}</span>
                 {who !== null && changeCharged && (
-                  <span className={`${styles.windowTime ?? ""} ${styles.windowLate ?? ""}`}>
+                  <span className={classes(styles.windowTime, styles.windowLate)}>
                     {copy.within(props.noticeHours)}
                   </span>
                 )}

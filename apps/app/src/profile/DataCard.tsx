@@ -1,6 +1,7 @@
 // The account's data card: a copy of the client's data, and a concern raised and answered
 // (docs/decisions/0049-dpdp.md).
 
+import { GRIEVANCE_MAX_CHARS } from "../../../../src/policy/grievances.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
@@ -93,7 +94,7 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
           <textarea
             className={styles.input}
             rows={4}
-            maxLength={2000}
+            maxLength={GRIEVANCE_MAX_CHARS}
             required
             value={text}
             onChange={(event) => {

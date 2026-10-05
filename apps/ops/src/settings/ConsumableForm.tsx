@@ -5,6 +5,7 @@
 // before anything is sent (ADR 0071). Every box holds text: an empty level is
 // no level, never a nought.
 
+import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -185,7 +186,7 @@ export function ConsumableForm({
           value={draft.cost}
           inputMode="decimal"
           maxLength={10}
-          className={`${styles.number ?? ""} ${styles.amount ?? ""}`}
+          className={classes(styles.number, styles.amount)}
           onChange={edit("cost")}
         />
       </div>

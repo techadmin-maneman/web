@@ -6,7 +6,7 @@
 import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Consumable, type Consumables } from "../api.ts";
+import { api, type Answer, type Consumable, type Consumables } from "../api.ts";
 import { settings } from "../content.ts";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { refusalOf, type Failure } from "./refusal.ts";
@@ -17,65 +17,87 @@ const words = copy.retiring;
 
 type Step = { readonly step: "editing" | "checking" | "saving" } | ({ readonly step: "failed" } & Failure);
 
-export function Retirement({
-  consumable,
-  today,
-  restoring,
-  onSaved,
-  onCancel,
-}: {
-  consumable: Consumable;
-  today: string;
-  /** True to offer a retired one again; false to retire one offered. */
-  restoring: boolean;
-  onSaved: (book: Consumables, said: string) => void;
-  onCancel: () => void;
-}) {
-  const [from, setFrom] = useState(today);
-  const [step, setStep] = useState<Step>({ step: restoring ? "checking" : "editing" });
-  const id = `retire-${consumable.code}`;
+interface Props {
+  readonly consumable: Consumable;
+  readonly onSaved: (book: Consumables, said: string) => void;
+  readonly onCancel: () => void;
+}
 
-  const send = async () => {
+/** The change sent, and the consumables as they stand once it is made; a refusal stays on the panel. */
+function useSend(first: Step, onSaved: Props["onSaved"]) {
+  const [step, setStep] = useState<Step>(first);
+  const send = async (call: () => Promise<Answer<Consumables>>) => {
     setStep({ step: "saving" });
-    const answer = restoring
-      ? await api.restoreConsumable(consumable.code)
-      : await api.retireConsumable(consumable.code, from);
+    const answer = await call();
     if (!answer.ok) {
       setStep({ step: "failed", code: answer.code, fields: answer.fields });
       return;
     }
     onSaved(answer.body, words.done);
   };
+  return [step, setStep, send] as const;
+}
 
+function Refused({ step }: { step: Step }) {
+  if (step.step !== "failed") return null;
+  return (
+    <p className={styles.error} role="alert">
+      {refusalOf(copy.errors, step)}
+    </p>
+  );
+}
+
+/** A retired consumable offered again: nothing to fill in, so the check is all there is. */
+export function Restoring({ consumable, onSaved, onCancel }: Props) {
+  const [step, , send] = useSend({ step: "checking" }, onSaved);
   return (
     <fieldset className={styles.group}>
-      <legend className={styles.ruleTitle}>
-        {restoring ? copy.restoreLabel(consumable.name) : words.title(consumable.name)}
-      </legend>
-      {!restoring && (
-        <div className={styles.fields}>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel} htmlFor={id}>
-              {words.from}
-            </label>
-            <input
-              className={styles.date}
-              id={id}
-              type="date"
-              min={today}
-              value={from}
-              aria-describedby={`${id}-hint`}
-              onChange={(event) => {
-                setFrom(event.target.value);
-                setStep({ step: "editing" });
-              }}
-            />
-            <p className={styles.hint} id={`${id}-hint`}>
-              {words.fromHint}
-            </p>
-          </div>
+      <legend className={styles.ruleTitle}>{copy.restoreLabel(consumable.name)}</legend>
+      <CheckPanel
+        title={copy.form.confirm.title}
+        lines={[words.restore(consumable.name)]}
+        send={words.restoreSend}
+        sending={copy.form.saving}
+        back={copy.form.confirm.back}
+        busy={step.step === "saving"}
+        onSend={() => void send(() => api.restoreConsumable(consumable.code))}
+        onBack={onCancel}
+      />
+      <Refused step={step} />
+    </fieldset>
+  );
+}
+
+/** An offered consumable retired from a day, which the check names before anything is sent. */
+export function Retiring({ consumable, today, onSaved, onCancel }: Props & { readonly today: string }) {
+  const [from, setFrom] = useState(today);
+  const [step, setStep, send] = useSend({ step: "editing" }, onSaved);
+  const id = `retire-${consumable.code}`;
+  return (
+    <fieldset className={styles.group}>
+      <legend className={styles.ruleTitle}>{words.title(consumable.name)}</legend>
+      <div className={styles.fields}>
+        <div className={styles.field}>
+          <label className={styles.fieldLabel} htmlFor={id}>
+            {words.from}
+          </label>
+          <input
+            className={styles.date}
+            id={id}
+            type="date"
+            min={today}
+            value={from}
+            aria-describedby={`${id}-hint`}
+            onChange={(event) => {
+              setFrom(event.target.value);
+              setStep({ step: "editing" });
+            }}
+          />
+          <p className={styles.hint} id={`${id}-hint`}>
+            {words.fromHint}
+          </p>
         </div>
-      )}
+      </div>
       {step.step === "editing" ? (
         <div className={styles.actions}>
           <Button
@@ -95,26 +117,18 @@ export function Retirement({
       ) : (
         <CheckPanel
           title={copy.form.confirm.title}
-          lines={[restoring ? words.restore(consumable.name) : words.question(consumable.name, longDate(from))]}
-          send={restoring ? words.restoreSend : words.send}
+          lines={[words.question(consumable.name, longDate(from))]}
+          send={words.send}
           sending={copy.form.saving}
           back={copy.form.confirm.back}
           busy={step.step === "saving"}
-          onSend={() => void send()}
-          onBack={
-            restoring
-              ? onCancel
-              : () => {
-                  setStep({ step: "editing" });
-                }
-          }
+          onSend={() => void send(() => api.retireConsumable(consumable.code, from))}
+          onBack={() => {
+            setStep({ step: "editing" });
+          }}
         />
       )}
-      {step.step === "failed" && (
-        <p className={styles.error} role="alert">
-          {refusalOf(copy.errors, step)}
-        </p>
-      )}
+      <Refused step={step} />
     </fieldset>
   );
 }

@@ -19,6 +19,9 @@ export const ONE_TIME_CODE = {
   whatsappResendCooldownSeconds: 30,
 } as const;
 
+/** A code as it is typed: its digits and nothing else. The routes check it, and the apps size their boxes by it. */
+export const CODE_TEXT = new RegExp(`^\\d{${String(ONE_TIME_CODE.digits)}}$`);
+
 /** A code works for ten minutes ("Endpoints": "code lifetime of 10 minutes"). */
 export const CODE_TTL_MS = 10 * MINUTE_MS;
 /** One challenge sends at most this many codes, whichever channel asks; each also counts against the number's day. */

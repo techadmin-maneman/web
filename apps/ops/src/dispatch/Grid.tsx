@@ -12,6 +12,7 @@
 // A search that names a client, an area or a pincode outlines the blocks it
 // found, so the one visit is plain among a technician's eight.
 
+import { classes } from "@maneman/ui/classes";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { inIndia, shortDate } from "@maneman/web-kit/dates";
 import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
@@ -91,7 +92,7 @@ function BlockButton({ job, found, onOpen, onTake }: BlockButtonProps) {
   const begun = begunWord(block);
   return (
     <button
-      className={`${styles.block ?? ""} ${inkOf(block) ?? ""} ${sizeOf(block) ?? ""} ${movable ? "" : (styles.finished ?? "")}`}
+      className={classes(styles.block, inkOf(block), sizeOf(block), !movable && styles.finished)}
       type="button"
       data-appointment={block.appointment_id}
       data-match={found?.(block) === true ? "" : undefined}
@@ -137,7 +138,7 @@ function AwayMark({ technician, date, blocks }: { technician: BoardRow; date: st
   const day = shortDate(date);
   const marked = stranded === 0 ? styles.awayMark : `${styles.awayMark ?? ""} ${styles.stranded ?? ""}`;
   return (
-    <span className={`${marked ?? ""} ${label.caps ?? ""}`}>
+    <span className={classes(marked, label.caps)}>
       <span aria-hidden="true">{stranded === 0 ? copy.away : copy.stranded(stranded)}</span>
       <VisuallyHidden>
         {stranded === 0 ? copy.awayLabel(technician.name, day) : copy.strandedLabel(technician.name, day, stranded)}

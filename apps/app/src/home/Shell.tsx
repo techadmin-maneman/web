@@ -56,7 +56,7 @@ function PageHeader({ header }: { header: Header }) {
       );
     case "back":
       return (
-        <header className={`${styles.header} ${styles.titled}`}>
+        <header className={classes(styles.header, styles.titled)}>
           <Link className={styles.back} to={header.to} label={header.label}>
             <Icon d={ICONS.back} size={22} />
           </Link>

@@ -39,6 +39,9 @@ import styles from "./settings.module.css";
 
 const copy = settings.services;
 
+/** A service's buttons, each named by its words and its label. */
+type ServiceWord = "price" | "rename" | "describe" | "length" | "retire" | "restore" | "up" | "down";
+
 /** The one action open, and the block it is open in. */
 type Action =
   | { readonly kind: "price"; readonly target: Priced }
@@ -292,6 +295,28 @@ function ServiceBlock(props: {
     opened.onAct({ kind: "order", of: service.kind, tiers });
   };
   const retiredNow = service.retired_date !== null && service.retired_date <= today;
+  // What may be done to it, in the order the buttons stand: no new price once it is retired, and no move past an end.
+  const actions: readonly { kind: Action["kind"]; word: ServiceWord; onClick: () => void }[] = [
+    ...(retiredNow
+      ? []
+      : [
+          {
+            kind: "price" as const,
+            word: "price" as const,
+            onClick: () => {
+              opened.onAct({ kind: "price", target: asPriced(service) });
+            },
+          },
+        ]),
+    { kind: "rename", word: "rename", onClick: act("rename") },
+    { kind: "describe", word: "describe", onClick: act("describe") },
+    { kind: "length", word: "length", onClick: act("length") },
+    service.retired_date === null
+      ? { kind: "retire", word: "retire", onClick: act("retire") }
+      : { kind: "restore", word: "restore", onClick: act("restore") },
+    ...(place > 0 ? [{ kind: "order" as const, word: "up" as const, onClick: move(-1) }] : []),
+    ...(place < siblings.length - 1 ? [{ kind: "order" as const, word: "down" as const, onClick: move(1) }] : []),
+  ];
   const nameId = `service-${service.kind}-${service.tier}`;
   return (
     <li className={styles.service}>
@@ -306,56 +331,17 @@ function ServiceBlock(props: {
       </p>
       <PriceLines target={asPriced(service)} today={today} busy={busy} may={opened.may} onAct={opened.onAct} />
       <div className={styles.actions}>
-        {!retiredNow && (
+        {actions.map((action) => (
           <ActionButton
+            key={action.word}
             opened={opened}
-            kind="price"
-            label={copy.labels.price(service.name)}
-            onClick={() => {
-              opened.onAct({ kind: "price", target: asPriced(service) });
-            }}
+            kind={action.kind}
+            label={copy.labels[action.word](service.name)}
+            onClick={action.onClick}
           >
-            {copy.actions.price}
+            {copy.actions[action.word]}
           </ActionButton>
-        )}
-        <ActionButton opened={opened} kind="rename" label={copy.labels.rename(service.name)} onClick={act("rename")}>
-          {copy.actions.rename}
-        </ActionButton>
-        <ActionButton
-          opened={opened}
-          kind="describe"
-          label={copy.labels.describe(service.name)}
-          onClick={act("describe")}
-        >
-          {copy.actions.describe}
-        </ActionButton>
-        <ActionButton opened={opened} kind="length" label={copy.labels.length(service.name)} onClick={act("length")}>
-          {copy.actions.length}
-        </ActionButton>
-        {service.retired_date === null ? (
-          <ActionButton opened={opened} kind="retire" label={copy.labels.retire(service.name)} onClick={act("retire")}>
-            {copy.actions.retire}
-          </ActionButton>
-        ) : (
-          <ActionButton
-            opened={opened}
-            kind="restore"
-            label={copy.labels.restore(service.name)}
-            onClick={act("restore")}
-          >
-            {copy.actions.restore}
-          </ActionButton>
-        )}
-        {place > 0 && (
-          <ActionButton opened={opened} kind="order" label={copy.labels.up(service.name)} onClick={move(-1)}>
-            {copy.actions.up}
-          </ActionButton>
-        )}
-        {place < siblings.length - 1 && (
-          <ActionButton opened={opened} kind="order" label={copy.labels.down(service.name)} onClick={move(1)}>
-            {copy.actions.down}
-          </ActionButton>
-        )}
+        ))}
       </div>
       <OpenAction opened={opened} where={where} />
       <Outcome opened={opened} where={where} />

@@ -3,6 +3,7 @@
 // sheet, so the sheet is ours, in the change sheet's frame, with placeholder words (docs/fidelity-method.md).
 // Should the app be told booking is with ops after all, the note goes to them on WhatsApp, as it did before.
 
+import { CLIENT_NOTE_MAX_CHARS } from "../../../../src/policy/client-notes.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Sheet } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
@@ -12,9 +13,6 @@ import { focusIfLost } from "../lib/arrival.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import styles from "./booking.module.css";
-
-/** The most a note may hold, as the API takes it. */
-const MOST = 500;
 
 type Step =
   | { readonly kind: "writing" }
@@ -78,7 +76,7 @@ export function NoteSheet(props: {
               <textarea
                 className={styles.noteInput}
                 rows={4}
-                maxLength={MOST}
+                maxLength={CLIENT_NOTE_MAX_CHARS}
                 required
                 value={text}
                 onChange={(event) => {

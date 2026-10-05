@@ -40,6 +40,7 @@ import { visitorOf } from "../../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { APP_SWITCH_SOURCES, CONSENT_PURPOSES, screenAsks } from "../../policy/consents.ts";
 import { DECISION_SHOWN_DAYS } from "../../policy/decision-reasons.ts";
+import { CODE_TEXT } from "../../policy/one-time-code.ts";
 import { GRIEVANCES_SHOWN } from "../../policy/grievances.ts";
 import { latestGrievances, type ShownGrievance } from "../../domain/grievances.ts";
 import { revokeCard } from "../../domain/referral-cards.ts";
@@ -63,7 +64,7 @@ export const AddressSchema = z
     line2: z.string().trim().max(120).nullable(),
     locality: z.string().trim().min(1).max(80),
     city: z.string().trim().min(1).max(40),
-    pincode: z.string().regex(/^\d{6}$/),
+    pincode: z.string().regex(CODE_TEXT),
     access_notes: optional(300).openapi({
       description: "For the technician, from the day before the visit: gate code, parking.",
     }),
@@ -341,7 +342,7 @@ export const numberChangeVerifyRoute = clientRoute({
       required: true,
       ...json(
         z
-          .object({ request_id: z.uuid(), number: z.enum(["old", "new"]), code: z.string().regex(/^\d{6}$/) })
+          .object({ request_id: z.uuid(), number: z.enum(["old", "new"]), code: z.string().regex(CODE_TEXT) })
           .strict()
           .openapi("NumberChangeVerify"),
       ),

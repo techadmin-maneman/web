@@ -1,6 +1,7 @@
 // The share sheet's three steps (boards F2 to F4), drawn from its flow (./share-flow.ts): which card, the lines its own
 // photographs need agreeing to, and the invite's preview with the ways to send it.
 
+import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
@@ -176,7 +177,7 @@ function Bubble({ state, card }: { state: Refer; card: Shown }) {
 export function ShareStep({ flow, onClose }: StepProps) {
   const { shareFailed, file, message } = flow;
   return (
-    <div className={`${styles.screen} ${styles.inkScreen}`}>
+    <div className={classes(styles.screen, styles.inkScreen)}>
       <button className={styles.inkClose} type="button" onClick={onClose}>
         {refer.close}
       </button>
@@ -201,7 +202,7 @@ export function ShareStep({ flow, onClose }: StepProps) {
           </h3>
           <div className={styles.ways}>
             <a
-              className={`${styles.way} ${styles.whatsapp}`}
+              className={classes(styles.way, styles.whatsapp)}
               href={whatsappShare(message)}
               rel="noopener"
               target="_blank"

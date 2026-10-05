@@ -6,6 +6,7 @@
 // a payment held or a payment link unpaid; ops may then erase all the same, saying they will settle it by hand today.
 // From then on the client's page shows only what is kept of them.
 
+import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
@@ -198,7 +199,7 @@ export function ErasedRecord({ record, onChanged }: { record: ErasedClientRecord
         <h2 className={styles.name}>{copy.record.title}</h2>
         <p className={styles.note}>{copy.record.on(longDate(record.erased_at))}</p>
       </div>
-      <div className={`${styles.panel ?? ""} ${styles.visits ?? ""}`}>
+      <div className={classes(styles.panel, styles.visits)}>
         <VisitRecords visits={record.visits} name={copy.record.whose} onChanged={onChanged} />
         <MoneyRecords payments={record.payments} links={record.payment_links} invoices={record.invoices} />
       </div>

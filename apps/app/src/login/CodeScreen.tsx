@@ -1,5 +1,7 @@
 // A2: the code (design/phase2/Client App, board A2).
 
+import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
+import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
@@ -131,11 +133,11 @@ export function CodeScreen(props: Props) {
         </button>
       </div>
       <form
-        className={`${styles.body} ${styles.form}`}
+        className={classes(styles.body, styles.form)}
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
-          if (code.length === 6 && !closed) props.onVerify(code);
+          if (code.length === ONE_TIME_CODE.digits && !closed) props.onVerify(code);
         }}
       >
         <h1 className={styles.title}>{copy.title}</h1>
@@ -192,7 +194,7 @@ export function CodeScreen(props: Props) {
             size="action"
             className={styles.primary}
             type="submit"
-            disabled={code.length < 6 || props.busy || closed}
+            disabled={code.length < ONE_TIME_CODE.digits || props.busy || closed}
             busy={props.busy}
           >
             {copy.submit}

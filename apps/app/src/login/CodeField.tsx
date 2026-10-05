@@ -1,6 +1,7 @@
 // The code's six boxes (board A2), as one labelled field: assistive technology
 // sees a single input, and the boxes only draw what is typed into it.
 
+import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
 import type { Ref } from "react";
 import styles from "./CodeField.module.css";
 
@@ -21,17 +22,17 @@ export function CodeField({ value, label, invalid, onChange, ref }: Props) {
         className={styles.input}
         value={value}
         onChange={(event) => {
-          onChange(event.target.value.replace(/\D/g, "").slice(0, 6));
+          onChange(event.target.value.replace(/\D/g, "").slice(0, ONE_TIME_CODE.digits));
         }}
         inputMode="numeric"
         autoComplete="one-time-code"
-        maxLength={6}
+        maxLength={ONE_TIME_CODE.digits}
         aria-label={label}
         aria-invalid={invalid}
         autoFocus
       />
       <div className={styles.boxes} aria-hidden="true">
-        {Array.from({ length: 6 }, (_, index) => (
+        {Array.from({ length: ONE_TIME_CODE.digits }, (_, index) => (
           <div key={index} className={styles.box} data-next={index === value.length}>
             {value[index] ?? (index === value.length ? <span className={styles.caret} /> : null)}
           </div>

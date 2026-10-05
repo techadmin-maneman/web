@@ -16,6 +16,7 @@
 // him, with his number; and a change of technician alone, which leaves his
 // window as it was, tells him nothing (docs/decisions/0069-dispatch-under-concurrency.md).
 
+import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { Field, TextArea } from "@maneman/ui/Field";
@@ -99,7 +100,7 @@ export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckI
 
   return (
     <Dialog
-      className={`${styles.panel} ${styles.picker}`}
+      className={classes(styles.panel, styles.picker)}
       labelledBy="move-title"
       canClose={!sending}
       onDismiss={onCancel}

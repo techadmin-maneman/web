@@ -106,7 +106,10 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
     link.href = URL.createObjectURL(blob);
     link.download = copy.downloadName;
     link.click();
-    URL.revokeObjectURL(link.href);
+    // Released once the click has been handled: released at once, some browsers cancel the download.
+    setTimeout(() => {
+      URL.revokeObjectURL(link.href);
+    }, 0);
   };
 
   const pressSave = () => {

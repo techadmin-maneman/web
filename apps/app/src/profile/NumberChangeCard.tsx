@@ -1,6 +1,7 @@
 // The account's change of mobile number (board G2): both numbers proved by a code each, then ops decide. The design
 // draws the card's first state; the ones after it are written in the same card, with placeholder words.
 
+import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -98,10 +99,10 @@ function ProvingCodes({
               className={styles.input}
               inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={6}
+              maxLength={ONE_TIME_CODE.digits}
               value={codes[which]}
               onChange={(event) => {
-                onCode(which, event.target.value.replace(/\D/g, "").slice(0, 6));
+                onCode(which, event.target.value.replace(/\D/g, "").slice(0, ONE_TIME_CODE.digits));
               }}
             />
           )}
@@ -222,7 +223,7 @@ export function NumberChangeCard({
     once(async () => {
       const next = { ...notes };
       for (const which of pending) {
-        if (codes[which].length !== 6) continue;
+        if (codes[which].length !== ONE_TIME_CODE.digits) continue;
         next[which] = codeNote(await api.verifyNumberChange(requestId, which, codes[which]));
       }
       setNotes(next);

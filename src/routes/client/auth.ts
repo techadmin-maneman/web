@@ -24,7 +24,13 @@ import { json } from "../../http/openapi.ts";
 import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../../http/send-code.ts";
 import { checkTurnstile, visitorOf } from "../../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
-import { MAX_SENDS_PER_CHALLENGE, newLoginCode, smsOfferedAt, whatsappResendAt } from "../../policy/one-time-code.ts";
+import {
+  CODE_TEXT,
+  MAX_SENDS_PER_CHALLENGE,
+  newLoginCode,
+  smsOfferedAt,
+  whatsappResendAt,
+} from "../../policy/one-time-code.ts";
 import type { CodeChannel } from "../../providers/codes.ts";
 import { firstNameOf } from "../../lib/names.ts";
 
@@ -52,7 +58,7 @@ const LoginRequestSchema = z
   .openapi("LoginRequest");
 const ChallengeRequestSchema = z.object({ challenge_id: z.uuid() }).strict().openapi("LoginChallengeRequest");
 const VerifyRequestSchema = z
-  .object({ challenge_id: z.uuid(), code: z.string().regex(/^\d{6}$/) })
+  .object({ challenge_id: z.uuid(), code: z.string().regex(CODE_TEXT) })
   .strict()
   .openapi("LoginVerifyRequest");
 

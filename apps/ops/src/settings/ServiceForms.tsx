@@ -3,6 +3,7 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A price's boxes start from the price in force, its
 // GST included: a GST box that opened at nought once made an 18% item GST-free without anyone seeing it.
 
+import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { addDays, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -215,7 +216,7 @@ export function PriceForm(props: {
         <Box id={`price-amount-${key}`} label={form.amount} hint={form.amountHint(rupees(props.maxAmount))}>
           {(hint) => (
             <input
-              className={`${styles.number ?? ""} ${styles.amount ?? ""}`}
+              className={classes(styles.number, styles.amount)}
               id={`price-amount-${key}`}
               type="number"
               inputMode="numeric"

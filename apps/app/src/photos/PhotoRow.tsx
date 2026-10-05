@@ -8,6 +8,7 @@
 // (docs/decisions/0093-the-storage-meter.md). Each is fetched only as it nears
 // the screen, and says its size, so the page does not move as it arrives.
 
+import { classes } from "@maneman/ui/classes";
 import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { Angle, PhotoSet } from "../api.ts";
@@ -43,7 +44,7 @@ export function Thumb(props: { link: ImageLink; alt: string; className?: string;
   const [arrived, setArrived] = useState(false);
   return (
     <img
-      className={`${styles.thumb} ${arrived ? styles.arrived : ""} ${className ?? ""}`}
+      className={classes(styles.thumb, arrived && styles.arrived, className)}
       src={link.url}
       alt={alt}
       width={link.width ?? undefined}

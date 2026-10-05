@@ -9,6 +9,7 @@
 // view and not a second entry in the log. A client erased since has no tabs:
 // their page keeps only their visits and money (Erase.tsx).
 
+import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
@@ -93,7 +94,7 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
         ))}
         <div className={styles.metaItem}>
           <dt className={styles.metaKey}>{clients.meta.replacement}</dt>
-          <dd className={`${styles.metaValue ?? ""} ${styles.metaBrass ?? ""}`}>{replacementDueOf(record.history)}</dd>
+          <dd className={classes(styles.metaValue, styles.metaBrass)}>{replacementDueOf(record.history)}</dd>
         </div>
         <div className={styles.metaItem}>
           <dt className={styles.metaKey}>{clients.meta.mobile}</dt>

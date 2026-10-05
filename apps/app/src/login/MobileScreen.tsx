@@ -1,5 +1,6 @@
 // A1: the mobile number (design/phase2/Client App, board A1).
 
+import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { mobileDigits } from "@maneman/web-kit/mobile";
@@ -31,7 +32,7 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
 
   return (
     <main className={styles.screen}>
-      <div className={`${styles.body} ${styles.first}`}>
+      <div className={classes(styles.body, styles.first)}>
         <Mark className={styles.mark} />
         <h1 className={styles.title}>{copy.title}</h1>
         {ended && (

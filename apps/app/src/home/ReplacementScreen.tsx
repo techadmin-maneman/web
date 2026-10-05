@@ -18,15 +18,12 @@ export function ReplacementScreen() {
       type="replacement"
       label={replacement.book}
       message={messages.bookReplacement}
-      {...(offered === null ? {} : { tier: offered.tier, offer: { date: offered.date, window: offered.window } })}
+      tier={offered?.tier}
+      offer={offered === null ? undefined : { date: offered.date, window: offered.window }}
     />
   ) : undefined;
   return (
-    <Shell
-      header={{ kind: "back", title: replacement.title, to: "/", label: replacement.back }}
-      tab="/"
-      {...(book === undefined ? {} : { footer: book })}
-    >
+    <Shell header={{ kind: "back", title: replacement.title, to: "/", label: replacement.back }} tab="/" footer={book}>
       <div className={styles.home}>
         <ol className={styles.steps}>
           {replacement.lines.map((line, index) => (

@@ -18,7 +18,7 @@ import { settings } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ConsumableForm } from "./ConsumableForm.tsx";
-import { Retirement } from "./Retirement.tsx";
+import { Restoring, Retiring } from "./Retirement.tsx";
 import { ServiceUsage } from "./ServiceUsage.tsx";
 import own from "./consumables.module.css";
 import styles from "./settings.module.css";
@@ -132,12 +132,14 @@ function Form({
       />
     );
   }
+  if (doing.kind === "restore") {
+    return <Restoring key={`restore-${named.code}`} consumable={named} onSaved={onSaved} onCancel={onCancel} />;
+  }
   return (
-    <Retirement
-      key={`${doing.kind}-${named.code}`}
+    <Retiring
+      key={`retire-${named.code}`}
       consumable={named}
       today={book.today}
-      restoring={doing.kind === "restore"}
       onSaved={onSaved}
       onCancel={onCancel}
     />

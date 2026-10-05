@@ -5,9 +5,6 @@
 // (src/domain/tech-jobs.ts). A visit already under way still takes one; one
 // closed, cancelled or gone does not.
 
-/** A note, not a letter: what the technician needs at the door. */
-export const CLIENT_NOTE_MAX_CHARS = 500;
-
 export type NoteSaved =
   | { readonly kind: "saved"; readonly note: string; readonly notedAt: string }
   | { readonly kind: "not_found" }

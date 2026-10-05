@@ -48,7 +48,7 @@ const IMRAN = row("t1", "Imran Qureshi", [block()]);
 const SALIM = row("t2", "Salim Khan", []);
 
 const board = (technicians: BoardRow[]): Board => ({
-  version: "v1",
+  version: 1,
   from: "2025-09-19",
   dates: ["2025-09-19"],
   city: null,

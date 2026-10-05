@@ -1,5 +1,6 @@
 // Board C2: the date.
 
+import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { weekdayDate } from "@maneman/web-kit/dates";
 import { booking } from "../../content.ts";
@@ -79,7 +80,7 @@ export function DateStep(props: {
           {copy.available}
         </span>
         <span>
-          <span className={`${styles.swatch} ${styles.swatchFull}`} />
+          <span className={classes(styles.swatch, styles.swatchFull)} />
           {copy.full}
         </span>
         {anyInsideNotice && (

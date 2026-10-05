@@ -1,6 +1,7 @@
 // The WhatsApp code's field, beneath the number it went to (useNumberCode.ts). /book and /try each give it their own
 // classes, on paper and on ink.
 
+import { ONE_TIME_CODE } from "../../../src/policy/one-time-code.ts";
 import { useEffect, useRef } from "preact/hooks";
 import { numberCode as words } from "../content/site.ts";
 
@@ -47,7 +48,7 @@ export function NumberCodeField(props: {
         value={props.code}
         inputMode="numeric"
         autocomplete="one-time-code"
-        maxLength={6}
+        maxLength={ONE_TIME_CODE.digits}
         aria-required="true"
         aria-invalid={bad}
         aria-describedby={bad ? `${hintId} ${errorId}` : hintId}
