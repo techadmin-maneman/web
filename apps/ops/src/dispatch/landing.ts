@@ -38,7 +38,7 @@ export function doneNotice(job: Job, to: Target, moved: Moved): Notice {
 }
 
 /** Why a move was refused, in the board's words. Nothing was written either way. */
-export function refusalOf(job: Job, to: Target, code: string): string {
+export function moveRefusal(job: Job, to: Target, code: string): string {
   const copy = dispatch.landing;
   if (code === "past_day") return copy.pastDay(shortDate(to.date));
   if (code === "window_passed") return copy.windowPassed(shortDate(to.date), windowWord(to.window));

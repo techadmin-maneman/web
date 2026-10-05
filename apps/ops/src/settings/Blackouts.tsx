@@ -7,6 +7,7 @@
 // names who added all of it; offering them again sends that run of days back. Blacking out a day moves nothing already booked on it, so
 // each run says how many visits are still booked on it, and opens the dispatch board on its first day to move them.
 
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -19,7 +20,6 @@ import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
 
 const copy = settings.blackouts;
@@ -164,7 +164,7 @@ function AddForm({ today, onAdded }: { today: string; onAdded: (days: readonly B
       )}
       {outcome !== null && outcome !== "added" && (
         <p className={styles.error} role="alert">
-          {refusalOf(copy.errors, outcome)}
+          {errorText(copy.errors, outcome)}
         </p>
       )}
     </form>
@@ -230,7 +230,7 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
       )}
       {failure !== null && (
         <p className={styles.error} role="alert">
-          {refusalOf(copy.errors, failure)}
+          {errorText(copy.errors, failure)}
         </p>
       )}
     </li>

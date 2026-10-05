@@ -6,12 +6,14 @@
 // a payment held or a payment link unpaid; ops may then erase all the same, saying they will settle it by hand today.
 // From then on the client's page shows only what is kept of them.
 
+import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
+import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { api, type ErasedClientRecord } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
@@ -58,12 +60,8 @@ function Confirm({
   onErase: () => void;
   onCancel: () => void;
 }) {
-  const panel = useRef<HTMLDivElement>(null);
+  const panel = useFocusOnMount<HTMLDivElement>();
   const [checked, setChecked] = useState(false);
-
-  useEffect(() => {
-    panel.current?.focus();
-  }, []);
 
   return (
     <div className={deletionStyles.confirm} ref={panel} tabIndex={-1} role="group" aria-label={copy.confirmLabel(name)}>
@@ -169,7 +167,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
       )}
       {erasing.step === "failed" && (
         <p className={deletionStyles.error} role="alert">
-          {copy.errors[erasing.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: erasing.code })}
         </p>
       )}
     </section>

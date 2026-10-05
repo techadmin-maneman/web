@@ -18,6 +18,7 @@
     "./small-jpeg": "./small-jpeg.ts",
     "./turnstile": "./turnstile.ts",
     "./names": "./names.ts",
+    "./refusal": "./refusal.ts",
     "./pwa": "./pwa.ts"
   }
 }

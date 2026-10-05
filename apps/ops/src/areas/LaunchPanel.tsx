@@ -2,9 +2,10 @@
 // the press that sends it. Nothing is sent before that press
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
-import { useEffect, useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { areas, BOOKING_URL } from "../content.ts";
 import styles from "./areas.module.css";
 
@@ -37,11 +38,8 @@ interface Props {
 
 export function LaunchPanel(props: Props) {
   const { label, alerts, area, lines, sendLabel, ready = true, sending, done, error, note, onSend, onCancel } = props;
-  const panel = useRef<HTMLElement>(null);
+  const panel = useFocusOnMount<HTMLElement>();
   // It opens beneath a list, so it is brought into view and read from its head (FEO-15).
-  useEffect(() => {
-    panel.current?.focus();
-  }, []);
   return (
     <section className={styles.launch} aria-labelledby="launch" ref={panel} tabIndex={-1}>
       <p className={capsLook(styles.launchLabel)} id="launch">

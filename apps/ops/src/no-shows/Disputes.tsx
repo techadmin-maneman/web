@@ -4,6 +4,8 @@
 // gives back what the charge took; the client is told the ruling either way, never the note. A dispute waits on the
 // Tasks board too, whose link opens its row here.
 
+import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -144,7 +146,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
           <textarea
             id={`ruling-${each.id}`}
             className={styles.reasonField}
-            maxLength={300}
+            maxLength={REASON_MAX_CHARS}
             placeholder={copy.reason.placeholder}
             aria-describedby={`ruling-hint-${each.id}`}
             value={reason}
@@ -182,7 +184,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
       )}
       {step.kind === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[step.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: step.code })}
         </p>
       )}
     </section>

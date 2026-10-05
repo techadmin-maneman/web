@@ -4,6 +4,7 @@
 // when booking on the site is shown under "None" and starts the box. The cell keeps what its last answer said, so the
 // tab is not read again for it.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate } from "@maneman/web-kit/dates";
@@ -30,7 +31,7 @@ function Shown({ code }: { code: VisitDiscountCode | null }) {
 }
 
 /** A refusal in the console's words. */
-const said = (code: string): string => copy.errors[code] ?? copy.errors.unknown ?? "";
+const said = (code: string): string => errorText(copy.errors, { code });
 
 export function VisitCode({ visit }: { visit: ClientVisit }) {
   const [code, setCode] = useState<VisitDiscountCode | null>(visit.discount_code);

@@ -5,13 +5,13 @@
 // figure it finds, and the ledger takes the difference. A place that would
 // hold less than nothing says so, since a delivery or a count is then missing.
 
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type Stock } from "../api.ts";
 import { stock as copy } from "../content.ts";
 import { CheckPanel } from "../settings/CheckPanel.tsx";
-import { refusalOf, type Failure } from "../settings/refusal.ts";
 import form from "../settings/settings.module.css";
 import styles from "./stock.module.css";
 
@@ -326,7 +326,7 @@ export function StockForm({
         )}
         {step.step === "failed" && (
           <p className={form.error} role="alert">
-            {refusalOf(copy.errors, step)}
+            {errorText(copy.errors, step)}
           </p>
         )}
       </div>

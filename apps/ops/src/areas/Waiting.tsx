@@ -6,11 +6,13 @@
 // untold, and this is how they are told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A pincode
 // the service area does not hold is added first, with its area's name and its city.
 
+import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
+import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Table } from "@maneman/ui/Table";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, listDate, yearInIndia } from "@maneman/web-kit/dates";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { api, type Area, type Launch, type ServedPincode } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { areas, waitlist } from "../content.ts";
@@ -50,9 +52,6 @@ function openingLaunchDay(area: Area, today: string): string {
   return held < today ? held : today;
 }
 
-/** What a refused launch says. */
-const refusalOf = (code: string): string | null => copy.errors[code] ?? copy.errors.unknown ?? null;
-
 /** Each column, head and cells alike, at the board's own width, in waitlist.columns' order. */
 const COLUMNS = [styles.pincode, styles.area, styles.count, styles.oldest, styles.referred, styles.alerts];
 
@@ -81,7 +80,7 @@ function LaunchOne({ launching, today, launchOn, mayRename, onLaunchOn, onCancel
       ready={launchOn !== "" && launchOn <= today}
       sending={step === "sending"}
       done={step === "done" ? copy.done(preview.alerts) : null}
-      error={launching.code === undefined ? null : refusalOf(launching.code)}
+      error={launching.code === undefined ? null : errorText(copy.errors, { code: launching.code })}
       note={area.served ? copy.toldNote : copy.note(preview.waiting - preview.alerts)}
       onSend={onSend}
       onCancel={onCancel}
@@ -140,10 +139,7 @@ function AddPanel({
   onAdded: (added: ServedPincode) => void;
   onCancel: () => void;
 }) {
-  const panel = useRef<HTMLElement>(null);
-  useEffect(() => {
-    panel.current?.focus();
-  }, []);
+  const panel = useFocusOnMount<HTMLElement>();
   return (
     <section className={styles.launch} aria-labelledby="add" ref={panel} tabIndex={-1}>
       <p className={capsLook(styles.launchLabel)} id="add">
@@ -292,7 +288,7 @@ export function Waiting() {
     <div className={styles.column}>
       {refused !== null && (
         <p className={styles.error} role="alert">
-          {refusalOf(refused)}
+          {errorText(copy.errors, { code: refused })}
         </p>
       )}
       {whenLoaded(loaded, {

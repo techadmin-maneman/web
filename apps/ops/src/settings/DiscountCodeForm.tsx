@@ -7,6 +7,7 @@
 // it covers and its limits, and only the second press makes them, as a price is set
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { classes } from "@maneman/ui/classes";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
@@ -26,7 +27,6 @@ import {
   type Covered,
   type Draft,
 } from "./discount-draft.ts";
-import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
 
 const copy = settings.discountCodes;
@@ -293,7 +293,7 @@ export function DiscountCodeForm({ today, most, onMade }: { today: string; most:
       )}
       {step.step === "failed" && (
         <p className={styles.error} role="alert">
-          {refusalOf(copy.errors, step.failure)}
+          {errorText(copy.errors, step.failure)}
         </p>
       )}
     </form>

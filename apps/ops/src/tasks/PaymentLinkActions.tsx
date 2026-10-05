@@ -2,6 +2,7 @@
 // Razorpay text it to the client again, or make it now where it never did. A link Razorpay refused is sent from its
 // dashboard, so it offers neither.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useState } from "react";
@@ -13,7 +14,7 @@ import styles from "./tasks.module.css";
 
 const copy = tasks.link;
 
-const errorLine = (code: string): string => copy.errors[code] ?? copy.errors.unknown ?? "";
+const errorLine = (code: string): string => errorText(copy.errors, { code });
 
 export function PaymentLinkActions({ task, subject }: { task: Task; subject: string }) {
   const [done, setDone] = useState("");

@@ -9,6 +9,7 @@
 // asked for, since a client of some years has a great many. The opening is held
 // by the client's page, so leaving this tab and coming back is the same view.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
@@ -245,7 +246,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
       )}
       {state.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[state.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: state.code })}
         </p>
       )}
     </section>

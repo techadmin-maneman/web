@@ -8,6 +8,7 @@
 // the audit log under whoever Access says is signed in (ADR 0031). It messages
 // nobody: ops answer the client themselves, on the number shown.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -93,7 +94,7 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
       )}
       {answering.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[answering.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: answering.code })}
         </p>
       )}
     </>

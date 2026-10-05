@@ -11,6 +11,7 @@
 // Nothing is sent until ops have seen the change: each figure that moves, the
 // old beside the new, and only the second press sends it, as a price is set.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { CheckPanel } from "./CheckPanel.tsx";
@@ -67,9 +68,9 @@ function fieldLabel(rule: OpsSetting, field: string): string {
   return key === undefined ? rule.title : keyLabel(rule, key);
 }
 
-function refusalOf(rule: OpsSetting, code: string, fields: readonly string[]): string | undefined {
+function ruleRefusal(rule: OpsSetting, code: string, fields: readonly string[]): string | undefined {
   const [field] = fields;
-  if (code !== "invalid_request") return copy.errors[code] ?? copy.errors.unknown;
+  if (code !== "invalid_request") return errorText(copy.errors, { code });
   if (field === undefined) return copy.errors.invalid_request;
   return copy.outside(fieldLabel(rule, field));
 }
@@ -478,7 +479,7 @@ function GroupSection({ section, allowed, onSaved, children }: GroupSectionProps
 
   const refusalFor = (rule: OpsSetting): string | undefined => {
     if (saving.step !== "failed" || saving.rule !== rule.name) return undefined;
-    return refusalOf(rule, saving.code, saving.fields);
+    return ruleRefusal(rule, saving.code, saving.fields);
   };
 
   // One rule at a time, in the order shown: a refusal stops the rest, and says which rule it was.

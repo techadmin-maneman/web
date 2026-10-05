@@ -17,11 +17,14 @@
 // The API refuses while the client has a visit booked or a payment held, and
 // the refusal's copy says which, with a link to the client's tab that settles it.
 
+import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { api, type DeletionRequest } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { Reach } from "../components/Reach.tsx";
@@ -62,12 +65,8 @@ function ConfirmDelete({
   onDelete: () => void;
   onCancel: () => void;
 }) {
-  const panel = useRef<HTMLDivElement>(null);
+  const panel = useFocusOnMount<HTMLDivElement>();
   const [checked, setChecked] = useState(false);
-
-  useEffect(() => {
-    panel.current?.focus();
-  }, []);
 
   return (
     <div className={styles.confirm} ref={panel} tabIndex={-1} role="group" aria-label={copy.confirmLabel(request.name)}>
@@ -156,7 +155,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
               <TextArea
                 {...control}
                 className={styles.reasonField}
-                maxLength={300}
+                maxLength={REASON_MAX_CHARS}
                 // The field stands where the button that asked for it stood, so the keyboard goes to it.
                 autoFocus
                 value={reason}
@@ -220,7 +219,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
       )}
       {deciding.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[deciding.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: deciding.code })}
           <SettleOn personId={request.person_id} code={deciding.code} />
         </p>
       )}

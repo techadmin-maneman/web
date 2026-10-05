@@ -3,6 +3,8 @@
 // close it without a follow-up, with why. Board D2 draws each task's owner and none of these; they sit beneath the
 // task's own lines, as the way to where it is decided does.
 
+import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -13,9 +15,6 @@ import { tasks } from "../content.ts";
 import styles from "./tasks.module.css";
 
 type Group = TaskGroup["group"];
-
-/** The longest reason kept, as the route allows (src/policy/decision-reasons.ts). */
-const REASON_MAX_CHARS = 300;
 
 /** The group as the close route names it, for the one group whose tasks ops may close; null for any other. */
 const closableAs = (group: Group): ClosableGroup | null => (group === "partial_visit" ? group : null);
@@ -297,7 +296,7 @@ export function TaskActions({
       )}
       {failed !== null && (
         <span className={styles.error} role="alert">
-          {errors[failed.code] ?? errors.unknown}
+          {errorText(errors, { code: failed.code })}
         </span>
       )}
     </>

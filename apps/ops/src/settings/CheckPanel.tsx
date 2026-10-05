@@ -4,8 +4,9 @@
 // sight (FEO-15). Every setting's form shares it, as do the stock and a
 // technician's leave (docs/decisions/0087-consumables-and-stock.md).
 
+import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { Button } from "@maneman/ui/Button";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import styles from "./settings.module.css";
 
 interface Props {
@@ -40,11 +41,8 @@ export function CheckPanel({
   onSend,
   onBack,
 }: Props) {
-  const panel = useRef<HTMLDivElement>(null);
+  const panel = useFocusOnMount<HTMLDivElement>();
   const nameId = useId();
-  useEffect(() => {
-    panel.current?.focus();
-  }, []);
   return (
     <div className={styles.check} ref={panel} tabIndex={-1} role="group" aria-labelledby={nameId}>
       {title !== undefined && (

@@ -10,6 +10,7 @@
 // before any search, the clients opened this session are offered
 // (lib/client-search.ts).
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useState } from "react";
@@ -149,7 +150,7 @@ export function FindClientScreen() {
         </Button>
         {finding.step === "failed" && (
           <p className={styles.error} role="alert">
-            {copy.errors[finding.code] ?? copy.errors.unknown}
+            {errorText(copy.errors, { code: finding.code })}
           </p>
         )}
       </form>
