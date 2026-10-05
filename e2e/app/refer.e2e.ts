@@ -306,7 +306,7 @@ test("asks for the consent before choosing their own card, and sends the example
     if (route.request().method() !== "POST") return route.continue();
     builds += 1;
     await building.promise;
-    return route.fulfill({ status: 503, json: { error: { code: "unavailable", message: "not just now" } } });
+    return route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "e2e" } } });
   });
   let consents = 0;
   await page.route("**/api/consents/*", (route) => {
