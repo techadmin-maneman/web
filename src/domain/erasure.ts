@@ -38,6 +38,7 @@ import { copyKey, keptLookKey } from "./kept-try-ons.ts";
 import { deleteCounted, deleteUnder } from "./storage-meter.ts";
 import { recordEvent } from "./tryon.ts";
 import { type CrmSyncMessage } from "../config/pipeline.ts";
+import { paidNotBooked } from "./hold-stages.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;
@@ -137,8 +138,7 @@ export async function erasureBlockers(db: D1Database, personId: string, now: Dat
   const { results: bookings } = await db
     .prepare(
       `SELECT id, type, date, window_label AS window FROM slot_holds
-       WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
-       ORDER BY date, start_unit`,
+       WHERE person_id = ?1 AND ${paidNotBooked("slot_holds")} AND moves_appointment_id IS NULL ORDER BY date, start_unit`,
     )
     .bind(personId)
     .all<ErasureBlockers["bookings"][number]>();

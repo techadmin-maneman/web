@@ -5,6 +5,7 @@
 
 import { creditExpiry } from "../policy/referral-reward.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
+import { paidNotBooked } from "./hold-stages.ts";
 
 type CreditSource = "referral" | "appointment" | "ops" | "import";
 
@@ -42,7 +43,7 @@ const NEXT_GRANT = `SELECT id FROM (${LIVE_GRANTS}) WHERE remaining > 0 ${SOONES
  * A credit hold confirmed but not yet booked: its credit is redeemed as its visit is booked, so until then no other
  * booking may count on it.
  */
-const PROMISED_CREDIT = "use_credit = 1 AND state = 'held' AND confirmed_at IS NOT NULL";
+const PROMISED_CREDIT = `use_credit = 1 AND ${paidNotBooked("slot_holds")}`;
 
 /**
  * spendableCredits as SQL, for a statement that decides on it as it writes: what person ?1 may spend at ?2, leaving

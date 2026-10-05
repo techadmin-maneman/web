@@ -9,7 +9,7 @@ import { agreedByBooking, GIVEN_BY_BOOKING, type GivenByBooking } from "../polic
 import { auditStatementIfWritten } from "./audit.ts";
 import { recordConsent } from "./consents.ts";
 import { consentRecordsOf } from "./profile.ts";
-import { graceEnds } from "./scheduling.ts";
+import { graceEnds } from "./hold-stages.ts";
 
 interface BookingTap {
   readonly personId: string;
