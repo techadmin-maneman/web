@@ -11,7 +11,7 @@ import type { BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
 import type { InHand } from "./Grid.tsx";
-import { nameOf, type Target } from "./job.ts";
+import { nameOf, type Target, windowWord } from "./job.ts";
 
 /** "a first fit, 2 slots": the job's kind and the slots it takes. */
 function sizeOf(inHand: InHand): string {
@@ -35,7 +35,7 @@ function destinationsOf(inHand: InHand, rows: readonly BoardRow[], dates: readon
       (inHand.windowsAt(technician.technician_id, date) ?? []).map((window: BookingWindow) => ({
         key: `${technician.technician_id}/${date}/${window}`,
         target: { technician, date, window },
-        label: dispatch.landing.listOption(technician.name, shortDate(date), dispatch.windows[window] ?? window),
+        label: dispatch.landing.listOption(technician.name, shortDate(date), windowWord(window)),
       })),
     ),
   );

@@ -14,14 +14,13 @@ import { shortDate } from "@maneman/web-kit/dates";
 import type { BookingWindow, Unassigned } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
-import { nameOf, type Job } from "./job.ts";
+import { nameOf, type Job, windowWord } from "./job.ts";
 
-const windowWord = (window: BookingWindow | null) =>
-  window === null ? dispatch.unknown : (dispatch.windows[window] ?? window);
+const windowOrUnknown = (window: BookingWindow | null) => (window === null ? dispatch.unknown : windowWord(window));
 
 /** "Sat, evening", as the tray writes the day and window offered. */
 export const offeredWord = (date: string | null, window: BookingWindow | null) =>
-  date === null ? windowWord(window) : `${shortDate(date).slice(0, 3)}, ${windowWord(window)}`;
+  date === null ? windowOrUnknown(window) : `${shortDate(date).slice(0, 3)}, ${windowOrUnknown(window)}`;
 
 /** The asked window, or the tray's words for a booking that recorded none. */
 export const askedWord = (each: Unassigned) =>

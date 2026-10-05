@@ -18,15 +18,13 @@ import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
 import label from "../components/label.module.css";
 import styles from "./dispatch.module.css";
-import { begunWord, isMovable, nameOf, type Job, type Target } from "./job.ts";
+import { begunWord, isMovable, nameOf, type Job, type Target, windowWord } from "./job.ts";
 
 /** A job in hand, and the windows each technician's day would take it in; null while the board is asking. */
 export interface InHand {
   readonly job: Job;
   readonly windowsAt: (technicianId: string, date: string) => readonly BookingWindow[] | null;
 }
-
-const windowWord = (window: BookingWindow) => dispatch.windows[window] ?? window;
 
 /** "Fri 19", as a column is headed. */
 const dayHead = (date: string) => shortDate(date).split(" ").slice(0, 2).join(" ");
