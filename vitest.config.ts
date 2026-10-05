@@ -4,6 +4,33 @@ import { StalledFiles } from "./test/stalled-files.ts";
 
 const migrations = await readD1Migrations("./migrations");
 
+/** The tests that run in Node: mm-api's pure code, the scripts' libraries, and the apps' logic. */
+export const NODE_PROJECT = {
+  test: {
+    name: "node",
+    environment: "node",
+    include: ["test/node/**/*.test.ts"],
+  },
+};
+
+/**
+ * The apps' components and packages/ui's, on the React 19 they ship with: from packages/ui, React would otherwise
+ * resolve to the repository root's React 18, as apps/app/vite.config.ts says.
+ */
+export const DOM_PROJECT = {
+  resolve: {
+    alias: {
+      react: `${import.meta.dirname}/apps/app/node_modules/react`,
+      "react-dom": `${import.meta.dirname}/apps/app/node_modules/react-dom`,
+    },
+  },
+  test: {
+    name: "dom",
+    environment: "jsdom",
+    include: ["test/dom/**/*.test.ts"],
+  },
+};
+
 export default defineConfig({
   test: {
     restoreMocks: true,
@@ -90,28 +117,8 @@ export default defineConfig({
           hookTimeout: 30_000,
         },
       },
-      {
-        test: {
-          name: "node",
-          environment: "node",
-          include: ["test/node/**/*.test.ts"],
-        },
-      },
-      {
-        // The apps' components and packages/ui's, on the React 19 they ship with: from packages/ui, React
-        // would otherwise resolve to the repository root's React 18, as apps/app/vite.config.ts says.
-        resolve: {
-          alias: {
-            react: `${import.meta.dirname}/apps/app/node_modules/react`,
-            "react-dom": `${import.meta.dirname}/apps/app/node_modules/react-dom`,
-          },
-        },
-        test: {
-          name: "dom",
-          environment: "jsdom",
-          include: ["test/dom/**/*.test.ts"],
-        },
-      },
+      NODE_PROJECT,
+      DOM_PROJECT,
     ],
   },
 });

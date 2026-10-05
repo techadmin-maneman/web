@@ -207,6 +207,8 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Unit and contract tests, coverage of lines and branches on src/ and scripts/lib/
         run: npm run test:coverage
+      - name: The front ends' coverage, of the apps, the shared packages and the site
+        run: npm run test:coverage:front
 
   # Migrations run before code, so the code now deployed runs on this branch's schema until the deploy, and
   # again after a rollback: its own Worker tests must pass on these migrations (docs/decisions/0006).

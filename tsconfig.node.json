@@ -23,6 +23,7 @@
     "src/config/**/*.ts",
     "src/worker-configuration.d.ts",
     "vitest.config.ts",
+    "vitest.front.config.ts",
     "test/stalled-files.ts",
     "eslint.config.ts"
   ],
