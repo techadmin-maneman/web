@@ -38,8 +38,19 @@ describe("the production gate on Phase 2's copy", () => {
   it("covers each app's content, the site's, the referral landing's and the API's", () => {
     expect(CONTENT_FILES).toEqual({
       site: ["site/src/content/referral.ts", "site/src/content/site.ts"],
-      app: ["apps/app/src/content.ts"],
-      // The console's copy is one file a feature (apps/ops/src/content/).
+      app: [
+        "apps/app/src/content.ts",
+        "apps/app/src/content/booking.ts",
+        "apps/app/src/content/common.ts",
+        "apps/app/src/content/home.ts",
+        "apps/app/src/content/login.ts",
+        "apps/app/src/content/payments.ts",
+        "apps/app/src/content/photos.ts",
+        "apps/app/src/content/profile.ts",
+        "apps/app/src/content/refer.ts",
+        "apps/app/src/content/visits.ts",
+      ],
+      // The client app's copy and the console's are one file a feature (apps/*/src/content/).
       ops: [
         "apps/ops/src/content.ts",
         "apps/ops/src/content/areas.ts",
@@ -84,7 +95,7 @@ describe("the production gate on Phase 2's copy", () => {
       });
       expect(build.status).toBe(1);
       expect(build.stderr).toContain("The production build is blocked");
-      expect(build.stderr).toContain(`apps/${app}/src/content.ts`);
+      expect(build.stderr).toContain(`apps/${app}/src/content`);
     },
   );
 });

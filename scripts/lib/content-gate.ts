@@ -11,7 +11,7 @@
 
 import { readdirSync, readFileSync } from "node:fs";
 
-/** A surface's copy written one file a feature, as the console's is. */
+/** A surface's copy written one file a feature, as the client app's and the console's are. */
 const featureFiles = (dir: string): string[] =>
   readdirSync(dir)
     .filter((name) => name.endsWith(".ts"))
@@ -21,7 +21,7 @@ const featureFiles = (dir: string): string[] =>
 /** The content files each production build is gated on. */
 export const CONTENT_FILES = {
   site: ["site/src/content/referral.ts", "site/src/content/site.ts"],
-  app: ["apps/app/src/content.ts"],
+  app: ["apps/app/src/content.ts", ...featureFiles("apps/app/src/content")],
   ops: ["apps/ops/src/content.ts", ...featureFiles("apps/ops/src/content")],
   tech: ["apps/tech/src/content.ts"],
   api: ["src/config/job-sheet.ts", "src/config/message-templates.ts"],
