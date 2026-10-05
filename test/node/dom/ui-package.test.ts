@@ -63,6 +63,12 @@ describe.each(APPS)("%s", (app) => {
     expect(copies).toEqual([]);
   });
 
+  // P3-34 (UX-16): a box's label, hint and error are tied together by the shared Field alone.
+  it("keeps no field wrapper of its own", () => {
+    const copies = code.filter((path) => /\bfunction (Field|Box)\b/.test(read(path)));
+    expect(copies).toEqual([]);
+  });
+
   // P3-33 (UX-14): the code's boxes, a countdown, and focus given back to a new screen's heading.
   it("keeps no code field, countdown or focus hand-back of its own", () => {
     const copies = code.filter((path) =>

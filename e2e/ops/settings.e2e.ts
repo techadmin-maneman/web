@@ -194,7 +194,7 @@ test.describe("the rules", () => {
     await expect(radius).toHaveAccessibleDescription("Enter a whole figure from 50 to 1000 metres.");
     await expect(section(page, "Visits in the field").getByRole("button", { name: "Save" })).toBeDisabled();
     await radius.fill("150");
-    await expect(radius).toHaveAttribute("aria-invalid", "false");
+    await expect(radius).not.toHaveAttribute("aria-invalid", "true");
   });
 
   // FEO-06: the refusal named its field and the console dropped it, so every refusal read the same.
@@ -1073,7 +1073,7 @@ test.describe("the discount codes", () => {
     await expect(form.getByRole("button", { name: "Check" })).toBeDisabled();
     // Ordinary words are codes: the owner allowed I, L and O in a code ops type.
     await code.fill("WEDDING25");
-    await expect(code).toHaveAttribute("aria-invalid", "false");
+    await expect(code).not.toHaveAttribute("aria-invalid", "true");
     await expect(form.getByRole("button", { name: "Check" })).toBeEnabled();
   });
 

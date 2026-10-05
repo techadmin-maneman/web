@@ -5,6 +5,7 @@
 // figure it finds, and the ledger takes the difference. A place that would
 // hold less than nothing says so, since a delivery or a count is then missing.
 
+import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type Stock } from "../api.ts";
@@ -43,60 +44,53 @@ export function placeName(book: Stock, technicianId: string | null): string {
   return place.active ? place.name : copy.left(place.name);
 }
 
-function Select(props: {
-  id: string;
+/** One of the consumables or the places, by name. */
+function Choice(props: {
   label: string;
   value: string;
   options: readonly (readonly [string, string])[];
   onChange: (value: string) => void;
 }) {
   return (
-    <div className={form.field}>
-      <label className={form.fieldLabel} htmlFor={props.id}>
-        {props.label}
-      </label>
-      <select
-        className={form.select}
-        id={props.id}
-        value={props.value}
-        onChange={(event) => {
-          props.onChange(event.target.value);
-        }}
-      >
-        {props.options.map(([value, name]) => (
-          <option key={value} value={value}>
-            {name}
-          </option>
-        ))}
-      </select>
-    </div>
+    <Field label={props.label} className={form.field}>
+      {(control) => (
+        <Select
+          {...control}
+          className={form.choiceBox}
+          value={props.value}
+          onChange={(event) => {
+            props.onChange(event.target.value);
+          }}
+        >
+          {props.options.map(([value, name]) => (
+            <option key={value} value={value}>
+              {name}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
   );
 }
 
-function Figure(props: { id: string; label: string; hint?: string; value: string; onChange: (text: string) => void }) {
+/** How many, kept as typed until it is sent. */
+function Quantity(props: { label: string; hint?: string; value: string; onChange: (text: string) => void }) {
   return (
-    <div className={form.field}>
-      <label className={form.fieldLabel} htmlFor={props.id}>
-        {props.label}
-      </label>
-      <input
-        className={form.number}
-        id={props.id}
-        type="text"
-        inputMode="numeric"
-        maxLength={6}
-        value={props.value}
-        aria-describedby={props.hint === undefined ? undefined : `${props.id}-hint`}
-        onChange={(event) => {
-          props.onChange(event.target.value);
-        }}
-      />
-      {props.hint !== undefined && (
-        <p className={form.hint} id={`${props.id}-hint`}>
-          {props.hint}
-        </p>
+    <Field label={props.label} hint={props.hint} className={form.field}>
+      {(control) => (
+        <NumberInput
+          {...control}
+          className={form.figureBox}
+          type="text"
+          inputMode="numeric"
+          maxLength={6}
+          value={props.value}
+          onChange={(event) => {
+            props.onChange(event.target.value);
+          }}
+        />
       )}
-    </div>
+    </Field>
   );
 }
 
@@ -243,8 +237,7 @@ export function StockForm({
           ))}
         </fieldset>
         <div className={form.fields}>
-          <Select
-            id="stock-consumable"
+          <Choice
             label={copy.record.consumable}
             value={draft.code}
             options={book.consumables.map((each) => [each.code, each.name] as const)}
@@ -252,38 +245,24 @@ export function StockForm({
           />
           {draft.kind === "transfer" && (
             <>
-              <Select
-                id="stock-from"
-                label={copy.record.from}
-                value={draft.from}
-                options={places}
-                onChange={edit("from")}
-              />
-              <Select id="stock-to" label={copy.record.to} value={draft.to} options={places} onChange={edit("to")} />
+              <Choice label={copy.record.from} value={draft.from} options={places} onChange={edit("from")} />
+              <Choice label={copy.record.to} value={draft.to} options={places} onChange={edit("to")} />
             </>
           )}
           {(draft.kind === "count" || draft.kind === "write_off") && (
-            <Select
-              id="stock-place"
-              label={copy.record.place}
-              value={draft.place}
-              options={places}
-              onChange={edit("place")}
-            />
+            <Choice label={copy.record.place} value={draft.place} options={places} onChange={edit("place")} />
           )}
         </div>
         <div className={form.fields}>
           {draft.kind === "count" ? (
-            <Figure
-              id="stock-counted"
+            <Quantity
               label={copy.record.counted}
               hint={copy.record.quantityHint(unit, book.max_quantity)}
               value={draft.counted}
               onChange={edit("counted")}
             />
           ) : (
-            <Figure
-              id="stock-quantity"
+            <Quantity
               label={copy.record.quantity}
               hint={copy.record.quantityHint(unit, book.max_quantity)}
               value={draft.quantity}

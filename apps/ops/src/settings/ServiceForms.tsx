@@ -3,8 +3,8 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A price's boxes start from the price in force, its
 // GST included: a GST box that opened at nought once made an 18% item GST-free without anyone seeing it.
 
+import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "./CheckPanel.tsx";
-import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { addDays, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -110,29 +110,6 @@ function Refused({ failed }: { failed: { code: string; fields: readonly string[]
   );
 }
 
-/** A box with its label above and its hint beneath, the hint read with it. */
-/** A box with its label and hint. A box whose value cannot be sent says why in the hint's place. */
-function Box(props: {
-  readonly id: string;
-  readonly label: string;
-  readonly hint: string;
-  readonly error?: string | null;
-  readonly children: (describedBy: string) => ReactNode;
-}) {
-  const error = props.error ?? null;
-  return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel} htmlFor={props.id}>
-        {props.label}
-      </label>
-      {props.children(`${props.id}-hint`)}
-      <p className={error === null ? styles.hint : styles.fieldError} id={`${props.id}-hint`}>
-        {error ?? props.hint}
-      </p>
-    </div>
-  );
-}
-
 function FormButtons(props: { readonly ready: boolean; readonly onNext: () => void; readonly onCancel: () => void }) {
   return (
     <div className={styles.actions}>
@@ -166,7 +143,6 @@ export function PriceForm(props: {
   const [gst, setGst] = useState(start === undefined ? "" : String(start.gst_percent));
   const firstDay = addDays(today, 1);
   const [from, setFrom] = useState(correcting?.valid_from ?? firstDay);
-  const key = `${target.item}-${target.tier}`;
   // Rupees on the screen, paise in the book: the API and the database count in paise.
   const change = {
     item: target.item,
@@ -203,38 +179,34 @@ export function PriceForm(props: {
         <p className={styles.formNow}>{copy.now(priceWords(inForce), longDate(inForce.valid_from))}</p>
       )}
       <div className={styles.fields}>
-        <Box id={`price-amount-${key}`} label={form.amount} hint={form.amountHint(rupees(props.maxAmount))}>
-          {(hint) => (
-            <input
-              className={classes(styles.number, styles.amount)}
-              id={`price-amount-${key}`}
-              type="number"
+        <Field label={form.amount} hint={form.amountHint(rupees(props.maxAmount))} className={styles.field}>
+          {(control) => (
+            <NumberInput
+              {...control}
+              className={styles.amountBox}
               inputMode="numeric"
               step={1}
               min={0}
               max={props.maxAmount / 100}
               value={rupeesTyped}
-              aria-describedby={hint}
               onChange={(event) => {
                 setRupees(event.target.value);
                 steps.edit();
               }}
             />
           )}
-        </Box>
-        <Box id={`price-gst-${key}`} label={form.gst} hint={form.gstHint(props.maxGst)}>
-          {(hint) => (
+        </Field>
+        <Field label={form.gst} hint={form.gstHint(props.maxGst)} className={styles.field}>
+          {(control) => (
             <div className={styles.fieldRow}>
-              <input
-                className={styles.number}
-                id={`price-gst-${key}`}
-                type="number"
+              <NumberInput
+                {...control}
+                className={styles.figureBox}
                 inputMode="numeric"
                 step={1}
                 min={0}
                 max={props.maxGst}
                 value={gst}
-                aria-describedby={hint}
                 onChange={(event) => {
                   setGst(event.target.value);
                   steps.edit();
@@ -243,24 +215,26 @@ export function PriceForm(props: {
               <span className={styles.unit}>%</span>
             </div>
           )}
-        </Box>
-        <Box id={`price-from-${key}`} label={form.from} hint={form.fromHint} error={tooSoon ? form.fromTooSoon : null}>
-          {(hint) => (
-            <input
-              className={styles.date}
-              id={`price-from-${key}`}
-              type="date"
+        </Field>
+        <Field
+          label={form.from}
+          hint={tooSoon ? undefined : form.fromHint}
+          error={tooSoon ? form.fromTooSoon : null}
+          className={styles.field}
+        >
+          {(control) => (
+            <DateInput
+              {...control}
+              className={styles.dateBox}
               min={firstDay}
               value={from}
-              aria-describedby={hint}
-              aria-invalid={tooSoon}
               onChange={(event) => {
                 setFrom(event.target.value);
                 steps.edit();
               }}
             />
           )}
-        </Box>
+        </Field>
       </div>
       {steps.step === "editing" ? (
         <FormButtons ready={ready} onNext={steps.check} onCancel={props.onCancel} />
@@ -348,27 +322,24 @@ export function RenameForm(props: {
       ? { ok: true, services: answer.body, said: copy.done.saved }
       : { ok: false, code: answer.code, fields: answer.fields };
   }, props.onDone);
-  const id = `rename-${service.kind}-${service.tier}`;
   return (
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.renameTitle(service.name)}</legend>
       <div className={styles.fields}>
-        <Box id={id} label={form.name} hint={form.nameHint}>
-          {(hint) => (
-            <input
-              className={styles.text}
-              id={id}
-              type="text"
+        <Field label={form.name} hint={form.nameHint} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.areaBox}
               maxLength={60}
               value={name}
-              aria-describedby={hint}
               onChange={(event) => {
                 setName(event.target.value);
                 steps.edit();
               }}
             />
           )}
-        </Box>
+        </Field>
       </div>
       {steps.step === "editing" ? (
         <FormButtons
@@ -409,27 +380,24 @@ export function DescribeForm(props: {
       ? { ok: true, services: answer.body, said: copy.done.saved }
       : { ok: false, code: answer.code, fields: answer.fields };
   }, props.onDone);
-  const id = `describe-${service.kind}-${service.tier}`;
   return (
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.describeTitle(service.name)}</legend>
       <div className={styles.fields}>
-        <Box id={id} label={form.description} hint={form.descriptionHint(props.maxLength)}>
-          {(hint) => (
-            <input
-              className={styles.text}
-              id={id}
-              type="text"
+        <Field label={form.description} hint={form.descriptionHint(props.maxLength)} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.areaBox}
               maxLength={props.maxLength}
               value={line}
-              aria-describedby={hint}
               onChange={(event) => {
                 setLine(event.target.value);
                 steps.edit();
               }}
             />
           )}
-        </Box>
+        </Field>
       </div>
       {steps.step === "editing" ? (
         <FormButtons ready={line.trim() !== was} onNext={steps.check} onCancel={props.onCancel} />
@@ -465,30 +433,27 @@ export function LengthForm(props: {
       ? { ok: true, services: answer.body, said: copy.done.saved }
       : { ok: false, code: answer.code, fields: answer.fields };
   }, props.onDone);
-  const id = `length-${service.kind}-${service.tier}`;
   return (
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.lengthTitle(service.name)}</legend>
       <div className={styles.fields}>
-        <Box id={id} label={form.minutes} hint={form.minutesHint(bounds.min, bounds.max)}>
-          {(hint) => (
-            <input
-              className={styles.number}
-              id={id}
-              type="number"
+        <Field label={form.minutes} hint={form.minutesHint(bounds.min, bounds.max)} className={styles.field}>
+          {(control) => (
+            <NumberInput
+              {...control}
+              className={styles.figureBox}
               inputMode="numeric"
               step={1}
               min={bounds.min}
               max={bounds.max}
               value={minutes}
-              aria-describedby={hint}
               onChange={(event) => {
                 setMinutes(event.target.value);
                 steps.edit();
               }}
             />
           )}
-        </Box>
+        </Field>
       </div>
       {steps.step === "editing" ? (
         <FormButtons
@@ -528,27 +493,24 @@ export function RetireForm(props: {
       ? { ok: true, services: answer.body, said: copy.done.saved }
       : { ok: false, code: answer.code, fields: answer.fields };
   }, props.onDone);
-  const id = `retire-${service.kind}-${service.tier}`;
   return (
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.retireTitle(service.name)}</legend>
       <div className={styles.fields}>
-        <Box id={id} label={form.retireFrom} hint={form.retireHint}>
-          {(hint) => (
-            <input
-              className={styles.date}
-              id={id}
-              type="date"
+        <Field label={form.retireFrom} hint={form.retireHint} className={styles.field}>
+          {(control) => (
+            <DateInput
+              {...control}
+              className={styles.dateBox}
               min={today}
               value={from}
-              aria-describedby={hint}
               onChange={(event) => {
                 setFrom(event.target.value);
                 steps.edit();
               }}
             />
           )}
-        </Box>
+        </Field>
       </div>
       {steps.step === "editing" ? (
         <FormButtons ready={from !== ""} onNext={steps.check} onCancel={props.onCancel} />
@@ -653,37 +615,32 @@ export function AddForm(props: {
       ? { ok: true, services: answer.body, said: copy.done.saved }
       : { ok: false, code: answer.code, fields: answer.fields };
   }, props.onDone);
-  const id = `add-${kind}`;
   const ready = name.trim() !== "" && PRICE_TIER.test(codeSent) && minutes.trim() !== "";
   return (
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{form.addTitle(kindName)}</legend>
       <div className={styles.fields}>
-        <Box id={`${id}-name`} label={form.name} hint={form.nameHint}>
-          {(hint) => (
-            <input
-              className={styles.text}
-              id={`${id}-name`}
-              type="text"
+        <Field label={form.name} hint={form.nameHint} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.areaBox}
               maxLength={60}
               value={name}
-              aria-describedby={hint}
               onChange={(event) => {
                 setName(event.target.value);
                 steps.edit();
               }}
             />
           )}
-        </Box>
-        <Box id={`${id}-code`} label={form.code} hint={form.codeHint}>
-          {(hint) => (
-            <input
-              className={styles.text}
-              id={`${id}-code`}
-              type="text"
+        </Field>
+        <Field label={form.code} hint={form.codeHint} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.areaBox}
               maxLength={32}
               value={codeTyped ? code : (tierCodeOf(name) ?? "")}
-              aria-describedby={hint}
               onChange={(event) => {
                 setCode(event.target.value);
                 setCodeTyped(true);
@@ -691,26 +648,24 @@ export function AddForm(props: {
               }}
             />
           )}
-        </Box>
-        <Box id={`${id}-minutes`} label={form.minutes} hint={form.minutesHint(bounds.min, bounds.max)}>
-          {(hint) => (
-            <input
-              className={styles.number}
-              id={`${id}-minutes`}
-              type="number"
+        </Field>
+        <Field label={form.minutes} hint={form.minutesHint(bounds.min, bounds.max)} className={styles.field}>
+          {(control) => (
+            <NumberInput
+              {...control}
+              className={styles.figureBox}
               inputMode="numeric"
               step={1}
               min={bounds.min}
               max={bounds.max}
               value={minutes}
-              aria-describedby={hint}
               onChange={(event) => {
                 setMinutes(event.target.value);
                 steps.edit();
               }}
             />
           )}
-        </Box>
+        </Field>
       </div>
       {steps.step === "editing" ? (
         <FormButtons ready={ready} onNext={steps.check} onCancel={props.onCancel} />

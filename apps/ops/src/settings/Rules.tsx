@@ -11,6 +11,7 @@
 // Nothing is sent until ops have seen the change: each figure that moves, the
 // old beside the new, and only the second press sends it, as a price is set.
 
+import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -172,20 +173,18 @@ function changesIn(rules: readonly OpsSetting[], drafts: Drafts): Change[] {
     .filter((change) => movedBy(change.rule, change.value).length > 0);
 }
 
-function Field({
-  id,
+/** A rule's figure: its box and its unit, with the range it may take, or why what was typed is outside it. */
+function FigureField({
   label,
   bounds,
   text,
   onChange,
 }: {
-  id: string;
   label: string;
   bounds: { min: number; max: number; unit: string };
   text: string;
   onChange: (text: string) => void;
 }) {
-  const hint = `${id}-allowed`;
   // An hour of the day is typed on a 24-hour clock and read beside the box as the clock says it.
   const clock = bounds.unit === HOUR_OF_DAY;
   const typed = Number(text);
@@ -197,45 +196,37 @@ function Field({
   const range = clock
     ? copy.allowedHours(copy.hour(bounds.min), copy.hour(bounds.max))
     : copy.allowed(bounds.min, bounds.max, bounds.unit);
+  const why = clock ? range : copy.outOfBounds(String(bounds.min), `${String(bounds.max)} ${bounds.unit}`);
   return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel} htmlFor={id}>
-        {label}
-      </label>
-      <div className={styles.fieldRow}>
-        <input
-          className={styles.number}
-          id={id}
-          type="number"
-          inputMode="numeric"
-          step={1}
-          min={bounds.min}
-          max={bounds.max}
-          value={text}
-          aria-describedby={hint}
-          aria-invalid={outside}
-          onChange={(event) => {
-            onChange(event.target.value);
-          }}
-        />
-        <span className={styles.unit}>{unit}</span>
-      </div>
-      <p className={outside ? styles.fieldError : styles.hint} id={hint}>
-        {outside && !clock ? copy.outOfBounds(String(bounds.min), `${String(bounds.max)} ${bounds.unit}`) : range}
-      </p>
-    </div>
+    <Field label={label} hint={outside ? undefined : range} error={outside ? why : null} className={styles.field}>
+      {(control) => (
+        <div className={styles.fieldRow}>
+          <NumberInput
+            {...control}
+            className={styles.figureBox}
+            inputMode="numeric"
+            step={1}
+            min={bounds.min}
+            max={bounds.max}
+            value={text}
+            onChange={(event) => {
+              onChange(event.target.value);
+            }}
+          />
+          <span className={styles.unit}>{unit}</span>
+        </div>
+      )}
+    </Field>
   );
 }
 
 function ChoiceField({
-  id,
   label,
   rule,
   choices,
   choice,
   onChange,
 }: {
-  id: string;
   label: string;
   rule: ChoiceRule;
   choices: readonly string[];
@@ -243,25 +234,24 @@ function ChoiceField({
   onChange: (choice: string) => void;
 }) {
   return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel} htmlFor={id}>
-        {label}
-      </label>
-      <select
-        className={styles.select}
-        id={id}
-        value={choice}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-      >
-        {choices.map((each) => (
-          <option key={each} value={each}>
-            {choiceLabel(rule, each)}
-          </option>
-        ))}
-      </select>
-    </div>
+    <Field label={label} className={styles.field}>
+      {(control) => (
+        <Select
+          {...control}
+          className={styles.choiceBox}
+          value={choice}
+          onChange={(event) => {
+            onChange(event.target.value);
+          }}
+        >
+          {choices.map((each) => (
+            <option key={each} value={each}>
+              {choiceLabel(rule, each)}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
   );
 }
 
@@ -378,7 +368,6 @@ function Fields({
         {rule.keys.map((key) => (
           <ChoiceField
             key={key}
-            id={`${rule.name}-${key}`}
             label={keyLabel(rule, key)}
             rule={rule}
             choices={rule.choices[key] ?? []}
@@ -394,9 +383,8 @@ function Fields({
   return (
     <div className={styles.fields}>
       {Object.entries(draft).map(([key, text]) => (
-        <Field
+        <FigureField
           key={key}
-          id={`${rule.name}-${key}`}
           label={typeof rule.value === "number" ? rule.title : keyLabel(rule, key)}
           bounds={boundsOf(rule, key)}
           text={text}

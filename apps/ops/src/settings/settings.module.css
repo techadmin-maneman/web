@@ -661,3 +661,25 @@
 .once {
   margin-top: var(--sp-16);
 }
+
+/* The widths of the shared boxes (@maneman/ui/Field) on these forms: the box itself is the package's. */
+.figureBox {
+  width: var(--ops-figure);
+}
+
+.amountBox {
+  width: var(--ops-amount);
+}
+
+.dateBox {
+  width: var(--ops-date);
+}
+
+.areaBox {
+  width: var(--ops-area);
+}
+
+.choiceBox {
+  width: auto;
+  min-width: var(--ops-area);
+}
