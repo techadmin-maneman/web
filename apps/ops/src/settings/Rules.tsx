@@ -69,7 +69,10 @@ function fieldLabel(rule: OpsSetting, field: string): string {
 }
 
 function ruleRefusal(rule: OpsSetting, code: string, fields: readonly string[]): string | undefined {
-  const [field] = fields;
+  const [field, reached] = fields;
+  if (code === "figures_conflict" && field !== undefined && reached !== undefined) {
+    return copy.conflict(fieldLabel(rule, field), fieldLabel(rule, reached));
+  }
   if (code !== "invalid_request") return errorText(copy.errors, { code });
   if (field === undefined) return copy.errors.invalid_request;
   return copy.outside(fieldLabel(rule, field));

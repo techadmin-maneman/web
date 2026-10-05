@@ -211,6 +211,23 @@ test.describe("the rules", () => {
     );
   });
 
+  // Each figure fits its own bounds, but services every 60 days cannot be booked 45 days ahead.
+  test("says which box must reach which when the figures do not fit together", async ({ page }) => {
+    await open(page, "/settings", {
+      "POST /api/settings/booking_days": fails(422, "figures_conflict", [
+        "booking_days.horizon",
+        "booking_days.service_cadence",
+      ]),
+    });
+    const days = page.getByRole("group", { name: "Booking and the next visit" });
+    await days.getByLabel("Between service visits").fill("60");
+    await section(page, "Booking and payment").getByRole("button", { name: "Save" }).click();
+    await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("listitem").filter({ has: days }).getByRole("alert")).toHaveText(
+      "“How far ahead a visit may be booked” must be at least “Between service visits”, or a client is offered a day they cannot book. It was not saved.",
+    );
+  });
+
   // Seventeen rules on one page, each with its own Save, in no order.
   test("groups the rules by subject, each section a link away", async ({ page }) => {
     await open(page);

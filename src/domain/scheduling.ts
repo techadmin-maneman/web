@@ -3,6 +3,7 @@
 // taking the same time, and a booked visit then holds it itself. Days ops black out are never offered.
 
 import { failedUniqueOn } from "../lib/d1-errors.ts";
+import { inTakingOrder, tieRange } from "./technician-choice.ts";
 import { graceEnds, ownUnpaid } from "./unpaid-holds.ts";
 import {
   PAYMENT_GRACE_SECONDS,
@@ -442,7 +443,7 @@ export function lettingGo(db: D1Database, now: Date, clientToo: string | null = 
 }
 
 /**
- * Holds a window for the client: their regular technician if free, else whoever has the least that day.
+ * Holds a window for the client: their regular technician if free, else whoever has the least (inTakingOrder).
  * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out. The hold waits
  * `holdSeconds` for payment, and keeps its time for `graceSeconds` after, both as ops set them when it is made.
  */
@@ -492,11 +493,12 @@ export async function holdSlot(
   const { personId, service, date, window, price, moves, useCredit = false, oneVisit = false, from = "app" } = input;
   const units = unitsFor(service.minutes);
   const moving = moves?.kind === "move" ? moves.visit : null;
+  const ties = tieRange(date);
   const [blackouts, technicians, regular, held] = await Promise.all([
     loadBlackouts(db, date, date),
     techniciansFor(db, moving),
     moving === null ? regularTechnician(db, personId) : moving.technicianId,
-    occupancy(db, date, date, now, moving?.visitId ?? null, null, from === "app" ? personId : null),
+    occupancy(db, ties.from, ties.to, now, moving?.visitId ?? null, null, from === "app" ? personId : null),
   ]);
   if (blackouts.has(date)) return null;
   const chosen =
@@ -506,11 +508,7 @@ export async function holdSlot(
   const candidates = chosen
     .map((technician) => ({ technician, start: placement(held(technician.id, date), window, units) }))
     .filter((candidate): candidate is { technician: Technician; start: number } => candidate.start !== null)
-    .sort(
-      (a, b) =>
-        Number(b.technician.id === regular) - Number(a.technician.id === regular) ||
-        held(a.technician.id, date).units.size - held(b.technician.id, date).units.size,
-    );
+    .sort(inTakingOrder(held, date, regular));
 
   const at = now.toISOString();
   const expiresAt = new Date(now.getTime() + holdSeconds * 1000).toISOString();

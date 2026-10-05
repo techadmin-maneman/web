@@ -24,6 +24,7 @@ import type { App } from "../../http/context.ts";
 import {
   boundsOf,
   checkValue,
+  conflictOf,
   isChoice,
   OPS_SETTINGS,
   settingNamed,
@@ -139,6 +140,7 @@ const setSettingRoute = createRoute({
     200: { description: "What it is now", ...json(SettingSchema) },
     400: errorResponse("invalid_request: the figure is outside what the rule allows, and fields names it"),
     403: errorResponse("access_required"),
+    422: errorResponse("figures_conflict: fields names a box, then the box its figure must reach"),
   },
 });
 
@@ -452,12 +454,11 @@ export function registerOpsSettings(app: App): void {
       const checked = checkValue(setting, value);
       if (!checked.ok) {
         c.var.log.warn("setting_refused", { setting: setting.name, refusals: checked.refusals.length });
-        return refuse(
-          c,
-          "invalid_request",
-          checked.refusals.map((refusal) => refusal.field),
-        );
+        const fields = checked.refusals.map((refusal) => refusal.field);
+        return refuse(c, "invalid_request", fields);
       }
+      const conflict = conflictOf(setting, checked.value);
+      if (conflict !== null) return refuse(c, "figures_conflict", conflict);
       await setOpsSetting(c.env.DB, {
         setting,
         value: checked.value,

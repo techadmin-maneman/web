@@ -2809,6 +2809,14 @@ Request body:
 }
 ```
 
+**422**: figures_conflict: fields names a box, then the box its figure must reach
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/prices
 
 The price book: every price, past, present and scheduled
@@ -4646,7 +4654,8 @@ Request body:
             "code_exists",
             "slot_times_too_soon",
             "not_permitted",
-            "last_admin"
+            "last_admin",
+            "figures_conflict"
           ]
         },
         "request_id": {
@@ -7886,7 +7895,8 @@ Request body:
             "code_exists",
             "slot_times_too_soon",
             "not_permitted",
-            "last_admin"
+            "last_admin",
+            "figures_conflict"
           ]
         },
         "request_id": {

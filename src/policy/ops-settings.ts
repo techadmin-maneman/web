@@ -13,7 +13,13 @@
 
 import { CHECKIN_RADIUS_M } from "./check-in.ts";
 import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "./job-visibility.ts";
-import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAY_KEYS, NEXT_VISIT_DAYS } from "./next-visit.ts";
+import {
+  NEXT_VISIT_DAY_BOUNDS,
+  NEXT_VISIT_DAY_KEYS,
+  NEXT_VISIT_DAYS,
+  pastTheHorizon,
+  type NextVisitDays,
+} from "./next-visit.ts";
 import { chargesFor, FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "./moving-a-visit.ts";
 import { DISPUTE_WINDOW_DAYS, NO_SHOW_CHARGES, NO_SHOW_WAIT_MIN, WAIVER_GIVES_BACK, WAIVER_KEYS } from "./no-show.ts";
 import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "./phone-clock.ts";
@@ -64,6 +70,11 @@ export interface NumberSetting extends Described {
   readonly keys: readonly string[] | "open" | null;
   /** In force while the store holds no row, or cannot be read. */
   readonly fallback: number | Readonly<Record<string, number>>;
+  /**
+   * Keys whose figures each fit their bounds but not each other: for each, the key and the key it must reach. None
+   * where the figures hold together.
+   */
+  readonly conflicts?: (value: Readonly<Record<string, number>>) => readonly (readonly [string, string])[];
 }
 
 /**
@@ -252,6 +263,7 @@ export const OPS_SETTINGS = [
     keys: NEXT_VISIT_DAY_KEYS,
     bounds: NEXT_VISIT_DAY_BOUNDS,
     fallback: NEXT_VISIT_DAYS,
+    conflicts: (value) => pastTheHorizon(value as NextVisitDays).map((key) => ["horizon", key] as const),
   },
   {
     // The owner's ruling of 1 October 2026: each side's visits, and how long they last (ADR 0025, item 94).
@@ -410,6 +422,13 @@ export function checkValue(setting: OpsSetting, value: unknown): Checked {
     if (refusal !== null) refusals.push(refusal);
   }
   return refusals.length > 0 ? { ok: false, refusals } : { ok: true, value: value as Record<string, number> };
+}
+
+/** The first pair of boxes whose figures, each within bounds, do not hold together: the one that must reach the other. */
+export function conflictOf(setting: OpsSetting, value: SettingValue): readonly [string, string] | null {
+  if (isChoice(setting) || setting.conflicts === undefined || typeof value !== "object") return null;
+  const [pair] = setting.conflicts(value as Readonly<Record<string, number>>);
+  return pair === undefined ? null : [`${setting.name}.${pair[0]}`, `${setting.name}.${pair[1]}`];
 }
 
 /**
