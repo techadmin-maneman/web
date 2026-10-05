@@ -15,7 +15,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
 import { randomMobile } from "../support.ts";
-import { row, wrangler } from "./fitted.ts";
+import { wrangler } from "./fitted.ts";
+import { sqlRow } from "../../scripts/lib/sql-literal.ts";
 
 export interface TryOnClient {
   /** Ten digits, as the login's field takes it. */
@@ -67,17 +68,17 @@ export async function seedTryOn(): Promise<void> {
   const resultKey = `results/${job}.jpg`;
 
   const sql = [
-    `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${row(person, at, `+91${mobile}`, "Arjun Mehta")};`,
+    `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${sqlRow(person, at, `+91${mobile}`, "Arjun Mehta")};`,
     // The consultation booked from the site, which lets the number log in; and the lead the gate made.
     `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, proposed_visit_date,
        sync_state, request_id) VALUES
-       ${row(booking, person, at, "form", "Gurgaon", "weekday_pm", "receding", consultationDay, "synced", "e2e")},
-       ${row(tryOnLead, person, createdAt, "tryon", null, null, "receding", null, "synced", "e2e")};`,
+       ${sqlRow(booking, person, at, "form", "Gurgaon", "weekday_pm", "receding", consultationDay, "synced", "e2e")},
+       ${sqlRow(tryOnLead, person, createdAt, "tryon", null, null, "receding", null, "synced", "e2e")};`,
     // Claimed with the number proved by its WhatsApp code, as every claim is.
     `INSERT INTO tryon_jobs (id, created_at, upload_key, uploaded_at, stage, preset, hair_color, endpoint, state,
        result_key, expires_at, person_id, lead_id, claimed_at, photo_consent_version, photo_consent_at, ip_hash,
        request_id, copy_key, number_proved_at) VALUES
-       ${row(job, createdAt, uploadKey, createdAt, "receding", "medium-natural-short", "black", "pro", "ready", resultKey, expiresAt, person, tryOnLead, createdAt, "photo-v2", createdAt, "e2e", "e2e", copyKey, createdAt)};`,
+       ${sqlRow(job, createdAt, uploadKey, createdAt, "receding", "medium-natural-short", "black", "pro", "ready", resultKey, expiresAt, person, tryOnLead, createdAt, "photo-v2", createdAt, "e2e", "e2e", copyKey, createdAt)};`,
   ];
 
   const folder = await mkdtemp(join(tmpdir(), "mm-e2e-"));

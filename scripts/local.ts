@@ -9,19 +9,8 @@
 import { execFileSync } from "node:child_process";
 import { createHmac, randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
+import { d1Query } from "./lib/d1.ts";
 import { API_ORIGIN } from "./lib/local-stack.ts";
-
-/** Rows from the local database, read by wrangler as the e2e seeds write it. */
-function query<T>(sql: string): T[] {
-  const output = execFileSync(
-    process.execPath,
-    ["node_modules/wrangler/bin/wrangler.js", "d1", "execute", "DB", "--local", "--json", "--command", sql],
-    { encoding: "utf8" },
-  );
-  // wrangler prints its banner before the JSON when the terminal is not a TTY.
-  const answers = JSON.parse(output.slice(output.indexOf("["))) as { results: T[] }[];
-  return answers[0]?.results ?? [];
-}
 
 async function tick(): Promise<void> {
   // wrangler dev --test-scheduled runs the Worker's scheduled() for this path; the cron string is the one it runs on.
@@ -51,7 +40,8 @@ interface Hold {
 
 async function pay(holdId: string | undefined): Promise<void> {
   const which = holdId === undefined ? "" : `AND id = '${holdId.replaceAll("'", "")}'`;
-  const [hold] = query<Hold>(
+  const [hold] = d1Query<Hold>(
+    "local",
     `SELECT id, person_id, razorpay_order_id, amount FROM slot_holds WHERE state = 'held' ${which}
      ORDER BY created_at DESC LIMIT 1;`,
   );
@@ -103,7 +93,8 @@ interface OpenVisit {
 
 async function close(visitId: string | undefined, outcome: "done" | "partial"): Promise<void> {
   if (visitId === undefined) {
-    const open = query<OpenVisit>(
+    const open = d1Query<OpenVisit>(
+      "local",
       `SELECT a.id, a.type, a.window_start, p.name FROM appointments a LEFT JOIN people p ON p.id = a.person_id
        WHERE a.status IN ('scheduled', 'dispatched', 'in_progress') AND a.deleted_at IS NULL
        ORDER BY a.window_start LIMIT 20;`,

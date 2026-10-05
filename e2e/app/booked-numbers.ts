@@ -13,7 +13,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomMobile } from "../support.ts";
-import { row, wrangler } from "./fitted.ts";
+import { wrangler } from "./fitted.ts";
+import { sqlRow } from "../../scripts/lib/sql-literal.ts";
 
 /** Every test that takes one, with a retry each, and room to spare. */
 const POOL_SIZE = 120;
@@ -35,12 +36,12 @@ export async function seedBookedNumbers(): Promise<void> {
     const person = crypto.randomUUID();
     return [
       `INSERT INTO people (id, created_at, mobile_e164, name, contactable)
-         VALUES ${row(person, now, `+91${mobile}`, "Rohit Malhotra", 1)};`,
+         VALUES ${sqlRow(person, now, `+91${mobile}`, "Rohit Malhotra", 1)};`,
       `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
-         VALUES ${row(crypto.randomUUID(), person, "contact", "booking-v1", 1, now)};`,
+         VALUES ${sqlRow(crypto.randomUUID(), person, "contact", "booking-v1", 1, now)};`,
       `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent,
          proposed_visit_date, request_id)
-         VALUES ${row(crypto.randomUUID(), person, now, "form", "Gurgaon", "weekday_am", "crown", proposed, "e2e")};`,
+         VALUES ${sqlRow(crypto.randomUUID(), person, now, "form", "Gurgaon", "weekday_am", "crown", proposed, "e2e")};`,
     ];
   });
   // Too long for a command line on Windows, so it goes in a file.

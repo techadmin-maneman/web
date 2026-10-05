@@ -28,7 +28,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { parseArgs, promisify } from "node:util";
-import { clearTester, quote } from "./lib/technician-tester.ts";
+import { clearTester } from "./lib/technician-tester.ts";
+import { sqlLiteral, sqlRow } from "./lib/sql-literal.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
@@ -60,8 +61,6 @@ if (!/^[6-9]\d{9}$/.test(mobile)) {
 const mobileE164 = `+91${mobile}`;
 
 const wrangler = (...args: string[]) => run(process.execPath, [WRANGLER, ...args], { cwd: resolve(".") });
-
-const row = (...values: (string | number | null)[]) => `(${values.map(quote).join(", ")})`;
 
 /**
  * Runs SQL on the staging database. A file, not a command, so quoting is the
@@ -111,7 +110,7 @@ const indiaDate = (days: number) => new Date(Date.now() + INDIA_OFFSET_MS + days
 const morning = (date: string) => ({ start: `${date}T04:30:00.000Z`, end: `${date}T06:00:00.000Z` });
 
 const existing = await query<{ id: string; fsm_id: string; name: string }>(
-  `SELECT id, fsm_id, name FROM technicians WHERE mobile_e164 = ${quote(mobileE164)};`,
+  `SELECT id, fsm_id, name FROM technicians WHERE mobile_e164 = ${sqlLiteral(mobileE164)};`,
 );
 const ours = existing.filter((technician) => technician.fsm_id.startsWith(FSM_ID_PREFIX));
 
@@ -120,7 +119,7 @@ if (options.clear) {
     console.log("nothing to clear: no test technician is on that number");
     process.exit(0);
   }
-  const ids = ours.map((technician) => quote(technician.id)).join(", ");
+  const ids = ours.map((technician) => sqlLiteral(technician.id)).join(", ");
   const people = await query<{ person_id: string }>(
     `SELECT DISTINCT person_id FROM appointments WHERE technician_id IN (${ids}) AND person_id IS NOT NULL;`,
   );
@@ -156,7 +155,7 @@ const clientMobile = `9${String(Math.floor(Math.random() * 1e9)).padStart(9, "0"
 
 const appointment = (jobId: string, date: string) => {
   const when = morning(date);
-  return row(
+  return sqlRow(
     jobId,
     `${FSM_ID_PREFIX}${tag}-${jobId}`,
     personId,
@@ -173,15 +172,15 @@ const appointment = (jobId: string, date: string) => {
 
 await execute([
   `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
-     VALUES ${row(technicianId, `${FSM_ID_PREFIX}${tag}`, "Test Technician", "TT", 1, ZONE, mobileE164, now, 1)};`,
+     VALUES ${sqlRow(technicianId, `${FSM_ID_PREFIX}${tag}`, "Test Technician", "TT", 1, ZONE, mobileE164, now, 1)};`,
   `INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record)
-     VALUES ${row(personId, now, `+91${clientMobile}`, "Staging test", 1, 1)};`,
+     VALUES ${sqlRow(personId, now, `+91${clientMobile}`, "Staging test", 1, 1)};`,
   // No lat or lng, on purpose. An address with no coordinates cannot be measured
   // against, so "I have arrived" is accepted wherever the tester is standing
   // (src/domain/check-ins.ts). The 200 m geofence is docs/tech-field-test.md's
   // to measure, at real addresses.
   `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes, lat, lng)
-     VALUES ${row(addressId, personId, now, "Tower C, 14th floor", null, SECTOR, "Gurgaon", PINCODE, "PLACEHOLDER Gate code on the test fixture", null, null)};`,
+     VALUES ${sqlRow(addressId, personId, now, "Tower C, 14th floor", null, SECTOR, "Gurgaon", PINCODE, "PLACEHOLDER Gate code on the test fixture", null, null)};`,
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
      service_city, service_pincode, synced_at) VALUES
      ${appointment(jobs.today, dates.today)},

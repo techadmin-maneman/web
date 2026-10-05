@@ -19,7 +19,7 @@ import {
   type CheckLine,
 } from "./lib/books-org-check.ts";
 import { readJsonc } from "./lib/jsonc.ts";
-import { refreshTokenForScript } from "./lib/zoho-script-token.ts";
+import { requiredEnv, zohoScriptClient } from "./lib/zoho-script-client.ts";
 
 // --use-worker-token is read by refreshTokenForScript; it is named here so the parser takes it.
 const { values } = parseArgs({
@@ -28,15 +28,6 @@ const { values } = parseArgs({
     "use-worker-token": { type: "boolean", default: false },
   },
 });
-
-function required(name: string): string {
-  const value = process.env[name]?.trim() ?? "";
-  if (value === "") {
-    console.error(`${name} is not set; pass the secrets file with --env-file`);
-    process.exit(2);
-  }
-  return value;
-}
 
 /** A var the Worker of this environment carries in wrangler.jsonc; null where it is empty. */
 function workerVar(environment: string, name: string): string | null {
@@ -50,41 +41,13 @@ if (values.env !== "staging" && values.env !== "production") {
   process.exit(2);
 }
 const environment = values.env;
-const apiHost = required("ZOHO_BOOKS_API_HOST");
-const orgId = required("ZOHO_BOOKS_ORG_ID");
-
-async function accessToken(): Promise<string> {
-  const query = new URLSearchParams({
-    refresh_token: refreshTokenForScript("books"),
-    client_id: required("ZOHO_BOOKS_CLIENT_ID"),
-    client_secret: required("ZOHO_BOOKS_CLIENT_SECRET"),
-    grant_type: "refresh_token",
-  });
-  const response = await fetch(`https://${required("ZOHO_BOOKS_ACCOUNTS_HOST")}/oauth/v2/token?${query.toString()}`, {
-    method: "POST",
-  });
-  const body = await response.json<{ access_token?: string; error?: string }>();
-  if (body.access_token === undefined) {
-    console.error(`FAIL  token: Zoho refused the refresh token (${body.error ?? String(response.status)})`);
-    process.exit(1);
-  }
-  return body.access_token;
-}
-
-const token = await accessToken();
+const books = await zohoScriptClient("books");
 
 /** One read of Books, in the owner's organisation. */
-async function read(path: string): Promise<BooksAnswer> {
-  const separator = path.includes("?") ? "&" : "?";
-  const response = await fetch(`https://${apiHost}/books/v3${path}${separator}organization_id=${orgId}`, {
-    headers: { Authorization: `Zoho-oauthtoken ${token}` },
-  });
-  const text = await response.text();
-  return { status: response.status, json: text === "" ? null : (JSON.parse(text) as unknown) };
-}
+const read = (path: string): Promise<BooksAnswer> => books.call("GET", path);
 
 const refundAccountId = workerVar(environment, "BOOKS_REFUND_ACCOUNT_ID");
-const organisationAnswer = (await read(`/organizations/${orgId}`)).json;
+const organisationAnswer = (await read(`/organizations/${requiredEnv("ZOHO_BOOKS_ORG_ID")}`)).json;
 const lines: CheckLine[] = [
   organisation(organisationAnswer),
   discountPreference((await read("/settings/invoices")).json),

@@ -4,14 +4,21 @@
 import type { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import {
+  BOOKS_CONTACT,
+  BOOKS_INVOICE,
+  BOOKS_PAYMENT,
+  booksPage,
+  booksRecord,
   crmDeleteOutcome,
   crmHoldsNoSuchRecord,
+  crmPage,
   crmScopeMissing,
   DELETE_ORDER,
   isStagingMarked,
   KNOWN_IDS_SQL,
   leftAlone,
   looksLikeATest,
+  REVIEWED_LIST,
   toDelete,
   unlinkStatements,
   unlisted,
@@ -219,5 +226,47 @@ describe("the CRM's answers", () => {
       "refused: the scripts' CRM token may not delete it (runbook, step 8.7); delete it in the CRM",
     );
     expect(crmDeleteOutcome(500, { code: "INTERNAL_ERROR" })).toBe('refused: 500 {"code":"INTERNAL_ERROR"}');
+  });
+});
+
+// The deleting script reads every answer through these: a record without its ID, or a list of another shape, stops the
+// run before anything is listed or deleted.
+describe("the org's lists", () => {
+  it("read a Books page's records under their key, and whether another page follows", () => {
+    const answer = {
+      contacts: [{ contact_id: "c-1", contact_name: "Staging test" }, { contact_id: "c-2" }],
+      page_context: { has_more_page: true },
+    };
+    expect(booksPage(answer, "contacts", BOOKS_CONTACT)).toEqual({
+      rows: [
+        { contact_id: "c-1", contact_name: "Staging test" },
+        { contact_id: "c-2", contact_name: "" },
+      ],
+      more: true,
+    });
+    expect(booksPage({ contacts: [] }, "contacts", BOOKS_CONTACT)).toEqual({ rows: [], more: false });
+  });
+
+  it("refuse a record without its ID", () => {
+    expect(() => booksPage({ contacts: [{ contact_name: "Staging test" }] }, "contacts", BOOKS_CONTACT)).toThrow();
+    expect(() => booksPage({ customerpayments: [{ payment_id: "" }] }, "customerpayments", BOOKS_PAYMENT)).toThrow();
+    expect(() => crmPage({ data: [{ Full_Name: "Staging test" }] })).toThrow();
+  });
+
+  it("read one Books record under its key", () => {
+    const answer = { code: 0, invoice: { invoice_id: "i-1", invoice_number: "INV-1", customer_name: "Staging test" } };
+    expect(booksRecord(answer, "invoice", BOOKS_INVOICE)).toMatchObject({ invoice_number: "INV-1" });
+  });
+
+  it("read the CRM's empty answer as no records, and its last page as the last", () => {
+    expect(crmPage(null)).toEqual({ rows: [], more: false });
+    const answer = { data: [{ id: "lead-1", Full_Name: null }], info: { more_records: false } };
+    expect(crmPage(answer)).toEqual({ rows: [{ id: "lead-1", Full_Name: "" }], more: false });
+  });
+
+  it("read the owner's reviewed list only as the listing run wrote it", () => {
+    const record = { kind: "books/contacts", id: "c-1", name: "Staging test" };
+    expect(REVIEWED_LIST.parse({ records: [record] }).records).toEqual([record]);
+    expect(() => REVIEWED_LIST.parse({ records: [{ ...record, kind: "books/items" }] })).toThrow();
   });
 });

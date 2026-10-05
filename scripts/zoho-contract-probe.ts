@@ -19,6 +19,7 @@ import { createZohoLeadFinder } from "../src/providers/crm/zoho.ts";
 import { createZohoRequester } from "../src/providers/zoho-http.ts";
 import { writeFixture } from "./lib/vendor-fixtures.ts";
 import { callLogger, tokenTable } from "./lib/zoho-script-deps.ts";
+import { requiredEnv } from "./lib/zoho-script-client.ts";
 import { refreshTokenForScript } from "./lib/zoho-script-token.ts";
 
 // --use-worker-token is read by refreshTokenForScript; it is named here so the parser takes it.
@@ -29,32 +30,23 @@ const { values } = parseArgs({
   },
 });
 
-function required(name: string): string {
-  const value = process.env[name]?.trim() ?? "";
-  if (value === "") {
-    console.error(`${name} is not set; pass the secrets files with --env-file`);
-    process.exit(2);
-  }
-  return value;
-}
-
 const booksSettings: ZohoBooksSettings = {
-  clientId: required("ZOHO_BOOKS_CLIENT_ID"),
-  clientSecret: required("ZOHO_BOOKS_CLIENT_SECRET"),
+  clientId: requiredEnv("ZOHO_BOOKS_CLIENT_ID"),
+  clientSecret: requiredEnv("ZOHO_BOOKS_CLIENT_SECRET"),
   refreshToken: refreshTokenForScript("books"),
-  accountsHost: required("ZOHO_BOOKS_ACCOUNTS_HOST"),
-  apiHost: required("ZOHO_BOOKS_API_HOST"),
-  orgId: required("ZOHO_BOOKS_ORG_ID"),
+  accountsHost: requiredEnv("ZOHO_BOOKS_ACCOUNTS_HOST"),
+  apiHost: requiredEnv("ZOHO_BOOKS_API_HOST"),
+  orgId: requiredEnv("ZOHO_BOOKS_ORG_ID"),
   refundAccountId: null,
   gst: NO_GST,
 };
 
 const crmSettings: ZohoSettings = {
-  clientId: required("ZOHO_CLIENT_ID"),
-  clientSecret: required("ZOHO_CLIENT_SECRET"),
+  clientId: requiredEnv("ZOHO_CLIENT_ID"),
+  clientSecret: requiredEnv("ZOHO_CLIENT_SECRET"),
   refreshToken: refreshTokenForScript("crm"),
-  accountsHost: required("ZOHO_ACCOUNTS_HOST"),
-  apiHost: required("ZOHO_API_HOST"),
+  accountsHost: requiredEnv("ZOHO_ACCOUNTS_HOST"),
+  apiHost: requiredEnv("ZOHO_API_HOST"),
   larId: null,
 };
 

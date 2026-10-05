@@ -8,12 +8,10 @@
 //
 // Each pincode's area is named from its post offices (scripts/lib/pincodes.ts).
 
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { EXPECTED_DATABASE_NAME, isEnvironmentName } from "../src/config/environments.ts";
+import { readFileSync } from "node:fs";
+import { isEnvironmentName } from "../src/config/environments.ts";
 import { indiaInstant } from "../src/lib/india-time.ts";
+import { d1Execute, d1Query } from "./lib/d1.ts";
 import {
   areaOf,
   fields,
@@ -51,17 +49,8 @@ const rows = lines.map((line): PincodeRow => {
   return { pincode, area: areaOf(at(row, "office_names"), city), city, served, launchedAt };
 });
 
-const target =
-  environment === "local"
-    ? ["DB", "--local", "--env="]
-    : [EXPECTED_DATABASE_NAME[environment], "--remote", "--env", environment];
-const d1Execute = ["node_modules/wrangler/bin/wrangler.js", "d1", "execute", ...target];
-
 // The import tells nobody on a waitlist, so it serves no pincode people wait for: the console does, and tells them.
-const [answer] = JSON.parse(
-  execFileSync(process.execPath, [...d1Execute, "--command", WAITING_QUERY, "--json"], { encoding: "utf8" }),
-) as [{ results: Waiting[] } | undefined];
-const refused = launchesWithPeopleWaiting(rows, answer?.results ?? []);
+const refused = launchesWithPeopleWaiting(rows, d1Query<Waiting>(environment, WAITING_QUERY));
 if (refused.length > 0) {
   console.error(`import-pincodes: refused. The file serves ${String(refused.length)} pincode(s) people wait for:`);
   for (const { pincode, waiting } of refused) console.error(`  ${pincode}: ${String(waiting)} waiting`);
@@ -72,12 +61,5 @@ if (refused.length > 0) {
   process.exit(1);
 }
 
-const folder = mkdtempSync(join(tmpdir(), "mm-pincodes-"));
-try {
-  const file = join(folder, "pincodes.sql");
-  writeFileSync(file, pincodeUpsert(rows));
-  execFileSync(process.execPath, [...d1Execute, "--file", file, "--yes"], { stdio: "inherit" });
-  console.log(`import-pincodes: ${String(rows.length)} pincodes into ${environment}`);
-} finally {
-  rmSync(folder, { recursive: true, force: true });
-}
+d1Execute(environment, [pincodeUpsert(rows)], true);
+console.log(`import-pincodes: ${String(rows.length)} pincodes into ${environment}`);
