@@ -25,7 +25,7 @@ test("draws where the keyboard is on the navigation and the Tasks board, in the 
     const drawn = await ringDrawn(page);
     if (drawn === null) continue;
     seen += 1;
-    const name = await page.evaluate(() => document.activeElement?.textContent?.trim().slice(0, 40) ?? "");
+    const name = await page.evaluate(() => document.activeElement?.textContent.trim().slice(0, 40) ?? "");
     expect(drawn, `"${name}" takes the keyboard without a ring`).toBe(true);
   }
   expect(seen).toBeGreaterThan(20);
