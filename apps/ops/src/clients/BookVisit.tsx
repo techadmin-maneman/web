@@ -1,6 +1,6 @@
 // Booking a visit for a client from the console: every kind, in a window someone is free in, with the technician ops
 // choose or whoever is free. A paid visit goes out as a payment link and is booked once the client pays; anything
-// else is booked at once (src/routes/ops-visits.ts). No board draws it (docs/fidelity-method.md).
+// else is booked at once (src/routes/ops/visits.ts). No board draws it (docs/fidelity-method.md).
 
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";

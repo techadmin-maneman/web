@@ -19,7 +19,7 @@ const DECISION = `/api/deletion-requests/${FIRST?.id ?? ""}/decision` as const;
 const DECIDE: Call = `POST ${DECISION}`;
 const DELETE = "Delete the account of Rohit Malhotra";
 
-/** The API's refusal while the client still has a visit booked, naming it (src/routes/ops-profile.ts). */
+/** The API's refusal while the client still has a visit booked, naming it (src/routes/ops/profile.ts). */
 const VISIT_BOOKED = {
   error: { code: "visit_booked", request_id: "test" },
   visits: [

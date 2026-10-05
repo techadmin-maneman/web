@@ -1,5 +1,5 @@
 // Tasks' "Needs a hand": the alerts ops were told of in the alert space, each until somebody puts right what it was
-// about (src/routes/ops-alerts.ts). Each says what happened and links to where to act; ops mark one done, or send
+// about (src/routes/ops/alerts.ts). Each says what happened and links to where to act; ops mark one done, or send
 // again the message, lead or CRM erasure it gave up on. Each person sees their own departments' kinds.
 
 import { useLoad } from "@maneman/ui/useLoad";
