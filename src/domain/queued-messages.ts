@@ -3,7 +3,7 @@
 import type { MessageKind } from "../config/message-kinds.ts";
 import { insertRow } from "../lib/sql.ts";
 
-export interface QueuedMessage {
+interface QueuedMessage {
   readonly id: string;
   readonly personId: string;
   readonly kind: MessageKind;
