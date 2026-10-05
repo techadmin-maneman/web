@@ -9,6 +9,9 @@
 // The people are the design's own invented ones. No real name, number or
 // photograph is used anywhere.
 
+// The API's own rules, so the fake cannot drift from them: the card's steps, and the piece label it refuses a write for.
+import { isPieceCode } from "../../src/config/pieces.ts";
+import { cardStepsFor } from "../../src/policy/in-job-steps.ts";
 import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page, Route } from "@playwright/test";
 import type { paths } from "../../apps/tech/src/api-schema.ts";
@@ -233,9 +236,6 @@ export const PRODUCTS: Card["products"] = [
   { tier: "natural", name: "Mane Man Natural" },
 ];
 
-/** The API's piece label (src/config/pieces.ts), which it refuses a write for. */
-const PIECE_LABEL = /^MM-[A-Z0-9]{2,6}-\d{2,8}-[A-Z]$/;
-
 export const NOTHING_DONE: Progress = {
   checked_in_at: null,
   wait_ends_at: null,
@@ -279,28 +279,6 @@ export const ROHITS_PROFILE: HairProfile = {
   },
   history: { remedies: ["minoxidil"], transplant_year: null, skin_and_allergies: "Dry at the crown" },
 };
-
-/**
- * The API's steps (src/policy/in-job-steps.ts): a consultation and a one visit take the profile, and a consultation
- * takes no after photographs. A one visit takes the piece, with the client's choice, before the checklist.
- */
-function stepsFor(type: VisitType, oneVisit = false): Step[] {
-  if (oneVisit) {
-    return ["before_photos", "piece", "checklist", "consumables", "profile", "after_photos", "outcome"];
-  }
-  const takesPiece = type === "replacement" || type === "first_fit";
-  const takesProfile = type === "consultation";
-  const takesAfterPhotos = type !== "consultation";
-  return [
-    "before_photos",
-    "checklist",
-    "consumables",
-    ...(takesPiece ? (["piece"] as const) : []),
-    ...(takesProfile ? (["profile"] as const) : []),
-    ...(takesAfterPhotos ? (["after_photos"] as const) : []),
-    "outcome",
-  ];
-}
 
 /** Parts of the address the client filled in beyond the fixture's two lines: flat, floor, tower, building, landmark. */
 type AddressParts = Partial<NonNullable<Card["address"]>>;
@@ -366,7 +344,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
         ? { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${JOB_ID}/last-visit-photo` }
         : null,
     reminder: options.reminderDelivered === undefined ? null : { delivered_at: options.reminderDelivered },
-    steps: stepsFor(oneVisit ? "first_fit" : type, oneVisit),
+    steps: cardStepsFor(oneVisit ? "first_fit" : type, oneVisit),
     checklist: options.checklist ?? CHECKLIST,
     checklist_if_declined: oneVisit ? CONSULTATION_CHECKLIST : [],
     partial_reasons: PARTIAL_REASONS,
@@ -393,7 +371,7 @@ export function lockedCard(date: string): Card {
     pieces: null,
     last_visit: null,
     reminder: null,
-    steps: stepsFor("first_fit"),
+    steps: cardStepsFor("first_fit"),
     checklist: CHECKLIST,
     checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
@@ -665,7 +643,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         product?: string;
       } | null;
       const declined = body?.declined === true;
-      if (path.endsWith("/piece") && !declined && !PIECE_LABEL.test(body?.piece_code ?? "")) {
+      if (path.endsWith("/piece") && !declined && !isPieceCode(body?.piece_code ?? "")) {
         return refuse(route, 400, "invalid_request", ["piece_code"]);
       }
       fake.writes.push({ path, eventId, startsAt, body });
@@ -737,7 +715,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     }
     if (path === "/api/tech/pieces/lookup") {
       const code = url.searchParams.get("code") ?? "";
-      if (!PIECE_LABEL.test(code)) return refuse(route, 404, "not_found");
+      if (!isPieceCode(code)) return refuse(route, 404, "not_found");
       return reply(route, 200, {
         piece: { ...ROHITS_PIECE, piece_code: code },
         belongs_to_this_job: code === ROHITS_PIECE.piece_code,

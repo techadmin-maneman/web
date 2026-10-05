@@ -139,6 +139,14 @@ Request body:
 }
 ```
 
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **410**: code_expired: start again
 
 ```json
@@ -180,6 +188,14 @@ Request body:
 ```json
 {
   "$ref": "#/components/schemas/LoginChallenge"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 
@@ -1284,6 +1300,14 @@ Request body:
 }
 ```
 
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **401**: session_required
 
 ```json
@@ -1452,6 +1476,14 @@ Request body:
 ```json
 {
   "$ref": "#/components/schemas/Booking"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 

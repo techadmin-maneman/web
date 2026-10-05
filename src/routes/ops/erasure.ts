@@ -125,6 +125,7 @@ const erasureRoute = createRoute({
   },
   responses: {
     200: { description: "Erased", ...json(ErasedSchema) },
+    400: errorResponse("invalid_request"),
     403: errorResponse("access_required: a service token, which names no member of staff"),
     404: errorResponse("not_found: nobody by that ID in the caller's cities, or erased already"),
     409: {

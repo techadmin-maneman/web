@@ -105,6 +105,7 @@ const resendRoute = createRoute({
   request: { body: { required: true, ...json(ChallengeRequestSchema) } },
   responses: {
     202: challengeAnswer,
+    400: errorResponse("invalid_request"),
     410: errorResponse("code_expired: start again"),
     429: errorResponse(SENT_AGAIN_REFUSED),
     503: errorResponse("busy"),
@@ -118,6 +119,7 @@ const smsRoute = createRoute({
   request: { body: { required: true, ...json(ChallengeRequestSchema) } },
   responses: {
     202: challengeAnswer,
+    400: errorResponse("invalid_request"),
     404: errorResponse("not_found: SMS is not available"),
     410: errorResponse("code_expired: start again"),
     429: errorResponse(SENT_AGAIN_REFUSED),

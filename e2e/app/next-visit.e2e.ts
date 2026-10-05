@@ -22,6 +22,9 @@ async function accessible(page: Page): Promise<void> {
 const daysAfter = (date: string, days: number) =>
   new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
+/** The service the windows are for, as the local mm-api's standard one. */
+const SERVICE = { tier: "standard", name: "Service visit", minutes: 90 };
+
 /** India's day tomorrow. */
 const tomorrow = () => daysAfter(new Date(Date.now() + 330 * 60 * 1000).toISOString().slice(0, 10), 1);
 
@@ -52,7 +55,9 @@ async function everyWindowOpen(page: Page): Promise<URL[]> {
       }));
       const last = daysAfter(tomorrow(), 44);
       const type = url.searchParams.get("type");
-      return route.fulfill({ json: { type, price, regular: null, change_notice_hours: 24, last, days } });
+      return route.fulfill({
+        json: { type, service: SERVICE, price, regular: null, change_notice_hours: 24, last, days },
+      });
     },
   );
   return asked;

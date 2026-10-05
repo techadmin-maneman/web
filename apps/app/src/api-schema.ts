@@ -213,6 +213,15 @@ export interface paths {
                         "application/json": components["schemas"]["LoginChallenge"];
                     };
                 };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description code_expired: start again */
                 410: {
                     headers: {
@@ -278,6 +287,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["LoginChallenge"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description not_found: SMS is not available */
@@ -2072,6 +2090,15 @@ export interface paths {
                         "application/json": components["schemas"]["Booking"];
                     };
                 };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description session_required */
                 401: {
                     headers: {
@@ -2314,6 +2341,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description session_required */

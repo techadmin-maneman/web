@@ -78,7 +78,7 @@ describe("ci.yml on a pull request", () => {
     const declared = [...config.matchAll(/^ {6}name: "([^"]+)",$/gm)].map((match) => match[1]);
     const scripts = (JSON.parse(readFileSync("package.json", "utf8")) as { scripts: Record<string, string> }).scripts;
     const run = [...(scripts["test:e2e"] ?? "").matchAll(/--project=(\S+)/g)].map((match) => match[1]);
-    expect(declared).toEqual(["390", "1440", "app", "ops", "tech", "tech-ios"]);
+    expect(declared).toEqual(["390", "1440", "app", "ops", "tech", "tech-live", "tech-ios"]);
     expect(run).toEqual(declared);
 
     const browser = jobOf("browser");
