@@ -8,6 +8,12 @@
  * (docs/decisions/0092-task-owners.md).
  */
 
+/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-task-owner: 72px; /* a task's owner, and how long it has left, beside what it is (board D2) */
+  --local-task-due: 120px; /* "18 days overdue" on one line */
+}
+
 .board {
   display: flex;
   flex-direction: column;
@@ -145,7 +151,7 @@
 .task,
 .marked {
   display: grid;
-  grid-template-columns: 1fr var(--ops-task-owner) var(--ops-task-due);
+  grid-template-columns: 1fr var(--local-task-owner) var(--local-task-due);
   align-items: center;
   gap: var(--sp-12);
   min-height: var(--ops-row);

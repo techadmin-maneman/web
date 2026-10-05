@@ -13,6 +13,12 @@
  * grey the boards use for a note.
  */
 
+/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-control: 28px; /* a box or a button inside a table row, which keeps the row at --ops-row */
+  --local-amount: 120px; /* a price in whole rupees, up to ten lakh, beside the box's own arrows */
+}
+
 .screen {
   display: flex;
   flex-direction: column;
@@ -171,7 +177,7 @@
 
 /* A price runs to seven figures, which a rule's box was never drawn for. */
 .amount {
-  width: var(--ops-amount);
+  width: var(--local-amount);
 }
 
 .text {
@@ -385,7 +391,7 @@
 
 /* A button inside a row: as tall as the row allows, so the table keeps its 34 px. */
 .inline {
-  height: var(--ops-control);
+  height: var(--local-control);
   margin-left: var(--sp-10);
   padding: 0 var(--sp-10);
   border: var(--hairline) solid var(--ink);
@@ -495,7 +501,7 @@
 /* A row's own boxes, as tall as the row allows. */
 .cellText,
 .cellDate {
-  height: var(--ops-control);
+  height: var(--local-control);
   padding: 0 var(--sp-6);
   border: var(--hairline) solid var(--paper-control);
   border-radius: 0;
@@ -616,7 +622,7 @@
 }
 
 .amountBox {
-  width: var(--ops-amount);
+  width: var(--local-amount);
 }
 
 .dateBox {

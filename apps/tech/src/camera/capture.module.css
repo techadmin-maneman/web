@@ -4,6 +4,12 @@
  * the step frame every board B screen shares (apps/tech/src/steps/steps.module.css).
  */
 
+/* The framing guide's lines, in the drawing's own units (its viewBox is 320 by 420), as board B1 draws them. */
+:root {
+  --local-guide-hairline: 2.5;
+  --local-guide-corners: 3;
+}
+
 .stage {
   position: relative;
   display: flex;
@@ -40,12 +46,12 @@
 
 .hairline {
   stroke: var(--paper);
-  stroke-width: 2.5;
+  stroke-width: var(--local-guide-hairline);
 }
 
 .corners {
   stroke: var(--paper);
-  stroke-width: 3;
+  stroke-width: var(--local-guide-corners);
 }
 
 .guide {

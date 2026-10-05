@@ -97,6 +97,22 @@ export function version(files: readonly { name: string; content: string | Uint8A
   return hash.digest("hex").slice(0, 12);
 }
 
+/**
+ * The browser bar's colour, written into the page's head from tokens.css at build: index.html names the token
+ * (`<meta name="theme-color" content="--ink" />`), so a brand colour changes in one place.
+ */
+export function themeColor(): Plugin {
+  return {
+    name: "mm-theme-color",
+    transformIndexHtml: (html) => {
+      const meta = /<meta name="theme-color" content="(--[\w-]+)" \/>/;
+      const named = meta.exec(html)?.[1];
+      if (named === undefined) throw new Error('index.html has no <meta name="theme-color"> naming a token');
+      return html.replace(meta, `<meta name="theme-color" content="${token(named)}" />`);
+    },
+  };
+}
+
 export function pwa(app: PwaApp): Plugin {
   return {
     name: "mm-pwa",

@@ -4,6 +4,12 @@
  * the header stay where a focused control can always be reached (WCAG 2.4.11).
  */
 
+/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-nav: 196px; /* the navigation column down the left */
+  --local-finder: 240px; /* the header's client search */
+}
+
 .console {
   display: flex;
   height: 100dvh;
@@ -13,7 +19,7 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  width: var(--ops-nav);
+  width: var(--local-nav);
   /* The sections outgrow a short window, or one at 200% zoom: they scroll rather than run off the page. */
   overflow-y: auto;
   background: var(--ink);
@@ -167,7 +173,7 @@
 
 .finderField {
   width: 100%;
-  max-width: var(--ops-finder);
+  max-width: var(--local-finder);
   height: var(--tap);
   padding: 0 var(--sp-11);
   border: var(--hairline) solid var(--paper-control);

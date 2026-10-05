@@ -40,3 +40,12 @@ The three viewport values no board draws are tokens, each with its reason, in `t
   - Spaces still stand in for sizes in about fifty places: an icon's width or a dot's height written with `--sp-16`, say.
   - Most component stylesheets still address the value-named scale directly.
   - A role layer across every screen, which DS-18 describes, is a redesign of the tokens rather than a refactor, and would move nothing on screen. It waits for a design need.
+
+## Amendment, 5 October 2026: a screen's own sizes
+
+The audit of 2 October (CQ-72, UX-43) found the shared brand package holding sizes one screen alone draws. Changing a single console column meant editing `packages/brand`. It also found two values the token tests never read: the browser bar's colour, written as hex into each app's `index.html`, and an SVG line's `stroke-width`.
+
+- **A screen's own sizes** sit at the top of its stylesheet, in one `:root` block of `--local-*` properties, each named and explained: the console's table columns, the dispatch board's tray, say. That block is the only place a stylesheet may write a value; `test/node/raw-values.ts` reads it out and holds the rest of the stylesheet to the tokens. A size two screens draw stays in `packages/brand`. The 23 console sizes one stylesheet alone used have moved out of `tokens-phase2.css`.
+- **The bar's colour** is named by its token in `index.html` (`content="--ink"`), and the build writes in the value (`themeColor()`, `packages/web-kit/pwa.ts`).
+- **A stroke width** written as a number is a raw value. The capture guide's two lines, in the drawing's own units, are local sizes.
+- **Still waiting for a design need:** the role layer (`--text-body`, `--text-label` and so on) and the site's single-use sizes. The site's build would change for no change on screen.
