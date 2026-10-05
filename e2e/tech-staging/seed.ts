@@ -35,6 +35,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
+import { sqlLiteral, sqlRow } from "../../scripts/lib/sql-literal.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
@@ -88,10 +89,6 @@ export const INSIDE = { latitude: 28.4598, longitude: 77.0268, accuracy: 12 } as
 export const OUTSIDE = { latitude: 28.465, longitude: 77.0266, accuracy: 25 } as const;
 
 const wrangler = (...args: string[]) => run(process.execPath, [WRANGLER, ...args], { cwd: resolve(".") });
-
-const quote = (value: string | number | null) =>
-  value === null ? "NULL" : typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
-const row = (...values: (string | number | null)[]) => `(${values.map(quote).join(", ")})`;
 
 /**
  * Runs SQL on the staging database. A file, not a command, so quoting is the
@@ -174,7 +171,7 @@ export async function seedStaging(): Promise<StagingFixture> {
 
   const appointment = (jobId: string, date: string) => {
     const when = morning(date);
-    return row(
+    return sqlRow(
       jobId,
       `tech-proof-${tag}-${jobId}`,
       personId,
@@ -193,21 +190,21 @@ export async function seedStaging(): Promise<StagingFixture> {
 
   await execute([
     `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, mobile_e164, hand_written)
-       VALUES ${row(technicianId, `tech-proof-${tag}`, technicianName, "ST", 1, now, `+91${technicianMobile}`, 1)};`,
+       VALUES ${sqlRow(technicianId, `tech-proof-${tag}`, technicianName, "ST", 1, now, `+91${technicianMobile}`, 1)};`,
     `INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record)
-       VALUES ${row(personId, now, `+91${clientMobile}`, clientName, 1, 1)};`,
+       VALUES ${sqlRow(personId, now, `+91${clientMobile}`, clientName, 1, 1)};`,
     `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes, lat, lng,
        geocoded_at)
-       VALUES ${row(addressId, personId, now, "Tower C, 14th floor", null, SECTOR, "Gurgaon", "122022", "PLACEHOLDER Gate code on the proof fixture", ADDRESS.lat, ADDRESS.lng, now)};`,
+       VALUES ${sqlRow(addressId, personId, now, "Tower C, 14th floor", null, SECTOR, "Gurgaon", "122022", "PLACEHOLDER Gate code on the proof fixture", ADDRESS.lat, ADDRESS.lng, now)};`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
        ${appointment(jobs.today, dates.today)},
        ${appointment(jobs.tomorrow, dates.tomorrow)},
        ${appointment(jobs.later, dates.later)};`,
     `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at, device_label)
-       VALUES ${row(sessionId, "technician", technicianId, now, now, expiresAt, "Chrome on the proof's desktop")};`,
+       VALUES ${sqlRow(sessionId, "technician", technicianId, now, now, expiresAt, "Chrome on the proof's desktop")};`,
     `INSERT INTO technician_devices (id, technician_id, device_id, session_id, label, created_at, last_seen_at)
-       VALUES ${row(id(), technicianId, deviceId, sessionId, "Chrome on the proof's desktop", now, now)};`,
+       VALUES ${sqlRow(id(), technicianId, deviceId, sessionId, "Chrome on the proof's desktop", now, now)};`,
   ]);
 
   const fixture: StagingFixture = {
@@ -250,7 +247,7 @@ export function stagingFixture(): StagingFixture {
  * because of this fixture, and it is what stops the technician being deleted.
  */
 export async function clearStaging(fixture: StagingFixture): Promise<void> {
-  const ids = [fixture.today.id, fixture.tomorrow.id, fixture.later.id].map(quote).join(", ");
+  const ids = [fixture.today.id, fixture.tomorrow.id, fixture.later.id].map(sqlLiteral).join(", ");
 
   const photos = await query<{ r2_key: string }>(
     `SELECT p.r2_key FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id WHERE s.appointment_id IN (${ids});`,
@@ -262,8 +259,8 @@ export async function clearStaging(fixture: StagingFixture): Promise<void> {
   await execute([
     // A job's use and what was used point at its events, and the kit's stock at the technician. A
     // transfer goes with both its rows, so the central store holds what it held before it.
-    `DELETE FROM stock_movements WHERE appointment_id IN (${ids}) OR technician_id = ${quote(fixture.technicianId)}
-       OR transfer_id IN (SELECT transfer_id FROM stock_movements WHERE technician_id = ${quote(fixture.technicianId)});`,
+    `DELETE FROM stock_movements WHERE appointment_id IN (${ids}) OR technician_id = ${sqlLiteral(fixture.technicianId)}
+       OR transfer_id IN (SELECT transfer_id FROM stock_movements WHERE technician_id = ${sqlLiteral(fixture.technicianId)});`,
     `DELETE FROM consumables_used WHERE appointment_id IN (${ids});`,
     `DELETE FROM job_events WHERE appointment_id IN (${ids});`,
     `DELETE FROM no_show_cases WHERE appointment_id IN (${ids});`,
@@ -271,16 +268,16 @@ export async function clearStaging(fixture: StagingFixture): Promise<void> {
     `DELETE FROM photos WHERE photo_set_id IN (SELECT id FROM photo_sets WHERE appointment_id IN (${ids}));`,
     `DELETE FROM photo_sets WHERE appointment_id IN (${ids});`,
     `DELETE FROM appointments WHERE id IN (${ids});`,
-    `DELETE FROM addresses WHERE person_id = ${quote(fixture.personId)};`,
-    `DELETE FROM people WHERE id = ${quote(fixture.personId)};`,
-    `DELETE FROM otp_challenges WHERE technician_id = ${quote(fixture.technicianId)};`,
+    `DELETE FROM addresses WHERE person_id = ${sqlLiteral(fixture.personId)};`,
+    `DELETE FROM people WHERE id = ${sqlLiteral(fixture.personId)};`,
+    `DELETE FROM otp_challenges WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
     // The challenge for a number FSM does not list holds no technician and no code hash.
     `DELETE FROM otp_challenges WHERE technician_login = 1 AND technician_id IS NULL
-       AND created_at >= ${quote(fixture.startedAt)};`,
-    `DELETE FROM technician_devices WHERE technician_id = ${quote(fixture.technicianId)};`,
-    `DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id = ${quote(fixture.technicianId)};`,
-    `DELETE FROM slot_claims WHERE technician_id = ${quote(fixture.technicianId)};`,
-    `DELETE FROM slot_holds WHERE technician_id = ${quote(fixture.technicianId)};`,
-    `DELETE FROM technicians WHERE id = ${quote(fixture.technicianId)};`,
+       AND created_at >= ${sqlLiteral(fixture.startedAt)};`,
+    `DELETE FROM technician_devices WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
+    `DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id = ${sqlLiteral(fixture.technicianId)};`,
+    `DELETE FROM slot_claims WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
+    `DELETE FROM slot_holds WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
+    `DELETE FROM technicians WHERE id = ${sqlLiteral(fixture.technicianId)};`,
   ]);
 }

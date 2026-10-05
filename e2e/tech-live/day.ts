@@ -11,7 +11,8 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { row, wrangler } from "../app/fitted.ts";
+import { sqlRow } from "../../scripts/lib/sql-literal.ts";
+import { wrangler } from "../app/fitted.ts";
 import { randomMobile } from "../support.ts";
 
 const MINUTE = 60 * 1000;
@@ -57,7 +58,7 @@ export async function seedTechLive(): Promise<void> {
   const worked = job(15);
   const moved = job(20);
   const appointment = ({ id: jobId, startsAt }: LiveJob) =>
-    row(
+    sqlRow(
       jobId,
       `e2e-${jobId}`,
       person,
@@ -75,10 +76,10 @@ export async function seedTechLive(): Promise<void> {
 
   const sql = [
     `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, mobile_e164, hand_written)
-       VALUES ${row(technicianId, `e2e-live-${technicianId}`, "Vikas Rana", "VR", 1, now, `+91${mobile}`, 1)};`,
-    `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${row(person, now, `+91${randomMobile()}`, "Arjun Mehta")};`,
+       VALUES ${sqlRow(technicianId, `e2e-live-${technicianId}`, "Vikas Rana", "VR", 1, now, `+91${mobile}`, 1)};`,
+    `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${sqlRow(person, now, `+91${randomMobile()}`, "Arjun Mehta")};`,
     `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode, lat, lng, geocoded_at)
-       VALUES ${row(address, person, now, "Tower B, 6th floor", "Sector 24", "Gurgaon", "122022", ADDRESS.lat, ADDRESS.lng, now)};`,
+       VALUES ${sqlRow(address, person, now, "Tower B, 6th floor", "Sector 24", "Gurgaon", "122022", ADDRESS.lat, ADDRESS.lng, now)};`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
        ${appointment(worked)},

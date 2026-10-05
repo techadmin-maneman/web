@@ -2,16 +2,12 @@
 // walked and everything they left, and the invented client, save the rows a hair profile points at, which stay. A row
 // goes before the rows it refers to, since D1 keeps foreign keys (test/worker/technician-tester.test.ts).
 
-/** A value as SQL: quoted, with its quotes doubled; NULL for null. */
-export const quote = (value: string | number | null): string => {
-  if (value === null) return "NULL";
-  return typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
-};
+import { sqlLiteral } from "./sql-literal.ts";
 
 /** The statements that clear these test technicians and their clients, in the order they must run. */
 export function clearTester(technicianIds: readonly string[], personIds: readonly string[]): string[] {
-  const ids = technicianIds.map(quote).join(", ");
-  const persons = personIds.map(quote).join(", ") || "NULL";
+  const ids = technicianIds.map(sqlLiteral).join(", ");
+  const persons = personIds.map(sqlLiteral).join(", ") || "NULL";
   return [
     // A job's use and what was used point at its events, and the kit's stock at the technician. A
     // transfer goes with both its rows, so the central store holds what it held before it.

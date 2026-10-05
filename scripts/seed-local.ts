@@ -19,20 +19,21 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { changingClients, seedChanging } from "../e2e/app/changing.ts";
-import { fittedClient, row, seedFitted, wrangler } from "../e2e/app/fitted.ts";
+import { fittedClient, seedFitted, wrangler } from "../e2e/app/fitted.ts";
+import { indiaDate } from "../src/lib/india-time.ts";
 import { seedBookingArea } from "../e2e/booking-area.ts";
 import { LOCAL_HAIR_SYSTEMS } from "../src/config/local-hair-systems.ts";
 import { LOCAL_LOGIN_CODE, PORTS } from "./lib/local-stack.ts";
+import { sqlRow } from "./lib/sql-literal.ts";
 
 /** The technician a developer signs in as, and his client: fixed, so a second run finds the same ones. */
 const TECHNICIAN = { id: "local-technician", fsmId: "local-resource-1", mobile: "9810099001", name: "Sandeep Yadav" };
 const CLIENT = { id: "local-client", addressId: "local-client-address", mobile: "9810099002", name: "Neha Kapoor" };
 
-const INDIA_OFFSET_MS = 330 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** India's calendar date `days` from today. */
-const indiaDate = (days: number) => new Date(Date.now() + INDIA_OFFSET_MS + days * DAY_MS).toISOString().slice(0, 10);
+const indiaDay = (days: number) => indiaDate(new Date(Date.now() + days * DAY_MS));
 
 /** A visit's window on an India date, as UTC: the morning is 10:00 to 11:30, the afternoon 2:00 to 3:30. */
 const WINDOWS = {
@@ -54,8 +55,8 @@ function consumables(now: string): string[] {
   ] as const;
   // Four times the store's level delivered, and three times the kit's level moved into the technician's kit.
   const moved = kept.flatMap(([code, , , , kit, central]) => [
-    row(`local-stock-${code}-in`, code, "central", null, central * 4, "received", null, "staff", "seed", now),
-    row(
+    sqlRow(`local-stock-${code}-in`, code, "central", null, central * 4, "received", null, "staff", "seed", now),
+    sqlRow(
       `local-stock-${code}-out`,
       code,
       "central",
@@ -67,7 +68,7 @@ function consumables(now: string): string[] {
       "seed",
       now,
     ),
-    row(
+    sqlRow(
       `local-stock-${code}-kit`,
       code,
       "kit",
@@ -82,9 +83,9 @@ function consumables(now: string): string[] {
   ]);
   return [
     `INSERT OR IGNORE INTO consumables (code, name, unit, unit_cost, reorder_kit, reorder_central, created_at,
-       updated_at) VALUES ${kept.map(([code, name, unit, cost, kit, central]) => row(code, name, unit, cost, kit, central, now, now)).join(", ")};`,
+       updated_at) VALUES ${kept.map(([code, name, unit, cost, kit, central]) => sqlRow(code, name, unit, cost, kit, central, now, now)).join(", ")};`,
     `INSERT OR IGNORE INTO consumable_usage (visit_type, tier, consumable_code, quantity, set_by, set_at) VALUES
-       ${kept.flatMap(([code, , , , , , expected]) => (expected > 0 ? [row("service", "standard", code, expected, "seed", now)] : [])).join(", ")};`,
+       ${kept.flatMap(([code, , , , , , expected]) => (expected > 0 ? [sqlRow("service", "standard", code, expected, "seed", now)] : [])).join(", ")};`,
     `INSERT OR IGNORE INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason, transfer_id,
        actor_kind, actor, created_at) VALUES ${moved.join(", ")};`,
   ];
@@ -98,10 +99,10 @@ function consumables(now: string): string[] {
 function products(now: string): string[] {
   return [
     `INSERT OR IGNORE INTO services (kind, tier, name, minutes, sort, updated_by, updated_at) VALUES
-       ${LOCAL_HAIR_SYSTEMS.map(({ tier, name }, index) => row("first_fit", tier, name, 180, index + 1, "seed", now)).join(", ")};`,
+       ${LOCAL_HAIR_SYSTEMS.map(({ tier, name }, index) => sqlRow("first_fit", tier, name, 180, index + 1, "seed", now)).join(", ")};`,
     `INSERT OR IGNORE INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES
-       ${LOCAL_HAIR_SYSTEMS.map(({ tier, price }) => row("first_fit", tier, price, 0, "2026-01-01")).join(", ")};`,
-    `UPDATE services SET retired_date = '${indiaDate(0)}', updated_by = 'seed', updated_at = '${now}'
+       ${LOCAL_HAIR_SYSTEMS.map(({ tier, price }) => sqlRow("first_fit", tier, price, 0, "2026-01-01")).join(", ")};`,
+    `UPDATE services SET retired_date = '${indiaDay(0)}', updated_by = 'seed', updated_at = '${now}'
        WHERE kind = 'first_fit' AND tier = 'standard' AND retired_date IS NULL;`,
   ];
 }
@@ -110,7 +111,7 @@ async function seedTechnician(): Promise<void> {
   const now = new Date().toISOString();
   const visit = (date: string, window: keyof typeof WINDOWS) => {
     const id = crypto.randomUUID();
-    return row(
+    return sqlRow(
       id,
       `local-${id}`,
       CLIENT.id,
@@ -126,19 +127,19 @@ async function seedTechnician(): Promise<void> {
   };
   const sql = [
     `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
-       VALUES ${row(TECHNICIAN.id, TECHNICIAN.fsmId, TECHNICIAN.name, "SY", 1, "Gurgaon", `+91${TECHNICIAN.mobile}`, now)};`,
+       VALUES ${sqlRow(TECHNICIAN.id, TECHNICIAN.fsmId, TECHNICIAN.name, "SY", 1, "Gurgaon", `+91${TECHNICIAN.mobile}`, now)};`,
     `UPDATE technicians SET active = 1, updated_at = '${now}' WHERE id = '${TECHNICIAN.id}';`,
     `INSERT OR IGNORE INTO people (id, created_at, mobile_e164, name, contactable)
-       VALUES ${row(CLIENT.id, now, `+91${CLIENT.mobile}`, CLIENT.name, 1)};`,
+       VALUES ${sqlRow(CLIENT.id, now, `+91${CLIENT.mobile}`, CLIENT.name, 1)};`,
     // No coordinates, as an address typed rather than chosen has none: "I have arrived" then passes anywhere,
     // which a laptop needs, having no position to give (src/domain/check-ins.ts).
     `INSERT OR IGNORE INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode, access_notes,
-       lat, lng) VALUES ${row(CLIENT.addressId, CLIENT.id, now, "Tower C, 14th floor", null, "Sector 65", "Gurgaon", "122018", "Gate code 4417", null, null)};`,
+       lat, lng) VALUES ${sqlRow(CLIENT.addressId, CLIENT.id, now, "Tower C, 14th floor", null, "Sector 65", "Gurgaon", "122018", "Gate code 4417", null, null)};`,
     `UPDATE appointments SET status = 'cancelled', synced_at = '${now}'
        WHERE technician_id = '${TECHNICIAN.id}' AND fsm_id LIKE 'local-%' AND status = 'scheduled';`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        service_city, service_pincode, synced_at) VALUES
-       ${visit(indiaDate(0), "morning")}, ${visit(indiaDate(0), "afternoon")}, ${visit(indiaDate(1), "morning")};`,
+       ${visit(indiaDay(0), "morning")}, ${visit(indiaDay(0), "afternoon")}, ${visit(indiaDay(1), "morning")};`,
     ...consumables(now),
     ...products(now),
   ];

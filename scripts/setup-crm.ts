@@ -20,7 +20,8 @@ import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../src/config/booking.ts";
 import { BOOKED_WINDOW_NAMES, REFERRAL_LEAD_SOURCE } from "../src/config/crm.ts";
 import { LEAD_STATUSES } from "../src/providers/crm/index.ts";
 import { LEAD_SOURCE_NAMES } from "../src/providers/crm/zoho.ts";
-import { refreshTokenForScript } from "./lib/zoho-script-token.ts";
+import { fieldProblem, fieldWritten, LEAD_FIELDS, type LeadField } from "./lib/crm-settings.ts";
+import { zohoScriptClient } from "./lib/zoho-script-client.ts";
 
 interface NewField {
   /** The label Zoho shows, chosen so that the API name it derives is `apiName`. */
@@ -65,30 +66,10 @@ const PICK_LIST_VALUES: Readonly<Record<string, readonly string[]>> = {
   Lead_Source: [...Object.values(LEAD_SOURCE_NAMES), REFERRAL_LEAD_SOURCE],
 };
 
-interface ZohoField {
-  id: string;
-  api_name: string;
-  field_label: string;
-  data_type: string;
-  pick_list_values?: { id?: string; display_value: string; actual_value: string }[];
-  unique?: Record<string, unknown>;
-}
-
 // --use-worker-token is read by refreshTokenForScript; it is named here so the parser takes it.
 const { values: options } = parseArgs({
   options: { check: { type: "boolean", default: false }, "use-worker-token": { type: "boolean", default: false } },
 });
-
-function required(name: string): string {
-  const value = process.env[name]?.trim() ?? "";
-  if (value === "") {
-    console.error(`${name} is not set; pass the secrets file with --env-file`);
-    process.exit(2);
-  }
-  return value;
-}
-
-const apiHost = required("ZOHO_API_HOST");
 
 let failures = 0;
 function report(ok: boolean, check: string, detail: string): void {
@@ -96,44 +77,12 @@ function report(ok: boolean, check: string, detail: string): void {
   console.log(`${ok ? "PASS" : "FAIL"}  ${check}: ${detail}`);
 }
 
-async function accessToken(): Promise<string> {
-  const query = new URLSearchParams({
-    refresh_token: refreshTokenForScript("crm"),
-    client_id: required("ZOHO_CLIENT_ID"),
-    client_secret: required("ZOHO_CLIENT_SECRET"),
-    grant_type: "refresh_token",
-  });
-  const response = await fetch(`https://${required("ZOHO_ACCOUNTS_HOST")}/oauth/v2/token?${query.toString()}`, {
-    method: "POST",
-  });
-  const body = await response.json<{ access_token?: string; error?: string; scope?: string }>();
-  if (body.access_token === undefined) {
-    console.error(`FAIL  token: Zoho refused the refresh token (${body.error ?? String(response.status)})`);
-    process.exit(1);
-  }
-  report(true, "token", `issued for ${apiHost}`);
-  return body.access_token;
-}
+const crm = await zohoScriptClient("crm");
+report(true, "token", `issued for ${crm.host}`);
 
-const token = await accessToken();
-
-async function call(method: string, path: string, body?: unknown): Promise<{ status: number; json: unknown }> {
-  const response = await fetch(`https://${apiHost}${path}`, {
-    method,
-    headers: {
-      Authorization: `Zoho-oauthtoken ${token}`,
-      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
-  // An empty list answers 204 with no body.
-  const text = await response.text();
-  return { status: response.status, json: text === "" ? null : JSON.parse(text) };
-}
-
-async function leadFields(): Promise<ZohoField[]> {
-  const answer = await call("GET", "/crm/v8/settings/fields?module=Leads&type=all");
-  const fields = (answer.json as { fields?: ZohoField[] } | null)?.fields;
+async function leadFields(): Promise<LeadField[]> {
+  const answer = await crm.call("GET", "/crm/v8/settings/fields?module=Leads&type=all");
+  const fields = LEAD_FIELDS.safeParse(answer.json).data?.fields;
   if (fields === undefined) {
     console.error(`FAIL  fields: Zoho answered ${String(answer.status)}; the token needs ZohoCRM.settings.fields.ALL`);
     process.exit(1);
@@ -141,18 +90,12 @@ async function leadFields(): Promise<ZohoField[]> {
   return fields;
 }
 
-/** What Zoho says went wrong, from the shape its settings APIs answer in. */
-function problem(json: unknown): string {
-  const first = (json as { fields?: { code?: string; message?: string }[] } | null)?.fields?.[0];
-  return `${first?.code ?? "unknown"}: ${first?.message ?? JSON.stringify(json)}`;
-}
-
 function pickListFor(field: NewField): { display_value: string; actual_value: string }[] | undefined {
   return field.values?.map((value) => ({ display_value: value, actual_value: value }));
 }
 
 async function createField(field: NewField): Promise<void> {
-  const answer = await call("POST", "/crm/v8/settings/fields?module=Leads", {
+  const answer = await crm.call("POST", "/crm/v8/settings/fields?module=Leads", {
     fields: [
       {
         field_label: field.label,
@@ -163,9 +106,8 @@ async function createField(field: NewField): Promise<void> {
       },
     ],
   });
-  const created = (answer.json as { fields?: { code?: string }[] } | null)?.fields?.[0];
-  if (created?.code !== "SUCCESS") {
-    report(false, field.apiName, `Zoho refused it (${problem(answer.json)})`);
+  if (!fieldWritten(answer.json)) {
+    report(false, field.apiName, `Zoho refused it (${fieldProblem(answer.json)})`);
     return;
   }
   // Zoho derives the API name from the label and does not answer with it, so read it back:
@@ -176,7 +118,7 @@ async function createField(field: NewField): Promise<void> {
 }
 
 /** Adds the values the sync writes, keeping every value the org already has. */
-async function addPickListValues(field: ZohoField, wanted: readonly string[]): Promise<void> {
+async function addPickListValues(field: LeadField, wanted: readonly string[]): Promise<void> {
   const present = new Set((field.pick_list_values ?? []).map((value) => value.actual_value));
   const missing = wanted.filter((value) => !present.has(value));
   if (missing.length === 0) {
@@ -187,7 +129,7 @@ async function addPickListValues(field: ZohoField, wanted: readonly string[]): P
     report(false, field.api_name, `missing values: ${missing.join(", ")}`);
     return;
   }
-  const answer = await call("PATCH", `/crm/v8/settings/fields/${field.id}?module=Leads`, {
+  const answer = await crm.call("PATCH", `/crm/v8/settings/fields/${field.id}?module=Leads`, {
     fields: [
       {
         id: field.id,
@@ -202,11 +144,11 @@ async function addPickListValues(field: ZohoField, wanted: readonly string[]): P
       },
     ],
   });
-  const updated = (answer.json as { fields?: { code?: string }[] } | null)?.fields?.[0];
+  const added = fieldWritten(answer.json);
   report(
-    updated?.code === "SUCCESS",
+    added,
     field.api_name,
-    updated?.code === "SUCCESS" ? `added ${missing.join(", ")}` : `Zoho refused the values (${problem(answer.json)})`,
+    added ? `added ${missing.join(", ")}` : `Zoho refused the values (${fieldProblem(answer.json)})`,
   );
 }
 

@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { scriptRefreshToken, USE_WORKER_TOKEN } from "../../scripts/lib/zoho-script-token.ts";
 
@@ -36,13 +37,20 @@ describe("a script's Zoho refresh token", () => {
     expect(scriptRefreshToken("books", {}, [USE_WORKER_TOKEN])).toHaveProperty("problem");
   });
 
-  it("is what every script that talks to Zoho reads", () => {
-    const scripts = ["scripts/check-zoho-setup.ts", "scripts/setup-crm.ts", "scripts/check-books-setup.ts"];
-    for (const script of scripts) {
-      const source = readFileSync(script, "utf8");
-      expect(source, script).toContain("refreshTokenForScript(");
-      expect(source, script).not.toMatch(/required\("ZOHO_(BOOKS_)?REFRESH_TOKEN"\)/);
-    }
+  it("is what every script that talks to Zoho reads, through the one client that mints a script's tokens", () => {
+    const scripts = [
+      "scripts/check-zoho-setup.ts",
+      "scripts/setup-crm.ts",
+      "scripts/check-books-setup.ts",
+      "scripts/staging-records.ts",
+    ];
+    for (const script of scripts) expect(readFileSync(script, "utf8"), script).toContain("zohoScriptClient(");
+    expect(readFileSync("scripts/lib/zoho-script-client.ts", "utf8")).toContain("refreshTokenForScript(");
+    // The others run the Worker's own adapters (src/providers/zoho-http.ts), with the scripts' token.
+    const minting = readdirSync("scripts", { recursive: true, encoding: "utf8" }).filter(
+      (file) => file.endsWith(".ts") && readFileSync(join("scripts", file), "utf8").includes("grant_type"),
+    );
+    expect(minting.map((file) => file.replaceAll("\\", "/"))).toEqual(["lib/zoho-script-client.ts"]);
   });
 
   // Each parses its flags strictly, so one it does not name stops it before the token is read.

@@ -8,7 +8,8 @@
 
 import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS } from "../technicians.ts";
-import { row, wrangler } from "./fitted.ts";
+import { wrangler } from "./fitted.ts";
+import { sqlRow } from "../../scripts/lib/sql-literal.ts";
 
 export interface Booker {
   /** Ten digits, as the login's field takes it. */
@@ -31,17 +32,17 @@ export async function seedBooker(): Promise<void> {
   const mobile = randomMobile();
   const fitted = new Date(Date.now() + 330 * 60 * 1000 - 60 * DAY).toISOString().slice(0, 10);
   const sql = [
-    `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${row(person, now, `+91${mobile}`, "Rohit Malhotra")};`,
+    `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${sqlRow(person, now, `+91${mobile}`, "Rohit Malhotra")};`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
-       ${row(fit, `e2e-${fit}`, person, "first_fit", `${fitted}T03:30:00.000Z`, `${fitted}T06:30:00.000Z`, E2E_TECHNICIANS.fitted.id, "completed", "Completed", "Gurgaon", "122018", now, now)};`,
+       ${sqlRow(fit, `e2e-${fit}`, person, "first_fit", `${fitted}T03:30:00.000Z`, `${fitted}T06:30:00.000Z`, E2E_TECHNICIANS.fitted.id, "completed", "Completed", "Gurgaon", "122018", now, now)};`,
     `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode) VALUES
-       ${row(crypto.randomUUID(), person, now, "House 4417, Tower C", "Sector 65", "Gurgaon", "122018")};`,
+       ${sqlRow(crypto.randomUUID(), person, now, "House 4417, Tower C", "Sector 65", "Gurgaon", "122018")};`,
     // Both photograph consents already given in Profile, so the pay step asks for neither (ADR 0080) and is as
     // boards C4 and C5 draw it. A test that needs them undecided says so in the profile it answers.
     `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at) VALUES
-       ${row(crypto.randomUUID(), person, "photos_own_record", "photos-own-record-v1", 1, now)},
-       ${row(crypto.randomUUID(), person, "photos_referral_cards", "photos-referral-cards-v2", 1, now)};`,
+       ${sqlRow(crypto.randomUUID(), person, "photos_own_record", "photos-own-record-v1", 1, now)},
+       ${sqlRow(crypto.randomUUID(), person, "photos_referral_cards", "photos-referral-cards-v2", 1, now)};`,
   ];
   await wrangler("d1", "execute", "DB", "--local", "--command", sql.join("\n"));
   process.env[HANDOVER] = JSON.stringify({ mobile } satisfies Booker);

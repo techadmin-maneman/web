@@ -67,8 +67,6 @@ export function launchesWithPeopleWaiting(
   });
 }
 
-const sqlText = (value: string | null) => (value === null ? "NULL" : `'${value.replaceAll("'", "''")}'`);
-
 /**
  * The statement that loads the rows, replacing each pincode's with the file's.
  * An area ops have named from the console keeps its name, since area_named_by
@@ -77,7 +75,7 @@ const sqlText = (value: string | null) => (value === null ? "NULL" : `'${value.r
 export function pincodeUpsert(rows: readonly PincodeRow[]): string {
   const values = rows.map(
     (row) =>
-      `(${sqlText(row.pincode)}, ${sqlText(row.area)}, ${sqlText(row.city)}, ${row.served ? "1" : "0"}, ${sqlText(row.launchedAt)})`,
+      `(${sqlLiteral(row.pincode)}, ${sqlLiteral(row.area)}, ${sqlLiteral(row.city)}, ${row.served ? "1" : "0"}, ${sqlLiteral(row.launchedAt)})`,
   );
   return `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES
 ${values.join(",\n")}
@@ -85,3 +83,4 @@ ON CONFLICT (pincode) DO UPDATE SET
   area = CASE WHEN serviceable_pincodes.area_named_by IS NULL THEN excluded.area ELSE serviceable_pincodes.area END,
   city = excluded.city, served = excluded.served, launched_at = excluded.launched_at;`;
 }
+import { sqlLiteral } from "./sql-literal.ts";

@@ -43,8 +43,12 @@ export function scriptRefreshToken(
 }
 
 /** The refresh token, or the script stops with why. */
-export function refreshTokenForScript(client: ZohoClient): string {
-  const found = scriptRefreshToken(client, process.env, process.argv);
+export function refreshTokenForScript(
+  client: ZohoClient,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+  argv: readonly string[] = process.argv,
+): string {
+  const found = scriptRefreshToken(client, env, argv);
   if ("problem" in found) {
     console.error(found.problem);
     process.exit(2);

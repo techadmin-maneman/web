@@ -9,11 +9,13 @@
 // ZohoCRM.settings.fields.READ and ZohoCRM.settings.assignment_rules.READ.
 // No secret is printed.
 
+import type { z } from "zod";
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../src/config/booking.ts";
 import { BOOKED_WINDOW_NAMES, REFERRAL_LEAD_SOURCE } from "../src/config/crm.ts";
 import { LEAD_STATUSES } from "../src/providers/crm/index.ts";
 import { LEAD_SOURCE_NAMES } from "../src/providers/crm/zoho.ts";
-import { refreshTokenForScript } from "./lib/zoho-script-token.ts";
+import { ASSIGNMENT_RULES, LEAD_FIELDS } from "./lib/crm-settings.ts";
+import { zohoScriptClient } from "./lib/zoho-script-client.ts";
 
 interface ExpectedField {
   readonly apiName: string;
@@ -48,60 +50,9 @@ const EXPECTED_FIELDS: readonly ExpectedField[] = [
   { apiName: "Booked_Window", type: "picklist", values: Object.values(BOOKED_WINDOW_NAMES) },
 ];
 
-interface ZohoField {
-  api_name: string;
-  data_type: string;
-  pick_list_values?: { actual_value: string }[];
-  /** `{}` when duplicates are allowed; `{ case_sensitive: … }` when they are not. */
-  unique?: Record<string, unknown>;
-}
-
-function required(name: string): string {
-  const value = process.env[name]?.trim() ?? "";
-  if (value === "") {
-    console.error(`${name} is not set; pass the secrets file with --env-file`);
-    process.exit(2);
-  }
-  return value;
-}
-
 /** Empty when unset. */
 function optional(name: string): string {
   return process.env[name]?.trim() ?? "";
-}
-
-const accountsHost = required("ZOHO_ACCOUNTS_HOST");
-const apiHost = required("ZOHO_API_HOST");
-
-async function accessToken(): Promise<string> {
-  const query = new URLSearchParams({
-    refresh_token: refreshTokenForScript("crm"),
-    client_id: required("ZOHO_CLIENT_ID"),
-    client_secret: required("ZOHO_CLIENT_SECRET"),
-    grant_type: "refresh_token",
-  });
-  const response = await fetch(`https://${accountsHost}/oauth/v2/token?${query.toString()}`, { method: "POST" });
-  const body = await response.json<{ access_token?: string; error?: string }>();
-  if (body.access_token === undefined) {
-    console.error(`FAIL  token: Zoho refused the refresh token (${body.error ?? String(response.status)})`);
-    process.exit(1);
-  }
-  return body.access_token;
-}
-
-async function get(token: string, path: string): Promise<unknown> {
-  const response = await fetch(`https://${apiHost}${path}`, { headers: { Authorization: `Zoho-oauthtoken ${token}` } });
-  // An empty list answers 204 with no body: an org with no assignment rules yet.
-  const text = await response.text();
-  const body: unknown = text === "" ? {} : JSON.parse(text);
-  if (!response.ok) {
-    const code = (body as { code?: string } | null)?.code ?? String(response.status);
-    throw new Error(
-      `${path}: ${code}. Check the token's scope includes the settings READ scopes, and that ZOHO_API_HOST ` +
-        "matches the org: developer.zohoapis.<dc> for a Developer Edition org, www.zohoapis.<dc> for production.",
-    );
-  }
-  return body;
 }
 
 let failures = 0;
@@ -110,10 +61,23 @@ function report(ok: boolean, what: string, detail: string): void {
   console.log(`${ok ? "PASS" : "FAIL"}  ${what}: ${detail}`);
 }
 
-const token = await accessToken();
-report(true, "token", `refreshed through ${accountsHost}`);
+const crm = await zohoScriptClient("crm");
+report(true, "token", `issued for ${crm.host}`);
 
-const { fields } = (await get(token, "/crm/v8/settings/fields?module=Leads")) as { fields: ZohoField[] };
+/** A settings read, or the script stops with what to check: the token's scope, and the org's API host. */
+async function read<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+  try {
+    return await crm.get(path, schema);
+  } catch (error) {
+    console.error(
+      `FAIL  ${error instanceof Error ? error.message : String(error)}. Check the token's scope includes the settings READ scopes, and that ` +
+        "ZOHO_API_HOST matches the org: developer.zohoapis.<dc> for a Developer Edition org, www.zohoapis.<dc> for production.",
+    );
+    process.exit(1);
+  }
+}
+
+const { fields } = await read("/crm/v8/settings/fields?module=Leads", LEAD_FIELDS);
 for (const expected of EXPECTED_FIELDS) {
   const field = fields.find((candidate) => candidate.api_name === expected.apiName);
   if (field === undefined) {
@@ -139,11 +103,9 @@ for (const expected of EXPECTED_FIELDS) {
   );
 }
 
-const { assignment_rules: rules = [] } = (await get(token, "/crm/v8/settings/automation/assignment_rules")) as {
-  assignment_rules?: { id: string; name: string; module?: { api_name?: string } }[];
-};
+const rules = (await read("/crm/v8/settings/automation/assignment_rules", ASSIGNMENT_RULES))?.assignment_rules ?? [];
 
-const leadRules = rules.filter((rule) => rule.module?.api_name === "Leads");
+const leadRules = rules.filter((rule) => rule.module.api_name === "Leads");
 console.log("\nLeads assignment rules (ZOHO_LAR_ID is one of these IDs):");
 for (const rule of leadRules) console.log(`  ${rule.id}  ${rule.name}`);
 if (leadRules.length === 0) report(false, "assignment rule", "no Leads assignment rule exists");

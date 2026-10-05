@@ -9,14 +9,13 @@
 // The real file holds names and numbers: it lives in git-ignored private/, and nothing here prints them. Credits
 // imported expire 365 days after the import, as the owner ruled (ADR 0025, item 24), so none arrives expired.
 
-import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { EXPECTED_DATABASE_NAME, isEnvironmentName } from "../src/config/environments.ts";
+import { readFileSync } from "node:fs";
+import { isEnvironmentName } from "../src/config/environments.ts";
 import { newReferralCode } from "../src/domain/referrals.ts";
 import { CREDIT_TTL_DAYS, CREDITS_PER_REFERRAL } from "../src/policy/referral-reward.ts";
+import { d1Execute } from "./lib/d1.ts";
+import { sqlLiteral } from "./lib/sql-literal.ts";
 import { fields } from "./lib/pincodes.ts";
 
 const [environment, flag, file] = process.argv.slice(2);
@@ -28,11 +27,6 @@ if (!isEnvironmentName(environment) || flag !== "--file" || file === undefined) 
 const now = new Date();
 const at = now.toISOString();
 const expiresAt = new Date(now.getTime() + CREDIT_TTL_DAYS * 86_400_000).toISOString();
-
-const quote = (value: string | number | null): string => {
-  if (value === null) return "NULL";
-  return typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
-};
 
 /** Where the grant stands: given, waiting on the friend's first fit, or due once they are fitted. */
 function grantState(granted: boolean, firstFitOn: string): string {
@@ -65,10 +59,10 @@ const at_ = (row: string[], name: string) => (row[columns.indexOf(name)] ?? "").
 const sql: string[] = [];
 const person = (mobile: string, name: string) => {
   sql.push(
-    `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (${quote(idFor(`person:${mobile}`))}, ${quote(at)}, ${quote(mobile)}, ${quote(name)}, 1)
+    `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (${sqlLiteral(idFor(`person:${mobile}`))}, ${sqlLiteral(at)}, ${sqlLiteral(mobile)}, ${sqlLiteral(name)}, 1)
      ON CONFLICT (mobile_e164) DO NOTHING;`,
   );
-  return `(SELECT id FROM people WHERE mobile_e164 = ${quote(mobile)})`;
+  return `(SELECT id FROM people WHERE mobile_e164 = ${sqlLiteral(mobile)})`;
 };
 
 let rows = 0;
@@ -82,7 +76,7 @@ for (const line of lines) {
   const referred = person(referredMobile, at_(row, "referred_name"));
   const code = newReferralCode(at_(row, "referrer_name"));
   sql.push(
-    `INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES (${quote(code)}, ${referrer}, ${quote(at)}, ${quote(at)})
+    `INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES (${sqlLiteral(code)}, ${referrer}, ${sqlLiteral(at)}, ${sqlLiteral(at)})
      ON CONFLICT (person_id) DO NOTHING;`,
   );
   const theirCode = `(SELECT code FROM referral_codes WHERE person_id = ${referrer})`;
@@ -92,8 +86,8 @@ for (const line of lines) {
   sql.push(
     `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, grant_state, created_at,
        updated_at)
-     VALUES (${quote(attribution)}, ${theirCode}, ${referred}, ${quote(at_(row, "referred_on") || at)}, 'consultation',
-       ${quote(grantState(granted, firstFitOn))}, ${quote(at)}, ${quote(at)})
+     VALUES (${sqlLiteral(attribution)}, ${theirCode}, ${referred}, ${sqlLiteral(at_(row, "referred_on") || at)}, 'consultation',
+       ${sqlLiteral(grantState(granted, firstFitOn))}, ${sqlLiteral(at)}, ${sqlLiteral(at)})
      ON CONFLICT (referred_person_id) DO NOTHING;`,
   );
   // The credits the log says were given, less those already used, as one grant and one correction each.
@@ -104,38 +98,23 @@ for (const line of lines) {
     ] as const) {
       sql.push(
         `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
-         VALUES (${quote(crypto.randomUUID())}, ${who}, 'grant', ${String(CREDITS_PER_REFERRAL)}, 'import', ${quote(attribution)},
-           ${quote(expiresAt)}, ${quote(at)})
+         VALUES (${sqlLiteral(crypto.randomUUID())}, ${who}, 'grant', ${String(CREDITS_PER_REFERRAL)}, 'import', ${sqlLiteral(attribution)},
+           ${sqlLiteral(expiresAt)}, ${sqlLiteral(at)})
          ON CONFLICT DO NOTHING;`,
       );
       if (used > 0) {
-        const grant = `(SELECT id FROM credit_ledger WHERE kind = 'grant' AND source_kind = 'import' AND source_id = ${quote(attribution)} AND person_id = ${who})`;
+        const grant = `(SELECT id FROM credit_ledger WHERE kind = 'grant' AND source_kind = 'import' AND source_id = ${sqlLiteral(attribution)} AND person_id = ${who})`;
         sql.push(
           `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-           SELECT ${quote(crypto.randomUUID())}, ${who}, 'adjust', ${String(-Math.min(used, CREDITS_PER_REFERRAL))}, ${grant},
-             'import', ${quote(`${attribution}:used`)}, ${quote(at)}
+           SELECT ${sqlLiteral(crypto.randomUUID())}, ${who}, 'adjust', ${String(-Math.min(used, CREDITS_PER_REFERRAL))}, ${grant},
+             'import', ${sqlLiteral(`${attribution}:used`)}, ${sqlLiteral(at)}
            WHERE NOT EXISTS (SELECT 1 FROM credit_ledger WHERE kind = 'adjust' AND source_kind = 'import'
-             AND source_id = ${quote(`${attribution}:used`)} AND person_id = ${who});`,
+             AND source_id = ${sqlLiteral(`${attribution}:used`)} AND person_id = ${who});`,
         );
       }
     }
   }
 }
 
-const folder = mkdtempSync(join(tmpdir(), "mm-referrals-"));
-try {
-  const path = join(folder, "referrals.sql");
-  writeFileSync(path, sql.join("\n"));
-  const target =
-    environment === "local"
-      ? ["DB", "--local", "--env="]
-      : [EXPECTED_DATABASE_NAME[environment], "--remote", "--env", environment];
-  execFileSync(
-    process.execPath,
-    ["node_modules/wrangler/bin/wrangler.js", "d1", "execute", ...target, "--file", path, "--yes"],
-    { stdio: "inherit" },
-  );
-  console.log(`import-referrals: ${String(rows)} referrals into ${environment}`);
-} finally {
-  rmSync(folder, { recursive: true, force: true });
-}
+d1Execute(environment, sql, true);
+console.log(`import-referrals: ${String(rows)} referrals into ${environment}`);

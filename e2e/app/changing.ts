@@ -11,7 +11,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
-import { row, wrangler } from "./fitted.ts";
+import { wrangler } from "./fitted.ts";
+import { sqlRow } from "../../scripts/lib/sql-literal.ts";
 
 export interface Changing {
   /** Ten digits, as the login's field takes it. */
@@ -41,16 +42,16 @@ export async function seedChanging(): Promise<void> {
     const mobile = randomMobile();
     const ends = new Date(starts.getTime() + 1.5 * HOUR);
     sql.push(
-      `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${row(person, at, `+91${mobile}`, "Rohit Malhotra")};`,
+      `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${sqlRow(person, at, `+91${mobile}`, "Rohit Malhotra")};`,
       `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
          technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
-         ${row(visit, `e2e-${visit}`, `e2e-order-${visit}`, person, "service", starts.toISOString(), ends.toISOString(), technician, "scheduled", "Scheduled", "Gurgaon", "122018", at, at)};`,
+         ${sqlRow(visit, `e2e-${visit}`, `e2e-order-${visit}`, person, "service", starts.toISOString(), ends.toISOString(), technician, "scheduled", "Scheduled", "Gurgaon", "122018", at, at)};`,
       `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, method, status,
          captured_at, created_at, updated_at) VALUES
-         ${row(payment, person, visit, `pay_${payment}`, 200000, "INR", "upi", "captured", at, at, at)};`,
+         ${sqlRow(payment, person, visit, `pay_${payment}`, 200000, "INR", "upi", "captured", at, at, at)};`,
       // A move holds a slot, and no slot is held for a client without an address (ADR 0079).
       `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode) VALUES
-         ${row(crypto.randomUUID(), person, at, "House 4417, Tower C", "Sector 65", "Gurgaon", "122018")};`,
+         ${sqlRow(crypto.randomUUID(), person, at, "House 4417, Tower C", "Sector 65", "Gurgaon", "122018")};`,
     );
     const date = new Date(starts.getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
     return { mobile, visitId: visit, date };

@@ -28,6 +28,7 @@ import { promisify } from "node:util";
 import sharp from "sharp";
 import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
+import { sqlRow } from "../../scripts/lib/sql-literal.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
@@ -66,11 +67,6 @@ function day(days: number): { date: string; start: string; end: string } {
   return { date, start: `${date}T06:30:00.000Z`, end: `${date}T08:00:00.000Z` };
 }
 
-const quote = (value: string | number | null) =>
-  value === null ? "NULL" : typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
-/** One row of SQL values, quoted. */
-export const row = (...values: (string | number | null)[]) => `(${values.map(quote).join(", ")})`;
-
 /** The client the global setup seeded. */
 export function fittedClient(): Fitted {
   const handed = process.env[HANDOVER];
@@ -99,7 +95,7 @@ export async function seedFitted(): Promise<void> {
     status: string,
     invoice: string | null,
   ) =>
-    row(
+    sqlRow(
       appointmentId,
       `e2e-${appointmentId}`,
       person,
@@ -118,7 +114,7 @@ export async function seedFitted(): Promise<void> {
     );
 
   const sql = [
-    `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${row(person, now, `+91${mobile}`, "Rohit Malhotra")};`,
+    `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${sqlRow(person, now, `+91${mobile}`, "Rohit Malhotra")};`,
     ...technicianFor("fitted", now),
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        fsm_status, service_city, service_pincode, fsm_invoice_id, invoice_issued_at, fsm_modified_at,
@@ -128,22 +124,22 @@ export async function seedFitted(): Promise<void> {
        ${appointment(visits.firstFit, "first_fit", firstFit, "completed", null)},
        ${appointment(visits.consultation, "consultation", consultation, "completed", null)};`,
     `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at) VALUES
-       ${row(id(), visits.service, service.start, service.end, 85, "done", now)},
-       ${row(id(), visits.firstFit, firstFit.start, firstFit.end, 150, "done", now)};`,
+       ${sqlRow(id(), visits.service, service.start, service.end, 85, "done", now)},
+       ${sqlRow(id(), visits.firstFit, firstFit.start, firstFit.end, 150, "done", now)};`,
     `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,
        status, captured_at, created_at, updated_at, books_payment_id) VALUES
-       ${row(servicePaid, reference, person, visits.service, `pay_${servicePaid}`, 200000, "INR", "upi", "captured", service.end, service.end, now, `stub-e2e-${servicePaid}`)},
-       ${row(firstFitPaid, null, person, visits.firstFit, `pay_${firstFitPaid}`, 3000000, "INR", "card", "captured", firstFit.end, firstFit.end, now, null)};`,
+       ${sqlRow(servicePaid, reference, person, visits.service, `pay_${servicePaid}`, 200000, "INR", "upi", "captured", service.end, service.end, now, `stub-e2e-${servicePaid}`)},
+       ${sqlRow(firstFitPaid, null, person, visits.firstFit, `pay_${firstFitPaid}`, 3000000, "INR", "card", "captured", firstFit.end, firstFit.end, now, null)};`,
     `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, speed, created_at, updated_at)
-       VALUES ${row(id(), servicePaid, `rfnd_${servicePaid}`, 100000, "created", "normal", day(-18).end, now)};`,
+       VALUES ${sqlRow(id(), servicePaid, `rfnd_${servicePaid}`, 100000, "created", "normal", day(-18).end, now)};`,
     // The piece fitted at the first fit, still in wear, due 180 days after it.
     `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, supplier_lot, fitted_at, replacement_due_at,
        appointment_id, synced_at) VALUES
-       ${row(piece, `e2e-${piece}`, person, pieceCode, "Mono", "L-1109", firstFit.date, pieceDue, visits.firstFit, now)};`,
+       ${sqlRow(piece, `e2e-${piece}`, person, pieceCode, "Mono", "L-1109", firstFit.date, pieceDue, visits.firstFit, now)};`,
     // What the technician ticked on the service visit's checklist, as his phone sent it (src/config/job-sheet.ts).
     `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
        fsm_write_state, updated_at) VALUES
-       ${row(id(), visits.service, id(), technician, "checklist", JSON.stringify({ done: ["piece_removed", "scalp_cleaned", "piece_cleaned"] }), service.start, service.start, "written", now)};`,
+       ${sqlRow(id(), visits.service, id(), technician, "checklist", JSON.stringify({ done: ["piece_removed", "scalp_cleaned", "piece_cleaned"] }), service.start, service.start, "written", now)};`,
   ];
 
   const taken = [
@@ -154,7 +150,7 @@ export async function seedFitted(): Promise<void> {
   const sets = new Map([visits.service, visits.firstFit].map((visit) => [visit, id()]));
   sql.push(
     `INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES
-       ${[...sets].map(([visit, set]) => row(set, visit, "after", now)).join(", ")};`,
+       ${[...sets].map(([visit, set]) => sqlRow(set, visit, "after", now)).join(", ")};`,
   );
 
   const folder = await mkdtemp(join(tmpdir(), "mm-e2e-"));
@@ -174,7 +170,7 @@ export async function seedFitted(): Promise<void> {
         const smallKey = photo.small ? `e2e/${person}/${photo.visit}/after-${photo.angle}-small.jpg` : null;
         sql.push(
           `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, width, height, taken_at, thumbnail_key, created_at)
-             VALUES ${row(id(), sets.get(photo.visit) ?? "", photo.angle, key, "image/jpeg", bytes.length, 600, 800, photo.when.end, smallKey, now)};`,
+             VALUES ${sqlRow(id(), sets.get(photo.visit) ?? "", photo.angle, key, "image/jpeg", bytes.length, 600, 800, photo.when.end, smallKey, now)};`,
         );
         return smallKey === null
           ? [{ key, file }]
