@@ -8,12 +8,12 @@
 //
 // No client's name or number here: a label says which piece, not whose.
 
-import { techRoute } from "../http/session-routes.ts";
+import { techRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
-import { pieceWithOwner } from "../domain/pieces.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { technicianOf } from "../http/technician-session.ts";
+import type { App } from "../../http/context.ts";
+import { pieceWithOwner } from "../../domain/pieces.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { technicianOf } from "../../http/technician-session.ts";
 
 export const PieceSchema = z
   .object({

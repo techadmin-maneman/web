@@ -1,10 +1,10 @@
-// Recording a technician's step (./tech-jobs.steps.ts): the job it names, the write it carries, landing it once
+// Recording a technician's step (./jobs.steps.ts): the job it names, the write it carries, landing it once
 // with what its step records, and the answer, accepted or refused.
 
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { AppEnv } from "../http/context.ts";
-import { arrivalOfEvent } from "../domain/check-ins.ts";
+import type { AppEnv } from "../../http/context.ts";
+import { arrivalOfEvent } from "../../domain/check-ins.ts";
 import {
   eventByClientId,
   landJobEvent,
@@ -14,19 +14,19 @@ import {
   type Landing,
   type MovedTo,
   type Superseding,
-} from "../domain/job-events.ts";
-import { jobRecordOf, type LandingStep } from "../domain/job-record.ts";
-import { type PieceField } from "../domain/pieces.ts";
-import { progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
-import { errorBody, type ErrorResponse, refuse } from "../http/errors.ts";
-import { technicianOf } from "../http/technician-session.ts";
-import { timeOfUuidV7 } from "../lib/uuidv7.ts";
-import { type JobEventKind } from "../policy/in-job-steps.ts";
-import { noShowWaitEnds } from "../policy/no-show.ts";
-import { boundedPhoneTime } from "../policy/phone-clock.ts";
-import { opsInputs } from "../http/ops-inputs.ts";
+} from "../../domain/job-events.ts";
+import { jobRecordOf, type LandingStep } from "../../domain/job-record.ts";
+import { type PieceField } from "../../domain/pieces.ts";
+import { progressOf, workableJob, type WorkableJob } from "../../domain/tech-jobs.ts";
+import { errorBody, type ErrorResponse, refuse } from "../../http/errors.ts";
+import { technicianOf } from "../../http/technician-session.ts";
+import { timeOfUuidV7 } from "../../lib/uuidv7.ts";
+import { type JobEventKind } from "../../policy/in-job-steps.ts";
+import { noShowWaitEnds } from "../../policy/no-show.ts";
+import { boundedPhoneTime } from "../../policy/phone-clock.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 
-import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, AcceptedSchema, CheckInSchema } from "./tech-jobs.schemas.ts";
+import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, AcceptedSchema, CheckInSchema } from "./jobs.schemas.ts";
 
 export type Ctx = Context<AppEnv>;
 

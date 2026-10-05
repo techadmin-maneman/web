@@ -60,7 +60,7 @@ export const SENSITIVE_PATHS = [
   "src/domain/hair-profiles",
   "src/policy/hair-profile",
   "src/routes/ops/hair-profile",
-  "src/routes/hair-profile-schemas",
+  "src/routes/schemas/hair-profile",
   // Every table
   "migrations/",
 ] as const;

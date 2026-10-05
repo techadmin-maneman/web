@@ -45,7 +45,7 @@ const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: n
   "src/providers/image/ailabtools.ts": { fn: 114 },
   "src/providers/zoho-http.ts": { fn: 108 },
   "src/routes/ops/profile.ts": { fn: 100 },
-  "src/routes/tech-auth.ts": { fn: 92 },
+  "src/routes/tech/auth.ts": { fn: 92 },
   "src/queues/crm-sync.ts": { fn: 88 },
   "src/routes/public/tryon-upload.ts": { fn: 86 },
   "src/providers/payments/razorpay.ts": { fn: 81 },

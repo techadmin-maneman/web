@@ -1,15 +1,15 @@
-// The technician API's routes (./tech-jobs.ts), made of its schemas (./tech-jobs.schemas.ts).
+// The technician API's routes (./jobs.ts), made of its schemas (./jobs.schemas.ts).
 
-import { techRoute } from "../http/session-routes.ts";
+import { techRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import {
   ChecklistRequestSchema,
   ConsumablesRequestSchema,
   OutcomeRequestSchema,
   PieceRequestSchema,
-} from "../domain/job-event-bodies.ts";
-import { errorResponse } from "../http/errors.ts";
-import { json } from "../http/openapi.ts";
+} from "../../domain/job-event-bodies.ts";
+import { errorResponse } from "../../http/errors.ts";
+import { json } from "../../http/openapi.ts";
 import {
   jobId,
   EventIdSchema,
@@ -24,7 +24,7 @@ import {
   NoShowSchema,
   ProfileRequestSchema,
   ProfileRecordedSchema,
-} from "./tech-jobs.schemas.ts";
+} from "./jobs.schemas.ts";
 
 const RECORDED = { description: "Recorded", ...json(AcceptedSchema) };
 

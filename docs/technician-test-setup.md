@@ -31,7 +31,7 @@ Two of those three jobs are there for a reason. Today's and tomorrow's carry the
 
 You have been told that open point 27 — every technician needs an FSM user **with his mobile number on it** — blocks the technician app, and that only you can create one in Zoho. For production that is still true. **For this test it is not.**
 
-The sign-in reads one table in our own database, `technicians`, and nothing else. Its query is `WHERE mobile_e164 = ? AND active = 1` (`src/domain/technicians.ts`). FSM is asked only when that comes back empty, and then only as a refresh, so that a technician you added to FSM this morning does not have to wait for tonight's reconciliation (`src/routes/tech-auth.ts`). With a row already there, **no call to Zoho is made at all**.
+The sign-in reads one table in our own database, `technicians`, and nothing else. Its query is `WHERE mobile_e164 = ? AND active = 1` (`src/domain/technicians.ts`). FSM is asked only when that comes back empty, and then only as a refresh, so that a technician you added to FSM this morning does not have to wait for tonight's reconciliation (`src/routes/tech/auth.ts`). With a row already there, **no call to Zoho is made at all**.
 
 That is not a reading of the code; it was done. The technician above was written straight into staging's database with no Zoho record behind him, and the code request answered `202` and the code went out on WhatsApp.
 

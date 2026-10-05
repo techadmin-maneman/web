@@ -1,14 +1,14 @@
 import { z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
+import type { App } from "../../http/context.ts";
 import {
   latestArrival,
   measureArrival,
   passedArrivalStatement,
   recordFailedArrival,
   type ArrivalInput,
-} from "../domain/check-ins.ts";
-import { allConsumables } from "../domain/consumables.ts";
-import { profileLanded, recordAtVisit } from "../domain/hair-profiles.ts";
+} from "../../domain/check-ins.ts";
+import { allConsumables } from "../../domain/consumables.ts";
+import { profileLanded, recordAtVisit } from "../../domain/hair-profiles.ts";
 import {
   answerBeforeLanding,
   closedAt,
@@ -16,15 +16,15 @@ import {
   landInOrder,
   whatChanged,
   type EventInput,
-} from "../domain/job-events.ts";
-import { pieceLabelTaken, pieceStepOf } from "../domain/pieces.ts";
-import { checklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
-import { recordJobUse } from "../domain/job-use.ts";
-import { tellOfLowStock } from "../domain/stock.ts";
-import { hasStorageRoom } from "../domain/storage-meter.ts";
-import { noShowReadiness, openNoShowCase } from "../domain/no-shows.ts";
-import { closeOneVisit } from "../domain/one-visit.ts";
-import { progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
+} from "../../domain/job-events.ts";
+import { pieceLabelTaken, pieceStepOf } from "../../domain/pieces.ts";
+import { checklistOf, jobSheet, knownCodes } from "../../domain/job-sheet-settings.ts";
+import { recordJobUse } from "../../domain/job-use.ts";
+import { tellOfLowStock } from "../../domain/stock.ts";
+import { hasStorageRoom } from "../../domain/storage-meter.ts";
+import { noShowReadiness, openNoShowCase } from "../../domain/no-shows.ts";
+import { closeOneVisit } from "../../domain/one-visit.ts";
+import { progressOf, workableJob, type WorkableJob } from "../../domain/tech-jobs.ts";
 import {
   anglesHeld,
   MAX_PHOTO_BYTES,
@@ -34,19 +34,19 @@ import {
   storeThumbnail,
   uploadLink,
   type PhotoSlot,
-} from "../domain/tech-photos.ts";
-import { type Phase } from "../domain/visit-photos.ts";
-import { cappedBody } from "../http/capped-body.ts";
-import { refuse } from "../http/errors.ts";
-import { technicianOf } from "../http/technician-session.ts";
-import { timeOfUuidV7 } from "../lib/uuidv7.ts";
-import { takesStep } from "../policy/in-job-steps.ts";
-import { takesProfile } from "../policy/hair-profile.ts";
-import { noShowWaitEnds } from "../policy/no-show.ts";
-import { boundedPhoneTime } from "../policy/phone-clock.ts";
-import { opsInputs } from "../http/ops-inputs.ts";
-import { queueMessage } from "../http/queue-message.ts";
-import { arrivalNotice } from "../domain/visit-messages.ts";
+} from "../../domain/tech-photos.ts";
+import { type Phase } from "../../domain/visit-photos.ts";
+import { cappedBody } from "../../http/capped-body.ts";
+import { refuse } from "../../http/errors.ts";
+import { technicianOf } from "../../http/technician-session.ts";
+import { timeOfUuidV7 } from "../../lib/uuidv7.ts";
+import { takesStep } from "../../policy/in-job-steps.ts";
+import { takesProfile } from "../../policy/hair-profile.ts";
+import { noShowWaitEnds } from "../../policy/no-show.ts";
+import { boundedPhoneTime } from "../../policy/phone-clock.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
+import { queueMessage } from "../../http/queue-message.ts";
+import { arrivalNotice } from "../../domain/visit-messages.ts";
 
 import {
   checkinRoute,
@@ -61,8 +61,8 @@ import {
   profileRoute,
   outcomeRoute,
   noShowRoute,
-} from "./tech-jobs.routes.ts";
-import { ProfileRecordedSchema } from "./tech-jobs.schemas.ts";
+} from "./jobs.routes.ts";
+import { ProfileRecordedSchema } from "./jobs.schemas.ts";
 import {
   type Ctx,
   namedJob,
@@ -75,9 +75,9 @@ import {
   refusedOf,
   resultOf,
   checkInReplayed,
-} from "./tech-jobs.record.ts";
+} from "./jobs.record.ts";
 
-import { pieceBody } from "./tech-jobs.piece.ts";
+import { pieceBody } from "./jobs.piece.ts";
 export function registerTechJobSteps(app: App): void {
   registerArrival(app);
   registerNoShow(app);

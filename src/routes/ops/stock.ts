@@ -9,7 +9,7 @@
 // Each movement is a row of the ledger, with the Access identity behind it,
 // written with its audit entry in one batch (ADR 0031); what a place holds is
 // the sum of its rows. A job's use comes out of the technician's kit as his
-// step lands (src/routes/tech-jobs.ts). A place that falls to its reorder level
+// step lands (src/routes/tech/jobs.ts). A place that falls to its reorder level
 // raises one alert, and the table marks it low. Every write answers the whole
 // of GET's answer, so the screen follows it without reading again.
 //

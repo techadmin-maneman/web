@@ -44,7 +44,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
 import { NO_SHOW_DECISIONS } from "../../policy/no-show.ts";
 import { dueAt } from "../../policy/tasks.ts";
-import { PieceSchema } from "../tech-pieces.ts";
+import { PieceSchema } from "../tech/pieces.ts";
 
 const NoShowCaseSchema = z
   .object({

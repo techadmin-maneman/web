@@ -1,13 +1,13 @@
-// The technician API's schemas (./tech-jobs.ts): what each call takes and answers.
+// The technician API's schemas (./jobs.ts): what each call takes and answers.
 
 import { z } from "@hono/zod-openapi";
-import { BOOKING_WINDOWS } from "../config/scheduling.ts";
-import { VISIT_TYPES } from "../config/visit-types.ts";
-import { ANGLES, PHASES } from "../domain/visit-photos.ts";
-import { CARD_STEPS } from "../policy/in-job-steps.ts";
-import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
-import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "./hair-profile-schemas.ts";
-import { PieceSchema } from "./tech-pieces.ts";
+import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
+import { VISIT_TYPES } from "../../config/visit-types.ts";
+import { ANGLES, PHASES } from "../../domain/visit-photos.ts";
+import { CARD_STEPS } from "../../policy/in-job-steps.ts";
+import { PAYMENT_BADGES } from "../../policy/job-visibility.ts";
+import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
+import { PieceSchema } from "./pieces.ts";
 
 export const jobId = z.object({ id: z.uuid() });
 

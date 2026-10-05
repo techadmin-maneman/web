@@ -15,30 +15,30 @@
 // Technicians' codes have a day's ceiling of their own, so client traffic never
 // stops one signing in, and ops are told when an active technician is refused.
 
-import { techRoute } from "../http/session-routes.ts";
+import { techRoute } from "../../http/session-routes.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import type { LoginSettings } from "../config/settings.ts";
-import type { App, AppEnv } from "../http/context.ts";
-import { mobileHashOf } from "../domain/number-codes.ts";
-import { createChallenge } from "../domain/one-time-codes.ts";
-import { revokeSession, deviceLabel } from "../domain/sessions.ts";
+import type { LoginSettings } from "../../config/settings.ts";
+import type { App, AppEnv } from "../../http/context.ts";
+import { mobileHashOf } from "../../domain/number-codes.ts";
+import { createChallenge } from "../../domain/one-time-codes.ts";
+import { revokeSession, deviceLabel } from "../../domain/sessions.ts";
 import {
   findFieldTechnician,
   openTechnicianSession,
   signedInTechnician,
   verifyTechnicianCode,
-} from "../domain/technicians.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { json } from "../http/openapi.ts";
-import { firstNameOf, initialsOf } from "../lib/names.ts";
-import { afterResponse } from "../http/after-response.ts";
-import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse, type CodeGate } from "../http/send-code.ts";
-import { clearTechnicianCookie, setTechnicianCookie, technicianOf } from "../http/technician-session.ts";
-import { visitorOf } from "../http/visitor.ts";
-import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { newLoginCode } from "../policy/one-time-code.ts";
-import { isStagingTestName } from "../lib/test-names.ts";
+} from "../../domain/technicians.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { json } from "../../http/openapi.ts";
+import { firstNameOf, initialsOf } from "../../lib/names.ts";
+import { afterResponse } from "../../http/after-response.ts";
+import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse, type CodeGate } from "../../http/send-code.ts";
+import { clearTechnicianCookie, setTechnicianCookie, technicianOf } from "../../http/technician-session.ts";
+import { visitorOf } from "../../http/visitor.ts";
+import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
+import { newLoginCode } from "../../policy/one-time-code.ts";
+import { isStagingTestName } from "../../lib/test-names.ts";
 
 /** Why an active technician was refused a code, and what he can do, in ops' words. */
 function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings): string {

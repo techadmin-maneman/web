@@ -1,17 +1,17 @@
-// The technician's reads (./tech-jobs.ts): the day's jobs, one job's card, and the client's last visit.
+// The technician's reads (./jobs.ts): the day's jobs, one job's card, and the client's last visit.
 
-import type { App } from "../http/context.ts";
-import { type VisitType } from "../config/visit-types.ts";
-import { offeredForJob, serviceOfJob } from "../domain/consumables.ts";
-import { checklistOf, declinedChecklistOf, jobSheet } from "../domain/job-sheet-settings.ts";
-import { jobDetail, jobsOn, lastVisitPhoto } from "../domain/tech-jobs.ts";
-import { refuse } from "../http/errors.ts";
-import { technicianOf } from "../http/technician-session.ts";
-import { indiaDate } from "../lib/india-time.ts";
-import { listableDate } from "../policy/job-visibility.ts";
-import { opsInputs } from "../http/ops-inputs.ts";
+import type { App } from "../../http/context.ts";
+import { type VisitType } from "../../config/visit-types.ts";
+import { offeredForJob, serviceOfJob } from "../../domain/consumables.ts";
+import { checklistOf, declinedChecklistOf, jobSheet } from "../../domain/job-sheet-settings.ts";
+import { jobDetail, jobsOn, lastVisitPhoto } from "../../domain/tech-jobs.ts";
+import { refuse } from "../../http/errors.ts";
+import { technicianOf } from "../../http/technician-session.ts";
+import { indiaDate } from "../../lib/india-time.ts";
+import { listableDate } from "../../policy/job-visibility.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 
-import { jobsRoute, jobRoute, lastVisitPhotoRoute } from "./tech-jobs.routes.ts";
+import { jobsRoute, jobRoute, lastVisitPhotoRoute } from "./jobs.routes.ts";
 
 export function registerTechJobReads(app: App): void {
   app.openapi(jobsRoute, async (c) => {

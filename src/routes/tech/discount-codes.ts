@@ -9,14 +9,14 @@
 // address (src/http/code-checks.ts). No amount is answered: none reaches the technician's phone.
 
 import { z } from "@hono/zod-openapi";
-import { techRoute } from "../http/session-routes.ts";
-import type { App } from "../http/context.ts";
-import { enterOnVisit } from "../domain/discount-code-uses.ts";
-import { workableJob } from "../domain/tech-jobs.ts";
-import { mayCheckCode } from "../http/code-checks.ts";
-import { errorResponse, refuse } from "../http/errors.ts";
-import { json } from "../http/openapi.ts";
-import { technicianOf } from "../http/technician-session.ts";
+import { techRoute } from "../../http/session-routes.ts";
+import type { App } from "../../http/context.ts";
+import { enterOnVisit } from "../../domain/discount-code-uses.ts";
+import { workableJob } from "../../domain/tech-jobs.ts";
+import { mayCheckCode } from "../../http/code-checks.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { json } from "../../http/openapi.ts";
+import { technicianOf } from "../../http/technician-session.ts";
 
 const EntrySchema = z
   .object({ code: z.string().trim().min(1).max(40).openapi({ description: "As the client gave it, any case." }) })

@@ -23,7 +23,7 @@ import {
   HairProfileSchema,
   HairProfileVersionSchema,
   HistorySchema,
-} from "../hair-profile-schemas.ts";
+} from "../schemas/hair-profile.ts";
 import { clientInReach } from "./clients.ts";
 
 const clientId = z.object({ id: z.uuid() });

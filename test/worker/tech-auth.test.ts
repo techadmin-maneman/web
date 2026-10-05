@@ -1,4 +1,4 @@
-// Logging in to the technician app (src/routes/tech-auth.ts). NOW is Monday
+// Logging in to the technician app (src/routes/tech/auth.ts). NOW is Monday
 // 21 September 2026, 12 noon in India. Every name and number here is made up.
 //
 // A technician is recognised only while he is active on the console's roster,

@@ -1,15 +1,15 @@
-// The piece step's body (./tech-jobs.steps.ts): on a one visit, the product the client chose or that they decided
+// The piece step's body (./jobs.steps.ts): on a one visit, the product the client chose or that they decided
 // against it; on any other job that takes one, the piece fitted or the one that failed.
 
 import { z } from "@hono/zod-openapi";
-import { PieceRequestSchema } from "../domain/job-event-bodies.ts";
-import { offeredProducts } from "../domain/services.ts";
-import { type WorkableJob } from "../domain/tech-jobs.ts";
-import { indiaDate } from "../lib/india-time.ts";
-import { takesStep } from "../policy/in-job-steps.ts";
-import { pieceRecorded } from "../policy/piece-step.ts";
+import { PieceRequestSchema } from "../../domain/job-event-bodies.ts";
+import { offeredProducts } from "../../domain/services.ts";
+import { type WorkableJob } from "../../domain/tech-jobs.ts";
+import { indiaDate } from "../../lib/india-time.ts";
+import { takesStep } from "../../policy/in-job-steps.ts";
+import { pieceRecorded } from "../../policy/piece-step.ts";
 
-import { type Ctx, type StepBody } from "./tech-jobs.record.ts";
+import { type Ctx, type StepBody } from "./jobs.record.ts";
 
 type PieceBody = z.infer<typeof PieceRequestSchema>;
 

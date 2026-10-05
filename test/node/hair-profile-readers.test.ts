@@ -33,7 +33,7 @@ describe("the hair profile's table", () => {
       "src/domain/erasure.ts",
       "src/domain/tech-jobs.ts",
       "src/routes/ops/hair-profile.ts",
-      "src/routes/tech-jobs.steps.ts",
+      "src/routes/tech/jobs.steps.ts",
     ]);
   });
 });
