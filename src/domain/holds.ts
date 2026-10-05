@@ -19,7 +19,7 @@ import { spendableCredits } from "./credits.ts";
 import { holdDiscount } from "./discount-code-holds.ts";
 import { consentGiven } from "./consents.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
-import { graceEndOf, graceEnds } from "./hold-stages.ts";
+import { graceEndOf, graceEnds, type HoldState } from "./hold-stages.ts";
 import { heldMinutes, visitTimes } from "./visit-times.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { paidNotBooked } from "./hold-stages.ts";
@@ -37,7 +37,7 @@ interface HoldRow {
   amount: number;
   amount_ex_gst: number;
   gst_percent: number;
-  state: "held" | "booked" | "released";
+  state: HoldState;
   expires_at: string;
   /** The grace it was made with; null for a hold made before holds kept one. */
   grace_seconds: number | null;

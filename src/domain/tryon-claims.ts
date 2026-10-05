@@ -13,6 +13,7 @@ import type { LossExtent } from "../config/booking.ts";
 import { recordConsent } from "./consents.ts";
 import type { LeadAttribution } from "./leads.ts";
 import { recordEvent, type JobRow } from "./tryon.ts";
+import { personByMobile } from "./people.ts";
 
 /**
  * Reserves the job for this claim, so two claims at once cannot both create a lead; false when another claim
@@ -72,14 +73,15 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
 
   try {
     await db.batch([
-      // A returning person keeps their ID, their name and whether they are contactable: anyone can type a
-      // number at the gate, so the gate never renames the person it belongs to.
-      db
-        .prepare(
-          `INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record) VALUES (?, ?, ?, ?, 0, ?)
-           ON CONFLICT (mobile_e164) DO NOTHING`,
-        )
-        .bind(crypto.randomUUID(), at, mobileE164, claim.name, claim.testRecord ? 1 : 0),
+      // A returning person keeps their ID, their name and whether they are contactable.
+      personByMobile(db, {
+        id: crypto.randomUUID(),
+        mobile: mobileE164,
+        name: claim.name,
+        testRecord: claim.testRecord,
+        contactable: "as_before",
+        at,
+      }),
       recordConsent(db, {
         person: { mobileE164 },
         purpose: "result_delivery",

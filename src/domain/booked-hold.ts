@@ -5,6 +5,7 @@ import type { VisitType } from "../config/visit-types.ts";
 import { type Logger } from "../log.ts";
 import { type AlertOnce } from "./alerts.ts";
 import { PAYMENT_HELD, statusIn } from "../config/statuses.ts";
+import type { HoldState } from "./hold-stages.ts";
 
 export interface ConfirmOptions {
   /** Queues a message about the visit once its row is written (src/domain/visit-messages.ts). */
@@ -28,7 +29,7 @@ export interface HoldRow {
   start_unit: number;
   technician_id: string;
   amount: number;
-  state: "held" | "booked" | "released";
+  state: HoldState;
   expires_at: string;
   /** The grace it was made with; null for a hold made before holds kept one. */
   grace_seconds: number | null;

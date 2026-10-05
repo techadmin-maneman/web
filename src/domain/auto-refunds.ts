@@ -10,6 +10,7 @@ import { firstNameOf } from "../lib/names.ts";
 import { heldVisitTimes } from "./visit-times.ts";
 import { DESTINATIONS, underVisitsConsent, type Composed } from "./visit-messages.ts";
 import { PAYMENT_TAKEN, statusIn } from "../config/statuses.ts";
+import { queueMessage } from "./queued-messages.ts";
 
 /** Why a booking refunded its hold by itself. */
 export const AUTO_REFUND_REASONS = ["lapsed", "not_movable"] as const;
@@ -68,12 +69,13 @@ export function refundedMessage(
   input: { readonly personId: string; readonly holdId: string; readonly now: Date },
 ): { id: string; statement: D1PreparedStatement } {
   const id = crypto.randomUUID();
-  const statement = db
-    .prepare(
-      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-       VALUES (?1, ?2, ?3, 'booking_refunded', 'slot_hold', ?4, 'queued', ?2)`,
-    )
-    .bind(id, input.now.toISOString(), input.personId, input.holdId);
+  const statement = queueMessage(db, {
+    id,
+    personId: input.personId,
+    kind: "booking_refunded",
+    subject: { kind: "slot_hold", id: input.holdId },
+    at: input.now.toISOString(),
+  });
   return { id, statement };
 }
 
