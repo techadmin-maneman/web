@@ -6,6 +6,9 @@ The points of `docs/open-points.md` that are settled, each with its answer, its 
 
 Each keeps its number. Where something follows from a ruling and is still owed, it is an open point of its own, named here.
 
+- **7. Late fees, the refund route, a late-cancelled credit.** Settled 5 October 2026: the owner keeps C8, reached from C7's "Cancel the visit instead", as built; no designer's screen is owed.
+- **45. Words the site adds where no design draws any.** Settled 5 October 2026: the owner approved the booking form's, the confirmation's and the film's lines as they stand (`site/src/content/referral.ts`, `site/src/content/site.ts`).
+- **61. Board D2's owner, its SLAs, and its other two groups.** Settled 5 October 2026: the owner keeps 7 days for First fit to book (`booking_days` in Settings · Rules, ops may change it); task owners and At-risk client are built (ADR 0086, ADR 0092); Photo QA is not built.
 - **185. Dependency updates.** Settled 5 October 2026: the Renovate app is installed (it opened its first updates, #425 and #426), and the owner turned on Dependabot alerts, secret scanning and push protection. An update waits for review before it merges (`scripts/lib/auto-merge.ts`).
 - **86. Production's photographs bucket.** Settled: `mm-prod-client-photos` and `mm-prod-referral-cards` exist, with no rule but Cloudflare's default that aborts an unfinished upload after seven days (`wrangler r2 bucket list` and `lifecycle list`, 4 October 2026).
 - **34. The CRM's referral fields.** Settled 2 October 2026: `scripts/ops/setup-crm.ts` created Referral_Code, Booked_Window and the Lead_Source value Referral in the org, and `CRM_ORG_HAS_REFERRAL_FIELDS` is on.
