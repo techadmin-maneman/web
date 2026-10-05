@@ -551,6 +551,7 @@ describe("crm-sync: a changed number, address or invite", () => {
     const body = { update_person_id: PERSON, request_id: "r", ...more };
     const batch = fakeBatch("mm-crm-sync-local", [body], { attempts });
     const [message] = batch.messages;
+    if (message === undefined) throw new Error("the batch holds no message");
     const deps = fakeDependencies({ crm });
     return { message, deps, done: handleCrmSyncBatch(batch, env.DB, deps, log) };
   }
