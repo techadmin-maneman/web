@@ -42,32 +42,13 @@
   --switch-width: 46px; /* a consent's switch (board G1) */
 
   /* The ops console's frame and density (design/phase2/Ops Console.dc.html, its opening note). */
-  --ops-nav: 196px; /* the navigation column down the left */
   --ops-row: 34px; /* a table row: dense but not cramped */
-  --ops-control: 28px; /* a box or a button inside a table row, which keeps the row at --ops-row */
   --ops-box: 16px; /* a square to tick, as board A2 draws the reason picker's */
   --ops-figure: 76px; /* a column of figures, right aligned */
   --ops-panel: 484px; /* a panel the boards draw on its own, such as the launch confirmation */
   --ops-list: 1200px; /* a list page on a desktop: the main width, short of rows too wide to scan (UX-23) */
-  --ops-finder: 240px; /* the header's client search */
   --ops-area: 200px; /* an area's name, and a tier's, as ops type them */
-  --ops-amount: 120px; /* a price in whole rupees, up to ten lakh, beside the box's own arrows */
   --ops-date: 150px; /* a date box that shows the whole year beside the picker's button (VIS-21) */
-  --ops-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack (board B1) */
-  --ops-piece-base: 84px;
-  --ops-piece-column: 116px; /* the fitted date, and the supplier lot beside it */
-  --ops-piece-due: 120px;
-  --ops-consent-state: 92px; /* a consent's state, date and source, beside the purpose (board B3) */
-  --ops-consent-date: 96px;
-  --ops-consent-source: 72px;
-  --ops-zone: 96px; /* and the zone beside it */
-  --ops-jobs: 64px; /* the jobs he has finished, right aligned as every column of figures is */
-  --ops-service: 88px; /* and how they ran against the length they were planned for */
-  --ops-waitlist-count: 54px; /* the waitlist's three narrower columns of figures, count, Ref and Alerts (board C3) */
-  --ops-waitlist-ref: 60px;
-  --ops-waitlist-alerts: 62px;
-  --ops-task-owner: 72px; /* a task's owner, and how long it has left, beside what it is (board D2) */
-  --ops-task-due: 120px; /* "18 days overdue" on one line */
 
   /* The technician app's targets (design/phase2/Technician App.dc.html, "Targets" and "Gloved use"). */
   --tech-primary: 64px; /* the one primary action, bottom of every screen, and the fields beside it */
@@ -79,12 +60,6 @@
   --tech-box: 36px; /* a checklist item's box (board B2) */
   --fs-timer: 56px; /* the wait timer's count, board B5's one large number */
   --tech-retake: 88px; /* the Retake key beside Capture, the one action that is not full width (board B1) */
-
-  /* The dispatch board (board A1): technicians down, seven days across. */
-  --ops-tech: 104px; /* the column the technician and their zone stand in */
-  --ops-tray: 236px; /* the unassigned tray down the right */
-  --ops-cell: 88px; /* one technician's day */
-  --ops-day: 96px; /* the narrowest a day's column goes before the grid scrolls sideways (VIS-22) */
 
   --skeleton-label: 120px; /* the loading state's label (board B3) */
   --skeleton-card: 150px; /* and its card */

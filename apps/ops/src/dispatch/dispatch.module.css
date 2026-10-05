@@ -8,9 +8,17 @@
  * or a service visit sits on light paper, each sized by the slots it takes.
  *
  * The grid scrolls under its header row and its technicians' column, which stay
- * put (OPS-10), and a day never narrows past --ops-day: on a narrow window, or
+ * put (OPS-10), and a day never narrows past --local-day: on a narrow window, or
  * at 200% zoom, the grid scrolls sideways and the tray goes beneath it (VIS-22).
  */
+
+/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-tech: 104px; /* the column the technician and their zone stand in */
+  --local-tray: 236px; /* the unassigned tray down the right */
+  --local-cell: 88px; /* one technician's day */
+  --local-day: 96px; /* the narrowest a day's column goes before the grid scrolls sideways (VIS-22) */
+}
 
 .area {
   display: flex;
@@ -79,7 +87,7 @@
 
 .find {
   flex: 1;
-  min-width: var(--ops-tray);
+  min-width: var(--local-tray);
 }
 
 .fieldLabel {
@@ -102,7 +110,7 @@
 
 .grid {
   width: 100%;
-  min-width: calc(var(--ops-tech) + 7 * var(--ops-day));
+  min-width: calc(var(--local-tech) + 7 * var(--local-day));
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
@@ -111,7 +119,7 @@
 
 .corner,
 .tech {
-  width: var(--ops-tech);
+  width: var(--local-tech);
   padding: var(--sp-9) var(--sp-10);
   font-weight: var(--weight-regular);
   text-align: left;
@@ -177,7 +185,7 @@
 }
 
 .cell {
-  height: var(--ops-cell);
+  height: var(--local-cell);
   padding: var(--sp-3);
   border-bottom: var(--hairline) solid var(--paper-line);
   border-left: var(--hairline) solid var(--paper-line);
@@ -434,7 +442,7 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  width: var(--ops-tray);
+  width: var(--local-tray);
   overflow-y: auto;
   border-left: var(--hairline) solid var(--text);
   background: var(--paper-light);

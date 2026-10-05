@@ -47,6 +47,8 @@ const PATTERNS = [
   // A weight or a leading written as a number.
   /\bweight\s*:\s*\d+/g,
   /\bline-height\s*:\s*\d*\.?\d+(?![\w%])/g,
+  // A line's weight in a drawing, which a size names as any other does.
+  /\bstroke-width\s*:\s*\d/g,
 ] as const;
 
 /** Comments and media conditions, which cannot use custom properties, taken out. */
@@ -54,8 +56,15 @@ export function withoutCommentsAndConditions(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@media[^{]*\{/g, "@media {");
 }
 
+/**
+ * A screen's own sizes, which nothing else draws: a :root block of --local-* properties at the top of its stylesheet,
+ * where each value is written once, named and explained (ADR 0077, as amended), rather than in the shared brand
+ * package. Nowhere else may a stylesheet write a value.
+ */
+const LOCAL_SIZES = /^\s*:root\s*\{(?:\s*--local-[\w-]+\s*:[^;{}]*;)+\s*\}/;
+
 /** Every raw value in a stylesheet: a colour, a length, a duration, a curve, a weight or a leading. */
 export function rawValues(css: string): string[] {
-  const plain = withoutCommentsAndConditions(css);
+  const plain = withoutCommentsAndConditions(css).replace(LOCAL_SIZES, "");
   return PATTERNS.flatMap((pattern) => [...plain.matchAll(pattern)].map((match) => match[0].trim()));
 }

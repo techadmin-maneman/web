@@ -5,6 +5,17 @@
  * board B1's frame, narrowed to what the ops routes answer.
  */
 
+/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack (board B1) */
+  --local-piece-base: 84px;
+  --local-piece-column: 116px; /* the fitted date, and the supplier lot beside it */
+  --local-piece-due: 120px;
+  --local-consent-state: 92px; /* a consent's state, date and source, beside the purpose (board B3) */
+  --local-consent-date: 96px;
+  --local-consent-source: 72px;
+}
+
 /* ---- Finding a client ---------------------------------------------------- */
 
 .find {
@@ -251,7 +262,7 @@
 
 .addressRow .metaKey {
   flex-shrink: 0;
-  width: var(--ops-piece-column);
+  width: var(--local-piece-column);
 }
 
 .addressValue {
@@ -386,7 +397,7 @@
 
 .numberField {
   display: block;
-  width: var(--ops-piece-column);
+  width: var(--local-piece-column);
   height: var(--field-h);
   margin-top: var(--sp-8);
   padding: 0 var(--sp-14);
@@ -445,22 +456,22 @@
 
 /* The board's own column widths; the failure and its reason take the slack. */
 .code {
-  width: var(--ops-piece-code);
+  width: var(--local-piece-code);
   padding-inline: 0 var(--sp-10);
   font-variant-numeric: tabular-nums;
 }
 
 .base {
-  width: var(--ops-piece-base);
+  width: var(--local-piece-base);
 }
 
 .fitted,
 .lot {
-  width: var(--ops-piece-column);
+  width: var(--local-piece-column);
 }
 
 .due {
-  width: var(--ops-piece-due);
+  width: var(--local-piece-due);
 }
 
 .base,
@@ -598,15 +609,15 @@
 }
 
 .state {
-  width: var(--ops-consent-state);
+  width: var(--local-consent-state);
 }
 
 .date {
-  width: var(--ops-consent-date);
+  width: var(--local-consent-date);
 }
 
 .source {
-  width: var(--ops-consent-source);
+  width: var(--local-consent-source);
 }
 
 .date,
@@ -732,7 +743,7 @@
 }
 
 .codeInput {
-  width: var(--ops-piece-column);
+  width: var(--local-piece-column);
   height: var(--field-h);
   padding: 0 var(--sp-10);
   border: var(--hairline) solid var(--paper-control);

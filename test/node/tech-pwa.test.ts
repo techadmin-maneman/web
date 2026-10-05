@@ -18,7 +18,7 @@ describe("the technician app's manifest", () => {
 
   it("takes its colour from the ink the app is drawn on", () => {
     expect(ink).toBe("#0e1728");
-    expect(readFileSync("apps/tech/index.html", "utf8")).toContain(`<meta name="theme-color" content="${ink}" />`);
+    expect(readFileSync("apps/tech/index.html", "utf8")).toContain('<meta name="theme-color" content="--ink-deep" />');
     expect(manifest(ink)).toMatchObject({ background_color: ink, theme_color: ink });
   });
 

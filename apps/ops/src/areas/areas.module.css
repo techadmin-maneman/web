@@ -5,6 +5,13 @@
  * the gap between them is visible.
  */
 
+/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-waitlist-count: 54px; /* the waitlist's three narrower columns of figures, count, Ref and Alerts (board C3) */
+  --local-waitlist-ref: 60px;
+  --local-waitlist-alerts: 62px;
+}
+
 .screen {
   display: flex;
   flex-direction: column;
@@ -88,7 +95,7 @@
 
 /* The board's own widths for the four columns of figures and dates. */
 .count {
-  width: var(--ops-waitlist-count);
+  width: var(--local-waitlist-count);
 }
 
 .oldest {
@@ -97,11 +104,11 @@
 }
 
 .referred {
-  width: var(--ops-waitlist-ref);
+  width: var(--local-waitlist-ref);
 }
 
 .alerts {
-  width: var(--ops-waitlist-alerts);
+  width: var(--local-waitlist-alerts);
 }
 
 .count,

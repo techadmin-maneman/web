@@ -8,6 +8,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { colourOf } from "../../packages/brand/colours.ts";
+import { themeColor } from "../../packages/web-kit/pwa.ts";
 
 const TOKENS = readFileSync("packages/brand/tokens.css", "utf8");
 
@@ -39,7 +40,7 @@ describe("a colour drawn outside a stylesheet", () => {
   });
 });
 
-// A page's head is static HTML, so its theme colour is written there; it is held to its token here instead.
+// A page's head names its theme colour's token, and the build writes in the value (packages/web-kit/pwa.ts, UX-43).
 describe("each app's theme colour", () => {
   it.each([
     ["apps/app/index.html", "--ink"],
@@ -47,6 +48,9 @@ describe("each app's theme colour", () => {
     ["apps/tech/index.html", "--ink-deep"],
   ])("%s is its ground, %s", (page, ground) => {
     const html = readFileSync(page, "utf8");
-    expect(/<meta name="theme-color" content="(#[0-9a-f]{6})"/.exec(html)?.[1]).toBe(colourOf(ground, TOKENS));
+    expect(/<meta name="theme-color" content="(--[\w-]+)"/.exec(html)?.[1]).toBe(ground);
+    expect(themeColor().transformIndexHtml).toBeTypeOf("function");
+    const built = (themeColor().transformIndexHtml as (html: string) => string)(html);
+    expect(built).toContain(`<meta name="theme-color" content="${colourOf(ground, TOKENS)}" />`);
   });
 });
