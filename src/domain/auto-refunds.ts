@@ -1,4 +1,4 @@
-// Holds a booking refunded by itself (src/domain/bookings.ts): paid after the hold lapsed, or a move its visit could no
+// Holds a booking refunded by itself (src/domain/give-back.ts): paid after the hold lapsed, or a move its visit could no
 // longer take, since the technician had begun it or ops had changed its technician or time. The client is told on
 // WhatsApp in the batch that lets the hold go, and ops read each on the client's Visits tab.
 

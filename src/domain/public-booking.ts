@@ -703,8 +703,7 @@ export async function joinTheWaitlist(
     db
       .prepare(
         `INSERT INTO waitlist_entries (id, pincode, person_id, referral_code, contact_consent_at, launch_alert,
-           created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
+           created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
          ON CONFLICT (pincode, person_id) DO UPDATE SET launch_alert = MAX(launch_alert, excluded.launch_alert)`,
       )
       .bind(crypto.randomUUID(), request.pincode, personId, invite?.code ?? null, at, request.launchAlert ? 1 : 0),

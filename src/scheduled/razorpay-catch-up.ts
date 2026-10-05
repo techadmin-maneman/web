@@ -2,7 +2,8 @@
 // (src/domain/razorpay-catch-up.ts), and each hold found paid for booked as the webhook would book it.
 
 import type { Dependencies } from "../dependencies.ts";
-import { confirmBooking, type ConfirmOptions } from "../domain/bookings.ts";
+import { confirmBooking } from "../domain/bookings.ts";
+import { type ConfirmOptions } from "../domain/booked-hold.ts";
 import { catchUpWithRazorpay } from "../domain/razorpay-catch-up.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";

@@ -4,7 +4,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { autoRefundsOf } from "../../../src/domain/auto-refunds.ts";
-import { bookUnbookedHolds, confirmBooking, giveBack } from "../../../src/domain/bookings.ts";
+import { bookUnbookedHolds } from "../../../src/domain/unbooked-holds.ts";
+import { confirmBooking } from "../../../src/domain/bookings.ts";
+import { giveBack } from "../../../src/domain/give-back.ts";
 import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../../src/domain/credits.ts";
 import { openSession } from "../../../src/domain/sessions.ts";
 import { settleOwedRefunds } from "../../../src/domain/cancel-refunds.ts";

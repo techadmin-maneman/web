@@ -25,7 +25,6 @@ const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
 const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
   "src/routes/ops/clients.ts": { lines: 735, fn: 198 },
   "src/domain/dispatch.ts": { lines: 726 },
-  "src/domain/bookings.ts": { lines: 685 },
   "src/routes/client/booking.ts": { lines: 560, fn: 146 },
   "src/routes/client/profile.ts": { lines: 556, fn: 223 },
   "src/domain/public-booking.ts": { lines: 518, fn: 130 },
