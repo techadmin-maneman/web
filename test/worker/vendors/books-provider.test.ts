@@ -17,6 +17,7 @@ import {
 import { createStubBooks } from "../../../src/providers/books/stub.ts";
 import { NOW, captureLogs, fakeFetch, json, type RecordedCall } from "../helpers.ts";
 import contactAdded from "../../fixtures/vendors/books/contact-added.json";
+import contactCrmLink from "../../fixtures/vendors/books/contact-crm-link.json";
 import contactDeleted from "../../fixtures/vendors/books/contact-deleted.json";
 import contactErased from "../../fixtures/vendors/books/contact-erased.json";
 import contactGone from "../../fixtures/vendors/books/contact-gone.json";
@@ -245,6 +246,24 @@ describe("Books: erasing a customer", () => {
       [`${BOOKS_API}/contacts/${CUSTOMER_ID}`]: () => json({ code: 9, message: "Internal error" }, 500),
     });
     await expect(books.eraseCustomer(CUSTOMER_ID)).rejects.toThrow("Zoho 500 9: Internal error");
+  });
+
+  it("reads the CRM Contact that Books' own CRM integration made of the customer, and only reads", async () => {
+    const { books, calls } = zohoBooks({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/contacts/${CUSTOMER_ID}`]: () => json(contactCrmLink),
+    });
+    expect(await books.crmContactOf(CUSTOMER_ID)).toBe(contactCrmLink.contact.zcrm_contact_id);
+    expect(booksCalls(calls).map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  it("answers no CRM Contact for a customer not synced yet, or one Books no longer has", async () => {
+    const unsynced = { ...contactCrmLink, contact: { ...contactCrmLink.contact, zcrm_contact_id: "" } };
+    const reading = (answer: () => Response) =>
+      zohoBooks({ [ZOHO_TOKEN_URL]: () => tokenIssued(), [`${BOOKS_API}/contacts/${CUSTOMER_ID}`]: answer }).books;
+
+    expect(await reading(() => json(unsynced)).crmContactOf(CUSTOMER_ID)).toBeNull();
+    expect(await reading(() => json(contactGone, 404)).crmContactOf(CUSTOMER_ID)).toBeNull();
   });
 });
 

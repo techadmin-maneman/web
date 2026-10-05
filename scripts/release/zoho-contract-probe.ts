@@ -231,6 +231,16 @@ async function probeBooksPayments(): Promise<void> {
     { vendor: "books", name: "payments-by-reference" },
   );
 
+  await check(
+    "books crm_contact_of",
+    async () => {
+      if (payment === undefined) skip("no payment, so no customer, to read");
+      const contactId = await books.crmContactOf(payment.customer_id);
+      return contactId === null ? "no CRM Contact yet" : "its CRM Contact";
+    },
+    { vendor: "books", name: "contact-crm-link" },
+  );
+
   await check("books receipt_pdf", async () => {
     if (payment === undefined) skip("no payment to read");
     expectThat(await isPdf(await books.receiptPdf(payment.payment_id)), "the answer is not a PDF");

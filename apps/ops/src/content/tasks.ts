@@ -270,6 +270,7 @@ export const needsAHand = {
     contact_sync: "A contact change did not go through",
     deletion_waiting: "A deletion request is nearly due",
     books_erasure: "An erasure did not finish in Books",
+    crm_contact_erasure: "An erasure did not finish on a CRM Contact",
     cancel_refund_failed: "A refund failed",
     no_show_refund_failed: "A refund failed",
     no_show_credit_not_back: "A visit credit did not come back",

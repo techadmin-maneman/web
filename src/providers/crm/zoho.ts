@@ -5,6 +5,8 @@
 //   update  PUT  /crm/v8/Leads/{id}        { data: [record], trigger: [...] }
 //   note    POST /crm/v8/Leads/{id}/Notes  { data: [{ Note_Title, Note_Content }] }
 //   find    GET  /crm/v8/Leads/search?criteria=(D1_Person_ID:equals:{id})
+//   blank   PUT  /crm/v8/Contacts/{id}     { data: [record], trigger: [] }
+//   delete  DELETE /crm/v8/Contacts/{id}   the Contact Books' CRM integration made, once it is blank
 //   token   POST https://{accounts}/oauth/v2/token?grant_type=refresh_token&...
 //
 // "trigger": [] turns workflows off; leaving the key out would run them.
@@ -110,6 +112,9 @@ export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): C
       }
     },
 
+    eraseContact: (contactId) =>
+      eraseContact(createZohoApi(settings, { ...deps, log: deps.log.child({ crm_contact_id: contactId }) }), contactId),
+
     async erasePerson(personId, knownCrmLeadId) {
       const api = createZohoApi(settings, { ...deps, log: deps.log.child({ person_id: personId }) });
       const id = knownCrmLeadId ?? (await api.findLeadByPersonId(personId));
@@ -124,6 +129,18 @@ export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): C
   };
 }
 
+/** Blanks the Contact, so the recycle bin keeps no one either, then deletes it; nothing when the CRM has it no more. */
+async function eraseContact(api: ZohoApi, contactId: string): Promise<{ found: boolean }> {
+  try {
+    await api.blankContact(contactId);
+  } catch (error) {
+    if (mayBeGone(error)) return { found: false };
+    throw error;
+  }
+  await api.deleteContact(contactId);
+  return { found: true };
+}
+
 /** What an erased person's record keeps: the lead history, without who it was. */
 const ERASED_RECORD: Readonly<Record<string, unknown>> = {
   Last_Name: "Erased",
@@ -132,6 +149,48 @@ const ERASED_RECORD: Readonly<Record<string, unknown>> = {
   Contact_Consent: false,
   Description: null,
 };
+
+/**
+ * What an erased client's CRM Contact is blanked to before it is deleted, so the recycle bin keeps no one either:
+ * every field of the org's Contacts that could say who they were.
+ */
+const ERASED_CONTACT: Readonly<Record<string, unknown>> = {
+  Salutation: null,
+  First_Name: null,
+  Last_Name: "Erased",
+  Email: null,
+  Secondary_Email: null,
+  Phone: null,
+  Home_Phone: null,
+  Other_Phone: null,
+  Mobile: null,
+  Fax: null,
+  Assistant: null,
+  Asst_Phone: null,
+  Date_of_Birth: null,
+  Title: null,
+  Department: null,
+  Skype_ID: null,
+  Twitter: null,
+  Description: null,
+  Email_Opt_Out: true,
+  ...blankAddress("Mailing"),
+  ...blankAddress("Other"),
+};
+
+function blankAddress(which: "Mailing" | "Other"): Record<string, null> {
+  const parts = [
+    "Street",
+    "Flat_House_No_Building_Apartment_Name",
+    "City",
+    "State",
+    "Zip",
+    "Country",
+    "Latitude",
+    "Longitude",
+  ];
+  return Object.fromEntries(parts.map((part) => [`${which}_${part}`, null]));
+}
 
 const PLAN_NAMES: Readonly<Record<Plan, string>> = {
   consultation: "Consultation",
@@ -247,7 +306,7 @@ export function noteFor(lead: CrmLead): { title: string; content: string } {
 // HTTP
 // ---------------------------------------------------------------------------
 
-type Step = "search" | "insert" | "update" | "note";
+type Step = "search" | "insert" | "update" | "note" | "blank_contact" | "delete_contact";
 
 /** Zoho answers per record inside `data`, under a 200 even when the record failed. */
 const RecordOutcomes = z.object({
@@ -314,6 +373,16 @@ function createZohoApi(settings: ZohoSettings, deps: ZohoDependencies) {
     async updateLead(id: string, record: Record<string, unknown>, options: { runWorkflows: boolean }): Promise<void> {
       const body = { data: [record], trigger: options.runWorkflows ? ["workflow"] : [] };
       firstRecord(await call("update", `/crm/v8/Leads/${id}`, { method: "PUT", body }));
+    },
+
+    async blankContact(id: string): Promise<void> {
+      // Workflows off: nothing should chase, or e-mail about, an erased person.
+      const body = { data: [ERASED_CONTACT], trigger: [] };
+      firstRecord(await call("blank_contact", `/crm/v8/Contacts/${id}`, { method: "PUT", body }));
+    },
+
+    async deleteContact(id: string): Promise<void> {
+      firstRecord(await call("delete_contact", `/crm/v8/Contacts/${id}`, { method: "DELETE" }));
     },
 
     async addNote(id: string, note: { title: string; content: string }): Promise<void> {

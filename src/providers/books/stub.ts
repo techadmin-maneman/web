@@ -24,7 +24,7 @@ export type StubBooksCreate = "recordPayment" | "recordRefund" | "upsertCustomer
 
 /** The calls a test can make fail, or have refused, once. */
 export type StubBooksStep =
-  StubBooksCreate | "updateCustomer" | "eraseCustomer" | "findInvoice" | "items" | "updateItem";
+  StubBooksCreate | "updateCustomer" | "crmContactOf" | "eraseCustomer" | "findInvoice" | "items" | "updateItem";
 
 /** The stub, and what was written to it, for tests to read. */
 export interface StubBooks extends BooksProvider {
@@ -121,7 +121,7 @@ export function createStubBooks(world: StubBooksWorld = {}): StubBooks {
 
 type StubMade = StubBooks["made"];
 type StubControls = ReturnType<typeof createStubControls>;
-type CustomerCalls = "upsertCustomer" | "updateCustomer" | "eraseCustomer";
+type CustomerCalls = "upsertCustomer" | "updateCustomer" | "crmContactOf" | "eraseCustomer";
 type ItemCalls = "items" | "createItem" | "updateItem";
 
 function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, controls: StubControls) {
@@ -214,6 +214,11 @@ function stubCustomers(made: StubMade, controls: StubControls) {
     async updateCustomer(customerId, customer) {
       await controls.check("updateCustomer");
       made.customerUpdates.push({ customerId, ...customer });
+    },
+    // Books' CRM integration has made a Contact of every customer.
+    async crmContactOf(customerId) {
+      await controls.check("crmContactOf");
+      return `stub-crm-contact-${customerId}`;
     },
     async eraseCustomer(customerId) {
       await controls.check("eraseCustomer");

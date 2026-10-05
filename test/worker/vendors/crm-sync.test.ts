@@ -38,6 +38,7 @@ function recordingCrm(): CrmProvider & {
       erasures.push({ personId, knownId });
       return Promise.resolve({ found: knownId !== null });
     },
+    eraseContact: () => Promise.resolve({ found: true }),
     updateContact: (contact, knownId) => {
       updates.push({ contact, knownId });
       return Promise.resolve({ crmLeadId: knownId ?? "zoho-found" });
@@ -330,6 +331,7 @@ describe("crm-sync: the queue batch", () => {
       syncLead: () =>
         ++call === 1 ? Promise.resolve({ crmLeadId: "z", created: true }) : Promise.reject(new Error("down")),
       erasePerson: () => Promise.resolve({ found: false }),
+      eraseContact: () => Promise.resolve({ found: false }),
       updateContact: () => Promise.resolve({ crmLeadId: null }),
     };
     const batch = batchOf([

@@ -69,6 +69,11 @@ export interface CrmProvider {
    */
   erasePerson(personId: string, knownCrmLeadId: string | null): Promise<{ found: boolean }>;
   /**
+   * Blanks an erased client's Contact, the one Books' CRM integration made of their Books customer, and deletes it.
+   * `found` is false when the CRM no longer has it.
+   */
+  eraseContact(contactId: string): Promise<{ found: boolean }>;
+  /**
    * Writes a person's number, their address's city and the invite they came
    * through onto their record, with workflows off: nothing chases a client for
    * a change of number. An invite ops have just attached is noted as well. The
