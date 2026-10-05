@@ -37,6 +37,7 @@ import { serviceToOffer } from "./services.ts";
 import { NO_VISITS_CONSENT, remindersFrom, type Composed } from "./visit-messages.ts";
 import { paidNotBooked } from "./hold-stages.ts";
 import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE } from "../config/statuses.ts";
+import { queueMessage } from "./queued-messages.ts";
 
 /** A visit a next service follows: a first fit, a service or a replacement, done. Migration 0048 indexes these. */
 const DONE = "a.status = 'completed' AND a.type IN ('first_fit', 'service', 'replacement') AND a.deleted_at IS NULL";
@@ -228,12 +229,13 @@ export async function queueNextServiceReminders(
   if (messages.length > 0) {
     await db.batch(
       messages.map((message) =>
-        db
-          .prepare(
-            `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-             VALUES (?1, ?2, ?3, 'next_service_reminder', 'appointment', ?4, 'queued', ?2)`,
-          )
-          .bind(message.id, at, message.personId, message.visitId),
+        queueMessage(db, {
+          id: message.id,
+          personId: message.personId,
+          kind: "next_service_reminder",
+          subject: { kind: "appointment", id: message.visitId },
+          at,
+        }),
       ),
     );
   }
