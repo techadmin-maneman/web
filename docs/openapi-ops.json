@@ -10209,6 +10209,16 @@
               }
             }
           },
+          "400": {
+            "description": "invalid_request: the ID is not one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "not_found: no such client, or the client is outside the caller's cities",
             "content": {
@@ -11315,6 +11325,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Erased"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

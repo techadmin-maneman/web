@@ -354,6 +354,7 @@ const bookingRoute = selfServeRoute({
   request: { body: { required: true, content: { "application/json": { schema: BookingStartSchema } } } },
   responses: {
     201: { description: "Started", content: { "application/json": { schema: BookingSchema } } },
+    400: errorResponse("invalid_request"),
     401: errorResponse("session_required"),
     409: errorResponse("hold_expired: the hold lapsed, was let go, or is booked already; or ops_assisted"),
   },

@@ -121,6 +121,7 @@ const rescheduleRoute = selfServeRoute({
   },
   responses: {
     201: { description: "The move is started", content: { "application/json": { schema: BookingSchema } } },
+    400: errorResponse("invalid_request"),
     401: errorResponse("session_required"),
     404: errorResponse("not_found: no such hold for moving this visit"),
     409: errorResponse("not_changeable; hold_expired; or ops_assisted"),

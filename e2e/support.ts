@@ -45,13 +45,17 @@ export const test = base.extend<{ contentSecurityPolicy: undefined; appTurnstile
         page.on("requestfinished", (request) => {
           const { pathname } = new URL(request.url());
           if (!pathname.startsWith("/api/")) return;
-          const read = request.response().then(async (response) => {
-            if (response === null) return [];
-            if (!(response.headers()["content-type"] ?? "").includes("application/json")) return [];
-            const body: unknown = await response.json().catch(() => undefined);
-            if (body === undefined) return [];
-            return contractErrors(surface, request.method(), pathname, response.status(), body);
-          });
+          const read = request.response().then(
+            async (response) => {
+              if (response === null) return [];
+              if (!(response.headers()["content-type"] ?? "").includes("application/json")) return [];
+              const body: unknown = await response.json().catch(() => undefined);
+              if (body === undefined) return [];
+              return contractErrors(surface, request.method(), pathname, response.status(), body);
+            },
+            // The page closed before its answer could be read.
+            () => [],
+          );
           const lost = new Promise<string[]>((resolve) =>
             setTimeout(() => {
               resolve([]);

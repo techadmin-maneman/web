@@ -10,6 +10,7 @@
 import { readFileSync } from "node:fs";
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import { ANY_ROUTE } from "../test/any-route.ts";
 
 export type Surface = "public" | "client" | "ops" | "tech";
 
@@ -92,15 +93,6 @@ export function documentedPath(surface: Surface, method: string, pathname: strin
     .sort((a, b) => placeholders(a) - placeholders(b));
   return fits[0] ?? null;
 }
-
-/**
- * What every /api/* route can answer besides its own documented replies (src/app.ts): the error handler's 500, and
- * the database check's 503, which runs before any route.
- */
-const ANY_ROUTE: Readonly<Record<number, readonly string[]>> = {
-  500: ["internal_error"],
-  503: ["unavailable", "environment_mismatch"],
-};
 
 /** The code of an error body, `{ error: { code } }`, or null for any other body. */
 function errorCode(body: unknown): string | null {
