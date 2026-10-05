@@ -31,6 +31,8 @@
     // Referral cards a client made; a revoke deletes them (docs/decisions/0048-referrals.md).
     { "binding": "REFERRAL_CARDS", "bucket_name": "mm-local-referral-cards" }
   ],
+  // Draws a client's referral card from their photographs (src/providers/cards.ts): free, refused past the plan.
+  "images": { "binding": "IMAGES" },
   "queues": {
     "producers": [
       { "binding": "RENDER_QUEUE", "queue": "mm-render-local" },
@@ -138,6 +140,8 @@
         // Referral cards a client made; a revoke deletes them (docs/decisions/0048-referrals.md).
         { "binding": "REFERRAL_CARDS", "bucket_name": "mm-staging-referral-cards" }
       ],
+      // Draws a client's referral card from their photographs (src/providers/cards.ts): free, refused past the plan.
+      "images": { "binding": "IMAGES" },
       "queues": {
         "producers": [
           { "binding": "RENDER_QUEUE", "queue": "mm-render-staging" },
@@ -238,6 +242,8 @@
         // Referral cards a client made; a revoke deletes them (docs/decisions/0048-referrals.md).
         { "binding": "REFERRAL_CARDS", "bucket_name": "mm-prod-referral-cards" }
       ],
+      // Draws a client's referral card from their photographs (src/providers/cards.ts): free, refused past the plan.
+      "images": { "binding": "IMAGES" },
       "queues": {
         "producers": [
           { "binding": "RENDER_QUEUE", "queue": "mm-render-prod" },

@@ -9,6 +9,7 @@ import { createLogger, type Logger } from "./log.ts";
 import { createAlert, createLeadNotice, type Alert, type LeadNotice } from "./providers/alerts.ts";
 import { createBooksProvider, type BooksProvider } from "./providers/books/index.ts";
 import { createCodeSender, type CodeSender } from "./providers/codes.ts";
+import { createCardComposer, type CardComposer } from "./providers/cards.ts";
 import { createCrmProvider, type CrmProvider } from "./providers/crm/index.ts";
 import { createImageProvider, type ImageProvider } from "./providers/image/index.ts";
 import { createMessagingProvider, type MessagingProvider } from "./providers/messaging/index.ts";
@@ -39,6 +40,8 @@ export interface Dependencies {
   readonly payments: PaymentsProvider;
   /** The address search, and the coordinate the geofence measures against. */
   readonly geocode: GeocodeProvider;
+  /** Draws a client's referral card from their first fit's photographs. */
+  readonly cards: CardComposer;
 }
 
 /**
@@ -92,6 +95,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
     const payments = lazily(() =>
       createPaymentsProvider(providers.PAYMENTS_PROVIDER, settings.razorpay, { fetch: httpFetch, log }),
     );
+    const cards = lazily(() => createCardComposer(env.IMAGES));
     const geocode = lazily(() =>
       createGeocodeProvider(providers.GEOCODE_PROVIDER, settings.geocode.apiKey, { fetch: httpFetch, log }),
     );
@@ -131,6 +135,9 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       },
       get geocode() {
         return geocode();
+      },
+      get cards() {
+        return cards();
       },
     };
   };

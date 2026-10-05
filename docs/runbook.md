@@ -98,6 +98,8 @@ done
 
 Phase 2's two buckets get no rule: a client's photograph is deleted only on purpose, and a referral card when its referrer or a revoke takes it down.
 
+A client's referral card is drawn by Cloudflare Images, through the Worker's `IMAGES` binding (`wrangler.jsonc`), which needs nothing set up. The free plan allows 5,000 transformations a month and refuses work past them, with no bill; a card takes a few. A refusal shows in Workers Logs as `card_not_made`, and the app sends the house card instead.
+
 ```sh
 W r2 bucket create mm-<t>-client-photos --location apac
 W r2 bucket create mm-<t>-referral-cards --location apac

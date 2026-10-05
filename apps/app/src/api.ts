@@ -111,7 +111,7 @@ export function onSessionEnded(listener: () => void): () => void {
  */
 const PATIENCE_MS = { read: 15_000, write: 20_000 } as const;
 
-/** The referral card, the largest thing the app sends. */
+/** The referral card, which the API draws from two photographs while the app waits. */
 const CARD_PATIENCE_MS = 60_000;
 
 const client = createClient<paths, ErrorCode>({
@@ -194,11 +194,9 @@ export const api = {
 export const documentUrl = (id: string) => `/api/documents/${id}`;
 export const receiptUrl = (paymentId: string) => `/api/payments/${paymentId}/receipt`;
 
-/** The client's own referral card, as the phone composed it: a JPEG, not JSON, so it goes as it is. */
-export const putCard = (card: Blob) =>
-  client.request<Success<OperationAt<paths, "/api/refer/card", "put">>>("PUT", "/api/refer/card", {
-    body: card,
-    headers: { "Content-Type": "image/jpeg" },
+/** Asks the API to make the client's own referral card from their first fit's photographs, which takes a moment. */
+export const makeCard = () =>
+  client.request<Success<OperationAt<paths, "/api/refer/card", "post">>>("POST", "/api/refer/card", {
     patience: CARD_PATIENCE_MS,
   });
 

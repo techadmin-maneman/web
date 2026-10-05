@@ -3,13 +3,14 @@
 // fitted, never opens, consultations or pending referrals.
 //
 //   GET    /api/refer
-//   PUT    /api/refer/card    the client's card: a 1200 x 630 JPEG under 300 KB, with their consent to cards
+//   POST   /api/refer/card    the client's card, made from their first fit's photographs, with their consent
 //   GET    /api/refer/card    the same card while it is live, for the app to show and to share as a photograph
 //   DELETE /api/refer/card    the revoke: new opens show the house card
 //
 // Refer is a fitted client's (ADR 0048; ADR 0083, withdrawn): the invite says "Had my hair system fitted", and a lead
 // could otherwise invite their own first number from a second. So every route but the revoke answers 403 not_fitted
 // before a first fit, as the app's tab shows its empty state; and a card of their own waits for that fit's photographs.
+// The API makes the card itself: nothing the client sends becomes one.
 
 import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
@@ -17,13 +18,13 @@ import type { App } from "../../http/context.ts";
 import { PUBLIC_ORIGIN } from "../../config/environments.ts";
 import { isFitted } from "../../domain/client-visits.ts";
 import { spendableCredits, type Balance } from "../../domain/credits.ts";
-import { liveCard, MAX_CARD_BYTES, revokeCard, storeCard } from "../../domain/referral-cards.ts";
+import { liveCard, makeCard, revokeCard } from "../../domain/referral-cards.ts";
 import { inviteOf, referralCodeOf } from "../../domain/referrals.ts";
 import { clientOf } from "../../http/client-session.ts";
-import { cappedBody } from "../../http/capped-body.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";
+import { failureReason } from "../../log.ts";
 
 export const CreditsSchema = z
   .object({
@@ -142,18 +143,18 @@ const referRoute = clientRoute({
 });
 
 const cardRoute = clientRoute({
-  method: "put",
+  method: "post",
   path: "/api/refer/card",
-  summary: "Upload the client's referral card: the body is the JPEG itself",
+  summary: "Make the client's referral card from their first fit's front photographs, before and after",
   responses: {
     200: {
-      description: "Stored as the card's next version",
+      description: "Made, and stored as the card's next version",
       content: { "application/json": { schema: z.object({ version: z.number().int() }).strict() } },
     },
     401: errorResponse("session_required"),
-    403: errorResponse(`${NOT_FITTED}, or no photograph of their first fit is stored`),
+    403: errorResponse(`${NOT_FITTED}, or no front photograph of their first fit, before and after, is stored`),
     409: errorResponse("consent_required: the client has not agreed to photographs on referral cards"),
-    422: errorResponse("photo_invalid_file: not a 1200 x 630 JPEG under 300 KB"),
+    503: errorResponse("unavailable: the card could not be made just now"),
   },
 });
 
@@ -194,16 +195,20 @@ export function registerClientRefer(app: App): void {
     const db = c.env.DB;
     const now = c.var.deps.now();
     if (!(await isFitted(db, session.subjectId))) return refuse(c, "not_fitted");
-    const bytes = await cappedBody(c.req.raw, MAX_CARD_BYTES);
-    if (bytes === null) return refuse(c, "photo_invalid_file");
     const code = await codeOf(db, session.subjectId, now);
-    const stored = await storeCard(db, c.env.REFERRAL_CARDS, { personId: session.subjectId, code, bytes, now });
-    if ("problem" in stored) {
-      if (stored.problem === "no_consent") return refuse(c, "consent_required");
-      if (stored.problem === "not_photographed") return refuse(c, "not_fitted");
-      return refuse(c, "photo_invalid_file");
+    const stores = { photos: c.env.CLIENT_PHOTOS, cards: c.env.REFERRAL_CARDS };
+    const made = await makeCard(db, stores, c.var.deps.cards, { personId: session.subjectId, code, now }).catch(
+      (error: unknown) => {
+        c.var.log.warn("card_not_made", { reason: failureReason(error) });
+        return { problem: "not_made" } as const;
+      },
+    );
+    if ("problem" in made) {
+      if (made.problem === "no_consent") return refuse(c, "consent_required");
+      if (made.problem === "not_photographed") return refuse(c, "not_fitted");
+      return refuse(c, "unavailable");
     }
-    return c.json({ version: stored.version }, 200);
+    return c.json({ version: made.version }, 200);
   });
 
   registerLiveCard(app);

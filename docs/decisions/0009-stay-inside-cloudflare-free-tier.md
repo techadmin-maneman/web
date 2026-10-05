@@ -9,23 +9,24 @@ The owner requires that Cloudflare's free limits are never exceeded and that the
 
 On 21 September 2026 the account (`a2e185075b1b8eef3bee24b72f45ace3`) was confirmed to be on the **Workers Free** plan: Cloudflare rejected an upload that set a CPU limit, "CPU limits are not supported for the Free plan" (code 100328). Cloudflare's pricing pages state what happens at each limit:
 
-| Product                   | Free allowance                                                                     | Past the allowance                                             |
-| ------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Workers requests          | 100,000 a day                                                                      | requests fail                                                  |
-| Workers CPU               | 10 ms per invocation                                                               | the invocation fails                                           |
-| Workers Logs              | 200,000 events a day, 3-day retention                                              | events are dropped                                             |
-| D1                        | 5M rows read and 100,000 written a day; 500 MB a database, 5 GB across the account | queries fail until 00:00 UTC; past the size, every write fails |
-| Queues                    | 10,000 operations a day; 24-hour retention                                         | operations fail                                                |
-| Static assets (mm-site)   | unlimited                                                                          | not applicable                                                 |
-| **R2 (Standard storage)** | **10 GB-month; 1M Class A and 10M Class B operations a month**                     | **billed; there is no spending cap**                           |
-| Access (Zero Trust)       | 50 users                                                                           | more seats are paid                                            |
+| Product                   | Free allowance                                                                     | Past the allowance                                                |
+| ------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Workers requests          | 100,000 a day                                                                      | requests fail                                                     |
+| Workers CPU               | 10 ms per invocation                                                               | the invocation fails                                              |
+| Workers Logs              | 200,000 events a day, 3-day retention                                              | events are dropped                                                |
+| D1                        | 5M rows read and 100,000 written a day; 500 MB a database, 5 GB across the account | queries fail until 00:00 UTC; past the size, every write fails    |
+| Queues                    | 10,000 operations a day; 24-hour retention                                         | operations fail                                                   |
+| Images (the binding)      | 5,000 unique transformations a month                                               | new transformations fail with 9422; never billed on the Free plan |
+| Static assets (mm-site)   | unlimited                                                                          | not applicable                                                    |
+| **R2 (Standard storage)** | **10 GB-month; 1M Class A and 10M Class B operations a month**                     | **billed; there is no spending cap**                              |
+| Access (Zero Trust)       | 50 users                                                                           | more seats are paid                                               |
 
 On Workers Free every product except R2 fails closed, which is an outage rather than a charge. R2 charges the card, and the only way to stop that is not to use it past the allowance.
 
 ## Decision
 
 1. **The account stays on Workers Free.** Upgrading to Workers Paid turns every "fails" row above into a bill. It needs a new ADR and the owner's sign-off.
-2. **Only free-tier bindings.** `npm run check:config` allows mm-api exactly these binding kinds: vars, D1, R2, Queues and version metadata. Any other kind (Workers AI, Browser Rendering, Images, Vectorize, Hyperdrive, Analytics Engine, Durable Objects and so on) fails the build until this ADR is revised. A `limits` block fails too, since it is Paid-only. mm-site binds only its assets and mm-api (docs/decisions/0027-referral-landing.md).
+2. **Only free-tier bindings.** `npm run check:config` allows mm-api exactly these binding kinds: vars, D1, R2, Queues, Images and version metadata. Images joined on 5 October 2026, to draw a client's referral card (ADR 0048): on the Free plan it refuses work past its allowance and is never billed, which holds while the account has no paid Images subscription (dashboard, Images). Any other kind (Workers AI, Browser Rendering, Vectorize, Hyperdrive, Analytics Engine, Durable Objects and so on) fails the build until this ADR is revised. A `limits` block fails too, since it is Paid-only. mm-site binds only its assets and mm-api (docs/decisions/0027-referral-landing.md).
 3. **R2 has an application-level hard cap (M3, before R2 is first used):**
    - Global daily ceilings on upload URLs, renders and result reads, kept in D1 counters. On breach the API answers `503 busy`, the same as the render ceiling.
    - Worst-case monthly usage from those ceilings (operations, and storage from ceiling × maximum object size × retention) must stay under 80% of each R2 allowance. A test proves this from the configured numbers, so a ceiling cannot be raised past the free tier without the build failing.

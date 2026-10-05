@@ -1,16 +1,17 @@
 // A client's referral card (design/phase2/Referral and Waitlist, A1 and A2; docs/decisions/0048-referrals.md): a
-// 1200 x 630 JPEG the app composes on the phone from their first fit's before and after photographs, with no
-// name and no words on it. It needs their consent to photographs on referral cards, and a completed first fit with
-// photographs of it stored, which is all a card can be made from. Each upload or revoke is a new version, since
-// WhatsApp caches a link's preview by its URL: a revoke only reaches new shares.
+// 1200 x 630 JPEG the API makes from their first fit's front photographs, before and after, with no name and no
+// words on it (src/providers/cards.ts). Nothing the client sends becomes a card. It needs their consent to
+// photographs on referral cards. Each new card or revoke is a new version, since WhatsApp caches a link's preview by
+// its URL: a revoke only reaches new shares.
 
 import { CARD_HEIGHT, CARD_WIDTH } from "../config/referral-cards.ts";
 import { inspectImage } from "../lib/image-bytes.ts";
+import type { CardComposer } from "../providers/cards.ts";
 import { consentGiven } from "./consents.ts";
 import { deleteCounted, putCounted } from "./storage-meter.ts";
 
 /** WhatsApp's preview wants an image under 300 KB. */
-export const MAX_CARD_BYTES = 300 * 1024;
+const MAX_CARD_BYTES = 300 * 1024;
 
 const cardKey = (code: string, version: number) => `cards/${code}/v${String(version)}.jpg`;
 
@@ -18,38 +19,57 @@ const cardKey = (code: string, version: number) => `cards/${code}/v${String(vers
 const cardConsent = (db: D1Database, personId: string): Promise<boolean> =>
   consentGiven(db, personId, "photos_referral_cards");
 
-type Stored = { readonly version: number } | { readonly problem: "no_consent" | "not_photographed" | "not_a_card" };
+type Made = { readonly version: number } | { readonly problem: "no_consent" | "not_photographed" | "not_made" };
 
-/** Whether the person's first fit is done and photographed: what their card is made from (ADR 0048). */
-async function firstFitPhotographed(db: D1Database, personId: string): Promise<boolean> {
-  const row = await db
+/** The R2 keys of the front photographs before and after the client's latest completed first fit; null without both. */
+async function firstFitFronts(db: D1Database, personId: string): Promise<{ before: string; after: string } | null> {
+  const { results } = await db
     .prepare(
-      `SELECT 1 AS found FROM appointments a
-       JOIN photo_sets s ON s.appointment_id = a.id JOIN photos p ON p.photo_set_id = s.id
-       WHERE a.person_id = ?1 AND a.type = 'first_fit' AND a.status = 'completed' AND a.deleted_at IS NULL LIMIT 1`,
+      `SELECT s.phase, p.r2_key FROM appointments a
+       JOIN photo_sets s ON s.appointment_id = a.id JOIN photos p ON p.photo_set_id = s.id AND p.angle = 'front'
+       WHERE a.person_id = ?1 AND a.type = 'first_fit' AND a.status = 'completed' AND a.deleted_at IS NULL
+       ORDER BY a.window_start DESC`,
     )
     .bind(personId)
-    .first();
-  return row !== null;
+    .all<{ phase: "before" | "after"; r2_key: string }>();
+  const before = results.find((row) => row.phase === "before")?.r2_key;
+  const after = results.find((row) => row.phase === "after")?.r2_key;
+  return before === undefined || after === undefined ? null : { before, after };
 }
 
-/** Stores the client's card as their code's next version. */
-export async function storeCard(
+interface CardStores {
+  /** Where the client's photographs are. */
+  readonly photos: R2Bucket;
+  /** Where their cards are kept. */
+  readonly cards: R2Bucket;
+}
+
+/** Makes the client's card from their first fit's photographs, and stores it as their code's next version. */
+export async function makeCard(
+  db: D1Database,
+  stores: CardStores,
+  composer: CardComposer,
+  input: { personId: string; code: string; now: Date },
+): Promise<Made> {
+  if (!(await cardConsent(db, input.personId))) return { problem: "no_consent" };
+  const fronts = await firstFitFronts(db, input.personId);
+  if (fronts === null) return { problem: "not_photographed" };
+  const [before, after] = await Promise.all([stores.photos.get(fronts.before), stores.photos.get(fronts.after)]);
+  if (before === null || after === null) return { problem: "not_photographed" };
+  const bytes = await composer.compose({ before: await before.bytes(), after: await after.bytes() });
+  const info = inspectImage(bytes);
+  if (info?.width !== CARD_WIDTH || info.height !== CARD_HEIGHT || bytes.byteLength > MAX_CARD_BYTES) {
+    return { problem: "not_made" };
+  }
+  return { version: await storeVersion(db, stores.cards, { ...input, bytes }) };
+}
+
+/** Stores the card as the code's next version, and deletes the one it replaces. */
+async function storeVersion(
   db: D1Database,
   bucket: R2Bucket,
   input: { personId: string; code: string; bytes: Uint8Array; now: Date },
-): Promise<Stored> {
-  if (!(await cardConsent(db, input.personId))) return { problem: "no_consent" };
-  if (!(await firstFitPhotographed(db, input.personId))) return { problem: "not_photographed" };
-  const info = inspectImage(input.bytes);
-  if (
-    info?.type !== "image/jpeg" ||
-    info.width !== CARD_WIDTH ||
-    info.height !== CARD_HEIGHT ||
-    input.bytes.byteLength > MAX_CARD_BYTES
-  ) {
-    return { problem: "not_a_card" };
-  }
+): Promise<number> {
   const row = await db
     .prepare("SELECT card_version, card_key FROM referral_codes WHERE code = ?1 AND person_id = ?2")
     .bind(input.code, input.personId)
@@ -66,7 +86,7 @@ export async function storeCard(
     .bind(input.code, version, key, input.now.toISOString())
     .run();
   if (row.card_key !== null) await deleteCounted(db, bucket, [row.card_key]);
-  return { version };
+  return version;
 }
 
 /** Takes the client's card down: the house card shows on new opens, under a new version. */

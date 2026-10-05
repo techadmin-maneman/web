@@ -102,12 +102,11 @@ describe("referral codes", () => {
     for (const [method, path] of [
       ["GET", "/api/refer"],
       ["GET", "/api/refer/card"],
-      ["PUT", "/api/refer/card"],
+      ["POST", "/api/refer/card"],
     ] as const) {
       const answer = await request(client(), path, {
         method,
         headers: { Cookie: cookie, Origin: "https://maneman.test" },
-        ...(method === "PUT" ? { body: new Uint8Array(10) } : {}),
       });
       expect(answer.status).toBe(403);
       expect(await answer.json()).toMatchObject({ error: { code: "not_fitted" } });
