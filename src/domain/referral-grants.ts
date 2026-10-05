@@ -23,6 +23,7 @@ import { auditStatementIfStamped, type AuditEntry } from "./audit.ts";
 import { clawBack } from "./credits.ts";
 import type { MessageKind } from "../config/message-kinds.ts";
 import { firstNameOf } from "../lib/names.ts";
+import { PAYMENT_HELD, statusIn } from "../config/statuses.ts";
 
 /** "Karan Bhatia" → "Karan": all the messages and the tracker name a person by. */
 
@@ -221,7 +222,7 @@ function grantStatements(
 
 /** A first fit that counts: any but a one visit, and a one visit once it is paid or owes nothing. */
 const PAID = `(a.one_visit IS NULL OR a.nothing_owed_at IS NOT NULL OR EXISTS (SELECT 1 FROM payments p
-      WHERE p.appointment_id = a.id AND p.kind = 'visit' AND p.status IN ('captured', 'partially_refunded')))`;
+      WHERE p.appointment_id = a.id AND p.kind = 'visit' AND ${statusIn("p.status", PAYMENT_HELD)}))`;
 
 // Each referral with its friend's first fit done.
 // CROSS JOIN keeps the referrals as the outer loop. Left to itself, SQLite walks every visit ever made to

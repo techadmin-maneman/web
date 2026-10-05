@@ -6,6 +6,7 @@
 import { creditExpiry } from "../policy/referral-reward.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { paidNotBooked } from "./hold-stages.ts";
+import { creditSpentOn } from "./visit-facts.ts";
 
 type CreditSource = "referral" | "appointment" | "ops" | "import";
 
@@ -172,10 +173,10 @@ export function redeemCreditForBooking(
 /** Whether a credit was redeemed for the visit. */
 export async function creditRedeemedFor(db: D1Database, appointmentId: string): Promise<boolean> {
   const redeem = await db
-    .prepare("SELECT 1 FROM credit_ledger WHERE source_id = ?1 AND kind = 'redeem'")
+    .prepare(`SELECT ${creditSpentOn("?1")} AS spent`)
     .bind(appointmentId)
-    .first();
-  return redeem !== null;
+    .first<{ spent: number }>();
+  return redeem?.spent === 1;
 }
 
 /** Why ops put a balance right by hand: a credit given or taken in error, or visits given to make up for something. */

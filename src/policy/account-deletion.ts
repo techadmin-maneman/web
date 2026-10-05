@@ -3,6 +3,8 @@
 // (src/domain/deletion.ts); the erasure that follows, which deletes the photographs at once and blanks the person
 // while the invoices stay in Books, is src/domain/erasure.ts.
 
+import { VISIT_LIVE } from "../config/statuses.ts";
+
 /** A request to delete an account is decided within this many days of it (docs/decisions/0049-dpdp.md). */
 export const DELETION_DECIDED_WITHIN_DAYS = 7;
 
@@ -15,7 +17,7 @@ export const DELETION_DECIDED_WITHIN_DAYS = 7;
  * Erasing then would send a technician to nobody, keep money owed back, or leave
  * Razorpay asking an erased client to pay. Ops settle each first.
  */
-export const LIVE_VISIT_STATUSES = ["scheduled", "dispatched", "in_progress"] as const;
+export const LIVE_VISIT_STATUSES = VISIT_LIVE;
 
 export type ErasureRefusal = "visit_booked" | "payment_held" | "payment_owed";
 

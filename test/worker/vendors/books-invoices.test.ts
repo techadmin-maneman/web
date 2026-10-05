@@ -12,6 +12,7 @@ import { createLogger } from "../../../src/log.ts";
 import { type BooksInvoice, type BooksProvider } from "../../../src/providers/books/index.ts";
 import { createStubBooks, type StubBooks } from "../../../src/providers/books/stub.ts";
 import { ZohoError } from "../../../src/providers/zoho-http.ts";
+import { IMRAN, technician } from "../clients.ts";
 import { captureLogs, NOW } from "../helpers.ts";
 import { RECHECK_AFTER_MS } from "../../../src/domain/vendor-pass.ts";
 
@@ -397,6 +398,25 @@ describe("sending it", () => {
     await invoicePass(books, later(RECHECK_AFTER_MS + 1000));
     expect(books.made.issued).toEqual([]);
     expect(books.made.invoices).toHaveLength(1);
+    expect(alerted).toHaveLength(1);
+  });
+
+  it("never sends the invoice of a visit booked on a credit the client no longer had, until ops decide", async () => {
+    await visit();
+    await technician();
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
+         gst_percent, state, appointment_id, use_credit, expires_at, created_at, updated_at, confirmed_at)
+       VALUES ('hold-1', ?1, 'service', '2026-09-23', 'morning', ?4, 0, 0, 0, 0, 'booked', ?2, 1, ?3, ?3, ?3, ?3)`,
+    )
+      .bind(PERSON, VISIT, NOW.toISOString(), IMRAN)
+      .run();
+    const books = createStubBooks();
+
+    expect(await invoicePass(books)).toEqual({ raised: 1, issued: 0 });
+    expect(alerted[0]).toContain("booked on a referral credit the client no longer had");
+    await invoicePass(books, later(RECHECK_AFTER_MS + 1000));
+    expect(books.made.issued).toEqual([]);
     expect(alerted).toHaveLength(1);
   });
 
