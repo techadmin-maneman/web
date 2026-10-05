@@ -1,4 +1,4 @@
-// Discount codes (src/policy/discount-codes.ts), each rule named by the owner's rulings of 1 October 2026.
+// Discount codes (src/policy/discount-codes.ts), as the owner ruled on 1 October 2026.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -10,7 +10,6 @@ import {
   discounted,
   isCodeText,
   normalisedCode,
-  RULES,
   termsRefusal,
   type CodeState,
 } from "../../../src/policy/discount-codes.ts";
@@ -32,7 +31,7 @@ const FIRST_FIT = { type: "first_fit", onCredit: false, moves: false } as const;
 const TODAY = "2026-10-01";
 
 describe("discount codes", () => {
-  it(RULES[0], () => {
+  it("takes a percentage, capped or not, or a rupee amount off before GST", () => {
     // 10% of Rs. 30,000 before GST, and GST on what is left.
     const price = { amount_ex_gst: 3_000_000, amount: 3_540_000, gst_percent: 18 };
     const tenPercent = { kind: "percent", value: 10, cap: null } as const;
@@ -75,7 +74,7 @@ describe("discount codes", () => {
     expect(termsRefusal({ kind: "amount", value: 150_000, cap: 50_000 })).toBe("cap");
   });
 
-  it(RULES[1], () => {
+  it("covers the kinds of visit ops choose: first fit, service or replacement", () => {
     expect(COVERABLE).toEqual(["first_fit", "service", "replacement"]);
     const servicesOnly = { ...OPEN, covers: ["service"] as const };
     expect(codeRefusal(servicesOnly, { ...FIRST_FIT, type: "service" }, TODAY)).toBeNull();
@@ -86,7 +85,7 @@ describe("discount codes", () => {
     expect(codeRefusal(OPEN, { ...FIRST_FIT, type: "consultation" }, TODAY)).toBe("not_covered");
   });
 
-  it(RULES[2], () => {
+  it("keeps a code in capitals with no spaces, made of letters no one misreads", () => {
     // Whoever enters it, a code is the same code: matched whatever its case, and with no spaces around it.
     expect(normalisedCode("  wedding25 ")).toBe("WEDDING25");
     // A generated code's letters and digits are those no one misreads: no I, L, O, 0 or 1.
@@ -99,7 +98,7 @@ describe("discount codes", () => {
     expect(isCodeText("A".repeat(17))).toBe(false);
   });
 
-  it(RULES[3], () => {
+  it("refuses a code expired, used up, used once by the client, on a credit visit or switched off", () => {
     // An expiry date: the code may be entered all of its last day in India, and not the day after.
     expect(codeRefusal({ ...OPEN, expiresOn: TODAY }, FIRST_FIT, TODAY)).toBeNull();
     expect(codeRefusal({ ...OPEN, expiresOn: "2026-09-30" }, FIRST_FIT, TODAY)).toBe("expired");
@@ -116,7 +115,7 @@ describe("discount codes", () => {
     expect(codeRefusal({ ...OPEN, switchedOff: true }, FIRST_FIT, TODAY)).toBe("switched_off");
   });
 
-  it(RULES[4], () => {
+  it("spends a credit that would pay before any code", () => {
     // A credit pays a service visit, so a client holding one spends it before any code.
     expect(creditComesFirst("service", 1)).toBe(true);
     expect(creditComesFirst("service", 0)).toBe(false);

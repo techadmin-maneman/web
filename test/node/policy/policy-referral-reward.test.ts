@@ -1,19 +1,13 @@
-// What a referral earns, each rule named by the prompt's own words, or the owner's (src/policy/referral-reward.ts).
+// What a referral earns (src/policy/referral-reward.ts).
 
 import { describe, expect, it } from "vitest";
 import { checkValue, settingNamed } from "../../../src/policy/ops-settings.ts";
 import { COMMITTED } from "../../../src/domain/ops-settings.ts";
 import { indiaDate } from "../../../src/lib/india-time.ts";
-import {
-  CREDIT_TTL_DAYS,
-  creditExpiry,
-  REFERRAL_REWARD,
-  RULES,
-  takesCredit,
-} from "../../../src/policy/referral-reward.ts";
+import { CREDIT_TTL_DAYS, creditExpiry, REFERRAL_REWARD, takesCredit } from "../../../src/policy/referral-reward.ts";
 
 describe("referral credits", () => {
-  it(`${RULES[0]} ${RULES[1]}`, () => {
+  it("pays a service visit with a credit, and nothing else", () => {
     // A service visit, new or booked in place of one moved inside 24 hours, is paid with a credit.
     expect(takesCredit("service", null)).toBe(true);
     expect(takesCredit("service", "replace")).toBe(true);
@@ -25,7 +19,7 @@ describe("referral credits", () => {
     }
   });
 
-  it(RULES[2], () => {
+  it("keeps a credit 365 days, to the end of its last day in India", () => {
     expect(CREDIT_TTL_DAYS).toBe(365);
     // Granted at 11:30 pm in India on 21 September 2026: good for all of 21 September 2027 in India.
     const granted = new Date("2026-09-21T18:00:00Z");
@@ -36,7 +30,7 @@ describe("referral credits", () => {
     expect(creditExpiry(new Date("2026-09-21T03:30:00Z")).toISOString()).toBe("2027-09-21T18:29:59.999Z");
   });
 
-  it(RULES[3], () => {
+  it("lets ops set each side's visits and the credits' life apart, starting from 3, 3 and 365", () => {
     // Until ops set them, each side gets the prompt's 3 and the credits last its 365 days.
     expect(REFERRAL_REWARD).toEqual({ referrer_visits: 3, friend_visits: 3, valid_days: 365 });
     expect(COMMITTED.referralReward).toEqual(REFERRAL_REWARD);

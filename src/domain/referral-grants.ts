@@ -155,8 +155,8 @@ function referralCredits(
 
 /**
  * The credits each side gets under `reward`, and the message to each; the attribution's new state, and the reward it
- * was given under, go with them. The friend is told their credits have landed, as the referrer is told of the fit
- * (LIFE-10). A side the reward gives nothing gets no credits; the friend is then told nothing, and the referrer is
+ * was given under, go with them. The friend is told their credits have landed, as the referrer is told of the fit.
+ * A side the reward gives nothing gets no credits; the friend is then told nothing, and the referrer is
  * still told of the fit.
  */
 function grantStatements(

@@ -1,8 +1,7 @@
-// The no-show wait, each rule named by the prompt's own words (src/policy/no-show.ts).
+// The no-show: the wait, what a charge costs, and its dispute (src/policy/no-show.ts).
 
 import { describe, expect, it } from "vitest";
 import {
-  BOOKED_START_RULE,
   canCloseAsNoShow,
   chargedCredit,
   chargedRefund,
@@ -12,8 +11,6 @@ import {
   NO_SHOW_DECISIONS,
   NO_SHOW_WAIT_MIN,
   noShowWaitEnds,
-  RULES,
-  SERVER_CLOCK_RULE,
   WAIVER_GIVES_BACK,
   waitEndsAt,
   waitStartsAt,
@@ -30,17 +27,17 @@ const minutesLater = (minutes: number) => new Date(CHECKED_IN.getTime() + minute
 const ONLINE = { at: CHECKED_IN, receivedAt: CHECKED_IN };
 
 describe("no-show", () => {
-  it(RULES[0], () => {
+  it("starts the wait at check-in, and runs it 15 minutes", () => {
     expect(NO_SHOW_WAIT_MIN.service).toBe(15);
     expect(waitEndsAt(CHECKED_IN, "service")).toEqual(minutesLater(15));
   });
 
-  it(RULES[1], () => {
+  it("closes no job as a no-show before the wait ends", () => {
     expect(canCloseAsNoShow(ONLINE, VISIT_START, "service", minutesLater(14))).toBe(false);
     expect(canCloseAsNoShow(ONLINE, VISIT_START, "service", minutesLater(15))).toBe(true);
   });
 
-  it(SERVER_CLOCK_RULE, () => {
+  it("runs the wait on the server's clock too, whatever time the phone gave the check-in", () => {
     // The phone says 10:00 and the server heard at 10:20: a back-dated check-in, or a basement.
     const heardLate = { at: CHECKED_IN, receivedAt: minutesLater(20) };
     expect(canCloseAsNoShow(heardLate, VISIT_START, "service", minutesLater(34))).toBe(false);
@@ -48,7 +45,7 @@ describe("no-show", () => {
     expect(noShowWaitEnds(heardLate, VISIT_START, "service")).toEqual(minutesLater(35));
   });
 
-  it(BOOKED_START_RULE, () => {
+  it("waits from the booked start for a technician who checked in early", () => {
     // Checked in at 09:10 for the 10:00 visit: the client's fifteen minutes run from 10:00.
     const early = { at: minutesLater(-50), receivedAt: minutesLater(-50) };
     expect(waitStartsAt(early.at, VISIT_START)).toEqual(VISIT_START);
@@ -73,14 +70,11 @@ describe("no-show", () => {
     expect(noShowWaitEnds(checkIn, fourPm, "service", fiveMinutes)).toEqual(new Date("2026-09-21T10:35:00Z"));
   });
 
-  it(RULES[4], () => {
-    // The wait is per visit type, so a first fit can be given its own without
-    // touching this rule. The owner ruled 15 minutes for every type on
-    // 24 September 2026, a first fit included.
+  it("keeps a wait for each kind of visit, 15 minutes for every one, so one can differ", () => {
     for (const type of VISIT_TYPES) expect(NO_SHOW_WAIT_MIN[type]).toBe(15);
   });
 
-  it(RULES[3], () => {
+  it("opens a case undecided, on the check-in, the distance and the message delivered", () => {
     // The three facts, and nothing that decides anything: a case opens undecided.
     const evidence: Evidence = { checkedInAt: CHECKED_IN.toISOString(), distanceM: 42, messageDeliveredAt: null };
     expect(Object.keys(evidence)).toEqual(["checkedInAt", "distanceM", "messageDeliveredAt"]);
@@ -88,15 +82,11 @@ describe("no-show", () => {
     expect([...NO_SHOW_DECISIONS]).toEqual(["undecided", "charged", "waived"]);
   });
 
-  // The rule says what a charge keeps and nothing of what a waiver gives back, which the owner ruled
-  // on 27 September 2026: "Refund and credit back" (docs/archive/owner-answers-2026-09-27.md).
-  it("gives back the payment and the credit on a waiver, as the owner ruled", () => {
+  it("gives back the payment and the credit on a waiver", () => {
     expect(WAIVER_GIVES_BACK).toEqual({ payment: "refunded", credit: "returned" });
   });
 
-  // Item 60 of docs/open-points.md: a no-show costs, to begin with, what a late cancellation of the same visit costs,
-  // set apart from it so either can change alone.
-  it(RULES[5], () => {
+  it("charges what a late cancellation of the same visit costs, to begin with", () => {
     expect(NO_SHOW_CHARGES).toEqual(LATE_CHANGE_CHARGES);
     expect(NO_SHOW_CHARGES).not.toBe(LATE_CHANGE_CHARGES);
     // "first fit ₹4,000, replacement ₹3,000, a paid service visit kept, a credit lost"
@@ -113,7 +103,7 @@ describe("no-show", () => {
     expect(chargedRefund("first_fit", "visit")).toBe("none");
   });
 
-  it(RULES[6], () => {
+  it("lets the client dispute a charge, and ops refund or uphold it, with a reason", () => {
     expect([...DISPUTE_RULINGS]).toEqual(["refunded", "upheld"]);
     expect(isDisputable({ kept: 400000, creditSpent: false })).toBe(true);
     expect(isDisputable({ kept: 0, creditSpent: true })).toBe(true);

@@ -1,5 +1,5 @@
-// A client's dispute of a no-show's charge, and ops' ruling on it (src/policy/no-show.ts, RULES[6];
-// docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+// A client's dispute of a no-show's charge, and ops' ruling on it
+// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 //
 // "The client disputes a charge in the app, and ops rule Refund or Uphold in the console with a reason, and the
 // client is told." One dispute a charge, of a charge that took something: money it kept, or the credit it spent.
