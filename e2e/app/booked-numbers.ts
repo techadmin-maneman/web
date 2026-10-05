@@ -1,6 +1,6 @@
 // Numbers that may log in to the client app with a consultation still to be confirmed, as Phase 1's booking form
 // left them: the person, their consent to be contacted, and a lead for a weekday morning in Gurgaon with a day
-// proposed. Home shows it as "Your consultation" (src/routes/client-me.ts). Each test used to make its own through
+// proposed. Home shows it as "Your consultation" (src/routes/client/me.ts). Each test used to make its own through
 // POST /api/lead, which is gone (docs/open-points.md, item 107), and the site's booking form now holds a slot that
 // FSM confirms within seconds, after which Home shows the visit instead.
 //

@@ -131,7 +131,7 @@ test("the code request carries the phone's own ID, and a wrong code is not an er
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
 
   // A number FSM does not list. Nothing is sent at all: with no technician there
-  // is no number to send to (src/routes/tech-auth.ts).
+  // is no number to send to (src/routes/tech/auth.ts).
   const unlisted = page.waitForRequest((request) => request.url().endsWith("/api/tech/auth/otp"));
   await page.getByLabel("Mobile number").fill(fixture.unknownMobile);
   await page.getByRole("button", { name: "Send the code" }).click();
