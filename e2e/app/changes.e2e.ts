@@ -2,9 +2,9 @@
 // against the local mm-api, whose FSM and payments are stubs, with Razorpay faked (e2e/app/checkout-fakes.ts).
 // The consequence shows before the client confirms.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { changingClients } from "./changing.ts";
 import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { continueToPayment } from "./picking.ts";
@@ -18,10 +18,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function scan(page: Page): Promise<void> {
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 }
 
 async function reschedule(page: Page, mobile: string) {

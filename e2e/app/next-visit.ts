@@ -9,6 +9,7 @@
 //
 // e2e/global-setup.ts seeds them once, after the fitted client, whose technician their visits name.
 
+import { indiaDate } from "../../src/lib/india-time.ts";
 import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS } from "../technicians.ts";
 import { wrangler } from "./fitted.ts";
@@ -32,7 +33,7 @@ const HANDOVER = "MM_E2E_NEXT_VISIT";
 const DAY = 24 * 60 * 60 * 1000;
 
 /** India's calendar day `days` from today. */
-const indiaDay = (days: number) => new Date(Date.now() + 330 * 60 * 1000 + days * DAY).toISOString().slice(0, 10);
+const indiaDay = (days: number) => indiaDate(new Date(Date.now() + days * DAY));
 
 /** India's day the app offers the first fit on: tomorrow, as of the moment it is asked. */
 export const firstFitDay = (): string => indiaDay(1);

@@ -8,12 +8,11 @@
 // hard to do by accident: two steps, the consequences written out, and the
 // confirmation not usable until ops say they have checked the request.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { answer, DELETION_REQUESTS, fails, json, TASKS_READ_ON, type Call, type OpsReply } from "./fixtures.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = DELETION_REQUESTS.requests[0];
 const DECISION = `/api/deletion-requests/${FIRST?.id ?? ""}/decision` as const;
 const DECIDE: Call = `POST ${DECISION}`;
@@ -192,10 +191,8 @@ test("says so when the queue cannot be loaded, and loads it on Try again", async
 
 test("meets WCAG 2.2 AA with a queue, and with the confirmation open", async ({ page }) => {
   await open(page);
-  const full = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(full.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await ask(page);
-  const asking = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(asking.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

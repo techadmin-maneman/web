@@ -4,12 +4,10 @@
 // the day the fixture's dates are read against, so "2 days left" and "3 days
 // overdue" mean the same thing on every run.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { answer, empty, fails, json, TASKS, TASKS_READ_ON, type OpsReply } from "./fixtures.ts";
-
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 /** No alert open: "Needs a hand" draws nothing. */
 const NO_ALERTS: OpsReply<"/api/alerts"> = { count: 0, alerts: [] };
@@ -211,8 +209,7 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
     "href",
     "/clients/22000000-0000-4000-8000-000000000013/visits",
   );
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 // Another group the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
@@ -302,8 +299,7 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
     "href",
     "/clients/22000000-0000-4000-8000-000000000020/payments",
   );
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   // A client who lost the SMS is texted the link again from the row.
   await answer(page, { "POST /api/payment-links/{id}/resend": json({ outcome: "resent" }) });
@@ -543,8 +539,7 @@ test("gives a task to another member of staff who has signed in, and says so whe
   const whom = deepak.getByLabel("Assign to · Deepak Rao");
   await expect(whom).toBeFocused();
   await whom.selectOption("anil@maneman.in");
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
   await deepak.getByRole("button", { name: "Assign", exact: true }).click();
   await expect(deepak).toContainText("Anil");
   await expect(deepak.getByRole("button", { name: "Assign… · Deepak Rao" })).toBeFocused();
@@ -603,8 +598,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
   await expect(why).toBeFocused();
   const closeIt = manish.getByRole("button", { name: "Close it" });
   await expect(closeIt).toBeDisabled();
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await why.fill("Moving to Pune; wants no more visits.");
   await closeIt.click();
@@ -683,8 +677,7 @@ test("records a call about a move from its row, and opens each of the board's ta
   await expect(
     row(page, "Kunal Mehta").getByRole("link", { name: "Move it in Dispatch · Kunal Mehta" }),
   ).toHaveAttribute("href", `/dispatch?from=2027-09-30&visit=${ON_LEAVE}`);
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await vikram.getByRole("button", { name: "Told by phone · Vikram Sethi" }).click();
   await expect(list(page).getByRole("listitem")).toHaveCount(1);
@@ -750,8 +743,7 @@ test("heads the board with the alerts that need a hand, and sends a failed messa
   await expect(needsAHand.getByRole("listitem").first()).toContainText("A WhatsApp message did not go");
   await expect(needsAHand.getByRole("listitem").nth(1)).toContainText("3 times since Tue 21 Sep");
   await expect(needsAHand.getByRole("link", { name: "Open · Stock is low" })).toHaveAttribute("href", "/stock");
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await needsAHand.getByRole("button", { name: "Send again · A WhatsApp message did not go" }).click();
   await expect(needsAHand.getByRole("listitem")).toHaveCount(1);
@@ -761,10 +753,8 @@ test("heads the board with the alerts that need a hand, and sends a failed messa
 
 test("meets WCAG 2.2 AA with a list, and with none", async ({ page }) => {
   await open(page);
-  const full = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(full.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await open(page, { overdue: 0, truncated: false, low_stock_places: 0, staff: [], groups: [] });
-  const none = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(none.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

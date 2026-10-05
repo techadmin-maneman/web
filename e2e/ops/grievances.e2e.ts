@@ -4,12 +4,11 @@
 // fixed to the day the fixture's dates are read against, so the days left of
 // the answer time mean the same thing on every run.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { answer, fails, GRIEVANCES, json, TASKS_READ_ON, type Call } from "./fixtures.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = GRIEVANCES.grievances[0];
 const RESOLVE = `/api/grievances/${FIRST?.id ?? ""}/resolve` as const;
 const ANSWER_IT: Call = `POST ${RESOLVE}`;
@@ -117,6 +116,5 @@ test("says so when the queue cannot be loaded, and loads it on Try again", async
 
 test("meets WCAG 2.2 AA with a queue", async ({ page }) => {
   await open(page);
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

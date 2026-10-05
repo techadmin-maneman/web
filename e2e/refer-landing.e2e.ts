@@ -1,3 +1,4 @@
+import { axeViolations } from "./a11y.ts";
 // The referral landing at /r/:code against a mocked API, so every answer it can
 // give is covered (design/phase2/Referral and Waitlist, C1 to C4).
 //
@@ -7,7 +8,6 @@
 // mm-api.
 
 import { HOUSE_CARD } from "../src/config/house-card.ts";
-import AxeBuilder from "@axe-core/playwright";
 import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./booking-area.ts";
 import {
@@ -623,10 +623,7 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   await expect(page.getByRole("group", { name: "Window" }).getByRole("radio")).toHaveCount(2);
   // The invite is this page's offer: no discount code here (docs/decisions/0108-discount-codes.md).
   await expect(page.getByLabel("Discount code (optional)")).toHaveCount(0);
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
