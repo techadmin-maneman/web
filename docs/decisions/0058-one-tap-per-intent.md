@@ -23,10 +23,10 @@ The other three cost work, money or patience and leave nothing false behind: a w
 | Where                                             | Before | After |
 | ------------------------------------------------- | ------ | ----- |
 | `login/CodeScreen.tsx` — Send a new code          | 2      | 1     |
-| `profile/AccountCards.tsx` — Start the change     | 2      | 1     |
-| `profile/AccountCards.tsx` — Check the codes      | 4      | 2     |
+| `profile/NumberChangeCard.tsx` — Start the change | 2      | 1     |
+| `profile/NumberChangeCard.tsx` — Check the codes  | 4      | 2     |
 | `profile/AddressSection.tsx` — Save               | 2      | 1     |
-| `profile/AccountCards.tsx` — Send (grievance)     | 2      | 1     |
+| `profile/DataCard.tsx` — Send (grievance)         | 2      | 1     |
 | `refer/ShareSheet.tsx` — Allow for referral cards | 2      | 1     |
 
 Checking the codes sends one request per number, so one tap is two and two taps are four. Every button was live while its first request was in flight.

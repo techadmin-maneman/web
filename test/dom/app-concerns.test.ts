@@ -5,7 +5,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Profile } from "../../apps/app/src/api.ts";
-import { DataCard } from "../../apps/app/src/profile/AccountCards.tsx";
+import { DataCard } from "../../apps/app/src/profile/DataCard.tsx";
 
 const ANSWERED: Profile["grievances"][number] = {
   id: "6f1c2a4e-8b3d-4f5a-9c7e-1d2b3a4c5e6f",

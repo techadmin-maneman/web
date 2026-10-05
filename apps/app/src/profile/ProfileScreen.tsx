@@ -12,7 +12,10 @@ import { AddressSection } from "./AddressSection.tsx";
 import { Loading } from "../states/Loading.tsx";
 import { ConsentList } from "./ConsentList.tsx";
 import { SessionsCard } from "./SessionsCard.tsx";
-import { DataCard, DeletionCard, NumberChangeCard, SupportCard } from "./AccountCards.tsx";
+import { DataCard } from "./DataCard.tsx";
+import { DeletionCard } from "./DeletionCard.tsx";
+import { NumberChangeCard } from "./NumberChangeCard.tsx";
+import { SupportCard } from "./SupportCard.tsx";
 import styles from "./profile.module.css";
 
 export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
