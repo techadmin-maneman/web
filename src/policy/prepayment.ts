@@ -19,6 +19,11 @@ export type InvoiceHold =
    * (docs/open-points.md, item 14).
    */
   | "paid_with_credit"
+  /**
+   * Booked on a referral credit the client no longer had by then, so nothing paid for it, and ops were told to decide
+   * the charge (src/domain/bookings.ts). The invoice waits on their decision.
+   */
+  | "credit_missing"
   /** The invoice totals something other than what the client was sold the visit for. */
   | "price_differs"
   /** Nothing here says what the visit was sold for, so its total cannot be checked. */
@@ -28,11 +33,14 @@ export interface SoldVisit {
   /** What the client was sold the visit for, in paise with GST; null where nothing here knows. */
   readonly soldFor: number | null;
   readonly paidWithCredit: boolean;
+  /** Booked on a credit, and no credit paid for it. */
+  readonly creditMissing: boolean;
 }
 
 /** Why the invoice may not be issued; null when it may. An issued invoice is undone only by a credit note. */
 export function invoiceHold(invoiceTotal: number, visit: SoldVisit): InvoiceHold | null {
   if (visit.paidWithCredit) return "paid_with_credit";
+  if (visit.creditMissing) return "credit_missing";
   if (visit.soldFor === null) return "price_unknown";
   if (invoiceTotal !== visit.soldFor) return "price_differs";
   return null;

@@ -293,7 +293,7 @@ async function codeOff(
 /**
  * What the client was sold the visit for: what they paid for it, or, for a visit no payment names, the price book's
  * price on the day it happened, less the discount code entered on it. And whether a referral credit paid for it, by
- * the ledger or by the hold that booked it.
+ * the ledger, or the hold that booked it asked for one and the client had none left.
  */
 async function soldVisit(db: D1Database, visit: PricedVisit, off: number): Promise<SoldVisit> {
   const row = await db
@@ -301,15 +301,17 @@ async function soldVisit(db: D1Database, visit: PricedVisit, off: number): Promi
       `SELECT
          (SELECT SUM(amount) FROM payments
            WHERE appointment_id = ?1 AND kind = 'visit' AND ${statusIn("status", PAYMENT_HELD)}) AS paid,
-         ${creditSpentOn("?1")} AS with_credit`,
+         ${creditSpentOn("?1")} AS with_credit,
+         EXISTS (SELECT 1 FROM slot_holds WHERE appointment_id = ?1 AND use_credit = 1) AS on_credit`,
     )
     .bind(visit.id)
-    .first<{ paid: number | null; with_credit: number }>();
+    .first<{ paid: number | null; with_credit: number; on_credit: number }>();
   const paidWithCredit = row?.with_credit === 1;
+  const creditMissing = row?.on_credit === 1 && !paidWithCredit;
   const paid = row?.paid ?? null;
-  if (paid !== null) return { soldFor: paid, paidWithCredit };
+  if (paid !== null) return { soldFor: paid, paidWithCredit, creditMissing };
   const price = await listPrice(db, visit);
-  return { soldFor: price === null ? null : discounted(price, off).amount, paidWithCredit };
+  return { soldFor: price === null ? null : discounted(price, off).amount, paidWithCredit, creditMissing };
 }
 
 /** The price book's price for the visit's own service on the day it happened in India; null where there is none. */
@@ -344,6 +346,9 @@ async function tellHeld(
     paid_with_credit:
       "the visit was paid with a referral credit, and how such a visit is invoiced waits for the accountant. " +
       "Leave the draft until then: nothing here sends it.",
+    credit_missing:
+      "the visit was booked on a referral credit the client no longer had, so nothing paid for it. Once ops decide " +
+      "whether to charge, send or delete the draft in Books: nothing here sends it.",
   };
   await pass.deps.alertOnce({ key: `invoice_draft:${visit.id}`, message: `${held} ${why[hold]}`, link: linkTo(visit) });
 }
