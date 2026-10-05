@@ -23,6 +23,7 @@
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
 
+import { CodeField } from "@maneman/ui/CodeField";
 import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
@@ -73,33 +74,6 @@ function useCountdown(seconds: number, from: unknown): number {
     };
   }, [seconds, from]);
   return left;
-}
-
-/** The code's six boxes, as one labelled field: assistive technology sees a single input. */
-function CodeBoxes({ value, disabled, onChange }: { value: string; disabled: boolean; onChange: (v: string) => void }) {
-  return (
-    <div className={styles.boxes}>
-      <input
-        className={styles.hiddenInput}
-        value={value}
-        disabled={disabled}
-        onChange={(event) => {
-          onChange(event.target.value.replace(/\D/g, "").slice(0, ONE_TIME_CODE.digits));
-        }}
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        maxLength={ONE_TIME_CODE.digits}
-        aria-label={copy.codeLabel}
-      />
-      <div className={styles.boxRow} aria-hidden="true">
-        {Array.from({ length: ONE_TIME_CODE.digits }, (_, index) => (
-          <div key={index} className={styles.box}>
-            {value[index] ?? null}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }) {
@@ -214,7 +188,13 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
 
       <div className={styles.codeBlock}>
         <div className={styles.label}>{copy.codeLabel}</div>
-        <CodeBoxes value={code} disabled={challenge === null} onChange={setCode} />
+        <CodeField
+          className={styles.code}
+          value={code}
+          label={copy.codeLabel}
+          disabled={challenge === null}
+          onChange={setCode}
+        />
       </div>
 
       {challenge !== null && (

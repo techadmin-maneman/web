@@ -11,7 +11,7 @@ import type { LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
 import { BUBBLE } from "../icons.ts";
 import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
-import { CodeField } from "./CodeField.tsx";
+import { CodeField } from "@maneman/ui/CodeField";
 import styles from "./login.module.css";
 import { MessageUs } from "./MessageUs.tsx";
 import { masked } from "./mobile.ts";
@@ -144,9 +144,11 @@ export function CodeScreen(props: Props) {
         <p className={styles.lead}>{sent(masked(props.mobile))}</p>
         <CodeField
           ref={field}
+          className={styles.codeField}
           value={code}
           label={copy.label}
           invalid={message !== null}
+          autoFocus
           onChange={(typed) => {
             setCode(typed);
             setTypedSince(problem);
