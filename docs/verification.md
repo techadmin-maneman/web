@@ -851,6 +851,13 @@ Every read the Books and CRM adapters make, run through the adapters against the
 
 **Owed.** The CRM's scripts' token has only the settings scopes, so the Lead search is not yet read on the org: a new code with `ZohoCRM.modules.leads.READ` and `ZohoSearch.securesearch.READ` added (RB, Zoho, step 7), then the probe again with `--record`, which writes `test/fixtures/vendors/crm/lead-search.json` for the CRM tests to load. Read 2 waits for the first invoice the D1 path raises on staging.
 
+## A receipt's description of supply, 5 October 2026
+
+With the scripts' tokens, on the owner's org.
+
+- **The description of supply.** A Rs 1 payment, "Staging test: advance probe", recorded on the staging test customer with `product_description` "Staging test: Advance for First fit, Sat 10 Oct" was kept as sent, and its receipt printed it under **Description of Supply**. The receipt still printed the amount as **Over payment**, a label of the org's one receipt template, "Elite" (open point 9). The payment was deleted straight after.
+- **The org.** `is_registered_for_gst` is false and it holds no GSTIN; its address reads Delhi with state code MH (open point 3).
+
 ## What the P2-M2 and P2-M5 proofs left in the owner's org
 
 Staging shares the real Zoho org (open point 19), so the records below are real and are the owner's to keep or clear. Every one of them is labelled "Staging test". Nothing was deleted, because two of them are still wanted: **WO13 carries the invoice the owner raised by hand**, INV-000001, which the invoice check still waits on for the reason in open point 114; and the first fit is the visit a move was proven on.
