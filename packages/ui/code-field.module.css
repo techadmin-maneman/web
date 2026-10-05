@@ -1,0 +1,67 @@
+/*
+ * A one-time code's boxes (./CodeField.tsx), board A2's: lines on ink, the next box marked while the field has
+ * focus, the error colour when wrong. The lines are --ink-line-strong, 3:1 against the ink (WCAG 1.4.11), where the
+ * design's --ink-line is 1.75:1 (ADR 0025, item 36). An app sets the boxes' height and gap, and the next box's line,
+ * with --code-box-height, --code-box-gap and --code-box-next on its own class.
+ */
+
+@layer base, ui;
+
+@layer ui {
+  /* The defaults, which an app's own class on the field replaces: it is in no layer, so it wins. */
+  .field {
+    --code-box-height: var(--tap-row);
+    --code-box-gap: var(--sp-9);
+    --code-box-next: var(--gilt);
+
+    position: relative;
+  }
+
+  /* The real field lies over the boxes, unseen, so a tap anywhere on them types into it. */
+  .input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    opacity: 0;
+    font-size: var(--fs-16);
+    caret-color: transparent;
+  }
+
+  .boxes {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--code-box-gap);
+  }
+
+  .box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--code-box-height);
+    border: var(--hairline) solid var(--ink-line-strong);
+    font-size: var(--fs-24);
+    font-variant-numeric: tabular-nums;
+    color: var(--paper);
+  }
+
+  .field:focus-within .box[data-next="true"] {
+    border-color: var(--code-box-next);
+  }
+
+  .field[data-invalid="true"] .box {
+    border-color: var(--error-on-ink);
+  }
+
+  .caret {
+    display: none;
+    width: var(--hairline);
+    height: var(--sp-26);
+    background: var(--paper);
+  }
+
+  .field:focus-within .caret {
+    display: block;
+  }
+}

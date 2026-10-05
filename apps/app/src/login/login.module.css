@@ -78,6 +78,10 @@
   flex-direction: column;
 }
 
+.codeField {
+  margin-top: var(--sp-36);
+}
+
 /* Edged at 3:1 against the ink (WCAG 1.4.11), where the design's --ink-line is 1.75:1 (ADR 0025, item 36). */
 .field {
   display: flex;

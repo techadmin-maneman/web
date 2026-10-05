@@ -23,11 +23,13 @@
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
 
+import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
+import { CodeField } from "@maneman/ui/CodeField";
 import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { fieldDigits, mobileDigits } from "@maneman/web-kit/mobile";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { api, type Challenge } from "../api.ts";
 import { session, signIn as copy } from "../content.ts";
@@ -51,57 +53,6 @@ const messageFor = (code: string, fallback: string) => MESSAGES[code] ?? fallbac
 /** How long after a code goes out a new one is offered: time enough for WhatsApp to deliver the first. */
 const RESEND_AFTER_S = 30;
 
-/**
- * Whole seconds left of `seconds`, counted from when `from` last changed. As
- * the client app's does (apps/app/src/lib/useSecondsLeft.ts), it reads the
- * clock rather than counting ticks, so a phone that spent the wait in a
- * pocket, where timers slow down, still offers the new code on time.
- */
-function useCountdown(seconds: number, from: unknown): number {
-  const [left, setLeft] = useState(seconds);
-  useEffect(() => {
-    setLeft(seconds);
-    if (seconds <= 0) return;
-    const started = Date.now();
-    const timer = window.setInterval(() => {
-      const remaining = Math.max(0, seconds - Math.floor((Date.now() - started) / 1000));
-      setLeft(remaining);
-      if (remaining === 0) window.clearInterval(timer);
-    }, 250);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [seconds, from]);
-  return left;
-}
-
-/** The code's six boxes, as one labelled field: assistive technology sees a single input. */
-function CodeBoxes({ value, disabled, onChange }: { value: string; disabled: boolean; onChange: (v: string) => void }) {
-  return (
-    <div className={styles.boxes}>
-      <input
-        className={styles.hiddenInput}
-        value={value}
-        disabled={disabled}
-        onChange={(event) => {
-          onChange(event.target.value.replace(/\D/g, "").slice(0, ONE_TIME_CODE.digits));
-        }}
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        maxLength={ONE_TIME_CODE.digits}
-        aria-label={copy.codeLabel}
-      />
-      <div className={styles.boxRow} aria-hidden="true">
-        {Array.from({ length: ONE_TIME_CODE.digits }, (_, index) => (
-          <div key={index} className={styles.box}>
-            {value[index] ?? null}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }) {
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
@@ -111,7 +62,9 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   // Left with digits that are not a mobile number: the hint says why Send stays off.
   const [left, setLeft] = useState(false);
   // Counted afresh from each code sent, since each one is a new challenge.
-  const resendIn = useCountdown(challenge === null ? 0 : RESEND_AFTER_S, challenge);
+  // When a new code may be asked for: time enough after the last for WhatsApp to deliver it.
+  const [resendAt, setResendAt] = useState(0);
+  const resendIn = useSecondsLeft(resendAt);
   const number = useRef<HTMLInputElement | null>(null);
 
   const digits = mobileDigits(mobile);
@@ -126,6 +79,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       const answer = await api.sendCode(digits, await deviceId());
       if (answer.ok) {
         setChallenge(answer.body);
+        setResendAt(Date.now() + RESEND_AFTER_S * 1000);
         setCode("");
         setError(null);
       } else setError(messageFor(answer.code, copy.errors.unknown));
@@ -214,7 +168,13 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
 
       <div className={styles.codeBlock}>
         <div className={styles.label}>{copy.codeLabel}</div>
-        <CodeBoxes value={code} disabled={challenge === null} onChange={setCode} />
+        <CodeField
+          className={styles.code}
+          value={code}
+          label={copy.codeLabel}
+          disabled={challenge === null}
+          onChange={setCode}
+        />
       </div>
 
       {challenge !== null && (

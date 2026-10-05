@@ -9,7 +9,7 @@ import { Sheet } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.ts";
 import { booking, note as copy } from "../content.ts";
-import { focusIfLost } from "../lib/arrival.ts";
+import { focusIfLost } from "@maneman/ui/arrival";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import styles from "./booking.module.css";

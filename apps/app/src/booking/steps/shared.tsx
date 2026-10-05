@@ -1,13 +1,14 @@
 // What every step of the booking sheet (../BookingSheet.tsx) draws alike: its heading with the sheet's title id,
 // the countdown, the late fee, and the step that is still loading.
 
+import { apiNow } from "../../lib/clock.ts";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import type { Hold, Price } from "../../api.ts";
 import { booking, states } from "../../content.ts";
 import { CLOCK } from "../../icons.ts";
 import { priceFigures } from "../../lib/money.ts";
-import { useSecondsLeft } from "../../lib/useSecondsLeft.ts";
+import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import styles from "../booking.module.css";
 
 /** The id every step's heading carries, which names the sheet (BookingSheet.tsx). */
@@ -20,7 +21,7 @@ export const minutesAndSeconds = (seconds: number) =>
   `${String(Math.floor(seconds / 60))}:${String(seconds % 60).padStart(2, "0")}`;
 
 /** The seconds a hold has left, counted on the API's clock, which set its expiry. */
-export const useHoldLeft = (hold: Hold): number => useSecondsLeft(Date.parse(hold.expires_at));
+export const useHoldLeft = (hold: Hold): number => useSecondsLeft(Date.parse(hold.expires_at), apiNow);
 
 /** A hold that costs the client nothing now: a free visit, or one a credit covers. Checkout never opens for it. */
 export const paysNothing = (hold: Hold): boolean => hold.price.amount === 0 || hold.credit !== null;

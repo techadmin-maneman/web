@@ -3,6 +3,7 @@
 
 import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
+import { codeDigits } from "@maneman/ui/CodeField";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { mobileDigits } from "@maneman/web-kit/mobile";
@@ -102,7 +103,7 @@ function ProvingCodes({
               maxLength={ONE_TIME_CODE.digits}
               value={codes[which]}
               onChange={(event) => {
-                onCode(which, event.target.value.replace(/\D/g, "").slice(0, ONE_TIME_CODE.digits));
+                onCode(which, codeDigits(event.target.value));
               }}
             />
           )}

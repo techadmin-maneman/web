@@ -3,9 +3,13 @@
 // rather than being dropped on the page when the last screen went.
 
 import { useCallback, useEffect, useRef } from "react";
+import { focusIfLost } from "@maneman/ui/arrival";
 import { titles } from "../content.ts";
 
-/** Names the screen in the title, and answers a ref for its heading, which takes the focus once, when it first draws. */
+/**
+ * Names the screen in the title, and answers a ref for its heading, which takes the focus once, when it first draws,
+ * unless the screen has put it in a field of its own.
+ */
 export function useScreen(name: string | null): (heading: HTMLHeadingElement | null) => void {
   useEffect(() => {
     document.title = name === null ? titles.app : titles.of(name);
@@ -18,6 +22,6 @@ export function useScreen(name: string | null): (heading: HTMLHeadingElement | n
   return useCallback((heading: HTMLHeadingElement | null) => {
     if (heading === null || focused.current) return;
     focused.current = true;
-    heading.focus({ preventScroll: true });
+    focusIfLost(heading, { preventScroll: true });
   }, []);
 }

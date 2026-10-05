@@ -14,6 +14,7 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/Dialog`         | A panel opened over the page as a native modal dialog, whose caller decides when it may close      |
 | `@maneman/ui/Panel`          | The ops console's bordered panel, headed by its title and its count                                |
 | `@maneman/ui/Field`          | `Field` (a label, a hint and an error tied to their control), `TextInput`, `TextArea`, `Checkbox`  |
+| `@maneman/ui/CodeField`      | A one-time code's boxes as one labelled field, and `codeDigits()` for a code typed elsewhere       |
 | `@maneman/ui/Table`          | The ops console's table at the boards' density, and `FIGURE` for a column of figures               |
 | `@maneman/ui/Tabs`           | The ops console's tabs, each a link the app draws with `TAB`'s look                                |
 | `@maneman/ui/States`         | `Loading` (board B3's shape) and `Failed` (a line and a retry), in each app's words                |
@@ -21,6 +22,8 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/router`         | `usePath`, `go`, `followsHere` and `Link`: moving between pages without a reload                   |
 | `@maneman/ui/useLoad`        | A page's data, fetched as it opens and again on "Try again"                                        |
 | `@maneman/ui/useOneAtATime`  | One thing at a time, so two taps on one intent start it once                                       |
+| `@maneman/ui/useSecondsLeft` | Whole seconds left until a deadline, by the API's clock or the phone's                             |
+| `@maneman/ui/arrival`        | `focusIfLost()`: a new screen's heading takes the focus the last one left on nothing               |
 | `@maneman/ui/motion`         | `ARRIVE`, the apps' one fade, for a page or an image arriving                                      |
 | `@maneman/ui/classes`        | `classes()`, which joins an element's class names                                                  |
 | `@maneman/ui/cssToken`       | A token's value as the page has it, for what is drawn outside a stylesheet: a canvas, a checkout   |
