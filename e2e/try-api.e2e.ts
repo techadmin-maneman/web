@@ -6,8 +6,8 @@
 import type { Page } from "@playwright/test";
 import { expect, fakeTurnstile, randomMobile, sendFromGate, test, throughToGate, visit } from "./support.ts";
 
-// One at a time, as for bookings: each upload makes the API verify a Turnstile token.
-test.describe.configure({ mode: "serial" });
+// One at a time, in order, as for bookings: each upload makes the API verify a Turnstile token.
+test.describe.configure({ mode: "default" });
 
 /** Every request the page makes for a look, which it must never make. */
 function lookRequests(page: Page): string[] {
