@@ -11,16 +11,6 @@
 import { windowsFor, type BookingWindow } from "../config/scheduling.ts";
 import { addDays } from "../lib/india-time.ts";
 
-export const RULES = [
-  "the app offers the next service the moment a first fit, a service or a replacement closes, due 30 days later; a WhatsApp reminder follows 7 days before it is due, and an At-risk client task 7 days after.",
-  "The client books it; the technician does not.",
-  "A replacement is booked and paid in the app like any other visit.",
-  "the fit may be booked as soon as the consultation is completed; the gap becomes a console setting starting at 0 days, so a lead time can be set later without a release.",
-  "the fit is booked and paid in the app after the consultation, and ops see any request not yet booked on the Tasks board.",
-  "the horizon becomes a console setting starting at 45 days (item 12), so a service due in 30 days can be booked the day the last visit closes.",
-  "overdue hair system offered on the earlier of its own due date and the service due date",
-] as const;
-
 /** The figures, each in days, in the order Settings · Rules lists them. */
 export const NEXT_VISIT_DAY_KEYS = [
   // From the consultation's day to the first day a first fit may be booked on (open point 70).

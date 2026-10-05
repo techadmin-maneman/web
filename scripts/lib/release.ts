@@ -1,5 +1,5 @@
 // What scripts/release/release.ts does with a Worker's versions. Wrangler is handed in,
-// so test/node/release.test.ts can answer as Cloudflare does.
+// so test/node/tooling/release.test.ts can answer as Cloudflare does.
 //
 // The deploy workflows decide nothing in shell: whether a Worker is deployed,
 // what it serves, and what a rollback puts back are all answered here

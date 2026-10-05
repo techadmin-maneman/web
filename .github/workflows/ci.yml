@@ -179,7 +179,7 @@ jobs:
       # apart, and fails the step only if every try fails. On 29 September four tries were not enough either, so it
       # runs only when a pull request changes what is installed: a signature is verified as the lockfile brings a
       # package in, and the lockfile's integrity hash holds every later install to those bytes
-      # (test/node/ci-workflow.test.ts).
+      # (test/node/tooling/ci-workflow.test.ts).
       - name: Registry signatures
         if: needs.changes.outputs.dependencies == 'true'
         run: |

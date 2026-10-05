@@ -1,6 +1,6 @@
 // The worst case the try-on can cost Cloudflare, from the ceilings in each
 // environment's config, plus the share set aside for Phase 2, and what the
-// cron and the console's two boards read from D1. test/node/free-tier-budget.test.ts holds them under 80%
+// cron and the console's two boards read from D1. test/node/tooling/free-tier-budget.test.ts holds them under 80%
 // of the free allowances, so no ceiling can be raised past the free tier, or
 // into Phase 2's share, without the build failing
 // (docs/decisions/0009-stay-inside-cloudflare-free-tier.md, 0039-phase-2-budget.md).
@@ -49,9 +49,9 @@ export const PHASE_2_ALLOWANCE = {
 
 /**
  * The cron's D1 reads. Every query on its path searches an index that holds
- * only the rows still waiting (test/node/query-plans.test.ts), so a job reads
+ * only the rows still waiting (test/node/database/query-plans.test.ts), so a job reads
  * about the rows it handles and none of the history behind them
- * (test/worker/cron-reads.test.ts measures every job against a history, and
+ * (test/worker/jobs/cron-reads.test.ts measures every job against a history, and
  * against twice that history). No job runs more often than every five minutes,
  * so a day reads at most 288 times what one turn of every job reads.
  */
@@ -91,7 +91,7 @@ export function cronRowsReadPerDay(perBusyRun: number = CRON_ROWS_READ_PER_BUSY_
  * The most statements one minute's run may send D1, its own record's included. The free plan stops a run past 10 ms of
  * CPU, and on staging an invocation cost about 1 ms and 0.35 ms more for each statement (docs/decisions/0009, "the
  * cron's CPU time"). 16 come to about 6.6 ms, leaving a third of the 10 for code a run meets for the first time.
- * test/worker/cron-reads.test.ts holds every minute of the hour to it, over a history.
+ * test/worker/jobs/cron-reads.test.ts holds every minute of the hour to it, over a history.
  */
 export const CRON_STATEMENTS_PER_RUN = 16;
 
@@ -102,7 +102,7 @@ export const REQUEST_READ_SHARE = HEADROOM - CRON_READ_SHARE;
  * The console's two boards, open through the working day. The dispatch board asks for its version on a timer, reads
  * itself again when the version has moved, and in full every so often; the Tasks board is read at most once a minute
  * as pages open. Measured on staging on 2 October 2026 with 31 visits in the board's week: a board load read 484 rows,
- * about 66 and 13.5 for each visit, and a look at Tasks 364. test/worker/cron-reads.test.ts holds one load of each,
+ * about 66 and 13.5 for each visit, and a look at Tasks 364. test/worker/jobs/cron-reads.test.ts holds one load of each,
  * and one look at the version, to the figures below. A visit worked through, whose card has everything on it (two
  * answers on each kind of message, an invite, a credit, every step of the technician's), reads 17.5.
  */

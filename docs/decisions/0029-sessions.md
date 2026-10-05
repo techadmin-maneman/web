@@ -27,10 +27,10 @@ The Phase 2 backend prompt asks for the client app's routes to sit "behind the s
 
 - **Writes need the page's own Origin.** `SameSite=Lax` alone would let another `*.maneman.in` page post with the cookie, which is why the client surface refuses cross-origin writes (ADR 0026).
 - **An installed iOS web app has its own cookie store,** so a client who adds the app to the home screen logs in once more there (the plan's issues list).
-- **Tests** (`test/worker/client-auth.test.ts`) cover:
+- **Tests** (`test/worker/app/client-auth.test.ts`) cover:
   - the cookie's exact attributes, and only the hash being stored;
   - the hourly slide, and the end after 90 days;
   - logout, erasure, and a made-up cookie;
-  - the device label (`test/node/device-label.test.ts`);
-  - the list, and signing one session or every other out (`test/worker/client-sessions.test.ts`);
-  - a confirmed number change signing out the old phone (`test/worker/client-profile.test.ts`).
+  - the device label (`test/node/api/device-label.test.ts`);
+  - the list, and signing one session or every other out (`test/worker/app/client-sessions.test.ts`);
+  - a confirmed number change signing out the old phone (`test/worker/app/client-profile.test.ts`).

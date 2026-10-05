@@ -6,12 +6,6 @@
 // The form books the consultation, or the consultation and the first fit in one visit, paid for at the visit
 // (src/policy/one-visit.ts; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Nothing is paid on the site.
 
-export const RULES = [
-  "A booking from the site saves the address typed into it only when the person has no saved address. One they already have is kept, the visit goes to it, and its owner is told so on WhatsApp.",
-  "The site gives every number the same answer. A number with a consultation still to happen, or past consultations, books nothing there: its owner is told why on WhatsApp.",
-  "A visit goes to the address on the account, so that address's pincode is the one checked and booked. Where we do not come to it, nothing is booked, the page answers as it would for a new number, and its owner is told on WhatsApp.",
-] as const;
-
 /**
  * What a booking from the site does with the address typed into it: "saved", as the person's, when they have
  * none; "on_account" when they have one, which is kept and used, and the typed one is not written.

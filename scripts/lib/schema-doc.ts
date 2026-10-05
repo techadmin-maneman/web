@@ -1,6 +1,6 @@
 // docs/schema.md, written from the migrations themselves: they are applied in
 // order to an empty database, and each table is read back as they leave it
-// (npm run schema; test/node/schema-doc.test.ts). What a table is for is the
+// (npm run schema; test/node/database/schema-doc.test.ts). What a table is for is the
 // one thing the schema cannot say, so it is written once here, and the test
 // fails on a table that has no line or a line whose table is gone.
 
@@ -567,7 +567,7 @@ export function schemaDoc(tables: readonly Table[]): string {
   return [
     "# The database schema",
     "",
-    "What each table in D1 holds, as the migrations leave it. This file is written by `npm run schema`, which applies `migrations/` in order to an empty database and reads every table back; `test/node/schema-doc.test.ts` fails until it is run after a migration changes a table. How to write a migration is `docs/migrations.md`.",
+    "What each table in D1 holds, as the migrations leave it. This file is written by `npm run schema`, which applies `migrations/` in order to an empty database and reads every table back; `test/node/database/schema-doc.test.ts` fails until it is run after a migration changes a table. How to write a migration is `docs/migrations.md`.",
     "",
     "## Times and dates",
     "",

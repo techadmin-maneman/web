@@ -39,4 +39,4 @@ It answers a duplicate receipt as a refund made before, with no ID. Only a refus
 - The common case, a refund made whose answer was lost, is found at once and never reaches ops.
 - A cancellation's refund ID is kept only when Razorpay gave one; a refund found made before has none, and Razorpay's webhook still records it (ADR 0044).
 - A refund ops make by hand in Razorpay's dashboard carries no receipt of ours, so the console's advice for a refusal is unchanged: refund it there, then press Refund it, which finds the payment refunded.
-- Tests: `test/node/refunds.test.ts`; additions to `razorpay-client`, `held-bookings`, `visit-changes` and `no-show-disputes`; the console's held-bookings spec.
+- Tests: `test/node/api/refunds.test.ts`; additions to `razorpay-client`, `held-bookings`, `visit-changes` and `no-show-disputes`; the console's held-bookings spec.

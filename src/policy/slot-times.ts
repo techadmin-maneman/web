@@ -14,12 +14,6 @@ import type { BookingWindow } from "../config/scheduling.ts";
 import { addDays } from "../lib/india-time.ts";
 import { MINUTES_PER_UNIT } from "./visit-length.ts";
 
-export const RULES = [
-  "the window times become a console setting; every surface reads the hours from the API rather than at build, and a window's place in the day (its half-slots) stays in code.",
-  "a change of times applies only after the furthest day a client can book (today + the app's horizon, 45 days now) and after the last visit already booked. Nothing booked or bookable ever moves.",
-  "every half-slot, the last one up to the day's end included, lasts at least the 45 minutes a half-slot is counted as, so a visit placed by half-slots cannot run into the next visit or past the day's end.",
-] as const;
-
 /** A day's times in India: when each half-slot starts, and when the day ends. */
 export interface SlotTimes {
   readonly unitStarts: readonly string[];

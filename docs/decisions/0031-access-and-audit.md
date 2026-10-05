@@ -34,7 +34,7 @@ A refused call gets `403 access_required`, and the reason is logged; the token n
 
 **Every ops call is audited before it runs.** `auditCall` (`src/domain/audit.ts`) follows `requireAccess`. It writes an `ops.call` entry naming the identity, the method and the route pattern (never the path, which can hold a token). If the write fails, the call is refused with `503`. The same rule, write first or refuse, will apply to each audited action as later milestones add them.
 
-**Amended 25 September 2026: an action's entry is written with it.** Written first, an entry claimed actions that then failed: a deletion that never happened was recorded twice. Written after, as several routes had drifted into doing, an action whose entry failed happened unrecorded. So an audited action (a decision, a revoke, leave, a launch, an answer, a request) now writes its entry in the same D1 batch as its change, and both happen or neither: `auditStatement` gives the statement, and `auditStatementIfWritten` one for an insert that may write nothing. What only reads, an export or a photograph viewed, still writes its entry first and refuses when it cannot. `test/worker/audit-with-action.test.ts` makes each route's entry fail and checks that nothing changed.
+**Amended 25 September 2026: an action's entry is written with it.** Written first, an entry claimed actions that then failed: a deletion that never happened was recorded twice. Written after, as several routes had drifted into doing, an action whose entry failed happened unrecorded. So an audited action (a decision, a revoke, leave, a launch, an answer, a request) now writes its entry in the same D1 batch as its change, and both happen or neither: `auditStatement` gives the statement, and `auditStatementIfWritten` one for an insert that may write nothing. What only reads, an export or a photograph viewed, still writes its entry first and refuses when it cannot. `test/worker/ops/audit-with-action.test.ts` makes each route's entry fail and checks that nothing changed.
 
 - **One exception: `/api/health` on a database not yet proven to be this environment's.** It is the only route that passes that check, and it writes nothing there. It answers 503 and reads no data.
 
@@ -65,7 +65,7 @@ Actions are listed in code (`AUDIT_ACTIONS`), not in a CHECK constraint, so that
 - **The log is kept.** Nothing deletes from it yet. The owner chose two years on 2 October 2026, for counsel to confirm; once confirmed, a migration lets the delete trigger pass rows older than that, and the sweeper deletes them in batches.
 - **Switching on the ops surface** now needs `ACCESS_OPS_AUD` as well as its DNS record, Access application and route (runbook, step 11).
 - **The contract** gains the `access_required` error code. `docs/openapi.json`, `docs/api.md` and the site's types are regenerated.
-- **Tests** (`test/worker/access.test.ts`), using keys generated in the test, so no real token or key is involved:
+- **Tests** (`test/worker/ops/access.test.ts`), using keys generated in the test, so no real token or key is involved:
   - a valid person's token and a valid service token are accepted;
   - a token is refused when it has the wrong audience or issuer, has expired, is not valid yet, names nobody, is missing or malformed, is signed by an unknown key, has a forged signature, has claims changed after signing, or uses another algorithm;
   - the key cache fetches once, fetches again after an hour, and throttles refetches for unknown keys;
@@ -74,4 +74,4 @@ Actions are listed in code (`AUDIT_ACTIONS`), not in a CHECK constraint, so that
   - no other surface asks for Access;
   - the log refuses `UPDATE`, `DELETE` and malformed rows.
 
-  `test/worker/guard.test.ts` covers the new settings.
+  `test/worker/platform/guard.test.ts` covers the new settings.

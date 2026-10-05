@@ -12,11 +12,6 @@
 
 import { isOneOf } from "../lib/one-of.ts";
 
-export const RULES = ["Referral review queue: approve or reject, with the reason recorded."] as const;
-
-/** The same rule in the frontend prompt's words, for the two queues that charge a client or grant one credits. */
-export const CONSOLE_RULES = ["Charge or waive, with a reason.", "Both require a reason."] as const;
-
 /**
  * Which decisions need a reason, queue by queue. Everything that charges,
  * grants or refuses the client does; confirming a number change or erasing an

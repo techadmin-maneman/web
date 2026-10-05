@@ -1,6 +1,5 @@
-// Changing a client's mobile number (src/policy/number-change.ts): "A code goes
-// to both numbers. The change then waits for ops to confirm, and takes effect
-// only after that confirmation." Each number's code is its own challenge.
+// Changing a client's mobile number: a code goes to both numbers, and the change waits for ops to confirm it and
+// takes effect only then. Each number's code is its own challenge.
 
 import type { PlacesReached } from "../policy/access.ts";
 import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";

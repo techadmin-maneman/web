@@ -38,5 +38,5 @@ All three are built: the no-show queue in P2-F4, on board D1's case, and the oth
 ## Consequences
 
 - Nothing in the console changes with this ADR; it records what was built against the prompt's instruction.
-- There is no fidelity pair for the three client-rights queues, since there is no board to pair them with (`docs/fidelity-method.md`); the no-show queue is paired with board D1. Each is held by its browser tests — `e2e/ops/no-shows.e2e.ts`, `number-changes.e2e.ts`, `deletions.e2e.ts` and `grievances.e2e.ts`, each with axe at WCAG 2.2 AA — and by `test/worker/ops-no-shows.test.ts`, `ops-queues.test.ts` and `dpdp.test.ts`.
+- There is no fidelity pair for the three client-rights queues, since there is no board to pair them with (`docs/fidelity-method.md`); the no-show queue is paired with board D1. Each is held by its browser tests — `e2e/ops/no-shows.e2e.ts`, `number-changes.e2e.ts`, `deletions.e2e.ts` and `grievances.e2e.ts`, each with axe at WCAG 2.2 AA — and by `test/worker/ops/ops-no-shows.test.ts`, `ops-queues.test.ts` and `dpdp.test.ts`.
 - The owner approves the words with the rest of the console's copy (`docs/open-points.md`, item 42), and, with counsel, the time a grievance is answered in (open point 51).

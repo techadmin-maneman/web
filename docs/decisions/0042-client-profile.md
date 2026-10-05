@@ -21,7 +21,7 @@ Phase 1's `consents` table is the legal record of what each person agreed to. It
 - `consents` keeps every row and gains Phase 2's five purposes: `photos_own_record`, `photos_referral_cards`, `photos_marketing`, `whatsapp_visits` and `whatsapp_launches`.
 - The purposes stay checked in the database, unlike message kinds (ADR 0041), because this is the legal record. A new purpose is rare enough to earn a rebuild.
 - The append-only triggers are recreated with the table.
-- `test/node/migration-0009.test.ts` applies the real migrations to SQLite. It shows every row surviving, the triggers refusing changes, and an unknown purpose refused.
+- `test/node/database/migration-0009.test.ts` applies the real migrations to SQLite. It shows every row surviving, the triggers refusing changes, and an unknown purpose refused.
 
 A switch is a new row (`PATCH /api/consents/:purpose`), naming the notice version the client saw. The current state of each purpose is its latest row, so every consent carries its own date. A purpose is off until the client first switches it on. The notices are in `src/config/notices.ts`:
 
@@ -56,5 +56,5 @@ Counsel's sign-off is still owed, so the notices are not yet pinned as published
 - **The ops console's screens** for these queues come with P2-F2. Until then the routes are the ops side.
 - **The ops surface has its own API documents**, `docs/openapi-ops.json` and `docs/api-ops.md`.
 - **Tests:**
-  - `test/worker/client-profile.test.ts` names each rule by its words in `src/policy/`. It also covers address history, the append-only switches, a number change's code opening no login, withdrawal, the daily limit, a number already in use, reasons for rejections, a deletion made once and processed by erasure, and nothing audited for a request that is not waiting.
-  - `test/node/migration-0009.test.ts` covers the rebuild.
+  - `test/worker/app/client-profile.test.ts` names each rule by its words in `src/policy/`. It also covers address history, the append-only switches, a number change's code opening no login, withdrawal, the daily limit, a number already in use, reasons for rejections, a deletion made once and processed by erasure, and nothing audited for a request that is not waiting.
+  - `test/node/database/migration-0009.test.ts` covers the rebuild.

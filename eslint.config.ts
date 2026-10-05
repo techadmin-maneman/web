@@ -9,6 +9,8 @@ const ADR_DESCRIPTION = { descriptionFormat: "^: see docs/decisions/\\d{4}-[a-z0
 
 /** The most code lines a function, and a file, may hold in src/. */
 const SIZE = { fn: 80, lines: 400 } as const;
+/** The most code lines a test file holds before it is warned of. */
+const TEST_LINES = 500;
 
 /** A size rule at a level, counting code lines alone. */
 const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
@@ -202,11 +204,12 @@ export default defineConfig(
     rules: { "no-console": ["error", { allow: ["warn"] }] },
   },
   {
+    // A test file past 500 lines is warned of: one that long is several, each easier to find a failure in.
     files: ["test/**/*.ts", "e2e/**/*.ts"],
-    rules: { "no-console": "off" },
+    rules: { "no-console": "off", "max-lines": sized("warn", TEST_LINES) },
   },
   {
-    // A screen that picks between three things says so in a function that returns early (FEA-41, FEO-32).
+    // A screen that picks between three things says so in a function that returns early.
     files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}"],
     rules: { "no-nested-ternary": "error" },
   },

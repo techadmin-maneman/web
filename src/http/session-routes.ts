@@ -1,6 +1,6 @@
 // The session a client's or a technician's route needs, declared on the route itself (createRoute's middleware), so
 // the guard stands with the route it guards, whatever order the modules are registered in.
-// test/worker/every-route-guarded.test.ts asks every route of both surfaces without a session.
+// test/worker/platform/every-route-guarded.test.ts asks every route of both surfaces without a session.
 
 import { createRoute, type RouteConfig } from "@hono/zod-openapi";
 import { requireClientSession } from "./client-session.ts";

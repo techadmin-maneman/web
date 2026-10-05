@@ -48,6 +48,6 @@ The config check requires the routes to match exactly: one `<host>/api/*` route 
 - **Smoke on the new hosts waits for the owner.** Before a staging surface can be switched on, the owner has to create its DNS record, its Access application and its CI service token. Until then its tests run locally, on the `.localhost` hosts.
 - **Webhooks from Razorpay, Zoho FSM and Evolution** arrive at `/api/hooks/*` on the public host. On staging that path needs an Access bypass, which the owner has yet to create. They carry no Origin; each one is authenticated by its own signature or secret.
 - **Tests:**
-  - `test/worker/surfaces.test.ts`: the host map; each surface's health check; every public route answering `404` on the other hosts; the bare `404` for a host the environment does not serve.
-  - `test/worker/origin.test.ts`: writes from the surface's own origin, from no origin, from another surface, over `http` and from an opaque origin.
-  - `test/node/wrangler-config-check.test.ts`: refuses a route for a surface that is switched off.
+  - `test/worker/platform/surfaces.test.ts`: the host map; each surface's health check; every public route answering `404` on the other hosts; the bare `404` for a host the environment does not serve.
+  - `test/worker/platform/origin.test.ts`: writes from the surface's own origin, from no origin, from another surface, over `http` and from an opaque origin.
+  - `test/node/tooling/wrangler-config-check.test.ts`: refuses a route for a surface that is switched off.

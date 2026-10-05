@@ -1,5 +1,5 @@
 // Which requests the client app's service worker answers (apps/app/sw/sw.ts), by the rule both apps share
-// (packages/web-kit/sw-requests.ts), and tested on its own (test/node/app-sw.test.ts).
+// (packages/web-kit/sw-requests.ts), and tested on its own (test/node/apps/app/app-sw.test.ts).
 
 import { answerFor as answerOf, type Answer as Answered } from "../../../packages/web-kit/sw-requests.ts";
 
