@@ -169,8 +169,10 @@ test("says the sign-in has run out when Access turns a call away, and offers the
 // A Ctrl-click was swallowed, so a section could not be opened in a tab of its own.
 test("leaves a click that asks for a new tab to the browser", async ({ page, context }) => {
   await page.goto("/");
-  // Settled on Tasks first: a click while / still sends the page there can land before the link answers it.
+  // Settled on /tasks first: Tasks shows at / before whoami answers, and the page is drawn again once / becomes
+  // /tasks, so a click before then can land on a link that is being replaced.
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  await expect(page).toHaveURL(/\/tasks$/);
   const opened = context.waitForEvent("page");
   await page.getByRole("link", { name: "Areas" }).click({ modifiers: ["ControlOrMeta"] });
   const tab = await opened;
