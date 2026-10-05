@@ -8,7 +8,6 @@ import { describe, expect, it } from "vitest";
 const WRITERS: Readonly<Record<string, readonly string[]>> = {
   people: ["src/domain/form-person.ts", "src/domain/people.ts"],
   outbound_messages: [
-    "src/domain/deletion.ts",
     "src/domain/payment-links.ts",
     "src/domain/queued-messages.ts",
     "src/domain/referral-grants.ts",
