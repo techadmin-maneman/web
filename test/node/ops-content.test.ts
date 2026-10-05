@@ -15,7 +15,7 @@ import { VISIT_TYPES } from "../../src/config/visit-types.ts";
 
 describe("the ops console's content", () => {
   it("previews the launch alert word for word, with the first name left as a placeholder", () => {
-    const url = BOOKING_URL.staging ?? "";
+    const url = BOOKING_URL.staging;
     expect(areas.launch.message("Bandra W", url)).toBe(
       renderMessage("launch_alert_v1", ["{first name}", "Bandra W", url]),
     );

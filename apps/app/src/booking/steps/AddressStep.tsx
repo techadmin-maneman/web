@@ -43,7 +43,7 @@ export function NotServedStep({ address, onSaved }: { address: Address; onSaved:
         variant="outline"
         size="control"
         className={styles.secondary}
-        href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}
+        href={BOOKING_URL[import.meta.env.MM_ENV]}
       >
         {copy.waitlist}
       </ButtonLink>

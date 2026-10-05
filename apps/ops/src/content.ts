@@ -2,10 +2,11 @@
 // component holds no copy of its own. Lines the design does not draw are
 // ours, approved by the owner on 4 October 2026 (docs/open-points.md, item 42).
 
+import type { EnvironmentName } from "../../../src/config/environments.ts";
 import type { LinkState } from "./tasks/payment-link.ts";
 
 /** The public site's booking page, which a launch alert sends people to, as apps/app/src/content.ts has it. */
-export const BOOKING_URL: Readonly<Record<string, string>> = {
+export const BOOKING_URL: Readonly<Record<EnvironmentName, string>> = {
   local: "http://127.0.0.1:4321/book",
   staging: "https://staging.maneman.in/book",
   production: "https://maneman.in/book",

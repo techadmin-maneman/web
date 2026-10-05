@@ -5,9 +5,13 @@
 
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
+import { ENVIRONMENTS, isEnvironmentName } from "../../src/config/environments.ts";
 import { themeColor } from "../../packages/web-kit/pwa.ts";
 
 const environment = process.env.MM_ENV ?? "local";
+// A misnamed environment would build an app that links to production; it builds nothing instead.
+if (!isEnvironmentName(environment))
+  throw new Error(`MM_ENV is "${environment}", not one of ${ENVIRONMENTS.join(", ")}`);
 /** The commit built, which scripts/lib/spa-build.ts passes in and the smoke tests compare with the deploy's. */
 const version = process.env.MM_VERSION ?? "unversioned";
 

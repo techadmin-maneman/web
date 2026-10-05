@@ -2,6 +2,7 @@
 // component holds no copy of its own. Lines the design does not draw are
 // ours, approved by the owner on 4 October 2026 (docs/open-points.md, item 42).
 
+import type { EnvironmentName } from "../../../src/config/environments.ts";
 import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 
@@ -34,7 +35,7 @@ export const whatsapp = {
 } as const;
 
 /** The public site's booking page, for a number with no booking yet (board A3). */
-export const BOOKING_URL: Readonly<Record<string, string>> = {
+export const BOOKING_URL: Readonly<Record<EnvironmentName, string>> = {
   local: "http://127.0.0.1:4321/book",
   staging: "https://staging.maneman.in/book",
   production: "https://maneman.in/book",
