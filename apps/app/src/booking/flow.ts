@@ -2,7 +2,11 @@
 // way through the sheet is tested without a browser (test/node/app-booking-flow.test.ts). An event that does not
 // belong to the step the sheet is on changes nothing: an answer that comes back after the client moved on is dropped.
 
-import type { Address, Hold } from "../api.ts";
+// The types from the generated schema, not ../api.ts, so the flow is read in Node without the fetch client.
+import type { components } from "../api-schema.ts";
+
+type Address = components["schemas"]["Address"];
+type Hold = components["schemas"]["Hold"];
 
 export type Step =
   | { readonly kind: "loading" }
