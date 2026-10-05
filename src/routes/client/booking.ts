@@ -10,35 +10,27 @@
 
 import { selfServeRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
-import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { keepShownConsents, recordBookingConsents } from "../../domain/booking-consents.ts";
-import { startBooking } from "../../domain/bookings.ts";
 import { codeToCarry } from "../../domain/discount-code-uses.ts";
 import { spendableCredits } from "../../domain/credits.ts";
 import { lateFeeOn, priceOf, type Price } from "../../domain/price-book.ts";
-import { checkoutHold, clientHold, releaseHold } from "../../domain/holds.ts";
+import { clientHold, releaseHold } from "../../domain/holds.ts";
 import { currentAddress } from "../../domain/profile.ts";
 import { isServed } from "../../domain/service-area.ts";
-import { activeTechnicians, regularTechnician, type Moving } from "../../domain/occupancy.ts";
+import { activeTechnicians, regularTechnician } from "../../domain/occupancy.ts";
 import { availability, bookableTypes } from "../../domain/availability.ts";
 import { holdSlot } from "../../domain/hold-slot.ts";
 import { bookableService, offeredProducts, serviceOf, type PricedService } from "../../domain/services.ts";
 import { loadSlotSchedule } from "../../domain/slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
-import {
-  changeableVisit,
-  changeTerms,
-  termsInForce,
-  type ChangeableVisit,
-  type ChangeTerms,
-} from "../../domain/visit-changes.ts";
+import { termsInForce, type ChangeableVisit, type ChangeTerms } from "../../domain/visit-changes.ts";
 import { bookableDays } from "../../domain/next-visit.ts";
 import type { OpsInputs } from "../../domain/ops-settings.ts";
-import { bookHold } from "../../http/book-hold.ts";
+import { moveTermsFor, startCheckout } from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
@@ -388,27 +380,6 @@ const serviceBody = (service: { readonly tier: string; readonly name: string; re
 });
 
 /**
- * The terms for moving one of the client's visits of this type now, and the visit as a move sees it; null if it
- * can no longer be moved in the app. A visit with no technician yet is ops' to move.
- */
-export async function moveTermsFor(
-  c: Context<AppEnv>,
-  personId: string,
-  visitId: string,
-  type: VisitType | null,
-  on?: string,
-): Promise<{ terms: ChangeTerms; moving: Moving } | null> {
-  const now = c.var.deps.now();
-  const visit = await changeableVisit(c.env.DB, personId, visitId, now);
-  if (visit === null || (type !== null && visit.type !== type) || visit.technicianId === null) return null;
-  const inForce = termsInForce(await opsInputs(c), visit.type);
-  return {
-    terms: await changeTerms(c.env.DB, visit, now, inForce, on),
-    moving: { visitId: visit.id, technicianId: visit.technicianId },
-  };
-}
-
-/**
  * What a hold is sold under: a move in place carries the moved visit's own terms and late fee to its new time, since
  * it is the same visit, sold once; any other hold, a new booking or a charged move's new visit, is sold under the
  * terms in force and its kind's late fee on its day (docs/decisions/0088-every-policy-in-the-console.md).
@@ -434,35 +405,6 @@ async function creditPays(
 ): Promise<boolean> {
   if (!takesCredit(hold.type, hold.moveKind)) return false;
   return (await spendableCredits(db, hold.personId, now)).visits > 0;
-}
-
-/** Starts paying for a live hold: what Checkout opens with, or null for one that is free and sent to be booked. */
-export async function startCheckout(c: Context<AppEnv>, holdId: string, personId: string) {
-  const { deps } = c.var;
-  const started = await startBooking(c.env.DB, deps.payments, holdId, personId, deps.now());
-  if (started === null) return null;
-  if (started.kind === "free") {
-    await bookHold(c, holdId);
-    return { hold_id: holdId, checkout: null };
-  }
-  const row = await checkoutHold(c.env.DB, holdId);
-  if (row === null) return null;
-  // "Mane Man Natural · Sat 3 Oct", or "Moving your visit to Sat 3 Oct".
-  const day = shortDate(row.date);
-  const name = row.service_name ?? VISIT_TYPE_NAMES[row.type];
-  const description = row.move_kind === "move" ? `Moving your visit to ${day}` : `${name} · ${day}`;
-  return {
-    hold_id: holdId,
-    checkout: {
-      key_id: c.var.config.settings.razorpay?.keyId ?? "",
-      order_id: started.orderId,
-      amount: row.amount,
-      currency: "INR" as const,
-      name: "Mane Man",
-      description,
-      prefill: { name: row.name, contact: row.mobile_e164 },
-    },
-  };
 }
 
 export function registerClientBooking(app: App): void {

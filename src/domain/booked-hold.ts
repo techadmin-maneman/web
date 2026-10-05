@@ -48,7 +48,7 @@ export interface HoldRow {
   city: string | null;
 }
 
-export async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
+export async function bookingHoldRow(db: D1Database, holdId: string): Promise<HoldRow | null> {
   return db
     .prepare(
       `SELECT h.id, h.person_id, p.erased_at AS person_erased_at, h.type, h.tier, h.minutes, h.date, h.window_label,
@@ -99,3 +99,6 @@ export async function refundableFor(db: D1Database, orderId: string | null): Pro
     .bind(orderId)
     .first<CapturedPayment>();
 }
+
+/** How a try to book a hold ended. */
+export type Confirmed = "booked" | "already_booked" | "being_booked" | "not_paid" | "refunded" | "lapsed";

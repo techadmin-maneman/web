@@ -25,7 +25,8 @@ import { opsInputs } from "../../http/ops-inputs.ts";
 import { clientOf } from "../../http/client-session.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { queueMessage } from "../../http/queue-message.ts";
-import { BookingSchema, moveTermsFor, PriceSchema, startCheckout } from "./booking.ts";
+import { BookingSchema, PriceSchema } from "./booking.ts";
+import { moveTermsFor, startCheckout } from "../../http/client-booking.ts";
 
 const NoticeSchema = z.enum(["free", "late"]).openapi({
   description:

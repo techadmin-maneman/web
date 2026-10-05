@@ -7,8 +7,8 @@ import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 import { paidNotBooked } from "./hold-stages.ts";
-import { type ConfirmOptions } from "./booked-hold.ts";
-import { type Confirmed, confirmBooking } from "./bookings.ts";
+import { type ConfirmOptions, type Confirmed } from "./booked-hold.ts";
+import { confirmBooking } from "./bookings.ts";
 
 /** How long a confirmed hold may wait to be booked before the cron books it. */
 const UNBOOKED_AFTER_MS = 30 * MINUTE_MS;

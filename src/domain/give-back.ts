@@ -3,7 +3,13 @@
 import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { refundedMessage, type AutoRefundReason } from "./auto-refunds.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
-import { type ConfirmOptions, type HoldRow, holdOf, type CapturedPayment, refundableFor } from "./booked-hold.ts";
+import {
+  type ConfirmOptions,
+  type HoldRow,
+  bookingHoldRow,
+  type CapturedPayment,
+  refundableFor,
+} from "./booked-hold.ts";
 
 /** What giving a hold back did with the money. */
 type GivenBack =
@@ -54,7 +60,7 @@ export async function giveBack(
   alongside: readonly D1PreparedStatement[] = [],
   ifRefunded: readonly D1PreparedStatement[] = [],
 ): Promise<GivenBack> {
-  const hold = await holdOf(db, holdId);
+  const hold = await bookingHoldRow(db, holdId);
   if (hold === null) throw new Error("no such hold to give back");
   if (hold.state === "booked") return { kind: "booked" };
   const payment = await refundableFor(db, hold.razorpay_order_id);

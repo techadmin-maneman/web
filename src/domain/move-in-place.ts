@@ -9,8 +9,7 @@ import { hasBegun, visitBegun } from "./visit-begun.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage } from "./visit-messages.ts";
 import { moveVisit } from "./visit-status.ts";
-import { type ConfirmOptions, type HoldRow } from "./booked-hold.ts";
-import { type Confirmed } from "./bookings.ts";
+import { type ConfirmOptions, type HoldRow, type Confirmed } from "./booked-hold.ts";
 import { giveBack, AUTO_REFUND_NOTES, autoRefundMarked, giveBackUnkept } from "./give-back.ts";
 
 interface VisitToMove {

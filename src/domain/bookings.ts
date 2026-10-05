@@ -15,10 +15,11 @@ import { MINUTE_MS } from "../lib/durations.ts";
 import {
   type ConfirmOptions,
   type HoldRow,
-  holdOf,
+  bookingHoldRow,
   paidInMoney,
   type CapturedPayment,
   capturedFor,
+  type Confirmed,
 } from "./booked-hold.ts";
 import { moveInPlace, replacesBegunVisit, moveRefused, retireReplaced } from "./move-in-place.ts";
 import { giveBack, giveBackUnkept } from "./give-back.ts";
@@ -63,7 +64,7 @@ async function tryStartBooking(
   personId: string,
   now: Date,
 ): Promise<Started | null | "price_changed"> {
-  const hold = await holdOf(db, holdId);
+  const hold = await bookingHoldRow(db, holdId);
   if (hold?.person_id !== personId || hold.state !== "held" || hold.expires_at <= now.toISOString()) return null;
   if (hold.pay_by_link === 1) return null;
   const isNewVisit = hold.moves_appointment_id === null;
@@ -91,7 +92,7 @@ async function tryStartBooking(
     .bind(order.id, now.toISOString(), hold.id, hold.amount)
     .first();
   if (claimed !== null) return { kind: "pay", orderId: order.id };
-  const won = (await holdOf(db, holdId))?.razorpay_order_id ?? null;
+  const won = (await bookingHoldRow(db, holdId))?.razorpay_order_id ?? null;
   return won === null ? "price_changed" : { kind: "pay", orderId: won };
 }
 
@@ -118,7 +119,7 @@ async function confirmFree(db: D1Database, hold: HoldRow, now: Date): Promise<bo
  * spend. False when it no longer qualifies, as when another booking took the client's last credit meanwhile.
  */
 export async function confirmUnpaid(db: D1Database, holdId: string, now: Date): Promise<boolean> {
-  const hold = await holdOf(db, holdId);
+  const hold = await bookingHoldRow(db, holdId);
   if (hold?.state !== "held") return false;
   return confirmFree(db, hold, now);
 }
@@ -146,9 +147,6 @@ export function confirmPaidHold(db: D1Database, orderId: string, paidAt: string,
     )
     .bind(orderId, paidAt, now.toISOString());
 }
-
-/** How a try ended. */
-export type Confirmed = "booked" | "already_booked" | "being_booked" | "not_paid" | "refunded" | "lapsed";
 
 /** Whether Razorpay made the payment after the hold ran out and the grace it was made with. */
 function paidTooLate(hold: HoldRow, payment: CapturedPayment): boolean {
@@ -188,7 +186,7 @@ export async function confirmBooking(
   now: Date,
   options: ConfirmOptions = {},
 ): Promise<Confirmed> {
-  const hold = await holdOf(db, holdId);
+  const hold = await bookingHoldRow(db, holdId);
   if (hold === null) throw new Error("no such hold to book");
   if (hold.state === "booked") {
     await afterBooked(db, hold, now, options);
@@ -213,7 +211,7 @@ export async function confirmBooking(
 
   if (!(await takeLease(db, hold.id, now))) return "being_booked";
   try {
-    const leased = (await holdOf(db, holdId)) ?? hold;
+    const leased = (await bookingHoldRow(db, holdId)) ?? hold;
     if (leased.refunded_at !== null) {
       await giveBack(db, payments, hold.id, now, "its payment was refunded");
       return "refunded";
@@ -325,7 +323,7 @@ async function writeNewBooking(
       .bind(visit.id, at, hold.person_id, hold.type, hold.one_visit),
     ...creditRedeem(db, hold, now),
   ]);
-  const booked = await holdOf(db, hold.id);
+  const booked = await bookingHoldRow(db, hold.id);
   if (booked === null) return;
   await alertIfNoCreditPaid(db, booked, options);
   await afterBooked(db, booked, now, options);
