@@ -54,7 +54,7 @@
   justify-content: center;
   min-height: var(--btn-md);
   padding: 0 var(--sp-14);
-  border: var(--hairline) solid var(--ink-line);
+  border: var(--hairline) solid var(--ink-line-strong);
 }
 
 .pickerLabel {
