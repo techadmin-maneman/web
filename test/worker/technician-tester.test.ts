@@ -1,4 +1,4 @@
-// What `node scripts/seed-technician-tester.ts --clear` deletes (scripts/lib/technician-tester.ts), run against the
+// What `node scripts/staging/seed-technician-tester.ts --clear` deletes (scripts/lib/technician-tester.ts), run against the
 // schema every migration builds, since D1 keeps foreign keys and a row left pointing at one deleted stops the
 // whole clear. NOW is Monday 21 September 2026, 12 noon in India. Nothing here is a real person or number.
 

@@ -9,7 +9,7 @@
 // alert goes out against it (ADR 0048). So it is dated and `served` is not.
 //
 // Most rows are loaded from data/pincodes/ncr-pincodes.csv by
-// scripts/import-pincodes.ts, which is where a pincode's city and first name
+// scripts/ops/import-pincodes.ts, which is where a pincode's city and first name
 // for its area come from. Ops change the two columns that are theirs, and may
 // give the area a better name. They may also add a pincode the file does not
 // hold, in one of our cities, which starts unserved; nobody removes one.

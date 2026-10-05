@@ -1,5 +1,5 @@
 // The OpenAPI document and docs/api.md are generated from the zod route
-// schemas, never written by hand. scripts/generate-openapi.ts writes them; the
+// schemas, never written by hand. scripts/build/generate-openapi.ts writes them; the
 // contract test fails when a committed copy is stale.
 
 import { createApp } from "./app.ts";
