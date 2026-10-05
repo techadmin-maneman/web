@@ -11,6 +11,7 @@ export function Panel({
   title,
   count,
   headingRef,
+  actions,
   className,
   children,
 }: {
@@ -21,6 +22,8 @@ export function Panel({
   readonly count?: number;
   /** For a queue whose heading takes the keyboard once a row is decided and leaves it. */
   readonly headingRef?: RefObject<HTMLHeadingElement | null>;
+  /** What the head holds beside the title: a way to download the list, say. */
+  readonly actions?: ReactNode;
   readonly className?: string;
   readonly children: ReactNode;
 }) {
@@ -31,6 +34,7 @@ export function Panel({
           {title}
         </h2>
         {count !== undefined && <span className={styles.count}>{count}</span>}
+        {actions}
       </div>
       {children}
     </section>

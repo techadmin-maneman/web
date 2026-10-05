@@ -8,6 +8,7 @@
 // Until ops save a list, the committed one stands (src/config/job-sheet.ts),
 // and the panel says so.
 
+import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { api, type JobSheet as Sheet, type VisitType } from "../api.ts";
@@ -36,12 +37,7 @@ export function JobSheet() {
   const checklist = current.checklists.find((each) => each.visit_type === kind);
 
   return (
-    <section className={styles.panel} aria-labelledby="job-sheet">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="job-sheet">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="job-sheet" title={copy.title} className={styles.panel}>
       <p className={styles.note}>{copy.note}</p>
       <div className={styles.group}>
         <div className={styles.field}>
@@ -99,6 +95,6 @@ export function JobSheet() {
           onSaved={setSheet}
         />
       )}
-    </section>
+    </Panel>
   );
 }

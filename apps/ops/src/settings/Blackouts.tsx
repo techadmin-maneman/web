@@ -7,6 +7,7 @@
 // names who added all of it; offering them again sends that run of days back. Blacking out a day moves nothing already booked on it, so
 // each run says how many visits are still booked on it, and opens the dispatch board on its first day to move them.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button, buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, longDate, shortDate } from "@maneman/web-kit/dates";
@@ -250,12 +251,7 @@ export function Blackouts() {
   const periods = periodsOf(changed ?? loaded.value.blackouts);
 
   return (
-    <section className={styles.panel} aria-labelledby="blackouts">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="blackouts">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="blackouts" title={copy.title} className={styles.panel}>
       <p className={styles.note}>
         {copy.note}{" "}
         <OpsLink className={styles.link} to={dispatchPath({})}>
@@ -279,6 +275,6 @@ export function Blackouts() {
           ))}
         </ul>
       )}
-    </section>
+    </Panel>
   );
 }

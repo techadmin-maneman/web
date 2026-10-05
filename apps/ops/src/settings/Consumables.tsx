@@ -8,6 +8,7 @@
 // invoice carries a consumable, so what one costs is only ever read here. Each
 // change shows its old figure beside the new before it is sent (ADR 0071).
 
+import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
@@ -166,12 +167,7 @@ export function Consumables() {
 
   return (
     <>
-      <section className={styles.panel} aria-labelledby="consumables">
-        <div className={styles.panelHead}>
-          <h2 className={styles.panelTitle} id="consumables">
-            {copy.title}
-          </h2>
-        </div>
+      <Panel titleId="consumables" title={copy.title} className={styles.panel}>
         <p className={styles.note}>{copy.note}</p>
         {current.consumables.length === 0 ? (
           <p className={styles.note}>{copy.none}</p>
@@ -215,7 +211,7 @@ export function Consumables() {
             setDoing({ kind: "add" });
           }}
         />
-      </section>
+      </Panel>
       <ServiceUsage book={current} onSaved={setBook} />
     </>
   );

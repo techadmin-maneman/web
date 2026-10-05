@@ -14,18 +14,6 @@
   gap: var(--sp-24);
 }
 
-.panel {
-  border: var(--hairline) solid var(--paper-line);
-}
-
-.panelHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: var(--sp-14) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--text);
-}
-
 .panelTitle {
   margin: 0;
   font-family: var(--font-serif);

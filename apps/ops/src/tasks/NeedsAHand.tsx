@@ -2,6 +2,7 @@
 // about (src/routes/ops/alerts.ts). Each says what happened and links to where to act; ops mark one done, or send
 // again the message, lead or CRM erasure it gave up on. Each person sees their own departments' kinds.
 
+import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -102,13 +103,7 @@ function AlertList({ access }: { access: Access }) {
     heading.current?.focus();
   };
   return (
-    <section className={styles.panel} aria-labelledby="needs-a-hand">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="needs-a-hand" ref={heading} tabIndex={-1}>
-          {copy.title}
-        </h2>
-        <span className={styles.count}>{count}</span>
-      </div>
+    <Panel titleId="needs-a-hand" title={copy.title} count={count} headingRef={heading}>
       <ul className={styles.tasks}>
         {alerts.map((alert) => (
           <AlertRow
@@ -123,7 +118,7 @@ function AlertList({ access }: { access: Access }) {
         ))}
       </ul>
       {count > alerts.length && <p className={styles.shown}>{copy.shown(alerts.length, count)}</p>}
-    </section>
+    </Panel>
   );
 }
 

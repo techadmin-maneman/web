@@ -11,6 +11,7 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
+    gap: var(--sp-16);
     padding: var(--sp-14) var(--sp-20);
     border-bottom: var(--hairline) solid var(--text);
   }
