@@ -2,8 +2,8 @@
 // late to move it. Every hold here is made up.
 
 import { describe, expect, it } from "vitest";
-import type { components } from "../../apps/app/src/api-schema.ts";
-import { holdOf, nextStep, type BookingEvent, type Step } from "../../apps/app/src/booking/flow.ts";
+import type { components } from "../../../../apps/app/src/api-schema.ts";
+import { holdOf, nextStep, type BookingEvent, type Step } from "../../../../apps/app/src/booking/flow.ts";
 
 type Address = components["schemas"]["Address"];
 type Hold = components["schemas"]["Hold"];

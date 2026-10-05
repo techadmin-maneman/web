@@ -1,5 +1,5 @@
 // The booking sheet's steps, and the step each thing that happens to it leads to (BookingSheet.tsx). Pure, so every
-// way through the sheet is tested without a browser (test/node/app-booking-flow.test.ts). An event that does not
+// way through the sheet is tested without a browser (test/node/apps/app/app-booking-flow.test.ts). An event that does not
 // belong to the step the sheet is on changes nothing: an answer that comes back after the client moved on is dropped.
 
 // The types from the generated schema, not ../api.ts, so the flow is read in Node without the fetch client.
