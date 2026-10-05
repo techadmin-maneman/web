@@ -122,7 +122,7 @@ async function tellOfRefund(messageId: string, options: ConfirmOptions): Promise
   try {
     await options.notify?.(messageId);
   } catch (error) {
-    options.log?.warn("refund_message_not_queued", { message_id: messageId, error });
+    options.log.warn("refund_message_not_queued", { message_id: messageId, error });
   }
 }
 

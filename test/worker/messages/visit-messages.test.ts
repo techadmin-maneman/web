@@ -634,6 +634,7 @@ describe("what queues a visit message", () => {
         notified.push(id);
         return Promise.resolve();
       },
+      log: createLogger(),
     });
     expect(outcome).toBe("booked");
     const { results } = await messages();

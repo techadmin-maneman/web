@@ -12,7 +12,7 @@ export interface ConfirmOptions {
   readonly notify?: (messageId: string) => Promise<unknown>;
   /** Tells ops, once, of something they must put right by hand (src/domain/alerts.ts). */
   readonly alertOnce?: AlertOnce;
-  readonly log?: Logger;
+  readonly log: Logger;
 }
 
 export interface HoldRow {

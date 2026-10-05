@@ -20,6 +20,7 @@ import {
   savedAddress,
   deliverRazorpay,
 } from "../helpers.ts";
+import { createLogger } from "../../../src/log.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 let cookie: string;
@@ -159,10 +160,10 @@ describe("confirmBooking", () => {
     const holdId = await heldService(app);
     await post(app, "/api/bookings", { hold_id: holdId });
     const payments = createStubPayments();
-    expect(await confirmBooking(env.DB, payments, holdId, NOW, {})).toBe("not_paid");
+    expect(await confirmBooking(env.DB, payments, holdId, NOW, { log: createLogger() })).toBe("not_paid");
 
     await captured(holdId);
-    expect(await confirmBooking(env.DB, payments, holdId, NOW, {})).toBe("booked");
+    expect(await confirmBooking(env.DB, payments, holdId, NOW, { log: createLogger() })).toBe("booked");
     const visit = await visitOf(holdId);
     expect(visit).toMatchObject({
       type: "service",
@@ -182,7 +183,7 @@ describe("confirmBooking", () => {
     const hold = await request(app, `/api/holds/${holdId}`, { headers: { Cookie: cookie } });
     expect(await hold.json()).toMatchObject({ state: "booked", paid: true, visit_id: visit?.id });
     // Told again, it books nothing twice.
-    expect(await confirmBooking(env.DB, payments, holdId, NOW, {})).toBe("already_booked");
+    expect(await confirmBooking(env.DB, payments, holdId, NOW, { log: createLogger() })).toBe("already_booked");
     const visits = await env.DB.prepare("SELECT COUNT(*) AS n FROM appointments WHERE type = 'service'").first();
     expect(visits).toEqual({ n: 2 });
   });
@@ -194,8 +195,8 @@ describe("confirmBooking", () => {
     await captured(holdId, new Date(NOW.getTime() + 13 * 60_000).toISOString());
     const payments = createStubPayments();
     const later = new Date(NOW.getTime() + 13 * 60_000);
-    expect(await confirmBooking(env.DB, payments, holdId, later, {})).toBe("refunded");
-    expect(await confirmBooking(env.DB, payments, holdId, later, {})).toBe("refunded");
+    expect(await confirmBooking(env.DB, payments, holdId, later, { log: createLogger() })).toBe("refunded");
+    expect(await confirmBooking(env.DB, payments, holdId, later, { log: createLogger() })).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_1", amount: 200000 }]);
     expect(await visitOf(holdId)).toBeNull();
   });
@@ -215,8 +216,8 @@ describe("confirmBooking", () => {
       },
     };
     const payments = createStubPayments();
-    expect(await confirmBooking(env.DB, payments, holdId, later, options)).toBe("refunded");
-    expect(await confirmBooking(env.DB, payments, holdId, later, options)).toBe("refunded");
+    expect(await confirmBooking(env.DB, payments, holdId, later, { ...options, log: createLogger() })).toBe("refunded");
+    expect(await confirmBooking(env.DB, payments, holdId, later, { ...options, log: createLogger() })).toBe("refunded");
 
     const { results } = await env.DB.prepare(
       "SELECT id, kind, subject_kind, subject_id, state FROM outbound_messages WHERE person_id = ?1",
@@ -254,7 +255,9 @@ describe("confirmBooking", () => {
     await post(app, "/api/bookings", { hold_id: consult.id }, { DB: leaseRefused(env.DB) });
     await env.DB.prepare("UPDATE slot_holds SET state = 'released' WHERE id = ?1").bind(consult.id).run();
     const later = new Date(NOW.getTime() + 13 * 60_000);
-    expect(await confirmBooking(env.DB, createStubPayments(), consult.id, later)).toBe("lapsed");
+    expect(await confirmBooking(env.DB, createStubPayments(), consult.id, later, { log: createLogger() })).toBe(
+      "lapsed",
+    );
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first()).toEqual({ n: 0 });
     expect(await autoRefundsOf(env.DB, PERSON)).toEqual([]);
   });
@@ -294,7 +297,7 @@ describe("booking a service ops added", () => {
     expect(started.checkout).toMatchObject({ amount: 250000, description: "Premium service · Tue 22 Sep" });
 
     await captured(holdId);
-    expect(await confirmBooking(env.DB, createStubPayments(), holdId, NOW, {})).toBe("booked");
+    expect(await confirmBooking(env.DB, createStubPayments(), holdId, NOW, { log: createLogger() })).toBe("booked");
 
     expect(await visitOf(holdId)).toMatchObject({
       type: "service",
@@ -318,7 +321,7 @@ describe("booking a service ops added", () => {
     await post(app, "/api/bookings", { hold_id: holdId });
     await captured(holdId);
 
-    await confirmBooking(env.DB, createStubPayments(), holdId, NOW, {});
+    await confirmBooking(env.DB, createStubPayments(), holdId, NOW, { log: createLogger() });
 
     expect((await visitOf(holdId))?.window_end).toBe("2026-09-22T08:30:00.000Z");
     const paid = await env.DB.prepare("SELECT amount FROM payments WHERE razorpay_payment_id = 'pay_1'").first();

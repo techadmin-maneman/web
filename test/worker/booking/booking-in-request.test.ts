@@ -990,7 +990,7 @@ describe("confirmBooking", () => {
     await grantCredits(env.DB, { personId: PERSON, visits: 2, source: "ops", sourceId: "o2", now: NOW }).run();
     const ordered = await heldAndOrdered();
 
-    const again = await confirmBooking(env.DB, createStubPayments(), ordered.holdId, at(5));
+    const again = await confirmBooking(env.DB, createStubPayments(), ordered.holdId, at(5), { log: createLogger() });
 
     expect(again).toBe("already_booked");
     expect((await visitsOf(PERSON, "service")).results).toHaveLength(1);

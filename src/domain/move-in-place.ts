@@ -1,6 +1,5 @@
 // A hold that moves a visit: the visit moved in place, or a replacement booked and the visit it replaces cancelled.
 
-import { createLogger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { refundedMessage } from "./auto-refunds.ts";
 import { heldTimeFree } from "./hold-slot.ts";
@@ -108,7 +107,7 @@ async function moveOvertaken(
   now: Date,
   options: ConfirmOptions,
 ): Promise<Confirmed> {
-  (options.log ?? createLogger()).warn("move_overtaken", { hold_id: hold.id });
+  options.log.warn("move_overtaken", { hold_id: hold.id });
   const told = refundedMessage(db, { personId: hold.person_id, holdId: hold.id, now });
   await giveBack(
     db,

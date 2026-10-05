@@ -30,6 +30,7 @@ import {
 } from "../helpers.ts";
 import { asClient, client, fittedInAugust, signedIn, technician, type Call } from "../clients.ts";
 import { JOB, working } from "../job-fixtures.ts";
+import { createLogger } from "../../../src/log.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const OTHER = "55555555-5555-4555-8555-555555555555";
@@ -457,7 +458,7 @@ describe("the client, at the app's pay step", () => {
       .bind(hold.id, at(20).toISOString())
       .run();
     const payments = createStubPayments();
-    expect(await confirmBooking(env.DB, payments, hold.id, at(20))).toBe("refunded");
+    expect(await confirmBooking(env.DB, payments, hold.id, at(20), { log: createLogger() })).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 180_000 }]);
   });
 
@@ -478,7 +479,7 @@ describe("the client, at the app's pay step", () => {
       ).bind(PERSON, checkout.order_id, checkout.amount, NOW.toISOString()),
       env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1").bind(hold.id, NOW.toISOString()),
     ]);
-    expect(await confirmBooking(env.DB, createStubPayments(), hold.id, NOW)).toBe("booked");
+    expect(await confirmBooking(env.DB, createStubPayments(), hold.id, NOW, { log: createLogger() })).toBe("booked");
     const theirs = await heldService(OTHER, NOW, "morning");
     expect((await enter(OTHER, theirs.id, "UNQ5")).status).toBe(422);
 

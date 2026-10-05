@@ -12,6 +12,7 @@ import { enterOnHold, removeFromHold } from "../../../src/domain/discount-code-h
 import { clientHold } from "../../../src/domain/holds.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { captureLogs, markDatabase, NOW } from "../helpers.ts";
+import { createLogger } from "../../../src/log.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const HOLD = "33333333-3333-4333-8333-333333333333";
@@ -107,7 +108,9 @@ describe("a hold booked or given back", () => {
   const payments = createStubPayments();
 
   it("is refused for a hold that is not there", async () => {
-    await expect(confirmBooking(env.DB, payments, HOLD, NOW)).rejects.toThrow("no such hold to book");
+    await expect(confirmBooking(env.DB, payments, HOLD, NOW, { log: createLogger() })).rejects.toThrow(
+      "no such hold to book",
+    );
     await expect(giveBack(env.DB, payments, HOLD, NOW, "test")).rejects.toThrow("no such hold to give back");
   });
 

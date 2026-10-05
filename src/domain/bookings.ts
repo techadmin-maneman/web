@@ -2,7 +2,6 @@
 // visit, books it in one batch; a paid hold keeps its time until it is booked, by the half-hour pass if its request
 // failed (src/domain/unbooked-holds.ts), or is given back (src/domain/give-back.ts).
 
-import { createLogger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { paymentsTab } from "./alerts.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "./credits.ts";
@@ -184,7 +183,7 @@ export async function confirmBooking(
   payments: PaymentsProvider,
   holdId: string,
   now: Date,
-  options: ConfirmOptions = {},
+  options: ConfirmOptions,
 ): Promise<Confirmed> {
   const hold = await bookingHoldRow(db, holdId);
   if (hold === null) throw new Error("no such hold to book");
@@ -346,7 +345,7 @@ function creditRedeem(db: D1Database, hold: HoldRow, now: Date): D1PreparedState
 async function alertIfNoCreditPaid(db: D1Database, booked: HoldRow, options: ConfirmOptions): Promise<void> {
   if (booked.use_credit !== 1 || booked.appointment_id === null) return;
   if (await creditRedeemedFor(db, booked.appointment_id)) return;
-  (options.log ?? createLogger()).warn("credit_visit_without_credit", { hold_id: booked.id });
+  options.log.warn("credit_visit_without_credit", { hold_id: booked.id });
   await options.alertOnce?.({
     key: `credit_visit_without_credit:${booked.id}`,
     message:

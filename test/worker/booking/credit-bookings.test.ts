@@ -11,6 +11,7 @@ import { composeVisitMessage } from "../../../src/domain/visit-messages.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { captureLogs, fakeDependencies, fakeQueue, leaseRefused, markDatabase, NOW } from "../helpers.ts";
 import { asClient, client, fittedInAugust, signedIn, technician } from "../clients.ts";
+import { createLogger } from "../../../src/log.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 
@@ -92,7 +93,7 @@ describe("one credit pays for one visit", () => {
   const bookLater = (holdId: string) => book(holdId, { DB: leaseRefused(env.DB) });
   const get = async (path: string) => (await asClient(cookie, path)).json();
   const confirm = (holdId: string, now = NOW, options = {}) =>
-    confirmBooking(env.DB, createStubPayments(), holdId, now, options);
+    confirmBooking(env.DB, createStubPayments(), holdId, now, { ...options, log: createLogger() });
   const redeems = async () =>
     (await env.DB.prepare("SELECT source_id FROM credit_ledger WHERE kind = 'redeem'").all()).results;
 
