@@ -3,13 +3,13 @@
 // offering it from that day; nothing already recorded moves, and neither does
 // its stock. The check says so before anything is sent (ADR 0071).
 
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Answer, type Consumable, type Consumables } from "../api.ts";
 import { settings } from "../content.ts";
 import { CheckPanel } from "./CheckPanel.tsx";
-import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
 
 const copy = settings.consumables;
@@ -42,7 +42,7 @@ function Refused({ step }: { step: Step }) {
   if (step.step !== "failed") return null;
   return (
     <p className={styles.error} role="alert">
-      {refusalOf(copy.errors, step)}
+      {errorText(copy.errors, step)}
     </p>
   );
 }

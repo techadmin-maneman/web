@@ -5,6 +5,7 @@
 // before anything is sent (ADR 0071). Every box holds text: an empty level is
 // no level, never a nought.
 
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { rupees } from "@maneman/web-kit/money";
@@ -12,7 +13,6 @@ import { useState } from "react";
 import { api, type Consumable, type Consumables } from "../api.ts";
 import { settings } from "../content.ts";
 import { CheckPanel } from "./CheckPanel.tsx";
-import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
 
 const copy = settings.consumables;
@@ -230,7 +230,7 @@ export function ConsumableForm({
       )}
       {step.step === "failed" && (
         <p className={styles.error} role="alert">
-          {refusalOf(copy.errors, step)}
+          {errorText(copy.errors, step)}
         </p>
       )}
     </fieldset>

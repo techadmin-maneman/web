@@ -3,6 +3,7 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A price's boxes start from the price in force, its
 // GST included: a GST box that opened at nought once made an 18% item GST-free without anyone seeing it.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { Button } from "@maneman/ui/Button";
@@ -35,16 +36,6 @@ export interface Priced {
 /** "Rs. 2,000 + 18% GST". */
 export const priceWords = (price: { amount_ex_gst: number; gst_percent: number }) =>
   copy.price(rupees(price.amount_ex_gst), price.gst_percent);
-
-/** A refusal, said of the box it names where it names one. */
-function refusalOf(
-  failure: { readonly code: string; readonly fields: readonly string[] },
-  errors: Readonly<Record<string, string>> = copy.errors,
-): string {
-  const [field] = failure.fields;
-  if (failure.code === "invalid_request" && field !== undefined) return errors[field] ?? copy.errors.unknown ?? "";
-  return errors[failure.code] ?? copy.errors.unknown ?? "";
-}
 
 /** The check before anything is sent, headed by its title, with the change beneath. */
 function Check(props: {
@@ -105,7 +96,7 @@ function Refused({ failed }: { failed: { code: string; fields: readonly string[]
   if (failed === null) return null;
   return (
     <p className={styles.error} role="alert">
-      {refusalOf(failed)}
+      {errorText(copy.errors, failed)}
     </p>
   );
 }
@@ -301,7 +292,7 @@ export function TakeBack(props: {
       />
       {steps.failed !== null && (
         <p className={styles.error} role="alert">
-          {refusalOf(steps.failed, { ...copy.errors, ...copy.takeBackErrors })}
+          {errorText({ ...copy.errors, ...copy.takeBackErrors }, steps.failed)}
         </p>
       )}
     </>

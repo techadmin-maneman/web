@@ -39,7 +39,7 @@ import { Tray } from "./Tray.tsx";
 import { useBoard } from "./useBoard.ts";
 import { answersTo, foundBy, weekOf } from "./board-view.ts";
 import { ChangePanel, changedNotice, type Changing } from "./ChangePanel.tsx";
-import { doneNotice, refusalOf, STALE, staleWords, type Notice } from "./landing.ts";
+import { doneNotice, moveRefusal, STALE, staleWords, type Notice } from "./landing.ts";
 import { NoticeLine } from "./NoticeLine.tsx";
 import { OpenedDrawer } from "./OpenedDrawer.tsx";
 import { isBlackout, landsAtFrom, useRooms, windowsFrom } from "./rooms.ts";
@@ -237,7 +237,7 @@ export function DispatchScreen() {
       }
       // Nothing was written: the job stays in hand, and the board asks again where it fits.
       setMove({ ...move, to: null, sending: false });
-      setNotice({ tone: "refusal", text: refusalOf(job, to, answer.code), call: null });
+      setNotice({ tone: "refusal", text: moveRefusal(job, to, answer.code), call: null });
       askRooms();
     },
     [move, refresh, focusBlock, askRooms],

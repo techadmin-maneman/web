@@ -15,13 +15,16 @@
 // to cost a no-show once ops rule, under whoever Access says is signed in
 // (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
 
+import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
+import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { type Loaded, useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, minutesBetween, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useRef, useState } from "react";
 import { api, type Charge, type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
@@ -265,11 +268,8 @@ const keepsCreditToo = (preview: Loaded<ChargePreview>): boolean =>
  * buttons stood. It cannot be sent until the figures are in.
  */
 function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge: () => void; onBack: () => void }) {
-  const panel = useRef<HTMLDivElement>(null);
+  const panel = useFocusOnMount<HTMLDivElement>();
   const [preview] = useLoad(useCallback(() => api.chargePreview(each.id), [each.id]));
-  useEffect(() => {
-    panel.current?.focus();
-  }, []);
   const day = each.visit_date === null ? copy.noDay : shortDate(each.visit_date);
   return (
     <div
@@ -365,7 +365,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
       <textarea
         id={`reason-${each.id}`}
         className={styles.reasonField}
-        maxLength={300}
+        maxLength={REASON_MAX_CHARS}
         placeholder={copy.reason.placeholder}
         aria-describedby={`reason-hint-${each.id}`}
         value={reason}
@@ -416,7 +416,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
       )}
       {ruling.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[ruling.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: ruling.code })}
         </p>
       )}
     </>

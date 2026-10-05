@@ -2,6 +2,8 @@
 // reached us. Ops say how it went, when the work began and ended on the visit's own day, and how they know
 // (src/routes/ops/visit-changes.ts). No board draws it.
 
+import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
@@ -22,10 +24,10 @@ const OUTCOMES: readonly Outcome[] = ["done", "partial"];
 const instantOf = (date: string, time: string): string => new Date(`${date}T${time}:00+05:30`).toISOString();
 
 /** A refusal in the console's words: a field the API named, else its code. */
-function refusalOf(code: string, fields: readonly string[]): string {
+function closeRefusal(code: string, fields: readonly string[]): string {
   if (code === "invalid_request" && fields.includes("reason")) return copy.errors.reason ?? "";
   if (code === "invalid_request") return copy.errors.times ?? "";
-  return copy.errors[code] ?? copy.errors.unknown ?? "";
+  return errorText(copy.errors, { code });
 }
 
 function OutcomeChoice({ outcome, onChoose }: { outcome: Outcome; onChoose: (outcome: Outcome) => void }) {
@@ -70,7 +72,7 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
         reason: reason.trim(),
       });
       if (answer.ok) onClosed(outcome);
-      else setFailed(refusalOf(answer.code, answer.fields));
+      else setFailed(closeRefusal(answer.code, answer.fields));
     });
 
   return (
@@ -117,7 +119,7 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
           <TextArea
             {...control}
             className={styles.reason}
-            maxLength={300}
+            maxLength={REASON_MAX_CHARS}
             value={reason}
             disabled={busy}
             onChange={(event) => {

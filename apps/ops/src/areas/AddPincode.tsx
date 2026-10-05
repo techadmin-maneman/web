@@ -1,6 +1,7 @@
 // Adding a pincode the service area does not hold: its number, what messages call its area, and its city, one of
 // ours. It goes in unserved, so adding one messages nobody; marking it live is the launch panel's.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type ServedPincode } from "../api.ts";
@@ -139,7 +140,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
       </div>
       {code !== null && (
         <p className={styles.error} role="alert">
-          {copy.errors[code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code })}
         </p>
       )}
       <p className={styles.note}>{copy.note}</p>

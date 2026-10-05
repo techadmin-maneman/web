@@ -1,6 +1,7 @@
 // The Served tab's parts (./Served.tsx): the city tabs with their bulk pair, one pincode's row, who a save would
 // message, what sits beneath Save, and a file read with its changes shown before they go into the table.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import type { AreaChange, ServedPincode } from "../api.ts";
@@ -325,7 +326,7 @@ export function SaveNotes({
       )}
       {saving.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[saving.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: saving.code })}
         </p>
       )}
     </>

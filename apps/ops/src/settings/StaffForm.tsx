@@ -1,6 +1,7 @@
 // Adding a member of staff, or changing their grants and whether they are let in. The whole list of grants is sent
 // and replaces theirs; the check names each grant given or taken away before anything is saved.
 
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
@@ -18,7 +19,6 @@ import {
   whereOf,
   whereValue,
 } from "./grants.ts";
-import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
 import staffStyles from "./staff.module.css";
 
@@ -294,7 +294,7 @@ export function StaffForm(props: {
       </div>
       {step.step === "failed" && (
         <p className={styles.error} role="alert">
-          {refusalOf(copy.errors, step.failure)}
+          {errorText(copy.errors, step.failure)}
         </p>
       )}
     </form>

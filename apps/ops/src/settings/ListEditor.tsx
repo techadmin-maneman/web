@@ -6,6 +6,7 @@
 // understands. The check shows what is added, renamed and taken off before
 // anything is sent (ADR 0071).
 
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
@@ -13,7 +14,6 @@ import type { Answer, JobSheet, JobSheetItemSent, JobSheetList } from "../api.ts
 import { settings } from "../content.ts";
 import { whoWords } from "../lib/who.ts";
 import { CheckPanel } from "./CheckPanel.tsx";
-import { refusalOf, type Failure } from "./refusal.ts";
 import own from "./consumables.module.css";
 import styles from "./settings.module.css";
 
@@ -289,7 +289,7 @@ export function ListEditor(props: Props) {
       )}
       {step.step === "failed" && (
         <p className={styles.error} role="alert">
-          {refusalOf(copy.errors, step)}
+          {errorText(copy.errors, step)}
         </p>
       )}
     </fieldset>

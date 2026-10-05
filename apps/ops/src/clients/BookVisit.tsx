@@ -2,6 +2,7 @@
 // choose or whoever is free. A paid visit goes out as a payment link and is booked once the client pays; anything
 // else is booked at once (src/routes/ops/visits.ts). No board draws it (docs/fidelity-method.md).
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -345,7 +346,7 @@ function Form({
       </div>
       {failed !== null && (
         <p className={styles.error} role="alert">
-          {copy.errors[failed] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: failed })}
         </p>
       )}
     </form>

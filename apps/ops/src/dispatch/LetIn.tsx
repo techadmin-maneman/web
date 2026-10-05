@@ -2,6 +2,8 @@
 // far from its door (src/routes/ops/visit-changes.ts). Ops say why; the reason stays with the visit and is shown with a
 // no-show's evidence. No board draws it.
 
+import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { Field, TextArea } from "@maneman/ui/Field";
@@ -23,7 +25,7 @@ function Form({ visitId, onLetIn }: { visitId: string; onLetIn: () => void }) {
       setFailed(null);
       const answer = await api.letIn(visitId, reason.trim());
       if (answer.ok) onLetIn();
-      else setFailed(copy.errors[answer.code] ?? copy.errors.unknown ?? "");
+      else setFailed(errorText(copy.errors, { code: answer.code }));
     });
 
   return (
@@ -39,7 +41,7 @@ function Form({ visitId, onLetIn }: { visitId: string; onLetIn: () => void }) {
           <TextArea
             {...control}
             className={styles.reason}
-            maxLength={300}
+            maxLength={REASON_MAX_CHARS}
             value={reason}
             disabled={busy}
             onChange={(event) => {

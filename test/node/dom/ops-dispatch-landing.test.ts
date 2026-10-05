@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { Block, Board, BoardRow } from "../../../apps/ops/src/api.ts";
 import { answersTo, foundBy, weekOf } from "../../../apps/ops/src/dispatch/board-view.ts";
 import type { BlockJob, Target } from "../../../apps/ops/src/dispatch/job.ts";
-import { doneNotice, refusalOf, staleWords } from "../../../apps/ops/src/dispatch/landing.ts";
+import { doneNotice, moveRefusal, staleWords } from "../../../apps/ops/src/dispatch/landing.ts";
 import { dispatch } from "../../../apps/ops/src/content.ts";
 
 const ROHIT = {
@@ -64,9 +64,9 @@ const TO_SALIM: Target = { technician: SALIM, date: "2025-09-20", window: "eveni
 
 describe("what a move says once it is sent", () => {
   it("names the technician and the window a refused move asked for", () => {
-    expect(refusalOf(JOB, TO_SALIM, "clash")).toBe(dispatch.landing.clash("Salim Khan", "Sat 20 Sep", "evening"));
-    expect(refusalOf(JOB, TO_SALIM, "does_not_fit")).toContain(dispatch.typeNames.service ?? "service");
-    expect(refusalOf(JOB, TO_SALIM, "no_such_code")).toBe(dispatch.landing.errors.unknown);
+    expect(moveRefusal(JOB, TO_SALIM, "clash")).toBe(dispatch.landing.clash("Salim Khan", "Sat 20 Sep", "evening"));
+    expect(moveRefusal(JOB, TO_SALIM, "does_not_fit")).toContain(dispatch.typeNames.service ?? "service");
+    expect(moveRefusal(JOB, TO_SALIM, "no_such_code")).toBe(dispatch.landing.errors.unknown);
   });
 
   it("asks ops to call a client WhatsApp may not message, and carries the move to record the call", () => {

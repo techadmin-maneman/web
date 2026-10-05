@@ -8,6 +8,8 @@
 // Each name in a held pair is a way to that client's page, and each grant says
 // how long it has been held, as the board writes it.
 
+import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
@@ -101,7 +103,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
               <TextArea
                 {...control}
                 className={styles.reasonField}
-                maxLength={300}
+                maxLength={REASON_MAX_CHARS}
                 // The field stands where the button that asked for it stood, so the keyboard goes to it.
                 autoFocus
                 value={reason}
@@ -162,7 +164,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
       )}
       {decision.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[decision.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: decision.code })}
         </p>
       )}
     </>

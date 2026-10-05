@@ -27,6 +27,7 @@
     "./Table": "./Table.tsx",
     "./Tabs": "./Tabs.tsx",
     "./useAsync": "./useAsync.ts",
+    "./useFocusOnMount": "./useFocusOnMount.ts",
     "./useLoad": "./useLoad.ts",
     "./useOneAtATime": "./useOneAtATime.ts",
     "./useSecondsLeft": "./useSecondsLeft.ts",

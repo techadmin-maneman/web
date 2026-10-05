@@ -2,6 +2,7 @@
 // in. No board draws it, so it is laid out as the other Settings panels are. The API narrows the list to the places
 // its viewer may see, and refuses a change beyond their own.
 
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -16,7 +17,6 @@ import { whoWords } from "../lib/who.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { grantWords } from "./grants.ts";
-import { refusalOf, type Failure } from "./refusal.ts";
 import { StaffForm } from "./StaffForm.tsx";
 import styles from "./settings.module.css";
 import staffStyles from "./staff.module.css";
@@ -88,7 +88,7 @@ function Enforcement({ book, onChanged }: PanelProps) {
       )}
       {typeof step === "object" && (
         <p className={styles.error} role="alert">
-          {refusalOf(words.errors, step)}
+          {errorText(words.errors, step)}
         </p>
       )}
     </Panel>
@@ -249,7 +249,7 @@ function TokenRow({ token, removable, onChanged }: TokenRowProps) {
       )}
       {typeof step === "object" && (
         <p className={styles.error} role="alert">
-          {refusalOf(words.errors, step)}
+          {errorText(words.errors, step)}
         </p>
       )}
     </li>
@@ -330,7 +330,7 @@ function TokenForm({ onChanged }: { onChanged: (book: StaffBook) => void }) {
       </div>
       {failure !== null && (
         <p className={styles.error} role="alert">
-          {refusalOf(words.errors, failure)}
+          {errorText(words.errors, failure)}
         </p>
       )}
     </form>

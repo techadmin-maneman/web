@@ -6,6 +6,7 @@
 // list is sent at once, and the check shows each consumable whose figure
 // changes, old beside new (ADR 0071). An empty box is none.
 
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
@@ -14,7 +15,6 @@ import { api, type Consumables, type ServiceUse } from "../api.ts";
 import { dispatch, settings } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { CheckPanel } from "./CheckPanel.tsx";
-import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
 import own from "./consumables.module.css";
 
@@ -173,7 +173,7 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
         )}
         {step.step === "failed" && (
           <p className={styles.error} role="alert">
-            {refusalOf(copy.errors, step)}
+            {errorText(copy.errors, step)}
           </p>
         )}
       </fieldset>

@@ -63,6 +63,17 @@ describe.each(APPS)("%s", (app) => {
     expect(copies).toEqual([]);
   });
 
+  // P3-36 (CQ-36): a refusal is said through @maneman/web-kit/refusal, and a panel that opens takes the keyboard
+  // through useFocusOnMount.
+  it("keeps no refusal lookup or focus-on-open effect of its own", () => {
+    const copies = code.filter((path) =>
+      /\b(function|const) (refusalOf|errorText)\b|useEffect\(\(\) => \{\s*panel\.current\?\.focus\(\);\s*\}, \[\]\)/.test(
+        read(path),
+      ),
+    );
+    expect(copies).toEqual([]);
+  });
+
   // P3-35 (UX-15): the boards' small-caps label is Caps's look; a screen's class sets its size and colour alone.
   it("keeps no small-caps label recipe of its own", () => {
     const recipes = styles.filter((path) => /font-variant-caps:\s*all-small-caps/.test(read(path)));

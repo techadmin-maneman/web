@@ -16,6 +16,7 @@
 // him, with his number; and a change of technician alone, which leaves his
 // window as it was, tells him nothing (docs/decisions/0069-dispatch-under-concurrency.md).
 
+import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
@@ -30,9 +31,6 @@ import { phoneWords } from "../lib/phone.ts";
 import { changesTime, nameOf, personOf, startOf, whenOf, type Job, type Target, windowWord } from "./job.ts";
 
 const AN_HOUR = 60 * 60 * 1000;
-
-/** The longest blackout reason the server keeps. */
-const REASON_MAX_CHARS = 300;
 
 /** The notice the visit was sold under, in hours, when the visit is inside it: the board answers with one more line. */
 function noticeInside(job: Job, now: Date): number | null {

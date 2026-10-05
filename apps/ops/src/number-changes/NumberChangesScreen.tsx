@@ -10,6 +10,8 @@
 // somebody else already holds is refused by the API, and said so here. Each
 // change says how long it has left, counted as the Tasks board counts it.
 
+import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
@@ -82,7 +84,7 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
           <textarea
             id={`reason-${change.id}`}
             className={styles.reasonField}
-            maxLength={300}
+            maxLength={REASON_MAX_CHARS}
             // The field stands where the button that asked for it stood, so the keyboard goes to it.
             autoFocus
             aria-describedby={`reason-hint-${change.id}`}
@@ -150,7 +152,7 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
       )}
       {deciding.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[deciding.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: deciding.code })}
         </p>
       )}
     </>

@@ -8,6 +8,7 @@
 // the visits and the reason, and the server writes the ledger's entry and its
 // audit entry together; the balance it answers is shown, and heads the page.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -310,7 +311,7 @@ function CreditForm({
           )}
           {adjusting.step === "failed" && (
             <p className={styles.error} role="alert">
-              {creditCopy.errors[adjusting.code] ?? creditCopy.errors.unknown}
+              {errorText(creditCopy.errors, { code: adjusting.code })}
             </p>
           )}
         </form>

@@ -2,6 +2,7 @@
 // signed out or revoked. Revoking a phone ends its session and makes it drop its cached jobs, so it asks before it
 // sends (src/domain/technicians.ts). It also stops him signing in on any phone until ops let him again.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -102,7 +103,7 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
       )}
       {revoking.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[revoking.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: revoking.code })}
         </p>
       )}
     </li>
@@ -152,7 +153,7 @@ function SignInStopped({ technician, since }: { technician: Technician; since: s
       )}
       {allowing.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.errors[allowing.code] ?? copy.errors.unknown}
+          {errorText(copy.errors, { code: allowing.code })}
         </p>
       )}
     </div>

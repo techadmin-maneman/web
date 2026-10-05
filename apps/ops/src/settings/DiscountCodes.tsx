@@ -6,6 +6,7 @@
 // it (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A code switched off stays listed, with who
 // switched it off, and its uses stay on record.
 
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -19,7 +20,6 @@ import { whoWords } from "../lib/who.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { DiscountCodeForm } from "./DiscountCodeForm.tsx";
-import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
 
 const copy = settings.discountCodes;
@@ -103,7 +103,7 @@ function CodeRow({ code, maySwitchOff, onSwitched }: CodeRowProps) {
       )}
       {typeof switching === "object" && (
         <p className={styles.error} role="alert">
-          {refusalOf(copy.errors, switching)}
+          {errorText(copy.errors, switching)}
         </p>
       )}
     </li>

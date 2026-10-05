@@ -6,6 +6,8 @@
 // (docs/decisions/0089-an-invite-is-not-lost.md). No board draws it
 // (docs/fidelity-method.md).
 
+import { REASON_MAX_CHARS } from "../../../../src/policy/decision-reasons.ts";
+import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
@@ -18,9 +20,6 @@ import { whoWords } from "../lib/who.ts";
 import styles from "./clients.module.css";
 
 const copy = clients.invite;
-
-/** The longest reason kept, as the route allows (src/policy/decision-reasons.ts). */
-const REASON_MAX_CHARS = 300;
 
 /** Where the form is: being filled, sending, or refused with the API's code. */
 type Attaching =
@@ -136,7 +135,7 @@ function AttachForm({
       </Button>
       {attaching.step === "failed" && (
         <p className={styles.error} role="alert">
-          {copy.form.errors[attaching.code] ?? copy.form.errors.unknown}
+          {errorText(copy.form.errors, { code: attaching.code })}
         </p>
       )}
     </form>
