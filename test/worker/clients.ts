@@ -25,8 +25,22 @@ export async function client(id: string, mobile = "+919810000001", name = "Rohit
   await savedAddress(id);
 }
 
-/** A first fit done on 1 August, so a service visit is the client's to book. */
-export async function fittedInAugust(personId: string, visitId = "fit-1", technicianId = IMRAN): Promise<void> {
+/** Who fitted the clients here: a technician since switched off, so Imran may take their next visit. */
+export const FITTER = "t-fit";
+
+/**
+ * A first fit done on 1 August, so a service visit is the client's to book. It is the fitter's, not Imran's: a
+ * technician never takes two of a client's visits in a row (src/domain/technician-rotation.ts).
+ */
+export async function fittedInAugust(personId: string, visitId = "fit-1", technicianId = FITTER): Promise<void> {
+  if (technicianId === FITTER) {
+    await env.DB.prepare(
+      `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)
+       VALUES (?1, ?1, 'Sana Mirza', 'SM', 0, ?2)`,
+    )
+      .bind(FITTER, NOW.toISOString())
+      .run();
+  }
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
      VALUES (?1, ?1, ?2, 'first_fit', 'completed', '2026-08-01T03:30:00.000Z', '2026-08-01T06:30:00.000Z', ?3, ?4)`,

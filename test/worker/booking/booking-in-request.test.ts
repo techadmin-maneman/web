@@ -372,6 +372,8 @@ describe("one credit pays for one visit", () => {
   });
 
   it("books only the first of three visits booked back to back on it, and asks payment for the others", async () => {
+    // A second technician, so the three can alternate: no technician takes two of a client's visits in a row.
+    await technician("t3", "Sandeep Rawat", "SR");
     const answers = [];
     for (const date of ["2026-09-24", "2026-09-25", "2026-09-28"]) answers.push(await book(await hold(date)));
 

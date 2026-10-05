@@ -1031,6 +1031,7 @@ Request body:
             "clash",
             "on_leave",
             "does_not_fit",
+            "back_to_back",
             "past_day",
             "window_passed",
             "blackout",

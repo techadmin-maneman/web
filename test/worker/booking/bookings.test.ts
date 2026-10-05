@@ -39,10 +39,15 @@ beforeEach(async () => {
     .bind(PERSON, NOW.toISOString())
     .run();
   await savedAddress(PERSON);
-  // Fitted: a service visit done with Imran.
+  // Fitted: a service visit done by a technician since switched off, so Imran may take the next (ADR 0111).
+  await env.DB.prepare(
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t0', 't0', 'Sana Mirza', 'SM', 0, ?1)",
+  )
+    .bind(NOW.toISOString())
+    .run();
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
-     VALUES ('past', 'past', ?1, 'service', 'completed', '2026-09-01T06:30:00.000Z', '2026-09-01T08:00:00.000Z', 't1',
+     VALUES ('past', 'past', ?1, 'service', 'completed', '2026-09-01T06:30:00.000Z', '2026-09-01T08:00:00.000Z', 't0',
        ?2)`,
   )
     .bind(PERSON, NOW.toISOString())

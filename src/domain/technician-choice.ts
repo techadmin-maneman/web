@@ -1,5 +1,5 @@
-// Who takes a hold among the technicians free for it: the client's regular technician first, then whoever holds the
-// least that day, then whoever holds the least over the week around it, so a tie never goes by name.
+// Who takes a hold among the technicians free for it: whoever holds the least that day, then whoever holds the least
+// over the week around it, so a tie never goes by name. Who may take it at all is src/domain/technician-rotation.ts's.
 
 import { addDays } from "../lib/india-time.ts";
 
@@ -16,11 +16,10 @@ type Held = (technicianId: string, date: string) => { readonly units: ReadonlySe
 type Candidate = { readonly technician: { readonly id: string } };
 
 /** The order to try technicians in for a hold on `date`, as a sort's compare. */
-export function inTakingOrder(held: Held, date: string, regular: string | null) {
+export function inTakingOrder(held: Held, date: string) {
   const days = Array.from({ length: TIE_REACH * 2 + 1 }, (_, day) => addDays(date, day - TIE_REACH));
   const around = (technicianId: string) => days.reduce((sum, day) => sum + held(technicianId, day).units.size, 0);
   return (a: Candidate, b: Candidate) =>
-    Number(b.technician.id === regular) - Number(a.technician.id === regular) ||
     held(a.technician.id, date).units.size - held(b.technician.id, date).units.size ||
     around(a.technician.id) - around(b.technician.id);
 }

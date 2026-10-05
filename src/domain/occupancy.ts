@@ -92,18 +92,6 @@ export async function activeTechnicians(db: D1Database): Promise<Technician[]> {
   return results;
 }
 
-/** Whoever did the client's latest visit: their regular technician. */
-export async function regularTechnician(db: D1Database, personId: string): Promise<string | null> {
-  const row = await db
-    .prepare(
-      `SELECT technician_id FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL AND status = 'completed'
-         AND technician_id IS NOT NULL ORDER BY window_start DESC LIMIT 1`,
-    )
-    .bind(personId)
-    .first<{ technician_id: string }>();
-  return row?.technician_id ?? null;
-}
-
 /** A visit being moved: only its technician can take the move, and its own time is left out. */
 export interface Moving {
   readonly visitId: string;

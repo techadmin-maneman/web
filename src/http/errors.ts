@@ -91,6 +91,8 @@ export const ERROR_CODES = [
   "clash",
   "on_leave",
   "does_not_fit",
+  // A dispatch move onto the technician who took the client's visit just before or just after (ADR 0111).
+  "back_to_back",
   // A dispatch move to a day gone, or to today's window once every start in it has passed; or onto a day ops blacked
   // out, without the reason that lets it through.
   "past_day",
@@ -245,6 +247,7 @@ export const ERROR_STATUS = {
   clash: 409,
   on_leave: 409,
   does_not_fit: 409,
+  back_to_back: 409,
   past_day: 409,
   window_passed: 409,
   blackout: 409,

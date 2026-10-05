@@ -324,7 +324,8 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await expect(pay.getByText(new RegExp(`${FREE_UNTIL.source}|${INSIDE_NOTICE.source}`))).toBeVisible();
   // Checkout lists the ways to pay, so the sheet offers no choice Checkout would ignore.
   await expect(pay.getByRole("radiogroup")).toHaveCount(0);
-  await expect(pay.getByText("Imran never handles money.")).toBeVisible();
+  // Whoever the hold names: never the technician of the client's last visit (docs/decisions/0111).
+  await expect(pay.getByText(/^\S+ never handles money\.$/)).toBeVisible();
   // Already switched on, so the sheet does not ask again.
   await expect(pay.getByRole("checkbox", { name: REMIND })).toHaveCount(0);
   // Both photograph consents are decided, so booking asks for neither, as board C4 draws it.
@@ -765,7 +766,7 @@ test("marks the days and windows inside the notice, which are still sold", async
     ...days,
     days: days.days.map((day, index) => ({
       ...day,
-      windows: day.windows.map((each) => ({ ...each, with: "regular", change_charged: index === 0 })),
+      windows: day.windows.map((each) => ({ ...each, open: true, change_charged: index === 0 })),
     })),
   }));
   await openSheet(page);
