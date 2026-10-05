@@ -40,6 +40,11 @@ export default defineConfig({
     // No data: URLs: the content security policy allows none.
     assetsInlineLimit: 0,
     sourcemap: false,
+    // The console's copy, one file a feature (src/content/), in one chunk: its words compress best together, and
+    // scattered over the shared chunks they cost the first load more than a kilobyte.
+    rolldownOptions: {
+      output: { advancedChunks: { groups: [{ name: "content", test: /[\\/]src[\\/]content(?:[\\/]|\.ts$)/ }] } },
+    },
   },
   server: {
     port: 5174,
