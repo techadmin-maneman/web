@@ -43,6 +43,37 @@ beforeEach(async () => {
 });
 
 describe("sweeper: leads", () => {
+  it("lets go each hour of a hold nobody is paying for once its grace is past, with its claims", async () => {
+    await insertPerson("p", "+919810000001");
+    const hold = (id: string, expiresAt: string, unit: number) => [
+      env.DB.prepare(
+        `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+           amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at)
+         VALUES (?1, 'p', 'service', '2026-09-22', 'morning', 't1', ?2, 200000, 200000, 0, 'held', ?3, ?4, ?4)`,
+      ).bind(id, unit, expiresAt, minutesAgo(30)),
+      env.DB.prepare(
+        "INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES ('t1', '2026-09-22', ?1, ?2)",
+      ).bind(`unit:${String(unit)}`, id),
+    ];
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'fsm-t1', 'Imran Qureshi', 'IQ', 1, ?1)",
+      ).bind(NOW.toISOString()),
+      // Ten minutes and two of grace, both past; and one still counting down.
+      ...hold("dead", minutesAgo(13), 0),
+      ...hold("live", minutesAhead(5), 2),
+    ]);
+
+    await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    const holds = await env.DB.prepare("SELECT id, state FROM slot_holds ORDER BY id").all();
+    expect(holds.results).toEqual([
+      { id: "dead", state: "released" },
+      { id: "live", state: "held" },
+    ]);
+    expect((await env.DB.prepare("SELECT hold_id FROM slot_claims").all()).results).toEqual([{ hold_id: "live" }]);
+  });
+
   it("re-enqueues pending leads older than two minutes and failed leads with attempts left", async () => {
     await insertLead("pending-old", "pending", 0, minutesAgo(3));
     await insertLead("pending-new", "pending", 0, minutesAgo(1)); // its queue message is probably still on the way

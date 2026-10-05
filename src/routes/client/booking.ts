@@ -492,7 +492,7 @@ export function registerClientBooking(app: App): void {
     const terms = move !== null && moving !== null ? move.terms.sold : termsInForce(await opsInputs(c), type);
     const until = offered?.retired_date ?? null;
     const [days, regularId, technicians, schedule] = await Promise.all([
-      availability(db, session.subjectId, { minutes: service.minutes, until }, start, BOOKING_DAYS, now, moving),
+      availability(db, session.subjectId, { minutes: service.minutes, until }, start, BOOKING_DAYS, now, moving, true),
       moving === null ? regularTechnician(db, session.subjectId) : moving.technicianId,
       activeTechnicians(db),
       loadSlotSchedule(db),

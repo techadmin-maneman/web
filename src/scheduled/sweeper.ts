@@ -14,8 +14,9 @@
 //               any other photo's small copy goes with the photo or the look (docs/decisions/0084)
 //   kept looks  a client's kept look once their first fit is photographed
 //   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
-//               try-on sessions once expired, and app sessions 30 days after they ended
+//               try-on sessions once expired, app sessions 30 days after they ended, and holds nobody is paying for
 
+import { lettingGo } from "../domain/scheduling.ts";
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
@@ -251,7 +252,7 @@ export async function requeueTryons(
   return { renders, abandoned, downloads, lost };
 }
 
-/** Deletes what has outlived its use: idempotency keys, counters, sessions and spent codes. */
+/** Deletes what has outlived its use: idempotency keys, counters, sessions and spent codes; lets dead holds go. */
 export async function housekeep(context: SweepContext): Promise<void> {
   const { db, now, before } = sweepRun(context);
   const sessionsEnded = before(SESSION_RETENTION_MS);
@@ -273,6 +274,8 @@ export async function housekeep(context: SweepContext): Promise<void> {
       .bind(sessionsEnded),
     db.prepare("DELETE FROM sessions WHERE expires_at < ?1").bind(sessionsEnded),
     db.prepare("DELETE FROM sessions WHERE revoked_at < ?1").bind(sessionsEnded),
+    // A hold nobody is paying for, past its grace, would otherwise stand until someone else held a window.
+    ...lettingGo(db, now),
   ]);
 }
 
