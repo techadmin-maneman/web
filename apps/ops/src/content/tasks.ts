@@ -1,11 +1,12 @@
 // Tasks (board D2): every queue ops work through, a payment link's state, and the alerts that need a hand.
 
-import type { TaskGroup } from "../api.ts";
+import type { components } from "../api-schema.ts";
 import type { LinkState } from "../tasks/payment-link.ts";
 import { NOT_PERMITTED } from "./common.ts";
 import { DEPARTMENT_NAMES } from "./shell.ts";
 
-type Group = TaskGroup["group"];
+/** A task group as the API names it, from the generated schema, which the Worker-typed tests can read too. */
+type Group = components["schemas"]["Tasks"]["groups"][number]["group"];
 
 /** Where a payment link still owed stands, as the Tasks board says it. */
 const PAYMENT_LINK_STATES: Readonly<Record<LinkState, string>> = {
