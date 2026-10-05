@@ -1,12 +1,9 @@
 // The try-on's look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md): the owner's
-// list of 1 October 2026, item 10, in the owner's words, and their ruling D3 the same day. The visitor gives their
+// list of 1 October 2026, item 10 (ADR 0025, item 88), and their ruling D3 the same day. The visitor gives their
 // number before the look is made, and the look is sent to that number on WhatsApp, never shown on the site. So a
 // try-on whose look could not be sent must not run: the routes ask before anything is uploaded, claimed or rendered
 // (src/routes/public/tryon-upload.ts, tryon-claim.ts and tryon-generate.ts), and the page asks on arrival
 // (GET /api/tryon/availability, src/routes/public/tryon-result.ts).
-
-/** The owner's list of 1 October 2026, item 10 (ADR 0025, item 88). */
-export const RULING = "Try-on images are sent to WhatsApp for privacy, not shown on the site.";
 
 /**
  * One look per WhatsApp number every thirty days: the owner's ruling of 1 October 2026, "One per number, every 30

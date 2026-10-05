@@ -1,7 +1,7 @@
 // A client's try-on, kept (src/policy/kept-try-ons.ts): which of a person's try-ons is kept once they book a visit.
 
 import { describe, expect, it } from "vitest";
-import { keptTryOn, RULING, type HeldTryOn } from "../../src/policy/kept-try-ons.ts";
+import { keptTryOn, type HeldTryOn } from "../../src/policy/kept-try-ons.ts";
 
 const NOW = "2026-09-27T10:00:00.000Z";
 const LATER = "2026-10-05T10:00:00.000Z";
@@ -19,7 +19,7 @@ function tryOn(id: string, columns: Partial<HeldTryOn> = {}): HeldTryOn {
 }
 
 describe("a client's try-on, kept", () => {
-  describe(RULING, () => {
+  describe("the before photograph kept always, and the look until the first fit is photographed", () => {
     it("keeps nothing of someone who has not booked a visit", () => {
       expect(keptTryOn([tryOn("a")], false, NOW)).toBeNull();
     });

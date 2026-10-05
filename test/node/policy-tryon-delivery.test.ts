@@ -2,14 +2,14 @@
 // does not run.
 
 import { describe, expect, it } from "vitest";
-import { RULING, tryOnRuns, undelivered } from "../../src/policy/tryon-delivery.ts";
+import { tryOnRuns, undelivered } from "../../src/policy/tryon-delivery.ts";
 
 const ON = { enabled: true };
 const OFF = { enabled: false };
 const SENDS = { messaging: ON, heldBack: false, capSpent: false };
 
 describe("the try-on's look, on WhatsApp only", () => {
-  describe(RULING, () => {
+  describe("the look, sent on WhatsApp and never shown on the site", () => {
     it("runs only while WhatsApp can send its look", () => {
       expect(tryOnRuns(ON)).toBe(true);
       expect(tryOnRuns(OFF)).toBe(false);
