@@ -62,7 +62,7 @@ const EDGE_PAIRINGS: readonly EdgePairing[] = [
 /** The controls the edge pairings speak for, each by its stylesheet and its rule. */
 const CONTROLS = [
   { file: "apps/tech/src/login/login.module.css", selector: ".mobile" },
-  { file: "apps/tech/src/login/login.module.css", selector: ".box" },
+  { file: "packages/ui/code-field.module.css", selector: ".box" },
   { file: "apps/tech/src/steps/steps.module.css", selector: ".box" },
   { file: "apps/tech/src/steps/steps.module.css", selector: ".boxDone" },
   { file: "apps/tech/src/steps/steps.module.css", selector: ".box64" },
