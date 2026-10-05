@@ -182,6 +182,7 @@ describe("payments and refunds", () => {
           date: "2026-09-21",
           reference: "MM-2026-0841",
           description: "Staging test: Razorpay payment pay_test41",
+          supply: "Staging test: Advance for First fit, Fri 25 Sep",
         },
       ]);
       expect((await paymentRow())?.books_payment_id).toMatch(/^stub-payment-/);

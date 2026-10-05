@@ -315,7 +315,8 @@ describe("Zoho Books", () => {
     amount: 200000,
     date: "2026-10-02",
     reference: "MM-2026-0841",
-    description: "Advance for a visit",
+    description: "Razorpay payment pay_test41",
+    supply: "Advance for First fit, Fri 2 Oct",
   };
 
   function zohoBooks(routes: Parameters<typeof fakeFetch>[0]) {

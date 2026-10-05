@@ -8,7 +8,8 @@
 //   POST   /books/v3/invoices                        201 { invoice }
 //   POST   /books/v3/invoices/{id}/credits           a payment applied to an invoice
 //   GET    /books/v3/customerpayments&customer_id=&reference_number=      { customerpayments }
-//   POST   /books/v3/customerpayments                { payment }; GET .../{id} with &accept=pdf, the receipt
+//   POST   /books/v3/customerpayments                { payment }, its product_description the receipt's description
+//                                                    of supply; GET .../{id} with &accept=pdf, the receipt
 //   GET    /books/v3/customerpayments/{id}/refunds   { payment_refunds }; POST records one
 //   PUT    /books/v3/contacts                        keyed by X-Unique-Identifier-Key/-Value and X-Upsert:
 //                                                    201 added or 200 saved, { contact }
@@ -201,6 +202,7 @@ function paymentCalls({ request, org, read }: BooksApi): Payments {
           date: payment.date,
           reference_number: payment.reference,
           description: payment.description,
+          product_description: payment.supply,
         },
       }),
 

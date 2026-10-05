@@ -460,7 +460,7 @@ describe("Books: invoices", () => {
 describe("Books: payments, receipts and refunds", () => {
   const body = (call: { body: string } | undefined) => JSON.parse(call?.body ?? "null") as unknown;
 
-  it("records a payment in rupees, against the client's customer, and returns its ID", async () => {
+  it("records a payment in rupees, against the client's customer, with what it was for, and returns its ID", async () => {
     const { books, calls } = zohoBooks({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${BOOKS_API}/customerpayments`]: () => json({ code: 0, payment: { payment_id: "bp-1" } }, 201),
@@ -471,6 +471,7 @@ describe("Books: payments, receipts and refunds", () => {
       date: "2026-09-21",
       reference: "MM-2026-0841",
       description: "Staging test: Razorpay payment pay_test41",
+      supply: "Staging test: Advance for First fit, Mon 21 Sep",
     });
     expect(id).toBe("bp-1");
     expect(calls[1]?.method).toBe("POST");
@@ -482,6 +483,7 @@ describe("Books: payments, receipts and refunds", () => {
       date: "2026-09-21",
       reference_number: "MM-2026-0841",
       description: "Staging test: Razorpay payment pay_test41",
+      product_description: "Staging test: Advance for First fit, Mon 21 Sep",
     });
   });
 
@@ -567,7 +569,7 @@ describe("Books: payments, receipts and refunds", () => {
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${BOOKS_API}/customerpayments`]: () => json({ code: 1002, message: "Customer does not exist." }, 400),
     });
-    const payment = { customerId: "x", amount: 100, date: "2026-09-21", reference: "r", description: "d" };
+    const payment = { customerId: "x", amount: 100, date: "2026-09-21", reference: "r", description: "d", supply: "s" };
     await expect(books.recordPayment(payment)).rejects.toThrow(/400/);
   });
 });
@@ -591,7 +593,7 @@ describe("the stand-ins", () => {
     expect((await books.invoice("stub-41"))?.number).toBe("INV-000041");
     expect(await new Response((await books.invoicePdf("stub-41"))?.body).text()).toMatch(/^%PDF-1\.4/);
     expect(await books.invoicePdf("real-1")).toBeNull();
-    const payment = { customerId: "c", amount: 100, date: "2026-09-21", reference: "r", description: "d" };
+    const payment = { customerId: "c", amount: 100, date: "2026-09-21", reference: "r", description: "d", supply: "s" };
     const recorded = await books.recordPayment(payment);
     expect(await new Response((await books.receiptPdf(recorded))?.body).text()).toMatch(/^%PDF-1\.4/);
     expect(await books.receiptPdf("real-1")).toBeNull();
@@ -631,7 +633,14 @@ describe("the stand-ins", () => {
     const unused = await books.upsertCustomer(CUSTOMER);
     const paid = await books.upsertCustomer({ ...CUSTOMER, personId: "paid" });
     const invoiced = await books.upsertCustomer({ ...CUSTOMER, personId: "invoiced" });
-    await books.recordPayment({ customerId: paid, amount: 100, date: "2026-10-02", reference: "r", description: "d" });
+    await books.recordPayment({
+      customerId: paid,
+      amount: 100,
+      date: "2026-10-02",
+      reference: "r",
+      description: "d",
+      supply: "s",
+    });
     const line = { itemId: "stub-item-1", name: "First fit", description: "First fit", rate: 100, discount: 0 };
     await books.createInvoice({
       customerId: invoiced,
@@ -680,7 +689,7 @@ describe("the stand-ins", () => {
   it("none refuses every call plainly", async () => {
     const off = createBooksProvider("none", null, { db: env.DB, fetch, now: () => NOW, log: createLogger() });
     await expect(off.invoice("inv-1")).rejects.toThrow("Books is not connected here (BOOKS_PROVIDER is none)");
-    const payment = { customerId: "c", amount: 1, date: "2026-09-21", reference: "r", description: "d" };
+    const payment = { customerId: "c", amount: 1, date: "2026-09-21", reference: "r", description: "d", supply: "s" };
     await expect(off.recordPayment(payment)).rejects.toThrow("BOOKS_PROVIDER is none");
     await expect(off.upsertCustomer(CUSTOMER)).rejects.toThrow("BOOKS_PROVIDER is none");
     await expect(off.eraseCustomer("c")).rejects.toThrow("BOOKS_PROVIDER is none");

@@ -43,7 +43,10 @@ export interface NewBooksPayment {
   readonly date: string;
   /** Ours, e.g. MM-2026-0841: the receipt's reference. */
   readonly reference: string;
+  /** For Books' own list: Razorpay's payment ID. The receipt does not print it. */
   readonly description: string;
+  /** What the money was for, which the receipt prints as its description of supply. */
+  readonly supply: string;
 }
 
 /** Money given back from a recorded payment, from the account Razorpay settles into. Amounts in paise. */

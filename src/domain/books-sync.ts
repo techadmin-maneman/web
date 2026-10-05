@@ -7,7 +7,8 @@
 //   - makes the Books customer of each client with money or a finished visit to
 //     record (src/domain/books-customers.ts);
 //   - writes a client's new number or address to their customer;
-//   - records each captured payment whose client Books has, once;
+//   - records each captured payment whose client Books has, once, with what it
+//     was for, which the receipt prints as its description of supply;
 //   - applies a visit's payment to its invoice, once Books has sent it, and tells
 //     ops of any part the invoice did not owe;
 //   - tells ops of money kept that no invoice will come to be set against: what
@@ -35,6 +36,7 @@ import type { BooksProvider } from "../providers/books/index.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { customerFor, updateCustomerOf } from "./books-customers.ts";
+import { supplyOf, type PaymentPaidFor } from "./receipt-supply.ts";
 import { rupees } from "@maneman/web-kit/money";
 import { FAILURES_BEFORE_ALERT, PER_PASS, RECHECK_AFTER_MS, tellFailure as tellPassFailure } from "./vendor-pass.ts";
 
@@ -240,7 +242,7 @@ async function updateCustomer(pass: Pass, personId: string): Promise<boolean> {
 // Recording a payment
 // ---------------------------------------------------------------------------
 
-interface PaymentToRecord {
+interface PaymentToRecord extends PaymentPaidFor {
   id: string;
   person_id: string;
   razorpay_payment_id: string;
@@ -250,12 +252,15 @@ interface PaymentToRecord {
   books_customer_id: string;
 }
 
-/** Payments of clients with a Books customer. */
+/** Payments of clients with a Books customer, with the visit or the booking each paid for. */
 async function paymentsToRecord(pass: Pass): Promise<PaymentToRecord[]> {
   const { results } = await pass.db
     .prepare(
-      `SELECT p.id, p.person_id, p.razorpay_payment_id, p.reference, p.amount, p.captured_at, pe.books_customer_id
+      `SELECT p.id, p.person_id, p.razorpay_payment_id, p.reference, p.amount, p.captured_at, pe.books_customer_id,
+         p.kind, COALESCE(a.type, h.type) AS visit_type, a.window_start AS visit_start, h.date AS visit_day
        FROM payments p JOIN people pe ON pe.id = p.person_id
+         LEFT JOIN appointments a ON a.id = p.appointment_id
+         LEFT JOIN slot_holds h ON h.razorpay_order_id = p.razorpay_order_id
        WHERE p.books_payment_id IS NULL AND p.captured_at IS NOT NULL AND pe.books_customer_id IS NOT NULL
          AND (p.books_checked_at IS NULL OR p.books_checked_at < ?1)
        ORDER BY p.captured_at LIMIT ?2`,
@@ -288,6 +293,7 @@ async function recordPayment(pass: Pass, payment: PaymentToRecord): Promise<bool
         date: indiaDate(new Date(payment.captured_at)),
         reference,
         description: `${pass.label}Razorpay payment ${payment.razorpay_payment_id}`,
+        supply: `${pass.label}${supplyOf(payment)}`,
       }));
     await db
       .prepare("UPDATE payments SET books_payment_id = ?1, books_checked_at = NULL WHERE id = ?2")
