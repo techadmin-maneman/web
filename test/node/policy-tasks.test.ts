@@ -1,4 +1,4 @@
-// The task queue, each rule named by the prompt's own words (src/policy/tasks.ts).
+// The task queue (src/policy/tasks.ts).
 // The groups are queues the database already keeps, so the policy's job is to
 // say which they are and how long each may wait.
 
@@ -8,7 +8,6 @@ import {
   dueAt,
   isClosable,
   mayOwnTasks,
-  RULES,
   TASK_GROUPS,
   TASK_SLA_HOURS,
 } from "../../src/policy/tasks.ts";
@@ -17,7 +16,7 @@ import {
 const SINCE = new Date("2026-09-21T04:30:00Z");
 
 describe("tasks", () => {
-  it(RULES[0], () => {
+  it("queues the replacement orders", () => {
     expect(TASK_GROUPS).toContain("replacement_order");
   });
 
@@ -26,7 +25,7 @@ describe("tasks", () => {
     expect(TASK_GROUPS).toContain("referral_review");
   });
 
-  it(RULES[1], () => {
+  it("queues the no-shows for ops to charge or waive", () => {
     expect(TASK_GROUPS).toContain("no_show_decision");
   });
 
@@ -36,14 +35,14 @@ describe("tasks", () => {
     expect(TASK_SLA_HOURS.no_show_dispute).toBe(48);
   });
 
-  it(RULES[2], () => {
+  it("queues number changes to confirm and deletion requests to decide", () => {
     // One rule, two queues: a number change ops confirm, and an erasure they decide.
     expect(TASK_GROUPS).toContain("number_change");
     expect(TASK_GROUPS).toContain("erasure_request");
   });
 
   // A visit left partly done made no task.
-  it(RULES[3], () => {
+  it("queues a visit left partly done", () => {
     expect(TASK_GROUPS).toContain("partial_visit");
   });
 
@@ -84,7 +83,7 @@ describe("tasks", () => {
 
   // The owner's answer to open point 61, 27 September 2026. The members of staff are those who have signed in to the
   // console, as Access named them (src/domain/task-owners.ts).
-  it(RULES[4], () => {
+  it("lets a task be owned only by someone on the Staff list, whatever the case of their e-mail", () => {
     const staff = ["anil@maneman.in", "priya@maneman.in"];
     expect(mayOwnTasks("priya@maneman.in", staff)).toBe(true);
     // Access gives every e-mail in lower case; one typed otherwise is the same member of staff.
@@ -93,7 +92,7 @@ describe("tasks", () => {
   });
 
   // The owner's answer to open point 62. Every other task leaves the board only when its thing is done.
-  it(RULES[5], () => {
+  it("lets ops close a partial visit's task without a follow-up, and no other", () => {
     expect(CLOSABLE_TASK_GROUPS).toEqual(["partial_visit"]);
     expect(TASK_GROUPS.filter(isClosable)).toEqual(["partial_visit"]);
   });

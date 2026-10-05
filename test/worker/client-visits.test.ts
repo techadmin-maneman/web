@@ -7,7 +7,7 @@ import type { App } from "../../src/http/context.ts";
 import { findEligiblePerson } from "../../src/domain/login.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import type { Angle, Phase } from "../../src/domain/visit-photos.ts";
-import { RULES } from "../../src/policy/home-prompt.ts";
+
 import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, phaseOneLead, request } from "./helpers.ts";
 import { syntheticJpeg } from "./tryon-fixtures.ts";
 
@@ -403,7 +403,7 @@ describe("GET /api/me's prompt and invoice line", () => {
     expect(await prompt()).toMatchObject({ kind: "next_visit", type: "service", replacement_bookable: true });
   });
 
-  it(RULES[2], async () => {
+  it("says nothing of a replacement whose month is past the booking horizon", async () => {
     await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
     await signIn();
     await giveAddress();
@@ -433,7 +433,7 @@ describe("GET /api/me's prompt and invoice line", () => {
     expect(await prompt()).toBeNull();
   });
 
-  it(RULES[0], async () => {
+  it("leads with the next visit, and keeps the invoice as a second line for 14 days", async () => {
     const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     await giveAddress();

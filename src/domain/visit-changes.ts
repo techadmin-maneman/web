@@ -354,7 +354,7 @@ export async function changeTerms(
 
 /**
  * The terms ops cancel the visit on: free to the client, the whole payment back and a credit given back, unless ops
- * apply the client's own late terms (src/policy/moving-a-visit.ts, RULES[8]).
+ * apply the client's own late terms (src/policy/moving-a-visit.ts).
  */
 export function opsCancelTerms(terms: ChangeTerms, onClientTerms: boolean): ChangeTerms {
   const charged = opsCancelCharged(terms.notice, onClientTerms);

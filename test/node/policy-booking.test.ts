@@ -1,12 +1,12 @@
-// Booking a visit in the app, each rule named by the owner's own words of 27 September 2026 (src/policy/booking.ts).
+// Booking a visit in the app (src/policy/booking.ts).
 
 import { describe, expect, it } from "vitest";
-import { agreedByBooking, isFullAddress, RULES } from "../../src/policy/booking.ts";
+import { agreedByBooking, isFullAddress } from "../../src/policy/booking.ts";
 
 const ADDRESS = { line1: "House 4417, Tower C", locality: "Sector 65", city: "Gurgaon", pincode: "122018" };
 
 describe("booking in the app", () => {
-  it(RULES[0], () => {
+  it("counts an address full only with its line, locality, city and six-digit pincode", () => {
     expect(isFullAddress(ADDRESS)).toBe(true);
     expect(isFullAddress(null)).toBe(false);
     expect(isFullAddress({ ...ADDRESS, line1: " " })).toBe(false);
@@ -15,7 +15,7 @@ describe("booking in the app", () => {
     expect(isFullAddress({ ...ADDRESS, pincode: "1220" })).toBe(false);
   });
 
-  it(RULES[1], () => {
+  it("agrees by booking to each photograph purpose shown that the client has never decided on", () => {
     const both = ["photos_own_record", "photos_referral_cards"] as const;
     expect(agreedByBooking(both, [])).toEqual(both);
     expect(agreedByBooking(["photos_referral_cards"], [])).toEqual(["photos_referral_cards"]);

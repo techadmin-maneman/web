@@ -1,4 +1,4 @@
-// Moving or cancelling a visit, each rule named by the prompt's own words (src/policy/moving-a-visit.ts).
+// Moving or cancelling a visit (src/policy/moving-a-visit.ts).
 
 import { describe, expect, it } from "vitest";
 import {
@@ -12,7 +12,6 @@ import {
   noticeAt,
   noticeCountsFrom,
   opsCancelCharged,
-  RULES,
 } from "../../src/policy/moving-a-visit.ts";
 
 /** A window starting at noon on Thursday 24 September, in India. */
@@ -20,7 +19,7 @@ const WINDOW = new Date("2026-09-24T06:30:00Z");
 const hoursBefore = (hours: number) => new Date(WINDOW.getTime() - hours * 3_600_000);
 
 describe("moving a visit", () => {
-  it(RULES[0], () => {
+  it("makes a client's move or cancel free more than 24 hours before the window", () => {
     expect(freeUntil(WINDOW)).toEqual(hoursBefore(24));
     expect(noticeAt(WINDOW, hoursBefore(24.01))).toBe("free");
     for (const type of ["consultation", "first_fit", "service", "replacement"] as const) {
@@ -30,34 +29,34 @@ describe("moving a visit", () => {
     expect(creditOnChange("free")).toBe("restored");
   });
 
-  it(`${RULES[1]} ${RULES[2]}`, () => {
+  it("charges a paid service visit moved or cancelled inside 24 hours", () => {
     expect(noticeAt(WINDOW, hoursBefore(24))).toBe("late");
     expect(moveCost("service", "late", "client")).toBe("charged");
     expect(cancelRefund("service", "late")).toBe("none");
   });
 
-  it(`${RULES[1]} ${RULES[3]}`, () => {
+  it("loses a booking's credit inside 24 hours, and gives it back outside them", () => {
     expect(creditOnChange(noticeAt(WINDOW, hoursBefore(24)))).toBe("lost");
     expect(creditOnChange(noticeAt(WINDOW, hoursBefore(24.01)))).toBe("restored");
   });
 
-  it(RULES[4], () => {
+  it("charges a first fit moved or cancelled inside 24 hours its late fee, and refunds the rest", () => {
     expect(moveCost("first_fit", "late", "client")).toBe("late_fee");
     expect(cancelRefund("first_fit", "late")).toBe("all_but_fee");
   });
 
-  it(RULES[5], () => {
+  it("charges a replacement moved or cancelled inside 24 hours its late fee, and refunds the rest", () => {
     expect(moveCost("replacement", "late", "client")).toBe("late_fee");
     expect(cancelRefund("replacement", "late")).toBe("all_but_fee");
   });
 
-  it(RULES[6], () => {
+  it("never charges the client for a move ops make, however late", () => {
     for (const type of ["consultation", "first_fit", "service", "replacement"] as const) {
       expect(moveCost(type, "late", "ops")).toBe("free");
     }
   });
 
-  it(RULES[7], () => {
+  it("counts a client's notice, after ops move a visit, from its time before the move", () => {
     const before = new Date("2026-09-24T06:30:00Z");
     const movedSooner = new Date("2026-09-22T03:30:00Z");
     expect(noticeCountsFrom(movedSooner, before)).toEqual(before);
@@ -65,7 +64,7 @@ describe("moving a visit", () => {
     expect(noticeCountsFrom(movedSooner, null)).toEqual(movedSooner);
   });
 
-  it(RULES[8], () => {
+  it("never charges for a cancel ops make, unless ops apply the client's late terms", () => {
     expect(opsCancelCharged("late", false)).toBe("free");
     expect(cancelRefund("service", opsCancelCharged("late", false))).toBe("all");
     expect(creditOnChange(opsCancelCharged("late", false))).toBe("restored");
@@ -88,7 +87,7 @@ describe("moving a visit", () => {
 });
 
 // Every figure of these terms is ops' to set (docs/decisions/0088-every-policy-in-the-console.md): the notice, and what
-// each kind of visit costs inside it. The rules above are the committed terms, which stand until ops set others.
+// each kind of visit costs inside it. The tests above are of the committed terms, which stand until ops set others.
 describe("the terms ops set", () => {
   it("counts the notice in the hours ops set", () => {
     expect(freeUntil(WINDOW, 48)).toEqual(hoursBefore(48));
@@ -96,7 +95,7 @@ describe("the terms ops set", () => {
     expect(noticeAt(WINDOW, hoursBefore(30))).toBe("free");
   });
 
-  it("starts from the terms as the prompt states them", () => {
+  it("starts from the committed terms", () => {
     expect(LATE_CHANGE_CHARGES).toEqual({
       consultation: "nothing",
       first_fit: "late_fee",

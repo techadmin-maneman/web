@@ -12,13 +12,6 @@ import type { EnvironmentName } from "../config/environments.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { isStagingTestName } from "../lib/test-names.ts";
 
-export const RULES = [
-  "A record one of our own scripts made is messaged only if its number is on the allowlist, whatever the message's class.",
-  "On staging, a test record signs in with the known code in STAGING_TEST_RECORD_CODE, and skips the limits per address.",
-  "A test record's name is shown without its mark, as a real person's name would be.",
-  "Razorpay texts a payment link, and its reminders, only to a number on the allowlist. Production has no allowlist, so every client is texted.",
-] as const;
-
 /** Whether a person made now, with this name, is a test record: on staging alone, and so named. */
 export const testRecordAtCreation = (environment: EnvironmentName | undefined, name: string): boolean =>
   environment === "staging" && isStagingTestName(name);

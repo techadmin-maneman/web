@@ -1,17 +1,16 @@
-// Why ops decided what they did, each rule named by the prompts' own words
-// (src/policy/decision-reasons.ts). The routes refuse a decision without the
-// reason it needs; test/worker checks each one.
+// Why ops decided what they did (src/policy/decision-reasons.ts). The routes refuse a decision without the reason it
+// needs; test/worker checks each one.
 
 import { describe, expect, it } from "vitest";
-import { CONSOLE_RULES, needsReason, RULES } from "../../src/policy/decision-reasons.ts";
+import { needsReason } from "../../src/policy/decision-reasons.ts";
 
 describe("decision reasons", () => {
-  it(RULES[0], () => {
+  it("asks a reason of a referral grant approved or rejected", () => {
     expect(needsReason("referral", "approve")).toBe(true);
     expect(needsReason("referral", "reject")).toBe(true);
   });
 
-  it(CONSOLE_RULES[0], () => {
+  it("asks a reason of a no-show charged or waived", () => {
     expect(needsReason("no_show", "charged")).toBe(true);
     expect(needsReason("no_show", "waived")).toBe(true);
   });

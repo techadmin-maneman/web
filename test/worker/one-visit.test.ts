@@ -18,8 +18,7 @@ import { createStubPayments, type StubPayments } from "../../src/providers/payme
 import { ProviderError } from "../../src/providers/provider-error.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import type { Settings } from "../../src/config/settings.ts";
-import { RULES } from "../../src/policy/one-visit.ts";
-import { RULES as STAGING_RULES } from "../../src/policy/staging-test-records.ts";
+
 import {
   appFor,
   captureLogs,
@@ -224,7 +223,7 @@ describe("closing a one visit the client was fitted at", () => {
   });
 
   // A link took payment, and Razorpay kept reminding the client, however long it went unpaid.
-  it(RULES[3], async () => {
+  it("closes the payment link after 14 days, and the task for the money owed says so", async () => {
     const job = await oneVisit();
     await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
     await closeAsDone(job);
@@ -239,7 +238,7 @@ describe("closing a one visit the client was fitted at", () => {
   });
 
   // On staging a test record's made-up number, very likely a stranger's, was texted "pay Rs. 30,000".
-  it(STAGING_RULES[3], async () => {
+  it("makes, but never texts, a payment link to a number off the staging allowlist", async () => {
     const logs = captureLogs();
     const payments = createStubPayments();
     const job = await oneVisit({ payments }, allowing("+919810000777"));

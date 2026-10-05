@@ -1,24 +1,10 @@
 // A client moving or cancelling a visit, and ops moving one (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them, the owner's ruling on a move by ops, and what each costs
+// What a client's change costs, and the owner's ruling on a move by ops
 // (docs/decisions/0046-moving-and-cancelling.md, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The
 // terms are worked out in src/domain/visit-changes.ts, and a move is booked in src/domain/bookings.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
 import { HOUR_MS } from "../lib/durations.ts";
-
-export const RULES = [
-  "More than 24 hours before the window starts: moving or cancelling is free. The payment carries over, or is refunded to its source; a credit comes back.",
-  "Inside 24 hours:",
-  "a paid service visit is charged, and the new visit is paid separately",
-  "a credit booking loses the credit",
-  "a first fit costs a late fee of config LATE_FEE_FIRST_FIT (Rs. 4,000 in the design), with the balance carried over",
-  "a replacement's late fee is config LATE_FEE_REPLACEMENT (Rs. 3,000 in the design)",
-  "When ops move a visit, the client is never charged.",
-  // The owner, 27 September 2026 (docs/archive/owner-answers-2026-09-27.md, item 71).
-  "after a move by ops, the client's notice counts from the visit's time before ops moved it.",
-  // The owner, 2 October 2026 (the audit's decision 5).
-  "When ops cancel a visit, the client is never charged, unless ops apply the client's late terms, with a reason.",
-] as const;
 
 /** Moving or cancelling is free until this long before the window starts. */
 export const FREE_CHANGE_NOTICE_HOURS = 24;
@@ -33,7 +19,7 @@ export const noticeAt = (windowStarts: Date, now: Date, noticeHours: number = FR
   now.getTime() < freeUntil(windowStarts, noticeHours).getTime() ? "free" : "late";
 
 /**
- * The time a client's own move or cancel counts its notice from (RULES[7]): the visit's time before ops moved it,
+ * The time a client's own move or cancel counts its notice from: the visit's time before ops moved it,
  * so the client keeps the free change they had, unless the visit now starts later, which gives them more
  * (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
  */
@@ -41,7 +27,7 @@ export const noticeCountsFrom = (start: Date, startBeforeMove: Date | null): Dat
   startBeforeMove !== null && startBeforeMove.getTime() > start.getTime() ? startBeforeMove : start;
 
 /**
- * The notice an ops cancel is charged as (RULES[8]): free, unless ops apply the client's own terms, as when the client
+ * The notice an ops cancel is charged as: free, unless ops apply the client's own terms, as when the client
  * phones to cancel inside the notice.
  */
 export const opsCancelCharged = (notice: Notice, onClientTerms: boolean): Notice => (onClientTerms ? notice : "free");
@@ -66,7 +52,7 @@ export const CHARGES = ["nothing", "late_fee", "visit"] as const satisfies reado
 /** What each kind of visit costs inside the notice. */
 export type Charges = Readonly<Record<VisitType, Charge>>;
 
-/** The rules above, as each kind's charge: until ops set others, the committed terms. */
+/** Each kind's charge inside the notice: until ops set others, the committed terms. */
 export const LATE_CHANGE_CHARGES: Charges = {
   consultation: "nothing",
   first_fit: "late_fee",

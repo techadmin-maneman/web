@@ -1,11 +1,11 @@
-// How long a visit takes and what it holds of a technician's day, each rule named by the owner's own words of
-// 27 September 2026 (src/policy/visit-length.ts; docs/decisions/0085-services-ops-can-edit.md).
+// How long a visit takes and what it holds of a technician's day (src/policy/visit-length.ts;
+// docs/decisions/0085-services-ops-can-edit.md).
 
 import { describe, expect, it } from "vitest";
 import { UNITS_PER_DAY, VISIT_BLOCKS, WINDOW_SLOT_MAP } from "../../src/config/scheduling.ts";
 import { VISIT_TYPES } from "../../src/config/visit-types.ts";
 import { placement } from "../../src/domain/scheduling.ts";
-import { bookedLength, isServiceLength, RULES, SERVICE_MINUTES, unitsFor } from "../../src/policy/visit-length.ts";
+import { bookedLength, isServiceLength, SERVICE_MINUTES, unitsFor } from "../../src/policy/visit-length.ts";
 
 const emptyDay = () => ({
   units: new Set<number>(),
@@ -14,7 +14,7 @@ const emptyDay = () => ({
 });
 
 describe("a visit's length", () => {
-  it(RULES[0], () => {
+  it("gives each kind's own length the half-slots its block has always had", () => {
     // Each kind's own length gives the half-slots the design's blocks have always been (ADR 0035).
     expect(VISIT_TYPES.map((type) => [type, VISIT_BLOCKS[type].minutes, unitsFor(VISIT_BLOCKS[type].minutes)])).toEqual(
       VISIT_TYPES.map((type) => [type, VISIT_BLOCKS[type].minutes, VISIT_BLOCKS[type].units]),

@@ -1,8 +1,8 @@
-// The check-in geofence, each rule named by the prompt's own words (src/policy/check-in.ts).
+// The check-in geofence (src/policy/check-in.ts).
 // The coordinates are of made-up points near Cyber City, Gurgaon: no real address.
 
 import { describe, expect, it } from "vitest";
-import { CHECKIN_RADIUS_M, checkIn, distanceMetres, RULES } from "../../src/policy/check-in.ts";
+import { CHECKIN_RADIUS_M, checkIn, distanceMetres } from "../../src/policy/check-in.ts";
 
 /** The address a technician is sent to. */
 const ADDRESS = { lat: 28.4949, lng: 77.0886 };
@@ -12,7 +12,7 @@ const METRES_PER_DEGREE = (Math.PI * 6_371_000) / 180;
 const north = (metres: number) => ({ lat: ADDRESS.lat + metres / METRES_PER_DEGREE, lng: ADDRESS.lng });
 
 describe("check-in", () => {
-  it(RULES[0], () => {
+  it("passes a check-in within 200 m of the address, and not beyond", () => {
     expect(CHECKIN_RADIUS_M).toBe(200);
     expect(checkIn(north(150), ADDRESS).passed).toBe(true);
     expect(checkIn(north(250), ADDRESS).passed).toBe(false);
@@ -23,7 +23,7 @@ describe("check-in", () => {
     expect(checkIn(north(CHECKIN_RADIUS_M + 1), ADDRESS)).toEqual({ distanceM: 201, radiusM: 200, passed: false });
   });
 
-  it(RULES[2], () => {
+  it("keeps the distance measured and the radius in force, whether the check-in passed or not", () => {
     // The distance is logged whether the check-in passed or not, and so is the
     // radius in force, so a tuned radius can be told from the old one.
     expect(checkIn(north(900), ADDRESS)).toEqual({ distanceM: 900, radiusM: 200, passed: false });

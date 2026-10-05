@@ -1,14 +1,14 @@
-// Home's prompts in the owner's order, each rule named by the owner's own words (src/policy/home-prompt.ts).
+// Home's prompts in the owner's order (src/policy/home-prompt.ts).
 
 import { describe, expect, it } from "vitest";
-import { HOME_PROMPTS, homePromptOf, RULES, type PromptFacts } from "../../src/policy/home-prompt.ts";
+import { HOME_PROMPTS, homePromptOf, type PromptFacts } from "../../src/policy/home-prompt.ts";
 import { NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
 
 const NONE: PromptFacts = { address: false, next_visit: false, invoice_ready: false, replacement_due: false };
 const ALL: PromptFacts = { address: true, next_visit: true, invoice_ready: true, replacement_due: true };
 
 describe("Home's prompt", () => {
-  it(RULES[0], () => {
+  it("puts the next visit first, the invoice second for 14 days, then the replacement", () => {
     expect(HOME_PROMPTS).toEqual(["address", "next_visit", "invoice_ready", "replacement_due"]);
     expect(homePromptOf({ ...ALL, address: false })).toBe("next_visit");
     // The invoice leads only where no visit is offered, and the replacement waits for it.
@@ -18,7 +18,7 @@ describe("Home's prompt", () => {
     expect(NEXT_VISIT_DAYS.invoice_prompt).toBe(14);
   });
 
-  it(RULES[1], () => {
+  it("puts the address first while something is booked", () => {
     expect(homePromptOf(ALL)).toBe("address");
   });
 

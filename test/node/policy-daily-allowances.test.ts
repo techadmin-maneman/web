@@ -6,7 +6,6 @@ import {
   DAILY_ALLOWANCES,
   isNearlySpent,
   percentUsed,
-  RULES,
   WARN_AT_PERCENT,
 } from "../../src/policy/daily-allowances.ts";
 
@@ -16,7 +15,7 @@ describe("the daily allowances", () => {
     expect(ALLOWANCES).toEqual(["queueOperations", "d1RowsRead", "d1RowsWritten"]);
   });
 
-  it(RULES[0], () => {
+  it("warns at 70% of each daily allowance", () => {
     expect(WARN_AT_PERCENT).toBe(70);
     expect(isNearlySpent("queueOperations", 6_999)).toBe(false);
     expect(isNearlySpent("queueOperations", 7_000)).toBe(true);

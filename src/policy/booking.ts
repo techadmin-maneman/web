@@ -6,11 +6,6 @@
 
 import type { ConsentPurpose } from "./consents.ts";
 
-export const RULES = [
-  "A client gives their full address before a slot is confirmed.",
-  "Booking a visit in the app agrees to photographs for the client's own record and on referral cards, each only while the client has never decided on it.",
-] as const;
-
 /** The parts an address is not one without, as the app's address form asks for them. */
 interface AddressParts {
   readonly line1: string;

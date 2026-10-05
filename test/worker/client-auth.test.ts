@@ -7,7 +7,7 @@ import type { App } from "../../src/http/context.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { sha256Hex } from "../../src/lib/hash.ts";
-import { RULES } from "../../src/policy/one-time-code.ts";
+
 import {
   appFor,
   captureLogs,
@@ -328,7 +328,7 @@ describe("POST /api/auth/otp", () => {
 });
 
 describe("POST /api/auth/verify", () => {
-  it(RULES[0], async () => {
+  it("signs in with the six-digit code, and keeps the session for 90 days", async () => {
     const { body } = await start("98100 00001");
     const res = await verify(body.challenge_id, lastCode());
 
@@ -352,7 +352,7 @@ describe("POST /api/auth/verify", () => {
     expect((await verify(body.challenge_id, code)).status).toBe(410);
   });
 
-  it(RULES[2], async () => {
+  it("voids the code after five wrong attempts", async () => {
     const { body } = await start("98100 00001");
     const right = lastCode();
     for (const left of [4, 3, 2, 1, 0]) {
@@ -383,7 +383,7 @@ describe("POST /api/auth/verify", () => {
 });
 
 describe("sending the code again", () => {
-  it(RULES[3], async () => {
+  it("refuses a resend inside 30 seconds, and sends a new code after", async () => {
     const { body } = await start("98100 00001");
     const first = lastCode();
     later(29);
@@ -401,7 +401,7 @@ describe("sending the code again", () => {
     expect((await verify(body.challenge_id, lastCode())).status).toBe(200);
   });
 
-  it(RULES[1], async () => {
+  it("offers SMS after 30 seconds, and the code it sends signs in", async () => {
     const { body } = await start("98100 00001");
     later(20);
     expect((await post("/api/auth/otp/sms", { challenge_id: body.challenge_id })).status).toBe(429);
