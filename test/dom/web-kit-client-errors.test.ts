@@ -1,4 +1,4 @@
-// What goes wrong in an app's own page reaches mm-api (packages/web-kit/client-errors.ts; PLAT-43): a script error,
+// What goes wrong in an app's own page reaches mm-api (packages/web-kit/client-errors.ts): a script error,
 // a promise nobody caught and a screen an error boundary caught are each posted to /api/client-errors, once, and a
 // page sends only a few.
 

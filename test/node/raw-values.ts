@@ -1,6 +1,6 @@
 // What a stylesheet may not write for itself, for the token tests of the site and of the apps
 // (test/node/site-tokens.test.ts, test/node/app-tokens.test.ts): every colour, size, space, weight, leading,
-// duration and curve comes from packages/brand (DS-06, DS-20).
+// duration and curve comes from packages/brand.
 
 /** The colours CSS knows by name. `transparent` and `currentColor` are not among them: they name no colour. */
 const NAMED_COLOURS = [

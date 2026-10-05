@@ -115,7 +115,7 @@ const FIRST_FIT_EPISODE = "s.consulted_start";
 const NOT_FITTED_SINCE_CONSULTED = "(s.visit_start IS NULL OR s.visit_start < s.consulted_start)";
 
 /**
- * Every queue, in three statements sent together. D1 takes at most five arms in one
+ * Every queue, in four statements sent together. D1 takes at most five arms in one
  * compound SELECT, so the queues are split between statements; a batch is still
  * one round trip. A person who has been erased is left out everywhere: their
  * record is gone, and a task about them could not be done. A no-show and a
@@ -204,11 +204,11 @@ const OUTSTANDING = [
      AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL
 `),
 
-  // A job still booked on a day its technician is away: leave moves nothing, so ops move it (OPS-07). It waits from
+  // A job still booked on a day its technician is away: leave moves nothing, so ops move it. It waits from
   // when the leave was recorded, and falls due by the job. The client is named where there is one on our records.
   //
   // A visit to come whose client has given no address: the technician cannot find the door without one, and the
-  // app tells the client "We confirm it with you before your visit" (LIFE-04). It waits from when the visit first
+  // app tells the client "We confirm it with you before your visit". It waits from when the visit first
   // reached us, and falls due by the visit itself.
   //
   // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it,

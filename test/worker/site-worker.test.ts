@@ -188,7 +188,7 @@ describe("the site Worker at /r/:code", () => {
     expect((await visit()).asked.filter(isRewardRequest)).toHaveLength(1);
   });
 
-  // CP-24: the tab and search results read "You have a Mane Man invite" whatever the invite.
+  // The tab and search results read "You have a Mane Man invite" whatever the invite.
   it("titles and describes the page as its preview, by the referrer's name", async () => {
     const page = await open(withReward());
     expect(page.title).toBe("Rohit sent you a Mane Man invite");
@@ -196,7 +196,7 @@ describe("the site Worker at /r/:code", () => {
     expect(page.description).toContain("3 service visits free");
   });
 
-  // BK-62: a code we do not know is headed as /book is, so its tab does not say there is an invite.
+  // A code we do not know is headed as /book is, so its tab does not say there is an invite.
   it("titles a code we do not know as the booking page", async () => {
     const page = await open(() => Response.json(UNKNOWN));
     expect(page.title).toBe("Book a free consultation — Mane Man");
@@ -213,7 +213,7 @@ describe("the site Worker at /r/:code", () => {
     expect(JSON.stringify(warn.mock.calls)).not.toContain("RM4K7P");
   });
 
-  // BK-62: /r with no code answered 200 with a form that would post to /api/r//consultation.
+  // /r with no code answered 200 with a form that would post to /api/r//consultation.
   it.each(["/r", "/r/"])("sends %s, which has no code, to /book", async (path) => {
     const { env, asked, files } = siteEnv(withReward());
     const response = await createSiteWorker().fetch(new Request(`https://maneman.in${path}?utm_source=wa`), env);
@@ -247,7 +247,7 @@ describe("the site Worker at /r/:code", () => {
     expect(page.meta("og:url")).toBe(`${origin}/r/RM4K7P`);
   });
 
-  // FEO-18: a failure is not an unknown code. The page is served as built and the island asks again.
+  // A failure is not an unknown code. The page is served as built and the island asks again.
   it.each([
     ["answers 503", () => Response.json({ error: { code: "unavailable" } }, { status: 503 })],
     ["refuses an address past its misses", () => Response.json({ error: { code: "rate_limited" } }, { status: 429 })],
@@ -268,7 +268,7 @@ describe("the site Worker at /r/:code", () => {
     expect(page.meta("og:image")).toBe(`https://maneman.in${HOUSE_CARD}`);
   });
 
-  // FEO-25: mm-api counts an open only for a person, so it needs to know who asked.
+  // Mm-api counts an open only for a person, so it needs to know who asked.
   it("passes the visitor's user agent and address on to mm-api", async () => {
     const page = await open(() => Response.json(VALID), {
       "User-Agent": "WhatsApp/2.23.20.0",
@@ -306,7 +306,7 @@ describe("the site Worker on a page that shows a price", () => {
     return { response, html, asked, files, ...readPriced(html) };
   }
 
-  // FEO-22: the site published ₹25,000 and ₹1,500 while the book held ₹30,000 and ₹2,000.
+  // The site published ₹25,000 and ₹1,500 while the book held ₹30,000 and ₹2,000.
   it.each(["/", "/book"])("writes the book's figures over the built ones on %s, the totals computed", async (path) => {
     const page = await visit(path, withPrices());
 
@@ -470,7 +470,7 @@ describe("the site Worker on a built film", () => {
     return { response, body, asked };
   }
 
-  // UX-20, PLAT-65: a Range of bytes=0-1023 got 200 and all 2,343,106 bytes, so iOS Safari never played the film.
+  // A Range of bytes=0-1023 got 200 and all 2,343,106 bytes, so iOS Safari never played the film.
   it("gives the part a range asks for, as iOS Safari needs", async () => {
     const { response, body, asked } = await fetchFilm({ Range: "bytes=0-1" });
 

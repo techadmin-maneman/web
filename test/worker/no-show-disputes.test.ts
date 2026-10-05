@@ -208,7 +208,7 @@ describe("POST /api/visits/:id/dispute", () => {
     expect((await dispute("I was home all afternoon")).status).toBe(201);
   });
 
-  // A charge past its days once showed no Dispute button and no reason why (MON-17).
+  // A charge past its days once showed no Dispute button and no reason why.
   it("says when the days to dispute ended, once they have, for a charge never disputed", async () => {
     expect(await noShowNote()).toMatchObject({ disputable: true, dispute_closed_at: null });
 
@@ -261,7 +261,7 @@ describe("GET /api/no-shows/disputes", () => {
     });
   });
 
-  // FLD-35: a reminder that was skipped read "Not delivered" on the evidence ops rule a refund on.
+  // A reminder that was skipped read "Not delivered" on the evidence ops rule a refund on.
   it("says the reminder never went where it was skipped, and when it reached him where it did", async () => {
     await raised();
     await env.DB.batch([

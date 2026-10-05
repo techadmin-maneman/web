@@ -38,7 +38,7 @@ async function open(page: Page, routes: Answers, areas: OpsReply<"/api/waitlist"
   await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
 }
 
-// FEO-15 of the audit, 24 September 2026: the panel opened 1,632 px down a 900 px window, and focus stayed put.
+// The panel opened 1,632 px down a 900 px window, and focus stayed put.
 test("brings the panel into view and reads it from its head, however long the list", async ({ page }) => {
   const many = Array.from({ length: 40 }, (_, index) => ({
     pincode: String(400100 + index),
@@ -58,7 +58,7 @@ test("brings the panel into view and reads it from its head, however long the li
   await expect(panel).toBeInViewport();
 });
 
-// OPS-22: the panel sent today's date only, and had no field for the day a technician starts.
+// The panel sent today's date only, and had no field for the day a technician starts.
 test("takes the day a technician started coming, and sends it only when ops chose one", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2027-02-10T06:00:00.000Z"));
   await open(page, { [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
@@ -72,7 +72,7 @@ test("takes the day a technician started coming, and sends it only when ops chos
   expect((await sent).postDataJSON()).toEqual({ confirm: true, launch_on: "2027-02-01" });
 });
 
-// BK-38 of the audit, 2 October 2026: a launch dated to a later day served the pincode at once, and its alerts went.
+// A launch dated to a later day served the pincode at once, and its alerts went.
 test("sends no launch dated to a day still to come", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2027-02-10T06:00:00.000Z"));
   await open(page, { [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
@@ -82,7 +82,7 @@ test("sends no launch dated to a day still to come", async ({ page }) => {
   await expect(panel.getByRole("button", { name: "Send to 84" })).toBeDisabled();
 });
 
-// OPS-22: "Send to 0" only marked the pincode live, and "The 1 who did not opt in are".
+// "Send to 0" only marked the pincode live, and "The 1 who did not opt in are".
 test("says what the press does when nobody asked to be told, in words that agree", async ({ page }) => {
   const quiet = { pincode: "400050", waiting: 1, alerts: 0, launched: false };
   await open(page, { [LAUNCH_BANDRA]: launchRoute(quiet, { ...quiet, launched: true }) });
@@ -94,7 +94,7 @@ test("says what the press does when nobody asked to be told, in words that agree
   await expect(panel.getByRole("status")).toHaveText("Marked live. Nobody was messaged.");
 });
 
-// FEO-02: a pincode served from Settings showed "Live" with its waitlist untold and no way to tell them.
+// A pincode served from Settings showed "Live" with its waitlist untold and no way to tell them.
 test("tells those still waiting in a pincode already live", async ({ page }) => {
   const left = { pincode: "122018", waiting: 4, alerts: 2, launched: false };
   await open(page, { [LAUNCH_SECTOR_65]: launchRoute(left, { ...left, launched: true }) });
@@ -116,7 +116,7 @@ test("offers nothing to send where everyone in a live pincode has been told", as
   await expect(panel.getByRole("button", { name: /^Send|^Mark/ })).toHaveCount(0);
 });
 
-// OPS-13: the message named the area by its post office, with no way to a better name.
+// The message named the area by its post office, with no way to a better name.
 test("says where the message's name for the area comes from, and leads there", async ({ page }) => {
   await open(page, { [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
@@ -144,7 +144,7 @@ test("leads to the area's name only those whose access reaches Service area", as
   await expect(panel.getByRole("link", { name: "Change the name" })).toHaveCount(0);
 });
 
-// BK-36 and OIA-13 of the audit, 2 October 2026: every pincode on staging's waitlist was outside the service area, so
+// Every pincode on staging's waitlist was outside the service area, so
 // "Mark live" answered "We have no such pincode", and no screen could add one.
 test("adds a pincode the service area does not hold, then marks it live in the same panel", async ({ page }) => {
   const preview = { pincode: "560001", waiting: 3, alerts: 2, launched: false };

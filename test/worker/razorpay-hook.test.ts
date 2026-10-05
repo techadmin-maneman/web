@@ -216,7 +216,7 @@ describe("Razorpay's webhook: refunds", () => {
   });
 });
 
-// MON-12: each such refund was answered 409 for a day, and on a quiet day Razorpay could disable the whole webhook.
+// Each such refund was answered 409 for a day, and on a quiet day Razorpay could disable the whole webhook.
 describe("Razorpay's webhook: a refund of a payment whose own events never reached us", () => {
   /** The payment as a refund's event carries it. */
   const refundedPayment = (overrides: Record<string, unknown> = {}) =>
@@ -254,7 +254,7 @@ describe("Razorpay's webhook: a refund of a payment whose own events never reach
   });
 });
 
-// MON-13, MON-47: a refund Razorpay failed was kept silently, and a late event moved it back to "created"; a second
+// A refund Razorpay failed was kept silently, and a late event moved it back to "created"; a second
 // payment on one order was neither refunded nor told.
 describe("Razorpay's webhook: a refund that fails, and an order paid twice", () => {
   const alertsKept = async () => (await env.DB.prepare("SELECT key, link FROM alerts ORDER BY key").all()).results;

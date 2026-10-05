@@ -18,7 +18,7 @@ const task = (id: string): Task => ({
   owner: null,
 });
 
-// OIA-10 of the audit, 2 October 2026: a bare link to a client opened their Pieces, whatever the task was about.
+// A bare link to a client opened their Pieces, whatever the task was about.
 describe("where a task leads", () => {
   it("leads every group to a tab the client's page has", () => {
     for (const group of TASK_GROUPS) {

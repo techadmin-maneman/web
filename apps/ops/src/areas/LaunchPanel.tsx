@@ -39,7 +39,7 @@ interface Props {
 export function LaunchPanel(props: Props) {
   const { label, alerts, area, lines, sendLabel, ready = true, sending, done, error, note, onSend, onCancel } = props;
   const panel = useFocusOnMount<HTMLElement>();
-  // It opens beneath a list, so it is brought into view and read from its head (FEO-15).
+  // It opens beneath a list, so it is brought into view and read from its head.
   return (
     <section className={styles.launch} aria-labelledby="launch" ref={panel} tabIndex={-1}>
       <p className={capsLook(styles.launchLabel)} id="launch">

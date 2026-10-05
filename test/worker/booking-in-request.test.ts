@@ -1033,7 +1033,7 @@ describe("confirmBooking", () => {
   });
 });
 
-// MON-05, MON-47: a refund Razorpay refused for a hold already let go was swallowed, the money kept and nobody told;
+// A refund Razorpay refused for a hold already let go was swallowed, the money kept and nobody told;
 // and giving back a hold after a partial refund in Razorpay's dashboard refunded nothing of the rest.
 describe("money owed back on a hold", () => {
   const refusing = (payments: PaymentsProvider): PaymentsProvider => ({

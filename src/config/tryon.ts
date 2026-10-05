@@ -44,7 +44,7 @@ export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
  * that is not an image, fails the job at once with an alert (docs/decisions/0015).
  */
 export const MAX_RESULT_BYTES = 5 * 1024 * 1024;
-/** An upload link lasts 5 minutes and a session 30; a photo is deleted an hour after its last look. */
+/** A photograph is deleted an hour after its last look. */
 export const PHOTO_RETENTION_MS = HOUR_MS;
 /** The longest a look may be kept (RESULT_RETENTION_DAYS): the photo notice says fourteen days at most. */
 export const MAX_RESULT_RETENTION_DAYS = 14;
@@ -61,7 +61,7 @@ export const COPY_LONG_EDGE_PX = 1600;
 
 /** How long the upload link from POST /api/tryon/upload-url works. */
 export const TRYON_UPLOAD_LINK_TTL_MS = 5 * MINUTE_MS;
-/** One look per visitor: the browser remembers its render this long, the photos' retention period. */
+/** One look per visitor: the browser remembers for 30 days that it has had its look. */
 export const LOOK_COOKIE = "mm_look";
 export const LOOK_COOKIE_TTL_MS = 30 * DAY_MS;
 /**

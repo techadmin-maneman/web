@@ -63,7 +63,7 @@ describe("the counts beside the console's sections", () => {
     expect(waiting.get("/tasks")).toEqual({ count: 3, overdue: true, of: "tasks" });
   });
 
-  // A disputed charge once had no count anywhere in the navigation (OIA-07).
+  // A disputed charge once had no count anywhere in the navigation.
   it("counts the disputed charges in No-shows, beside the cases waiting for a decision", () => {
     const waiting = waitingIn(
       board([

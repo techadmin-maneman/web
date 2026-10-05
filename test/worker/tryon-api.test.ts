@@ -253,7 +253,7 @@ describe("PUT /api/tryon/upload/:job_id", () => {
     expect(await env.UPLOADS.head(`uploads/${link.job_id}`)).toBeNull();
   });
 
-  // PS-53: a body sent without its length read as 0 bytes declared, and was read whole, however long.
+  // A body sent without its length read as 0 bytes declared, and was read whole, however long.
   it("refuses a body over 5 MB sent without its length", async () => {
     const browser = visitor();
     const link = await (await browser.uploadLink()).json<{ job_id: string; upload_url: string }>();
@@ -343,7 +343,7 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     ]);
   });
 
-  // PS-10: the gate wrote a person, their consents and a lead for any number typed, and sent its look there.
+  // The gate wrote a person, their consents and a lead for any number typed, and sent its look there.
   it("refuses a number no code proved in the last 30 minutes, writing nothing", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
@@ -456,7 +456,7 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     expect(await env.DB.prepare("SELECT contactable FROM people").first()).toEqual({ contactable: 1 });
   });
 
-  it("is never renamed by the gate (PS-11)", async () => {
+  it("is never renamed by the gate", async () => {
     await insertPerson("p-known", "+919810000001", "Karan Bhatia");
     const browser = visitor();
     const jobId = await browser.uploaded();
@@ -613,7 +613,7 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     expect(await other.json()).toMatchObject({ error: { code: "look_limit_reached" } });
   });
 
-  // PS-58: the claim checks the number, but jobs claimed before any is asked for must not each make a look.
+  // The claim checks the number, but jobs claimed before any is asked for must not each make a look.
   it("makes one look for a number that claimed several jobs before asking for any", async () => {
     const browser = visitor({ tryon: { claimMobileDailyLimit: 10, generateIpHourlyLimit: 10 } });
     const first = await browser.claimed();

@@ -214,7 +214,7 @@
   color: var(--wa-dark-text);
 }
 
-/* Where the message's name for the area comes from, and the way to a better one (OPS-13). */
+/* Where the message's name for the area comes from, and the way to a better one. */
 .named {
   margin: var(--sp-10) 0 0;
   font-size: var(--fs-14);
@@ -225,7 +225,7 @@
   color: var(--text);
 }
 
-/* The day a technician starts coming, which the launch's API takes and the board does not draw (OPS-22). */
+/* The day a technician starts coming, which the launch's API takes and the board does not draw. */
 .field {
   margin-top: var(--sp-16);
 }

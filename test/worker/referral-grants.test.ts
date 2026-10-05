@@ -109,7 +109,7 @@ const messagesWritten = async () =>
     .results;
 
 describe("the grant", () => {
-  // The referrer was told and the friend, whose credits they also were, never was (LIFE-10).
+  // The referrer was told and the friend, whose credits they also were, never was.
   it("gives both sides 3 service visits once the friend's first fit is done, and tells them both", async () => {
     expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0 });
     await firstFit(FIT, FRIEND);
@@ -117,7 +117,7 @@ describe("the grant", () => {
     expect(settled).toMatchObject({ granted: 1, held: 0, expired: 0 });
     expect(settled.messageIds).toHaveLength(2);
     expect(await state()).toEqual({ grant_state: "granted", fraud_signals: null });
-    // 365 days on, to the end of that day in India: the date the referrer is told (BIZ-14).
+    // 365 days on, to the end of that day in India: the date the referrer is told.
     const expiry = "2027-09-21T18:29:59.999Z";
     expect(await creditBalance(env.DB, FRIEND, NOW)).toEqual({ visits: 3, earliestExpiry: expiry, expiringFirst: 3 });
     expect(await creditBalance(env.DB, REFERRER, NOW)).toEqual({ visits: 3, earliestExpiry: expiry, expiringFirst: 3 });
@@ -327,7 +327,7 @@ describe("what a referral earns, as ops set it", () => {
       expect((await state())?.grant_state).toBe("held");
     }
 
-    // PLAT-24 of the audit, 2 October 2026: a refused send answered 500 for a ruling already made, and ops ruled again.
+    // A refused send answered 500 for a ruling already made, and ops ruled again.
     it("is approved, and answers so, when the queue refuses the messages, which the sweeper then sends", async () => {
       await heldUnder({ referrer_visits: 2, friend_visits: 1, valid_days: 60 });
       const down = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) };
@@ -431,7 +431,7 @@ describe("fraud holds", () => {
     expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["monthly_cap"]' });
   });
 
-  // BIZ-13 of the audit, 24 September 2026: numbers are unique, so they can only match through a change of number.
+  // Numbers are unique, so they can only match through a change of number.
   it("holds a pair where the friend's number is one the referrer changed to before", async () => {
     await env.DB.prepare(
       `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state, decided_at)
@@ -476,7 +476,7 @@ describe("fraud holds", () => {
   });
 });
 
-describe("a friend with two first fits done (BIZ-13)", () => {
+describe("a friend with two first fits done", () => {
   it("settles the referral once, and tells each of them once", async () => {
     await firstFit(FIT, FRIEND);
     await firstFit("fit-second-0000-4000-8000-000000000000", FRIEND, "done", "2026-09-21T03:30:00.000Z");
@@ -490,7 +490,7 @@ describe("a friend with two first fits done (BIZ-13)", () => {
   });
 });
 
-// PS-62: the grant's state was written without asking what it was, so a second pass, or a second decision, wrote
+// The grant's state was written without asking what it was, so a second pass, or a second decision, wrote
 // its credits and messages again over the first.
 describe("a grant settled twice at once", () => {
   it("settles once when two passes of the cron take the same referral, telling each side once", async () => {
@@ -627,7 +627,7 @@ describe("ops' review", () => {
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
   });
 
-  // PS-60: a grant held for a consultation and fit never paid answered 404 to either decision, and sat on Tasks for ever.
+  // A grant held for a consultation and fit never paid answered 404 to either decision, and sat on Tasks for ever.
   it("rejects a held grant whose consultation and fit is not paid, and approves it only once it is", async () => {
     await held();
     await env.DB.prepare("UPDATE appointments SET one_visit = 'fitted' WHERE id = ?1").bind(FIT).run();
@@ -641,7 +641,7 @@ describe("ops' review", () => {
     expect(await (await decide({ decision: "reject", reason: "Never paid" })).json()).toEqual({ state: "rejected" });
   });
 
-  // A rejected grant reached neither of them (LIFE-10).
+  // A rejected grant reached neither of them.
   it("tells them both of a rejection, and never the reason ops gave", async () => {
     await held();
     const queue = fakeQueue();
@@ -681,7 +681,7 @@ async function told(kind: "friend_credited" | "referral_rejected", personId: str
 }
 
 // The tracker read the friend's name from their record, so once they were erased it read "Erased · Sep 2026" and told
-// the referrer something about the friend they had no business knowing (LIFE-13).
+// the referrer something about the friend they had no business knowing.
 describe("the referrer's tracker, after the friend is erased", () => {
   // Refer, the tracker with it, is a fitted client's.
   beforeEach(async () => {
@@ -733,7 +733,7 @@ describe("the referrer's tracker, after the friend is erased", () => {
   });
 });
 
-describe("what the friend is told (LIFE-10)", () => {
+describe("what the friend is told", () => {
   it("that the invite's credits are theirs, without naming who invited them", async () => {
     await firstFit(FIT, FRIEND);
     await settleReferrals(env.DB, NOW, REFERRAL_REWARD);

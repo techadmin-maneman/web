@@ -33,7 +33,7 @@ export const RECORD = {
   },
   credits: { visits: 2, earliest_expiry: "2028-01-03T06:00:00.000Z" },
   visits: {
-    // The Saturday visit he has booked, which the page once showed nowhere (OPS-04).
+    // The Saturday visit he has booked, which the page once showed nowhere.
     upcoming: [
       {
         id: "33000000-0000-4000-8000-000000000002",

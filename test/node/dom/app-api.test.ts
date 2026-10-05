@@ -42,7 +42,7 @@ describe("a 401", () => {
 });
 
 describe("the building search", () => {
-  // Each answer spends from Google's budget, so the query goes in a POST's body, never in a link (SEC-05).
+  // Each answer spends from Google's budget, so the query goes in a POST's body, never in a link.
   it("asks by POST, with what was typed and the search's one token in the body", async () => {
     const sent: { url: string; init: RequestInit | undefined }[] = [];
     vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
@@ -70,7 +70,7 @@ describe("an answer that is not the API's", () => {
   });
 });
 
-// UX-11, CQ-46: on a stalled signal, Pay, Continue and Cancel stayed busy until the page was reloaded.
+// On a stalled signal, Pay, Continue and Cancel stayed busy until the page was reloaded.
 describe("a signal that never answers", () => {
   it("is no connection after 15 seconds for a read", async () => {
     neverAnswering();

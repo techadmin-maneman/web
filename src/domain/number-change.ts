@@ -81,7 +81,7 @@ interface DecidedChange {
 
 /**
  * The client's latest change ops decided, within DECISION_SHOWN_DAYS, so the profile can say what became of it
- * rather than let it vanish (OPS-09). The profile shows it only while no change is under way.
+ * rather than let it vanish. The profile shows it only while no change is under way.
  */
 export async function lastDecidedChange(db: D1Database, personId: string, now: Date): Promise<DecidedChange | null> {
   const since = new Date(now.getTime() - DECISION_SHOWN_DAYS * DAY_MS).toISOString();

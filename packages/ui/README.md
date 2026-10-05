@@ -1,6 +1,6 @@
 # @maneman/ui
 
-The React parts the three Phase 2 apps share: the client app, the ops console and the technician app. What they have in common is written here once, so a fix reaches all three (ADR 0076; the audit's DS-23 and FEA-40). The calls to the API, India's dates, rupees and WhatsApp's links are `@maneman/web-kit`'s. The public site is Astro and Preact, and uses none of it.
+The React parts the three Phase 2 apps share: the client app, the ops console and the technician app. What they have in common is written here once, so a fix reaches all three (ADR 0076). The calls to the API, India's dates, rupees and WhatsApp's links are `@maneman/web-kit`'s. The public site is Astro and Preact, and uses none of it.
 
 | Import                       | What it holds                                                                                                                           |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |

@@ -41,7 +41,7 @@ describe("the profile form", () => {
     expect(fitOf(typed({ base_width_in: "80" }))).toBeNull();
   });
 
-  // FLD-61, UX-35: the chips ran #1 … #8, #1B, as an object's integer-like keys come first.
+  // The chips ran #1 … #8, #1B, as an object's integer-like keys come first.
   it("offers the colours in the suppliers' order, #1B after #1", () => {
     expect(COLOURS.slice(0, 3)).toEqual(["1", "1B", "2"]);
   });
@@ -77,7 +77,7 @@ describe("the profile form", () => {
 });
 
 describe("the console's correction, on the same form", () => {
-  // FLD-49: the console checked only that a figure was a number, and left its range to the API.
+  // The console checked only that a figure was a number, and left its range to the API.
   it("names each figure typed that the API would refuse", () => {
     const { figures } = fitFormOf(null);
     expect(

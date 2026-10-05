@@ -152,7 +152,7 @@ const ProfileSchema = z
         z.null(),
       ])
       .openapi({
-        description: `What ops decided about the client's latest change of number, for ${String(DECISION_SHOWN_DAYS)} days after, while no other change is under way. A rejection once vanished from the app (OPS-09).`,
+        description: `What ops decided about the client's latest change of number, for ${String(DECISION_SHOWN_DAYS)} days after, while no other change is under way. A rejection once vanished from the app.`,
       }),
     deletion: z
       .object({ state: z.literal("requested"), requested_at: z.iso.datetime() })

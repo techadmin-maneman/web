@@ -79,7 +79,7 @@ export function whenOf(job: Job): { readonly date: string | null; readonly windo
 }
 
 /**
- * The job as the board shows it, which a move sends so a stale board is refused (FEO-05). A tray job still on a
+ * The job as the board shows it, which a move sends so a stale board is refused. A tray job still on a
  * technician who was switched off is his until it moves.
  */
 export function shownOf(job: Job): Shown {

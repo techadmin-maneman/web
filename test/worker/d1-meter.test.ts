@@ -120,7 +120,7 @@ function sum(results: readonly D1Result[], field: "rows_read" | "rows_written"):
   return results.reduce((total, result) => total + result.meta[field], 0);
 }
 
-// PLAT-26: a lost connection failed a cron job, threw a consumer batch and answered a client 500, all seconds before
+// A lost connection failed a cron job, threw a consumer batch and answered a client 500, all seconds before
 // D1 would have answered.
 describe("a read D1 fails for a reason that passes by itself", () => {
   /** A database whose statements fail `failures` times with `message`, then work. */

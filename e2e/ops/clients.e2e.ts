@@ -118,7 +118,7 @@ const invitedBy = (page: Page) =>
     .filter({ hasText: /^Invited by$/ })
     .locator("+ dd");
 
-// A client could be found only by their whole number, typed exactly (OPS-04).
+// A client could be found only by their whole number, typed exactly.
 test("finds clients by part of a name, and sends it in the body, never in the URL", async ({ page }) => {
   await answer(page, {
     [FIND]: json({ clients: [FOUND], more: false }),
@@ -144,7 +144,7 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
   expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/visits`);
 });
 
-// OIA-15: search lived on Clients alone, Back lost the results, and a result named no state or visit.
+// Search lived on Clients alone, Back lost the results, and a result named no state or visit.
 test("finds a client from another page's header, keeps the words out of the URL, and keeps the results across Back", async ({
   page,
 }) => {
@@ -235,7 +235,7 @@ test("heads the page with the client's standing and the number to reach them on"
   );
 });
 
-// Who invited a client was shown only under Payments, below the credits form (MON-16).
+// Who invited a client was shown only under Payments, below the credits form.
 test("heads the page with who invited the client, a way to their page, and the invite's code", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
@@ -287,7 +287,7 @@ const OPEN_FOR_ROHIT = {
 
 const openForClient = (page: Page) => page.getByRole("region", { name: "Open for this client" });
 
-// OIA-10 of the audit, 2 October 2026: a client's page showed nothing open for them while a task about them waited.
+// A client's page showed nothing open for them while a task about them waited.
 test("lists what waits on Tasks for the client under the head, each with a way to where it is done", async ({
   page,
 }) => {
@@ -321,7 +321,7 @@ test("says when nothing waits on Tasks for the client", async ({ page }) => {
   await expect(openForClient(page)).toContainText("Nothing open.");
 });
 
-// Board B1 draws WhatsApp beside the name; the page once gave no way to reach the client (OPS-05).
+// Board B1 draws WhatsApp beside the name; the page once gave no way to reach the client.
 test("opens a WhatsApp chat with the client from beside their name, as the board draws it", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("link", { name: `WhatsApp ${CLIENT.name}` })).toHaveAttribute(
@@ -335,7 +335,7 @@ test("says in words that a client wearing no piece falls due on no date", async 
   await expect(meta(page)).toHaveText(["Booked", "2 · use by 3 Jan 2028", "No piece fitted", MOBILE]);
 });
 
-// OIA-10 of the audit, 2 October 2026: the page opened on an empty Pieces tab, a click away from the visit.
+// The page opened on an empty Pieces tab, a click away from the visit.
 test("opens on the visits, with the invite on a Referrals tab of its own", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText([
@@ -474,7 +474,7 @@ test.describe("the client's hair profile", () => {
   });
 });
 
-// The record carried the address, the access notes and every visit, and the page showed none of them (OPS-04).
+// The record carried the address, the access notes and every visit, and the page showed none of them.
 test("lists where visits go, and every visit to come and done", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/visits`);
   await expect(page.getByText("House 1204, Sector 65, Gurgaon 122018")).toBeVisible();
@@ -487,7 +487,7 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   await expect(coming).toContainText("Imran Qureshi");
   await expect(coming).toContainText("Booked · Prepaid");
   await expect(page.getByRole("region", { name: "Done" }).getByRole("row").nth(1)).toContainText("22 Aug 2027");
-  // OIA-03, BK-21: a visit to come opens on the dispatch board, on its week with its drawer open; a visit done does not.
+  // A visit to come opens on the dispatch board, on its week with its drawer open; a visit done does not.
   await expect(coming.getByRole("link", { name: "Show on board: the visit of 25 Sep 2027" })).toHaveAttribute(
     "href",
     "/dispatch?from=2027-09-25&visit=33000000-0000-4000-8000-000000000002",
@@ -607,7 +607,7 @@ test("enters a discount code on a visit not yet paid for, says when one does not
   await row.getByLabel("Discount code").fill("wrong1");
   await row.getByRole("button", { name: "Apply" }).click();
   await expect(row.getByRole("alert")).toHaveText("That code does not apply to this visit.");
-  // MON-53: one ops switched off said only that it did not apply.
+  // One ops switched off said only that it did not apply.
   await row.getByLabel("Discount code").fill("RPLC2K");
   await row.getByRole("button", { name: "Apply" }).click();
   await expect(row.getByRole("alert")).toHaveText("That code is switched off.");
@@ -624,7 +624,7 @@ test("enters a discount code on a visit not yet paid for, says when one does not
   await expect(row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" })).toBeVisible();
 });
 
-// MON-23: once the one visit was booked, ops no longer saw the code the client gave when booking on the site.
+// Once the one visit was booked, ops no longer saw the code the client gave when booking on the site.
 test("shows the code the client gave when booking, and starts the box from it", async ({ page }) => {
   const [coming] = RECORD.visits.upcoming;
   if (coming === undefined) throw new Error("the record has no visit to come");
@@ -696,7 +696,7 @@ test("names the discount code a payment was made with, and what it took off", as
   await expect(payment).toContainText("Code AUDTEST, Rs. 1,000 off");
 });
 
-// A booking paid for and not yet a visit read as a bare "Payment" (P2-25's note).
+// A booking paid for and not yet a visit read as a bare "Payment".
 test("names a payment for a booking not yet a visit by what is being booked", async ({ page }) => {
   const [paid] = RECORD.payments;
   const forBooking = {
@@ -711,7 +711,7 @@ test("names a payment for a booking not yet a visit by what is being booked", as
   await expect(payment).toContainText("First fit of 4 Oct 2027");
 });
 
-// MON-16 and OIA-08: a client who lost Razorpay's text could not be sent the link again; the address sat only in D1.
+// A client who lost Razorpay's text could not be sent the link again; the address sat only in D1.
 test("lists the payment links sent, and copies an open one's address to send again", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await openClient(page, `/clients/${CLIENT.id}/payments`);
@@ -762,7 +762,7 @@ test("says so when nothing was linked or invoiced yet", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Invoices" })).toContainText("No finished visit to invoice yet.");
 });
 
-// A credit given or taken in error once needed SQL to put right (BIZ-15).
+// A credit given or taken in error once needed SQL to put right.
 test("puts a client's credits right, with the reason, and shows the balance it answers", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
     [ADD_CREDITS]: json({ visits: 1, earliest_expiry: "2028-01-03T06:00:00.000Z" }),
@@ -834,7 +834,7 @@ test("attaches an invite to a client who came with none, with why, and shows it 
   });
   const invite = page.getByRole("region", { name: "Invite" });
   await expect(invite).toContainText("They came with no invite.");
-  // PS-25: the note forbade a fitted client, though the owner allows one, held for review.
+  // The note forbade a fitted client, though the owner allows one, held for review.
   await expect(invite).toContainText("Attached after their first fit, it waits for your review in Referrals.");
   const attach = invite.getByRole("button", { name: "Attach the invite" });
   await expect(attach).toBeDisabled();
@@ -915,7 +915,7 @@ test("keeps the photographs locked, and says what opening them records", async (
   await expect(page.getByRole("img")).toHaveCount(0);
 });
 
-// One opening was ten entries in the log, and the time lettered was the browser's (OPS-17).
+// One opening was ten entries in the log, and the time lettered was the browser's.
 test("logs the opening once, before any photograph, and letters the time the API logged", async ({ page }) => {
   const asked: string[] = [];
   page.on("request", (request) => {
@@ -968,7 +968,7 @@ test("shows no photograph the API would not serve", async ({ page }) => {
   await expect(page.getByRole("img")).toHaveCount(9);
 });
 
-// Every photograph of every visit was fetched at once (FEO-16).
+// Every photograph of every visit was fetched at once.
 test("fetches the newest visits' photographs first, and earlier ones when asked", async ({ page }) => {
   const [visit] = PHOTOS.visits;
   if (visit === undefined) throw new Error("the fixture has a visit");
@@ -1033,7 +1033,7 @@ test("says when the client has asked to be erased, and leaves it to Deletion req
   await expect(page.getByRole("button", { name: `Erase ${CLIENT.name}` })).toHaveCount(0);
 });
 
-// The operators' erasure was a script with a shared secret, on the public host, that left no audit entry (PS-16).
+// The operators' erasure was a script with a shared secret, on the public host, that left no audit entry.
 test("erases a client from their page, once ops confirm the request came from their own number", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [ERASE]: json(ERASED) });
   const erasing = page.getByRole("region", { name: "Erase this client" });

@@ -1,7 +1,7 @@
 // The check before a change is sent: what it was beside what it will be, and
 // only the second press sends it (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 // It takes the focus as it opens, so it is read at once and never opens out of
-// sight (FEO-15). Every setting's form shares it, as do the stock and a
+// sight. Every setting's form shares it, as do the stock and a
 // technician's leave (docs/decisions/0087-consumables-and-stock.md).
 
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";

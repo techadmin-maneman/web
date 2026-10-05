@@ -1,4 +1,4 @@
-// What axe cannot see in the console (UX-18): a control that takes the keyboard without drawing that it has (WCAG
+// What axe cannot see in the console: a control that takes the keyboard without drawing that it has (WCAG
 // 2.4.7). The skip link that comes first is console.e2e.ts's.
 
 import type { Page } from "@playwright/test";

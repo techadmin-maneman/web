@@ -1,4 +1,4 @@
-// The client app's address form, when the API will not save the address (BK-08): a pincode we do not come to says
+// The client app's address form, when the API will not save the address: a pincode we do not come to says
 // so on the pincode and offers the waitlist; a move to another city while a visit is booked offers a message to ops.
 
 import { act, createElement } from "react";

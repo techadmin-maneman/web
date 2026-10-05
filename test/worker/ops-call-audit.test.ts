@@ -80,7 +80,7 @@ describe("whose record a call opened", () => {
     ]);
   });
 
-  // PS-36 of the audit, 2 October 2026: the log said a route was called, never whose record it was.
+  // The log said a route was called, never whose record it was.
   it("keeps nothing but an ID from a path: a number typed in its place stays out of the log", async () => {
     await request(opsAs("care@maneman.in"), "/api/clients/9876543210");
 
@@ -96,7 +96,7 @@ describe("whose record a call opened", () => {
 });
 
 describe("what is not written", () => {
-  // PLAT-16 of the audit, 2 October 2026: most of the log was the health check and paths no route answers.
+  // Most of the log was the health check and paths no route answers.
   it("writes nothing for the health check, or for a path no route answers", async () => {
     const ops = opsAs("care@maneman.in");
 

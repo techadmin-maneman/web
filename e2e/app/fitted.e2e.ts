@@ -1,4 +1,4 @@
-// The client app's read surfaces for a fitted client (P2-F2): Home B1, Visits
+// The client app's read surfaces for a fitted client: Home B1, Visits
 // C1 and C9, Photos D1 to D3, and Payments E1 to E3, against the local mm-api
 // with the client in its mirrors (e2e/app/fitted.ts). The tests share the
 // client, and only read.
@@ -61,20 +61,20 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await page.getByRole("link", { name: "Back to visits" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
 
-  // The visit coming opens too, as Home's card, with the ways to change it (CLI-26).
+  // The visit coming opens too, as Home's card, with the ways to change it.
   await visits.nth(0).click();
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.next.date) })).toBeVisible();
   await expect(page.getByText("Afternoon, 12 to 4 pm")).toBeVisible();
   await expect(page.getByRole("button", { name: "Reschedule" })).toBeVisible();
 
-  // With self-serve booking on, the note is kept on the visit for the technician, not sent to WhatsApp (REQ-04).
+  // With self-serve booking on, the note is kept on the visit for the technician, not sent to WhatsApp.
   await page.getByRole("button", { name: "Add a note" }).click();
   const sheet = page.getByRole("dialog");
   await sheet.getByRole("textbox", { name: "What should they know at the door?" }).fill("The lift is out");
   await sheet.getByRole("button", { name: "Save the note" }).click();
   await expect(sheet.getByRole("heading", { name: /^Saved\./ })).toBeVisible();
 
-  // And shown back: on the card, and in the sheet when it opens again (BK-40).
+  // And shown back: on the card, and in the sheet when it opens again.
   await sheet.getByRole("button", { name: "Close" }).first().click();
   await expect(page.getByText("Your note: “The lift is out”")).toBeVisible();
   await page.getByRole("button", { name: "Add a note" }).click();
@@ -82,7 +82,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByRole("dialog").getByRole("textbox")).toHaveValue("The lift is out");
 });
 
-// A dropped signal unmounted the note sheet and its words, and Back left the page under it (UX-09).
+// A dropped signal unmounted the note sheet and its words, and Back left the page under it.
 test("an open note sheet keeps its words through a dropped signal, and Back closes it on the page", async ({
   page,
 }) => {
@@ -119,7 +119,7 @@ test("an open note sheet keeps its words through a dropped signal, and Back clos
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
 });
 
-// A visit that is not this client's, or a payment, says so rather than offering to try again for ever (CLI-33).
+// A visit that is not this client's, or a payment, says so rather than offering to try again for ever.
 test("a visit or a payment that is not the client's says it could not be found", async ({ page }) => {
   await logIn(page, fittedClient().mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
@@ -134,7 +134,7 @@ test("a visit or a payment that is not the client's says it could not be found",
 });
 
 // Home as the API gives it: a visit FSM has not closed stays, saying where it stands, and nothing is booked in its
-// place (LIFE-03); the credit tile, and each prompt in its own words (LIFE-08). The API's answers are altered on
+// place; the credit tile, and each prompt in its own words. The API's answers are altered on
 // their way, since the shared client has none of these.
 test("Home keeps a visit done but not yet closed, and shows the credit tile and the prompt the API gives", async ({
   page,
@@ -244,7 +244,7 @@ test("a past visit carries its own invoice, or says why there is none", async ({
   expect(served).toBe("application/pdf");
 
   // The first fit is billed, and its invoice has not been raised in the sixty days since: "within the hour" is
-  // no longer true of it, so the client is told it is late and how to ask for it (CLI-25).
+  // no longer true of it, so the client is told it is late and how to ask for it.
   await page.goto(`/visits/${client.firstFit.id}`);
   await expect(
     page.getByText("The invoice is taking longer than it should. Message us and we’ll send it."),
@@ -322,7 +322,7 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await tab(page, "Payments").click();
   const entries = page.getByRole("main").getByRole("link");
   await expect(entries).toHaveCount(3);
-  // A refund is titled a refund and reads as money coming back, never as a second charge (MON-19).
+  // A refund is titled a refund and reads as money coming back, never as a second charge.
   await expect(entries.nth(0)).toContainText("Refund");
   await expect(entries.nth(0)).toContainText("Service visit");
   await expect(entries.nth(0)).toContainText("+ Rs. 1,000");
@@ -338,7 +338,7 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await entries.nth(1).click();
   await expect(page.getByRole("heading", { level: 1, name: "Service visit" })).toBeVisible();
   await expect(page.getByText("Rs. 2,000", { exact: true })).toBeVisible();
-  // No rate was recorded for this payment, so nothing is said of GST at all (MON-49).
+  // No rate was recorded for this payment, so nothing is said of GST at all.
   await expect(page.getByText(/GST at/)).toHaveCount(0);
   await expect(page.getByText(client.reference)).toBeVisible();
   const documents = {
@@ -355,7 +355,7 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await page.getByRole("link", { name: "Back to payments" }).click();
   await entries.nth(2).click();
   await expect(page.getByRole("heading", { level: 1, name: "First fit" })).toBeVisible();
-  // Sixty days after the fit, its invoice is late rather than "usually ready within the hour" (CLI-25).
+  // Sixty days after the fit, its invoice is late rather than "usually ready within the hour".
   await page.getByRole("button", { name: "Tax invoice" }).click();
   await expect(page.getByText("The invoice is taking longer than it should.")).toBeVisible();
   await page.getByRole("button", { name: "Receipt" }).click();
@@ -369,7 +369,7 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await page.getByRole("link", { name: "Back to payments" }).click();
   await entries.nth(0).click();
   await expect(page.getByRole("heading", { level: 1, name: "Refund", exact: true })).toBeVisible();
-  // Begun eighteen days ago, it is past Razorpay's 5 to 7 working days, and the client is told so (CLI-25).
+  // Begun eighteen days ago, it is past Razorpay's 5 to 7 working days, and the client is told so.
   await expect(page.getByText("Refund processing · taking longer than it should")).toBeVisible();
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute(
     "href",
@@ -378,7 +378,7 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await expect(page.getByText("+ Rs. 1,000", { exact: true })).toBeVisible();
 });
 
-// MON-22: after paying, the entry did not say the code the visit was booked with. No route puts a code on the seeded
+// After paying, the entry did not say the code the visit was booked with. No route puts a code on the seeded
 // payment, so its entry is answered with one, held to the API's contract.
 test("a payment made with a discount code names the code, and what it took off", async ({ page }) => {
   const client = fittedClient();
@@ -465,7 +465,7 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
-// D-04: while FSM held a booking, Home said it was being booked and Visits said "Nothing booked yet.". BK-15: a
+// D-04: while FSM held a booking, Home said it was being booked and Visits said "Nothing booked yet.". A
 // consultation and fit booked on /book read "We are booking your visit" while the site had said it was booked. Both
 // answers are altered on their way, as above.
 test("Visits lists a visit FSM has not taken yet as Home says it, a consultation and fit as booked", async ({
@@ -494,7 +494,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   await expect(home).toContainText(shortDate("2027-09-25"));
   await expect(home).toContainText("Rs. 30,000, only if you go ahead");
   await expect(home).not.toContainText("We are booking your visit.");
-  // MON-14: nothing paid and no consent to visit messages, so no WhatsApp is promised.
+  // Nothing paid and no consent to visit messages, so no WhatsApp is promised.
   await expect(home).not.toContainText("We will message you on WhatsApp");
 
   await tab(page, "Visits").click();
@@ -509,7 +509,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
-// MON-21, BK-15, UX-08, CP-01: a consultation and fit in one visit read "First fit · 180 minutes", with no price and no
+// A consultation and fit in one visit read "First fit · 180 minutes", with no price and no
 // word of the link it is paid by. The API's answers are altered on their way, as the local database books no one visit.
 test("Home and Visits name a consultation and fit, what it costs once fitted, and what to expect", async ({ page }) => {
   const client = fittedClient();
@@ -544,7 +544,7 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   await expect(page.getByRole("main").getByRole("link").first()).toContainText("Consultation and fit · 12 to 4 pm");
 });
 
-// MON-21: once fitted, the link to pay by lived only in Razorpay's SMS.
+// Once fitted, the link to pay by lived only in Razorpay's SMS.
 test("Home and Payments show a payment owed once fitted, with the link to pay by", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);

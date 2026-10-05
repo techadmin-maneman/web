@@ -223,7 +223,7 @@ describe("the sweeper, on a try-on's small copy", () => {
 });
 
 describe("the sweeper, on a client's try-on", () => {
-  // PS-10: a claim whose number no code proved may hold a stranger's photograph, so it is never kept as theirs.
+  // A claim whose number no code proved may hold a stranger's photograph, so it is never kept as theirs.
   it("lets go of a try-on whose claim no code proved, as of anyone who never booked", async () => {
     await tryOnWithCopy("unproved", { number_proved_at: null });
     await booksAVisit();
@@ -289,7 +289,7 @@ describe("the sweeper, on a client's try-on", () => {
     expect(await metered()).toBe(COPY.byteLength + LOOK.byteLength);
   });
 
-  // PS-59: kept with nothing to show, it would hold the place of a later try-on the client could see.
+  // Kept with nothing to show, it would hold the place of a later try-on the client could see.
   it("lets go of a client's try-on whose look is gone, so a later one can be kept", async () => {
     await tryOnWithCopy("lost", { created_at: at(-3 * DAY) });
     await env.RESULTS.delete("results/lost.png");

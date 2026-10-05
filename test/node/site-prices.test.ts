@@ -50,7 +50,7 @@ const ANSWER: PublishedPrices = {
 };
 
 describe("the site's prices", () => {
-  // FEO-22: the site typed its figures, its first-year totals and the search engines' price range.
+  // The site typed its figures, its first-year totals and the search engines' price range.
   it("fills every sentence that gives a price from the book's figures, and computes the totals", () => {
     const words = priceWords(MOVED);
 
@@ -173,7 +173,7 @@ describe("the publish gate, on prices", () => {
   );
   const legalApproved = { privacy: { approved: true }, terms: { approved: true } };
 
-  // FEO-22: the landing's prices were typed, and the gate never read referral.ts.
+  // The landing's prices were typed, and the gate never read referral.ts.
   it("stops a price typed into the landing", () => {
     const [first, second] = referral.prices.rows;
     if (first === undefined || second === undefined) throw new Error("the landing has lost a price row");

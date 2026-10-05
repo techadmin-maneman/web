@@ -1,4 +1,4 @@
-// PLAT-42: every alert was sent from inside mm-api, so a cron that stopped running altogether told nobody.
+// Every alert was sent from inside mm-api, so a cron that stopped running altogether told nobody.
 
 import { beforeEach, describe, expect, it } from "vitest";
 import { createLogger } from "../../src/log.ts";

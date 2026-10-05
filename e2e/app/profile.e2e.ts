@@ -98,7 +98,7 @@ test("finds a building, keeps the flat separately, and shows the address as writ
   await page.getByRole("button", { name: "Save" }).click();
 
   await expect(page.getByText("Flat 1203, 12, Tower C, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
-  // FLD-57: as the client typed it, under its own label, never "Near Opposite the sector market".
+  // As the client typed it, under its own label, never "Near Opposite the sector market".
   await expect(page.getByText("Landmark", { exact: true })).toBeVisible();
   await expect(page.getByText("Opposite the sector market", { exact: true })).toBeVisible();
   await expect(page.getByText(/Near Opposite/)).toHaveCount(0);
@@ -162,7 +162,7 @@ test("refuses an address without a six-digit pincode", async ({ page }) => {
   await expect(page.getByRole("alert")).toHaveText(
     "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
   );
-  // The field that is wrong is marked, named by the error, and given the focus (A11Y-16).
+  // The field that is wrong is marked, named by the error, and given the focus.
   const pincode = page.getByLabel("Pincode");
   await expect(pincode).toHaveAttribute("aria-invalid", "true");
   await expect(pincode).toHaveAccessibleDescription(
@@ -191,7 +191,7 @@ test("refuses an address without the flat or house number, and says so on the fl
   await expect(flat).toBeFocused();
 });
 
-// Saved, the form closes on its own heading, so the client lands where they were rather than mid-page (CLI-30).
+// Saved, the form closes on its own heading, so the client lands where they were rather than mid-page.
 // An address the client gave ops on the phone, which ops saved for them (docs/decisions/0092-task-owners.md).
 test("says an address was given to us on the phone, so the client can check it", async ({ page }) => {
   await signIn(page);
@@ -326,7 +326,7 @@ test("changes the number: a code to each, then it waits for us", async ({ page }
 });
 
 // A switch the API did not answer stays as it was, and says so: a switch that looks off while the consent stands
-// would tell the client something untrue about their data (FEA-25).
+// would tell the client something untrue about their data.
 test("a consent that did not go through says so, and the switch stays as it was", async ({ page }) => {
   await loggedIn(page);
   await page.route("**/api/consents/*", (route) =>
@@ -539,7 +539,7 @@ test("logs out from the foot of the profile", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 });
 
-// PS-14: a lost or handed-on phone stayed signed in for 90 days, with no way to end it short of erasure.
+// A lost or handed-on phone stayed signed in for 90 days, with no way to end it short of erasure.
 test("lists where the client is signed in, and signs another browser out", async ({ page, browser }) => {
   const mobile = await signIn(page);
   const iPhone =

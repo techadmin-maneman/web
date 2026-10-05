@@ -1,6 +1,6 @@
 // The ops console's calls to mm-api (docs/openapi-ops.json), made with the one
 // client the apps share (packages/web-kit/api.ts), so each call's path, query,
-// body and answer are checked against ./api-schema.ts (FEO-30). Every call is
+// body and answer are checked against ./api-schema.ts. Every call is
 // same-origin, so Cloudflare Access's own cookie goes with it and the Origin
 // matches, which the ops surface requires on a write
 // (docs/decisions/0026-hosts-and-surfaces.md).

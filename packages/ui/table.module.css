@@ -2,8 +2,8 @@
  * The console's table (./Table.tsx), at the boards' density: each row
  * --ops-row high, its rule included, since the apps size boxes border-box.
  * A cell's padding above and below is what lets a 14 px line fit inside that:
- * 7 px does, and 8 or 9, which the tables used before, made every row 35
- * (OPS-24). A row grows past 34 px only when its words wrap. A screen's own
+ * 7 px does, and 8 or 9, which the tables used before, made every row 35.
+ * A row grows past 34 px only when its words wrap. A screen's own
  * class sets a column's width and its padding at the sides.
  */
 

@@ -1,5 +1,5 @@
 // The one fetch every vendor call goes through (src/providers/vendor-fetch.ts), and the reading of a vendor's answer
-// by its schema (src/providers/vendor-answer.ts). CQ-03 and PLAT-44: eight adapters each hand-rolled fetch, timeout
+// by its schema (src/providers/vendor-answer.ts). Eight adapters each hand-rolled fetch, timeout
 // and error mapping, four of them logged nothing per call, and an answer that failed a schema reached ops as a zod dump.
 
 import { beforeEach, describe, expect, it } from "vitest";

@@ -98,7 +98,7 @@ describe("web-kit dates", () => {
     expect(indiaInstant("2026-09-24", "03:00").toISOString()).toBe("2026-09-23T21:30:00.000Z");
   });
 
-  // FEA-40: India's offset was written out seven times across the front ends.
+  // India's offset was written out seven times across the front ends.
   // A service worker is built on its own and imports nothing, so the technician app's keeps its own copy.
   it("is the one place the front ends add India's offset", () => {
     const offsets = ["apps", "site/src", "packages"]
@@ -225,7 +225,7 @@ describe("web-kit WhatsApp links", () => {
     expect(whatsappShare("Look: https://maneman.in")).toBe("https://wa.me/?text=Look%3A%20https%3A%2F%2Fmaneman.in");
   });
 
-  // FEA-40, FEO-29: the number was written three times and a link built seven ways.
+  // The number was written three times and a link built seven ways.
   it("is the one place the front ends write the number or build a link", () => {
     const own = ["apps", "site/src", "packages/ui"]
       .flatMap((root) => sourcesUnder(root))

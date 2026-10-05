@@ -77,7 +77,7 @@ async function workTheJob(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Next" }).click();
 }
 
-// REQ-14: a whole job worked with no signal, from Start job to the outcome, reaches the API in the order it was
+// A whole job worked with no signal, from Start job to the outcome, reaches the API in the order it was
 // done once the signal returns, each write once, with the photographs behind it.
 test("replays a whole job worked with no signal, in the order it was done, once the signal returns", async ({
   page,
@@ -104,7 +104,7 @@ test("replays a whole job worked with no signal, in the order it was done, once 
   expect(fake.progress.outcome).toBe("done");
 });
 
-// FLD-15, UX-03: a refused set could not be retaken, and the only way out deleted the whole job's work.
+// A refused set could not be retaken, and the only way out deleted the whole job's work.
 test("a photograph the API refused is taken again on a job closed on the phone, and the rest of the job follows", async ({
   page,
   context,
@@ -144,7 +144,7 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
   expect(await heldOnPhone(page)).toMatchObject({ frames: 0 });
 });
 
-// FLD-25: a technician ops switch off keeps the work his phone has not sent, for him alone, and the clients' cards go.
+// A technician ops switch off keeps the work his phone has not sent, for him alone, and the clients' cards go.
 test("keeps a switched-off technician's unsent step, and sends it once he is back on and signs in", async ({
   page,
   context,
@@ -290,7 +290,7 @@ test("accounts plainly for what has not reached us, and says what changed on a s
   await expect(page.getByRole("alert").filter({ hasText: movedToSameer })).toHaveCount(0);
 });
 
-// BK-43, FLD-38: which job moved, by the time the technician knew, and the time it moved to from the card read again.
+// Which job moved, by the time the technician knew, and the time it moved to from the card read again.
 test("says which job moved to another time, and to when", async ({ page }) => {
   const fake = await fakeTech(page);
   await atTheDoor(page);
@@ -356,7 +356,7 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
     .analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
-  // Deleting never throws away photographs on one tap, and the question opens on the safe answer (UX-30).
+  // Deleting never throws away photographs on one tap, and the question opens on the safe answer.
   await page.getByRole("button", { name: "Delete this job's work" }).click();
   await expect(page.getByText("This deletes 5 photos and 1 action from this phone.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Keep them" })).toBeFocused();

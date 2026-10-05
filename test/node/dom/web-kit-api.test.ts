@@ -2,7 +2,7 @@
 // typed from the OpenAPI document of its surface, its path, query and body
 // included, and every answer is read the same way -- what a success carries,
 // what a refusal says, what counts as no connection, and the one place a
-// session that has ended is heard (FEA-30, FEA-40, FEO-29, FEO-30).
+// session that has ended is heard.
 
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import {
@@ -147,7 +147,7 @@ describe("a refusal", () => {
     });
   });
 
-  // PLAT-43: the screen shows it, so whoever is told "it failed" can find the call in the logs.
+  // The screen shows it, so whoever is told "it failed" can find the call in the logs.
   it("carries the API's ID for the call, from the refusal or else from its header", async () => {
     answering(() => refusal(500, "internal_error"));
     expect(await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } })).toMatchObject({
@@ -267,7 +267,7 @@ describe("no connection", () => {
     expect(answer.value).toMatchObject({ ok: false, code: "offline" });
   });
 
-  // CQ-46: an app that sets no patience no longer waits as long as the browser does.
+  // An app that sets no patience no longer waits as long as the browser does.
   it("is given up on after a minute when the app sets no patience", async () => {
     neverAnswering();
     const answer = settled(createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } }));

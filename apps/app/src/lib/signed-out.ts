@@ -1,7 +1,7 @@
 // Whether this phone's client logged out, or saw their session end, and has
 // not signed in since. Offline, the app cannot ask the API whether there is a
 // session; a phone that knows it signed out opens on the login rather than
-// on board B3's error, which is for a client who is still in (CLI-31). It
+// on board B3's error, which is for a client who is still in. It
 // records no one and nothing about them, only that the phone is signed out.
 
 const KEY = "mm-app-signed-out";

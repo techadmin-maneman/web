@@ -1,7 +1,7 @@
 // A control's edge shows that it is there, so WCAG 1.4.11 holds it to 3:1 against its ground. The boards draw
 // fields, tiles and boxes in --paper-line (1.3:1 on paper) and --ink-line (1.75:1 on the ink); the apps draw them
 // in --paper-control and --ink-line-strong instead (ADR 0025, item 36). The technician app's edges are
-// test/node/tech-contrast.test.ts's; this holds the client app's, the console's and the shared fields' (UX-18).
+// test/node/tech-contrast.test.ts's; this holds the client app's, the console's and the shared fields'.
 //
 // A control is read from its selector: a field, an input, a select, a box, a tile or a choice. A disabled control
 // needs no contrast (WCAG's own exception), and the console's check panel is a panel, not a control.

@@ -70,7 +70,7 @@ describe("content", () => {
     for (const file of files) expect(assetPath(file), file).not.toBeNull();
   });
 
-  // UX-20, PLAT-65: every phone downloaded the 2.3 MB film.
+  // Every phone downloaded the 2.3 MB film.
   it("gives phones a film under 800 KB", () => {
     const path = assetPath(site.heroFootage.phoneVideo);
     expect(path).not.toBeNull();
@@ -127,7 +127,7 @@ describe("content", () => {
     }
   });
 
-  // CLI-15, LIFE-16, FEO-23: the owner kept the design's lengths on 24 September 2026 (docs/open-points.md, item 122):
+  // The owner kept the design's lengths on 24 September 2026 (docs/open-points.md, item 122):
   // "consultation 60 minutes, service 90, replacement 135, first fit 180".
   it("says each visit is as long as the backend books it", () => {
     expect(VISIT_BLOCKS.consultation.minutes).toBe(60);
@@ -186,7 +186,7 @@ describe("content", () => {
     }
   });
 
-  // CLI-16: the site serves Delhi NCR, and the landing said Gurgaon. The owner's ruling on the wording is open
+  // The site serves Delhi NCR, and the landing said Gurgaon. The owner's ruling on the wording is open
   // (ADR 0025, item 14); until then every page says what the home page does.
   it("names one service area on every page", () => {
     const pages = JSON.stringify(site) + JSON.stringify(referral);
@@ -199,7 +199,7 @@ describe("content", () => {
     expect(referral.preview.description(3)).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
   });
 
-  // CLI-19: production keeps a result fourteen days (ADR 0039), as the privacy notice says.
+  // Production keeps a result fourteen days (ADR 0039), as the privacy notice says.
   it("keeps the try-on's result for as long as the privacy notice says", () => {
     expect(textOf(site.legalPages.privacy)).toContain("the simulation itself is kept for fourteen days");
     expect(site.tryOn.sent.privacy).toBe("We delete it after 14 days.");
@@ -217,7 +217,7 @@ describe("the second copy round", () => {
   // The placeholder quotes and founder's note are the design's, kept until the owner supplies real ones.
   const pages = JSON.stringify({ ...site, testimonials: null, founderNote: null }) + JSON.stringify(referral);
 
-  // CP-06: the FAQ concedes a hand through the hair can tell, so nothing may claim it cannot.
+  // The FAQ concedes a hand through the hair can tell, so nothing may claim it cannot.
   it("calls the hair 100% real human hair in the hero, and claims nowhere that it is undetectable", () => {
     expect(site.hero.sequence).toContain("100% real human hair.");
     expect(pages).not.toMatch(/undetectable/i);
@@ -225,14 +225,14 @@ describe("the second copy round", () => {
     expect(referral.arrival.title).toBe("A hair system, fitted at home. The consultation is free.");
   });
 
-  // CP-20: /book and its search snippet opened "He measures your scalp", with nobody for "He" to be.
+  // /book and its search snippet opened "He measures your scalp", with nobody for "He" to be.
   it("names the technician on /book and in the try-on before anything is said of him", () => {
     expect(site.booking.intro).toMatch(/^Your technician measures your scalp/);
     expect(site.pageDescriptions.book).toBe(site.booking.intro);
     expect(site.tryOn.stage.body).not.toMatch(/\bHe\b/);
   });
 
-  // CP-07: only the gate's notice says where the look goes.
+  // Only the gate's notice says where the look goes.
   it("leaves where the look goes to the gate, and points to a privacy notice /try has", () => {
     const screens = JSON.stringify(site.tryOn);
     expect(screens).not.toMatch(/never shown|privately|for your privacy/i);
@@ -241,7 +241,7 @@ describe("the second copy round", () => {
     expect(before + link + after).toBe("Read the full privacy notice.");
   });
 
-  // CP-07, UX-22: no empty "Preview" box stands in for a look's picture.
+  // No empty "Preview" box stands in for a look's picture.
   it("draws the looks' pictures only once all six have one, and labels no empty box", () => {
     expect(site.tryOn.looks).not.toHaveProperty("preview");
     expect(site.lookPictures()).toBeNull();
@@ -257,7 +257,7 @@ describe("the second copy round", () => {
     ]);
   });
 
-  // CP-44: the site promised a refit or a refund within 14 days; the app's pay step, that the technician stops.
+  // The site promised a refit or a refund within 14 days; the app's pay step, that the technician stops.
   it("gives the guarantee in one sentence on the home page, in the FAQ and at the app's pay step", () => {
     const answer = site.faq.items.find((item) => item.q === "What if I do not like it at the fit?")?.a;
     expect(site.guarantee.text).toBe(GUARANTEE);
@@ -265,20 +265,20 @@ describe("the second copy round", () => {
     expect(appBooking.pay.guarantee).toBe(GUARANTEE);
   });
 
-  // CP-45: no flow books a telephone consultation, so How it works does not offer one.
+  // No flow books a telephone consultation, so How it works does not offer one.
   it("promises no phone call in How it works", () => {
     expect(JSON.stringify(site.howItWorks)).not.toMatch(/telephon|phone|call/i);
     expect(site.howItWorks.steps.map((step) => step.number)).toEqual(["01", "02", "03"]);
     expect(site.stepPhotos.images).toHaveLength(site.howItWorks.steps.length);
   });
 
-  // CP-46: "for just" sneered. The owner kept "Two of these are not ours." on 2 October 2026.
+  // "for just" sneered. The owner kept "Two of these are not ours." on 2 October 2026.
   it("keeps the owner's comparison line and gives a transplant's cost without a sneer", () => {
     expect(site.comparison.intro).toBe("Two of these are not ours.");
     expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b/);
   });
 
-  // CP-47: the prices block is hidden, but switched on it said a client pays on the day of the fit, and "piece".
+  // The prices block is hidden, but switched on it said a client pays on the day of the fit, and "piece".
   it("keeps the hidden prices true to how a client pays, in hair systems rather than pieces", () => {
     expect(site.prices.payment).not.toMatch(/on the day of the fit/);
     expect(JSON.stringify({ site: site.prices, landing: referral.prices })).not.toMatch(/\bpiece\b/i);
@@ -288,7 +288,7 @@ describe("the second copy round", () => {
 describe("the legal pages", () => {
   const pages = [site.legalPages.privacy, site.legalPages.terms];
 
-  // UX-39, CP-51: both pages were unbroken paragraphs, and a phone could not tap the number to ask for erasure.
+  // Both pages were unbroken paragraphs, and a phone could not tap the number to ask for erasure.
   it("give each topic its own heading, and the WhatsApp number only as a link", () => {
     for (const page of pages) {
       expect(page.sections.length, page.title).toBeGreaterThan(3);
@@ -299,14 +299,14 @@ describe("the legal pages", () => {
     expect(site.whatsapp.label).toBe(`WhatsApp · ${site.whatsapp.display}`);
   });
 
-  // PS-29: withdrawing was possible only in the app, which a waitlister or a try-on visitor cannot sign in to.
+  // Withdrawing was possible only in the app, which a waitlister or a try-on visitor cannot sign in to.
   it("say how to withdraw an agreement without the app", () => {
     const privacy = textOf(site.legalPages.privacy);
     expect(privacy).toContain("withdraw in the app or by messaging us at {whatsapp}");
     expect(privacy).toContain("To stop our WhatsApp messages, reply STOP to any of them.");
   });
 
-  // CP-51: the notice of 22 September 2026 erased "the same day", let any visit move free by message, took payment
+  // The notice of 22 September 2026 erased "the same day", let any visit move free by message, took payment
   // on the day of the fit, and offered a call.
   it("say what Phase 2 does: erasure decided within seven days, visits paid at booking, changes in the app", () => {
     const privacy = textOf(site.legalPages.privacy);
@@ -337,7 +337,7 @@ describe("the publish gate", () => {
     expect(publishProblems(undefined, APPROVED, undefined, LEGAL_APPROVED)).toEqual([]);
   });
 
-  // CP-51: the pages' Phase 2 wording is a draft until counsel signs it off.
+  // The pages' Phase 2 wording is a draft until counsel signs it off.
   it("stops a legal page whose wording is not approved", () => {
     const legal = { ...LEGAL_APPROVED, terms: { approved: false } };
     expect(publishProblems(undefined, APPROVED, undefined, legal)).toEqual([

@@ -1,6 +1,6 @@
 // The Razorpay client (src/providers/payments/razorpay.ts) against Razorpay's own
 // replies, in the shapes its API documents: an order, a refund, and a refusal.
-// Nothing called the real client before (TCD-03); the stub stood in everywhere.
+// Nothing called the real client before; the stub stood in everywhere.
 
 import { describe, expect, it } from "vitest";
 import { createLogger } from "../../src/log.ts";
@@ -182,7 +182,7 @@ describe("Razorpay: payment links", () => {
     });
   });
 
-  // MON-30: the page read "Payment Request from" the account holder's own name, and "RECEIPT" over our reference.
+  // The page read "Payment Request from" the account holder's own name, and "RECEIPT" over our reference.
   it("has Razorpay's page name us and label our reference as one", async () => {
     expect((await linkMade()).options).toEqual({
       checkout: { name: "Mane Man" },
@@ -190,13 +190,13 @@ describe("Razorpay: payment links", () => {
     });
   });
 
-  // MON-45, PS-47: no link ever closed.
+  // No link ever closed.
   it("closes every link at the moment asked, in Unix seconds", async () => {
     const made = await linkMade({ ...LINK, closesAt: new Date("2026-09-22T06:30:00.000Z") });
     expect(made).toMatchObject({ expire_by: 1790058600 });
   });
 
-  // MON-45, PS-46: every link was texted, and reminded of, whoever the number belonged to.
+  // Every link was texted, and reminded of, whoever the number belonged to.
   it("texts neither the link nor reminders of it where asked not to", async () => {
     const made = await linkMade({ ...LINK, notify: false });
     expect(made).toMatchObject({ notify: { sms: false, email: false }, reminder_enable: false });

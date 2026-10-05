@@ -270,7 +270,7 @@ interface VisitDetail extends VisitSummary {
    * ruling, or a draft being checked before it is sent. Null otherwise.
    */
   readonly invoice_held: InvoiceHeld | null;
-  /** The client was not home: how long we waited, and what ops ruled (LIFE-07). Null for any other visit. */
+  /** The client was not home: how long we waited, and what ops ruled. Null for any other visit. */
   readonly no_show: NoShowNote | null;
 }
 

@@ -1,5 +1,5 @@
 // Ops' funnel counts an invite's opens (GET /api/r/:code). A chat app fetching the link to draw its preview is not
-// a person opening it, and the site's Worker passes the visitor's user agent on so the API can tell (FEO-25). An
+// a person opening it, and the site's Worker passes the visitor's user agent on so the API can tell. An
 // address counts once a day for each invite, and one guessing codes is refused every code for the rest of the hour.
 // NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
@@ -66,7 +66,7 @@ it("counts a person opening the invite, and not a chat app drawing its preview",
   expect(await opens(code)).toBe(1);
 });
 
-// PLAT-17: a reload, or a loop, writes nothing more to the funnel.
+// A reload, or a loop, writes nothing more to the funnel.
 it("counts an open once a day for each address", async () => {
   const code = await inviteCode();
 
@@ -81,7 +81,7 @@ it("counts an open once a day for each address", async () => {
   expect(await opens(code)).toBe(3);
 });
 
-// PS-54: guessing codes reveals referrers' first names and cards.
+// Guessing codes reveals referrers' first names and cards.
 it("refuses an address every code once its misses for the hour are spent, and no other address", async () => {
   const code = await inviteCode();
   for (let guess = 0; guess < INVITE_MISSES_PER_ADDRESS_HOURLY; guess += 1) {

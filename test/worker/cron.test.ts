@@ -164,7 +164,7 @@ describe("a job that keeps failing", () => {
     expect(deps.alerts).toHaveLength(2);
   });
 
-  // PLAT-11: every job's count was written on every run, sixteen writes a run for counts that were almost never set.
+  // Every job's count was written on every run, sixteen writes a run for counts that were almost never set.
   it("reads which jobs are failing once a run, rather than writing each working job's count", async () => {
     const { job } = recorder();
     const prepared = vi.spyOn(env.DB, "prepare");
@@ -221,7 +221,7 @@ describe("the run record", () => {
     expect(await lastCompletedAt(env.DB)).toBe(at(0).toISOString());
   });
 
-  // PLAT-11: a run cut short for its CPU left no row and no alert, and the jobs after where it stopped went unrun.
+  // A run cut short for its CPU left no row and no alert, and the jobs after where it stopped went unrun.
   it("tells ops once when the run before never finished, however many runs see it", async () => {
     await runAt(0);
     await cutShortAt(5);
@@ -283,7 +283,7 @@ describe("the run record", () => {
   });
 });
 
-// PLAT-42: every alert was sent from inside mm-api, so a cron that stopped running altogether told nobody.
+// Every alert was sent from inside mm-api, so a cron that stopped running altogether told nobody.
 describe("the heartbeat after a run", () => {
   const CHECK = "https://hc-ping.com/0b9f1a52-7c0b-4f5b-9a0e-2f4f6f2b1a01";
   const WITH_CHECK: StaticConfig = { ...LOCAL_CONFIG, settings: { ...LOCAL_CONFIG.settings, heartbeatUrl: CHECK } };
@@ -442,7 +442,7 @@ describe("the schedule", () => {
     expect(new Set(CRON_JOBS.map((each) => each.name)).size).toBe(CRON_JOBS.length);
   });
 
-  // PLAT-30: hourly jobs once ran only when the run's own clock said the first five minutes, so a late run skipped the
+  // Hourly jobs once ran only when the run's own clock said the first five minutes, so a late run skipped the
   // hour. A run is now due by the minute Cloudflare scheduled it for, however late it starts.
   it("runs each job as often as it says, in the same minutes every hour", () => {
     const runs = new Map<string, number[]>();
@@ -531,7 +531,7 @@ describe("CRON_JOBS", () => {
     ]);
   });
 
-  // PLAT-16 of the audit, 2 October 2026: nothing read the database's size before D1's limit stopped every write.
+  // Nothing read the database's size before D1's limit stopped every write.
   it("tells ops once when the database reaches half of D1's limit, in the same hourly look", async () => {
     const deps = fakeDependencies();
     const meter = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");

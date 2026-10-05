@@ -94,7 +94,7 @@ describe("the site's forms: the body", () => {
     expect((await errorOf(answer)).code).toBe("invalid_request");
   });
 
-  // BK-60, UX-38: the form chose crown thinning for everyone who skipped the question.
+  // The form chose crown thinning for everyone who skipped the question.
   it("takes a form that does not say where the hair loss is, and records it as not said", async () => {
     const { loss_extent: _skipped, ...withoutExtent } = JOINING;
     expect((await join(appFor(), withoutExtent)).status).toBe(201);

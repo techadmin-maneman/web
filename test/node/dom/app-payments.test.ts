@@ -1,5 +1,5 @@
-// What the client's Payments say of a payment and a refund (MON-19, CP-18), of a visit they were not home for
-// (LIFE-07), and of their service-visit credits, which never appeared there (LIFE-14). Every name and figure is made
+// What the client's Payments say of a payment and a refund, of a visit they were not home for
+//, and of their service-visit credits, which never appeared there. Every name and figure is made
 // up.
 
 import { describe, expect, it } from "vitest";
@@ -161,7 +161,7 @@ describe("the credits among the payments", () => {
     expect(creditAmount(added)).toEqual({ amount: null, count: "3 visits" });
   });
 
-  // MON-36: an invited friend read that "a friend you invited was fitted", which was the referrer's line.
+  // An invited friend read that "a friend you invited was fitted", which was the referrer's line.
   it("say an invite's visits by which side of it the client was", () => {
     const fromInvite = (side: CreditLine["referral_side"]) =>
       creditMeta(credit({ event: "added", visits: 3, visit: null, source: "referral", referral_side: side }), 2030);

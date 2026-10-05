@@ -39,7 +39,7 @@ export const ICONS_P2 = {
 
 /**
  * The glyphs the apps draw beyond the two sets, each declared once here
- * rather than once in each app (DS-24). An app's own icons.ts keeps only
+ * rather than once in each app. An app's own icons.ts keeps only
  * the glyphs no other app draws.
  */
 export const GLYPHS = {

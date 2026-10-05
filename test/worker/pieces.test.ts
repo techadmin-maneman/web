@@ -124,7 +124,7 @@ describe("the label the technician scans", () => {
     expect(unknown.status).toBe(404);
   });
 
-  // FLD-18: the lookup said whose a piece was for any job, a stranger's included.
+  // The lookup said whose a piece was for any job, a stranger's included.
   it("says whose it is only for a job of the technician's own", async () => {
     await fittedPieceStatement(env.DB, FITTED).run();
     await env.DB.prepare(

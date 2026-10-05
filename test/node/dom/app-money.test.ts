@@ -1,7 +1,7 @@
 // A price as the client app writes it (apps/app/src/lib/money.ts): on the pay step, the late fee, each visit a
 // client may choose between, and the Payments tab. What is charged, GST included, leads; once GST applies its split
-// sits beneath (MON-32). While GST is nothing, or no rate was recorded, there is one figure and nothing dangles after
-// it (MON-19, MON-49).
+// sits beneath. While GST is nothing, or no rate was recorded, there is one figure and nothing dangles after
+// it.
 
 import { describe, expect, it } from "vitest";
 import { amountOff, priceFigures } from "../../../apps/app/src/lib/money.ts";

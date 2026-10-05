@@ -149,7 +149,7 @@ describe("telling ops", () => {
     expect(deps.alerts).toEqual([expect.stringContaining("80% of their 3.6 GB of free storage")]);
   });
 
-  // OIA-12 of the audit, 2 October 2026: the figure moved from the top of Settings to The console's section of Rules.
+  // The figure moved from the top of Settings to The console's section of Rules.
   it("links to where Settings shows the figure", async () => {
     await setMeter(SHARE / 2);
     await tellOfStorage(env.DB, deps.alertOnce, "production");
@@ -161,7 +161,7 @@ describe("telling ops", () => {
   });
 });
 
-// PLAT-16 of the audit, 2 October 2026: nothing read the database's size, and past D1's limit every write fails.
+// Nothing read the database's size, and past D1's limit every write fails.
 describe("the database's size", () => {
   it("is what D1 says the database holds", async () => {
     expect(await readDatabaseBytes(env.DB)).toBeGreaterThan(0);

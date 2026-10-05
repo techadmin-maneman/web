@@ -132,7 +132,7 @@ describe("sending what the phone holds", () => {
     expect(await events()).toMatchObject([{ job_id: "a", state: "superseded", fields: ["technician"], moved }]);
   });
 
-  // BK-43: the card read again is what says where the job went once it has locked again.
+  // The card read again is what says where the job went once it has locked again.
   it("reads a job moved to another time again, so the phone holds its new start", async () => {
     await queue("start", "a", null, "2030-09-20T10:30:00.000Z");
     const card = { id: "a", starts_at: "2030-09-21T03:30:00.000Z", client: null, partial_reasons: [] };
@@ -394,7 +394,7 @@ describe("a step the API refused", () => {
     expect(await events()).toEqual([]);
   });
 
-  // PLAT-43: without the report, nobody but the technician would know the write never landed.
+  // Without the report, nobody but the technician would know the write never landed.
   it("keeps the refusal's request ID for the waiting screen, and reports the give-up", async () => {
     await queue("piece", "a", { piece_code: "MM-STD-0000-A" });
     const refusal = { error: { code: "piece_code", request_id: "0192a8e4-0000-7000-8000-0000000000aa" } };
@@ -424,7 +424,7 @@ describe("a step the API refused", () => {
   });
 });
 
-// FLD-15: a refused set had no way back but deleting the job's work.
+// A refused set had no way back but deleting the job's work.
 describe("a photograph the API refuses", () => {
   /** The photographs' calls answered as the API does, which refuses an empty file, as a frame evicted from the phone. */
   function refusingEmptyFiles() {
@@ -490,7 +490,7 @@ describe("a photograph the API refuses", () => {
 });
 
 describe("a step the API says is early", () => {
-  // FLD-46: the card's warning was held in memory, and went with a reload.
+  // The card's warning was held in memory, and went with a reload.
   it("is kept, so the card can tell a no-show was refused rather than sent, until one lands", async () => {
     await queue("no_show", "a", null);
     api(() => ({ status: 425, json: { error: { code: "too_early_to_close", request_id: "t" } } }));
@@ -519,7 +519,7 @@ describe("a step the API says is early", () => {
 });
 
 describe("queuing a step", () => {
-  // FLD-46: two screens queuing at once both found nothing waiting, and both added one.
+  // Two screens queuing at once both found nothing waiting, and both added one.
   it("keeps one when two screens queue the same step at once", async () => {
     await Promise.all([queue("start", "a", null), queue("start", "a", null)]);
     expect(await events()).toEqual([expect.objectContaining({ kind: "start", state: "waiting" })]);
@@ -539,7 +539,7 @@ const kept = (): JobSummary =>
   ({ id: "a", date: "2030-09-19", progress: { started_at: null, outcome: null } }) as JobSummary;
 
 describe("where a job stands, once a write of its lands", () => {
-  // FLD-36: with no signal, the row of a job started since the list was kept lost its "In progress".
+  // With no signal, the row of a job started since the list was kept lost its "In progress".
   it("is kept in the day the phone holds, from the write's answer", async () => {
     await keepDay("2030-09-19", [kept()]);
     await queue("start", "a", null);
@@ -566,7 +566,7 @@ describe("where a job stands, once a write of its lands", () => {
   });
 });
 
-// FLD-36: after "Got it" deleted a job's work, Today still read "Closed out" from the phone's own close-out mark.
+// After "Got it" deleted a job's work, Today still read "Closed out" from the phone's own close-out mark.
 describe("letting go of a job's stopped work", () => {
   it("lets go of its arrival and close-out too, since only what landed speaks for the job", async () => {
     await keepArrival("a", {

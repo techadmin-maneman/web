@@ -272,7 +272,7 @@ export const job = {
   navigate: "Navigate",
   // The design draws no landmark; the client types it as they like, so it shows as typed.
   landmark: "Landmark",
-  // The design draws no client's note; the client leaves one in their app (REQ-04).
+  // The design draws no client's note; the client leaves one in their app.
   clientNote: (who: string, note: string) => `${who}'s note: ${note}`,
   // The board draws no way to reach the client from the card.
   call: (who: string) => `Call ${who}`,

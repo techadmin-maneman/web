@@ -287,7 +287,7 @@
   line-height: var(--lh-155);
 }
 
-/* A visit the client was not home for, above what the visit's page says of it (LIFE-07; the board draws none). */
+/* A visit the client was not home for, above what the visit's page says of it (the board draws none). */
 .noShow {
   display: flex;
   flex-direction: column;

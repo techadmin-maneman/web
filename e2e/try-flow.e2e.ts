@@ -197,7 +197,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
   await expectNoPersonalData(page, ["Test Visitor", "98100", "9810000000"]);
 });
 
-// PS-10: the gate made a lead of any number typed, and sent its look there.
+// The gate made a lead of any number typed, and sent its look there.
 test("the gate claims nothing until the WhatsApp code sent to the number is entered right", async ({ page }) => {
   const seen = await mockApi(page, {
     verify: [
@@ -268,7 +268,7 @@ test("a face the renderer cannot read, found once the look is on its way, blames
 
 const OWN_LOOK: Answer = { status: 200, json: { job_id: JOB, state: "ready" } };
 
-// CLI-29: the visitor used to choose a photograph and agree to its use before being told they had had their look.
+// The visitor used to choose a photograph and agree to its use before being told they had had their look.
 test("a visitor who has had their look is told on arrival that it was sent, and shown no look", async ({ page }) => {
   const seen = await mockApi(page, { look: OWN_LOOK });
   await visit(page, "/try");
@@ -375,7 +375,7 @@ test("the gate says when the try-on is already another number's", async ({ page 
   await screenIs(page, "gate");
 });
 
-// UX-21: a refusal naming the number was said as "That did not go through", with nothing marked.
+// A refusal naming the number was said as "That did not go through", with nothing marked.
 test("the gate marks the field a claim's refusal names, and focuses it", async ({ page }) => {
   const refused = { error: { code: "invalid_request", request_id: "test", fields: ["mobile"] } };
   await mockApi(page, { claim: { status: 400, json: refused } });
@@ -391,7 +391,7 @@ test("the gate marks the field a claim's refusal names, and focuses it", async (
   await screenIs(page, "gate");
 });
 
-// FEO-21: pressing again after the answer was lost is the same claim, so it carries the same key.
+// Pressing again after the answer was lost is the same claim, so it carries the same key.
 test("the gate pressed again after a lost answer sends the same request key", async ({ page }) => {
   const seen = await mockApi(page, {
     claim: [refusal(500, "internal_error"), { status: 201, json: { lead_id: LEAD } }],
@@ -446,7 +446,7 @@ test("Back from the gate offers every look again, and nothing has been made", as
   expect(named(seen, "generate")).toHaveLength(0);
 });
 
-// FEO-19: the agreement is to one photograph's use; a second photograph is asked for afresh.
+// The agreement is to one photograph's use; a second photograph is asked for afresh.
 test("a new photograph asks for the agreement again", async ({ page }) => {
   await mockApi(page);
   await visit(page, "/try");

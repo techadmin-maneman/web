@@ -3309,7 +3309,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "What ops decided about the client's latest change of number, for 30 days after, while no other change is under way. A rejection once vanished from the app (OPS-09)."
+      "description": "What ops decided about the client's latest change of number, for 30 days after, while no other change is under way. A rejection once vanished from the app."
     },
     "deletion": {
       "type": [
@@ -4932,7 +4932,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+      "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled."
     },
     "discount_code": {
       "anyOf": [
@@ -5520,7 +5520,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+      "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled."
     },
     "discount_code": {
       "anyOf": [

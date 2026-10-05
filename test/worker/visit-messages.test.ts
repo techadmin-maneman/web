@@ -151,7 +151,7 @@ describe("what a visit message says", () => {
   });
 
   // The cancel sheet says "Cancel inside 24 hours and the credit is gone"; the confirmation said only that the visit
-  // was cancelled, as though nothing were lost (LIFE-14).
+  // was cancelled, as though nothing were lost.
   describe("a cancel of a visit a credit paid for", () => {
     async function cancelledOnCredit(notice: "free" | "late") {
       await consent(true);
@@ -211,7 +211,7 @@ describe("what a visit message says", () => {
     });
   });
 
-  // MON-14: a receipt or a refund is transactional, so it goes whatever the client's consent to visit messages.
+  // A receipt or a refund is transactional, so it goes whatever the client's consent to visit messages.
   it("sends a receipt without the client's consent to WhatsApp about visits, and nothing else", async () => {
     await visit();
     await paid();

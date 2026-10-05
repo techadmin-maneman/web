@@ -209,7 +209,7 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     ]);
   });
 
-  // FLD-27: clients' logins and number changes spent the one ceiling technicians shared, so a technician on a new
+  // Clients' logins and number changes spent the one ceiling technicians shared, so a technician on a new
   // phone could not start his day.
   it("still sends a technician his code once the client app's ceiling is spent", async () => {
     const oneCode = { ...LOCAL_SETTINGS, login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } };
@@ -307,7 +307,7 @@ describe("a signed-in phone", () => {
     expect(await after.json()).toMatchObject({ error: { code: "session_required" } });
   });
 
-  // TCD-01: the app's browser tests answer as the document says, so the document must say this too.
+  // The app's browser tests answer as the document says, so the document must say this too.
   it("refuses a logout from a phone with no session, as its documentation says", async () => {
     const answer = await withCookie("", "/api/tech/auth/logout", "POST");
 
@@ -375,7 +375,7 @@ describe("the two logins", () => {
   });
 });
 
-// FLD-25, PS-13: a revoke did not stick. The lost phone still gets his code on WhatsApp, and signing in again with it
+// A revoke did not stick. The lost phone still gets his code on WhatsApp, and signing in again with it
 // undid the revoke.
 describe("after ops revoke a phone of his", () => {
   const staff = { kind: "staff", id: "ops@maneman.test" } as const;

@@ -214,7 +214,7 @@ export async function composeLaunchAlert(
 }
 
 /**
- * The confirmation of a place on a pincode's list (REQ-03; ADR 0041 lists it), about the person's entry there,
+ * The confirmation of a place on a pincode's list (ADR 0041 lists it), about the person's entry there,
  * once: joining again writes nothing. For the same batch as the entry, which it reads its ID from; the message's
  * ID comes back from the batch, as `RETURNING id`.
  */

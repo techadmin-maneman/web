@@ -1,7 +1,7 @@
 // Razorpay Checkout in the client app (apps/app/src/booking/checkout.ts): its
 // script loaded once, a load that fails or stalls counted as a failed payment
 // (board C6) and tried afresh next time, and Checkout's three endings told
-// apart. It had no test at any level (TCD-04). The page is stood in for: a
+// apart. It had no test at any level. The page is stood in for: a
 // script element that loads, fails or never answers, and a Razorpay that
 // records what it was opened with.
 
@@ -50,7 +50,7 @@ beforeEach(() => {
     },
     documentElement: {},
   });
-  // Checkout is drawn in the page's own ink, read from its stylesheet (DS-19).
+  // Checkout is drawn in the page's own ink, read from its stylesheet.
   vi.stubGlobal("getComputedStyle", () => ({
     getPropertyValue: (name: string) => (name === "--ink" ? " #16233a" : ""),
   }));
@@ -148,7 +148,7 @@ describe("paying in Checkout", () => {
     expect(await pay(ORDER, payBy())).toBe("failed");
   });
 
-  // MON-42, UX-13: Checkout was headed by a letter "M" where the brand mark belongs.
+  // Checkout was headed by a letter "M" where the brand mark belongs.
   it("opens on our order, under the brand mark on ink, with Checkout's own retry off", async () => {
     const razorpay = standInRazorpay();
     const { pay } = await checkout();
@@ -168,7 +168,7 @@ describe("paying in Checkout", () => {
     expect(await paying).toBe("paid");
   });
 
-  // MON-44: Checkout ignores a method chosen beforehand unless it is also given an e-mail, which we never send, so
+  // Checkout ignores a method chosen beforehand unless it is also given an e-mail, which we never send, so
   // the app's "UPI · any app" was a choice that did nothing. Checkout lists its own ways to pay.
   it("chooses no way to pay for the client, leaving Checkout to list them", async () => {
     const razorpay = standInRazorpay();
@@ -193,7 +193,7 @@ describe("paying in Checkout", () => {
     expect(await refused).toBe("failed");
   });
 
-  // A payment Checkout took after the hold's grace would be refused and refunded (MON-03).
+  // A payment Checkout took after the hold's grace would be refused and refunded.
   it("takes no payment once it would be too late to keep the hold", async () => {
     vi.useFakeTimers({ now: Date.parse("2026-09-21T06:30:00.000Z") });
     windowStandIn.setTimeout = setTimeout;

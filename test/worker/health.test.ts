@@ -61,7 +61,7 @@ describe("GET /api/health", () => {
     expect(logs.lines().some((line) => line.event === "health_unavailable")).toBe(true);
   });
 
-  // PLAT-42: a cron that never ran looked the same as one that never failed.
+  // A cron that never ran looked the same as one that never failed.
   it("says when the cron last finished a run, which the status does not depend on", async () => {
     await markDatabase();
     const before = HealthSchema.parse(await (await request(appFor(), "/api/health")).json());

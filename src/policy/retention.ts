@@ -1,5 +1,5 @@
 // How long we keep what serves no purpose any more (DPDP Act 2023, s.8(7)). The owner ruled these on 2 October 2026,
-// as recommended, for counsel to confirm (docs/open-points.md, item 149; the 2 Oct audit's decision 10). A client's
+// as recommended, for counsel to confirm (docs/open-points.md, item 149). A client's
 // own record is kept until they ask for it to be erased, as the privacy page says; what follows is everyone and
 // everything else.
 

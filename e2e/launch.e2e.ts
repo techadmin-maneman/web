@@ -89,7 +89,7 @@ test("every page is served with the security headers, and only /try may use the 
   }
 });
 
-// DS-26: the kit's favicons, drawn on ink at 16, 32 and 48 px, the 16 in its silhouette cut, with no metadata.
+// The kit's favicons, drawn on ink at 16, 32 and 48 px, the 16 in its silhouette cut, with no metadata.
 test("the tab icons are the kit's favicons on ink, and carry nothing else", async ({ page, request }) => {
   await page.goto("/");
   const icons = page.locator('link[rel="icon"]');

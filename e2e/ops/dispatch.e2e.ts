@@ -81,7 +81,7 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
     "Faizan AliSohna Rd",
   ]);
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("Sec 65 · service");
-  // BK-17: each block says when it starts, not only its window.
+  // Each block says when it starts, not only its window.
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("9:00");
   await expect(page.getByRole("button", { name: "Sanjay B., Sat 20 Sep, morning" })).toContainText(
     "Sec 43 · first fit",
@@ -110,11 +110,11 @@ test("marks the days a technician is away, and still shows the jobs already on t
   await expect(page.getByRole("button", { name: "Nitin R., Sun 21 Sep, afternoon" })).toBeVisible();
   await expect(page.getByText("Faizan Ali is away on Tue 23 Sep")).toHaveCount(0);
   await expect(page.getByText("Leave is recorded on the Technicians screen")).toBeVisible();
-  // A11Y-22 of the audit, 24 September 2026: the mark was named by an aria-label on a plain span, which ARIA forbids.
+  // The mark was named by an aria-label on a plain span, which ARIA forbids.
   await expect(page.locator("main span[aria-label]")).toHaveCount(0);
 });
 
-// FEO-10 and REQ-S9-02: "Drop it on a cell with room", with "a hint that shows its slot size".
+// The brief: "Drop it on a cell with room", with "a hint that shows its slot size".
 test("says how much of a day the job takes, and offers only the windows it would land in", async ({ page }) => {
   await open(page);
   await press(page, ROHIT_BLOCK);
@@ -144,7 +144,7 @@ test("names leave when the server refuses a move onto a day off", async ({ page 
   await expect(page.getByRole("alert")).toHaveText("Sandeep Yadav is away on Sat 20 Sep. Nothing was moved.");
 });
 
-// FEO-08 and OPS-05: the tray paired the offered day with the asked window, and named no client.
+// The tray paired the offered day with the asked window, and named no client.
 test("lists the tray's jobs with their client, the window asked beside the one offered, and who invited them", async ({
   page,
 }) => {
@@ -165,7 +165,7 @@ test("lists the tray's jobs with their client, the window asked beside the one o
   await expect(tray.getByText("“Asked” is the window the client picked when booking")).toBeVisible();
 });
 
-// OIA-16: a tray click picked the job up at once, so it could not be read before it was assigned.
+// A tray click picked the job up at once, so it could not be read before it was assigned.
 test("opens a tray job's drawer, with the client, Assign and Open client", async ({ page }) => {
   await open(page);
   const job = page.getByRole("complementary", { name: "Unassigned" }).getByRole("button").first();
@@ -193,7 +193,7 @@ test("opens a tray job's drawer, with the client, Assign and Open client", async
   await expect(job).toBeFocused();
 });
 
-// OPS-05 and OPS-12: board A3's badge, WhatsApp {client} and Open client.
+// Board A3's badge, WhatsApp {client} and Open client.
 test("opens a block's drawer with the client, the badge, and both ways to reach him", async ({ page }) => {
   await open(page);
   await press(page, ROHIT_BLOCK);
@@ -218,7 +218,7 @@ test("opens a block's drawer with the client, the badge, and both ways to reach 
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeFocused();
 });
 
-// FLD-24: a building pin far from the door blocked the job, and ops had no way to let the technician in.
+// A building pin far from the door blocked the job, and ops had no way to let the technician in.
 test("lets the technician check in to a visit today past the geofence, with a reason", async ({ page }) => {
   const startsAt = ROHIT_JOB?.starts_at ?? "";
   await page.clock.setFixedTime(new Date(Date.parse(startsAt) - 30 * 60_000));
@@ -244,7 +244,7 @@ test("offers no way past the geofence for a visit on another day", async ({ page
   ).toHaveCount(0);
 });
 
-// FEO-13: the drawer and the picker are modal; nothing behind them takes the keyboard. Past the
+// The drawer and the picker are modal; nothing behind them takes the keyboard. Past the
 // panel's last control the browser's own come next (the page's body holds focus), then the panel's first.
 test("keeps the keyboard off the board behind an open panel", async ({ page }) => {
   await open(page);
@@ -272,7 +272,7 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await press(page, "Choose");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  // BK-17: the exact start the move takes, not the window alone.
+  // The exact start the move takes, not the window alone.
   await expect(picker).toContainText("Fri 19 Sep, 9 am → Sat 20 Sep, 9 am");
   await expect(picker).toContainText(
     "Rohit M. is messaged on WhatsApp with the new window. Their payment carries over.",
@@ -303,7 +303,7 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeFocused();
 });
 
-// BK-52: a free visit, or one paid once the client is fitted, has no payment to carry over.
+// A free visit, or one paid once the client is fitted, has no payment to carry over.
 test("says a payment carries over only where one was made", async ({ page }) => {
   const free = structuredClone(BOARD);
   const block = free.technicians[0]?.days[0]?.blocks[0];
@@ -322,7 +322,7 @@ test("says a payment carries over only where one was made", async ({ page }) => 
   await expect(picker.getByRole("radio")).toHaveCount(4);
 });
 
-// OIA-04 and BK-19: with a visit in hand, another week was never asked about, and said nowhere had room.
+// With a visit in hand, another week was never asked about, and said nowhere had room.
 test("carries a job in hand to the next week, asks where it fits there, and moves it", async ({ page }) => {
   const NEXT = ["2025-09-26", "2025-09-27", "2025-09-28", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02"];
   const nextWeek = {
@@ -415,7 +415,7 @@ test("says which technician and which window clashed, and keeps the job in hand"
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
-// OPS-06: a free window with no room was refused as a clash that did not exist.
+// A free window with no room was refused as a clash that did not exist.
 test("says a window has no room for the visit, rather than naming a clash", async ({ page }) => {
   await open(page, { [MOVE_IT]: fails(409, "does_not_fit") });
   await press(page, ROHIT_BLOCK);
@@ -429,7 +429,7 @@ test("says a window has no room for the visit, rather than naming a clash", asyn
   );
 });
 
-// BK-17, FLD-23: a move lands only at a start still ahead, and the server names a window already over.
+// A move lands only at a start still ahead, and the server names a window already over.
 test("says a window's starts have all passed, and keeps the job in hand", async ({ page }) => {
   await open(page, { [MOVE_IT]: fails(409, "window_passed") });
   await press(page, ROHIT_BLOCK);
@@ -493,7 +493,7 @@ test("assigns a tray job through the assign route, with no technician expected",
   ]);
 });
 
-// OPS-01: "The client has been messaged" followed every move, while most clients had not agreed to WhatsApp.
+// "The client has been messaged" followed every move, while most clients had not agreed to WhatsApp.
 test("asks ops to call a client who has not agreed to WhatsApp, and records the call", async ({ page }) => {
   const told = sentTo(page, TOLD);
   await open(page, {
@@ -540,7 +540,7 @@ test("tells ops a change of technician alone messages nobody", async ({ page }) 
   );
 });
 
-// FEO-04: Escape during "Moving" let the same job be moved twice.
+// Escape during "Moving" let the same job be moved twice.
 test("lets go of nothing while a move is being sent, so it cannot be sent twice", async ({ page }) => {
   let release: () => void = () => undefined;
   const held = new Promise<void>((resolve) => {
@@ -571,7 +571,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   expect(sent).toHaveLength(1);
 });
 
-// FEO-05: two ops users overwrote each other, and the board never read itself again.
+// Two ops users overwrote each other, and the board never read itself again.
 test("refuses a move made from a stale board, and says where the job is now", async ({ page }) => {
   const movedByAnother = structuredClone(BOARD);
   const [imran, , arjun] = movedByAnother.technicians;
@@ -598,7 +598,7 @@ test("refuses a move made from a stale board, and says where the job is now", as
   await expect(page.getByText("Moving Rohit M.")).toBeHidden();
 });
 
-// PLAT-12: the board read itself in full on every focus and every minute; it now asks for its version first.
+// The board read itself in full on every focus and every minute; it now asks for its version first.
 test("reads the board again when the tab comes back to a board that has changed, without the loading state", async ({
   page,
 }) => {
@@ -621,7 +621,7 @@ test("reads the board again when the tab comes back to a board that has changed,
   await expect(page.getByText("Loading")).toHaveCount(0);
 });
 
-// FEO-09: the brief's "city and week picker"; the route took both, and the board sent neither.
+// The brief's "city and week picker"; the route took both, and the board sent neither.
 test("moves between weeks and cities, asking the route for each", async ({ page }) => {
   const asked: string[] = [];
   page.on("request", (request) => {
@@ -653,7 +653,7 @@ test("opens on the week and the search a link asks for", async ({ page }) => {
   await expect.poll(() => asked[0]).toBe("?from=2025-09-19");
 });
 
-// OIA-03, BK-21: "Move it in Dispatch" landed on this week's bare board, and Back from a client reset it.
+// "Move it in Dispatch" landed on this week's bare board, and Back from a client reset it.
 test("opens the visit a link names, in its drawer, on the week the link asks for", async ({ page }) => {
   await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
   await page.goto(`/dispatch?from=2025-09-19&visit=${ROHIT_JOB?.appointment_id ?? ""}`);
@@ -684,7 +684,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   await expect(page.getByLabel("Find a technician, client or area")).toHaveValue("Rohit");
 });
 
-// OPS-10: 168 technicians made a board 15,000 px tall whose day headers scrolled away, with no way to find a row.
+// 168 technicians made a board 15,000 px tall whose day headers scrolled away, with no way to find a row.
 test("keeps its header row and technicians' column in place, and finds a row by name, zone or client", async ({
   page,
 }) => {
@@ -702,7 +702,7 @@ test("keeps its header row and technicians' column in place, and finds a row by 
   await expect(page.getByText("Nothing on this week's board matches “nobody”.")).toBeVisible();
 });
 
-// BK-22 and OIA-05: an area on a block found nothing, and a client found left a row of eight with no sign of his.
+// An area on a block found nothing, and a client found left a row of eight with no sign of his.
 test("finds a visit by its area or its client, and outlines the blocks it found", async ({ page }) => {
   await open(page);
   const find = page.getByLabel("Find a technician, client or area");
@@ -723,7 +723,7 @@ test("finds a visit by its area or its client, and outlines the blocks it found"
   await expect(found).toHaveCount(0);
 });
 
-// BK-54: an empty tray kept its 236 px, so a 1024 px laptop showed five of the week's seven days.
+// An empty tray kept its 236 px, so a 1024 px laptop showed five of the week's seven days.
 test("folds an empty tray to a rail, so the week has the width", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await open(page, { [READ_BOARD]: json({ ...BOARD, unassigned: [] }) });
@@ -732,7 +732,7 @@ test("folds an empty tray to a rail, so the week has the width", async ({ page }
   await expect(tray).toContainText("Nothing is waiting for a technician.");
 });
 
-// VIS-22: at 1280 wide and 200% zoom the days shrank to 15 px and the navigation ran off the page.
+// At 1280 wide and 200% zoom the days shrank to 15 px and the navigation ran off the page.
 test("keeps every day readable, and the navigation in reach, at 200% zoom", async ({ page }) => {
   await page.setViewportSize({ width: 640, height: 450 });
   await open(page);

@@ -255,7 +255,7 @@ describe("the client, at the app's pay step", () => {
       payments = createStubPayments();
     });
 
-    // MON-48: a client who closed Checkout without paying had to give up their hold to use a code.
+    // A client who closed Checkout without paying had to give up their hold to use a code.
     it("takes a code after Checkout was closed unpaid, and the next Pay makes an order for what is left", async () => {
       await make();
       const hold = await heldService(PERSON);
@@ -447,7 +447,7 @@ describe("the client, at the app's pay step", () => {
     expect((await enter(OTHER, later.id, "UNQ5", at(20))).status).toBe(200);
   });
 
-  // MON-22: after paying, the app's entry did not say the code was taken.
+  // After paying, the app's entry did not say the code was taken.
   it("names the code on the payment Checkout took, in the list and in the entry", async () => {
     await make();
     const hold = await heldService(PERSON);
@@ -606,7 +606,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
       .bind(id, booked.personId, booked.visitId, `pay_${id}`, kind, NOW.toISOString())
       .run();
 
-  // MON-22 and CP-23: the confirmation said nothing of a code the booking took.
+  // The confirmation said nothing of a code the booking took.
   it("answers what an amount code takes off, for the confirmation to say", async () => {
     await make({ code: "AUDTEST", kind: "amount", value: 100_000, covers: ["first_fit"] });
     const answer = await book({ discount_code: "audtest" });
@@ -615,7 +615,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     });
   });
 
-  // MON-22: after paying, neither the app's entry nor ops' Payments said the code was taken.
+  // After paying, neither the app's entry nor ops' Payments said the code was taken.
   it("carries the code onto the payment its link took, and not onto a late fee", async () => {
     await make();
     const booked = await bookedWithCode("TENPC");
@@ -633,7 +633,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     });
   });
 
-  // P1-71: a number we know that books nothing hears what a new number would, its code included.
+  // A number we know that books nothing hears what a new number would, its code included.
   it("answers a number we know, which books nothing, with the code as a new number hears it", async () => {
     await make();
     expect((await book({})).status).toBe(201);
@@ -668,7 +668,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     }>();
   }
 
-  // BK-15 and CP-01: Home said "We are booking your visit", with no price, while the site had said it was booked, and
+  // Home said "We are booking your visit", with no price, while the site had said it was booked, and
   // every Home logged consultation_window_unknown.
   it("shows Home the one visit booked as itself, priced after the code it was booked with", async () => {
     await make();
@@ -759,7 +759,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
           "{}",
       ) as Record<string, string>;
 
-    // MON-23: the code was judged again when ops booked the visit, and refused once it had expired meanwhile.
+    // The code was judged again when ops booked the visit, and refused once it had expired meanwhile.
     it("books it with the code though its last day has passed since the client typed it", async () => {
       await make({ expiresOn: "2026-09-21" });
       const personId = await requested("TENPC");
@@ -968,7 +968,7 @@ describe("the technician, before a one visit's payment link", () => {
     expect(code?.uses).toBe(0);
   });
 
-  // MON-22: the technician learnt a code was on the visit only by typing one ("This visit already has a code.").
+  // The technician learnt a code was on the visit only by typing one ("This visit already has a code.").
   it("puts the code already on a one visit on its card, and who gave it, never what it takes off", async () => {
     await make();
     const job = await oneVisit();

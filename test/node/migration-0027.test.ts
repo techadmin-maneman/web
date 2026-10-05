@@ -1,6 +1,6 @@
 // Migration 0027 adds the pieces mirror, the two columns the dispatch board and
-// the technician login read, and the technician a one-time code belongs to (the
-// plan's P2-M4). What the schema itself must hold, whatever the code around it
+// the technician login read, and the technician a one-time code belongs to.
+// What the schema itself must hold, whatever the code around it
 // does. D1 is SQLite, so this applies the real migration files to an in-memory
 // SQLite database. Every name and number is made up.
 

@@ -1,6 +1,6 @@
 /*
  * The apps' buttons (./Button.tsx). Every look answers a press, a pointer
- * resting on it where there is one, being unusable, and being busy (DS-22).
+ * resting on it where there is one, being unusable, and being busy.
  * The boards draw none of these, so each is the next ink down the ground's
  * own ramp, or a ring where there is no darker ink: gold and oxblood.
  *

@@ -1,6 +1,6 @@
 // A client's note on a visit to come (docs/prompts/phase2-backend.md, "Booking": POST /appointments/:id/note).
 // With self-serve booking on, the app's "Add a note" opened WhatsApp and the note reached neither the record nor
-// the technician (REQ-04). NOW is Monday 21 September 2026, 12 noon in India. Every name and number is made up.
+// the technician. NOW is Monday 21 September 2026, 12 noon in India. Every name and number is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -79,7 +79,7 @@ describe("POST /api/appointments/:id/note", () => {
   });
 
   // ADR 0043 sanctions WhatsApp for the note only while self-serve booking is off.
-  // BK-40, UX-10, OIA-11: the note went on the visit and nobody could read it back, the client nor ops.
+  // The note went on the visit and nobody could read it back, the client nor ops.
   it("is shown back to the client on their visit, and to ops on the client's page and the dispatch board", async () => {
     await note({ note: "Ring twice" });
 

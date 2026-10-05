@@ -38,7 +38,7 @@ test("lists the pincodes with their counts, and marks the ones we already come t
   await expect(served.getByRole("button")).toHaveAccessibleName("Tell those waiting in 122018, Sector 65");
 });
 
-// The area was packed into what the figure columns left, each drawn wider than the board draws it (VIS-23).
+// The area was packed into what the figure columns left, each drawn wider than the board draws it.
 test("gives the area the room the board does, and each figure the board's own width", async ({ page }) => {
   await open(page);
   const width = async (name: string) =>
@@ -52,7 +52,7 @@ test("gives the area the room the board does, and each figure the board's own wi
   expect(Math.round(await width("Area"))).toBe(114);
 });
 
-// The waitlist was read whole, however many pincodes had people waiting (FEO-16).
+// The waitlist was read whole, however many pincodes had people waiting.
 test("says when more pincodes are waiting than the table lists", async ({ page }) => {
   await answer(page, { "GET /api/waitlist": json({ ...AREAS, more: true }) });
   await page.goto("/areas");

@@ -124,7 +124,7 @@ export const numberChanges = {
     reject: "Reject",
     reason: {
       label: "Why you are rejecting it",
-      // The client's profile shows this reason for thirty days (OPS-09).
+      // The client's profile shows this reason for thirty days.
       hint: "Kept with the decision, under your name. The client reads it in the app.",
       confirm: "Reject the change",
       cancel: "Leave it waiting",

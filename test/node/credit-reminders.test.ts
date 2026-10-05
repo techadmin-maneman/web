@@ -1,5 +1,5 @@
 // When a client is reminded that free service visits are running out: a month before their last day, then a week
-// before (src/policy/credit-reminders.ts; MON-35, PS-38, CP-40).
+// before (src/policy/credit-reminders.ts).
 
 import { describe, expect, it } from "vitest";
 import { creditReminderDay, creditReminderOwed } from "../../src/policy/credit-reminders.ts";

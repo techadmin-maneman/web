@@ -1,4 +1,4 @@
-// The try-on's screens and what moves between them (FEO-27): the machine the
+// The try-on's screens and what moves between them: the machine the
 // island runs, walked here without a browser, an API or a timer. The look goes
 // to WhatsApp only (ADR 0104): the gate follows the looks, and the sent screen
 // the gate.
@@ -58,7 +58,7 @@ describe("the try-on's machine", () => {
     expect(step(looksScreen, { type: "lookDone" })).toBe(looksScreen);
   });
 
-  // FEO-19: the agreement is to one photograph's use.
+  // The agreement is to one photograph's use.
   it("asks for the agreement afresh when another photograph is chosen", () => {
     const again = step(walk(...TO_GATE), { type: "photoChosen", photo: "blob:another" });
     expect(again).toMatchObject({ screen: "consent", photo: "blob:another", consent: false });

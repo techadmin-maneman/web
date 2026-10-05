@@ -69,7 +69,7 @@ const fact = (page: Page, visit: string, name: string) =>
     .filter({ hasText: new RegExp(`^${name}$`) })
     .locator("+ dd");
 
-// MON-16 and OIA-08 of the audit, 2 October 2026: the money sat under "No-shows", only ever today's.
+// The money sat under "No-shows", only ever today's.
 test("is the console's Payments, at the address No-shows had", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("heading", { level: 1, name: "Payments" })).toBeVisible();
@@ -152,7 +152,7 @@ test("says a no-show's amount was not recorded where its charge kept none on rec
 /** Board D1's second card, found by its heading. */
 const disputeCard = (page: Page) => page.getByRole("region", { name: DISPUTED });
 
-// A disputed charge once floated between the panels, with no count and nothing that could link to it (OIA-07).
+// A disputed charge once floated between the panels, with no count and nothing that could link to it.
 test("lists the disputed charges in a queue with their count, and opens the one a task names", async ({ page }) => {
   await open(page, undefined, `/no-shows#dispute-${DISPUTE}`);
   const queue = page.getByRole("region", { name: DISPUTES_QUEUE });
@@ -180,7 +180,7 @@ test("draws a disputed charge: the client's words, what the charge took, and the
   await expect(row("Waited")).toHaveText("16 min · closed 11:47 am");
 });
 
-// FLD-52: a check-in held over a day was re-timed to when it reached us, and read as the phone's own time.
+// A check-in held over a day was re-timed to when it reached us, and read as the phone's own time.
 test("says beside a disputed check-in when the bounds moved the phone's time", async ({ page }) => {
   const dispute = DISPUTES.disputes[0];
   const moved = {
@@ -202,7 +202,7 @@ test("says beside a disputed check-in when the bounds moved the phone's time", a
   await expect(checkIn).toHaveText("1:03 pm · phone time adjusted (phone said 9:18 am)");
 });
 
-// OIA-16: the name was plain text, and the client could not be reached from the card.
+// The name was plain text, and the client could not be reached from the card.
 test("reaches the client's visits from their name, and the client on WhatsApp or by phone", async ({ page }) => {
   await open(page);
   const card = disputeCard(page);
@@ -221,7 +221,7 @@ test("reaches the client's visits from their name, and the client on WhatsApp or
   );
 });
 
-// FLD-35: a reminder that was skipped read "Not delivered" on the evidence a refund is ruled on.
+// A reminder that was skipped read "Not delivered" on the evidence a refund is ruled on.
 test("says on a disputed charge that the reminder never went, where it was not sent", async ({ page }) => {
   const disputes = [{ ...DISPUTES.disputes[0], message_state: "not_sent", message_delivered_at: null }];
   await answer(page, {
@@ -308,7 +308,7 @@ test("reads the queue of undecided cases, not every case", async ({ page }) => {
 });
 
 // The case once gave ops the phone's check-in and the wait the rules asked for,
-// named no client and dated no reminder (OPS-03).
+// named no client and dated no reminder.
 test("shows each case's client, the booked window, both clocks and the evidence", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("region", { name: QUEUE }).getByRole("listitem")).toHaveCount(2);
@@ -346,7 +346,7 @@ test("shows what the phone said when the bounds would not take its time", async 
   await expect(fact(page, FIRST, "The phone said")).toHaveText("Sun 19 Sep, 9:30 am");
 });
 
-// A reminder never sent once read "Never delivered", as if the client's phone had been off (OPS-03).
+// A reminder never sent once read "Never delivered", as if the client's phone had been off.
 test("says no reminder went to a client who never agreed to WhatsApp about visits", async ({ page }) => {
   await open(page);
   await expect(fact(page, SECOND, "WhatsApp")).toHaveText(
@@ -378,7 +378,7 @@ test("says the distance was never measured, and shows no number, when the route 
   await expect(only).not.toContainText(/\b0\s*m\b/);
 });
 
-// FLD-24: a check-in that passed only because ops let him in says so beside its distance.
+// A check-in that passed only because ops let him in says so beside its distance.
 test("says when ops let the technician check in past the fence, and why", async ({ page }) => {
   const [first, ...rest] = NO_SHOWS.cases;
   const letIn = { ...first, let_in: { by: "ops@maneman.test", reason: "The pin is at the society gate" } };
@@ -398,7 +398,7 @@ test("reaches the client's visits from the case", async ({ page }) => {
   expect(new URL(page.url()).pathname).toBe(`/clients/${NO_SHOWS.cases[0]?.person.id ?? ""}/visits`);
 });
 
-// "Charge or waive, with a reason": charging was once one click, with no reason and no second look (FEO-11).
+// "Charge or waive, with a reason": charging was once one click, with no reason and no second look.
 test("offers neither ruling until a reason is written", async ({ page }) => {
   await open(page);
   const first = caseOf(page, FIRST);
@@ -408,7 +408,7 @@ test("offers neither ruling until a reason is written", async ({ page }) => {
   await expect(first.getByRole("button", { name: "Charge" })).toBeDisabled();
 });
 
-// The charge was once asked about with no figure: "Charge X for the visit of Fri 2 Oct?" (MON-17).
+// The charge was once asked about with no figure: "Charge X for the visit of Fri 2 Oct?".
 test("asks once more before it charges, with what it keeps, and sends the reason with the charge", async ({ page }) => {
   await open(page);
   const first = caseOf(page, FIRST);
@@ -458,7 +458,7 @@ test("sends no charge until it knows what the charge keeps", async ({ page }) =>
   await expect(first.getByRole("button", { name: "Charge the visit" })).toBeDisabled();
 });
 
-// After a charge the page once still said "Nothing was charged today", and the case was gone (MON-17).
+// After a charge the page once still said "Nothing was charged today", and the case was gone.
 test("lists the cases ruled on today with their ruling, and reads them and the day's money again after a ruling", async ({
   page,
 }) => {
@@ -520,7 +520,7 @@ test("waives a case with its reason, and the case leaves the queue", async ({ pa
 test("shows no amount in the queue, and says what a charge costs and a waiver gives back", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("region", { name: QUEUE }).getByText("Rs.")).toBeHidden();
-  // BIZ-28: the owner ruled on 27 September 2026 that a waiver refunds the payment and returns the credit.
+  // The owner ruled on 27 September 2026 that a waiver refunds the payment and returns the credit.
   await expect(
     page.getByText(/a no-show costs and refunds the rest; waiving refunds the payment and returns its credit\./),
   ).toBeVisible();
@@ -535,7 +535,7 @@ test("says so when someone else has ruled on the case already", async ({ page })
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
-// The Tasks board links a no-show to its case here (OPS-05).
+// The Tasks board links a no-show to its case here.
 test("brings the case a task named into view, and gives it the keyboard", async ({ page }) => {
   await open(page, undefined, `/no-shows#case-${CASE}`);
   await expect(caseOf(page, FIRST)).toBeFocused();

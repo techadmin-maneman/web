@@ -39,7 +39,7 @@ async function pickAnother(page: Page, which: "first" | "last"): Promise<void> {
 }
 
 // Board C1's Prepaid, on a visit paid for ahead; and the visit opens its own page, with the same ways to change it
-// as Home has (CLI-26). Read before the tests below move and cancel it.
+// as Home has. Read before the tests below move and cancel it.
 test("C1: a paid visit is marked Prepaid, and opens with Reschedule", async ({ page }) => {
   await logIn(page, changingClients().free.mobile);
   await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
@@ -58,7 +58,7 @@ test("C7: a visit more than 24 hours out moves for free, its payment carried ove
   await sheet.getByRole("button", { name: "Pick a new date" }).click();
   // The furthest day, so the visit stays more than 24 hours out for the cancel below.
   await pickAnother(page, "last");
-  // Nothing to pay for a free move, so nothing calls it a payment (MON-33, BK-16, UX-06, CP-05).
+  // Nothing to pay for a free move, so nothing calls it a payment.
   const pay = page.getByRole("dialog", { name: "Confirm", exact: true });
   await expect(pay.getByText("Service visit · moved")).toBeVisible();
   await expect(pay.getByText("Free", { exact: true })).toBeVisible();

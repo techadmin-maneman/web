@@ -75,7 +75,7 @@ describe("a visit being booked", () => {
   });
 });
 
-// MON-10: Home and Visits never said which hair system a first fit was for.
+// Home and Visits never said which hair system a first fit was for.
 describe("a visit's title", () => {
   it("names the service beside the kind where the API names one", () => {
     expect(visitTitle({ type: "first_fit", service: "Mane Man Essential" })).toBe("First fit · Mane Man Essential");

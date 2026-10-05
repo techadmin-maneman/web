@@ -119,7 +119,7 @@ async function move(body: { appointment_id: string } & Record<string, unknown>, 
 }
 
 describe("a change of technician alone", () => {
-  // BIZ-18: a first fit at 12:00 given to a technician whose replacement runs from 10:30 to 12:45.
+  // A first fit at 12:00 given to a technician whose replacement runs from 10:30 to 12:45.
   // His afternoon window is free, but the first fit's own half-slots are not.
   it("keeps the visit's own time, and refuses it where that time is taken, as not fitting", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
@@ -167,7 +167,7 @@ describe("a change of technician alone", () => {
 });
 
 describe("a visit with no room", () => {
-  // OPS-06: a first fit takes four half-slots, and the evening has two.
+  // A first fit takes four half-slots, and the evening has two.
   it("refuses a first fit in an empty evening as not fitting, not as a clash", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
 
@@ -274,7 +274,7 @@ describe("a move and the time it goes to", () => {
   });
 });
 
-// FEO-05: two ops users on the same board, the second working from what he loaded a while ago.
+// Two ops users on the same board, the second working from what he loaded a while ago.
 describe("a move made from a board that has gone stale", () => {
   beforeEach(async () => {
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
@@ -332,7 +332,7 @@ interface BoardBody {
 const board = async (query: string): Promise<BoardBody> =>
   (await request(ops, `/api/dispatch?${query}`, {}, bindings())).json<BoardBody>();
 
-// BIZ-20: "the operating figure for the model's weekend-share assumption, so it
+// "the operating figure for the model's weekend-share assumption, so it
 // is also written to events daily". Finished jobs fell out of it, a technician
 // on leave still counted as a day's capacity, and the city asked for was ignored.
 describe("the utilisation at each column's head", () => {
@@ -403,7 +403,7 @@ const untoldTasks = async () => {
   return body.groups.find((group) => group.group === "untold_move")?.tasks ?? [];
 };
 
-// OPS-01: "The client has been messaged" was shown after every move, while the
+// "The client has been messaged" was shown after every move, while the
 // message went only to a client who had agreed to WhatsApp about his visits.
 describe("telling the client of a move", () => {
   beforeEach(async () => {
@@ -431,7 +431,7 @@ describe("telling the client of a move", () => {
     expect(messageQueue.sent).toEqual([]);
     const messages = await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first<{ n: number }>();
     expect(messages?.n).toBe(0);
-    // OIA-03, BK-21: the task carries the number to call and the visit, so it is settled from the task itself.
+    // The task carries the number to call and the visit, so it is settled from the task itself.
     expect(await untoldTasks()).toEqual([
       expect.objectContaining({
         id: moveId,
@@ -469,7 +469,7 @@ describe("telling the client of a move", () => {
     ]);
   });
 
-  // BK-20: a WhatsApp that failed read as "not on WhatsApp", for a client who had agreed to it.
+  // A WhatsApp that failed read as "not on WhatsApp", for a client who had agreed to it.
   it("says the WhatsApp did not go, not that the client never agreed, where it failed", async () => {
     await agreeToVisitMessages(true);
     const { move_id: moveId } = await (await move(toSameerWednesdayMorning(A))).json<{ move_id: string }>();
@@ -507,7 +507,7 @@ describe("telling the client of a move", () => {
   });
 });
 
-// OPS-05, OPS-12 and ADR 0068: nothing on the board led to the client, the
+// ADR 0068: nothing on the board led to the client, the
 // drawer had no badge, and the area came from the address, not the visit.
 describe("what the board carries of each visit", () => {
   beforeEach(async () => {
@@ -615,7 +615,7 @@ describe("what the board carries of each visit", () => {
     expect(week.technicians[0]?.days[0]?.blocks[0]).toMatchObject({ appointment_id: A, badge: "prepaid", slots: 1 });
     // Seven half-slots: three slots and a half.
     expect(week.technicians[1]?.days[0]?.blocks[0]).toMatchObject({ appointment_id: B, slots: 3.5 });
-    // MON-10: the drawer names what the client bought.
+    // The drawer names what the client bought.
     expect(week.technicians[1]?.days[0]?.blocks[0]).toMatchObject({ service: "Premium first fit" });
   });
 
@@ -641,7 +641,7 @@ describe("what the board carries of each visit", () => {
     expect(block?.person).toBeNull();
   });
 
-  // FEO-09: the brief's "city and week picker"; the route took both, and the board sent neither.
+  // The brief's "city and week picker"; the route took both, and the board sent neither.
   it("names the city it is narrowed to, and the cities it can be", async () => {
     const week = await board("from=2026-09-22&city=Gurgaon");
     expect(week.city).toBe("Gurgaon");
@@ -649,7 +649,7 @@ describe("what the board carries of each visit", () => {
     expect((await board("from=2026-09-22")).city).toBeNull();
   });
 
-  // OIA-05 and BK-54: Mumbai and Bengaluru, on the waitlist alone, were offered and gave an empty board.
+  // Mumbai and Bengaluru, on the waitlist alone, were offered and gave an empty board.
   it("offers the cities we serve, and one we do not only once a technician works there", async () => {
     expect((await board("from=2026-09-22")).cities).toEqual(["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"]);
 
@@ -668,7 +668,7 @@ interface RoomBody {
 const roomFor = (id: string, from: string) =>
   request(ops, `/api/dispatch/room?appointment_id=${id}&from=${from}`, {}, bindings());
 
-// FEO-10 and REQ-S9-02: "Drop it on a cell with room", and "a cell that would
+// The brief: "Drop it on a cell with room", and "a cell that would
 // clash is refused before the sheet opens". The board offered every window of
 // every day and learnt of a clash only after a reason had been picked.
 describe("where a job in hand can go", () => {
@@ -717,7 +717,7 @@ const dispatchMoves = () =>
     blackout_reason: string | null;
   }>();
 
-// BK-17, FLD-23: at 09:58 four visits moved to that morning all landed at 09:00, at 10:02 one landed at 09:00 to
+// At 09:58 four visits moved to that morning all landed at 09:00, at 10:02 one landed at 09:00 to
 // 10:00, and a move to yesterday answered 200. The technician and the client were told a time nobody could meet.
 describe("a move lands only at a start still ahead", () => {
   beforeEach(async () => {
@@ -861,7 +861,7 @@ describe("a move onto a blacked-out day", () => {
   });
 });
 
-// OPS-07: leave recorded over jobs already booked flagged nothing. Chetan's Wednesday job sat unmarked on his Away
+// Leave recorded over jobs already booked flagged nothing. Chetan's Wednesday job sat unmarked on his Away
 // cell, stayed on his phone, and waited for nobody.
 describe("leave recorded over jobs already booked", () => {
   /** Wednesday at 10:30 in India. */
@@ -919,7 +919,7 @@ describe("leave recorded over jobs already booked", () => {
   });
 });
 
-// PLAT-12: the open board read itself in full every minute, hundreds of rows each time, and so spent D1's day of
+// The open board read itself in full every minute, hundreds of rows each time, and so spent D1's day of
 // reads at a few hundred clients. It now asks for this number every minute and reads itself only when it has moved.
 describe("the board's version", () => {
   const version = async (): Promise<number> => {

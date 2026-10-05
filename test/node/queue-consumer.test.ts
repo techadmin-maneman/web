@@ -48,7 +48,7 @@ describe("a queue consumer", () => {
     expect(batch.messages[1]?.retry).toHaveBeenCalledWith({ delaySeconds: 90 });
   });
 
-  // CQ-23: a D1 throw on the first message rejected the whole batch, and every message came back at once.
+  // A D1 throw on the first message rejected the whole batch, and every message came back at once.
   it("tries again only the message whose work threw, later each time, and works the rest", async () => {
     const batch = batchOf([{ id: "throws" }, { id: "fine" }], 3);
     await run(batch, {

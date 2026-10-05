@@ -41,7 +41,7 @@ describe.each(APPS)("%s's design tokens", (_app, source) => {
     expect(stylesheets.length).toBeGreaterThan(0);
   });
 
-  // DS-06, DS-20: a weight, a leading, a duration, a curve or a named colour counts as much as a px.
+  // A weight, a leading, a duration, a curve or a named colour counts as much as a px.
   it.each(stylesheets)("%s uses no raw colour, size, weight, leading or motion", (path) => {
     expect(rawValues(readFileSync(path, "utf8"))).toEqual([]);
   });

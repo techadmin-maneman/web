@@ -34,7 +34,7 @@ test("lists every held grant with the rule it met, and counts them", async ({ pa
   await expect(queue.getByText("Monthly cap exceeded")).toBeVisible();
 });
 
-// Board C1 writes how long a grant has waited; the queue once wrote the day of the first fit (OPS-16).
+// Board C1 writes how long a grant has waited; the queue once wrote the day of the first fit.
 test("says how long each grant has been held, as the board writes it", async ({ page }) => {
   await open(page);
   const queue = page.getByRole("region", { name: "Held for review" });
@@ -43,7 +43,7 @@ test("says how long each grant has been held, as the board writes it", async ({ 
   await expect(queue.getByRole("listitem").filter({ hasText: "Karan Bose" })).toContainText("5 hours held");
 });
 
-// The held pair's names were plain text though the route gives both clients' IDs (OPS-05).
+// The held pair's names were plain text though the route gives both clients' IDs.
 test("reaches either client's page from the pair", async ({ page }) => {
   await open(page);
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
@@ -102,7 +102,7 @@ test("says so when someone else has decided the grant already", async ({ page })
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
-// PS-60: a grant held for a consultation and fit not yet paid can be rejected, and approved once it is paid.
+// A grant held for a consultation and fit not yet paid can be rejected, and approved once it is paid.
 test("says an approval waits for the friend's payment, and keeps the grant held", async ({ page }) => {
   await open(page, fails(409, "not_paid"));
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
@@ -113,7 +113,7 @@ test("says an approval waits for the friend's payment, and keeps the grant held"
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
-// The Tasks board links a referral review to its row here (OPS-05).
+// The Tasks board links a referral review to its row here.
 test("brings the grant a task named into view, and gives it the keyboard", async ({ page }) => {
   await open(page, undefined, `/referrals#held-${GRANT}`);
   await expect(page.getByRole("listitem").filter({ hasText: FIRST })).toBeFocused();
@@ -124,7 +124,7 @@ test("shows every referrer's figures, the busiest first, as the route orders the
   const rows = page.getByRole("row");
   await expect(rows.nth(1)).toContainText("Karan Bose");
   await expect(rows.nth(1)).toContainText("19");
-  // OIA-16: each name opens the referrer's page.
+  // Each name opens the referrer's page.
   await expect(rows.nth(1).getByRole("link", { name: "Karan Bose" })).toHaveAttribute(
     "href",
     `/clients/${REFERRERS.referrers[0]?.person_id ?? ""}/referrals`,

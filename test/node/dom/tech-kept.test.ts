@@ -180,7 +180,7 @@ describe("what the phone lets go of", () => {
   });
 });
 
-// BK-43: a job whose card locked again has no client left on the phone, and is still named by what it does hold.
+// A job whose card locked again has no client left on the phone, and is still named by what it does hold.
 describe("what the phone holds of each job", () => {
   it("is the card where there is one, else the day's list, whether or not the card is open", async () => {
     const moved = { ...card("a", TOMORROW), starts_at: `${TOMORROW}T03:30:00.000Z`, client: null };
@@ -233,7 +233,7 @@ describe("a day's jobs", () => {
     expect(await keptJob("old")).not.toBeNull();
   });
 
-  // FLD-42: the cards were fetched one after another, so the last of a day's came seconds after the list.
+  // The cards were fetched one after another, so the last of a day's came seconds after the list.
   it("asks for every unlocked card at once, and keeps each one", async () => {
     const asked: string[] = [];
     const askedByEachAnswer: number[] = [];
@@ -295,7 +295,7 @@ describe("a day's jobs", () => {
     expect(await loadDay(TODAY)).toEqual({ state: "failed", requestId: null });
   });
 
-  // FLD-36: with no signal, the row of a job started since the list was kept lost its "In progress".
+  // With no signal, the row of a job started since the list was kept lost its "In progress".
   it("keeps where a job stands as a write's answer said, so the list says it with no signal", async () => {
     await keepDay(TODAY, [summary("a", TODAY), summary("b", TODAY)]);
     await keepLanded("a", { started_at: "2030-09-19T04:05:00.000Z", outcome: null });

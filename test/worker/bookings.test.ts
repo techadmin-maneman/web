@@ -102,7 +102,7 @@ describe("POST /api/bookings", () => {
         amount: 200000,
         currency: "INR",
         name: "Mane Man",
-        // The day as the app writes it, never "2026-09-22" (MON-42).
+        // The day as the app writes it, never "2026-09-22".
         description: "Service visit · Tue 22 Sep",
         prefill: { name: "Rohit Malhotra", contact: "+919810000001" },
       },
@@ -200,7 +200,7 @@ describe("confirmBooking", () => {
     expect(await visitOf(holdId)).toBeNull();
   });
 
-  // MON-14: a lapse refund sent no message and showed nowhere in the console.
+  // A lapse refund sent no message and showed nowhere in the console.
   it("tells the client of a refund made because the hold had lapsed, once, without their visits consent", async () => {
     const app = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(app);
@@ -357,7 +357,7 @@ describe("Razorpay's capture of a hold's payment", () => {
   });
 });
 
-// CP-27: a booking a free service visit was to pay for told the client only that nothing was booked.
+// A booking a free service visit was to pay for told the client only that nothing was booked.
 describe("the message a booking given back sends", () => {
   it("tells a client whose free service visit was to pay that it is still theirs", async () => {
     await env.DB.batch([

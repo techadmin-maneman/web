@@ -53,7 +53,7 @@ describe("the app's promise of what a referral earns", () => {
   });
 });
 
-// CP-11 and CP-12 of the audit, 2 October 2026: Refer told a client not yet fitted that nobody they referred had
+// Refer told a client not yet fitted that nobody they referred had
 // been fitted, and a fitted client that no other discount applies, which the owner's ruling of 1 October undid.
 describe("Refer for a client not yet fitted", () => {
   const reward = { referrer_visits: 2, friend_visits: 4 };

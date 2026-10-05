@@ -14,7 +14,7 @@ export const RULES = [
   "A job shows a Prepaid or Credit badge only, and no API response to a technician carries an amount.",
   // Ruled by the owner on 27 September 2026 (docs/open-points.md, item 92).
   "the other technician's first name may reach the phone",
-  // The 2 Oct audit (FLD-18, PS-09): a card that never locked again kept every past client readable on a lost phone.
+  // A card that never locked again once kept every past client readable on a lost phone.
   "A card locks again at the end of the day after its visit, and the list reads no date before yesterday.",
 ] as const;
 

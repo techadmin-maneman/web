@@ -5,7 +5,7 @@
 //
 // Each step forward is an entry in the browser's history, so a phone's Back
 // steps back from the code to the number, as the screen's own back arrow does,
-// rather than leaving the app (CLI-27). Signing in goes back past them, so Back
+// rather than leaving the app. Signing in goes back past them, so Back
 // from Home leaves the app as before.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";

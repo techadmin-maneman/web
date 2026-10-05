@@ -34,7 +34,7 @@ describe("a PLACEHOLDER mark", () => {
 });
 
 describe("the production gate on Phase 2's copy", () => {
-  // CQ-43 and CP-26 of the 2 Oct audit: the site's own marks, the job sheet and the WhatsApp texts went ungated.
+  // The site's own marks, the job sheet and the WhatsApp texts went ungated.
   it("covers each app's content, the site's, the referral landing's and the API's", () => {
     expect(CONTENT_FILES).toEqual({
       site: ["site/src/content/referral.ts", "site/src/content/site.ts"],

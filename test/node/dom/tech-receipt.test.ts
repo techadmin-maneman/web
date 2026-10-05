@@ -1,5 +1,5 @@
 // The receipt beneath the no-show wait says whether a WhatsApp went to the client, and draws the tick only for one
-// delivered: a skipped reminder once read "messaged on WhatsApp, not delivered", with a tick (FLD-35, UX-26, CP-09).
+// delivered: a skipped reminder once read "messaged on WhatsApp, not delivered", with a tick.
 
 import { ICONS } from "@maneman/brand/icons";
 import { describe, expect, it } from "vitest";

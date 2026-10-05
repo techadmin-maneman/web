@@ -51,7 +51,7 @@ test("reaches the client's record from the name", async ({ page }) => {
   expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/consents");
 });
 
-// OIA-16: ops answer on the number shown, and copied it by hand to do so.
+// Ops answer on the number shown, and copied it by hand to do so.
 test("reaches the client on WhatsApp or by phone from the row", async ({ page }) => {
   await open(page);
   const first = row(page, "Rohit Malhotra");
@@ -83,7 +83,7 @@ test("records the answer, and the grievance leaves the queue", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Open concerns" })).toBeFocused();
 });
 
-// Grievances are a group on the Tasks board now, which links each to its row here (OPS-08, OPS-05).
+// Grievances are a group on the Tasks board now, which links each to its row here.
 test("brings the grievance a task named into view, and gives it the keyboard", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/grievances": json(GRIEVANCES) });

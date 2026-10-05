@@ -1,13 +1,13 @@
 // Board A1's grid: technicians down, seven days across, each column headed by
 // its utilisation. The header row and the technicians' column stay put while
-// the grid scrolls under them (OPS-10), so a board of many technicians can be
+// the grid scrolls under them, so a board of many technicians can be
 // read at any depth.
 //
 // While a job is in hand, each day offers only the windows the job would land
 // in, as the server answered for it: a day with none says so, and a day ops
 // recorded leave on offers nothing (ADR 0062). The windows are for the mouse;
 // the keyboard chooses from the list above the board, so the grid's thousands
-// of windows are not each a stop in the tab order (FEO-14).
+// of windows are not each a stop in the tab order.
 //
 // A search that names a client, an area or a pincode outlines the blocks it
 // found, so the one visit is plain among a technician's eight.
@@ -132,7 +132,7 @@ interface CellProps {
   readonly onLand: (to: Target) => void;
 }
 
-/** The day's leave, and the jobs still booked on it, which the leave moved nowhere (OPS-07). */
+/** The day's leave, and the jobs still booked on it, which the leave moved nowhere. */
 function AwayMark({ technician, date, blocks }: { technician: BoardRow; date: string; blocks: readonly Block[] }) {
   const copy = dispatch.board;
   const stranded = blocks.filter((block) => block.status === "scheduled" || block.status === "dispatched").length;

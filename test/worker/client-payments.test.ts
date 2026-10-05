@@ -84,7 +84,7 @@ describe("GET /api/payments", () => {
     await refund(REFUND, PAY_OLD, "created", "2026-09-10T06:00:00.000Z");
     const { entries } = await (await get("/api/payments")).json<{ entries: Record<string, unknown>[] }>();
     expect(entries).toEqual([
-      // No hold or link priced it, so no rate is known: never split at a guessed one (MON-49).
+      // No hold or link priced it, so no rate is known: never split at a guessed one.
       expect.objectContaining({
         kind: "payment",
         id: PAY_NEW,
@@ -156,7 +156,7 @@ describe("GET /api/payments", () => {
 });
 
 // A payment for a booking still being made was "Payment", and its tax invoice "taking longer than it should" a week
-// before the visit (MON-19, MON-20, CP-18).
+// before the visit.
 describe("GET /api/payments, a booking paid for and not yet a visit", () => {
   const ORDER = "order_held_1";
 
@@ -197,7 +197,7 @@ describe("GET /api/payments, a booking paid for and not yet a visit", () => {
   });
 });
 
-// LIFE-07 and LIFE-14: a no-show and a credit never appeared in Payments, though each took or kept something.
+// A no-show and a credit never appeared in Payments, though each took or kept something.
 describe("GET /api/payments, what else a visit took", () => {
   interface Body {
     entries: { id: string; no_show: unknown }[];
@@ -302,7 +302,7 @@ describe("GET /api/payments, what else a visit took", () => {
     ]);
   });
 
-  // MON-36: an invited friend read the referrer's line, "a friend you invited was fitted", for their own visits.
+  // An invited friend read the referrer's line, "a friend you invited was fitted", for their own visits.
   it("says which side of an invite its visits were for: the friend fitted through it, or the referrer", async () => {
     await env.DB.batch([
       env.DB.prepare(

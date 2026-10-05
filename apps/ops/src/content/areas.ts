@@ -167,7 +167,7 @@ export const waitlist = {
   choose: (pincode: string, area: string) => `Mark ${pincode} live, ${area}`,
   /**
    * A pincode served without its waitlist being told, as the
-   * Settings screen served them until it launched them too (FEO-02). Choosing
+   * Settings screen served them until it launched them too. Choosing
    * it asks who is still to be told.
    */
   tell: (pincode: string, area: string) => `Tell those waiting in ${pincode}, ${area}`,
@@ -181,7 +181,7 @@ export const waitlist = {
   date: "Launch date",
   dateHint:
     "Today, or the day a technician started coming if earlier. A held referral invite lapses twelve months from it.",
-  /** Where the area's name in the message comes from, and where it is changed (OPS-13). */
+  /** Where the area's name in the message comes from, and where it is changed. */
   named: "The message names the area as Served names it, or its city until then.",
   rename: "Change the name",
 } as const;

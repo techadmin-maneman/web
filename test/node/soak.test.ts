@@ -116,7 +116,7 @@ describe("what each route read from D1 while the new version served", () => {
     expect(judgeRouteReads({ "/api/waitlist": { requests: 3, rowsRead: 3 * 9_000 } }).outcome).toBe("not judged");
   });
 
-  // PLAT-15: Home and a job's card each waited on about 17 D1 round trips in turn, 1.6 to 2.1 s, before their reads
+  // Home and a job's card each waited on about 17 D1 round trips in turn, 1.6 to 2.1 s, before their reads
   // went together.
   it("passes Home and a job's card within their budgets at p95, and judges no other route on time", () => {
     const verdict = judgeRouteLatency({

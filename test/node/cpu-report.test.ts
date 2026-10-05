@@ -1,4 +1,4 @@
-// PLAT-11: nothing recorded the Worker's CPU time, so runs over the free plan's 10 ms went unseen until the audit.
+// Nothing recorded the Worker's CPU time, so runs over the free plan's 10 ms went unseen until the audit.
 
 import { describe, expect, it } from "vitest";
 import { judgeCpu, readCpu, type CpuReading } from "../../scripts/lib/cpu-report.ts";

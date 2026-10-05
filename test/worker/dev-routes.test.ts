@@ -1,5 +1,5 @@
 // The local stand-in for closing a visit without the technician app (src/routes/dev-visits.ts), so what follows a
-// close can be run locally (LIFE-17). It exists only where DEV_ROUTES is on, which the guard allows only locally; on
+// close can be run locally. It exists only where DEV_ROUTES is on, which the guard allows only locally; on
 // any other environment's app it is not there at all. NOW is Monday 21 September 2026, 12 noon in India.
 
 import { env } from "cloudflare:workers";

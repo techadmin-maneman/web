@@ -1,7 +1,7 @@
 // The client app's calls to mm-api (docs/openapi-client.json), made with the
 // one client the apps share (packages/web-kit/api.ts). Each call's path, query,
 // body and answer are checked against ./api-schema.ts, which `npm run openapi`
-// writes from the schemas that serve the routes (FEA-30).
+// writes from the schemas that serve the routes.
 //
 // Every call is same-origin, so the session cookie goes with it and the Origin matches.
 

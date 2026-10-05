@@ -34,7 +34,7 @@ interface NewLeave {
   readonly actor: string;
 }
 
-/** A job still booked for a technician on a day he is now away: ops move it (OPS-07). */
+/** A job still booked for a technician on a day he is now away: ops move it. */
 interface JobOnLeave {
   readonly appointment_id: string;
   readonly starts_at: string;
@@ -72,7 +72,7 @@ type LeaveOutcome =
   | {
       readonly kind: "recorded";
       readonly id: string;
-      /** The jobs already booked on those days, which the leave does not move: ops do (OPS-07). */
+      /** The jobs already booked on those days, which the leave does not move: ops do. */
       readonly jobs: JobOnLeave[];
     }
   | { readonly kind: "no_such_technician" }

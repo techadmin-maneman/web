@@ -76,7 +76,7 @@ describe("the index", () => {
   });
 });
 
-// CQ-09: the index said this test failed until it was regenerated, and nothing did.
+// The index said this test failed until it was regenerated, and nothing did.
 describe("the committed index", () => {
   it("is the index the records' headers make, so a new record or a changed status needs npm run adr-index", () => {
     const { adrs, others } = readDecisions();

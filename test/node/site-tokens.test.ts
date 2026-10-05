@@ -30,7 +30,7 @@ const defined = new Set(
 );
 
 describe("design tokens", () => {
-  // DS-06, DS-20: a weight, a leading, a duration, a curve or a named colour counts as much as a px.
+  // A weight, a leading, a duration, a curve or a named colour counts as much as a px.
   it.each(styled)("%s uses no raw colour, size, weight, leading or motion", (path) => {
     expect(rawValues(cssOf(path))).toEqual([]);
   });

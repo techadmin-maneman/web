@@ -36,7 +36,7 @@ describe("where a consent was given", () => {
   });
 });
 
-// PS-29: a person who replied "stop" kept getting messages.
+// A person who replied "stop" kept getting messages.
 describe("a WhatsApp reply that asks us to stop", () => {
   it.each(["STOP", "stop", "Stop.", " STOP! ", "stop all", "Unsubscribe"])("is %j", (text) => {
     expect(isStopReply(text)).toBe(true);

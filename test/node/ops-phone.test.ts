@@ -1,6 +1,6 @@
 // A mobile number as the ops console shows it (apps/ops/src/lib/phone.ts): in
 // the two groups of five it is read out in, never as the thirteen characters it
-// is stored as (OPS-21 of the audit, 24 September 2026).
+// is stored as.
 
 import { describe, expect, it } from "vitest";
 import { phoneWords } from "../../apps/ops/src/lib/phone.ts";
@@ -15,7 +15,7 @@ describe("a mobile number on the console", () => {
     expect(phoneWords("9557267803")).toBe("9557267803");
   });
 
-  // CP-35 of the audit, 2 October 2026: an erased client's grievance showed "erased:18f5c2c9-…" as their number.
+  // An erased client's grievance showed "erased:18f5c2c9-…" as their number.
   it("never shows the mark an erasure leaves in place of the number", () => {
     expect(phoneWords("erased:18f5c2c9-0000-4000-8000-000000000001")).toBe("Erased client");
   });

@@ -182,7 +182,7 @@ describe("PATCH /api/profile/address", () => {
     expect(contactSyncs()).toEqual([]);
   });
 
-  // BK-08: a client changed only the pincode to Mumbai's, and the address was saved and sent on.
+  // A client changed only the pincode to Mumbai's, and the address was saved and sent on.
   it("refuses a pincode we do not serve, or do not hold, and saves and sends on nothing", async () => {
     await servedPincode("122019", "Gurgaon", false);
     for (const pincode of ["122019", "411001"]) {
@@ -494,7 +494,7 @@ describe("PATCH /api/consents/:purpose", () => {
     expect(await Promise.all(both.map((answer) => answer.json()))).toEqual([given, given]);
   });
 
-  // PS-36 of the audit, 2 October 2026: the log said a client switched a consent they had not.
+  // The log said a client switched a consent they had not.
   it("writes no audit entry for a switch to the state the purpose already holds", async () => {
     await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true });
     const again = await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true });
@@ -667,7 +667,7 @@ describe("a number change", () => {
     });
     expect(await decided.json()).toEqual({ state: "confirmed" });
     expect(await mobile()).toBe(NEW);
-    // LIFE-12: the new number reaches the CRM lead, and the old one is kept for the fraud rules.
+    // The new number reaches the CRM lead, and the old one is kept for the fraud rules.
     expect(contactSyncs()).toEqual([{ update_person_id: "p1", request_id: expect.any(String) as string }]);
     const replaced = await env.DB.prepare("SELECT replaced_mobile_e164 FROM number_change_requests").first();
     expect(replaced).toEqual({ replaced_mobile_e164: OLD });
@@ -678,7 +678,7 @@ describe("a number change", () => {
     expect(staff).toBe("ops@localhost");
   });
 
-  // PS-14: a phone that went with the old number stayed signed in for 90 days.
+  // A phone that went with the old number stayed signed in for 90 days.
   it("signs out every other session of the client once confirmed, and keeps the one that asked", async () => {
     const oldPhone = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p1", deviceLabel: null, now: NOW })}`;
     const meWith = (session: string) =>
@@ -790,7 +790,7 @@ describe("a number change", () => {
     expect(replaced).toEqual({ replaced_mobile_e164: null });
   });
 
-  // A rejected change vanished from the app, and its reason stayed in ops (OPS-09).
+  // A rejected change vanished from the app, and its reason stayed in ops.
   describe("once ops have decided it", () => {
     async function decided(decision: "confirm" | "reject", reason: string | null) {
       const { body } = await start();
@@ -891,7 +891,7 @@ describe("a deletion request", () => {
     expect(await auditActions()).toEqual(["deletion.request", "deletion.decide"]);
   });
 
-  // PS-19: the app promised a confirmation on WhatsApp, and nothing sent one.
+  // The app promised a confirmation on WhatsApp, and nothing sent one.
   it("tells the client on WhatsApp that it is done, at the number the erasure has just blanked", async () => {
     const whatsapp = recordingWhatsApp();
 
@@ -923,7 +923,7 @@ describe("a deletion request", () => {
     expect(await env.DB.prepare("SELECT name FROM people WHERE id = 'p1'").first("name")).toBe("Erased");
   });
 
-  // PS-19: a rejected request went back to "Request deletion", with no outcome and no reason.
+  // A rejected request went back to "Request deletion", with no outcome and no reason.
   it("tells the client why ops kept the account, on WhatsApp whatever they chose about visit messages", async () => {
     expect(await (await decided("reject", "You still have a consultation booked")).json()).toEqual({
       state: "rejected",

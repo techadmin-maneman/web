@@ -1,7 +1,7 @@
-// The three React apps share one component layer, packages/ui (DS-23,
-// FEA-40): what they have in common is written there once, and no app keeps a
+// The three React apps share one component layer, packages/ui:
+// what they have in common is written there once, and no app keeps a
 // copy of its own. A copy is how the apps drifted apart before, a fix reaching
-// one app and not the others (the audit of 24 September 2026).
+// one app and not the others.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -63,7 +63,7 @@ describe.each(APPS)("%s", (app) => {
     expect(copies).toEqual([]);
   });
 
-  // P3-36 (CQ-36): a refusal is said through @maneman/web-kit/refusal, and a panel that opens takes the keyboard
+  // A refusal is said through @maneman/web-kit/refusal, and a panel that opens takes the keyboard
   // through useFocusOnMount.
   it("keeps no refusal lookup or focus-on-open effect of its own", () => {
     const copies = code.filter((path) =>
@@ -74,25 +74,25 @@ describe.each(APPS)("%s", (app) => {
     expect(copies).toEqual([]);
   });
 
-  // P3-35 (UX-15): the boards' small-caps label is Caps's look; a screen's class sets its size and colour alone.
+  // The boards' small-caps label is Caps's look; a screen's class sets its size and colour alone.
   it("keeps no small-caps label recipe of its own", () => {
     const recipes = styles.filter((path) => /font-variant-caps:\s*all-small-caps/.test(read(path)));
     expect(recipes).toEqual([]);
   });
 
-  // P3-35 (UX-15): an icon from the set is drawn by the shared Icon, at the set's stroke or the one it is given.
+  // An icon from the set is drawn by the shared Icon, at the set's stroke or the one it is given.
   it("draws no icon from the set by hand", () => {
     const own = code.filter((path) => read(path).includes("<path d={ICONS."));
     expect(own).toEqual([]);
   });
 
-  // P3-34 (UX-16): a box's label, hint and error are tied together by the shared Field alone.
+  // A box's label, hint and error are tied together by the shared Field alone.
   it("keeps no field wrapper of its own", () => {
     const copies = code.filter((path) => /\bfunction (Field|Box)\b/.test(read(path)));
     expect(copies).toEqual([]);
   });
 
-  // P3-33 (UX-14): the code's boxes, a countdown, and focus given back to a new screen's heading.
+  // The code's boxes, a countdown, and focus given back to a new screen's heading.
   it("keeps no code field, countdown or focus hand-back of its own", () => {
     const copies = code.filter((path) =>
       /\bfunction (CodeField|CodeBoxes|useSecondsLeft|useCountdown|focusIfLost)\b|\.replace\(\/\\D\/g, ""\)\.slice\(0, ONE_TIME_CODE/.test(

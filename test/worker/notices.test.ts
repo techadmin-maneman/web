@@ -50,7 +50,7 @@ describe("consent notices", () => {
     expect(Object.keys(PUBLISHED)).not.toContain(CURRENT_NOTICE.tryon_photo);
   });
 
-  // PS-26, CP-03: v3 said the photograph reached nobody outside Mane Man and was kept thirty days.
+  // V3 said the photograph reached nobody outside Mane Man and was kept thirty days.
   it("names who the try-on's photograph reaches, and says it goes within the hour", () => {
     const photo = findNotice(CURRENT_NOTICE.tryon_photo)?.text ?? [];
     const gate = findNotice(CURRENT_NOTICE.result_delivery)?.text ?? [];

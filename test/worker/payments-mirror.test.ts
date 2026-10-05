@@ -1,7 +1,7 @@
 // The payments mirror's edges (src/domain/payments.ts): what Razorpay's
 // webhook sends when a field is missing, and whom a payment is put against.
 // test/worker/razorpay-hook.test.ts walks the webhook itself; these are the
-// branches it leaves (TCD-03). NOW is Monday 21 September 2026, noon in India.
+// branches it leaves. NOW is Monday 21 September 2026, noon in India.
 
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";

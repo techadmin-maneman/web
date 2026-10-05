@@ -102,7 +102,7 @@ describe("what the job has done", () => {
   });
 });
 
-// FLD-37, MON-52: the checklist, the outcome and the close-out of a one visit follow what the client decided.
+// The checklist, the outcome and the close-out of a one visit follow what the client decided.
 describe("a one visit's choice", () => {
   const oneVisit = (choice: Job["client_choice"] = null) =>
     job({ type: "first_fit", one_visit: true, client_choice: choice });
@@ -161,7 +161,7 @@ describe("the stage a card is at", () => {
   });
 });
 
-// FLD-36, UX-04: Today's list said "In progress" for a job its card had closed, and nothing for one begun offline.
+// Today's list said "In progress" for a job its card had closed, and nothing for one begun offline.
 describe("where a row of the day's list stands", () => {
   it("is closed once the close-out landed, though the visit's status has not caught up", () => {
     const closedOnAnotherPhone = job({ status: "in_progress" }, { started_at: "t", outcome: "done" });

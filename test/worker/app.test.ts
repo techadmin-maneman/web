@@ -168,7 +168,7 @@ describe("access log", () => {
     expect(typeof access?.d1_wait_ms).toBe("number");
   });
 
-  // PLAT-15: how long a request waited on D1, in a browser's network panel. Only once the caller has signed in: before
+  // How long a request waited on D1, in a browser's network panel. Only once the caller has signed in: before
   // that, the trips an answer took could tell a number we know from a new one.
   it("tells a signed-in caller's browser how many round trips to D1 it waited on, and nobody else", async () => {
     await markDatabase();

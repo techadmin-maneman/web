@@ -43,7 +43,7 @@ describe("icons", () => {
     expect(Object.values(GLYPHS).filter((path) => sets.has(path))).toEqual([]);
   });
 
-  // DS-24: the technician app re-declared five of the set's glyphs, and both apps the chevron and the tick.
+  // The technician app re-declared five of the set's glyphs, and both apps the chevron and the tick.
   it.each(["apps/app/src/icons.ts", "apps/tech/src/icons.ts"])("%s declares no glyph the brand holds", (file) => {
     const held = new Set<string>([...Object.values(ICONS), ...Object.values(ICONS_P2), ...Object.values(GLYPHS)]);
     const declared = [...readFileSync(file, "utf8").matchAll(/"(M[^"]+)"/g)].map((match) => match[1] ?? "");
@@ -84,12 +84,12 @@ describe("every token", () => {
     [...readFileSync(file, "utf8").matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1] ?? ""),
   );
 
-  // DS-15: --fs-30 was once defined twice, which a Map of the names hides.
+  // --fs-30 was once defined twice, which a Map of the names hides.
   it("is defined once across the brand's token files", () => {
     expect(names.filter((name, index) => names.indexOf(name) !== index)).toEqual([]);
   });
 
-  // DS-16: eleven were left behind by the Phase 1 booking form.
+  // Eleven were left behind by the Phase 1 booking form.
   it("is used by a stylesheet, a component or a script, or it is not a token", () => {
     const walk = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -132,7 +132,7 @@ describe("the Phase 2 colour layer", () => {
   );
 });
 
-// DS-15, DS-18: --fs-app-title and --fs-34 both held 34px, so a change to one would leave the other behind. A
+// --fs-app-title and --fs-34 both held 34px, so a change to one would leave the other behind. A
 // value is written once in its family; a name for what it is for says which token it is.
 describe("the scale", () => {
   const all = new Map([

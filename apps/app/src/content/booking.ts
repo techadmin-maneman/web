@@ -169,7 +169,7 @@ export const booking = {
   },
   confirmed: {
     label: "Confirmed",
-    /** The board writes "Imran messages you the day before."; the reminder is ours, sent automatically (CP-08). */
+    /** The board writes "Imran messages you the day before."; the reminder is ours, sent automatically. */
     tellsYou: "We’ll remind you on WhatsApp the day before.",
     paid: "Paid",
     note: (name: string) => `Add a note for ${name}`,
@@ -188,7 +188,7 @@ export const booking = {
 } as const;
 
 /**
- * A note on a visit to come, kept on it for the technician's card (REQ-04). Our words: the design draws the
+ * A note on a visit to come, kept on it for the technician's card. Our words: the design draws the
  * "Add a note" button and no sheet behind it.
  */
 export const note = {

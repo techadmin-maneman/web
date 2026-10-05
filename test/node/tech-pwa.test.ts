@@ -25,7 +25,7 @@ describe("the technician app's manifest", () => {
   it("opens the whole app standalone, which is what makes an iPhone keep its store", () => {
     expect(manifest(ink)).toMatchObject({
       name: "Mane Man technician",
-      // Its own name under the icon, apart from the client app's, and held upright (CP-50).
+      // Its own name under the icon, apart from the client app's, and held upright.
       short_name: "MM Tech",
       orientation: "portrait",
       id: "/",

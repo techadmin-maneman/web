@@ -1,7 +1,7 @@
 // How the apps move between their pages (packages/ui/router.tsx): one link for
 // all three, which changes the page in place for a plain click and leaves one
 // that asks for a new tab or window to the browser. The client app's own link
-// swallowed a Ctrl-click, as the console's once did (FEO-31, FEA-40).
+// swallowed a Ctrl-click, as the console's once did.
 
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";

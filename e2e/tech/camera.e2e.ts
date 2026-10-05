@@ -58,7 +58,7 @@ test("a double tap on Capture keeps one frame for one angle, and moves on by one
   await page.goto(BEFORE);
   const capture = page.getByRole("button", { name: "Capture" });
   await expect(capture).toBeEnabled();
-  // FLD-61: each angle has its own guide, not Top's line for all five.
+  // Each angle has its own guide, not Top's line for all five.
   await expect(page.getByText("Front · face the camera, eyes level")).toBeVisible();
 
   await capture.dblclick();

@@ -182,7 +182,7 @@ describe("POST /api/clients/:id/erasure", () => {
     for (const secret of ["Arjun", "9810000001", "arjun@example.com"]) expect(written).not.toContain(secret);
   });
 
-  // PS-16: the operators' door took one shared secret and left nothing in the audit log.
+  // The operators' door took one shared secret and left nothing in the audit log.
   it("audits the erasure under the member of staff who did it", async () => {
     const personId = await book();
 
@@ -273,7 +273,7 @@ async function openRequest(personId: string): Promise<void> {
 
 const alertsNow = () => alertAgedDeletions(env.DB, NOW, fakeDependencies().alertOnce);
 
-// PS-17: the operators' door left the client's own request listed as waiting, and alerting.
+// The operators' door left the client's own request listed as waiting, and alerting.
 describe("a client erased with a deletion request open", () => {
   it("has the request closed by the erasure, under whoever erased them", async () => {
     const personId = await book();
@@ -310,7 +310,7 @@ describe("a client erased with a deletion request open", () => {
   });
 });
 
-// PS-18 and OIA-18 of the audit, 2 October 2026: an erased client's open grievance stayed in Grievances for good, with
+// An erased client's open grievance stayed in Grievances for good, with
 // an answer box for nobody, and the alerts about them kept linking to their page.
 describe("what an erasure leaves open for ops", () => {
   const EARLIER = "2026-09-01T06:00:00.000Z";

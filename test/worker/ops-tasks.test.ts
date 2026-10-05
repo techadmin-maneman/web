@@ -279,7 +279,7 @@ describe("GET /api/tasks", () => {
   it("drops a consultation request once that client has a consultation, unless it was cancelled", async () => {
     await consultationRequest();
     await consultationFor(PERSON, "scheduled");
-    // The consultation's own address, which no one has given yet, is another task (LIFE-04).
+    // The consultation's own address, which no one has given yet, is another task.
     expect(groupNames(await tasks())).not.toContain("consultation_request");
 
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled'").run();
@@ -305,7 +305,7 @@ describe("GET /api/tasks", () => {
     ]);
   });
 
-  // FLD-41, BK-42: a hair system made to measure was asked for on the day it fell due, with no time to order it.
+  // A hair system made to measure was asked for on the day it fell due, with no time to order it.
   it("lists a piece falling due within the lead time, due by its own day at the latest", async () => {
     await pieceDue("2026-10-06");
     expect(tasksIn(await tasks(), "replacement_order")).toMatchObject([
@@ -335,7 +335,7 @@ describe("GET /api/tasks", () => {
     )
       .bind(VISIT, PERSON, NOW.toISOString())
       .run();
-    // The booked visit's own address, which this client has not given, is another task (LIFE-04).
+    // The booked visit's own address, which this client has not given, is another task.
     expect(groupNames(await tasks())).not.toContain("replacement_order");
 
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled'").run();
@@ -349,7 +349,7 @@ describe("GET /api/tasks", () => {
     ]);
   });
 
-  // A no-show once named the technician alone, so its task led nowhere a client could be reached from (OPS-05).
+  // A no-show once named the technician alone, so its task led nowhere a client could be reached from.
   it("names the client whose visit it was on a no-show, and the technician who attended", async () => {
     await noShowCase("undecided");
     expect(tasksIn(await tasks(), "no_show_decision")).toMatchObject([
@@ -366,7 +366,7 @@ describe("GET /api/tasks", () => {
     expect(groupNames(await tasks())).toEqual([]);
   });
 
-  // A client's claim for money back once waited on No-shows alone: no Tasks row, no count, no link (OIA-07, MON-17).
+  // A client's claim for money back once waited on No-shows alone: no Tasks row, no count, no link.
   it("waits on a disputed charge until ops rule on it, naming what the charge kept", async () => {
     await noShowCase("charged");
     await env.DB.batch([
@@ -408,7 +408,7 @@ describe("GET /api/tasks", () => {
 
   it("holds an erasure request until it is decided, for the seven days the client was promised", async () => {
     await erasureRequest("requested");
-    // The Deletion requests section counts down to the same day (OPS-08).
+    // The Deletion requests section counts down to the same day.
     expect(tasksIn(await tasks(), "erasure_request")).toMatchObject([
       { id: ERASURE, detail: null, since: "2026-09-20T06:00:00.000Z", due: "2026-09-27T06:00:00.000Z" },
     ]);
@@ -417,7 +417,7 @@ describe("GET /api/tasks", () => {
     expect(groupNames(await tasks())).toEqual([]);
   });
 
-  // A grievance was promised an answer within thirty days and waited on no board at all (OPS-08).
+  // A grievance was promised an answer within thirty days and waited on no board at all.
   it("holds an open grievance until it is answered, for the thirty days the client was promised", async () => {
     await grievance(GRIEVANCE);
     expect(tasksIn(await tasks(), "grievance")).toEqual([
@@ -435,7 +435,7 @@ describe("GET /api/tasks", () => {
     expect(groupNames(await tasks())).toEqual([]);
   });
 
-  // The count was cut at 200 tasks across every group, so a busy queue read as a quiet one (FEO-07).
+  // The count was cut at 200 tasks across every group, so a busy queue read as a quiet one.
   it("counts every task in a group, and lists the longest waits of it", async () => {
     const hour = 3_600_000;
     await env.DB.batch(
@@ -485,7 +485,7 @@ describe("GET /api/tasks", () => {
   });
 
   // The brief: "ops need the full set because these drive the task queue". A visit left partly done made no task
-  // at all (BIZ-21).
+  // at all.
   describe("a visit left partly done", () => {
     async function closed(outcome: "partial" | "no_show", reason: string | null) {
       await env.DB.batch([
@@ -535,7 +535,7 @@ describe("GET /api/tasks", () => {
   });
 
   // A site booking reaches the technician with no place, and the app tells the client "We confirm it with you
-  // before your visit"; nobody owned that confirmation (LIFE-04).
+  // before your visit"; nobody owned that confirmation.
   describe("a visit to come whose client has given no address", () => {
     /** Booked for tomorrow at 10 am in India; the mirror first had it this morning. */
     async function booked(status = "scheduled", start = "2026-09-22T04:30:00.000Z") {
@@ -584,7 +584,7 @@ describe("GET /api/tasks", () => {
     });
   });
 
-  // OIA-03, BK-21: "Move it in Dispatch" opened this week's board with no drawer, wherever the job was.
+  // "Move it in Dispatch" opened this week's board with no drawer, wherever the job was.
   it("gives a job on its technician's day off its visit, so the task opens it on the board", async () => {
     await env.DB.batch([
       env.DB.prepare(
@@ -637,7 +637,7 @@ describe("GET /api/tasks", () => {
     expect(groupNames(await tasks())).toEqual([]);
   });
 
-  // OIA-10 of the audit, 2 October 2026: a client's page showed nothing open for them while a task about them waited.
+  // A client's page showed nothing open for them while a task about them waited.
   it("lists one client's tasks alone when asked for them, counted as theirs", async () => {
     // Rohit's grant was held on the 18th, so it is overdue; his number change is not. Vikram's grievance is his own.
     await heldGrant('["shared_address"]');

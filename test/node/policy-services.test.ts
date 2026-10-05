@@ -60,7 +60,7 @@ describe("the services", () => {
     ]);
   });
 
-  // BK-41, UX-27: a client choosing a hair system reads what sets each apart, in one line ops write.
+  // A client choosing a hair system reads what sets each apart, in one line ops write.
   it("describes a service in one line of up to 160 characters, or not at all", () => {
     expect(isServiceDescription("Made for men who sweat.")).toBe(true);
     expect(isServiceDescription("A".repeat(DESCRIPTION_LENGTH))).toBe(true);
@@ -86,7 +86,7 @@ describe("the services", () => {
     expect(retireRefusal("first_fit", [{ retiredDate: "2026-12-01", pricedBy: true }])).toBeNull();
   });
 
-  // MON-10: the product a client paid for reaches the technician, ops and the client by its service's name.
+  // The product a client paid for reaches the technician, ops and the client by its service's name.
   it("names a visit's service where it says more than the kind", () => {
     expect(namesMoreThanItsKind("essential", null)).toBe(true);
     expect(namesMoreThanItsKind("essential", "fitted")).toBe(true);

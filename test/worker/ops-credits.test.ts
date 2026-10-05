@@ -1,5 +1,5 @@
-// Ops putting a client's service-visit credits right by hand (src/routes/ops/credits.ts; BIZ-15 of the audit,
-// 24 September 2026). NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
+// Ops putting a client's service-visit credits right by hand (src/routes/ops/credits.ts).
+// NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";

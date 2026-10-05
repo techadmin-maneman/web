@@ -3,7 +3,7 @@
 // needs beyond its own origin; everything else is refused.
 
 export interface AppPolicy {
-  /** Hosts the page may call beyond its own origin, e.g. Razorpay's for the client app (P2-F5). */
+  /** Hosts the page may call beyond its own origin, e.g. Razorpay's for the client app. */
   readonly connect?: readonly string[];
   /** Hosts scripts may load from beyond the app's own origin. */
   readonly scripts?: readonly string[];

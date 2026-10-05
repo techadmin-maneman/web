@@ -30,7 +30,7 @@ describe("tasks", () => {
     expect(TASK_GROUPS).toContain("no_show_decision");
   });
 
-  // A disputed charge once waited on No-shows alone, with no row, count or link on the Tasks board (OIA-07).
+  // A disputed charge once waited on No-shows alone, with no row, count or link on the Tasks board.
   it("queues a client's dispute of a no-show's charge, with two days to rule on it", () => {
     expect(TASK_GROUPS).toContain("no_show_dispute");
     expect(TASK_SLA_HOURS.no_show_dispute).toBe(48);
@@ -42,7 +42,7 @@ describe("tasks", () => {
     expect(TASK_GROUPS).toContain("erasure_request");
   });
 
-  // BIZ-21: a visit left partly done made no task.
+  // A visit left partly done made no task.
   it(RULES[3], () => {
     expect(TASK_GROUPS).toContain("partial_visit");
   });
@@ -69,7 +69,7 @@ describe("tasks", () => {
     expect(Object.keys(TASK_SLA_HOURS).sort()).toEqual([...TASK_GROUPS].sort());
   });
 
-  // A client's grievance waits for an answer as their erasure waits for a decision (OPS-08).
+  // A client's grievance waits for an answer as their erasure waits for a decision.
   it("counts down an open grievance, as it does the other requests about a client's own data", () => {
     expect(TASK_GROUPS).toContain("grievance");
   });

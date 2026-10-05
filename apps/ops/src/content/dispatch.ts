@@ -75,7 +75,7 @@ export const dispatch = {
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
     away: "Away",
     awayLabel: (technician: string, date: string) => `${technician} is away on ${date}`,
-    /** Leave recorded over jobs already booked moves none of them; ops do (OPS-07). */
+    /** Leave recorded over jobs already booked moves none of them; ops do. */
     stranded: (jobs: number) => `Away · ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} to move`,
     strandedLabel: (technician: string, date: string, jobs: number) =>
       `${technician} is away on ${date}, with ${String(jobs)} ${jobs === 1 ? "job" : "jobs"} still to move`,

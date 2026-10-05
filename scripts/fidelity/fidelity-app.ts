@@ -1,5 +1,5 @@
 // The client app's fidelity pairs (docs/fidelity-method.md, "Phase 2 boards"):
-// each frame of design/phase2/Client App.dc.html that P2-F1 and P2-F2 build,
+// each frame of design/phase2/Client App.dc.html that the client app builds,
 // beside the built app in the same state, at the frames' 390 px.
 //
 //   npm run build:app -- --env local && npm run fidelity:app
@@ -63,7 +63,7 @@ const ME = {
   pending_invite: null,
 } satisfies Schemas["Me"];
 
-// ---- Fitted (P2-F2) --------------------------------------------------------------
+// ---- Fitted --------------------------------------------------------------
 
 /** The services a fitted client books: a service visit, and a replacement on the price book's figures. */
 const OFFERED: Schemas["OfferedService"][] = [
@@ -221,7 +221,7 @@ const paid = (
   discount_code: null,
 });
 const SERVICE_PAID = paid(2, AUGUST, 200000, "upi", "MM-2027-0841");
-/** Board E1's entries that exist before booking (P2-M5): the charge and the credit arrive with it. */
+/** Board E1's entries that exist before booking: the charge and the credit arrive with it. */
 const ENTRIES = {
   owed: [],
   entries: [
@@ -249,7 +249,7 @@ const ENTRY = { ...SERVICE_PAID, documents: { invoice: AUGUST.id, receipt: null 
 /** The clock for the payments: in 2027, so its entries drop the year, as E1's do. */
 const IN_2027 = new Date("2027-09-20T05:00:00Z");
 
-// ---- Booking (P2-F5) ----------------------------------------------------------------
+// ---- Booking ----------------------------------------------------------------
 
 /** Booking on: the design's strip runs Mon 16 to Sun 29 Sep, with the 17th, 24th and 28th full. */
 const ME_BOOKING = {
@@ -663,7 +663,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   await loading.close();
 
   // E1's entries are newest first, where the board lists them in no order; its charge and credit arrive
-  // with booking (P2-M5).
+  // with booking.
   const list = await openApp(browser, "/payments", { ...me, "/api/payments": json(ENTRIES) }, IN_2027);
   await list.getByText("MM-2027-0841").or(list.getByText("Paid").first()).first().waitFor();
   await pair(OUT, WIDTH, "e1-payments", await frame(design, "Payments · list"), await shot(list));

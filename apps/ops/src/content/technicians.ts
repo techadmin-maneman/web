@@ -203,7 +203,7 @@ export const technicians = {
 /*
  * The three sections a client's rights over their own data put in front of ops
  * (docs/decisions/0049-dpdp.md, docs/decisions/0042-client-profile.md). The
- * design draws no board for any of them — they came out of the P2-M6 proof,
+ * design draws no board for any of them — they came out of a proof on staging,
  * which found all three API-only — so every line below is a placeholder, and
  * each queue is built as the boards' own queues are (C1 and D1).
  */

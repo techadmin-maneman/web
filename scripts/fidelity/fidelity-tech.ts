@@ -1,5 +1,5 @@
 // The technician app's fidelity pairs (docs/fidelity-method.md, "The technician
-// app"): each frame of design/phase2/Technician App.dc.html that P2-F4 builds,
+// app"): each frame of design/phase2/Technician App.dc.html that the app builds,
 // beside the built app in the same state, at the frames' 390 px.
 //
 //   npm run build:tech -- --env local && npm run fidelity:tech

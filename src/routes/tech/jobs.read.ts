@@ -18,7 +18,7 @@ export function registerTechJobReads(app: App): void {
     const { technicianId } = technicianOf(c);
     const now = c.var.deps.now();
     const date = c.req.valid("query").date ?? indiaDate(now);
-    // Nothing before yesterday: paging back through every date read every past client's card (FLD-18).
+    // Nothing before yesterday: paging back through every date read every past client's card.
     if (!listableDate(date, now)) return refuse(c, "invalid_request", ["date"]);
     const { addressUnlockHour } = await opsInputs(c);
     return c.json({ date, jobs: await jobsOn(c.env.DB, technicianId, date, now, addressUnlockHour) }, 200);

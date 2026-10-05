@@ -53,7 +53,7 @@ const PERSONAL_FIELDS = [
   "notes",
   "client_note",
   // An address's coordinates, and a phone's own, which locate a client's home
-  // as surely as the street does (the technician app's check-in, P2-M4).
+  // as surely as the street does (the technician app's check-in).
   "lat",
   "lng",
   "latitude",

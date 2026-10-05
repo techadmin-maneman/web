@@ -1,5 +1,5 @@
 // A pincode launch's alerts leave ten a minute however they go: held back on the queue, or sent again by the sweeper
-// once a lost message or an outage has kept them (BK-39, PS-37). NOW is Monday 21 September 2026, 12 noon in India.
+// once a lost message or an outage has kept them. NOW is Monday 21 September 2026, 12 noon in India.
 // Every name and number here is made up.
 
 import { env } from "cloudflare:workers";

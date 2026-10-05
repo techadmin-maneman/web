@@ -52,7 +52,7 @@ export const NEXT_VISIT_DAYS: NextVisitDays = {
   first_fit_to_book: 7,
   horizon: 45,
   invoice_prompt: 14,
-  // The owner's supplier takes about a month to make one (the 2 Oct audit, FLD-41).
+  // The owner's supplier takes about a month to make one.
   replacement_order_lead: 30,
 };
 

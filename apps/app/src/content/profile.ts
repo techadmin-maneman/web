@@ -97,7 +97,7 @@ export const profile = {
     withdraw: "Withdraw this change",
     failed: "That didn’t go through. Try again.",
     limited: "You’ve started three changes today. Try again tomorrow.",
-    // What ops decided about the last change, for 30 days after (OPS-09). The reason is ops' own words.
+    // What ops decided about the last change, for 30 days after. The reason is ops' own words.
     confirmed: (number: string, date: string) => `Your number was changed to ${number} on ${date}.`,
     rejected: (number: string, date: string) => `On ${date} we didn’t change your number to ${number}.`,
     why: (reason: string) => `Our reason: ${reason}`,

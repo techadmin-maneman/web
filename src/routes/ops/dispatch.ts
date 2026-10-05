@@ -177,7 +177,7 @@ const BoardSchema = z
 
 /**
  * The job as the board the move was made from showed it. If either differs from the job now, another ops user
- * has moved it since, and nothing is written (FEO-05).
+ * has moved it since, and nothing is written.
  */
 const EXPECTED = {
   expected_technician_id: z

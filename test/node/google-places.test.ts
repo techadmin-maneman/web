@@ -119,7 +119,7 @@ describe("suggestions", () => {
   });
 });
 
-// PLAT-44: during the Google key's refusal the logs held no line per call, so its cause had to be found from outside.
+// During the Google key's refusal the logs held no line per call, so its cause had to be found from outside.
 describe("the log", () => {
   it("has a line for each call to Google, by step, with its status and time, and never the key", async () => {
     const { provider } = watched();

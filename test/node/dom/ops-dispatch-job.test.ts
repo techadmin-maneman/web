@@ -1,6 +1,6 @@
 // What the dispatch board reasons about a job in hand (apps/ops/src/dispatch/job.ts),
 // and the days left that every queue counts (apps/ops/src/lib/due.ts). Neither had a
-// test below the browser, where the board's fakes stood in (FEO-34).
+// test below the browser, where the board's fakes stood in.
 
 import { describe, expect, it } from "vitest";
 import type { Block, BoardRow, Unassigned } from "../../../apps/ops/src/api.ts";
@@ -117,7 +117,7 @@ describe("where a job stands, and what a move changes", () => {
     expect(changesTime(onBoard(), { technician: ROW, date: "2025-09-20", window: "morning" })).toBe(true);
   });
 
-  // BK-17: a 09:00 visit whose start has passed moves to the window's next start, which the client is told of.
+  // A 09:00 visit whose start has passed moves to the window's next start, which the client is told of.
   it("changes the time when the start the move lands on differs, though the day and window do not", () => {
     const sameWindow = { technician: ROW, date: "2025-09-19", window: "morning" } as const;
     expect(changesTime(onBoard(), sameWindow, "2025-09-19T05:00:00.000Z")).toBe(true);
@@ -160,7 +160,7 @@ describe("where a job stands, and what a move changes", () => {
     expect(changeOf(block({ status: "terminated" }), after)).toBeNull();
   });
 
-  // OIA-03, BK-21: a link names the visit, and the board opens its drawer from the block it finds.
+  // A link names the visit, and the board opens its drawer from the block it finds.
   it("finds a visit's block on a technician's day, and nothing for a visit it does not hold", () => {
     const tuesday = block({ appointment_id: "a7" });
     const board = { technicians: [{ ...ROW, days: [{ date: "2025-09-23", blocks: [block(), tuesday] }] }] };

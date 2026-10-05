@@ -34,7 +34,7 @@ const refused = (code: ErrorCode | "network") => failed({ kind: errorKindOf(code
 export type Arrival = "open" | "hadLook" | "unavailable";
 
 /**
- * Asked on arrival, so that a visitor is not asked for a photograph the API would refuse (CLI-29). A look that failed
+ * Asked on arrival, so that a visitor is not asked for a photograph the API would refuse. A look that failed
  * does not count, so its visitor may try another photograph. Unanswered, the visitor starts, as before.
  */
 export async function onArrival(): Promise<Arrival> {

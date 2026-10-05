@@ -87,7 +87,7 @@ beforeEach(async () => {
 });
 
 describe("referral codes", () => {
-  // PS-54: six random characters, too many to guess.
+  // Six random characters, too many to guess.
   it("are the client's initials and six random characters, with none that look alike", () => {
     const codes = Array.from({ length: 500 }, () => newReferralCode("Rohit Malhotra"));
     expect(codes.every((code) => /^RM[A-HJ-NP-Z2-9]{6}$/.test(code))).toBe(true);
@@ -96,7 +96,7 @@ describe("referral codes", () => {
     expect(newReferralCode("Ishaan Oberoi")).toMatch(/^XX/);
   });
 
-  // PS-61: the app showed Refer to the fitted alone, but the API made a code for any client signed in.
+  // The app showed Refer to the fitted alone, but the API made a code for any client signed in.
   it("are a fitted client's alone: before a first fit, Refer and the card answer not_fitted", async () => {
     const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
     for (const [method, path] of [
@@ -126,7 +126,7 @@ describe("referral codes", () => {
     const again = await (await request(client(), "/api/refer", { headers: { Cookie: cookie } })).json();
     expect(again).toEqual({
       code: first.code,
-      // Locally the site, where /r/:code is served, is on :4321; mm-api on :8787 has no such page (LIFE-17).
+      // Locally the site, where /r/:code is served, is on :4321; mm-api on :8787 has no such page.
       link: `http://localhost:4321/r/${first.code}`,
       named: false,
       credits: { visits: 0, earliest_expiry: null, expiring_visits: 0 },
@@ -224,7 +224,7 @@ describe("what a referral earns, for the pages that say it", () => {
   });
 });
 
-// CP-12 of the audit, 2 October 2026: an invited friend was never reminded in the app of the visits the invite
+// An invited friend was never reminded in the app of the visits the invite
 // promised them.
 describe("the invite a client came with, on their Home", () => {
   const FRIEND_ID = "77777777-7777-4777-8777-777777777777";
@@ -306,7 +306,7 @@ describe("GET /api/pincodes/:pin", () => {
     expect((await request(site(), "/api/pincodes/012345")).status).toBe(400);
   });
 
-  // BK-27 and CP-25 of the audit, 2 October 2026: "We come to Sec37 Noida", the post office's name for the area.
+  // "We come to Sec37 Noida", the post office's name for the area.
   it("names no area ops have not named yet, so the page names the city", async () => {
     await pincode("122003", "Sec37", true, false);
     expect(await (await request(site(), "/api/pincodes/122003")).json()).toEqual({
@@ -384,7 +384,6 @@ describe("POST /api/r/:code/consultation", () => {
     expect(await unknown.json()).toMatchObject({ state: "booked", credits: false, invite: "unknown" });
   });
 
-  // W8 of the audit, 24 September 2026 (BIZ-12, REQ-06).
   it("says an invite held on a waitlist has expired once its area launched over 12 months ago, and grants nothing", async () => {
     const FRIEND_ID = "66666666-6666-4666-8666-666666666666";
     await env.DB.prepare(
@@ -633,7 +632,7 @@ describe("POST /api/r/:code/waitlist", () => {
     ]);
   });
 
-  // PS-23: anyone can join a list with a number, and once could attribute a client who came on their own, and switch
+  // Anyone can join a list with a number, and once could attribute a client who came on their own, and switch
   // their launch alert back on.
   describe("for a number already in the funnel", () => {
     const KNOWN = "77777777-7777-4777-8777-777777777777";
@@ -761,7 +760,7 @@ describe("POST /api/r/:code/waitlist", () => {
   });
 });
 
-// The landing sends one Idempotency-Key per submission (FEO-21): pressing again after the answer was lost on the way
+// The landing sends one Idempotency-Key per submission: pressing again after the answer was lost on the way
 // gets the first answer back, and the friend is booked or listed once.
 describe("POST /api/r/:code/*: the Idempotency-Key", () => {
   const keyed = (body: object, key: string) => ({
@@ -849,7 +848,7 @@ describe("the credit ledger", () => {
         .credits;
     expect(await me()).toBeNull();
     await grantCredits(env.DB, { personId: REFERRER, visits: 3, source: "ops", sourceId: "o1", now: NOW }).run();
-    // To the end of 21 September 2027 in India, a year on (BIZ-14).
+    // To the end of 21 September 2027 in India, a year on.
     expect(await me()).toEqual({ visits: 3, earliest_expiry: "2027-09-21T18:29:59.999Z", expiring_visits: 3 });
     // A later grant ends later, so Home can say how many end first.
     await grantCredits(env.DB, {

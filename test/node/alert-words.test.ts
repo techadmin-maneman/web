@@ -1,6 +1,6 @@
 // Alerts reach ops, on the Tasks board and on WhatsApp, so each is an instruction in ops' words. An environment
-// variable, a script, a repository path or an ADR number belongs in the structured log beside it (the 2 Oct audit,
-// CP-29); the runbook is named by its section, as ops find it.
+// variable, a script, a repository path or an ADR number belongs in the structured log beside it; the
+// runbook is named by its section, as ops find it.
 
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";

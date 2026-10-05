@@ -1,6 +1,6 @@
 // What the client app says, in one register: no back-office word (slot, hold, session, piece), no stiff phrase
-// ("just now", "Please try again", "You are offline"), and "Sign in" everywhere (the 2 Oct audit, CP-13, CP-14, CP-15
-// and CP-48). The consent notices are left out: they are kept word for word as each consent was given.
+// ("just now", "Please try again", "You are offline"), and "Sign in" everywhere. The consent
+// notices are left out: they are kept word for word as each consent was given.
 
 import { describe, expect, it } from "vitest";
 import * as app from "../../apps/app/src/content.ts";

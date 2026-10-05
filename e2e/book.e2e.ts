@@ -126,7 +126,7 @@ async function bookHere(page: Page): Promise<void> {
   await fillAndBook(page);
 }
 
-/** What /book says beside the invite this browser remembers, before it sends it (PS-24). */
+/** What /book says beside the invite this browser remembers, before it sends it. */
 const TOLD = "You have an invite. Whoever invited you is told when you are fitted. That is when the 3 visits land.";
 
 test("the page introduces itself, with no invite and no card", async ({ page }) => {
@@ -188,7 +188,7 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
-// BK-27 and CP-25 of the audit, 2 October 2026: "We come to Masjid Moth", the post office's name for the area.
+// "We come to Masjid Moth", the post office's name for the area.
 test("greets a served pincode by its city until ops name its area", async ({ page }) => {
   await mockApi(page);
   await page.route("**/api/pincodes/*", (route) => route.fulfill({ json: { ...SERVED, area: null } }));
@@ -210,7 +210,7 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   await plan.getByText("Consultation and fit · three hours").click();
   await expect(plan.getByRole("radio", { name: "Consultation and fit · three hours" })).toBeChecked();
   await expect(page.getByText(/^Starts in the morning or the afternoon\./)).toBeVisible();
-  // CP-20: the page's heading follows what it books.
+  // The page's heading follows what it books.
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a consultation and fit");
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -223,7 +223,7 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
 
-  // PS-10: nothing is booked for the number until the WhatsApp code sent to it is entered.
+  // Nothing is booked for the number until the WhatsApp code sent to it is entered.
   await expect(page.getByText("Sent on WhatsApp to +91 98100 00000.", { exact: false })).toBeVisible();
   await expect(page.getByLabel("WhatsApp code")).toBeFocused();
   expect(requests).toHaveLength(0);
@@ -236,7 +236,7 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   await expect(page.getByText("Booking received")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ one_visit: true, window: "morning", consent: true, number_code_id: NUMBER_CODE_ID });
-  // Where the hair loss is was skipped, so nothing is said of it (BK-60).
+  // Where the hair loss is was skipped, so nothing is said of it.
   expect(sent).not.toHaveProperty("loss_extent");
 });
 
@@ -296,7 +296,7 @@ async function bookOneVisitWithCode(page: Page, code: string): Promise<void> {
 }
 
 // A discount code for the one visit, on /book only (docs/decisions/0108-discount-codes.md), which no board draws.
-// MON-22 and CP-23: a refused code was said by the button, far below its box, and one that applied was never said.
+// A refused code was said by the button, far below its box, and one that applied was never said.
 test("says a wrong code under its box, and what a right one takes off once booked", async ({ page }) => {
   let applies = false;
   const requests = await mockApi(page);
@@ -330,7 +330,7 @@ test("says a wrong code under its box, and what a right one takes off once booke
   expect(sent).toMatchObject({ one_visit: true, discount_code: "WEDDNG25" });
 });
 
-// CP-23: another booking may take a code's last use between its check and the hold, and the booking stands without it.
+// Another booking may take a code's last use between its check and the hold, and the booking stands without it.
 test("says when the code sent could not be applied, and that the booking stands without it", async ({ page }) => {
   await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true, discount_code: null } } });
   await bookOneVisitWithCode(page, "weddng25");
@@ -418,7 +418,7 @@ test("a booking without the address is stopped at the form, each part it needs m
   });
 });
 
-// PS-06: whoever typed the number may not be its owner, so every number is answered alike. The details go to the
+// Whoever typed the number may not be its owner, so every number is answered alike. The details go to the
 // number on WhatsApp, and the app opens with the number filled in.
 test("every number is sent to WhatsApp, and offered the app with the number filled in", async ({ page }) => {
   await mockApi(page);
@@ -452,7 +452,7 @@ test("says nothing about an invite to someone who came here directly", async ({ 
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  // CP-20: the page is headed and introduced once: the form beneath it repeats neither.
+  // The page is headed and introduced once: the form beneath it repeats neither.
   await expect(page.getByRole("heading", { name: "Book a free consultation" })).toHaveCount(1);
   await expect(page.getByText(/^Your technician measures your scalp and matches your colour/)).toBeVisible();
   await expect(page.getByText("An hour, and free. Or have your fit in the same visit.")).toHaveCount(0);
@@ -462,7 +462,7 @@ test("says nothing about an invite to someone who came here directly", async ({ 
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByRole("button", { name: "Add me to the list" })).toBeVisible();
-  // CP-20: where we do not come yet, the page no longer offers to book.
+  // Where we do not come yet, the page no longer offers to book.
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Not in your area yet");
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 });
@@ -485,7 +485,7 @@ test("a pincode we do not serve takes the number, with the launch alert offered"
   expect(requests[0]?.postDataJSON()).toMatchObject({ contact_consent: true, launch_alert: true });
 });
 
-// FEO-17: the lead is the conversion paid campaigns are bought for, whichever answer the pincode gave.
+// The lead is the conversion paid campaigns are bought for, whichever answer the pincode gave.
 test("a booking and a waitlist are both counted, with nothing personal", async ({ page }) => {
   await mockApi(page);
   await visit(page, "/book");
@@ -551,7 +551,7 @@ test("a friend who opened an invite books here with it, and is told the invite's
   expect(await remembered(page)).toBeNull();
 });
 
-// PS-24: a friend who would rather their referrer were not told books without the invite.
+// A friend who would rather their referrer were not told books without the invite.
 test("a friend who opened an invite may book here without it, and the browser forgets it", async ({ page }) => {
   const requests = await mockApi(page);
   await openInvite(page);
@@ -588,7 +588,7 @@ test("a friend who opened an invite joins a waitlist here with it, and is told t
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, invite_told: true });
   await expect(page.getByText(/The invite holds for 12 months from when we start coming to 400050\./)).toBeVisible();
-  // Nobody who left "Tell me when you launch" unticked is promised a message they will never get (BK-37).
+  // Nobody who left "Tell me when you launch" unticked is promised a message they will never get.
   await expect(page.getByText(/We’ll message you on WhatsApp/)).toHaveCount(0);
   expect(await remembered(page)).toBeNull();
 });
@@ -674,7 +674,7 @@ test("booking through WhatsApp for now is confirmed as a request, not refused", 
   await expect(page.getByRole("button", { name: "Book the consultation" })).toBeHidden();
 });
 
-// UX-21: an empty submit left focus on the button, with the first errors two or three screens above it.
+// An empty submit left focus on the button, with the first errors two or three screens above it.
 test("an empty submit shows each error, announced, brings the first into view, and sends nothing", async ({ page }) => {
   const requests = await mockApi(page);
   await visit(page, "/book");
@@ -696,7 +696,7 @@ test("an empty submit shows each error, announced, brings the first into view, a
   expect(requests).toHaveLength(0);
 });
 
-// BK-28, CP-22: a number starting with 5 passed the form, and the API's refusal read "Something went wrong at our end".
+// A number starting with 5 passed the form, and the API's refusal read "Something went wrong at our end".
 test("a number that is not a mobile is marked at its field, focused, and not sent", async ({ page }) => {
   const requests = await mockApi(page);
   await openForm(page);
@@ -714,7 +714,7 @@ test("a number that is not a mobile is marked at its field, focused, and not sen
   expect(requests).toHaveLength(0);
 });
 
-// PS-57: our WhatsApp messages greet people by this name, so a link typed as one is never sent.
+// Our WhatsApp messages greet people by this name, so a link typed as one is never sent.
 test("a name that is not letters is marked at its field, focused, and not sent", async ({ page }) => {
   const requests = await mockApi(page);
   await openForm(page);
@@ -731,7 +731,7 @@ test("a name that is not letters is marked at its field, focused, and not sent",
   expect(requests).toHaveLength(0);
 });
 
-// BK-28, UX-21: a refusal naming fields was said by the button as our fault, with nothing marked.
+// A refusal naming fields was said by the button as our fault, with nothing marked.
 test("the fields the API refuses are marked where they are, the first focused, and not blamed on us", async ({
   page,
 }) => {
@@ -771,7 +771,7 @@ test("an empty waitlist submit marks all three fields, focuses the name, and cou
   expect(requests).toHaveLength(0);
 });
 
-// BK-26: every day and window was drawn open, so a full one failed only after the whole form was filled in. The
+// Every day and window was drawn open, so a full one failed only after the whole form was filled in. The
 // strip's first two days are Saturday 3 and Sunday 4 October.
 test("draws full days and windows closed, and starts on the first open one", async ({ page }) => {
   await page.clock.setFixedTime(NOON_2_OCTOBER);
@@ -852,7 +852,7 @@ test("a fortnight with nothing open says so, and offers WhatsApp", async ({ page
   await expect(page.getByRole("group", { name: "Pick a date" }).getByRole("radio", { disabled: false })).toHaveCount(0);
 });
 
-// BK-60, UX-38: Back after the pincode's answer, or after the confirmation, left /book and lost everything typed.
+// Back after the pincode's answer, or after the confirmation, left /book and lost everything typed.
 test("Back steps back through the page, and Forward returns to the confirmation", async ({ page }) => {
   await mockApi(page);
   await visit(page, "/book");
@@ -876,7 +876,7 @@ test("Back steps back through the page, and Forward returns to the confirmation"
   await expect(page.getByText("Booking received")).toBeVisible();
 });
 
-// BK-60, UX-33: fourteen tiles read "Sat 31 … Fri 6" with no month, and a screen reader heard "Sat 31".
+// Fourteen tiles read "Sat 31 … Fri 6" with no month, and a screen reader heard "Sat 31".
 test("the date strip names its months, and each day in full to a screen reader", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-10-23T06:00:00Z"));
   await mockApi(page);
@@ -892,7 +892,7 @@ test("the date strip names its months, and each day in full to a screen reader",
   await expect(days.nth(8)).toHaveAccessibleName("Sunday 1 November");
 });
 
-// BK-60, UX-38, CP-21: "Building, society or street" was followed by "Street (optional)", and every optional part
+// "Building, society or street" was followed by "Street (optional)", and every optional part
 // stood open.
 test("the address asks for the street once, and folds the floor, tower and landmark until asked", async ({ page }) => {
   const requests = await mockApi(page);
@@ -919,7 +919,7 @@ test("the address asks for the street once, and folds the floor, tower and landm
   });
 });
 
-// BK-60: everyone who skipped the question was recorded as crown thinning.
+// Everyone who skipped the question was recorded as crown thinning.
 test("chooses nothing for the visitor where the hair loss is", async ({ page }) => {
   await mockApi(page);
   await visit(page, "/book");
@@ -930,7 +930,7 @@ test("chooses nothing for the visitor where the hair loss is", async ({ page }) 
   for (const choice of await extent.getByRole("radio").all()) await expect(choice).not.toBeChecked();
 });
 
-// BK-60, UX-33: an empty check blamed the input, and "Change the pincode" was a 58 x 20 px target.
+// An empty check blamed the input, and "Change the pincode" was a 58 x 20 px target.
 test("an empty pincode is asked for, and Change is a full-size target", async ({ page }) => {
   await mockApi(page);
   await visit(page, "/book");

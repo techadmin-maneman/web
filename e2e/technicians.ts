@@ -1,7 +1,7 @@
 // The technicians the browser tests' visits are with. The local database is
 // kept from run to run, and each seed used to add a technician of its own every
-// run, so the local scheduler came to offer bookings to 155 "Imran Qureshi"s
-// (LIFE-17). Each seed now names the same one every run. There are three,
+// run, so the local scheduler came to offer bookings to 155 "Imran Qureshi"s.
+// Each seed now names the same one every run. There are three,
 // because the booking tests all reach for the same first free day and need
 // room for each other (e2e/app/picking.ts).
 

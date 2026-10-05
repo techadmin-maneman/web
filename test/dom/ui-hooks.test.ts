@@ -77,7 +77,7 @@ describe("an async read", () => {
     expect(valueOr(hook.current()[0], 0)).toBe(7);
   });
 
-  // P3-24: a read that rejected left the screen waiting for ever.
+  // A read that rejected left the screen waiting for ever.
   it("settles as failed when it rejects, so no screen waits for ever", async () => {
     const reader = () => Promise.reject(new Error("the store would not open"));
     const hook = render(() => useAsync(reader));

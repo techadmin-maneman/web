@@ -7008,7 +7008,7 @@ export interface components {
                 /** @description In paise: what was kept. */
                 amount: number;
             } | null;
-            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
+            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled. */
             no_show: components["schemas"]["NoShowNote"] | null;
             /** @description The discount code the visit was paid with; null for none, and on a late fee. */
             discount_code: {

@@ -17,7 +17,7 @@ export const payments = {
   charge: "Charge",
   charged: "Charged",
   evidence: (change: "cancelled" | "moved", at: string, visit: string) => `${change} ${at}, visit was ${visit}`,
-  // The design draws no visit the client was not home for (LIFE-07).
+  // The design draws no visit the client was not home for.
   noShow: {
     meta: (note: { waited_minutes: number }) => `not home, we waited ${String(note.waited_minutes)} min`,
     label: "Not home",
@@ -39,7 +39,7 @@ export const payments = {
     onItsWay: "Link on its way by text",
   },
   /**
-   * The free service visits among the payments (LIFE-14). Board E1 draws a visit one covered: "Service visit ·
+   * The free service visits among the payments. Board E1 draws a visit one covered: "Service visit ·
    * 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". Our words: all of it, in the reward's
    * one name, which the row's name or meta says, so its status and count need not.
    */

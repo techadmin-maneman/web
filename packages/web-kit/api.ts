@@ -1,5 +1,4 @@
-// The one way the front ends call mm-api (ADR 0037's "API client"; FEA-30,
-// FEA-40, FEO-29, FEO-30). Each front end makes its client from its own
+// The one way the front ends call mm-api (ADR 0037's "API client"). Each front end makes its client from its own
 // surface's document, which `npm run openapi` writes into its api-schema.ts:
 //
 //   const client = createClient<paths, ErrorCode>({ onSessionEnded: ... });

@@ -1,5 +1,5 @@
 // A mobile number as the console shows it, wherever it shows one: the queues
-// and the dispatch board alike (OPS-21).
+// and the dispatch board alike.
 
 import { ERASED_MOBILE } from "../content.ts";
 

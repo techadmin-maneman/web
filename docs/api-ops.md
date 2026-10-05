@@ -5955,7 +5955,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+      "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled."
     },
     "discount_code": {
       "anyOf": [

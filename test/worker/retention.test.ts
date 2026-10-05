@@ -21,7 +21,7 @@ beforeEach(async () => {
   await markDatabase();
 });
 
-// PS-31: names and numbers from the site's forms, the waitlist and check-in coordinates were kept for ever.
+// Names and numbers from the site's forms, the waitlist and check-in coordinates were kept for ever.
 describe("a person who never became a client", () => {
   it("is erased a year after their last sign of life, and not before", async () => {
     await person("10001");

@@ -1,10 +1,10 @@
 // A panel that opens over the page as a native modal <dialog>, as the ops
 // console's drawer and move picker do: the page behind it is inert and the
-// keyboard stays inside it (FEO-13). The panel takes the keyboard itself as it
+// keyboard stays inside it. The panel takes the keyboard itself as it
 // opens, so its name is read before its first control.
 //
 // Escape asks it to close, and the caller decides whether it may: not while a
-// move is being sent, or the same job could be sent twice (FEO-04). A browser
+// move is being sent, or the same job could be sent twice. A browser
 // that closes it anyway, as one may on a second Escape, finds it opened again
 // for as long as the caller still draws it.
 

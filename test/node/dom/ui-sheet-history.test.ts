@@ -1,5 +1,5 @@
 // An open sheet's own entry in the browser's history (packages/ui/sheetHistory.ts). Back used to leave the page
-// under an open sheet, and the client's note went with it (UX-09). Now Back closes the sheet and the page stays;
+// under an open sheet, and the client's note went with it. Now Back closes the sheet and the page stays;
 // the entry goes again with the sheet, so the next Back leaves the page as before. The browser's history is stood
 // in for, its Back landing a moment later, as a browser's does.
 

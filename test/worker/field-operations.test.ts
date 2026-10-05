@@ -1,4 +1,4 @@
-// P2-M4: the technician surface and dispatch. NOW is Monday 21 September 2026,
+// The technician surface and dispatch. NOW is Monday 21 September 2026,
 // 12 noon in India. Every name, number, address and photograph here is made up.
 //
 // The cases the milestone turns on:
@@ -163,7 +163,7 @@ const postAt = (at: Date, path: string, body: unknown, eventId: string, headers:
 
 /** Today's job starts at 13:00 in India. */
 const TODAY_START = new Date("2026-09-21T07:30:00.000Z");
-/** Today's job as a dispatch board loaded now shows it, which every move sends (FEO-05). */
+/** Today's job as a dispatch board loaded now shows it, which every move sends. */
 const AS_THE_BOARD_SHOWS_IT = { expected_technician_id: IMRAN, expected_starts_at: TODAY_START.toISOString() };
 const minutesAfterStart = (minutes: number) => new Date(TODAY_START.getTime() + minutes * 60_000);
 /** The event ID the app makes for a write queued that many minutes after the start. */
@@ -315,7 +315,7 @@ describe("checking in", () => {
     expect((await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01")).status).toBe(409);
   });
 
-  // FLD-24: a building pin far from its door blocked the whole job, and ops had no lever but the radius for everyone.
+  // A building pin far from its door blocked the whole job, and ops had no lever but the radius for everyone.
   it("passes outside the radius once ops let him in, keeping the distance and naming who let him", async () => {
     const refused = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, DOWN_THE_ROAD, "event-far-01");
     expect((await refused.json<{ passed: boolean }>()).passed).toBe(false);
@@ -442,7 +442,7 @@ describe("checking in", () => {
 });
 
 // ADR 0047 promised the arrival WhatsApp, and the no-show evidence reads its receipt; nothing ever wrote one, so the
-// only evidence was the day-before reminder (BIZ-22). The consumer sends it only with the client's consent to
+// only evidence was the day-before reminder. The consumer sends it only with the client's consent to
 // WhatsApp about visits, and records why when it does not.
 describe("the arrival WhatsApp", () => {
   const arrivals = () =>
@@ -537,7 +537,7 @@ describe("the phone's clock", () => {
     });
   });
 
-  // FLD-52: only the check-in kept what the phone said; a start held over a day kept no phone time at all.
+  // Only the check-in kept what the phone said; a start held over a day kept no phone time at all.
   it("keeps on every step what the phone said beside the time it was held to", async () => {
     await postAt(minutesAfterStart(10), `/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, uuidv7At(-90));
     // Queued an hour and a half before the booked start, by its event ID, and sent ten minutes after it.
@@ -697,8 +697,7 @@ describe("the outbox", () => {
 });
 
 // A check-in is measured and recorded only once it may land: the job is his, today's, and as his phone holds it. The
-// no-show's wait runs from the job's own technician's check-in, and a check-in sent again is answered as it landed
-// (FLD-11, PS-08, FLD-20).
+// no-show's wait runs from the job's own technician's check-in, and a check-in sent again is answered as it landed.
 describe("a check-in, guarded before it is measured", () => {
   const CHECK_IN = `/api/tech/jobs/${TODAY_JOB}/checkin`;
   const NO_SHOW = `/api/tech/jobs/${TODAY_JOB}/no-show`;
@@ -1349,7 +1348,7 @@ describe("dispatch", () => {
 });
 
 // A visit the technician has begun stays where he is working it: moved, his phone would carry on with a visit now
-// booked for another day or another technician (BK-05, FLD-08).
+// booked for another day or another technician.
 describe("dispatch, once the technician has begun", () => {
   const moveToSameerTomorrow = () =>
     opsPost("/api/dispatch/move", {
@@ -1493,7 +1492,7 @@ describe("dispatch, once the technician has begun", () => {
 });
 
 // A label is one piece's: typed again for another client, or this client's old piece typed as the new one, it would
-// record nothing for this client, or two clients' pieces as one (FLD-21). The technician corrects it on the phone.
+// record nothing for this client, or two clients' pieces as one. The technician corrects it on the phone.
 describe("a piece label already on record", () => {
   const REPLACEMENT = OTHER_JOB;
   const NEIGHBOUR = "11111111-1111-4111-8111-111111111112";
@@ -1676,7 +1675,7 @@ describe("leave", () => {
 });
 
 describe("the roster", () => {
-  // Read in one query for the whole roster, where it was once a query a technician (OPS-11).
+  // Read in one query for the whole roster, where it was once a query a technician.
   it("lists each technician's phones, the latest used first, beside their leave", async () => {
     await openTechnicianSession(env.DB, {
       technicianId: SAMEER,

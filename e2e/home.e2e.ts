@@ -80,7 +80,7 @@ test.describe("sticky bar and footer: the home page only", () => {
     expect(padding).toBe("72px");
   });
 
-  // UX-33: the bar sat outside every landmark, and at 1440 its button ran 1,350 px across the screen.
+  // The bar sat outside every landmark, and at 1440 its button ran 1,350 px across the screen.
   test("the bar is a landmark, and its button keeps to a phone's width", async ({ page }) => {
     await page.goto("/");
     const book = page
@@ -151,7 +151,7 @@ test.describe("home sections", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("A full head of hair, fitted at home.");
   });
 
-  // UX-20, PLAT-65: every phone downloaded the 2.3 MB film.
+  // Every phone downloaded the 2.3 MB film.
   test("the hero footage is muted, looped, inline, and the screen's own cut once it plays", async ({ page }) => {
     await page.goto("/");
     const video = page.locator("[data-hero-video]");
@@ -211,7 +211,7 @@ test.describe("home sections", () => {
     await expect(page.getByRole("link", { name: "Start the try-on" })).toHaveAttribute("href", "/try");
   });
 
-  // CP-45: nothing books a phone call, so no step promises one.
+  // Nothing books a phone call, so no step promises one.
   test("how it works: three numbered steps, from the consultation at home", async ({ page }) => {
     await page.goto("/");
     const steps = page.locator('[data-section="how"] ol > li');
@@ -284,7 +284,7 @@ test.describe("reduced motion", () => {
     await expect(phrases.last()).toHaveCSS("animation-name", "none");
   });
 
-  // UX-20, PLAT-65: a phone that never played the film still downloaded 1.4 MB of it.
+  // A phone that never played the film still downloaded 1.4 MB of it.
   test("the hero footage stays paused, none of it is fetched, and scrolling is instant", async ({ page }) => {
     const films = filmsFetched(page);
     await page.goto("/");
@@ -307,7 +307,7 @@ test.describe("a visitor saving data", () => {
     });
   });
 
-  // UX-20, PLAT-65: the film cost a phone on prepaid data 2.3 MB before the visitor chose anything.
+  // The film cost a phone on prepaid data 2.3 MB before the visitor chose anything.
   test("the hero footage waits for Play, and fetches nothing until then", async ({ page }) => {
     const films = filmsFetched(page);
     await page.goto("/");
@@ -323,7 +323,7 @@ test.describe("a visitor saving data", () => {
 });
 
 test.describe("WCAG on the home page", () => {
-  // A11Y-10: looping footage needs a way to stop it (WCAG 2.2.2).
+  // Looping footage needs a way to stop it (WCAG 2.2.2).
   test("the hero footage can be paused, and stays paused", async ({ page }) => {
     await page.goto("/");
     const video = page.locator("[data-hero-video]");
@@ -334,14 +334,14 @@ test.describe("WCAG on the home page", () => {
     expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
   });
 
-  // A11Y-02: a link in its sentence's colour must look like a link (WCAG 1.4.1).
+  // A link in its sentence's colour must look like a link (WCAG 1.4.1).
   test("the FAQ's WhatsApp link is underlined", async ({ page }) => {
     await page.goto("/");
     const link = page.locator('[data-section="faq"]').getByRole("link", { name: "ask on WhatsApp" });
     expect(await link.evaluate((element) => getComputedStyle(element).textDecorationLine)).toBe("underline");
   });
 
-  // A11Y-09: the fixed header and the sticky bar never cover what the keyboard has reached (WCAG 2.4.11).
+  // The fixed header and the sticky bar never cover what the keyboard has reached (WCAG 2.4.11).
   test("a focused link is never under the header or the sticky bar", async ({ page }) => {
     await page.goto("/");
     const height = page.viewportSize()?.height ?? 0;
@@ -357,7 +357,7 @@ test.describe("WCAG on the home page", () => {
     }
   });
 
-  // VIS-10, A11Y-03: the page keeps its width on a 320 px phone, its densest section open.
+  // The page keeps its width on a 320 px phone, its densest section open.
   test("the page fits a 320 px screen with every materials group open", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto("/");
@@ -376,7 +376,7 @@ test.describe("other pages", () => {
     await expect(page.locator("header")).toBeVisible();
   });
 
-  // UX-39, CP-51: a heading per topic, and the number to ask for erasure is a link a phone can tap.
+  // A heading per topic, and the number to ask for erasure is a link a phone can tap.
   test("privacy and terms carry their text under a heading per topic, with the number as a WhatsApp link", async ({
     page,
   }) => {
@@ -410,7 +410,7 @@ test.describe("other pages", () => {
     await expect(page.locator('footer a[href^="tel:"]')).toHaveCount(0);
   });
 
-  // PS-29: a reminder or the launch alert could be stopped only from the app.
+  // A reminder or the launch alert could be stopped only from the app.
   test("/stop stops the messages its link names in one tap, and forgets the link", async ({ page }) => {
     const sent: unknown[] = [];
     await page.route("**/api/stop", (route) => {
