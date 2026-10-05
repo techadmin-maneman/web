@@ -7,7 +7,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { SESSION_TTL_MS } from "../domain/sessions.ts";
 import type { AppEnv } from "./context.ts";
 
-export interface SessionCookie {
+interface SessionCookie {
   /** No Domain attribute: the cookie stays on the app's own host. */
   readonly set: (c: Context<AppEnv>, token: string) => void;
   readonly clear: (c: Context<AppEnv>) => void;
