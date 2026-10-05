@@ -9,6 +9,7 @@
 // view and not a second entry in the log. A client erased since has no tabs:
 // their page keeps only their visits and money (Erase.tsx).
 
+import { Icon } from "@maneman/ui/Icon";
 import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
@@ -79,9 +80,7 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
           rel="noopener noreferrer"
           aria-label={clients.whatsappLabel(record.name)}
         >
-          <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d={ICONS.whatsapp} />
-          </svg>
+          <Icon d={ICONS.whatsapp} size={16} className={styles.icon} />
           {clients.whatsapp}
         </a>
       </div>

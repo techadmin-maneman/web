@@ -731,13 +731,6 @@
 
 .icon {
   flex-shrink: 0;
-  width: var(--sp-16);
-  height: var(--sp-16);
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 /* ---- A narrow window, or 200% zoom: the tray goes beneath the grid (VIS-22) --- */

@@ -63,6 +63,12 @@ describe.each(APPS)("%s", (app) => {
     expect(copies).toEqual([]);
   });
 
+  // P3-35 (UX-15): an icon from the set is drawn by the shared Icon, at the set's stroke or the one it is given.
+  it("draws no icon from the set by hand", () => {
+    const own = code.filter((path) => /<path d=\{ICONS\./.test(read(path)));
+    expect(own).toEqual([]);
+  });
+
   // P3-34 (UX-16): a box's label, hint and error are tied together by the shared Field alone.
   it("keeps no field wrapper of its own", () => {
     const copies = code.filter((path) => /\bfunction (Field|Box)\b/.test(read(path)));

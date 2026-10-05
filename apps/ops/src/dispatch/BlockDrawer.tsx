@@ -14,6 +14,7 @@
 // check-in. A visit still ahead can be cancelled for the client here, and one
 // whose time has come closed by hand, each in its own panel.
 
+import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
@@ -129,9 +130,7 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d={ICONS.whatsapp} />
-                </svg>
+                <Icon d={ICONS.whatsapp} size={16} className={styles.icon} />
                 {copy.whatsapp(firstNameOf(person.name))}
               </ButtonLink>
               <OpsLink

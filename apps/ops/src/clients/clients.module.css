@@ -101,13 +101,6 @@
 /* The brand's WhatsApp glyph is a line, drawn as board A3's drawer draws it. */
 .icon {
   flex-shrink: 0;
-  width: var(--sp-16);
-  height: var(--sp-16);
-  fill: none;
-  stroke: currentcolor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 /* The number, which calls the client from a phone and reads as the rest of the line elsewhere. */
