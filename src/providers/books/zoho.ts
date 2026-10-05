@@ -22,7 +22,7 @@
 // "Invalid Element"), so they are sent only with a state code.
 //
 // Read from Books' documentation and not yet tried on the org: writing a discount onto a draft (docs/open-points.md,
-// item 181). scripts/release/zoho-contract-probe.ts tries every read on the org.
+// item 181). scripts/zoho-contract-probe.ts tries every read on the org.
 
 import { z } from "zod";
 import type { ZohoBooksSettings } from "../../config/settings.ts";
