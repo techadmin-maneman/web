@@ -1,20 +1,7 @@
 // What a client consents to (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them, and the purposes they name. A client switches each in src/domain/profile.ts;
+// The purposes, each with its own date. A client switches each in src/domain/profile.ts;
 // ops read them in the console (src/routes/ops/clients.ts) and never write one. Each consent also records where it
 // was given, as the owner ruled on 27 September 2026 (docs/decisions/0094-where-a-consent-was-given.md).
-
-export const RULES = [
-  "Each purpose carries its own date and can be switched by the client in the app. Ops can read them and never grant them. The purposes are:",
-  "photographs for the client's own record",
-  "photographs on referral cards",
-  "photographs in marketing",
-  "WhatsApp about visits",
-  "WhatsApp about launches",
-] as const;
-
-/** The owner's ruling of 27 September 2026 (docs/open-points.md, item 50). */
-export const SOURCE_RULE =
-  "A consent records where it was given: the site's form, a booking in the app, the profile's switch, the technician.";
 
 /** The five purposes, in the prompt's order. */
 export const CONSENT_PURPOSES = [

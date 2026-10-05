@@ -22,6 +22,7 @@ import {
   type Technician,
 } from "./occupancy.ts";
 import { heldMinutes } from "./visit-times.ts";
+import { insertRow } from "../lib/sql.ts";
 
 /**
  * What a hold is for: its service's kind and tier, and the length it is held and booked for, copied onto the hold as
@@ -146,44 +147,38 @@ export async function holdSlot(
       await db.batch([
         ...(input.alongside ?? []),
         ...lettingGo(db, now, from === "app" ? personId : null),
-        db
-          .prepare(
-            `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
-               amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind,
-               use_credit, pincode, late_fee_ex_gst, late_fee_gst_percent, confirmed_at, queued_at, tier, minutes,
-               grace_seconds, change_notice_hours, late_change_charge, no_show_charge, one_visit, pay_by_link)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
-               ?19, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27)`,
-          )
-          .bind(
-            id,
-            personId,
-            service.type,
-            date,
-            window,
-            technician.id,
-            start,
-            price.amount,
-            price.amount_ex_gst,
-            price.gst_percent,
-            expiresAt,
-            at,
-            moves?.visit.visitId ?? null,
-            moves?.kind ?? null,
-            useCredit ? 1 : 0,
-            input.pincode ?? null,
-            input.lateFee?.amount_ex_gst ?? null,
-            input.lateFee?.gst_percent ?? null,
-            confirmedAt,
-            service.tier,
-            service.minutes,
-            graceSeconds,
-            input.terms?.noticeHours ?? null,
-            input.terms?.lateCharge ?? null,
-            input.terms?.noShowCharge ?? null,
-            oneVisit ? 1 : 0,
-            input.payByLink === true ? 1 : 0,
-          ),
+        insertRow(db, "slot_holds", {
+          id,
+          person_id: personId,
+          type: service.type,
+          date,
+          window_label: window,
+          technician_id: technician.id,
+          start_unit: start,
+          amount: price.amount,
+          amount_ex_gst: price.amount_ex_gst,
+          gst_percent: price.gst_percent,
+          state: "held",
+          expires_at: expiresAt,
+          created_at: at,
+          updated_at: at,
+          moves_appointment_id: moves?.visit.visitId ?? null,
+          move_kind: moves?.kind ?? null,
+          use_credit: useCredit ? 1 : 0,
+          pincode: input.pincode ?? null,
+          late_fee_ex_gst: input.lateFee?.amount_ex_gst ?? null,
+          late_fee_gst_percent: input.lateFee?.gst_percent ?? null,
+          confirmed_at: confirmedAt,
+          queued_at: confirmedAt,
+          tier: service.tier,
+          minutes: service.minutes,
+          grace_seconds: graceSeconds,
+          change_notice_hours: input.terms?.noticeHours ?? null,
+          late_change_charge: input.terms?.lateCharge ?? null,
+          no_show_charge: input.terms?.noShowCharge ?? null,
+          one_visit: oneVisit ? 1 : 0,
+          pay_by_link: input.payByLink === true ? 1 : 0,
+        }),
         ...claimsOf(start, units, window).map((claim) =>
           db
             .prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, ?3, ?4)")

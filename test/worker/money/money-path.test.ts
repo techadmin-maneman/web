@@ -335,7 +335,9 @@ describe("the public form, with a client's number, while that client's hold is p
       name: "Rohit Malhotra",
     });
     const payments = createStubPayments();
-    expect(await confirmBooking(env.DB, payments, ordered.holdId, at(75), {})).toBe("booked");
+    expect(
+      await confirmBooking({ db: env.DB, payments: payments, now: at(75), log: createLogger() }, ordered.holdId),
+    ).toBe("booked");
     expect(payments.made.refunds).toEqual([]);
   });
 });
@@ -375,7 +377,9 @@ describe("a credit-covered move inside 24 hours", () => {
 
     // The move confirmed it free, on the credit, so the request that confirmed it booked it.
     const holdId = await replacementHold();
-    expect(await confirmBooking(env.DB, createStubPayments(), holdId, at(40), {})).toBe("already_booked");
+    expect(
+      await confirmBooking({ db: env.DB, payments: createStubPayments(), now: at(40), log: createLogger() }, holdId),
+    ).toBe("already_booked");
 
     const redeemed = await env.DB.prepare("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'redeem'").first();
     expect(redeemed).toEqual({ n: 1 });
@@ -404,7 +408,7 @@ async function paidHold(paymentId: string) {
 }
 
 const booking = (holdId: string, seconds: number, payments = createStubPayments()) =>
-  confirmBooking(env.DB, payments, holdId, at(seconds), {});
+  confirmBooking({ db: env.DB, payments: payments, now: at(seconds), log: createLogger() }, holdId);
 
 describe("booking a paid hold twice at once", () => {
   it("books it once when two tries take it at the same moment", async () => {

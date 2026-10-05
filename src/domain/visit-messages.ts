@@ -30,6 +30,7 @@ import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 import { firstNameOf } from "../lib/names.ts";
 import { PAYMENT_HELD, statusIn, VISIT_NOT_BEGUN } from "../config/statuses.ts";
 import { creditSpentOn } from "./visit-facts.ts";
+import { queueMessage } from "./queued-messages.ts";
 
 export const VISIT_MESSAGE_KINDS = [
   "consultation_confirmation",
@@ -117,12 +118,13 @@ export function visitMessage(
 ): { id: string; statement: D1PreparedStatement } {
   const id = crypto.randomUUID();
   const at = input.now.toISOString();
-  const statement = db
-    .prepare(
-      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-       VALUES (?1, ?2, ?3, ?4, 'appointment', ?5, 'queued', ?2)`,
-    )
-    .bind(id, at, input.personId, input.kind, input.appointmentId);
+  const statement = queueMessage(db, {
+    id,
+    personId: input.personId,
+    kind: input.kind,
+    subject: { kind: "appointment", id: input.appointmentId },
+    at,
+  });
   return { id, statement };
 }
 
@@ -614,10 +616,8 @@ export async function queueReminders(
       `SELECT a.id, a.person_id FROM appointments a
        WHERE a.window_start >= ?1 AND a.window_start < ?2 AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
          AND a.deleted_at IS NULL AND a.person_id IS NOT NULL AND a.type IS NOT NULL
-         AND NOT EXISTS (
-           SELECT 1 FROM outbound_messages m
-           WHERE m.subject_id = a.id AND m.kind = 'visit_reminder' AND m.created_at >= ?3
-         )
+         AND NOT EXISTS (SELECT 1 FROM outbound_messages m
+           WHERE m.subject_id = a.id AND m.kind = 'visit_reminder' AND m.created_at >= ?3)
        ORDER BY a.window_start LIMIT ?4`,
     )
     .bind(

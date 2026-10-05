@@ -17,11 +17,17 @@ import { queueMessage } from "./queue-message.ts";
 export async function bookHold(c: Context<AppEnv>, holdId: string): Promise<void> {
   const { deps, log } = c.var;
   try {
-    const outcome = await confirmBooking(c.env.DB, deps.payments, holdId, deps.now(), {
-      notify: (messageId) => queueMessage(c, messageId),
-      alertOnce: deps.alertOnce,
-      log,
-    });
+    const outcome = await confirmBooking(
+      {
+        db: c.env.DB,
+        payments: deps.payments,
+        now: deps.now(),
+        notify: (messageId) => queueMessage(c, messageId),
+        alertOnce: deps.alertOnce,
+        log,
+      },
+      holdId,
+    );
     log.info("booking", { hold_id: holdId, outcome });
   } catch (error) {
     log.warn("booking_failed", { hold_id: holdId, reason: failureReason(error) });

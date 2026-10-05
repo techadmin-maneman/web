@@ -13,6 +13,7 @@ import { bookableTypes, liveVisitOf, type LiveVisit } from "./availability.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { hoursOfWindow, NO_VISITS_CONSENT, type Composed } from "./visit-messages.ts";
 import { isOneOf } from "../lib/one-of.ts";
+import { queueMessage } from "./queued-messages.ts";
 
 export type SiteNoticeKind = Extract<
   MessageKind,
@@ -35,12 +36,13 @@ export function siteNotice(
 ): { id: string; statement: D1PreparedStatement } {
   const id = crypto.randomUUID();
   const at = input.now.toISOString();
-  const statement = db
-    .prepare(
-      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-       VALUES (?1, ?2, ?3, ?4, 'person', ?3, 'queued', ?2)`,
-    )
-    .bind(id, at, input.personId, input.kind);
+  const statement = queueMessage(db, {
+    id,
+    personId: input.personId,
+    kind: input.kind,
+    subject: { kind: "person", id: input.personId },
+    at,
+  });
   return { id, statement };
 }
 

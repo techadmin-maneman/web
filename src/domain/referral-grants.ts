@@ -15,7 +15,7 @@
 // item 93). One a discount code left nothing to pay is settled by the fit itself, as the owner ruled on 1 October
 // 2026, "Yes, once fitted" (docs/decisions/0108-discount-codes.md).
 
-import { indiaDate } from "../lib/india-time.ts";
+import { indiaDate, monthOf } from "../lib/india-time.ts";
 import { FRAUD_SIGNALS, REFERRAL_MONTHLY_CAP, type FraudSignal } from "../policy/fraud-holds.ts";
 import { inviteLapsed } from "../policy/invites.ts";
 import { creditExpiry, type ReferralReward } from "../policy/referral-reward.ts";
@@ -63,7 +63,7 @@ async function fraudSignals(db: D1Database, attribution: ReferralAttribution): P
     .first();
   if (sharedUpi !== null) met.add("shared_upi");
   // The month in India of this fit; the fits already granted or held for the referrer in it.
-  const month = indiaDate(new Date(attribution.firstFitStart)).slice(0, 7);
+  const month = monthOf(indiaDate(new Date(attribution.firstFitStart)));
   const { results } = await db
     .prepare(
       `SELECT a.window_start FROM referral_attributions r JOIN appointments a ON a.id = r.first_fit_appointment_id
@@ -71,7 +71,7 @@ async function fraudSignals(db: D1Database, attribution: ReferralAttribution): P
     )
     .bind(attribution.code, attribution.id)
     .all<{ window_start: string }>();
-  const thisMonth = results.filter((fit) => indiaDate(new Date(fit.window_start)).slice(0, 7) === month).length;
+  const thisMonth = results.filter((fit) => monthOf(indiaDate(new Date(fit.window_start))) === month).length;
   if (thisMonth >= REFERRAL_MONTHLY_CAP) met.add("monthly_cap");
   // A number belongs to one person at a time, and nobody is attributed to their own invite
   // (src/domain/referrals.ts), so the two can only share a number through a change of number:
@@ -156,8 +156,8 @@ function referralCredits(
 
 /**
  * The credits each side gets under `reward`, and the message to each; the attribution's new state, and the reward it
- * was given under, go with them. The friend is told their credits have landed, as the referrer is told of the fit
- * (LIFE-10). A side the reward gives nothing gets no credits; the friend is then told nothing, and the referrer is
+ * was given under, go with them. The friend is told their credits have landed, as the referrer is told of the fit.
+ * A side the reward gives nothing gets no credits; the friend is then told nothing, and the referrer is
  * still told of the fit.
  */
 function grantStatements(

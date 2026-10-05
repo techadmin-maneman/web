@@ -3,6 +3,9 @@
 
 import { PAYMENT_GRACE_SECONDS } from "../config/scheduling.ts";
 
+/** A hold's state column: held while it keeps its time, booked once it is a visit, released once let go. */
+export type HoldState = "held" | "booked" | "released";
+
 /**
  * When an unpaid hold stops keeping its time: its countdown, then the grace it was made with, or the committed two
  * minutes for a hold made before holds kept one.

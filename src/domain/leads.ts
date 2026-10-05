@@ -5,6 +5,7 @@
 // afterwards, from the crm-sync queue.
 
 import type { LossExtent } from "../config/booking.ts";
+import { personByMobile } from "./people.ts";
 
 export interface LeadAttribution {
   readonly utm_source?: string | undefined;
@@ -43,14 +44,15 @@ export async function saveBookingLead(db: D1Database, lead: BookingLead): Promis
   const attribution = lead.attribution;
 
   await db.batch([
-    // A returning person keeps their ID and their name, and becomes contactable. A form anyone can fill in with
-    // a number never renames the person it belongs to (docs/decisions/0068-a-paid-hold-is-kept.md).
-    db
-      .prepare(
-        `INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record) VALUES (?, ?, ?, ?, 1, ?)
-         ON CONFLICT (mobile_e164) DO UPDATE SET contactable = 1`,
-      )
-      .bind(lead.newPersonId, at, lead.mobileE164, lead.name, lead.testRecord ? 1 : 0),
+    // A returning person keeps their ID and their name, and becomes contactable.
+    personByMobile(db, {
+      id: lead.newPersonId,
+      mobile: lead.mobileE164,
+      name: lead.name,
+      testRecord: lead.testRecord,
+      contactable: "becomes",
+      at,
+    }),
 
     db
       .prepare(

@@ -1,13 +1,9 @@
 // What deleting an account deletes, and when (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rule as the prompt states it, and what stands in its way. A request is decided in the console
+// How soon a request is decided, and what stands in the way of the erasure. A request is decided in the console
 // (src/domain/deletion.ts); the erasure that follows, which deletes the photographs at once and blanks the person
 // while the invoices stay in Books, is src/domain/erasure.ts.
 
 import { VISIT_LIVE } from "../config/statuses.ts";
-
-export const RULES = [
-  "Photographs deleted within 7 days (config); invoices kept 8 years (config). Both need counsel's sign-off before launch, and the design flags this.",
-] as const;
 
 /** A request to delete an account is decided within this many days of it (docs/decisions/0049-dpdp.md). */
 export const DELETION_DECIDED_WITHIN_DAYS = 7;

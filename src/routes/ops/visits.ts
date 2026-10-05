@@ -217,7 +217,9 @@ async function letGo(c: Context<AppEnv>, holdId: string, reason: string): Promis
     requestId: c.var.requestId,
     detail: { reason },
   } as const;
-  await giveBack(c.env.DB, c.var.deps.payments, holdId, now, reason, [auditStatement(c.env.DB, entry, now)]);
+  await giveBack({ db: c.env.DB, payments: c.var.deps.payments, now }, holdId, reason, {
+    alongside: [auditStatement(c.env.DB, entry, now)],
+  });
 }
 
 interface Answer {
