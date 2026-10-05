@@ -629,12 +629,19 @@ describe("what queues a visit message", () => {
     });
     const hold = await answer.json<{ id: string }>();
     const notified: string[] = [];
-    const outcome = await confirmBooking(env.DB, createStubPayments(), hold.id, NOW, {
-      notify: (id) => {
-        notified.push(id);
-        return Promise.resolve();
+    const outcome = await confirmBooking(
+      {
+        db: env.DB,
+        payments: createStubPayments(),
+        now: NOW,
+        notify: (id) => {
+          notified.push(id);
+          return Promise.resolve();
+        },
+        log: createLogger(),
       },
-    });
+      hold.id,
+    );
     expect(outcome).toBe("booked");
     const { results } = await messages();
     expect(results).toEqual([

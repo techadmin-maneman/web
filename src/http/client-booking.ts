@@ -36,7 +36,7 @@ export async function moveTermsFor(
 /** Starts paying for a live hold: what Checkout opens with, or null for one that is free and sent to be booked. */
 export async function startCheckout(c: Context<AppEnv>, holdId: string, personId: string) {
   const { deps } = c.var;
-  const started = await startBooking(c.env.DB, deps.payments, holdId, personId, deps.now());
+  const started = await startBooking({ db: c.env.DB, payments: deps.payments, now: deps.now() }, holdId, personId);
   if (started === null) return null;
   if (started.kind === "free") {
     await bookHold(c, holdId);

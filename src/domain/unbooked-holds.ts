@@ -7,7 +7,7 @@ import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 import { paidNotBooked } from "./hold-stages.ts";
-import { type ConfirmOptions, type Confirmed } from "./booked-hold.ts";
+import { type Confirmed } from "./booked-hold.ts";
 import { confirmBooking } from "./bookings.ts";
 
 /** How long a confirmed hold may wait to be booked before the cron books it. */
@@ -67,9 +67,11 @@ async function bookUnbookedHold(
   hold: UnbookedHold,
   now: Date,
 ): Promise<Confirmed | null> {
-  const options: ConfirmOptions = { notify: pass.notify, alertOnce: pass.alertOnce, log: pass.log };
   try {
-    const outcome = await confirmBooking(db, pass.payments, hold.id, now, options);
+    const outcome = await confirmBooking(
+      { db, payments: pass.payments, now, notify: pass.notify, alertOnce: pass.alertOnce, log: pass.log },
+      hold.id,
+    );
     pass.log.info("unbooked_hold_booked", { hold_id: hold.id, outcome });
     if (outcome !== "being_booked") await pass.resolveAlert(unbookedAlertKey(hold.id));
     return outcome;

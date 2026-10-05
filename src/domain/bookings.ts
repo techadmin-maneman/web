@@ -2,7 +2,6 @@
 // visit, books it in one batch; a paid hold keeps its time until it is booked, by the half-hour pass if its request
 // failed (src/domain/unbooked-holds.ts), or is given back (src/domain/give-back.ts).
 
-import { createLogger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { paymentsTab } from "./alerts.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "./credits.ts";
@@ -20,6 +19,8 @@ import {
   type CapturedPayment,
   capturedFor,
   type Confirmed,
+  type BookingBasis,
+  type BookingContext,
 } from "./booked-hold.ts";
 import { moveInPlace, replacesBegunVisit, moveRefused, retireReplaced } from "./move-in-place.ts";
 import { giveBack, giveBackUnkept } from "./give-back.ts";
@@ -37,13 +38,8 @@ const BOOKING_TRIES = 2;
  * confirmed. Null when the hold is not live, when it is paid for by the link ops sent, or when a consultation or first
  * fit like it has been booked since.
  */
-export async function startBooking(
-  db: D1Database,
-  payments: PaymentsProvider,
-  holdId: string,
-  personId: string,
-  now: Date,
-): Promise<Started | null> {
+export async function startBooking(basis: BookingBasis, holdId: string, personId: string): Promise<Started | null> {
+  const { db, payments, now } = basis;
   for (let tries = 0; tries < BOOKING_TRIES; tries += 1) {
     const started = await tryStartBooking(db, payments, holdId, personId, now);
     if (started !== "price_changed") return started;
@@ -179,13 +175,9 @@ async function retakenInTime(
  * A refund asked of Razorpay is read again once the try holds the lease, since its `refunded_at` is set before the
  * call and kept once it goes through, even if the write that lets the hold go then fails.
  */
-export async function confirmBooking(
-  db: D1Database,
-  payments: PaymentsProvider,
-  holdId: string,
-  now: Date,
-  options: ConfirmOptions = {},
-): Promise<Confirmed> {
+export async function confirmBooking(context: BookingContext, holdId: string): Promise<Confirmed> {
+  const { db, now } = context;
+  const options: ConfirmOptions = context;
   const hold = await bookingHoldRow(db, holdId);
   if (hold === null) throw new Error("no such hold to book");
   if (hold.state === "booked") {
@@ -194,18 +186,18 @@ export async function confirmBooking(
   }
   const payment = await capturedFor(db, hold.razorpay_order_id);
   if (hold.person_erased_at !== null) {
-    await giveBack(db, payments, hold.id, now, "the client was erased");
+    await giveBack(context, hold.id, "the client was erased");
     return payment === null ? "lapsed" : "refunded";
   }
   if (paidInMoney(hold) && payment === null) {
     if (hold.confirmed_at === null) return "not_paid";
     // Only a capture confirms a paid hold, so this one's payment has since been refunded, by ops.
-    await giveBack(db, payments, hold.id, now, "its payment was refunded");
+    await giveBack(context, hold.id, "its payment was refunded");
     return "refunded";
   }
   const stillLetGo = hold.state === "released" && !(await retakenInTime(db, hold, payment, now));
   if (stillLetGo || (payment !== null && paidTooLate(hold, payment))) {
-    await giveBackUnkept(db, payments, hold, now, "lapsed", options);
+    await giveBackUnkept(context, hold, "lapsed");
     return payment === null ? "lapsed" : "refunded";
   }
 
@@ -213,11 +205,11 @@ export async function confirmBooking(
   try {
     const leased = (await bookingHoldRow(db, holdId)) ?? hold;
     if (leased.refunded_at !== null) {
-      await giveBack(db, payments, hold.id, now, "its payment was refunded");
+      await giveBack(context, hold.id, "its payment was refunded");
       return "refunded";
     }
-    if (leased.move_kind === "move") return await moveInPlace(db, payments, leased, now, options);
-    if (await replacesBegunVisit(db, leased)) return await moveRefused(db, payments, leased, now, options);
+    if (leased.move_kind === "move") return await moveInPlace(context, leased);
+    if (await replacesBegunVisit(db, leased)) return await moveRefused(context, leased);
     return await bookNewVisit(db, leased, now, options);
   } catch (error) {
     await releaseLease(db, hold.id);
@@ -346,7 +338,7 @@ function creditRedeem(db: D1Database, hold: HoldRow, now: Date): D1PreparedState
 async function alertIfNoCreditPaid(db: D1Database, booked: HoldRow, options: ConfirmOptions): Promise<void> {
   if (booked.use_credit !== 1 || booked.appointment_id === null) return;
   if (await creditRedeemedFor(db, booked.appointment_id)) return;
-  (options.log ?? createLogger()).warn("credit_visit_without_credit", { hold_id: booked.id });
+  options.log.warn("credit_visit_without_credit", { hold_id: booked.id });
   await options.alertOnce?.({
     key: `credit_visit_without_credit:${booked.id}`,
     message:

@@ -3,7 +3,6 @@
 
 import type { Dependencies } from "../dependencies.ts";
 import { confirmBooking } from "../domain/bookings.ts";
-import { type ConfirmOptions } from "../domain/booked-hold.ts";
 import { catchUpWithRazorpay } from "../domain/razorpay-catch-up.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
@@ -40,9 +39,9 @@ function holdBooker({ env, deps, log }: CatchUpRun): (holdId: string) => Promise
     const body = { message_id: messageId, request_id: REQUEST_ID } satisfies MessagingMessage;
     return enqueue(env.MESSAGE_QUEUE, body, { log, ifLost: "sweeper" });
   };
-  const options: ConfirmOptions = { notify, alertOnce: deps.alertOnce, log };
   return async (holdId) => {
-    const outcome = await confirmBooking(env.DB, deps.payments, holdId, deps.now(), options);
+    const context = { db: env.DB, payments: deps.payments, now: deps.now(), notify, alertOnce: deps.alertOnce, log };
+    const outcome = await confirmBooking(context, holdId);
     log.info("booking", { hold_id: holdId, outcome });
   };
 }

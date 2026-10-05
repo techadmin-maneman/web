@@ -22,6 +22,7 @@ import {
   request,
   savedAddress,
 } from "../helpers.ts";
+import { createLogger } from "../../../src/log.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -545,7 +546,9 @@ describe("moving a visit", () => {
       checkout: { amount: 400000, description: "Moving your visit to Mon 28 Sep" },
     });
 
-    expect(await confirmBooking(env.DB, payments, held.id, NOW, {})).toBe("not_paid");
+    expect(await confirmBooking({ db: env.DB, payments: payments, now: NOW, log: createLogger() }, held.id)).toBe(
+      "not_paid",
+    );
     await env.DB.prepare(
       `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, method, status,
          captured_at, created_at, updated_at)
@@ -554,7 +557,9 @@ describe("moving a visit", () => {
     )
       .bind(NOW.toISOString(), held.id, FEE)
       .run();
-    expect(await confirmBooking(env.DB, payments, held.id, NOW, {})).toBe("booked");
+    expect(await confirmBooking({ db: env.DB, payments: payments, now: NOW, log: createLogger() }, held.id)).toBe(
+      "booked",
+    );
     expect((await visitRow())?.window_start).toBe("2026-09-28T03:30:00.000Z");
     expect((await changes()).results).toEqual([
       expect.objectContaining({ kind: "moved", notice: "late", kept_amount: 400000, payment_id: FEE }),
@@ -581,7 +586,9 @@ describe("moving a visit", () => {
       .bind(NOW.toISOString(), held.id)
       .run();
 
-    expect(await confirmBooking(env.DB, createStubPayments(), held.id, NOW, {})).toBe("booked");
+    expect(
+      await confirmBooking({ db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger() }, held.id),
+    ).toBe("booked");
     const visits = await env.DB.prepare("SELECT status FROM appointments ORDER BY window_start").all();
     expect(visits.results).toEqual([{ status: "cancelled" }, { status: "scheduled" }]);
     expect((await visitRow())?.status).toBe("cancelled");
@@ -592,7 +599,9 @@ describe("moving a visit", () => {
     expect(old).toMatchObject({ charge: { change: "moved", amount: 200000 } });
 
     // Told again, nothing is booked or cancelled twice.
-    expect(await confirmBooking(env.DB, createStubPayments(), held.id, NOW, {})).toBe("already_booked");
+    expect(
+      await confirmBooking({ db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger() }, held.id),
+    ).toBe("already_booked");
     expect((await changes()).results).toHaveLength(1);
     const again = await env.DB.prepare("SELECT COUNT(*) AS n FROM appointments").first<{ n: number }>();
     expect(again?.n).toBe(2);
@@ -624,7 +633,9 @@ describe("moving a visit", () => {
     )
       .bind(NOW.toISOString(), held.id)
       .run();
-    expect(await confirmBooking(env.DB, createStubPayments(), held.id, NOW, {})).toBe("booked");
+    expect(
+      await confirmBooking({ db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger() }, held.id),
+    ).toBe("booked");
     expect((await visitRow())?.status).toBe("cancelled");
     // The visit moved is cancelled, so its use stands no more: the code counts the new visit's alone.
     const [code] = await listCodes(env.DB, NOW, "TENPC");
@@ -638,10 +649,15 @@ describe("moving a visit", () => {
     await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     await paidFor(held.id, "pay_new");
     await expect(
-      confirmBooking(failingAfterTheFirstBatch(env.DB), createStubPayments(), held.id, NOW, {}),
+      confirmBooking(
+        { db: failingAfterTheFirstBatch(env.DB), payments: createStubPayments(), now: NOW, log: createLogger() },
+        held.id,
+      ),
     ).rejects.toThrow("Network connection lost");
     expect((await visitRow())?.status).toBe("scheduled");
-    expect(await confirmBooking(env.DB, createStubPayments(), held.id, NOW, {})).toBe("already_booked");
+    expect(
+      await confirmBooking({ db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger() }, held.id),
+    ).toBe("already_booked");
     expect((await visitRow())?.status).toBe("cancelled");
   });
 
@@ -660,7 +676,9 @@ describe("moving a visit", () => {
       .bind(NOW.toISOString(), held.id, FEE)
       .run();
     await env.DB.prepare("UPDATE appointments SET status = 'in_progress' WHERE id = ?1").bind(VISIT).run();
-    expect(await confirmBooking(env.DB, payments, held.id, NOW, {})).toBe("refunded");
+    expect(await confirmBooking({ db: env.DB, payments: payments, now: NOW, log: createLogger() }, held.id)).toBe(
+      "refunded",
+    );
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_fee", amount: 400000 }]);
     expect((await visitRow())?.window_start).toBe(TUESDAY_MORNING);
   });
@@ -673,7 +691,9 @@ describe("moving a visit", () => {
     await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     await paidFor(held.id, "pay_fee");
     await checkedIn();
-    expect(await confirmBooking(env.DB, payments, held.id, NOW, {})).toBe("refunded");
+    expect(await confirmBooking({ db: env.DB, payments: payments, now: NOW, log: createLogger() }, held.id)).toBe(
+      "refunded",
+    );
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_fee", amount: 400000 }]);
     expect(await visitRow()).toMatchObject({ status: "scheduled", window_start: TUESDAY_MORNING });
   });
@@ -687,7 +707,9 @@ describe("moving a visit", () => {
     await paidFor(held.id, "pay_fee");
     await env.DB.prepare("UPDATE appointments SET technician_id = 't2' WHERE id = ?1").bind(VISIT).run();
 
-    expect(await confirmBooking(env.DB, payments, held.id, NOW, {})).toBe("refunded");
+    expect(await confirmBooking({ db: env.DB, payments: payments, now: NOW, log: createLogger() }, held.id)).toBe(
+      "refunded",
+    );
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_fee", amount: 400000 }]);
     expect(await visitRow()).toMatchObject({ window_start: TUESDAY_MORNING });
     const told = await env.DB.prepare("SELECT kind, subject_id FROM outbound_messages").all();
@@ -702,7 +724,9 @@ describe("moving a visit", () => {
     await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     await paidFor(held.id, "pay_new");
     await checkedIn();
-    expect(await confirmBooking(env.DB, payments, held.id, NOW, {})).toBe("refunded");
+    expect(await confirmBooking({ db: env.DB, payments: payments, now: NOW, log: createLogger() }, held.id)).toBe(
+      "refunded",
+    );
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_new", amount: 200000 }]);
     const visits = await env.DB.prepare("SELECT id, status FROM appointments").all();
     expect(visits.results).toEqual([{ id: VISIT, status: "scheduled" }]);
@@ -715,7 +739,10 @@ describe("moving a visit", () => {
     await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     await paidFor(held.id, "pay_new");
     await expect(
-      confirmBooking(failingAfterTheFirstBatch(env.DB), createStubPayments(), held.id, NOW, {}),
+      confirmBooking(
+        { db: failingAfterTheFirstBatch(env.DB), payments: createStubPayments(), now: NOW, log: createLogger() },
+        held.id,
+      ),
     ).rejects.toThrow("Network connection lost");
     await checkedIn();
 
@@ -724,7 +751,12 @@ describe("moving a visit", () => {
       told.push(alert.key);
       return Promise.resolve();
     };
-    expect(await confirmBooking(env.DB, createStubPayments(), held.id, NOW, { alertOnce })).toBe("already_booked");
+    expect(
+      await confirmBooking(
+        { db: env.DB, payments: createStubPayments(), now: NOW, alertOnce, log: createLogger() },
+        held.id,
+      ),
+    ).toBe("already_booked");
     expect((await visitRow())?.status).toBe("scheduled");
     expect(told).toEqual([`replaced_after_begun:${VISIT}`]);
   });
