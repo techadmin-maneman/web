@@ -76,6 +76,9 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
       {/* The new number: the one to confirm the change on. */}
       <Reach name={change.name} mobile={change.new_mobile} />
       <p className={styles.proven}>{copy.proven}</p>
+      {change.new_number_held_by !== null && (
+        <p className={styles.proven}>{copy.heldBy(change.new_number_held_by.name, change.new_number_held_by.client)}</p>
+      )}
       {asking && (
         <div className={styles.reason}>
           <label className={styles.reasonLabel} htmlFor={`reason-${change.id}`}>

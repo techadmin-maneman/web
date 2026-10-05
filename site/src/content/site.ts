@@ -243,7 +243,7 @@ export const founderNote = {
  */
 // PLACEHOLDER: the try-on's sentences await counsel with the notices (docs/open-points.md, item 146).
 const TRY_ON_PRIVACY =
-  "If you use the try-on, your photograph is used to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within thirty days, usually within the hour. Before the simulation is made, you give us your name and mobile number: we send the simulation to that number on WhatsApp, and it is never shown on this site; the simulation itself is kept for fourteen days. If you then book a visit while the simulation is kept, we keep a small copy of your photograph in your Mane Man account as your before photo, until you ask us to delete it, and the simulation until the photographs of your first fit are taken; you see both when you sign in.";
+  "If you use the try-on, your photograph is used to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within the hour, and in any case within thirty days. Before the simulation is made, you give us your name and mobile number: we send the simulation to that number on WhatsApp, and it is never shown on this site; the simulation itself is kept for fourteen days. If you then book a visit while the simulation is kept, we keep a small copy of your photograph in your Mane Man account as your before photo, until you ask us to delete it, and the simulation until the photographs of your first fit are taken; you see both when you sign in.";
 
 interface LegalSection {
   readonly heading: string;

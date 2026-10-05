@@ -1425,6 +1425,11 @@ export interface paths {
                                 name: string;
                                 old_mobile: string;
                                 new_mobile: string;
+                                /** @description Another record holding the new number: confirming takes it from one that never became a client, and is refused while a client holds it. Null when nobody else does. */
+                                new_number_held_by: {
+                                    name: string;
+                                    client: boolean;
+                                } | null;
                                 /** Format: date-time */
                                 requested_at: string;
                                 /**
@@ -6868,6 +6873,8 @@ export interface components {
             service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            /** @description Closed because nobody was home: a no-show. */
+            not_home: boolean;
             /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
             stage: ("booked" | "in_progress" | "done" | "closing") | null;
             /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
@@ -6936,6 +6943,8 @@ export interface components {
             service: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            /** @description Closed because nobody was home: a no-show. */
+            not_home: boolean;
             /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
             stage: ("booked" | "in_progress" | "done" | "closing") | null;
             /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */

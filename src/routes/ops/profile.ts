@@ -14,7 +14,7 @@ import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { type AuditAction, type AuditEntry } from "../../domain/audit.ts";
 import { decideDeletion, deletionDoneMessage, deletionsWaiting, type ErasedContact } from "../../domain/deletion.ts";
-import { changesAwaitingOps, decideNumberChange } from "../../domain/number-change.ts";
+import { changesAwaitingOps, decideNumberChange, type NumberHolder } from "../../domain/number-change.ts";
 import { NUMBER_CHANGE_WAITING_SINCE } from "../../domain/tasks.ts";
 import { queueContactSync } from "../../http/contact-sync.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -53,6 +53,13 @@ const numberChangesRoute = createRoute({
                   name: z.string(),
                   old_mobile: z.string(),
                   new_mobile: z.string(),
+                  new_number_held_by: z
+                    .union([z.object({ name: z.string(), client: z.boolean() }).strict(), z.null()])
+                    .openapi({
+                      description:
+                        "Another record holding the new number: confirming takes it from one that never became a " +
+                        "client, and is refused while a client holds it. Null when nobody else does.",
+                    }),
                   requested_at: z.iso.datetime(),
                   due: DueSchema,
                 })
@@ -147,6 +154,10 @@ const deletionDecisionRoute = createRoute({
   },
 });
 
+/** Who else holds a change's new number, as ops read it: whether they are a client, which refuses the change. */
+const heldByOf = (holder: NumberHolder | null) =>
+  holder === null ? null : { name: holder.name, client: !holder.neverAClient };
+
 /** A decision's audit entry, which the decision writes in its own batch. */
 function decisionAudit(
   c: Context<AppEnv>,
@@ -160,14 +171,8 @@ function decisionAudit(
 export function registerOpsProfile(app: App): void {
   app.openapi(numberChangesRoute, async (c) => {
     const changes = await changesAwaitingOps(c.env.DB, await routeReach(c));
-    const [names, since, inputs] = await Promise.all([
-      namesOf(
-        c.env.DB,
-        changes.map((change) => change.personId),
-      ),
-      waitingSince(c.env.DB),
-      opsInputs(c),
-    ]);
+    const people = changes.map((change) => change.personId);
+    const [names, since, inputs] = await Promise.all([namesOf(c.env.DB, people), waitingSince(c.env.DB), opsInputs(c)]);
     const due = (id: string, requestedAt: string) =>
       dueAt(new Date(since.get(id) ?? requestedAt), "number_change", inputs.taskSlaHours).toISOString();
     return c.json(
@@ -178,6 +183,7 @@ export function registerOpsProfile(app: App): void {
           name: names.get(change.personId) ?? "",
           old_mobile: change.oldMobileE164,
           new_mobile: change.newMobileE164,
+          new_number_held_by: heldByOf(change.newNumberHeldBy),
           requested_at: change.createdAt,
           due: due(change.id, change.createdAt),
         })),

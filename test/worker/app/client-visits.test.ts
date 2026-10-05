@@ -766,6 +766,9 @@ describe("GET /api/visits/:id and the photographs", () => {
       outcome: "no_show",
       no_show: { decision: "undecided", waited_minutes: 16 },
     });
+    // The list says it too, so a missed visit does not read as one done.
+    const listed = await (await get("/api/visits")).json<{ past: { id: string; not_home: boolean }[] }>();
+    expect(listed.past).toEqual([expect.objectContaining({ id: visit, not_home: true })]);
     await env.DB.prepare(
       "UPDATE no_show_cases SET decision = 'charged', charge = 'visit', kept_amount = 200000, refund_amount = 0",
     ).run();

@@ -149,8 +149,12 @@ export const tasks = {
      */
     at_risk_client: (weeks: number, due: string) =>
       `${String(weeks)} ${weeks === 1 ? "week" : "weeks"} since the last visit · due ${due}`,
-    /** "MM-STD-4417-C · due 1 Mar 2028". The board writes the supplier's lead time too; nothing records one. */
-    replacement_order: (piece: string, due: string) => `${piece} · due ${due}`,
+    /**
+     * "MM-ESS-4417-C · order by 1 Feb 2028, replace by 1 Mar 2028": the task falls due, and counts overdue, from the
+     * day the order must go in, the supplier's lead time before the piece is due.
+     */
+    replacement_order: (piece: string, orderBy: string, due: string) =>
+      `${piece} · order by ${orderBy}, replace by ${due}`,
     /**
      * "The piece was not ready · 20 Sep": book the visit that finishes it. The reason is in the
      * words the job sheet gives it, which ops set in Settings (docs/decisions/0087-consumables-and-stock.md).
