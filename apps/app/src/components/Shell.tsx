@@ -15,7 +15,7 @@ import { home, states, tabs } from "../content.ts";
 import { TAB_ICONS } from "../icons.ts";
 import type { Tab } from "../route.ts";
 import { useSession } from "../session.ts";
-import styles from "../home/shell.module.css";
+import styles from "./shell.module.css";
 
 /** A link within the app: the shared one, under the name the pages know it by. */
 export { Link as AppLink } from "@maneman/ui/router";

@@ -7,7 +7,7 @@
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { Button } from "@maneman/ui/Button";
 import { useId, type ReactNode } from "react";
-import styles from "../settings/settings.module.css";
+import styles from "./forms.module.css";
 
 interface Props {
   /** The check's heading. Without one, its first line names it, as taking a price back does. */
