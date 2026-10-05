@@ -409,7 +409,7 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     await rohit("fitted");
     const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" });
     const { hold_id: holdId } = await answer.json<{ hold_id: string }>();
-    expect(await startBooking(env.DB, payments, holdId, ROHIT, NOW)).toBeNull();
+    expect(await startBooking({ db: env.DB, payments: payments, now: NOW }, holdId, ROHIT)).toBeNull();
     expect(payments.made.orders).toEqual([]);
     expect(await holdOf(holdId)).toMatchObject({ state: "held", razorpay_order_id: null });
   });

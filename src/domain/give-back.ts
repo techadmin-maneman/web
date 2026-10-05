@@ -9,6 +9,8 @@ import {
   bookingHoldRow,
   type CapturedPayment,
   refundableFor,
+  type BookingBasis,
+  type BookingContext,
 } from "./booked-hold.ts";
 import { PAYMENT_REFUNDED, statusIn } from "../config/statuses.ts";
 
@@ -53,14 +55,16 @@ export class RefundUnanswered extends Error {
  * written in that batch only when this call made the refund.
  */
 export async function giveBack(
-  db: D1Database,
-  payments: PaymentsProvider,
+  basis: BookingBasis,
   holdId: string,
-  now: Date,
   reason: string,
-  alongside: readonly D1PreparedStatement[] = [],
-  ifRefunded: readonly D1PreparedStatement[] = [],
+  written: {
+    readonly alongside?: readonly D1PreparedStatement[];
+    readonly ifRefunded?: readonly D1PreparedStatement[];
+  } = {},
 ): Promise<GivenBack> {
+  const { db, payments, now } = basis;
+  const { alongside = [], ifRefunded = [] } = written;
   const hold = await bookingHoldRow(db, holdId);
   if (hold === null) throw new Error("no such hold to give back");
   if (hold.state === "booked") return { kind: "booked" };
@@ -96,24 +100,16 @@ export const autoRefundMarked = (db: D1Database, holdId: string, reason: AutoRef
  * hold go.
  */
 export async function giveBackUnkept(
-  db: D1Database,
-  payments: PaymentsProvider,
+  context: BookingContext,
   hold: HoldRow,
-  now: Date,
   reason: AutoRefundReason,
-  options: ConfirmOptions,
 ): Promise<GivenBack> {
+  const { db, now } = context;
   const message = refundedMessage(db, { personId: hold.person_id, holdId: hold.id, now });
-  const given = await giveBack(
-    db,
-    payments,
-    hold.id,
-    now,
-    AUTO_REFUND_NOTES[reason],
-    [],
-    [autoRefundMarked(db, hold.id, reason), message.statement],
-  );
-  if (given.kind === "refunded") await tellOfRefund(message.id, options);
+  const given = await giveBack(context, hold.id, AUTO_REFUND_NOTES[reason], {
+    ifRefunded: [autoRefundMarked(db, hold.id, reason), message.statement],
+  });
+  if (given.kind === "refunded") await tellOfRefund(message.id, context);
   return given;
 }
 

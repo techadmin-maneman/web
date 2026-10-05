@@ -990,7 +990,10 @@ describe("confirmBooking", () => {
     await grantCredits(env.DB, { personId: PERSON, visits: 2, source: "ops", sourceId: "o2", now: NOW }).run();
     const ordered = await heldAndOrdered();
 
-    const again = await confirmBooking(env.DB, createStubPayments(), ordered.holdId, at(5), { log: createLogger() });
+    const again = await confirmBooking(
+      { db: env.DB, payments: createStubPayments(), now: at(5), log: createLogger() },
+      ordered.holdId,
+    );
 
     expect(again).toBe("already_booked");
     expect((await visitsOf(PERSON, "service")).results).toHaveLength(1);
@@ -1067,7 +1070,7 @@ describe("money owed back on a hold", () => {
       .run();
     const payments = createStubPayments();
 
-    expect(await giveBack(env.DB, payments, ordered.holdId, NOW, "test")).toEqual({
+    expect(await giveBack({ db: env.DB, payments: payments, now: NOW }, ordered.holdId, "test")).toEqual({
       kind: "refunded",
       paymentId: "pay_part",
       amount: 150000,

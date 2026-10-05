@@ -1,6 +1,5 @@
 // A hold that moves a visit: the visit moved in place, or a replacement booked and the visit it replaces cancelled.
 
-import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { refundedMessage } from "./auto-refunds.ts";
 import { heldTimeFree } from "./hold-slot.ts";
 import { heldVisitTimes } from "./visit-times.ts";
@@ -8,7 +7,7 @@ import { hasBegun, visitBegun } from "./visit-begun.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage } from "./visit-messages.ts";
 import { moveVisit } from "./visit-status.ts";
-import { type ConfirmOptions, type HoldRow, type Confirmed } from "./booked-hold.ts";
+import { type ConfirmOptions, type HoldRow, type Confirmed, type BookingContext } from "./booked-hold.ts";
 import { giveBack, AUTO_REFUND_NOTES, autoRefundMarked, giveBackUnkept } from "./give-back.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../config/statuses.ts";
 
@@ -19,13 +18,9 @@ interface VisitToMove {
 }
 
 /** Moves the visit to the hold's time, with its technician; its payment carries over, and a late fee is kept. */
-export async function moveInPlace(
-  db: D1Database,
-  payments: PaymentsProvider,
-  hold: HoldRow,
-  now: Date,
-  options: ConfirmOptions,
-): Promise<Confirmed> {
+export async function moveInPlace(context: BookingContext, hold: HoldRow): Promise<Confirmed> {
+  const { db, now } = context;
+  const options: ConfirmOptions = context;
   const visit = await db
     .prepare(
       `SELECT a.id, a.window_start, a.technician_id FROM appointments a
@@ -33,8 +28,8 @@ export async function moveInPlace(
     )
     .bind(hold.moves_appointment_id)
     .first<VisitToMove>();
-  if (visit === null) return moveRefused(db, payments, hold, now, options);
-  if (!(await takesHeldTime(db, hold, visit, now))) return moveOvertaken(db, payments, hold, now, options);
+  if (visit === null) return moveRefused(context, hold);
+  if (!(await takesHeldTime(db, hold, visit, now))) return moveOvertaken(context, hold);
   const { start, end } = await heldVisitTimes(db, hold);
 
   const at = now.toISOString();
@@ -100,25 +95,15 @@ async function takesHeldTime(db: D1Database, hold: HoldRow, visit: VisitToMove, 
  * Lets a move in place go where the visit can no longer take the held time, and gives back what the client paid for
  * it. The visit stays as it is, and the client is told so.
  */
-async function moveOvertaken(
-  db: D1Database,
-  payments: PaymentsProvider,
-  hold: HoldRow,
-  now: Date,
-  options: ConfirmOptions,
-): Promise<Confirmed> {
-  options.log.warn("move_overtaken", { hold_id: hold.id });
+async function moveOvertaken(context: BookingContext, hold: HoldRow): Promise<Confirmed> {
+  const { db, now } = context;
+  context.log.warn("move_overtaken", { hold_id: hold.id });
   const told = refundedMessage(db, { personId: hold.person_id, holdId: hold.id, now });
-  await giveBack(
-    db,
-    payments,
-    hold.id,
-    now,
-    AUTO_REFUND_NOTES.not_movable,
-    [told.statement],
-    [autoRefundMarked(db, hold.id, "not_movable")],
-  );
-  await options.notify?.(told.id);
+  await giveBack(context, hold.id, AUTO_REFUND_NOTES.not_movable, {
+    alongside: [told.statement],
+    ifRefunded: [autoRefundMarked(db, hold.id, "not_movable")],
+  });
+  await context.notify?.(told.id);
   return hold.amount > 0 ? "refunded" : "lapsed";
 }
 
@@ -129,14 +114,8 @@ export async function replacesBegunVisit(db: D1Database, hold: HoldRow): Promise
 }
 
 /** Lets a move's hold go, and gives its payment back, since the visit it moves can no longer be changed. */
-export async function moveRefused(
-  db: D1Database,
-  payments: PaymentsProvider,
-  hold: HoldRow,
-  now: Date,
-  options: ConfirmOptions,
-): Promise<Confirmed> {
-  await giveBackUnkept(db, payments, hold, now, "not_movable", options);
+export async function moveRefused(context: BookingContext, hold: HoldRow): Promise<Confirmed> {
+  await giveBackUnkept(context, hold, "not_movable");
   return hold.amount > 0 ? "refunded" : "lapsed";
 }
 

@@ -93,7 +93,7 @@ describe("one credit pays for one visit", () => {
   const bookLater = (holdId: string) => book(holdId, { DB: leaseRefused(env.DB) });
   const get = async (path: string) => (await asClient(cookie, path)).json();
   const confirm = (holdId: string, now = NOW, options = {}) =>
-    confirmBooking(env.DB, createStubPayments(), holdId, now, { ...options, log: createLogger() });
+    confirmBooking({ db: env.DB, payments: createStubPayments(), now: now, ...options, log: createLogger() }, holdId);
   const redeems = async () =>
     (await env.DB.prepare("SELECT source_id FROM credit_ledger WHERE kind = 'redeem'").all()).results;
 

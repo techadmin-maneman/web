@@ -1214,7 +1214,10 @@ describe("a booking of a client erased since", () => {
       env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?1 WHERE id = 'hold-paying'").bind(at),
     ]);
     const payments = createStubPayments();
-    const outcome = await confirmBooking(env.DB, payments, "hold-paying", NOW, { log: createLogger() });
+    const outcome = await confirmBooking(
+      { db: env.DB, payments: payments, now: NOW, log: createLogger() },
+      "hold-paying",
+    );
 
     expect(outcome).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 200000 }]);
@@ -1231,7 +1234,10 @@ describe("a booking of a client erased since", () => {
     await freeBooking(personId);
     await env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(personId, NOW.toISOString()).run();
 
-    const outcome = await confirmBooking(env.DB, createStubPayments(), "hold-free", NOW, { log: createLogger() });
+    const outcome = await confirmBooking(
+      { db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger() },
+      "hold-free",
+    );
 
     expect(outcome).toBe("lapsed");
     expect(

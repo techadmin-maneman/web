@@ -376,7 +376,7 @@ describe("the client, at the app's pay step", () => {
         return made;
       },
     };
-    const started = await startBooking(env.DB, racing, hold.id, PERSON, NOW);
+    const started = await startBooking({ db: env.DB, payments: racing, now: NOW }, hold.id, PERSON);
     expect(stub.made.orders.map((order) => order.amount)).toEqual([180_000, 200_000]);
     const kept = await env.DB.prepare("SELECT amount, razorpay_order_id FROM slot_holds WHERE id = ?1")
       .bind(hold.id)
@@ -458,7 +458,9 @@ describe("the client, at the app's pay step", () => {
       .bind(hold.id, at(20).toISOString())
       .run();
     const payments = createStubPayments();
-    expect(await confirmBooking(env.DB, payments, hold.id, at(20), { log: createLogger() })).toBe("refunded");
+    expect(await confirmBooking({ db: env.DB, payments: payments, now: at(20), log: createLogger() }, hold.id)).toBe(
+      "refunded",
+    );
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 180_000 }]);
   });
 
@@ -479,7 +481,9 @@ describe("the client, at the app's pay step", () => {
       ).bind(PERSON, checkout.order_id, checkout.amount, NOW.toISOString()),
       env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1").bind(hold.id, NOW.toISOString()),
     ]);
-    expect(await confirmBooking(env.DB, createStubPayments(), hold.id, NOW, { log: createLogger() })).toBe("booked");
+    expect(
+      await confirmBooking({ db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger() }, hold.id),
+    ).toBe("booked");
     const theirs = await heldService(OTHER, NOW, "morning");
     expect((await enter(OTHER, theirs.id, "UNQ5")).status).toBe(422);
 

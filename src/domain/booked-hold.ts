@@ -4,8 +4,19 @@ import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { type Logger } from "../log.ts";
 import { type AlertOnce } from "./alerts.ts";
+import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { PAYMENT_HELD, statusIn } from "../config/statuses.ts";
 import type { HoldState } from "./hold-stages.ts";
+
+/** The database, Razorpay and the moment: what booking a hold, or giving one back, works with. */
+export interface BookingBasis {
+  readonly db: D1Database;
+  readonly payments: PaymentsProvider;
+  readonly now: Date;
+}
+
+/** BookingBasis, with how booking tells the client and ops, and logs. */
+export interface BookingContext extends BookingBasis, ConfirmOptions {}
 
 export interface ConfirmOptions {
   /** Queues a message about the visit once its row is written (src/domain/visit-messages.ts). */

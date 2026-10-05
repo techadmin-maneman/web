@@ -108,16 +108,18 @@ describe("a hold booked or given back", () => {
   const payments = createStubPayments();
 
   it("is refused for a hold that is not there", async () => {
-    await expect(confirmBooking(env.DB, payments, HOLD, NOW, { log: createLogger() })).rejects.toThrow(
-      "no such hold to book",
+    await expect(
+      confirmBooking({ db: env.DB, payments: payments, now: NOW, log: createLogger() }, HOLD),
+    ).rejects.toThrow("no such hold to book");
+    await expect(giveBack({ db: env.DB, payments: payments, now: NOW }, HOLD, "test")).rejects.toThrow(
+      "no such hold to give back",
     );
-    await expect(giveBack(env.DB, payments, HOLD, NOW, "test")).rejects.toThrow("no such hold to give back");
   });
 
   it("is not given back once booked, and refunds nothing", async () => {
     await hold({ state: "booked", confirmedAt: NOW.toISOString() });
 
-    expect(await giveBack(env.DB, payments, HOLD, NOW, "test")).toEqual({ kind: "booked" });
+    expect(await giveBack({ db: env.DB, payments: payments, now: NOW }, HOLD, "test")).toEqual({ kind: "booked" });
     expect(payments.made.refunds).toEqual([]);
   });
 });
