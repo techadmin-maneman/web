@@ -39,7 +39,7 @@ Counsel's sign-off is still owed, so the notices are not yet pinned as published
 
 1. `POST /api/number-change` sends a code to each number, on its own challenge (`number_change_old`, `number_change_new`). These codes follow the login's rules (ADR 0030), but no login accepts them. Starting again withdraws a change under way, and a client may start three a day.
 2. `POST /api/number-change/verify` checks one number's code. With both proven, the change waits for ops.
-3. Ops see the changes waiting at `GET /api/number-changes`, and `POST /api/number-changes/:id/decision` confirms or rejects one. Confirming moves the person to the new number, unless another person holds it (`409 number_in_use`). A rejection needs a reason.
+3. Ops see the changes waiting at `GET /api/number-changes`, and `POST /api/number-changes/:id/decision` confirms or rejects one. Confirming moves the person to the new number, unless another client holds it (`409 number_in_use`). A record that holds it but never became a client, with a try-on or a waitlist entry and nothing booked, gives it up in the same batch: its number becomes `released:<id>`, which no message is sent to, and it is signed out, keeping what it holds (the owner, 5 October 2026). A rejection needs a reason.
 
 **A deletion request is ops' to process.** `POST /api/deletion-request` records one open request, however often it is asked. Ops see them at `GET /api/deletion-requests`. "Delete" runs the Phase 1 erasure at once (ADR 0019), which is well within the seven days; "reject" needs a reason.
 

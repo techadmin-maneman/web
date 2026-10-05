@@ -129,6 +129,15 @@ describe("messaging: sending a result", () => {
     expect(await message()).toMatchObject({ state: "skipped", last_error: "person erased" });
   });
 
+  it("never sends to a record whose number a client took over", async () => {
+    await queuedMessage();
+    await env.DB.prepare("UPDATE people SET mobile_e164 = 'released:' || id").run();
+    const { provider, sent } = recordingProvider();
+    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, "m1");
+    expect(sent).toEqual([]);
+    expect(await message()).toMatchObject({ state: "skipped", last_error: "no number" });
+  });
+
   it("skips once the number has had its three result messages today", async () => {
     const { provider, sent } = recordingProvider();
     const deps = fakeDependencies({ messaging: provider });
