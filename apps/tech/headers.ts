@@ -3,9 +3,8 @@
 // (board B1's guided capture) and geolocation (board B5's "I have arrived"),
 // which no other origin may use through it.
 //
-// `connect-src 'self'` holds while photographs are confirmed through mm-api. If
-// The technician API's upload route hands the phone a presigned R2 URL to PUT to, that host
-// is added here and nowhere else (docs/prompts/phase2-frontend.md, Security).
+// `connect-src 'self'` holds because a photograph goes up through mm-api, on the app's own host, and never
+// straight to R2.
 
 import type { AppPolicy } from "@maneman/web-kit/headers";
 

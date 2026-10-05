@@ -1,21 +1,13 @@
-// The steps of a job (src/policy/in-job-steps.ts), each rule named by the prompt's own words.
+// The steps of a job (src/policy/in-job-steps.ts), in the order they run.
 
 import { describe, expect, it } from "vitest";
 import { ANGLES } from "../../src/domain/visit-photos.ts";
-import {
-  CONSULTATION_PHOTOS_RULE,
-  landsAfterClose,
-  PHOTO_ANGLES,
-  RULES,
-  stepBefore,
-  stepsFor,
-  takesStep,
-} from "../../src/policy/in-job-steps.ts";
+import { landsAfterClose, PHOTO_ANGLES, stepBefore, stepsFor, takesStep } from "../../src/policy/in-job-steps.ts";
 
 const done = (...kinds: string[]): ReadonlySet<string> => new Set(kinds);
 
 describe("the steps of a job", () => {
-  it(`${RULES[0]} ${RULES[4]}`, () => {
+  it("photographs five angles before the work and five after: front, top, left, right, hair", () => {
     expect(PHOTO_ANGLES).toEqual(["front", "top", "left", "right", "hair"]);
     // The photographs the app takes, stores and shows are these five, in this order.
     expect(ANGLES).toBe(PHOTO_ANGLES);
@@ -23,11 +15,11 @@ describe("the steps of a job", () => {
     expect(stepsFor("service").at(-2)).toBe("after_photos");
   });
 
-  it(`${RULES[1]} ${RULES[2]} ${RULES[5]}`, () => {
+  it("runs a service visit's checklist and consumables between the photographs, and ends on its outcome", () => {
     expect(stepsFor("service")).toEqual(["before_photos", "checklist", "consumables", "after_photos", "outcome"]);
   });
 
-  it(RULES[3], () => {
+  it("takes the piece step on a replacement, and never on a service visit or a consultation", () => {
     expect(stepsFor("replacement")).toEqual([
       "before_photos",
       "checklist",
@@ -44,7 +36,7 @@ describe("the steps of a job", () => {
     expect(stepsFor("first_fit")).toContain("piece");
   });
 
-  it(CONSULTATION_PHOTOS_RULE, () => {
+  it("photographs a consultation before and not after, unless it fits a piece", () => {
     expect(stepsFor("consultation")).toEqual(["before_photos", "checklist", "consumables", "outcome"]);
     expect(takesStep("after_photos", "consultation")).toBe(false);
     expect(takesStep("before_photos", "consultation")).toBe(true);

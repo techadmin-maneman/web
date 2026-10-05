@@ -25,7 +25,7 @@ export const CONSOLE_RULES = ["Charge or waive, with a reason.", "Both require a
 const NEEDS_A_REASON = {
   referral: ["approve", "reject"],
   no_show: ["charged", "waived"],
-  // A disputed charge, refunded or upheld (src/policy/no-show.ts, RULES[6]).
+  // A disputed charge, refunded or upheld.
   no_show_dispute: ["refunded", "upheld"],
   number_change: ["reject"],
   deletion: ["reject"],

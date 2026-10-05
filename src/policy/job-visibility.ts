@@ -1,22 +1,11 @@
-// What a technician sees of each job, and when (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
-// The rules as the prompt states them, and the day-before unlock they turn on.
-// Dates are India's, since a working day is (docs/decisions/0035-window-slot-map.md).
+// What a technician sees of each job, and when: a job's card opens the day before its visit and locks again the day
+// after. Dates are India's, since a working day is (docs/decisions/0035-window-slot-map.md).
 //
 // src/domain/tech-jobs.ts builds a job's answer from `unlocked`: a job still
 // locked carries no address, access notes, client, pieces, last visit or
 // reminder, and no answer to a technician carries an amount.
 
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
-
-export const RULES = [
-  "Today's jobs in order; tomorrow collapsed.",
-  "Jobs further out show only time, type and sector. The address, access notes and client card unlock the day before, and the API enforces this, not just the screen.",
-  "A job shows a Prepaid or Credit badge only, and no API response to a technician carries an amount.",
-  // Ruled by the owner on 27 September 2026 (docs/open-points.md, item 92).
-  "the other technician's first name may reach the phone",
-  // A card that never locked again once kept every past client readable on a lost phone.
-  "A card locks again at the end of the day after its visit, and the list reads no date before yesterday.",
-] as const;
 
 /** Where a job sits on the technician's list. */
 export type JobDay = "past" | "today" | "tomorrow" | "later";
@@ -36,17 +25,14 @@ export function jobDay(windowStart: Date, now: Date): JobDay {
 export const listableDate = (date: string, now: Date): boolean => date >= addDays(indiaDate(now), -1);
 
 /**
- * The hour in India the day-before WhatsApp goes at (docs/decisions/0047-visit-messages.md): 6 pm, as the owner
- * ruled on 27 September 2026 (docs/open-points.md, item 40), until ops set another in the console
- * (docs/decisions/0088-every-policy-in-the-console.md).
+ * The hour in India the day-before WhatsApp goes at (docs/decisions/0047-visit-messages.md): 6 pm, until ops set
+ * another in the console.
  */
 export const DAY_BEFORE_REMINDER_HOUR = 18;
 
 /**
- * The India clock time a job unlocks at on the day before the visit. The owner
- * ruled 6 pm on 24 September 2026 (docs/open-points.md, "When a job's address
- * unlocks"): the technician sees the address at the moment the client is told
- * someone is coming, when the day-before WhatsApp goes.
+ * The India clock time a job unlocks at on the day before the visit: the technician sees the address at the moment
+ * the client is told someone is coming, when the day-before WhatsApp goes.
  *
  * It is a privacy boundary, not a convenience: it is what keeps a whole day's
  * client list off a phone that might be lost, so the six hours it takes off
@@ -74,11 +60,9 @@ export const unlocked = (windowStart: Date, now: Date, hour: number = UNLOCK_HOU
   now.getTime() >= unlocksAt(windowStart, hour).getTime() && now.getTime() < relocksAt(windowStart).getTime();
 
 /**
- * The only money a technician's job carries: a badge, never an amount. The
- * prompt names two; board A1 draws a third, Free, on a visit the price book
- * charges nothing for, such as a consultation (ADR 0025, item 33). A fourth,
- * which no board draws, marks a consultation and fit in one visit, paid for
- * once the client is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+ * The only money a technician's job carries: a badge, never an amount. Free marks a visit the price book charges
+ * nothing for, such as a consultation; at_visit a consultation and fit in one visit, paid for once the client is
+ * fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
  */
 export const PAYMENT_BADGES = ["prepaid", "credit", "free", "at_visit"] as const;
 export type PaymentBadge = (typeof PAYMENT_BADGES)[number];

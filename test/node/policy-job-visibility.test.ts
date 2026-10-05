@@ -1,5 +1,4 @@
-// What a technician sees of each job, each rule named by the prompt's own words
-// (src/policy/job-visibility.ts). Days are India's: NOW is 12 noon on Monday 21
+// What a technician sees of each job, and when (src/policy/job-visibility.ts). Days are India's: NOW is 12 noon on Monday 21
 // September 2026, which is 06:30 UTC.
 
 import { describe, expect, it } from "vitest";
@@ -10,7 +9,6 @@ import {
   namesTheOtherTechnician,
   PAYMENT_BADGES,
   paymentBadge,
-  RULES,
   UNLOCK_HOUR,
   unlocked,
   relocksAt,
@@ -24,7 +22,7 @@ const noon = (date: string) => new Date(`${date}T06:30:00Z`);
 const sixPm = (date: string) => new Date(`${date}T12:30:00Z`);
 
 describe("job visibility", () => {
-  it(RULES[0], () => {
+  it("sorts a job into today, tomorrow or later, by India's date", () => {
     expect(jobDay(noon("2026-09-21"), NOW)).toBe("today");
     expect(jobDay(noon("2026-09-22"), NOW)).toBe("tomorrow");
     expect(jobDay(noon("2026-09-23"), NOW)).toBe("later");
@@ -37,7 +35,7 @@ describe("job visibility", () => {
     expect(jobDay(new Date("2026-09-21T19:30:00Z"), NOW)).toBe("tomorrow");
   });
 
-  it(RULES[1], () => {
+  it("opens a job's address and client at 6 pm the day before, and not before", () => {
     const wednesday = noon("2026-09-23");
     // It unlocks at 6 pm in India on Tuesday, the day before.
     expect(unlocksAt(wednesday)).toEqual(new Date("2026-09-22T12:30:00Z"));
@@ -76,8 +74,8 @@ describe("job visibility", () => {
     expect(unlocked(noon("2026-09-20"), NOW)).toBe(true);
   });
 
-  it(RULES[2], () => {
-    // Board A1's Free on a visit that costs nothing is a badge too (ADR 0025, item 33).
+  it("marks what a job was paid with by a badge, and never an amount", () => {
+    // Free, on a visit that costs nothing, is a badge too.
     expect([...PAYMENT_BADGES]).toEqual(["prepaid", "credit", "free", "at_visit"]);
     // No answer to a technician carries an amount: test/worker/field-operations.test.ts reads the API's own.
   });
@@ -94,7 +92,7 @@ describe("job visibility", () => {
 });
 
 describe("the other technician", () => {
-  it(RULES[3], () => {
+  it("names the other technician to the phone when ops gave the job to them", () => {
     expect(namesTheOtherTechnician(["technician"])).toBe(true);
     expect(namesTheOtherTechnician(["technician", "time"])).toBe(true);
   });
@@ -106,7 +104,7 @@ describe("the other technician", () => {
 });
 
 describe("a card after its visit", () => {
-  it(RULES[4], () => {
+  it("locks a card again at the end of the day after its visit, and lists no date before yesterday", () => {
     const yesterday = noon("2026-09-20");
     // Locked at midnight in India at the end of the day after the visit: 2026-09-21T18:30Z.
     expect(relocksAt(yesterday)).toEqual(new Date("2026-09-21T18:30:00Z"));
