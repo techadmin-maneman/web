@@ -347,7 +347,7 @@ A WhatsApp copy carries a link to `/api/result/…`, which the Evolution bridge 
 
 Access applies the most specific path, so the rest of staging stays behind the founders' login.
 
-**Access matches a bypass path without regard to case; the Workers' routes do not.** `/API/Result/…` and `/api/HOOKS/…` reach a Worker with no login, and today answer 404, because no route has those spellings. So the bypassed paths stay as narrow as they are, and every route added beneath them must be one anyone may call: `/api/result/` and `/api/hooks/` (step 12) hold nothing but signed links and webhooks that check their own secret. A route that needs the login goes under another path. A dedicated hooks host with nothing else on it would close this for good. It needs a DNS record and an Access application, so it waits for the owner.
+**Access matches a bypass path without regard to case; the Workers' routes do not.** `/API/Result/…` and `/api/HOOKS/…` reach a Worker with no login, and today answer 404, because no route has those spellings. So the bypassed paths stay as narrow as they are, and every route added beneath them must be one anyone may call: `/api/result/` and `/api/hooks/` (step 12) hold nothing but signed links and webhooks that check their own secret. A route that needs the login goes under another path. A hooks host of its own would close it for good, but only staging has Access, so the owner kept the hooks where they are (5 October 2026).
 
 ### 10b. Invite previews through Access (staging only)
 

@@ -6,6 +6,7 @@ The points of `docs/open-points.md` that are settled, each with its answer, its 
 
 Each keeps its number. Where something follows from a ruling and is still owed, it is an open point of its own, named here.
 
+- **185. Dependency updates.** Settled 5 October 2026: the Renovate app is installed (it opened its first updates, #425 and #426), and the owner turned on Dependabot alerts, secret scanning and push protection. An update waits for review before it merges (`scripts/lib/auto-merge.ts`).
 - **86. Production's photographs bucket.** Settled: `mm-prod-client-photos` and `mm-prod-referral-cards` exist, with no rule but Cloudflare's default that aborts an unfinished upload after seven days (`wrangler r2 bucket list` and `lifecycle list`, 4 October 2026).
 - **34. The CRM's referral fields.** Settled 2 October 2026: `scripts/ops/setup-crm.ts` created Referral_Code, Booked_Window and the Lead_Source value Referral in the org, and `CRM_ORG_HAS_REFERRAL_FIELDS` is on.
 - **158. The window times, and the figures the site prints at build.** Settled 4 October 2026 by the owner: the window times stay in code (`src/config/scheduling.ts`), as taken.

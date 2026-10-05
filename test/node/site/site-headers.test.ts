@@ -102,10 +102,11 @@ describe("the headers file", () => {
 
 // A security researcher found no contact (RFC 9116).
 describe("security.txt", () => {
-  it("names the site's published contact, and lapses a year after the build that wrote it", () => {
+  it("names the security mailbox, then the business's WhatsApp, and lapses a year after the build", () => {
     const built = new Date("2026-10-05T00:00:00.000Z");
     expect(securityTxt(built)).toBe(
-      "Contact: https://wa.me/919007973247\nExpires: 2027-10-05T00:00:00.000Z\nPreferred-Languages: en\n",
+      "Contact: mailto:security@maneman.in\nContact: https://wa.me/919007973247\nExpires: 2027-10-05T00:00:00.000Z\n" +
+        "Preferred-Languages: en\n",
     );
   });
 });

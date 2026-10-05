@@ -106,13 +106,17 @@ export function headersFile(environment: SiteEnvironment, csp: string): string {
 
 /**
  * /.well-known/security.txt (RFC 9116): where to report a weakness, until a year from the build, as the RFC asks of
- * its expiry. Each deploy writes it afresh, so it lapses only on a site left a year unbuilt. The business's WhatsApp is
- * the one contact the site publishes.
+ * its expiry. Each deploy writes it afresh, so it lapses only on a site left a year unbuilt. The security mailbox comes
+ * first, then the business's WhatsApp: the RFC reads the contacts in order.
  */
 export function securityTxt(builtAt: Date): string {
   const expires = new Date(builtAt.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
-  return `Contact: ${whatsappChat(WHATSAPP_NUMBER)}\nExpires: ${expires}\nPreferred-Languages: en\n`;
+  const contacts = [`mailto:${SECURITY_EMAIL}`, whatsappChat(WHATSAPP_NUMBER)];
+  return `${contacts.map((contact) => `Contact: ${contact}\n`).join("")}Expires: ${expires}\nPreferred-Languages: en\n`;
 }
+
+/** Where a weakness is reported. */
+const SECURITY_EMAIL = "security@maneman.in";
 
 export function robotsFile(environment: SiteEnvironment): string {
   if (environment === "production") return `User-agent: *\nAllow: /\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`;
