@@ -9,7 +9,7 @@ The prompt fixes two Workers (`mm-api`, `mm-site`), a `migrations/` directory, `
 
 ## Decision
 
-**Layout.** The repository root is `mm-api`: `src/`, `migrations/`, `wrangler.jsonc`. `site/` is `mm-site`, assets-only, with its own `wrangler.jsonc`; the front-end task replaces `site/placeholder/` with the Astro build. `scripts/` holds the build, check, release and smoke tools; `test/worker/` runs inside workerd, `test/node/` runs in Node.
+**Layout.** The repository root is `mm-api`: `src/`, `migrations/`, `wrangler.jsonc`. `site/` is `mm-site`, assets-only, with its own `wrangler.jsonc`; the front-end task replaces `site/placeholder/` with the Astro build. `scripts/` holds the build, check, release and smoke tools, in a folder for who runs each (`scripts/README.md`, 5 October 2026); `test/worker/` runs inside workerd, `test/node/` runs in Node.
 
 **Router and schemas.** Hono with `@hono/zod-openapi`. Each route is declared once with zod schemas, which give request validation, response types, the generated `docs/openapi.json` and `docs/api.md`, and the contract test that fails when those files are stale.
 

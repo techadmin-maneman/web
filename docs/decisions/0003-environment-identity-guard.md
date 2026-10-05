@@ -24,7 +24,7 @@ The prompt also names no variable for choosing between a real provider and its s
 
 These three provider variables are added to the prompt's var list so the stub rule is checkable. Staging may hold a stub, because the WhatsApp BSP is only chosen at the 4 October gate.
 
-**Database identity, on first use.** Migration 0001 creates `deployment_identity`, a single-row table that triggers make immutable. `scripts/mark-database.ts <env>` writes `maneman-local`, `maneman-staging` or `maneman-prod` into it once, after migrations, in each environment's pipeline, then reads it back. Before serving any `/api/*` route the Worker compares the row with the name expected for its `ENVIRONMENT`:
+**Database identity, on first use.** Migration 0001 creates `deployment_identity`, a single-row table that triggers make immutable. `scripts/release/mark-database.ts <env>` writes `maneman-local`, `maneman-staging` or `maneman-prod` into it once, after migrations, in each environment's pipeline, then reads it back. Before serving any `/api/*` route the Worker compares the row with the name expected for its `ENVIRONMENT`:
 
 - match: served, and the result is cached for the life of the isolate;
 - no row, or another environment's name: `503 environment_mismatch`;

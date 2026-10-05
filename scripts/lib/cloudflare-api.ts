@@ -8,7 +8,7 @@
 //
 // A call that can safely be made twice is simply made again. A call that cannot
 // — uploading a Worker version — asks Cloudflare what landed instead
-// (scripts/release.ts).
+// (scripts/release/release.ts).
 
 import { z } from "zod";
 import type { RemoteEnvironmentName } from "../../src/config/environments.ts";

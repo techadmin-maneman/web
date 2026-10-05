@@ -6,7 +6,7 @@
 // CI's Cloudflare tokens may not touch R2, by design (docs/decisions/0008): a
 // token that can read a bucket's settings can read the photographs in it too.
 // So in CI this says it checked nothing, and an operator runs it with a token
-// of their own (scripts/check-buckets.ts).
+// of their own (scripts/release/check-buckets.ts).
 
 import { z } from "zod";
 import type { RemoteEnvironmentName } from "../../src/config/environments.ts";
@@ -100,7 +100,7 @@ function notRead(check: BucketCheck, answer: ApiAnswer): Finding {
     outcome: "not read",
     detail:
       `not checked: ${why} (${describeAnswer(answer)}). CI's tokens never may (docs/decisions/0008). ` +
-      `Check them with an operator's token: node --env-file=<file> scripts/check-buckets.ts ${check.environment}`,
+      `Check them with an operator's token: node --env-file=<file> scripts/release/check-buckets.ts ${check.environment}`,
   };
 }
 

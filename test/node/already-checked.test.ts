@@ -1,4 +1,4 @@
-// No check of CI runs twice on the same files (scripts/already-checked.ts, docs/decisions/0006-deployment-pipeline.md,
+// No check of CI runs twice on the same files (scripts/ci/already-checked.ts, docs/decisions/0006-deployment-pipeline.md,
 // "Checks are not repeated"): a run takes as passed each check an earlier run passed on exactly its files. Anything
 // uncertain runs every check.
 

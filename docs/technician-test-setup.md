@@ -144,7 +144,7 @@ If anything is still waiting to go up, Sign out says how much first and offers *
 Then have a developer take the fixture out of staging, which removes the technician, the jobs, the invented client and — this is the part that matters — **your mobile number from staging's database**:
 
 ```sh
-TECH_TESTER_MOBILE=<your ten digits> node scripts/seed-technician-tester.ts --clear
+TECH_TESTER_MOBILE=<your ten digits> node scripts/staging/seed-technician-tester.ts --clear
 ```
 
 The same script lays it again, without `--clear`, once the old one is cleared: when you want another run, when the dates have gone stale, or when the test technician was switched off before 27 September 2026. It refuses while any technician holds your number. It takes the number from the environment and never writes it down, which is why it is not in the command above.

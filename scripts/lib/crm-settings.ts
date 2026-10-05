@@ -1,4 +1,4 @@
-// What the CRM's settings API answers about the Leads module, as scripts/check-zoho-setup.ts and scripts/setup-crm.ts
+// What the CRM's settings API answers about the Leads module, as scripts/ops/check-zoho-setup.ts and scripts/ops/setup-crm.ts
 // read it. Each object is loose: Zoho sends many more keys than these, and only these are read.
 
 import { z } from "zod";

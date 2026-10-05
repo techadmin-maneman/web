@@ -122,7 +122,7 @@ The service worker served every page network-first, with no limit, so a signal t
 
 Every call now gives up too: after 4 seconds for a read the phone holds its own copy of, 15 for a write or a sign-in, and 60 for a photograph. An answer that is not JSON — a Wi-Fi sign-in page, say — counts as no signal rather than leaving a screen loading. And whether the phone has signal is now what the last call found, not only what the phone says, so "No signal · working offline" shows when nothing answers on a network the phone believes in, and the day the service worker answered from its copy (`Mm-Served-From: cache`) shows as offline too.
 
-The worker no longer keeps the extended-Latin fonts or the rupee, which the app never draws with, and `scripts/build-tech.ts` counts `sw.js` in the 150 KB budget.
+The worker no longer keeps the extended-Latin fonts or the rupee, which the app never draws with, and `scripts/build/build-tech.ts` counts `sw.js` in the 150 KB budget.
 
 ### The store survives other tabs, new builds and a full phone
 

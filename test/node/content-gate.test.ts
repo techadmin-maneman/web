@@ -73,7 +73,7 @@ describe("the production gate on Phase 2's copy", () => {
 
   it("refuses a production release of the API while its copy holds a mark", () => {
     const marked = CONTENT_FILES.api.some((file) => placeholderMarks(readFileSync(file, "utf8")).length > 0);
-    const check = spawnSync(process.execPath, ["scripts/check-copy.ts", "api"], { encoding: "utf8" });
+    const check = spawnSync(process.execPath, ["scripts/release/check-copy.ts", "api"], { encoding: "utf8" });
     expect(check.status).toBe(marked ? 1 : 0);
     if (marked) expect(check.stderr).toContain("src/config/job-sheet.ts");
   });
@@ -90,7 +90,7 @@ describe("the production gate on Phase 2's copy", () => {
     (app) => {
       const marked = CONTENT_FILES[app].some((file) => placeholderMarks(readFileSync(file, "utf8")).length > 0);
       if (!marked) return; // Every line has the owner's wording: the build is allowed, and builds.
-      const build = spawnSync(process.execPath, [`scripts/build-${app}.ts`, "--env", "production"], {
+      const build = spawnSync(process.execPath, [`scripts/build/build-${app}.ts`, "--env", "production"], {
         encoding: "utf8",
       });
       expect(build.status).toBe(1);

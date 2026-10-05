@@ -1,5 +1,5 @@
 // The canary's soak judged on real visitors' requests, not only the smoke's
-// (scripts/soak.ts): Workers analytics counts each version's invocations and
+// (scripts/release/soak.ts): Workers analytics counts each version's invocations and
 // the ones that errored, and Workers Logs sums what each route read from D1
 // and how long Home and a job card took.
 

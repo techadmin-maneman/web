@@ -160,7 +160,7 @@ describe("POST /api/consultation", () => {
     expect(line?.d1_trips).toBeLessThanOrEqual(CONSULTATION_TRIPS + BOOKING_TRIPS);
   });
 
-  // The staging check and the load test book this way (scripts/staging-lead.ts, scripts/load-test-leads.ts).
+  // The staging check and the load test book this way (scripts/staging/staging-lead.ts, scripts/staging/load-test-leads.ts).
   it("takes the booking a script sends on staging, with Cloudflare's dummy token", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
     const body = consultationBody({
@@ -254,7 +254,7 @@ describe("POST /api/consultation", () => {
       requested_window: "morning",
       referral_code: null,
     });
-    // No slot, no confirmation: the load test (scripts/load-test-leads.ts) runs with self-serve booking off
+    // No slot, no confirmation: the load test (scripts/staging/load-test-leads.ts) runs with self-serve booking off
     // precisely so its random test numbers are never messaged (docs/decisions/0025-phase-2-conflicts-register.md,
     // item 84's refinement).
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first()).toEqual({ n: 0 });

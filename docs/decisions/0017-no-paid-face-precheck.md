@@ -9,7 +9,7 @@ The prompt says: submit a side-profile and a two-face image, read the credit bal
 
 ## Measurement, 21 September 2026
 
-Measured with `scripts/ailabtools-probe.ts rejected`, against Pro with the staging key:
+Measured with `scripts/staging/ailabtools-probe.ts rejected`, against Pro with the staging key:
 
 | Photo                 | What AILabTools did                                                                                           | Credits                   |
 | --------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------- |

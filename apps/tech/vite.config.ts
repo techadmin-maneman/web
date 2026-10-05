@@ -1,5 +1,5 @@
 // The technician app's build (docs/decisions/0026-hosts-and-surfaces.md). One
-// build per environment, into dist/<environment>; scripts/build-tech.ts adds
+// build per environment, into dist/<environment>; scripts/build/build-tech.ts adds
 // _headers. The service worker is a second entry, served as /sw.js so its scope
 // is the whole app (apps/tech/sw/sw.ts).
 

@@ -48,7 +48,7 @@ The layer only adds names; the site uses none of them. **Amended 27 September 20
 
 ## Consequences
 
-- **The site is byte-identical.** `scripts/dist-hash.ts` builds local, staging and production and hashes every file. Before and after the move, all 416 files across the three builds match.
+- **The site is byte-identical.** `scripts/build/dist-hash.ts` builds local, staging and production and hashes every file. Before and after the move, all 416 files across the three builds match.
 - **The fidelity pairs are unchanged**, since the site's output is. `docs/fidelity-method.md` now describes the method, including how Phase 2 boards are paired: frame by frame, at the frame's own width.
 - **Tests:**
   - `test/node/brand-package.test.ts`:

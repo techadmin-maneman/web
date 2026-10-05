@@ -115,7 +115,7 @@ describe("a pull request touching money or personal data", () => {
     expect(sensitiveFiles(files)).toEqual([]);
   });
 
-  // A file renamed away from a sensitive path is listed under its old path as well (scripts/auto-merge.ts).
+  // A file renamed away from a sensitive path is listed under its old path as well (scripts/ci/auto-merge.ts).
   it("counts a sensitive file renamed to a path outside the list", () => {
     const renamed = ["src/domain/money-back.ts", "src/domain/refunds.ts"];
     expect(sensitiveFiles(renamed)).toEqual(["src/domain/refunds.ts"]);

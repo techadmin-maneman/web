@@ -1,4 +1,4 @@
-// What mm-api's invocations spent of CPU time, from Workers analytics (scripts/cpu-report.ts). The free plan allows
+// What mm-api's invocations spent of CPU time, from Workers analytics (scripts/ops/cpu-report.ts). The free plan allows
 // 10 ms an invocation, and Cloudflare stops a Worker that runs over it consistently. Analytics gives each
 // cron run's own figure, and one for every invocation together: it does not tell a request from a queue batch.
 //

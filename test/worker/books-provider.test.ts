@@ -1,6 +1,6 @@
 // Zoho Books' adapter (src/providers/books/zoho.ts) on a Zoho client of its own. Customers, invoices, items and the
 // searches for a payment or a refund are read from answers the org gave (test/fixtures/vendors/books, recorded by
-// scripts/books-proof.ts and scripts/zoho-contract-probe.ts, with no one's details in them); the rest from Books'
+// scripts/staging/books-proof.ts and scripts/release/zoho-contract-probe.ts, with no one's details in them); the rest from Books'
 // documentation.
 
 import { env } from "cloudflare:workers";

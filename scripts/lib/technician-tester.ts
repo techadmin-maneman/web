@@ -1,4 +1,4 @@
-// What `node scripts/seed-technician-tester.ts --clear` deletes from staging: the test technician, the jobs he
+// What `node scripts/staging/seed-technician-tester.ts --clear` deletes from staging: the test technician, the jobs he
 // walked and everything they left, and the invented client, save the rows a hair profile points at, which stay. A row
 // goes before the rows it refers to, since D1 keeps foreign keys (test/worker/technician-tester.test.ts).
 

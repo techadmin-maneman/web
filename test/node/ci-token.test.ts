@@ -1,4 +1,4 @@
-// What scripts/verify-ci-token.ts says about the other environment's database.
+// What scripts/release/verify-ci-token.ts says about the other environment's database.
 // D1 Edit is account-wide (docs/decisions/0008, #3), so a CI token can write
 // the other environment's database, not only read it; the check proves which
 // with a write that changes nothing.

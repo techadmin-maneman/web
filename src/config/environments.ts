@@ -1,5 +1,5 @@
 // The environments this Worker may run as, and the resources each must be bound
-// to. Shared by the Worker (startup guard) and by scripts/check-wrangler-config.ts,
+// to. Shared by the Worker (startup guard) and by scripts/ci/check-wrangler-config.ts,
 // so the config check and the runtime guard cannot drift apart.
 
 import { isOneOf } from "../lib/one-of.ts";

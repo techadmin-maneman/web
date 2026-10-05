@@ -7,7 +7,7 @@
 // on the public site, so its content file is gated here too, with the site's own,
 // whose marks wait on counsel. The API's copy, the job sheet's labels and the
 // WhatsApp texts, is gated before a production release of mm-api
-// (scripts/check-copy.ts).
+// (scripts/release/check-copy.ts).
 
 import { readdirSync, readFileSync } from "node:fs";
 

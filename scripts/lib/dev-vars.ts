@@ -1,4 +1,4 @@
-// A local .dev.vars brought up to .dev.vars.example (scripts/ensure-dev-vars.ts):
+// A local .dev.vars brought up to .dev.vars.example (scripts/dev/ensure-dev-vars.ts):
 // the keys the example has gained are added, and a key left empty is given the
 // example's value once it has one. A value already set is never overwritten.
 

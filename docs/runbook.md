@@ -106,7 +106,7 @@ W r2 bucket create mm-<t>-referral-cards --location apac
 Then check every bucket the Workers bind: that it exists, that the try-on ones expire everything within 30 days, and that no other expires anything. CI's tokens may not read R2 (step 6), so this takes a token of your own that can (Account → Workers R2 Storage → Read), as `CLOUDFLARE_API_TOKEN` in a git-ignored `.env.cf-read`:
 
 ```sh
-node --env-file=.env.cf-read scripts/check-buckets.ts <env> --strict
+node --env-file=.env.cf-read scripts/release/check-buckets.ts <env> --strict
 ```
 
 ### 2. DNS
@@ -143,7 +143,7 @@ In production only the ops console (`ops.maneman.in`) stays behind Access. Its C
 
 ```sh
 W d1 migrations apply maneman-<env> --env <env> --remote
-node scripts/mark-database.ts <env>    # writes the identity row once; fails if it names another database
+node scripts/release/mark-database.ts <env>    # writes the identity row once; fails if it names another database
 ```
 
 ### 5. Bootstrap both Workers
@@ -165,7 +165,7 @@ Cloudflare dashboard → Manage Account → Account API Tokens → Create Token 
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also read and write production's database, and production's staging's; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - Optional, production's token: Account → **Account Analytics → Read**. With it, the canary's soak judges the new version on real visitors' errors as well as the smoke's (`docs/decisions/0006-deployment-pipeline.md`); without it the soak says so and the smoke checks stand alone.
 - Optional, production's token: Account → **Workers Observability → Edit** (Cloudflare asks for Edit to run a query, which changes nothing). With it, the soak also fails a release whose busy routes read more rows from D1 a request than their ceilings in `scripts/lib/free-tier-budget.ts`, or whose Home or job card is slower at p95 than its budget in `scripts/lib/soak.ts`; without it the soak says it could not read them.
-- Optional, staging's token: the same **Account Analytics → Read**. With it, each staging deploy reports mm-api's CPU time over the last day against the free plan's 10 ms (`scripts/cpu-report.ts`); without it the step says it could not read it.
+- Optional, staging's token: the same **Account Analytics → Read**. With it, each staging deploy reports mm-api's CPU time over the last day against the free plan's 10 ms (`scripts/ops/cpu-report.ts`); without it the step says it could not read it.
 - No zone permissions, and nothing on R2 or Queues: a token that reads a bucket's settings can read the photographs in it.
 
 Put each environment's secrets in a file at the repository root. Git ignores `.env.*` files.
@@ -187,8 +187,8 @@ CLOUDFLARE_API_TOKEN=<the mm-ci-production token>
 Check that each token reaches exactly what it should. The script prints results, never the values:
 
 ```sh
-node --env-file=.env.ci-staging scripts/verify-ci-token.ts staging
-node --env-file=.env.ci-production scripts/verify-ci-token.ts production
+node --env-file=.env.ci-staging scripts/release/verify-ci-token.ts staging
+node --env-file=.env.ci-production scripts/release/verify-ci-token.ts production
 ```
 
 Then load the files into the GitHub environments and delete them:
@@ -251,11 +251,11 @@ The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-p
 
 Both environments use the real org (`docs/decisions/0050-crm-in-the-real-org.md`), which also holds Books. Do this once per org.
 
-Steps 1 and 2 are what `scripts/setup-crm.ts` does, where the refresh token's scope includes `ZohoCRM.settings.fields.ALL`:
+Steps 1 and 2 are what `scripts/ops/setup-crm.ts` does, where the refresh token's scope includes `ZohoCRM.settings.fields.ALL`:
 
 ```sh
-node --env-file=.env.crm-<env> scripts/setup-crm.ts --check   # read-only
-node --env-file=.env.crm-<env> scripts/setup-crm.ts           # creates what is missing
+node --env-file=.env.crm-<env> scripts/ops/setup-crm.ts --check   # read-only
+node --env-file=.env.crm-<env> scripts/ops/setup-crm.ts           # creates what is missing
 ```
 
 Zoho names a new field from its label, so the script reads each one back: the sync writes the API name and nothing else. Steps 3 and 4 have no API and stay by hand.
@@ -277,9 +277,9 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
 2. **Pick-list values.** Lead Status: add `New`, `Waitlist` and `Try-on — delivery only` (with the em dash). Lead Source: add `Booking form`, `Waitlist`, `Try-on` and `Referral`.
 
-   The last two fields and `Referral` came with ADR 0074, for an invited friend and the window a booking asked for. Zoho refuses a lead carrying a pick-list value it does not have, so the sync writes none of the three until `CRM_ORG_HAS_REFERRAL_FIELDS` in `src/config/crm.ts` is turned on: run `scripts/setup-crm.ts`, then `scripts/check-zoho-setup.ts` to prove them, then turn it on in a release. Until then a record the CRM already has gets the invite and the window in its note.
+   The last two fields and `Referral` came with ADR 0074, for an invited friend and the window a booking asked for. Zoho refuses a lead carrying a pick-list value it does not have, so the sync writes none of the three until `CRM_ORG_HAS_REFERRAL_FIELDS` in `src/config/crm.ts` is turned on: run `scripts/ops/setup-crm.ts`, then `scripts/ops/check-zoho-setup.ts` to prove them, then turn it on in a release. Until then a record the CRM already has gets the invite and the window in its note.
 
-3. **Assignment rule.** Setup → Automation → Assignment Rules → Leads: create the rule that gives each new booking an owner. Its ID becomes `ZOHO_LAR_ID`; `scripts/check-zoho-setup.ts` (step 6) lists it. An org may have none: leave `ZOHO_LAR_ID` unset and Zoho leaves each record with the API user.
+3. **Assignment rule.** Setup → Automation → Assignment Rules → Leads: create the rule that gives each new booking an owner. Its ID becomes `ZOHO_LAR_ID`; `scripts/ops/check-zoho-setup.ts` (step 6) lists it. An org may have none: leave `ZOHO_LAR_ID` unset and Zoho leaves each record with the API user.
 4. **Workflows.** Setup → Automation → Workflow Rules → Leads:
    - on create, when Lead Status is New: notify the assigned technician and ops;
    - on edit, when Contact Consent becomes true: assign an owner. This covers a try-on customer who later books; Zoho has no assignment rule on update.
@@ -292,7 +292,7 @@ Zoho names a new field from its label, so the script reads each one back: the sy
       ZohoCRM.modules.leads.ALL,ZohoCRM.modules.notes.CREATE,ZohoSearch.securesearch.READ,ZohoCRM.settings.fields.READ,ZohoCRM.settings.assignment_rules.READ
       ```
 
-      The first three are what the sync uses. The two `settings…READ` scopes let `scripts/check-zoho-setup.ts` read the fields and assignment rules; they cannot change anything. Choose the longest time duration, add a description, then **Create** and pick the org.
+      The first three are what the sync uses. The two `settings…READ` scopes let `scripts/ops/check-zoho-setup.ts` read the fields and assignment rules; they cannot change anything. Choose the longest time duration, add a description, then **Create** and pick the org.
 
    3. Before the code expires, exchange it for a refresh token. Use your data centre's accounts host:
 
@@ -307,7 +307,7 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 6. **Check, then store.** Put the Zoho values (and `ALERT_WEBHOOK_URL`) in `.env.worker-<env>` (step 7). Leave `ZOHO_LAR_ID` empty if you don't know it yet. Then:
 
    ```sh
-   node --env-file=.env.worker-staging scripts/check-zoho-setup.ts
+   node --env-file=.env.worker-staging scripts/ops/check-zoho-setup.ts
    ```
 
    It confirms every field, type and pick-list value the sync writes, and lists the Leads assignment rules with their IDs. Fill in `ZOHO_LAR_ID`, run it again until it passes, then `W secret bulk` the file and delete it. The next lead proves the setup end to end: it should reach Zoho within a minute, assigned and with its proposed date.
@@ -318,11 +318,11 @@ Zoho names a new field from its label, so the script reads each one back: the sy
    ZohoCRM.settings.fields.ALL,ZohoCRM.settings.assignment_rules.READ,ZohoCRM.modules.leads.READ,ZohoCRM.modules.leads.DELETE,ZohoCRM.modules.contacts.READ,ZohoCRM.modules.contacts.DELETE,ZohoSearch.securesearch.READ
    ```
 
-   The settings scopes are for `scripts/setup-crm.ts` and `scripts/check-zoho-setup.ts`, the lead read and the search for the contract probe, and the lead and contact reads and deletes for "Staging's records in the org". For Books, use the same scopes as the Worker's Books token (step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
+   The settings scopes are for `scripts/ops/setup-crm.ts` and `scripts/ops/check-zoho-setup.ts`, the lead read and the search for the contract probe, and the lead and contact reads and deletes for "Staging's records in the org". For Books, use the same scopes as the Worker's Books token (step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
    - the CRM's as `ZOHO_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET` and the hosts, in `.env.crm-scripts`;
    - Books' as `ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, the hosts and `ZOHO_BOOKS_ORG_ID`, in `.env.books-scripts`.
 
-   `scripts/check-zoho-setup.ts`, `scripts/setup-crm.ts` and the Books scripts stop, naming this step, when theirs is missing (`scripts/lib/zoho-script-token.ts`). In an emergency, with the scripts' token lost, `--use-worker-token` runs one on the Worker's token on purpose; every token it mints is one the Worker cannot for ten minutes.
+   `scripts/ops/check-zoho-setup.ts`, `scripts/ops/setup-crm.ts` and the Books scripts stop, naming this step, when theirs is missing (`scripts/lib/zoho-script-token.ts`). In an emergency, with the scripts' token lost, `--use-worker-token` runs one on the Worker's token on purpose; every token it mints is one the Worker cannot for ten minutes.
 
 ### 9. Triggers
 
@@ -335,7 +335,7 @@ npm run apply-triggers -- --env <env>
 After every deploy, both workflows compare the live cron schedules and queue consumers, with each consumer's settings, with every Worker's config, and warn on a difference. CI's token cannot read the queues, so its consumers read "not compared"; check them, and confirm an `apply-triggers`, with a token of your own that can read Workers and Queues:
 
 ```sh
-node --env-file=.env.cf-read scripts/check-triggers.ts <env> --strict
+node --env-file=.env.cf-read scripts/release/check-triggers.ts <env> --strict
 ```
 
 ### 10. Result links through Access (staging only)
@@ -452,8 +452,8 @@ Our own database is the record of visits (docs/decisions/0110-field-work-without
 3. **The org.** Books needs a custom field on Customers and Vendors, **"MM person ID"**: Text, unique values, API name `cf_mm_person_id`. It is what finds a client's customer again. Then prove Books' calls on "Staging test" records the script removes again (about 20 calls; it keeps one item, "Staging test: proof item", which the scripts' scopes cannot delete), and check the org's settings:
 
    ```sh
-   node --env-file=.env.books-scripts scripts/books-proof.ts
-   node --env-file=.env.books-scripts scripts/check-books-setup.ts --env <env>
+   node --env-file=.env.books-scripts scripts/staging/books-proof.ts
+   node --env-file=.env.books-scripts scripts/release/check-books-setup.ts --env <env>
    ```
 
 4. **The Worker.** Set the secrets, then set the hosts (`ZOHO_BOOKS_*_HOST`) and `ZOHO_BOOKS_ORG_ID` in `wrangler.jsonc`, with `BOOKS_PROVIDER` as `zoho`.
@@ -636,20 +636,20 @@ The free plan gives the zone one rate-limiting rule. It keeps one address from s
 6. **Then take action:** **Block**, **Duration** 10 seconds. Then **Deploy**.
 7. **Check.** From a terminal, `for i in $(seq 1 60); do curl -s -o /dev/null -w "%{http_code} " https://maneman.in/api/health; done`: the first 50 or so answer `200`, then `429`, and ten seconds later `200` again. **Security** → **Analytics** → **Events** shows the blocks under the rule's name. Write the date in the table above.
 
-Anything that sends more than 50 API requests in 10 seconds from one address is blocked too. The load test (`scripts/load-test-leads.ts`) sends 50 at once: run it with `--people 20`, or switch the rule off for its run and on again after. If ops working from one office are shown Cloudflare's block page, raise **Requests** rather than delete the rule.
+Anything that sends more than 50 API requests in 10 seconds from one address is blocked too. The load test (`scripts/staging/load-test-leads.ts`) sends 50 at once: run it with `--people 20`, or switch the rule off for its run and on again after. If ops working from one office are shown Cloudflare's block page, raise **Requests** rather than delete the rule.
 
 ### Before the first production release of Phase 2
 
 Production runs 268eaa4, of 21 September 2026. The next release carries every migration since, and a Worker that binds what production has never had. Before starting `deploy-production.yml`:
 
-1. **What mm-api binds.** Create what step 1 lists and production lacks: `mm-prod-client-photos` and `mm-prod-referral-cards` (open point 86). Then check every bucket with `node --env-file=.env.cf-read scripts/check-buckets.ts production --strict`, and every queue with `W queues list`. A missing one stops the release at its upload, before any migration.
+1. **What mm-api binds.** Create what step 1 lists and production lacks: `mm-prod-client-photos` and `mm-prod-referral-cards` (open point 86). Then check every bucket with `node --env-file=.env.cf-read scripts/release/check-buckets.ts production --strict`, and every queue with `W queues list`. A missing one stops the release at its upload, before any migration.
 2. **Vars and secrets.** `npm run check:config` holds each environment to 64 vars and secrets together (ADR 0009, rule 6). A secret the switched-on providers need must be set before the release (step 7): the Worker refuses to start without it, and Cloudflare refuses the upload.
 3. **The apps.** The release passes over an app whose surface is off in production, whether or not it has a Worker there: `mm-app-production` was bootstrapped on 22 September 2026, and until 27 September 2026 the release shipped it and its production build refused the copy still owed (`docs/open-points.md`, item 152). An app is shipped from the release that switches its surface on (step 11).
 4. **After the release.** Attach the new consumer with `npm run apply-triggers -- --env production` and check it (step 9). Then the contract step ADR 0070 holds back, dropping the old Zoho token tables, may be merged (`docs/migrations.md`).
 
 ## The CI runner
 
-**Every job runs on GitHub's own runners**, `runs-on: ubuntu-latest` in each job of every workflow; since 4 October 2026 no variable can move them (`test/node/ci-workflow.test.ts` holds every workflow to it). The repository is public, so the minutes are free and the jobs run side by side, each on a runner of four cores: the unit tests take four workers, the browser tests three (`vitest.config.ts`, `playwright.config.ts`). Every push to a pull request runs the full suite: the static checks, the unit and contract tests with coverage, the build, every browser-test project and Lighthouse, the deployed code on new migrations and the local smoke. A check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated"), and adding a label starts no run. The last two jobs, "full suite" and "checks", pass only when every job they wait on passed or was skipped (`scripts/ci-gate.ts`).
+**Every job runs on GitHub's own runners**, `runs-on: ubuntu-latest` in each job of every workflow; since 4 October 2026 no variable can move them (`test/node/ci-workflow.test.ts` holds every workflow to it). The repository is public, so the minutes are free and the jobs run side by side, each on a runner of four cores: the unit tests take four workers, the browser tests three (`vitest.config.ts`, `playwright.config.ts`). Every push to a pull request runs the full suite: the static checks, the unit and contract tests with coverage, the build, every browser-test project and Lighthouse, the deployed code on new migrations and the local smoke. A check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated"), and adding a label starts no run. The last two jobs, "full suite" and "checks", pass only when every job they wait on passed or was skipped (`scripts/ci/ci-gate.ts`).
 
 **The owner's machine is retired.** Its runner, `maneman-runner` (`maneman-pc`, built from `ops/runner/`), was shut down on 2 October 2026, and must not come back while the repository is public: a fork's pull request would run its own code on that machine. On a private repository only, it could: the machine on, with Docker Desktop running, the image built and registered once with a token (it lasts an hour), and started again without it, so the token is not left in the container's settings:
 
@@ -809,7 +809,7 @@ If the alert comes back for runs started in the same minute of the hour again an
 node node_modules/wrangler/bin/wrangler.js tail mm-api-<env> --format json
 ```
 
-Every staging deploy also reports mm-api's CPU over the last day in its last step, and `node --env-file=.env.cf-read scripts/cpu-report.ts production` reports production's (the token needs Account Analytics: Read).
+Every staging deploy also reports mm-api's CPU over the last day in its last step, and `node --env-file=.env.cf-read scripts/ops/cpu-report.ts production` reports production's (the token needs Account Analytics: Read).
 
 **After a deploy that changes the trigger.** Cloudflare attaches the trigger apart from the code (ADR 0010). Until an operator runs `npm run apply-triggers -- --env <env>`, the five-minute trigger fires, and each of its runs runs every job at once, as before, too heavy for the free plan. The deploy's trigger check names the difference.
 
@@ -879,7 +879,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 
 ### Checking the booking path on staging
 
-Actions → **staging-lead** → Run workflow, with a pincode staging serves and a window. It books a test consultation through the site's form, `POST /api/consultation` (`scripts/staging-lead.ts`), on the last day the form offers. The name is "Staging test", the mobile number is random, and the address is made up. Within a minute the lead should be in the real Zoho org (ADR 0050), with the day booked, and the consultation on the console's Tasks board as a consultation asked for: staging shares the owner's org, and its records are the owner's to clear before go-live (`docs/open-points.md`, item 19). A `409` means the window has gone: run it again with another. In D1:
+Actions → **staging-lead** → Run workflow, with a pincode staging serves and a window. It books a test consultation through the site's form, `POST /api/consultation` (`scripts/staging/staging-lead.ts`), on the last day the form offers. The name is "Staging test", the mobile number is random, and the address is made up. Within a minute the lead should be in the real Zoho org (ADR 0050), with the day booked, and the consultation on the console's Tasks board as a consultation asked for: staging shares the owner's org, and its records are the owner's to clear before go-live (`docs/open-points.md`, item 19). A `409` means the window has gone: run it again with another. In D1:
 
 ```sql
 SELECT id, sync_state, sync_attempts, last_sync_error, created_at, synced_at FROM leads ORDER BY created_at DESC LIMIT 5;
@@ -932,7 +932,7 @@ The sweeper picks them up within fifteen minutes, and each lead's alert closes a
 The adapter tests read answers recorded from the org, so they pass only while Zoho answers as it did. Before every release, run each read the Books and CRM adapters make, through the adapters, against the owner's org. It writes nothing and makes about 15 calls:
 
 ```sh
-node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/zoho-contract-probe.ts
+node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/release/zoho-contract-probe.ts
 ```
 
 Each read prints `PASS`, `SKIP` when the org holds nothing for it to read (no invoice yet, say), or `FAIL`. A failure naming `UNEXPECTED_ANSWER` and a field means Zoho now answers in a shape the adapter does not read: change the adapter's schema in `src/providers/books/zoho.ts` or `zoho-crm.ts`, run the probe again with `--record` to write the answers the tests load (`test/fixtures/vendors`, with no one's details), and run those tests. `OAUTH_SCOPE_MISMATCH` means a scripts' token lacks a scope (Zoho, step 7 of "Provisioning an environment"). Record the date and the lines in `docs/verification.md`.
@@ -987,7 +987,7 @@ Staging writes to the owner's real Books and CRM, which production shares (open 
 1. List them:
 
    ```sh
-   node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/staging-records.ts
+   node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/staging/staging-records.ts
    ```
 
    It lists every Books payment whose description starts "Staging test: ", with its refunds; every Books invoice of a staging contact; every Books contact, CRM lead and CRM contact named "Staging test" or "Load test"; and every Books customer, payment and invoice and CRM lead whose ID staging's database keeps, read one by one, so an erased or inactive one is listed too. It writes them to `private/staging-records-<date>.json`. It names apart any record that looks like a test but carries neither mark, which it never deletes, and any ID staging's database keeps of a record the org no longer holds.
@@ -1277,8 +1277,8 @@ A request waiting 5 days alerts ops: process it before its 7 days run out. The c
 **The pincodes we serve** are loaded from `data/pincodes/ncr-pincodes.csv` (docs/decisions/0048-referrals.md). Fill in its `served` and `launch_on` columns, then:
 
 ```sh
-node scripts/import-pincodes.ts staging --all-served-from 2026-09-22   # staging's placeholder (open point 48)
-node scripts/import-pincodes.ts production                             # the file's own columns
+node scripts/ops/import-pincodes.ts staging --all-served-from 2026-09-22   # staging's placeholder (open point 48)
+node scripts/ops/import-pincodes.ts production                             # the file's own columns
 ```
 
 Run it again whenever the file changes: each pincode's row is replaced, except an area name ops gave it in the console. **The import tells nobody on a waitlist, so it refuses to serve a pincode people are waiting for.** It names each such pincode with how many wait, and writes nothing. Serve those from the console — Growth · Service area, or the waitlist's Mark live — which tells those who asked (ADR 0071), then run the import again: a pincode already served is no launch.
@@ -1288,7 +1288,7 @@ Run it again whenever the file changes: each pincode's row is replaced, except a
 **Ops' log of referrals before January** is imported once, from a CSV in git-ignored `private/`:
 
 ```sh
-node scripts/import-referrals.ts production --file private/referrals-before-january.csv
+node scripts/ops/import-referrals.ts production --file private/referrals-before-january.csv
 ```
 
 It writes people, codes, attributions and the credits, and can be run again safely. Staging uses the synthetic sample in `data/referrals/`.
@@ -1442,17 +1442,17 @@ mkdir -p private/restore
 # 2. Copy everything as it is now, if it can still be read. The export holds up other queries while it runs.
 W d1 export maneman-<env> --env <env> --remote --output private/restore/now.sql > /dev/null
 # 3. Build the carry-back file. Name each table the restore is for with --leave: it stays as it was at <T>.
-node scripts/restore-carry.ts private/restore/now.sql private/restore/carry.sql --leave <table>
+node scripts/release/restore-carry.ts private/restore/now.sql private/restore/carry.sql --leave <table>
 # 4. Go back, and switch maintenance on again. Keep the bookmark it prints: restoring to it undoes this.
 W d1 time-travel restore maneman-<env> --env <env> --timestamp <T> && W d1 execute maneman-<env> --env <env> --remote --command "$on"
 # 5. Carry back what can be trusted.
 W d1 execute maneman-<env> --env <env> --remote --file private/restore/carry.sql
 # 6. Check the database is still this environment's.
-node scripts/mark-database.ts <env> --check
+node scripts/release/mark-database.ts <env> --check
 # 7. Switch maintenance off, resume the queues, and run the smoke suite.
 ```
 
-`scripts/restore-carry.ts` reads the tables and their triggers from the export itself, and prints how it treats each. Its file empties each table and fills it again as it was a moment ago, except that:
+`scripts/release/restore-carry.ts` reads the tables and their triggers from the export itself, and prints how it treats each. Its file empties each table and fills it again as it was a moment ago, except that:
 
 - a table that refuses a delete, such as `consents`, `audit_log`, `credit_ledger` or `hair_profiles`, only gains the rows it lacks, and its rows changed since are changed to match, so a hair profile an erasure blanked is blanked again;
 - a table triggers write to, such as `last_visits` or `stock_balances`, is written last, as the export had it;
@@ -1483,7 +1483,7 @@ A production release rolls itself back when a smoke check or the soak fails once
 1. **Find the version to go back to.** Each Worker's config is in `scripts/lib/workers.ts`: `wrangler.jsonc` for mm-api, `site/wrangler.jsonc` for mm-site, and `apps/app/wrangler.jsonc`, `apps/ops/wrangler.jsonc` and `apps/tech/wrangler.jsonc` for the apps.
 
    ```sh
-   node scripts/release.ts current --worker <worker> --env <env>     # the version serving now
+   node scripts/release/release.ts current --worker <worker> --env <env>     # the version serving now
    W deployments list --config <config> --env <env>                  # the last ten deployments, each with its versions
    W versions list --config <config> --env <env>                     # every version, tagged with the commit it was built from
    ```
@@ -1493,7 +1493,7 @@ A production release rolls itself back when a smoke check or the soak fails once
 2. **Put it back.** One Worker or several in one command; a Worker already serving the version named is left alone, and every one is tried before the command fails:
 
    ```sh
-   node scripts/release.ts restore --env <env> --message "rollback: <reason>" --to mm-api=<version id> --to mm-app=<version id>
+   node scripts/release/release.ts restore --env <env> --message "rollback: <reason>" --to mm-api=<version id> --to mm-app=<version id>
    ```
 
 3. **Smoke it.** The public host, and each switched-on Phase 2 host, which must serve mm-api and its own app:
@@ -1511,4 +1511,4 @@ What a rollback does not undo:
 - **Triggers.** Cron schedules, queue consumers and routes are not part of a version. If the release was followed by `apply-triggers`, the older code runs with the newer triggers; attach the older ones by checking out the older commit and running `npm run apply-triggers -- --env <env>` from it.
 - **Staging's next merge.** A merge to `main` deploys every Worker again, so a rollback on staging lasts until then.
 
-An app's phones and browsers take the rolled-back version the next time they open it, when its service worker sees the change. If a release stopped halfway through a rollout, `release.ts current` refuses to answer and prints the split: put the good version back at 100% with `node scripts/release.ts deploy --worker <worker> --env <env> --split <version id>@100 --message "rollback: <reason>"`.
+An app's phones and browsers take the rolled-back version the next time they open it, when its service worker sees the change. If a release stopped halfway through a rollout, `release.ts current` refuses to answer and prints the split: put the good version back at 100% with `node scripts/release/release.ts deploy --worker <worker> --env <env> --split <version id>@100 --message "rollback: <reason>"`.

@@ -32,7 +32,7 @@ On 1 October 2026 the owner asked: "how are referrals configured? Is it a hard c
 
 - **The referral keeps the reward it was settled under.** Migration 0062 adds `referrer_visits`, `friend_visits` and `credit_valid_days` to `referral_attributions`, written when the referral is granted or held. A grant held for review is given what was in force when it was held, whenever ops approve it, and a rejection is told to each side that reward would have given visits. A grant held before the migration kept none, and takes the reward in force when ops decide it. So does an invite ops attach after the friend's first fit, which is held for review as it is attached (the owner's ruling of 30 September 2026 on open point 157): it keeps no reward, and takes the one in force when ops approve it, the simplest rule consistent with the rest.
 - **Credits already given keep their visits and their date.** The ledger holds each grant's visits and expiry (ADR 0033), and nothing a setting does reaches back into it.
-- **The credits' life is the referral's alone.** Visits ops give by hand in the client's page, and the back-filled log of before January (`scripts/import-referrals.ts`), keep 365 days.
+- **The credits' life is the referral's alone.** Visits ops give by hand in the client's page, and the back-filled log of before January (`scripts/ops/import-referrals.ts`), keep 365 days.
 
 ### A side given nothing
 

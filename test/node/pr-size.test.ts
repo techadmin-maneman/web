@@ -32,15 +32,15 @@ describe("the lines a pull request changes by hand", () => {
     expect(isGenerated("src/openapi.ts")).toBe(false);
     expect(isGenerated("docs/api-notes.md")).toBe(false);
     expect(isGenerated("docs/runbook.md")).toBe(false);
-    expect(isGenerated("scripts/generate-openapi.ts")).toBe(false);
+    expect(isGenerated("scripts/build/generate-openapi.ts")).toBe(false);
   });
 });
 
 describe("the review budget step in CI", () => {
   it("runs on every pull request and only warns", () => {
     const ci = readFileSync(".github/workflows/ci.yml", "utf8");
-    expect(ci).toContain(`run: git diff --numstat "$BASE...HEAD" | node scripts/pr-size.ts`);
-    const script = readFileSync("scripts/pr-size.ts", "utf8");
+    expect(ci).toContain(`run: git diff --numstat "$BASE...HEAD" | node scripts/ci/pr-size.ts`);
+    const script = readFileSync("scripts/ci/pr-size.ts", "utf8");
     expect(script).toContain("::warning::");
     expect(script).not.toContain("process.exit");
   });

@@ -1,5 +1,5 @@
 // The read-only check that every R2 bucket an environment binds exists and
-// keeps its objects as long as it should (scripts/check-buckets.ts), against a
+// keeps its objects as long as it should (scripts/release/check-buckets.ts), against a
 // fake account. The try-on buckets' 30-day rule is set by hand at provisioning
 // (docs/runbook.md, step 1), so nothing else would notice it gone.
 
@@ -118,6 +118,6 @@ describe("the live buckets", () => {
     const findings = await check(account(RIGHT, { "mm-staging-tryon-uploads": refused }));
     expect(findings).toHaveLength(1);
     expect(findings[0]?.outcome).toBe("not read");
-    expect(findings[0]?.detail).toContain("scripts/check-buckets.ts staging");
+    expect(findings[0]?.detail).toContain("scripts/release/check-buckets.ts staging");
   });
 });

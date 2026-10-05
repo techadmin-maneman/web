@@ -33,7 +33,7 @@ describe("a colour drawn outside a stylesheet", () => {
       ...files("site/src"),
       ...files("packages/ui"),
       ...files("packages/web-kit"),
-      "scripts/make-house-card.ts",
+      "scripts/build/make-house-card.ts",
     ].filter((path) => /\.(ts|tsx)$/.test(path));
     const written = code.filter((path) => /#[0-9a-fA-F]{6}\b/.test(readFileSync(path, "utf8")));
     expect(written).toEqual([]);

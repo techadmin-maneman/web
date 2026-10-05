@@ -339,7 +339,7 @@ describe("Zoho record and note contents", () => {
     expect(record).not.toHaveProperty("Proposed_Visit_Date");
   });
 
-  // LIFE-11. Zoho refuses a pick-list value it does not have, so the fields wait for scripts/setup-crm.ts.
+  // LIFE-11. Zoho refuses a pick-list value it does not have, so the fields wait for scripts/ops/setup-crm.ts.
   describe("an invited friend's booking", () => {
     const invited = crmLead({ firstChoiceWindow: null, inviteCode: "RM7K2Q", askedWindow: "afternoon" });
 
@@ -439,7 +439,7 @@ describe("Zoho: a person's changed number, address or invite", () => {
     expect(calls.map((call) => call.method)).toEqual(["POST", "PUT"]);
   });
 
-  // An invite ops attached (ADR 0089), in the field the org gains with scripts/setup-crm.ts (src/config/crm.ts).
+  // An invite ops attached (ADR 0089), in the field the org gains with scripts/ops/setup-crm.ts (src/config/crm.ts).
   it("writes the invite's code once the org has the referral fields, and nothing of it before", () => {
     const invited = { ...CONTACT, inviteCode: "VSAB23" };
     expect(contactRecordFor(invited, { referral: true })).toEqual({

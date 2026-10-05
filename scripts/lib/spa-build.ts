@@ -1,4 +1,4 @@
-// What building a Phase 2 app shares (scripts/build-app.ts, build-ops.ts,
+// What building a Phase 2 app shares (scripts/build/build-app.ts, build-ops.ts,
 // build-tech.ts): the production gate on its copy, the Vite build for one
 // environment into apps/<app>/dist/<environment>, its _headers, and the
 // prompt's budget: "first load under 150 KB of gzipped JavaScript"
@@ -23,7 +23,7 @@ export interface SpaBuild {
 export interface BuildOptions {
   readonly environment: EnvironmentName;
   /**
-   * Builds production with the copy still marked PLACEHOLDER. Only scripts/build.ts
+   * Builds production with the copy still marked PLACEHOLDER. Only scripts/build/build.ts
    * passes it, to prove production bundles; a release never does.
    */
   readonly allowPlaceholders: boolean;

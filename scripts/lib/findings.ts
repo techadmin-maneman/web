@@ -1,5 +1,5 @@
-// What the read-only checks of the live account report (scripts/check-triggers.ts,
-// scripts/check-buckets.ts), and how they print it: a line each, and under GitHub
+// What the read-only checks of the live account report (scripts/release/check-triggers.ts,
+// scripts/release/check-buckets.ts), and how they print it: a line each, and under GitHub
 // Actions a warning for a difference and a notice for what could not be read.
 
 export type Outcome = "matches" | "differs" | "not read" | "not deployed";

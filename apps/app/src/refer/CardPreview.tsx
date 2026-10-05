@@ -10,7 +10,7 @@ import houseCard from "./invite-house.jpg";
 import styles from "./refer.module.css";
 import { CARD_HEIGHT, CARD_WIDTH } from "./card-layout.ts";
 
-/** The house example as the app bundles it, the same file as the site's (scripts/make-house-card.ts). */
+/** The house example as the app bundles it, the same file as the site's (scripts/build/make-house-card.ts). */
 export { houseCard };
 
 /** What a card preview shows: the house example, the client's own before it is made, or a card already made. */

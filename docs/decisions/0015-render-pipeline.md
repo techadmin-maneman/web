@@ -21,7 +21,7 @@ AILabTools bills on generation, not delivery. Its results live 24 hours on a hos
 - **Transient submit failures are tried again**, three times in all. Failed calls bill nothing (7.6), so a network error, a 5xx or a 429 costs only time.
 - **Slow renders are followed for 15 minutes, not 180 s.** The prompt says to fail a render 180 s after submitting. On staging on 21 September 2026, a Premium render was still running at 189 s, was billed while it ran, and finished about 6½ minutes after submitting, after the job had already been failed. The harness had measured Premium at 80 to 91 s. The prompt defers to measurement (docs/reference/ailabtools-api-notes.md, section 7), so:
   - polling slows to once a minute after 3 minutes;
-  - it gives up only at 15 minutes, with an alert naming the task, which `scripts/ailabtools-probe.ts poll` can still check by hand;
+  - it gives up only at 15 minutes, with an alert naming the task, which `scripts/staging/ailabtools-probe.ts poll` can still check by hand;
   - the customer's page keeps showing `rendering` for as long as it chooses to wait, and a WhatsApp copy still follows when the result arrives.
 - **The result URL is stored before downloading.** The queue retries the download three times, a minute apart. Then the sweeper takes over, every 5 minutes for the first few tries and hourly after, until the URL's 24 hours are up. Only then does the job fail, with an alert that a billed image was lost.
 - **Results are capped at 6 MB** (`MAX_RESULT_BYTES`). The cap sizes the R2 storage budget, and WhatsApp takes images of 5 MB at most. Staging's first renders will show whether real results come near it.

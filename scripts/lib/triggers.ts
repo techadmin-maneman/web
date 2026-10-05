@@ -101,7 +101,7 @@ function isMissingWorker(answer: ApiAnswer): boolean {
 function remedies(environment: RemoteEnvironmentName) {
   return {
     apply: `An operator runs: npm run apply-triggers -- --env ${environment} (docs/decisions/0010-applying-triggers.md)`,
-    check: `Check it with a token that can read it: node --env-file=<file> scripts/check-triggers.ts ${environment}`,
+    check: `Check it with a token that can read it: node --env-file=<file> scripts/release/check-triggers.ts ${environment}`,
   };
 }
 

@@ -24,7 +24,7 @@ The `crm-sync` consumer is the only caller of Zoho. The prompt asks that the `la
 - A person's first lead inserts the record.
 - Later leads update it and add a note giving the city, window and proposed date. Notes carry no name or number.
 - Before inserting, the sync searches by `D1_Person_ID`. So a retry after Zoho accepted the insert, but before D1 recorded the ID, usually updates the record instead of inserting again.
-- **`D1_Person_ID` is unique in Zoho** ("Do not allow duplicate values"). This is the real guarantee against duplicates. The search is not enough on its own: on staging, Zoho's search did not find a new record 25 seconds after it was created, and did by two minutes. An insert that races or repeats is refused with `DUPLICATE_DATA`, the lead is marked failed, and the next attempt finds the record and updates it. `scripts/check-zoho-setup.ts` fails if the field allows duplicates.
+- **`D1_Person_ID` is unique in Zoho** ("Do not allow duplicate values"). This is the real guarantee against duplicates. The search is not enough on its own: on staging, Zoho's search did not find a new record 25 seconds after it was created, and did by two minutes. An insert that races or repeats is refused with `DUPLICATE_DATA`, the lead is marked failed, and the next attempt finds the record and updates it. `scripts/ops/check-zoho-setup.ts` fails if the field allows duplicates.
 
 **Consent rules** live in `src/providers/crm/rules.ts`, outside the Zoho code, so they hold for any CRM:
 
@@ -76,7 +76,7 @@ A longer timeout also matters for duplicates. If an insert times out after Zoho 
 
 **Hosts** are secrets (`ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`). For Zoho's India data centre the accounts host is `accounts.zoho.in`. The API host depends on the environment of the org: `www.zohoapis.in` for a production org, `developer.zohoapis.in` for a Developer Edition org, `sandbox.zohoapis.in` for a sandbox. The `api_domain` in a token response always names the production host, so it cannot be trusted for the other two; a token used on the wrong host gets a bare 401.
 
-**Scopes:** `ZohoCRM.modules.leads.ALL`, `ZohoCRM.modules.notes.CREATE` and `ZohoSearch.securesearch.READ` for the sync. Plus `ZohoCRM.settings.fields.READ` and `ZohoCRM.settings.assignment_rules.READ`, read-only, so `scripts/check-zoho-setup.ts` can confirm the org is set up as the sync expects.
+**Scopes:** `ZohoCRM.modules.leads.ALL`, `ZohoCRM.modules.notes.CREATE` and `ZohoSearch.securesearch.READ` for the sync. Plus `ZohoCRM.settings.fields.READ` and `ZohoCRM.settings.assignment_rules.READ`, read-only, so `scripts/ops/check-zoho-setup.ts` can confirm the org is set up as the sync expects.
 
 ## Consequences
 

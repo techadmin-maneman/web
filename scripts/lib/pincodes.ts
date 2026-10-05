@@ -1,4 +1,4 @@
-// Reading data/pincodes/ncr-pincodes.csv (scripts/import-pincodes.ts).
+// Reading data/pincodes/ncr-pincodes.csv (scripts/ops/import-pincodes.ts).
 //
 // A pincode's area is the shortest name among its sub and head post offices, with the office's suffix taken
 // off ("Saket SO South Delhi" becomes "Saket"): a name a client would recognise, until ops give better ones.

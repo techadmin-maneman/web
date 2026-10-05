@@ -1,5 +1,5 @@
 // The ops console's build (docs/decisions/0026-hosts-and-surfaces.md). One
-// build per environment, into dist/<environment>; scripts/build-ops.ts adds
+// build per environment, into dist/<environment>; scripts/build/build-ops.ts adds
 // _headers. There is no service worker: the console is a desk tool behind
 // Cloudflare Access, and nothing about a client belongs on a laptop's disk.
 

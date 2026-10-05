@@ -26,7 +26,9 @@ describe("the production site build", () => {
   it.runIf(!BUILDS)("refuses what awaits counsel, and nothing else", { timeout: 180_000 }, () => {
     expect(AWAITING_COUNSEL.map((notice) => notice.version)).toEqual(["photo-v4", "gate-v4"]);
     expect(PAGES_AWAITING_COUNSEL.map((page) => page.title)).toEqual(["Privacy", "Terms"]);
-    const build = spawnSync(process.execPath, ["scripts/build-site.ts", "--env", "production"], { encoding: "utf8" });
+    const build = spawnSync(process.execPath, ["scripts/build/build-site.ts", "--env", "production"], {
+      encoding: "utf8",
+    });
     const output = `${build.stdout}${build.stderr}`;
     expect(build.status, output).not.toBe(0);
     const problems = output.split("\n").filter((line) => line.startsWith("  - "));
@@ -41,7 +43,9 @@ describe("the production site build", () => {
   });
 
   it.runIf(BUILDS)("passes the publish gate", { timeout: 180_000 }, () => {
-    const build = spawnSync(process.execPath, ["scripts/build-site.ts", "--env", "production"], { encoding: "utf8" });
+    const build = spawnSync(process.execPath, ["scripts/build/build-site.ts", "--env", "production"], {
+      encoding: "utf8",
+    });
     expect(build.status, `${build.stdout}${build.stderr}`).toBe(0);
   });
 

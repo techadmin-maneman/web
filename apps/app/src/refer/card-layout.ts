@@ -3,7 +3,7 @@
 // right at the same crop, one gilt rule 2 px wide down the middle, and the mark
 // with the wordmark's small cut in the bottom right corner. No name and no
 // words. The phone's composition (card-draw.ts) and the house card's script
-// (scripts/make-house-card.ts) both draw from these figures.
+// (scripts/build/make-house-card.ts) both draw from these figures.
 
 import { CARD_HEIGHT, CARD_WIDTH } from "../../../../src/config/referral-cards.ts";
 

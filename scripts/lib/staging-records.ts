@@ -1,5 +1,5 @@
 // Staging's records in the owner's real Zoho org: which of Books' and the CRM's records staging wrote, the order a
-// reviewed list of them is deleted in, and the links staging's database keeps to them. scripts/staging-records.ts
+// reviewed list of them is deleted in, and the links staging's database keeps to them. scripts/staging/staging-records.ts
 // reads the org and deletes; this decides, and reaches nothing.
 //
 // Staging marks what it writes in two ways. A note or a description starts with "Staging test: "

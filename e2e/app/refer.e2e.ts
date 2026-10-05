@@ -62,7 +62,7 @@ const refuseNext = (page: Page, name: "NotAllowedError" | "AbortError") =>
     (window as unknown as { refusals: string[] }).refusals.push(refusal);
   }, name);
 
-/** The house card as the app bundles it (scripts/make-house-card.ts). */
+/** The house card as the app bundles it (scripts/build/make-house-card.ts). */
 const HOUSE_CARD = readFileSync("apps/app/src/refer/invite-house.jpg");
 
 /** The invite's own card sent as a photograph, with the invite's words as its caption. */
