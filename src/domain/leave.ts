@@ -1,13 +1,6 @@
-// A technician's leave, recorded by ops in the console (ADR 0062).
-//
-// Leave is read by the same clash check that reads slot_claims
-// (docs/decisions/0034-clash-check.md), which is what makes a job on a day off
-// refused rather than merely discouraged: booking never offers the day, and
-// dispatch answers "on_leave" before anything is written.
-//
-// Leave recorded over jobs already booked moves none of them: ops are told
-// which, the board marks them, and each waits on the Tasks board until it is
-// moved (docs/decisions/0074-hand-offs-and-messages.md).
+// A technician's leave, recorded by ops in the console (ADR 0062). The clash check reads it with the claims, so a job
+// on a day off is refused, never only discouraged. Leave over jobs already booked moves none of them: each waits on the
+// Tasks board until ops move it.
 
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays } from "../lib/india-time.ts";
