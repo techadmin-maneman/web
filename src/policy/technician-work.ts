@@ -3,8 +3,6 @@
 // answer of 27 September 2026, and ops set both in the console (docs/decisions/0088-every-policy-in-the-console.md).
 // The counting itself is src/domain/technician-work.ts's.
 
-export const RULES = ["counts over 90 days, an average flagged at 15 minutes over, and no Skill column."] as const;
-
 /** How many days back the counts reach, from tomorrow, so a job finished today is in. */
 export const WORK_PERIOD_DAYS = 90;
 

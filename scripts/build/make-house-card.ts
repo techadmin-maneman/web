@@ -10,7 +10,7 @@
 //
 // Writes site/public/images/invite-house.jpg, which the invite's Open Graph tags point at, and the same file into
 // the app, whose preview (board F4) shows it. Chats cache a preview by its address, so a file that changes needs
-// a new HOUSE_CARD_VERSION in site/src/lib/invite.ts; test/node/site-content.test.ts says so.
+// a new HOUSE_CARD_VERSION in site/src/lib/invite.ts; test/node/site/site-content.test.ts says so.
 
 import { writeFileSync } from "node:fs";
 import sharp from "sharp";

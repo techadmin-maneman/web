@@ -35,7 +35,7 @@ The `crm-sync` consumer is the only caller of Zoho. The prompt asks that the `la
 | Try-on, contactable                  | New                    | unchanged | no              | yes                    |
 | Anyone not contactable (try-on only) | Try-on — delivery only | unchanged | no              | **no** (`trigger: []`) |
 
-Every implementation calls `assertStatusAllowed` before writing. It throws if a non-contactable person would get any status except delivery-only. `test/worker/crm-rules.test.ts` and `test/worker/zoho.test.ts` prove it.
+Every implementation calls `assertStatusAllowed` before writing. It throws if a non-contactable person would get any status except delivery-only. `test/worker/vendors/crm-rules.test.ts` and `test/worker/vendors/zoho.test.ts` prove it.
 
 > **Amended 4 October 2026 (the owner's decision 9 on the audit of 2 October):** try-on leads stay out of sales views, so the try-on's gate can promise no marketing. The sync sends no try-on lead to the CRM, a client's included: it closes the lead in D1 and posts the chat line, which says it is not to be chased. A person's CRM record comes from their first booking or waitlist sign-up, with Try On ticked if they used the try-on. Records made before keep "Try-on — delivery only", and the rows above still hold for them.
 

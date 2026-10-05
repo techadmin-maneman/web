@@ -63,7 +63,7 @@ The prompt's rule: where v2 and the API contract disagree, the contract wins on 
 
 ## Tooling
 
-17. **`openapi-typescript` and TypeScript 6.** The prompt generates the API types with `openapi-typescript`. Its latest release (7.13) declares a peer dependency on TypeScript 5, and the repository uses 6. A `package.json` override points it at the repository's TypeScript. It generates correctly, and `test/node/site-booking.test.ts` fails if the committed types drift from `docs/openapi.json`.
+17. **`openapi-typescript` and TypeScript 6.** The prompt generates the API types with `openapi-typescript`. Its latest release (7.13) declares a peer dependency on TypeScript 5, and the repository uses 6. A `package.json` override points it at the repository's TypeScript. It generates correctly, and `test/node/site/site-booking.test.ts` fails if the committed types drift from `docs/openapi.json`.
 
 ## The try-on (F3)
 

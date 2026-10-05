@@ -76,7 +76,7 @@ export const refer = {
   },
   /**
    * Board F4: the chat's preview, exactly as the friend receives it. Its heading and line are the landing's own
-   * preview (site/src/content/referral.ts), which test/node/app-invite-preview.test.ts holds them to, so the
+   * preview (site/src/content/referral.ts), which test/node/apps/app/app-invite-preview.test.ts holds them to, so the
    * client is named only when the invite will name them, the friend promised only the visits ops give them, and
    * the area is the site's.
    */

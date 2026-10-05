@@ -1,6 +1,5 @@
 // The ops console's task queue (docs/prompts/phase2-backend.md, "Endpoints" and
-// "Pieces tab"). The rules as the prompt states them, the groups they turn on,
-// and how long a task may wait.
+// "Pieces tab"): its groups, and how long a task may wait.
 //
 // There is no `tasks` table and there is not going to be one. Every group below
 // is a queue the database already keeps: a consultation asked for, a held grant,
@@ -67,15 +66,6 @@
 
 import { HOUR_MS } from "../lib/durations.ts";
 import { DELETION_DECIDED_WITHIN_DAYS } from "./account-deletion.ts";
-
-export const RULES = [
-  "The replacement due date follows the per-base cycle config already defined in this prompt.",
-  "GET /no-shows and POST /no-shows/:id/decision, for ops to charge or waive from the evidence.",
-  "number-change confirmations and deletion-request processing",
-  "Partial reasons. Four in the design. The design says ops need the full set because these drive the task queue.",
-  "ops take or assign a task to a named member of staff (their Access e-mail) and the board shows whose it is",
-  "ops may close a partial visit's task without a follow-up, with a required reason kept under who closed it",
-] as const;
 
 /** The queues a task is read from, in the order the console lists them. */
 export const TASK_GROUPS = [

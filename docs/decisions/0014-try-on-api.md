@@ -66,4 +66,4 @@ The design's photo notice (`photo-v1`) says "Shared with: Nobody outside Mane Ma
 ## Consequences
 
 - The front end uploads with a plain `fetch(upload_url, { method: "PUT", body })` to the same host; no R2 credentials exist to leak.
-- Every R2 write and read is counted by a ceiling, which is what `test/node/free-tier-budget.test.ts` needs to hold the worst case under the free tier.
+- Every R2 write and read is counted by a ceiling, which is what `test/node/tooling/free-tier-budget.test.ts` needs to hold the worst case under the free tier.

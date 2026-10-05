@@ -19,7 +19,7 @@ The audit of 24 September 2026 found the tokens covering every colour and size b
 
 ## Decision
 
-**A scale is named for its value, and holds each value once.** Spaces (`--sp-14` is 14 px), type sizes (`--fs-15`) and now leading (`--lh-155` is 1.55) are the scales the designs draw from. `test/node/brand-package.test.ts` fails a scale that writes one value twice.
+**A scale is named for its value, and holds each value once.** Spaces (`--sp-14` is 14 px), type sizes (`--fs-15`) and now leading (`--lh-155` is 1.55) are the scales the designs draw from. `test/node/packages/brand-package.test.ts` fails a scale that writes one value twice.
 
 **A name for what a value is for points at the scale.** `--fs-app-title` is `var(--fs-34)`, not a second 34 px. Where a role has no single scale value behind it, it is named for what it does: the weights (`--weight-regular`, `--weight-medium`), the focus ring (`--focus-width`, `--focus-offset`, `--focus-offset-wide`), motion (`--duration-quick`, `--duration-travel`, and the one `--ease-house`), and each app's button sizes in `packages/ui/base.css`.
 

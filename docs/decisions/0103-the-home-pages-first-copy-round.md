@@ -34,7 +34,7 @@ Over the footage, "Undetectable. 100% Real Hair. At Home. Be the Main Man, Again
 - **How it works** opens with a free telephonic consultation, and its fit is "the same visit or a later one: your choice" (D2). Booking the two in one visit is not built yet (below).
 - **The technicians** show only their years fitting and fits completed: the promise that the same man fits the first piece and comes every month is gone, and so are their notes, which leave the frozen placeholder list too (`site/src/content/design-placeholders.ts`).
 - **The range** is new: Mane Man Essential, Active, Natural and NatMax, each with a line and what it is made of. They are the guide's Base, Active, Natural and Natural Plus under the owner's names.
-- **Materials and construction** replaces "Two bases, two prices": six groups, the base materials, the knots, the rim and the hairline, the density, the hair and what we do not fit, each closed until it is opened and each opening on its own. Every figure is the guide's. No life in months is given for a base we fit, since the guide says none has been measured by us and marks the multi-layer base "Test before promising"; only the bases we do not fit are given theirs (`test/node/site-content.test.ts`).
+- **Materials and construction** replaces "Two bases, two prices": six groups, the base materials, the knots, the rim and the hairline, the density, the hair and what we do not fit, each closed until it is opened and each opening on its own. Every figure is the guide's. No life in months is given for a base we fit, since the guide says none has been measured by us and marks the multi-layer base "Test before promising"; only the bases we do not fit are given theirs (`test/node/site/site-content.test.ts`).
 
 ### No prices
 

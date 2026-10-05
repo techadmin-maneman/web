@@ -1,5 +1,5 @@
 // Which requests the technician app's service worker answers (apps/tech/sw/sw.ts), by the rule both apps share
-// (packages/web-kit/sw-requests.ts), and tested on its own (test/node/tech-sw.test.ts).
+// (packages/web-kit/sw-requests.ts), and tested on its own (test/node/apps/tech/tech-sw.test.ts).
 
 import { answerFor as answerOf, type Answer as Answered } from "../../../packages/web-kit/sw-requests.ts";
 

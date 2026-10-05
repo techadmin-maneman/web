@@ -1,5 +1,5 @@
 // Timings and attempt limits for the render, messaging and CRM consumers, and what their queues carry. They live
-// here, not in the consumers, so test/node/free-tier-budget.test.ts can prove the worst case fits Cloudflare's free
+// here, not in the consumers, so test/node/tooling/free-tier-budget.test.ts can prove the worst case fits Cloudflare's free
 // tier (docs/decisions/0009), and so whoever sends to a queue (the domain, the routes, the sweeper) reads its contract
 // without reaching into its consumer.
 

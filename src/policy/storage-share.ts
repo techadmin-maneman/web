@@ -8,11 +8,6 @@
 
 import type { EnvironmentName } from "../config/environments.ts";
 
-export const RULES = [
-  "pay for R2 beyond the free tier when it fills",
-  "warns ops at 50% and 80% of the share, and R2's paid storage is accepted as the share fills",
-] as const;
-
 /** Phase 2's share of R2's free 10 GB, in decimal bytes, as Cloudflare bills them (ADR 0039). */
 export const PHASE_2_SHARE_BYTES = 4e9;
 

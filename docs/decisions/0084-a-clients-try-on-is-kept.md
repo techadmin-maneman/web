@@ -48,7 +48,7 @@ Three things stood in the way:
 
 **The notices, by build.** `photo-v2` and `gate-v2` say that if you book a visit, a small copy of your photograph stays in your Mane Man account as your before photo, and the look until your first fit's photographs are taken, and that both are deleted when you ask. The privacy page's try-on sentences say the same. All of it waits for counsel.
 
-- **Production keeps `photo-v1` and `gate-v1`.** Its site build refuses an unapproved notice (`site/src/lib/publish-gate.ts`), and `test/node/site-production-gate.test.ts` holds that build passing. So production also keeps today's rules and sends no copy.
+- **Production keeps `photo-v1` and `gate-v1`.** Its site build refuses an unapproved notice (`site/src/lib/publish-gate.ts`), and `test/node/site/site-production-gate.test.ts` holds that build passing. So production also keeps today's rules and sends no copy.
 - **Every other build shows the new pair** (`TRY_ON_PROMISE`, `site/src/lib/build.ts`), with the privacy page to match. Consents on staging record them.
 - **The claim records the gate's notice the page showed**, as the upload already records the photo notice's: `notice_version`, optional, the approved one when left out.
 - When counsel approves the words, production moves to them in one line. If counsel changes them, they become `photo-v3` and `gate-v3`, since staging's consents already name v2.
@@ -79,11 +79,11 @@ The copies held with their looks are counted at the upload ceiling, for the look
 - **The data export is unchanged.** It already lists each try-on's state and date (ADR 0082).
 - **The teaser and the result screen still say** "Your photograph is deleted after thirty days" and "Deleted after fourteen days". They describe the try-on before any booking; counsel may want them to mention the copy (item 146).
 - **Tests.**
-  - `test/node/policy-kept-try-ons.test.ts`: the rule.
-  - `test/node/free-tier-budget.test.ts`: the budget.
-  - `test/node/migration-0045.test.ts`: the migration.
-  - `test/worker/kept-try-ons.test.ts`: the copy's upload, the sweeper and erasure.
-  - `test/worker/client-try-ons.test.ts`: what the app is sent.
-  - `test/worker/cron-reads.test.ts`: the new sweeps read none of the history.
+  - `test/node/policy/policy-kept-try-ons.test.ts`: the rule.
+  - `test/node/tooling/free-tier-budget.test.ts`: the budget.
+  - `test/node/database/migration-0045.test.ts`: the migration.
+  - `test/worker/app/kept-try-ons.test.ts`: the copy's upload, the sweeper and erasure.
+  - `test/worker/app/client-try-ons.test.ts`: what the app is sent.
+  - `test/worker/jobs/cron-reads.test.ts`: the new sweeps read none of the history.
   - `e2e/try-flow.e2e.ts`: the site sends the copy and the new notices.
   - `e2e/app/try-on.e2e.ts`: a booked client's before photo and look, kept.

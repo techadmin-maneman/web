@@ -179,7 +179,7 @@ Board A3's piece card and last visit's photograph, board B3's "Pick from the lis
 
 ### Consequences
 
-- `test/node/dom/tech-progress.test.ts`, `tech-when.test.ts`, `tech-piece-label.test.ts` and new cases in `tech-outbox-replay.test.ts` hold the rules above; `test/node/tech-contrast.test.ts` holds the colours; `test/worker/tech-job-card.test.ts` the card's new fields and the photograph's route; `e2e/tech/job.e2e.ts`, `steps.e2e.ts`, `camera.e2e.ts` and `outbox.e2e.ts` walk them in a browser.
+- `test/node/dom/tech-progress.test.ts`, `tech-when.test.ts`, `tech-piece-label.test.ts` and new cases in `tech-outbox-replay.test.ts` hold the rules above; `test/node/apps/tech/tech-contrast.test.ts` holds the colours; `test/worker/field/tech-job-card.test.ts` the card's new fields and the photograph's route; `e2e/tech/job.e2e.ts`, `steps.e2e.ts`, `camera.e2e.ts` and `outbox.e2e.ts` walk them in a browser.
 - The words for what no board draws are placeholders in `apps/tech/src/content.ts`, for the owner with the rest (ADR 0025, "The technician boards").
 
 ## Update, 4 October 2026: the day's list names the client

@@ -1,16 +1,9 @@
 // Arriving at a job (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
-// The rules as the prompt states them, and the geofence they turn on.
 //
 // The address's coordinates come from the geocoder, Google where one is connected
 // (docs/decisions/0054-address-capture.md). Until an address has them there is
 // nothing to measure against, and src/domain/check-ins.ts, not this module,
 // decides what to do then.
-
-export const RULES = [
-  "I have arrived records the time and the device's position, and passes only within config CHECKIN_RADIUS_M (200 m) of the address.",
-  "Addresses are geocoded when a client address is created or edited, and the coordinates stored on addresses. Choose the geocoder in an ADR.",
-  "The 200 m radius is an open question in the design, given GPS error in Gurgaon high-rises. Log the measured distance on every check-in, so the value can be tuned from real data.",
-] as const;
 
 /**
  * How close to the address a check-in must be. A placeholder until the owner
