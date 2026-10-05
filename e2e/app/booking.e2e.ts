@@ -26,8 +26,9 @@ import { fittedClient } from "./fitted.ts";
 import { continueToPayment, TAKEN } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 
-// One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another.
-test.describe.configure({ mode: "serial" });
+// One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
+// order. One failing leaves the rest to run.
+test.describe.configure({ mode: "default" });
 
 test.beforeEach(async ({ page }) => {
   await noRealCheckout(page);
