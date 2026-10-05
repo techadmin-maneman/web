@@ -342,9 +342,3 @@
   height: var(--tech-primary);
   margin-top: 0;
 }
-
-.outline:focus-visible,
-.second:focus-visible {
-  outline: var(--focus-width) solid var(--paper);
-  outline-offset: var(--focus-offset);
-}

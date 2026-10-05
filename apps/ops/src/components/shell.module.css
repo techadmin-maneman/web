@@ -211,11 +211,6 @@
   color: var(--text);
 }
 
-.signOut:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* A spent Access session, said once under the header and over whichever section is open. */
 .lapsed {
   display: flex;

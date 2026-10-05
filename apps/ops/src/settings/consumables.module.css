@@ -53,11 +53,6 @@
   font-size: var(--fs-15);
 }
 
-.label:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* A button beside an item, as tall as the box: the same outlined ink as a row's own. */
 .move {
   min-height: var(--tap);

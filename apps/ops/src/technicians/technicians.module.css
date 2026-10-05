@@ -112,11 +112,6 @@
   cursor: pointer;
 }
 
-.choose:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* A technician who runs over the length their visits were planned for, in the oxblood the board letters it in. */
 .over {
   color: var(--error-on-paper);
@@ -164,11 +159,6 @@
   font-size: var(--fs-14);
   color: var(--text);
   text-underline-offset: var(--sp-4);
-}
-
-.back:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .pageTitle {
@@ -462,11 +452,6 @@
   font-size: var(--fs-13);
   color: var(--text);
   text-underline-offset: var(--sp-4);
-}
-
-.show:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .leaveNote {

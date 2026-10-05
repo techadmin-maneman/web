@@ -73,11 +73,6 @@
   text-underline-offset: var(--sp-4);
 }
 
-.link:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* Each section is a link's target, not a control, so it takes focus without a ring. */
 .ruleGroup {
   margin-top: var(--sp-24);
@@ -219,17 +214,6 @@
   background-repeat: no-repeat;
 }
 
-.number:focus-visible,
-.text:focus-visible,
-.select:focus-visible,
-.date:focus-visible,
-.cellText:focus-visible,
-.cellDate:focus-visible,
-.box:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* The unit beside the box, so nobody has to guess whether 15 is minutes or hours. */
 .unit {
   margin-top: var(--sp-6);
@@ -338,11 +322,6 @@
 .rule .check {
   margin-left: 0;
   margin-right: 0;
-}
-
-.check:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .checkTitle {
@@ -499,11 +478,6 @@
   cursor: pointer;
 }
 
-.history summary:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .history .table th:first-child,
 .history .table td:first-child {
   padding-left: 0;
@@ -532,11 +506,6 @@
 .city[aria-current="true"] {
   border-color: var(--ink);
   color: var(--text);
-}
-
-.city:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* A row's own boxes, as tall as the row allows. */
@@ -608,11 +577,6 @@
   font-size: var(--fs-15);
   font-weight: var(--weight-medium);
   cursor: pointer;
-}
-
-.file:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* The rules' and service area's quieter buttons (packages/ui/Button.tsx) sit a little narrower than Save. */

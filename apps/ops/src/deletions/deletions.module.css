@@ -29,11 +29,6 @@
   text-decoration: underline;
 }
 
-.name:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .who {
   margin: var(--sp-3) 0 0;
   font-size: var(--fs-14);
@@ -122,9 +117,4 @@
 .settleOn {
   color: inherit;
   text-decoration: underline;
-}
-
-.settleOn:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }

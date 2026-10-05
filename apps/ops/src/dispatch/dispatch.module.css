@@ -98,13 +98,6 @@
   color: var(--text);
 }
 
-.tool:focus-visible,
-.select:focus-visible,
-.input:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* ---- Board A1: technicians down, seven days across ----------------------- */
 
 .grid {
@@ -630,11 +623,6 @@
   border-color: var(--ink);
   background: var(--ink);
   box-shadow: inset 0 0 0 var(--sp-3) var(--paper);
-}
-
-.radio:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* What the move does, behind the board's brass rule. */

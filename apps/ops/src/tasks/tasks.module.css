@@ -53,11 +53,6 @@
   cursor: pointer;
 }
 
-.overdueJump:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .empty {
   margin: 0;
   font-size: var(--fs-15);
@@ -154,11 +149,6 @@
   cursor: pointer;
 }
 
-.fold:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* ---- One task ------------------------------------------------------------- */
 
 .tasks {
@@ -216,11 +206,6 @@ a.subject {
   text-decoration: underline;
 }
 
-a.subject:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .sub {
   font-size: var(--fs-14);
   color: var(--text-muted);
@@ -232,11 +217,6 @@ a.subject:focus-visible {
   text-decoration: underline;
   text-decoration-color: var(--paper-line);
   text-underline-offset: var(--sp-4);
-}
-
-.decide:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* A group longer than the board lists: its count is all of them, the rows the longest waits. */
@@ -296,11 +276,6 @@ a.subject:focus-visible {
   cursor: pointer;
 }
 
-.act:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .form {
   display: flex;
   flex-direction: column;
@@ -317,11 +292,6 @@ a.subject:focus-visible {
   font: inherit;
   font-size: var(--fs-14);
   color: var(--text);
-}
-
-.select:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .reason {

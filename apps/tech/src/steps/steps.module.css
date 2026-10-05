@@ -499,21 +499,6 @@
 
 /* ---- The one action, bottom of every screen, clear of an iPhone's home indicator ---- */
 
-.back:focus-visible,
-.step:focus-visible,
-.second:focus-visible,
-.pick:focus-visible,
-.choice:focus-visible,
-.choiceOn:focus-visible,
-.reason:focus-visible,
-.reasonOn:focus-visible,
-.chip:focus-visible,
-.chipOn:focus-visible,
-.box64:focus-visible {
-  outline: var(--focus-width) solid var(--paper);
-  outline-offset: var(--focus-offset);
-}
-
 /* A full-width row inside the scrolling body draws its ring inside itself, so the body's edge never cuts it. */
 .check:focus-visible,
 .labelField:focus-within {

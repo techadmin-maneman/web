@@ -62,8 +62,3 @@
   text-decoration: underline;
   text-underline-offset: var(--sp-4);
 }
-
-.reachLink:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}

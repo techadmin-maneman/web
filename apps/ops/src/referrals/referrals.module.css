@@ -47,11 +47,6 @@
   text-underline-offset: var(--sp-4);
 }
 
-.person:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .when,
 .late {
   font-size: var(--fs-14);

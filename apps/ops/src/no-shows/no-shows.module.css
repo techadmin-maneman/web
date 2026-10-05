@@ -68,11 +68,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.dayField:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* Each figure stands on the top line, whatever its own name runs to. */
 .figures {
   display: flex;
@@ -194,11 +189,6 @@
   color: var(--text);
   text-decoration: underline;
   text-underline-offset: var(--sp-4);
-}
-
-.client:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .caseSub {
@@ -353,9 +343,4 @@
 .disputeName {
   color: inherit;
   text-decoration: underline;
-}
-
-.disputeName:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }

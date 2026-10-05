@@ -82,11 +82,6 @@
   cursor: pointer;
 }
 
-.versionLine:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .form {
   display: flex;
   flex-direction: column;
@@ -114,11 +109,6 @@
   font: inherit;
   font-size: var(--fs-14);
   color: var(--text);
-}
-
-.select:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .history {

@@ -213,11 +213,6 @@
   text-underline-offset: var(--sp-4);
 }
 
-.foundName:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .foundTitle {
   margin: 0 0 var(--sp-8);
   font-size: var(--fs-14);
@@ -305,11 +300,6 @@
   text-decoration: underline;
   text-decoration-color: var(--paper-line);
   text-underline-offset: var(--sp-4);
-}
-
-.boardLink:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* A visit left partly done that ops closed without a follow-up, beneath its state. */
@@ -455,11 +445,6 @@
 .radio:checked {
   border-color: var(--ink);
   background: var(--ink);
-}
-
-.radio:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .done {
@@ -697,11 +682,6 @@
   font-size: var(--fs-14);
   color: var(--text);
   text-decoration: underline;
-}
-
-.erasedBack:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* ---- History: the record in figures, which the board draws no tab for ----- */
