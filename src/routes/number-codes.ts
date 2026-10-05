@@ -11,7 +11,7 @@
 import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
 import type { App, AppEnv } from "../http/context.ts";
 import { checkNumberCode, createNumberCode, mobileHashOf } from "../domain/number-codes.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json, PersonNameSchema } from "../http/openapi.ts";
 import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
@@ -84,26 +84,26 @@ const verifyRoute = createRoute({
 
 const ask: RouteHandler<typeof askRoute, AppEnv> = async (c) => {
   const body = c.req.valid("json");
-  const { requestId, deps, config } = c.var;
+  const { deps, config } = c.var;
   const { login, ipHashSalt } = config.settings;
   // Codes are hashed under the pepper; an environment without one proves no number.
-  if (login.codePepper === "") return c.json(errorBody("unavailable", requestId), 503);
+  if (login.codePepper === "") return refuse(c, "unavailable");
 
   const mobileE164 = toE164(body.mobile);
-  if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
+  if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
   const visitor = await visitorOf(c);
   const turnstile = await checkTurnstile(c, body.turnstile_token, visitor);
-  if (turnstile === "rejected") return c.json(errorBody("turnstile_failed", requestId), 403);
-  if (turnstile === "unavailable") return c.json(errorBody("unavailable", requestId), 503);
+  if (turnstile === "rejected") return refuse(c, "turnstile_failed");
+  if (turnstile === "unavailable") return refuse(c, "unavailable");
 
   const now = deps.now();
   const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
   const testRecord = await isTestNumber(c.env.DB, c.var.config.environment, mobileE164, body.name);
   const asked = await mayAskForCode(c, { surface: "form", mobileHash, ipHash: visitor.ipHash, now, testRecord });
-  if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
-  if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
+  if (asked === "busy") return refuse(c, "busy");
+  if (asked !== "open") return refuse(c, "rate_limited");
   const counted = await countCode(c, "form", mobileE164, testRecord, now);
-  if (!counted) return c.json(errorBody("busy", requestId), 503);
+  if (!counted) return refuse(c, "busy");
 
   const code = knownCode(login, testRecord) ?? newLoginCode();
   const codeId = await createNumberCode(c.env.DB, { mobileHash, code, pepper: login.codePepper, now });
@@ -113,11 +113,11 @@ const ask: RouteHandler<typeof askRoute, AppEnv> = async (c) => {
 
 const verify: RouteHandler<typeof verifyRoute, AppEnv> = async (c) => {
   const { code_id: id, code } = c.req.valid("json");
-  const { requestId, deps, config, log } = c.var;
+  const { deps, config, log } = c.var;
   const pepper = config.settings.login.codePepper;
 
   const checked = await checkNumberCode(c.env.DB, { id, code, pepper, now: deps.now() });
-  if (checked.outcome === "closed") return c.json(errorBody("code_expired", requestId), 410);
+  if (checked.outcome === "closed") return refuse(c, "code_expired");
   if (checked.outcome === "mismatch") {
     log.info("number_code_mismatch", { attempts_left: checked.attemptsLeft });
     return c.json({ verified: false as const, attempts_left: checked.attemptsLeft }, 200);

@@ -16,7 +16,7 @@ import { VISIT_TYPES } from "../config/visit-types.ts";
 import { jobSheet, saveList, type JobSheet, type JobSheetList, type ListName } from "../domain/job-sheet-settings.ts";
 import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 
 const ItemSchema = z.object({ code: z.string(), label: z.string() }).strict();
@@ -130,7 +130,7 @@ async function save(c: Context<AppEnv>, which: ListName, items: z.infer<typeof L
     requestId: c.var.requestId,
     now: c.var.deps.now(),
   });
-  if (!saved.ok) return c.json(errorBody("invalid_request", c.var.requestId, saved.fields), 400);
+  if (!saved.ok) return refuse(c, "invalid_request", saved.fields);
   return c.json(sheetBody(await jobSheet(c.env.DB)), 200);
 }
 

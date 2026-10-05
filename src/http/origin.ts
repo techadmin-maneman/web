@@ -3,7 +3,7 @@
 
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "./context.ts";
-import { errorBody } from "./errors.ts";
+import { refuse } from "./errors.ts";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
@@ -17,5 +17,5 @@ export const requireSameOrigin = createMiddleware<AppEnv>(async (c, next) => {
   const origin = c.req.header("Origin");
   if (origin === new URL(c.req.url).origin) return next();
   c.var.log.warn("cross_origin_write_refused", { has_origin: origin !== undefined });
-  return c.json(errorBody("forbidden_origin", c.var.requestId), 403);
+  return refuse(c, "forbidden_origin");
 });

@@ -18,7 +18,7 @@ import {
 } from "../domain/erasure.ts";
 import { staffMemberOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { withinRouteReach } from "../http/staff-access.ts";
 import { erasureRefusal, LIVE_VISIT_STATUSES, type ErasureRefusal } from "../policy/account-deletion.ts";
@@ -153,9 +153,9 @@ export function registerOpsErasure(app: App): void {
     const override = c.req.valid("json").override_open_bookings === true;
     const { requestId, log } = c.var;
     const staff = staffMemberOf(c);
-    if (staff === null) return c.json(errorBody("access_required", requestId), 403);
+    if (staff === null) return refuse(c, "access_required");
     const erasable = (await stillToErase(c.env.DB, id)) && (await withinRouteReach(c, "client", id));
-    if (!erasable) return c.json(errorBody("not_found", requestId), 404);
+    if (!erasable) return refuse(c, "not_found");
 
     const now = c.var.deps.now();
     const blockers = await erasureBlockers(c.env.DB, id, now);
@@ -186,7 +186,7 @@ export function registerOpsErasure(app: App): void {
       now,
       log,
     });
-    if (summary === null) return c.json(errorBody("not_found", requestId), 404);
+    if (summary === null) return refuse(c, "not_found");
     return c.json(erasedBody(summary), 200);
   });
 }

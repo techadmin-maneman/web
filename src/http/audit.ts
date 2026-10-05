@@ -9,7 +9,7 @@ import { auditStatement, auditStatementUnlessRepeated, type AuditActor, type Aud
 import { MINUTE_MS } from "../lib/durations.ts";
 import type { AccessIdentity } from "../providers/cloudflare-access.ts";
 import type { AppEnv } from "./context.ts";
-import { errorBody } from "./errors.ts";
+import { refuse } from "./errors.ts";
 
 /** A GET of one path by one member of staff within this many minutes of the last is the same look. */
 const REPEAT_LOOK_MINUTES = 10;
@@ -102,7 +102,7 @@ export const auditCall = createMiddleware<AppEnv>(async (c, next) => {
     await recordCall(c.env.DB, opsCallEntry(c, identity, route), c.req.method, c.var.deps.now());
   } catch (error) {
     c.var.log.error("audit_write_failed", { action: "ops.call", error });
-    return c.json(errorBody("unavailable", c.var.requestId), 503);
+    return refuse(c, "unavailable");
   }
   return next();
 });

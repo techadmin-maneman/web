@@ -41,7 +41,7 @@ import {
 } from "../domain/proposed-visits.ts";
 import { pendingInviteOf } from "../domain/referrals.ts";
 import { clientOf } from "../http/client-session.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
@@ -383,7 +383,7 @@ export function registerClientMe(app: App): void {
       pendingInviteOf(db, personId, now, nameOnInvite),
       owedPayments(db, personId),
     ]);
-    if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
+    if (person === null) return refuse(c, "session_required");
 
     const { name } = person;
     const state = clientStateOf(fitted, upcoming !== null || form.booking !== null);

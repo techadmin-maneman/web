@@ -11,7 +11,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { ADJUST_REASONS, adjustCredits } from "../domain/credits.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { withinRouteReach } from "../http/staff-access.ts";
 
@@ -75,7 +75,7 @@ export function registerOpsCredits(app: App): void {
       .bind(personId)
       .first<{ id: string }>();
     if (person === null || !(await withinRouteReach(c, "client", personId))) {
-      return c.json(errorBody("not_found", c.var.requestId), 404);
+      return refuse(c, "not_found");
     }
 
     const balance = await adjustCredits(db, {
@@ -91,7 +91,7 @@ export function registerOpsCredits(app: App): void {
       },
       now: c.var.deps.now(),
     });
-    if (balance === null) return c.json(errorBody("invalid_request", c.var.requestId, ["visits"]), 400);
+    if (balance === null) return refuse(c, "invalid_request", ["visits"]);
     c.var.log.info("credits_adjusted", { person_id: personId, visits, reason });
     return c.json({ visits: balance.visits, earliest_expiry: balance.earliestExpiry }, 200);
   });

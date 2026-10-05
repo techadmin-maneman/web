@@ -10,7 +10,7 @@ import clientDocument from "../../docs/openapi-client.json";
 import opsDocument from "../../docs/openapi-ops.json";
 import techDocument from "../../docs/openapi-tech.json";
 import publicDocument from "../../docs/openapi.json";
-import { ERROR_CODES } from "../../src/http/errors.ts";
+import { ERROR_CODES, ERROR_STATUS, type ErrorCode } from "../../src/http/errors.ts";
 import { buildOpenApiDocument, readResponse, renderApiMarkdown, type DocumentedSurface } from "../../src/openapi.ts";
 
 /** A schema as far as this test reads one: a reference, or an object's fields and whether it allows others. */
@@ -36,6 +36,20 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
 
   it("is the Markdown the schemas generate", () => {
     expect(renderApiMarkdown(buildOpenApiDocument(surface))).toBe(markdown.replace(/\r\n/g, "\n"));
+  });
+
+  // P3-44: eight bodies were optional, so a request sent without JSON reached its handler as an empty one.
+  it("requires the body of every write that takes one", () => {
+    const generated = buildOpenApiDocument(surface);
+    const optional = Object.entries(generated.paths ?? {}).flatMap(([path, item]) =>
+      (["post", "put", "patch"] as const)
+        .filter((method) => {
+          const body = item[method]?.requestBody;
+          return body !== undefined && !("$ref" in body) && body.required !== true;
+        })
+        .map((method) => `${method.toUpperCase()} ${path}`),
+    );
+    expect(optional).toEqual([]);
   });
 
   it("documents every GET response with a JSON schema, or as an image, a PDF, a page, a redirect or no content", () => {
@@ -80,6 +94,7 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
 
 const METHODS = ["get", "post", "put", "patch", "delete"] as const;
 const KNOWN_CODES: ReadonlySet<string> = new Set(ERROR_CODES);
+const isErrorCode = (code: string): code is ErrorCode => KNOWN_CODES.has(code);
 
 /**
  * The error codes an answer's description names. Each clause opens with one, "taken: that window has gone; or
@@ -138,20 +153,14 @@ describe("the error codes", () => {
     expect(unnamed).toEqual([]);
   });
 
-  it("each answer with one status, on every surface", () => {
-    const whereByStatusByCode = new Map<string, Map<string, string[]>>();
-    for (const { where, status, description } of errorAnswers()) {
-      for (const code of codesNamedIn(description)) {
-        const whereByStatus = whereByStatusByCode.get(code) ?? new Map<string, string[]>();
-        whereByStatus.set(status, [...(whereByStatus.get(status) ?? []), where]);
-        whereByStatusByCode.set(code, whereByStatus);
-      }
-    }
-    expect(whereByStatusByCode.get("session_required")).toBeDefined();
-
-    const answeredTwoWays = [...whereByStatusByCode].filter(([, whereByStatus]) => whereByStatus.size > 1);
-    expect(
-      Object.fromEntries(answeredTwoWays.map(([code, whereByStatus]) => [code, Object.fromEntries(whereByStatus)])),
-    ).toEqual({});
+  // P3-44: each code's status was read from the documents; now the routes answer it from one table, held to them here.
+  it("each answer with the status ERROR_STATUS gives it, on every surface", () => {
+    const elsewhere = errorAnswers().flatMap(({ where, status, description }) =>
+      codesNamedIn(description)
+        .filter(isErrorCode)
+        .filter((code) => String(ERROR_STATUS[code]) !== status)
+        .map((code) => `${where}: ${code} under ${status}, not ${String(ERROR_STATUS[code])}`),
+    );
+    expect(elsewhere).toEqual([]);
   });
 });

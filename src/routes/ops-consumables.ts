@@ -30,7 +30,7 @@ import {
 import { closeStaleLowStock } from "../domain/low-stock.ts";
 import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { PRICE_TIER } from "../policy/services.ts";
@@ -288,7 +288,7 @@ export function registerOpsConsumables(app: App): void {
       },
       written(c),
     );
-    if (!saved.ok) return c.json(errorBody("invalid_request", c.var.requestId, saved.fields), 400);
+    if (!saved.ok) return refuse(c, "invalid_request", saved.fields);
     return c.json(await answer(c), 200);
   });
 
@@ -306,8 +306,8 @@ export function registerOpsConsumables(app: App): void {
       },
       written(c),
     );
-    if (saved === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    if (!saved.ok) return c.json(errorBody("invalid_request", c.var.requestId, saved.fields), 400);
+    if (saved === null) return refuse(c, "not_found");
+    if (!saved.ok) return refuse(c, "invalid_request", saved.fields);
     return c.json(await answer(c), 200);
   });
 
@@ -315,8 +315,8 @@ export function registerOpsConsumables(app: App): void {
     const today = indiaDate(c.var.deps.now());
     const { from } = c.req.valid("json");
     const saved = await retireConsumable(c.env.DB, c.req.valid("param").code, from, { ...written(c), today });
-    if (saved === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    if (!saved.ok) return c.json(errorBody("invalid_request", c.var.requestId, saved.fields), 400);
+    if (saved === null) return refuse(c, "not_found");
+    if (!saved.ok) return refuse(c, "invalid_request", saved.fields);
     await closeStaleLowStock(c.env.DB, c.var.deps);
     return c.json(await answer(c), 200);
   });
@@ -324,7 +324,7 @@ export function registerOpsConsumables(app: App): void {
   app.openapi(restoreRoute, async (c) => {
     const today = indiaDate(c.var.deps.now());
     const saved = await retireConsumable(c.env.DB, c.req.valid("param").code, null, { ...written(c), today });
-    if (saved === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (saved === null) return refuse(c, "not_found");
     return c.json(await answer(c), 200);
   });
 
@@ -335,7 +335,7 @@ export function registerOpsConsumables(app: App): void {
       items: body.items,
       ...written(c),
     });
-    if (!saved.ok) return c.json(errorBody("invalid_request", c.var.requestId, saved.fields), 400);
+    if (!saved.ok) return refuse(c, "invalid_request", saved.fields);
     return c.json(await answer(c), 200);
   });
 }

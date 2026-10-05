@@ -14,7 +14,7 @@ import type { App } from "../http/context.ts";
 import { enterOnVisit } from "../domain/discount-code-uses.ts";
 import { workableJob } from "../domain/tech-jobs.ts";
 import { mayCheckCode } from "../http/code-checks.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { technicianOf } from "../http/technician-session.ts";
 
@@ -49,12 +49,12 @@ const enterRoute = techRoute({
 export function registerTechDiscountCodes(app: App): void {
   app.openapi(enterRoute, async (c) => {
     const { technicianId } = technicianOf(c);
-    const { requestId, log, deps } = c.var;
+    const { log, deps } = c.var;
     const { id } = c.req.valid("param");
     const job = await workableJob(c.env.DB, id);
-    if (job?.technicianId !== technicianId) return c.json(errorBody("not_found", requestId), 404);
-    if (job.oneVisit === null) return c.json(errorBody("price_settled", requestId), 409);
-    if (!(await mayCheckCode(c, technicianId))) return c.json(errorBody("rate_limited", requestId), 429);
+    if (job?.technicianId !== technicianId) return refuse(c, "not_found");
+    if (job.oneVisit === null) return refuse(c, "price_settled");
+    if (!(await mayCheckCode(c, technicianId))) return refuse(c, "rate_limited");
 
     const entry = {
       visitId: id,
@@ -68,10 +68,10 @@ export function registerTechDiscountCodes(app: App): void {
     }
     if (entered.kind === "not_applicable") {
       log.info("discount_code_refused", { appointment_id: id, reason: entered.reason });
-      return c.json(errorBody("code_not_applicable", requestId), 422);
+      return refuse(c, "code_not_applicable");
     }
-    if (entered.kind === "already_discounted") return c.json(errorBody("already_discounted", requestId), 409);
-    if (entered.kind === "not_found") return c.json(errorBody("not_found", requestId), 404);
-    return c.json(errorBody("price_settled", requestId), 409);
+    if (entered.kind === "already_discounted") return refuse(c, "already_discounted");
+    if (entered.kind === "not_found") return refuse(c, "not_found");
+    return refuse(c, "price_settled");
   });
 }

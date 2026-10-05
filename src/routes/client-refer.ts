@@ -21,7 +21,7 @@ import { liveCard, MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/refer
 import { inviteOf, referralCodeOf } from "../domain/referrals.ts";
 import { clientOf } from "../http/client-session.ts";
 import { cappedBody } from "../http/capped-body.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
 
@@ -193,15 +193,15 @@ export function registerClientRefer(app: App): void {
     const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
-    if (!(await isFitted(db, session.subjectId))) return c.json(errorBody("not_fitted", c.var.requestId), 403);
+    if (!(await isFitted(db, session.subjectId))) return refuse(c, "not_fitted");
     const bytes = await cappedBody(c.req.raw, MAX_CARD_BYTES);
-    if (bytes === null) return c.json(errorBody("photo_invalid_file", c.var.requestId), 422);
+    if (bytes === null) return refuse(c, "photo_invalid_file");
     const code = await codeOf(db, session.subjectId, now);
     const stored = await storeCard(db, c.env.REFERRAL_CARDS, { personId: session.subjectId, code, bytes, now });
     if ("problem" in stored) {
-      if (stored.problem === "no_consent") return c.json(errorBody("consent_required", c.var.requestId), 409);
-      if (stored.problem === "not_photographed") return c.json(errorBody("not_fitted", c.var.requestId), 403);
-      return c.json(errorBody("photo_invalid_file", c.var.requestId), 422);
+      if (stored.problem === "no_consent") return refuse(c, "consent_required");
+      if (stored.problem === "not_photographed") return refuse(c, "not_fitted");
+      return refuse(c, "photo_invalid_file");
     }
     return c.json({ version: stored.version }, 200);
   });
@@ -218,7 +218,7 @@ export function registerClientRefer(app: App): void {
     const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
-    if (!(await isFitted(db, session.subjectId))) return c.json(errorBody("not_fitted", c.var.requestId), 403);
+    if (!(await isFitted(db, session.subjectId))) return refuse(c, "not_fitted");
     const code = await codeOf(db, session.subjectId, now);
     const [card, invite, balance, fitted, invited] = await Promise.all([
       db
@@ -272,11 +272,11 @@ export function registerClientRefer(app: App): void {
 function registerLiveCard(app: App): void {
   app.openapi(liveCardRoute, async (c) => {
     const session = clientOf(c);
-    if (!(await isFitted(c.env.DB, session.subjectId))) return c.json(errorBody("not_fitted", c.var.requestId), 403);
+    if (!(await isFitted(c.env.DB, session.subjectId))) return refuse(c, "not_fitted");
     const code = await codeOf(c.env.DB, session.subjectId, c.var.deps.now());
     // Live exactly when the landing's preview would show it: stored, the consent still given, the client not erased.
     const card = await liveCard(c.env.DB, c.env.REFERRAL_CARDS, code);
-    if (card === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (card === null) return refuse(c, "not_found");
     return c.body(card.body, 200, {
       "Content-Type": "image/jpeg",
       "Content-Length": String(card.size),

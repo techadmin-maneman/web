@@ -28,7 +28,7 @@ import {
 } from "../domain/client-payments.ts";
 import { owedPayments } from "../domain/one-visit-money.ts";
 import { clientOf } from "../http/client-session.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { NoShowNoteSchema } from "./client-visits.ts";
 
 const VisitRefSchema = z
@@ -276,16 +276,16 @@ export function registerClientPayments(app: App): void {
   app.openapi(entryRoute, async (c) => {
     const session = clientOf(c);
     const entry = await paymentEntry(c.env.DB, session.subjectId, c.req.valid("param").id, c.var.deps.now());
-    if (entry === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (entry === null) return refuse(c, "not_found");
     return c.json(entry, 200);
   });
 
   app.openapi(receiptRoute, async (c) => {
     const session = clientOf(c);
     const payment = await receiptOf(c.env.DB, session.subjectId, c.req.valid("param").id);
-    if (payment === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (payment === null) return refuse(c, "not_found");
     const pdf = payment.books_payment_id === null ? null : await c.var.deps.books.receiptPdf(payment.books_payment_id);
-    if (pdf === null) return c.json(errorBody("not_ready", c.var.requestId), 409);
+    if (pdf === null) return refuse(c, "not_ready");
     return pdfResponse(pdf.body, "receipt.pdf");
   });
 
@@ -293,9 +293,9 @@ export function registerClientPayments(app: App): void {
     const session = clientOf(c);
     // A draft invoice answers "not ready", as it did before it was raised (ADR 0056).
     const visit = await issuedInvoiceOf(c.env.DB, session.subjectId, c.req.valid("param").id);
-    if (visit === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (visit === null) return refuse(c, "not_found");
     const pdf = visit.invoiceId === null ? null : await c.var.deps.books.invoicePdf(visit.invoiceId);
-    if (pdf === null) return c.json(errorBody("not_ready", c.var.requestId), 409);
+    if (pdf === null) return refuse(c, "not_ready");
     return pdfResponse(pdf.body, "invoice.pdf");
   });
 }

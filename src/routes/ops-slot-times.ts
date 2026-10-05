@@ -10,7 +10,7 @@ import { BOOKING_WINDOWS, UNITS_PER_DAY } from "../config/scheduling.ts";
 import { earliestChange, loadSlotSchedule, setSlotTimes } from "../domain/slot-times.ts";
 import { actorOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -146,8 +146,8 @@ export function registerOpsSlotTimes(app: App): void {
         detail: { applies_from: body.applies_from },
       },
     });
-    if (set.kind === "invalid") return c.json(errorBody("invalid_request", c.var.requestId, set.problems), 400);
-    if (set.kind === "too_soon") return c.json(errorBody("slot_times_too_soon", c.var.requestId), 409);
+    if (set.kind === "invalid") return refuse(c, "invalid_request", set.problems);
+    if (set.kind === "too_soon") return refuse(c, "slot_times_too_soon");
     return c.json({ applies_from: set.appliesFrom }, 201);
   });
 }

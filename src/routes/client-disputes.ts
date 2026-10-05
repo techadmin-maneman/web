@@ -10,7 +10,7 @@ import { clientRoute } from "../http/session-routes.ts";
 import type { App } from "../http/context.ts";
 import { raiseDispute } from "../domain/no-show-disputes.ts";
 import { clientOf } from "../http/client-session.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { DISPUTE_REASON_MAX_CHARS } from "../policy/no-show.ts";
 
@@ -69,10 +69,10 @@ export function registerClientDisputes(app: App): void {
         requestId: c.var.requestId,
       }),
     });
-    if (raised.kind === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
-    if (raised.kind === "not_disputable") return c.json(errorBody("not_disputable", c.var.requestId), 409);
-    if (raised.kind === "window_closed") return c.json(errorBody("dispute_window_closed", c.var.requestId), 409);
-    if (raised.kind === "already_disputed") return c.json(errorBody("already_disputed", c.var.requestId), 409);
+    if (raised.kind === "not_found") return refuse(c, "not_found");
+    if (raised.kind === "not_disputable") return refuse(c, "not_disputable");
+    if (raised.kind === "window_closed") return refuse(c, "dispute_window_closed");
+    if (raised.kind === "already_disputed") return refuse(c, "already_disputed");
     // The alert names the disputed visit, never the client or their words.
     await c.var.deps.alert(
       `A client disputed the no-show charge on visit ${appointmentId}; rule on it in the console.`,

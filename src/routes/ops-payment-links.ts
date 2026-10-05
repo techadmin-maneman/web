@@ -6,7 +6,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { resendLink } from "../domain/payment-links.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 
 const ResentSchema = z
@@ -37,11 +37,11 @@ const resendRoute = createRoute({
 
 export function registerOpsPaymentLinks(app: App): void {
   app.openapi(resendRoute, async (c) => {
-    const { deps, log, requestId } = c.var;
+    const { deps, log } = c.var;
     const linkDeps = { ...deps, log, messagingSettings: c.var.config.settings.messaging };
     const outcome = await resendLink(c.env.DB, linkDeps, c.req.valid("param").id, deps.now());
-    if (outcome === "not_found") return c.json(errorBody("not_found", requestId), 404);
-    if (outcome === "unavailable") return c.json(errorBody("unavailable", requestId), 503);
+    if (outcome === "not_found") return refuse(c, "not_found");
+    if (outcome === "unavailable") return refuse(c, "unavailable");
     return c.json({ outcome }, 200);
   });
 }

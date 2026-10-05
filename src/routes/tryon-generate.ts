@@ -18,7 +18,7 @@ import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { chooseRender } from "../domain/render-choice.ts";
 import { failJob, loadJob, type JobRow, type RenderChoice } from "../domain/tryon.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, refuse } from "../http/errors.ts";
 import { setLookCookie } from "../http/look-cookie.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { DAY_MS } from "../lib/durations.ts";
@@ -93,15 +93,15 @@ export function registerTryonGenerate(app: App): void {
 
     const visitor = await visitorOf(c);
     const withinLimit = await takeOne(db, "tryon:generate:ip", visitor.ipHash, { now, settings });
-    if (!withinLimit) return c.json(errorBody("rate_limited", requestId), 429);
+    if (!withinLimit) return refuse(c, "rate_limited");
 
     const job = await loadJob(db, request.job_id);
     const preset = findPreset(request.preset);
-    if (job === null) return c.json(errorBody("not_found", requestId), 404);
-    if (preset === undefined) return c.json(errorBody("invalid_request", requestId, ["preset"]), 400);
+    if (job === null) return refuse(c, "not_found");
+    if (preset === undefined) return refuse(c, "invalid_request", ["preset"]);
     // The claim gives the job its lead and its stage.
-    if (job.lead_id === null || job.stage === null) return c.json(errorBody("claim_required", requestId), 409);
-    if (!tryOnRuns(settings.messaging)) return c.json(errorBody("whatsapp_unavailable", requestId), 503);
+    if (job.lead_id === null || job.stage === null) return refuse(c, "claim_required");
+    if (!tryOnRuns(settings.messaging)) return refuse(c, "whatsapp_unavailable");
 
     const choice = chooseRender(job.stage, preset, request.hair_color, UNKNOWN_COLOR_ROUTE);
     const outcome = job.state === "awaiting_upload" ? await startFirstLook(c, job, choice) : sameLookAgain(job, choice);
@@ -112,7 +112,7 @@ export function registerTryonGenerate(app: App): void {
 
   app.openapi(statusRoute, async (c) => {
     const job = await loadJob(c.env.DB, c.req.valid("param").job_id);
-    if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (job === null) return refuse(c, "not_found");
     return c.json(statusOf(job), 200);
   });
 }

@@ -12,7 +12,7 @@ import { createCachedOpsInputs, type ReadOpsInputs } from "./domain/ops-settings
 import { requireAccess } from "./http/access.ts";
 import { requireStaffAccess } from "./http/staff-access.ts";
 import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
-import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
+import { ErrorResponseSchema, refuse } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
 import { meterDatabase, serverTiming, usageFields } from "./lib/d1-meter.ts";
 import { createLogger } from "./log.ts";
@@ -200,7 +200,7 @@ export function createApp(
     defaultHook: (result, c) => {
       if (result.success) return undefined;
       const fields = [...new Set(result.error.issues.map((issue) => issue.path.join(".") || "body"))];
-      return c.json(errorBody("invalid_request", c.var.requestId, fields), 400);
+      return refuse(c, "invalid_request", fields);
     },
   });
 
@@ -218,19 +218,19 @@ export function createApp(
   // Locally only, and only when switched on: what stands in for a technician's phone on a laptop (src/routes/dev-visits.ts).
   if (surface === "public" && config.environment === "local" && config.settings.devRoutes) registerDevVisits(app);
 
-  app.notFound((c) => c.json(errorBody("not_found", c.var.requestId), 404));
+  app.notFound((c) => refuse(c, "not_found"));
   app.onError((error, c) => {
     // Hono raises a 400 for a body that is not valid JSON.
     if (error instanceof HTTPException && error.status === 400) {
-      return c.json(errorBody("invalid_request", c.var.requestId, ["body"]), 400);
+      return refuse(c, "invalid_request", ["body"]);
     }
     // A read D1 failed for a reason that passes by itself, after its tries (src/lib/d1-retry.ts): try again shortly.
     if (c.req.method === "GET" && isTransientD1Error(error)) {
       c.var.log.warn("d1_unavailable", { error });
-      return c.json(errorBody("unavailable", c.var.requestId), 503);
+      return refuse(c, "unavailable");
     }
     c.var.log.error("unhandled_error", { error });
-    return c.json(errorBody("internal_error", c.var.requestId), 500);
+    return refuse(c, "internal_error");
   });
 
   return app;
@@ -298,8 +298,8 @@ const requireOwnDatabase = createMiddleware<AppEnv>(async (c, next) => {
 
   if (identity.state === "unreachable") {
     c.var.log.error("database_identity_failed", { state: identity.state, error: identity.error });
-    return c.json(errorBody("unavailable", c.var.requestId), 503);
+    return refuse(c, "unavailable");
   }
   c.var.log.error("database_identity_failed", { state: identity.state });
-  return c.json(errorBody("environment_mismatch", c.var.requestId), 503);
+  return refuse(c, "environment_mismatch");
 });

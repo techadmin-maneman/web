@@ -33,7 +33,7 @@ import {
 import { isWithin, techniciansWithin } from "../domain/places.ts";
 import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { reachOf, routeReach } from "../http/staff-access.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -256,12 +256,11 @@ async function placesOutOfReach(c: Context<AppEnv>, places: Readonly<Record<stri
     .map(([field]) => field);
 }
 
-const outOfReach = (c: Context<AppEnv>, fields: string[]) =>
-  c.json(errorBody("invalid_request", c.var.requestId, fields), 400);
+const outOfReach = (c: Context<AppEnv>, fields: string[]) => refuse(c, "invalid_request", fields);
 
 /** The movement's answer: refused, or the stock as it now stands, once each place it touched is checked for low. */
 async function after(c: Context<AppEnv>, moved: Moved, touched: readonly Place[]) {
-  if (!moved.ok) return c.json(errorBody("invalid_request", c.var.requestId, moved.fields), 400);
+  if (!moved.ok) return refuse(c, "invalid_request", moved.fields);
   await tellOfLowStock(c.env.DB, c.var.deps, { touched, lowered: moved.lowered });
   return c.json(await answer(c), 200);
 }

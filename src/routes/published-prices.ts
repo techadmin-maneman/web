@@ -14,7 +14,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { STANDARD_TIER, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { offeredServices } from "../domain/services.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { PriceSchema } from "./client-booking.ts";
 
@@ -68,7 +68,7 @@ export function registerPublishedPrices(app: App): void {
     const [service, replacement] = [standard("service"), standard("replacement")];
     if (service === null || replacement === null) {
       c.var.log.warn("published_price_missing", { on });
-      return c.json(errorBody("unavailable", c.var.requestId), 503);
+      return refuse(c, "unavailable");
     }
     const services = offered.map((each) => ({
       type: each.kind,

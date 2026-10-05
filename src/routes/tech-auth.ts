@@ -29,7 +29,7 @@ import {
   signedInTechnician,
   verifyTechnicianCode,
 } from "../domain/technicians.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { afterResponse } from "../http/after-response.ts";
@@ -188,13 +188,13 @@ const meRoute = techRoute({
 
 export function registerTechAuth(app: App): void {
   app.openapi(otpRoute, async (c) => {
-    const { requestId, deps, config } = c.var;
+    const { deps, config } = c.var;
     const { login: limits, ipHashSalt } = config.settings;
     const db = c.env.DB;
     const now = deps.now();
 
     const mobileE164 = toE164(c.req.valid("json").mobile);
-    if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
+    if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
 
     const visitor = await visitorOf(c);
     const technician = await findFieldTechnician(db, mobileE164);
@@ -203,11 +203,11 @@ export function registerTechAuth(app: App): void {
     const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
     const asked = await mayAskForCode(c, { surface: "tech", mobileHash, ipHash: visitor.ipHash, now, testRecord });
     if (technician !== null) await keepRefusalAlert(c, technician.id, asked);
-    if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
-    if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
+    if (asked === "busy") return refuse(c, "busy");
+    if (asked !== "open") return refuse(c, "rate_limited");
 
     const sendsTo = technician?.mobileE164 ?? null;
-    if (!(await countCode(c, "tech", sendsTo, testRecord, now))) return c.json(errorBody("busy", requestId), 503);
+    if (!(await countCode(c, "tech", sendsTo, testRecord, now))) return refuse(c, "busy");
 
     const code = knownCode(limits, testRecord) ?? newLoginCode();
     const challenge = await createChallenge(db, {
@@ -225,7 +225,7 @@ export function registerTechAuth(app: App): void {
   });
 
   app.openapi(verifyRoute, async (c) => {
-    const { requestId, deps, config, log } = c.var;
+    const { deps, config, log } = c.var;
     const db = c.env.DB;
     const now = deps.now();
     const { challenge_id: challengeId, code, device_id: deviceId } = c.req.valid("json");
@@ -236,7 +236,7 @@ export function registerTechAuth(app: App): void {
       pepper: config.settings.login.codePepper,
       now,
     });
-    if (verification.outcome === "closed") return c.json(errorBody("code_expired", requestId), 410);
+    if (verification.outcome === "closed") return refuse(c, "code_expired");
     if (verification.outcome === "mismatch") {
       log.info("technician_code_mismatch", { attempts_left: verification.attemptsLeft });
       return c.json({ verified: false as const, attempts_left: verification.attemptsLeft }, 200);
@@ -249,7 +249,7 @@ export function registerTechAuth(app: App): void {
     // A revoke sticks: the code reaches whoever has his WhatsApp, a lost phone included.
     if (technician !== null && technician.sign_in_stopped_at !== null) {
       log.warn("technician_sign_in_stopped", { technician_id: verification.technicianId });
-      return c.json(errorBody("sign_in_stopped", requestId), 403);
+      return refuse(c, "sign_in_stopped");
     }
     const name = technician?.name ?? null;
     const token = await openTechnicianSession(db, {
@@ -274,7 +274,7 @@ export function registerTechAuth(app: App): void {
     const { technicianId, deviceRowId } = technicianOf(c);
     const signedIn = await signedInTechnician(c.env.DB, { technicianId, deviceRowId });
     // The middleware found the device, so this is a technician deleted between the two reads.
-    if (signedIn === null) return c.json(errorBody("session_required", c.var.requestId), 401);
+    if (signedIn === null) return refuse(c, "session_required");
     return c.json(
       {
         id: technicianId,

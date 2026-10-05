@@ -17,7 +17,7 @@ import { decideDeletion, deletionDoneMessage, deletionsWaiting, type ErasedConta
 import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.ts";
 import { NUMBER_CHANGE_WAITING_SINCE } from "../domain/tasks.ts";
 import { queueContactSync } from "../http/contact-sync.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { queueMessage } from "../http/queue-message.ts";
@@ -190,9 +190,9 @@ export function registerOpsProfile(app: App): void {
     const { id } = c.req.valid("param");
     const { decision, reason } = c.req.valid("json");
     if (needsReason("number_change", decision) && (reason ?? "") === "") {
-      return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
+      return refuse(c, "invalid_request", ["reason"]);
     }
-    if (!(await withinRouteReach(c, "number_change", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await withinRouteReach(c, "number_change", id))) return refuse(c, "not_found");
     const outcome = await decideNumberChange(c.env.DB, {
       id,
       decision,
@@ -201,8 +201,8 @@ export function registerOpsProfile(app: App): void {
       audit: decisionAudit(c, "number_change.decide", { kind: "number_change", id }, decision),
       now: c.var.deps.now(),
     });
-    if (outcome === "not_waiting") return c.json(errorBody("not_found", c.var.requestId), 404);
-    if (outcome === "number_in_use") return c.json(errorBody("number_in_use", c.var.requestId), 409);
+    if (outcome === "not_waiting") return refuse(c, "not_found");
+    if (outcome === "number_in_use") return refuse(c, "number_in_use");
     if (decision === "reject") return c.json({ state: "rejected" as const }, 200);
     await queueContactSync(c, outcome.personId);
     return c.json({ state: "confirmed" as const }, 200);
@@ -230,10 +230,10 @@ export function registerOpsProfile(app: App): void {
     const { id } = c.req.valid("param");
     const { decision, reason } = c.req.valid("json");
     if (needsReason("deletion", decision) && (reason ?? "") === "") {
-      return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
+      return refuse(c, "invalid_request", ["reason"]);
     }
     if (!(await withinRouteReach(c, "deletion_request", id))) {
-      return c.json(errorBody("not_found", c.var.requestId), 404);
+      return refuse(c, "not_found");
     }
     const now = c.var.deps.now();
     // Recorded in the same batch as the erasure: an erasure cannot be undone, and one that failed did not happen.
@@ -249,7 +249,7 @@ export function registerOpsProfile(app: App): void {
       now,
       log: c.var.log,
     });
-    if (outcome.kind === "not_waiting") return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (outcome.kind === "not_waiting") return refuse(c, "not_found");
     if (outcome.kind === "refused") {
       return c.json(erasureRefused(outcome.refusal, outcome.blockers, c.var.requestId), 409);
     }

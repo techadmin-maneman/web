@@ -30,7 +30,7 @@ import { pincodeOf } from "../domain/service-area.ts";
 import { liveCard } from "../domain/referral-cards.ts";
 import { CODE_PATTERN } from "../config/invite-codes.ts";
 import { inviteOf, type Invite } from "../domain/referrals.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema } from "../http/idempotency.ts";
 import { PersonNameSchema } from "../http/openapi.ts";
 import { visitorOf } from "../http/visitor.ts";
@@ -174,7 +174,7 @@ const consultationRoute = createRoute({
   request: {
     params: CodeParams,
     headers: IdempotencyKeyHeaderSchema,
-    body: { content: { "application/json": { schema: ConsultationRequestSchema } } },
+    body: { required: true, content: { "application/json": { schema: ConsultationRequestSchema } } },
   },
   responses: {
     201: {
@@ -221,7 +221,7 @@ const waitlistRoute = createRoute({
   request: {
     params: CodeParams,
     headers: IdempotencyKeyHeaderSchema,
-    body: { content: { "application/json": { schema: WaitlistRequestSchema } } },
+    body: { required: true, content: { "application/json": { schema: WaitlistRequestSchema } } },
   },
   responses: {
     201: {
@@ -261,7 +261,7 @@ export function registerReferralLanding(app: App): void {
     const db = c.env.DB;
     const at = { now: c.var.deps.now(), settings: c.var.config.settings };
     const { ipHash } = await visitorOf(c);
-    if (await inviteMissesSpent(db, ipHash, at)) return c.json(errorBody("rate_limited", c.var.requestId), 429);
+    if (await inviteMissesSpent(db, ipHash, at)) return refuse(c, "rate_limited");
 
     const found = await invite(c, c.req.valid("param").code);
     if (found === null) {

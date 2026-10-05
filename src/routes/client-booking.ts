@@ -75,7 +75,7 @@ import { bookableDays } from "../domain/next-visit.ts";
 import type { OpsInputs } from "../domain/ops-settings.ts";
 import { bookHold } from "../http/book-hold.ts";
 import { clientOf } from "../http/client-session.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, refuse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
@@ -287,6 +287,7 @@ const holdRoute = selfServeRoute({
   summary: "Hold a window for ten minutes while the client pays",
   request: {
     body: {
+      required: true,
       content: {
         "application/json": {
           schema: z
@@ -350,7 +351,7 @@ const bookingRoute = selfServeRoute({
   method: "post",
   path: "/api/bookings",
   summary: "Book a held window: pay through Checkout, or, if free, book it at once",
-  request: { body: { content: { "application/json": { schema: BookingStartSchema } } } },
+  request: { body: { required: true, content: { "application/json": { schema: BookingStartSchema } } } },
   responses: {
     201: { description: "Started", content: { "application/json": { schema: BookingSchema } } },
     401: errorResponse("session_required"),
@@ -506,14 +507,14 @@ export function registerClientBooking(app: App): void {
     const range = await rangeFor(c, session.subjectId, type);
     const start = stripStart(from, range, BOOKING_DAYS);
     const move = movingId === undefined ? null : await moveTermsFor(c, session.subjectId, movingId, type, start);
-    if (movingId !== undefined && move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
+    if (movingId !== undefined && move === null) return refuse(c, "not_changeable");
     const offered = move === null ? await bookable(c, session.subjectId, { type, tier }, start) : null;
     if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
     const service = move === null ? offered : await movedService(c, move.terms.visit);
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
-    if (service === null || price === null) return c.json(errorBody("not_bookable", c.var.requestId), 422);
+    if (service === null || price === null) return refuse(c, "not_bookable");
     const db = c.env.DB;
-    if (await addressOutsideArea(db, session.subjectId)) return c.json(errorBody("not_served", c.var.requestId), 422);
+    if (await addressOutsideArea(db, session.subjectId)) return refuse(c, "not_served");
     // A move in place keeps the visit's technician; a charged move books a new visit with anyone.
     const moving = move === null || move.terms.move.cost === "charged" ? null : move.moving;
     // A move in place keeps its visit's terms, as its hold will (soldAs); anything else is sold under those in force.
@@ -569,7 +570,7 @@ export function registerClientBooking(app: App): void {
       currentAddress(c.env.DB, personId),
       opsInputs(c),
     ]);
-    if (movingId !== undefined && move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
+    if (movingId !== undefined && move === null) return refuse(c, "not_changeable");
     if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
     const moves =
       move === null
@@ -584,10 +585,10 @@ export function registerClientBooking(app: App): void {
     ]);
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
     if (service === null || price === null || date < range.opens || date > range.last) {
-      return c.json(errorBody("not_bookable", c.var.requestId), 422);
+      return refuse(c, "not_bookable");
     }
-    if (!isFullAddress(address)) return c.json(errorBody("address_required", c.var.requestId), 409);
-    if (!served) return c.json(errorBody("not_served", c.var.requestId), 422);
+    if (!isFullAddress(address)) return refuse(c, "address_required");
+    if (!served) return refuse(c, "not_served");
     // A visit moved late books a new one in its place, which keeps the visit's discount code, unless a credit pays it
     // (docs/decisions/0108-discount-codes.md).
     const carried =
@@ -612,17 +613,17 @@ export function registerClientBooking(app: App): void {
       inputs.paymentHold.countdown * 60,
       inputs.paymentHold.grace * 60,
     );
-    if (hold === null) return c.json(errorBody("taken", c.var.requestId), 409);
+    if (hold === null) return refuse(c, "taken");
     c.var.log.info("slot_held", { hold_id: hold.id, type, tier: service.tier, date, window });
     const held = await clientHold(c.env.DB, hold.id, personId, now);
-    if (held === null) return c.json(errorBody("taken", c.var.requestId), 409);
+    if (held === null) return refuse(c, "taken");
     return c.json(held, 201);
   });
 
   app.openapi(holdByIdRoute, async (c) => {
     const session = clientOf(c);
     const held = await clientHold(c.env.DB, c.req.valid("param").id, session.subjectId, c.var.deps.now());
-    if (held === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (held === null) return refuse(c, "not_found");
     return c.json(held, 200);
   });
 
@@ -630,7 +631,7 @@ export function registerClientBooking(app: App): void {
     const session = clientOf(c);
     const { hold_id: holdId, consents = [] } = c.req.valid("json");
     const booking = await startCheckout(c, holdId, session.subjectId);
-    if (booking === null) return c.json(errorBody("hold_expired", c.var.requestId), 409);
+    if (booking === null) return refuse(c, "hold_expired");
     const db = c.env.DB;
     await keepShownConsents(db, {
       personId: session.subjectId,

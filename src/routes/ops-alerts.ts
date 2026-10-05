@@ -9,7 +9,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { callerAccess, permits } from "../http/staff-access.ts";
 import { markDone, openAlert, openAlerts, sendAgain, type OpenAlert } from "../domain/needs-a-hand.ts";
@@ -122,10 +122,9 @@ export function registerOpsAlerts(app: App): void {
   });
 
   app.openapi(resolveRoute, async (c) => {
-    const { requestId } = c.var;
     const alert = await openAlert(c.env.DB, c.req.valid("param").id);
-    if (alert === null) return c.json(errorBody("not_found", requestId), 404);
-    if (!(await permits(c, markDoneNeed(alert.kind)))) return c.json(errorBody("not_permitted", requestId), 403);
+    if (alert === null) return refuse(c, "not_found");
+    if (!(await permits(c, markDoneNeed(alert.kind)))) return refuse(c, "not_permitted");
 
     await markDone(c.env.DB, alert, { now: c.var.deps.now(), audit: auditOf(c, alert, "alert.resolve") });
     return c.body(null, 204);
@@ -134,10 +133,10 @@ export function registerOpsAlerts(app: App): void {
   app.openapi(sendAgainRoute, async (c) => {
     const { requestId, log } = c.var;
     const alert = await openAlert(c.env.DB, c.req.valid("param").id);
-    if (alert === null) return c.json(errorBody("not_found", requestId), 404);
-    if (!(await permits(c, alertNeed(alert.kind, "act")))) return c.json(errorBody("not_permitted", requestId), 403);
+    if (alert === null) return refuse(c, "not_found");
+    if (!(await permits(c, alertNeed(alert.kind, "act")))) return refuse(c, "not_permitted");
     const { kind } = alert;
-    if (!maySendAgain(kind)) return c.json(errorBody("invalid_request", requestId), 400);
+    if (!maySendAgain(kind)) return refuse(c, "invalid_request");
 
     await sendAgain(c.env, alert, kind, {
       now: c.var.deps.now(),

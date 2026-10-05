@@ -8,7 +8,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { casesDecidedSince } from "../domain/no-show-rulings.ts";
 import { chargePreview } from "../domain/no-shows.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
@@ -77,9 +77,9 @@ const decidedRoute = createRoute({
 export function registerOpsNoShowRulings(app: App): void {
   app.openapi(chargePreviewRoute, async (c) => {
     const { id } = c.req.valid("param");
-    if (!(await withinRouteReach(c, "no_show", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await withinRouteReach(c, "no_show", id))) return refuse(c, "not_found");
     const preview = await chargePreview(c.env.DB, id, await opsInputs(c));
-    if (preview === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (preview === null) return refuse(c, "not_found");
     return c.json(preview, 200);
   });
 

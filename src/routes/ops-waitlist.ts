@@ -12,7 +12,7 @@ import { listCities } from "../domain/cities.ts";
 import { reachBinding, withinReach } from "../domain/places.ts";
 import { launchedPincode, pincodeOf } from "../domain/service-area.ts";
 import { launchPincode, launchPreview, waitlistByPincode } from "../domain/waitlist.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { queuePacedMessages } from "../http/queue-message.ts";
 import { reachOf, routeReach } from "../http/staff-access.ts";
@@ -176,10 +176,10 @@ export function registerOpsWaitlist(app: App): void {
     const db = c.env.DB;
     const now = c.var.deps.now();
     const known = await pincodeOf(db, pin);
-    if (known === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (known === null) return refuse(c, "not_found");
     // Whether we serve a pincode is no secret, as the site says so to anyone, so one elsewhere is refused, not hidden.
     if (!reachesCity(await routeReach(c), known.city)) {
-      return c.json(errorBody("not_permitted", c.var.requestId), 403);
+      return refuse(c, "not_permitted");
     }
 
     if (!confirm) {
@@ -188,7 +188,7 @@ export function registerOpsWaitlist(app: App): void {
     }
     const today = indiaDate(now);
     if (launchOn !== undefined && launchesLater(launchOn, today)) {
-      return c.json(errorBody("launch_in_future", c.var.requestId, ["launch_on"]), 400);
+      return refuse(c, "launch_in_future", ["launch_on"]);
     }
     const staff = actorOf(c);
     const { alerts } = await launchPincode(db, {

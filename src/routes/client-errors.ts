@@ -10,7 +10,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { takeOne } from "../domain/rate-limit.ts";
 import type { App } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { visitorOf } from "../http/visitor.ts";
 
@@ -54,7 +54,7 @@ export function registerClientErrors(app: App): void {
     const { ipHash } = await visitorOf(c);
     const within =
       (await takeOne(db, "client_error:ip", ipHash, at)) && (await takeOne(db, "client_error:all", "all", at));
-    if (!within) return c.json(errorBody("rate_limited", c.var.requestId), 429);
+    if (!within) return refuse(c, "rate_limited");
 
     const { request_id: refusedRequestId, ...report } = c.req.valid("json");
     c.var.log.error("client_error", {

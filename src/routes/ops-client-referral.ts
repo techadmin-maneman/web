@@ -16,7 +16,7 @@ import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { CODE_PATTERN } from "../config/invite-codes.ts";
 import { attribute, clientInviteOf, GRANT_STATES, howTheyCame, inviteOf } from "../domain/referrals.ts";
-import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
+import { errorBody, errorResponse, ErrorResponseSchema, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { withinRouteReach } from "../http/staff-access.ts";
 import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../config/crm.ts";
@@ -129,10 +129,10 @@ export function registerOpsClientReferral(app: App): void {
       .bind(personId)
       .first<{ id: string }>();
     if (person === null || !(await withinRouteReach(c, "client", personId))) {
-      return c.json(errorBody("not_found", requestId), 404);
+      return refuse(c, "not_found");
     }
     const invite = await inviteOf(db, code, false);
-    if (invite === null) return c.json(errorBody("unknown_invite", requestId), 422);
+    if (invite === null) return refuse(c, "unknown_invite");
 
     const staff = actorOf(c);
     const outcome = await attribute(db, {
@@ -154,7 +154,7 @@ export function registerOpsClientReferral(app: App): void {
         },
       },
     });
-    if (outcome.outcome === "own_invite") return c.json(errorBody("own_invite", requestId), 409);
+    if (outcome.outcome === "own_invite") return refuse(c, "own_invite");
     // Ops may attach after the friend's first fit; the grant is held for their review (LATE_ATTACH_RULE).
     if (outcome.outcome === "fitted") throw new Error("an invite ops attach is never refused for a first fit");
     if (outcome.outcome === "already_attributed") {

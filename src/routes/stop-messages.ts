@@ -4,7 +4,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { readStopToken, withdraw } from "../domain/stop-messages.ts";
 import { MESSAGE_PURPOSES } from "../policy/consents.ts";
@@ -40,7 +40,7 @@ export function registerStopMessages(app: App): void {
     const { config, deps, requestId, log } = c.var;
     const now = deps.now();
     const subject = await readStopToken(config.settings.tryon.linkSigningKey, c.req.valid("json").token, now);
-    if (subject === null) return c.json(errorBody("not_found", requestId), 404);
+    if (subject === null) return refuse(c, "not_found");
 
     const withdrawn = await withdraw(c.env.DB, {
       personId: subject.personId,

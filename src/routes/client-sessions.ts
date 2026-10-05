@@ -11,7 +11,7 @@ import { clientRoute } from "../http/session-routes.ts";
 import type { App } from "../http/context.ts";
 import { liveSessions, revokeByHandle, revokeOthersStatement, sessionHandle } from "../domain/sessions.ts";
 import { clearClientCookie, clientOf } from "../http/client-session.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 
 const SignedInSchema = z
@@ -99,7 +99,7 @@ export function registerClientSessions(app: App): void {
     const handle = c.req.valid("param").id;
     const subject = { kind: "client", id: session.subjectId } as const;
     if (!(await revokeByHandle(c.env.DB, subject, handle, c.var.deps.now()))) {
-      return c.json(errorBody("not_found", c.var.requestId), 404);
+      return refuse(c, "not_found");
     }
     if (handle === sessionHandle(session.id)) clearClientCookie(c);
     return c.body(null, 204);

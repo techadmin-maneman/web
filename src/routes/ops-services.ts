@@ -34,7 +34,7 @@ import {
 } from "../domain/services.ts";
 import { actorOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { LATE_FEES } from "../policy/moving-a-visit.ts";
@@ -267,16 +267,15 @@ async function servicesBody(c: Context<AppEnv>) {
 /** A refusal as the API answers it: the box it names, where it names one. */
 function refusalBody(c: Context<AppEnv>, refusal: ServiceRefusal) {
   c.var.log.warn("service_refused", { reason: refusal.refused });
-  const requestId = c.var.requestId;
   switch (refusal.refused) {
     case "invalid":
-      return c.json(errorBody("invalid_request", requestId, [refusal.field]), 400);
+      return refuse(c, "invalid_request", [refusal.field]);
     case "taken":
-      return c.json(errorBody("service_exists", requestId, [refusal.field]), 409);
+      return refuse(c, "service_exists", [refusal.field]);
     case "last_of_kind":
-      return c.json(errorBody("last_of_kind", requestId), 409);
+      return refuse(c, "last_of_kind");
     case "not_found":
-      return c.json(errorBody("not_found", requestId), 404);
+      return refuse(c, "not_found");
   }
 }
 

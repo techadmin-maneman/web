@@ -13,7 +13,7 @@ import type { App } from "../http/context.ts";
 import { openDisputes, ruleOnDispute } from "../domain/no-show-disputes.ts";
 import { MESSAGE_STATES } from "../domain/no-shows.ts";
 import { afterRuling } from "../domain/after-a-ruling.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { queueMessage } from "../http/queue-message.ts";
@@ -107,11 +107,11 @@ export function registerOpsDisputes(app: App): void {
     const { id } = c.req.valid("param");
     const { ruling, reason } = c.req.valid("json");
     if (needsReason("no_show_dispute", ruling) && (reason ?? "") === "") {
-      return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
+      return refuse(c, "invalid_request", ["reason"]);
     }
-    if (!(await withinRouteReach(c, "dispute", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (!(await withinRouteReach(c, "dispute", id))) return refuse(c, "not_found");
     if (ruling === "refunded" && !(await permitsOn(c, REFUNDING_A_DISPUTE, "dispute", id))) {
-      return c.json(errorBody("not_permitted", c.var.requestId), 403);
+      return refuse(c, "not_permitted");
     }
 
     const ruled = await ruleOnDispute(c.env.DB, {
@@ -129,7 +129,7 @@ export function registerOpsDisputes(app: App): void {
       },
       now: c.var.deps.now(),
     });
-    if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (ruled === null) return refuse(c, "not_found");
     const notify = (messageId: string) => queueMessage(c, messageId);
     await afterRuling(c.env.DB, { ...c.var.deps, notify }, ruled);
     return c.json({ ruled: true }, 200);

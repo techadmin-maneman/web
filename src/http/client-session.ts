@@ -6,7 +6,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "./context.ts";
 import { findSession, SESSION_TOUCH_MS, SESSION_TTL_MS, touchSession, type Session } from "../domain/sessions.ts";
-import { errorBody } from "./errors.ts";
+import { refuse } from "./errors.ts";
 
 /** __Host-: the browser holds it to this host, over HTTPS, at path /, whatever a page sets. */
 export const CLIENT_COOKIE = "__Host-mm_app";
@@ -43,7 +43,7 @@ export async function clientSessionOf(c: Context<AppEnv>): Promise<Session | nul
  */
 export const requireClientSession = createMiddleware<AppEnv>(async (c, next) => {
   const session = await clientSessionOf(c);
-  if (session === null) return c.json(errorBody("session_required", c.var.requestId), 401);
+  if (session === null) return refuse(c, "session_required");
 
   const now = c.var.deps.now();
   if (now.getTime() - session.lastSeenAt.getTime() > SESSION_TOUCH_MS) {

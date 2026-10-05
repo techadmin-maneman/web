@@ -29,7 +29,7 @@ import { assignTask, handBackTask, staffSeenSince, type TaskKey } from "../domai
 import { outstandingTasks, overdueCount, READ_CAP, tasksWithin, type Task } from "../domain/tasks.ts";
 import { lowStockPlaces } from "../domain/low-stock.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { DAY_MS } from "../lib/durations.ts";
@@ -268,7 +268,7 @@ const staffNow = (c: Context<AppEnv>): Promise<string[]> =>
   staffSeenSince(c.env.DB, new Date(c.var.deps.now().getTime() - STAFF_SEEN_WITHIN_DAYS * DAY_MS));
 
 /** A write kept under whoever made it, asked for by a service token, which names nobody. */
-const noMemberOfStaff = (c: Context<AppEnv>) => c.json(errorBody("access_required", c.var.requestId), 403);
+const noMemberOfStaff = (c: Context<AppEnv>) => refuse(c, "access_required");
 
 /** The task as the board reads it now; null once its thing is done, if there never was one, or if it is elsewhere. */
 async function taskOnTheBoard(c: Context<AppEnv>, key: TaskKey): Promise<Task | null> {
@@ -319,12 +319,12 @@ export function registerOpsTasks(app: App): void {
     const owner = asked === null ? null : asked.toLowerCase();
     const { requestId } = c.var;
     const db = c.env.DB;
-    if (!(await permits(c, taskNeed(key.group, "act")))) return c.json(errorBody("not_permitted", requestId), 403);
+    if (!(await permits(c, taskNeed(key.group, "act")))) return refuse(c, "not_permitted");
     const staff = staffMemberOf(c);
     if (staff === null) return noMemberOfStaff(c);
 
     const task = await taskOnTheBoard(c, key);
-    if (task === null) return c.json(errorBody("not_found", requestId), 404);
+    if (task === null) return refuse(c, "not_found");
     if (task.owner === owner) return c.json({ owner }, 200);
 
     const now = c.var.deps.now();
@@ -334,7 +334,7 @@ export function registerOpsTasks(app: App): void {
       return c.json({ owner: null }, 200);
     }
     if (!mayOwnTasks(owner, await staffNow(c))) {
-      return c.json(errorBody("invalid_request", requestId, ["owner"]), 400);
+      return refuse(c, "invalid_request", ["owner"]);
     }
     await assignTask(db, task, {
       owner,
@@ -351,7 +351,7 @@ export function registerOpsTasks(app: App): void {
     const { requestId } = c.var;
     const staff = staffMemberOf(c);
     if (staff === null) return noMemberOfStaff(c);
-    if ((await taskOnTheBoard(c, key)) === null) return c.json(errorBody("not_found", requestId), 404);
+    if ((await taskOnTheBoard(c, key)) === null) return refuse(c, "not_found");
 
     const now = c.var.deps.now();
     await closeTask(c.env.DB, key, {

@@ -29,7 +29,7 @@ import {
 import { afterResponse } from "../http/after-response.ts";
 import { bookHold } from "../http/book-hold.ts";
 import { cappedBody } from "../http/capped-body.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorResponse, refuse } from "../http/errors.ts";
 import { sha256Hex } from "../lib/hash.ts";
 import { cancelLinkPaidElsewhere, linkPaid } from "../domain/payment-links.ts";
 import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../domain/visit-booking.ts";
@@ -179,7 +179,7 @@ export function registerRazorpayHook(app: App): void {
   app.openapi(razorpayHookRoute, async (c) => {
     const { requestId, log, config, deps } = c.var;
     const secret = config.settings.razorpay?.webhookSecret ?? null;
-    if (secret === null) return c.json(errorBody("not_found", requestId), 404);
+    if (secret === null) return refuse(c, "not_found");
 
     // Razorpay's events are a few KB: a body past the cap is none of theirs, refused as unsigned without reading on.
     const bytes = await cappedBody(c.req.raw, MAX_EVENT_BYTES);
@@ -187,7 +187,7 @@ export function registerRazorpayHook(app: App): void {
     const signature = c.req.header("X-Razorpay-Signature") ?? "";
     if (body === null || !(await signedByRazorpay(secret, body, signature))) {
       log.warn("razorpay_hook_unauthorized");
-      return c.json(errorBody("unauthorized", requestId), 401);
+      return refuse(c, "unauthorized");
     }
 
     let json: unknown = null;
@@ -248,7 +248,7 @@ export function registerRazorpayHook(app: App): void {
       // Not kept as seen, so Razorpay's retry is applied once the payment has arrived.
       if (!taken) {
         log.info("razorpay_hook_refund_early", { event });
-        return c.json(errorBody("not_ready", requestId), 409);
+        return refuse(c, "not_ready");
       }
     } else {
       log.info("razorpay_hook_ignored", { event: event.slice(0, 40) });
