@@ -4,7 +4,7 @@
 
 import { DISPUTE_REASON_MAX_CHARS } from "../../../../src/policy/no-show.ts";
 import { Button } from "@maneman/ui/Button";
-import { Sheet } from "@maneman/ui/Sheet";
+import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.ts";
 import { booking, dispute as copy } from "../content.ts";
@@ -48,7 +48,7 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
       <button className={styles.close} type="button" onClick={close}>
         {booking.close}
       </button>
-      <div className={styles.sheet}>
+      <SheetPanel className={styles.sheet}>
         {step === "writing" && (
           <form
             className={styles.noteForm}
@@ -112,7 +112,7 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
             </Button>
           </div>
         )}
-      </div>
+      </SheetPanel>
     </Sheet>
   );
 }

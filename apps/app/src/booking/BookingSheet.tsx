@@ -25,7 +25,7 @@
 // (lib/clock.ts). When the phone sees them run out it lets the hold go too, but
 // not while Checkout is open: it waits for Checkout's answer.
 
-import { Sheet } from "@maneman/ui/Sheet";
+import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
 import { addDays } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -461,7 +461,7 @@ export function BookingSheet({
           {booking.close}
         </button>
       )}
-      <div className={styles.sheet}>
+      <SheetPanel className={styles.sheet}>
         {step.kind === "loading" && <LoadingStep />}
         {step.kind === "broken" && <WaitStep text={booking.failedToStart} onClose={close} />}
         {step.kind === "service" && (
@@ -545,7 +545,7 @@ export function BookingSheet({
           <WaitStep text={step.paid || reminders === true ? booking.slow : booking.slowQuiet} onClose={close} />
         )}
         {step.kind === "refunded" && <WaitStep text={booking.refunded} onClose={close} />}
-      </div>
+      </SheetPanel>
     </Sheet>
   );
 }

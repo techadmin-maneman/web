@@ -7,7 +7,7 @@
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
-import { Sheet } from "@maneman/ui/Sheet";
+import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
 import { photos } from "../content.ts";
 import { Thumb, type OpenPhoto } from "./PhotoRow.tsx";
@@ -65,7 +65,7 @@ export function PhotoSheet({ photo, onClose }: { photo: OpenPhoto; onClose: () =
   // A tap on the ground around the sheet closes it, as Close does.
   return (
     <Sheet ref={dialog} labelledBy="photo-title" onClose={onClose}>
-      <div className={styles.sheet}>
+      <SheetPanel>
         <Thumb link={photo.link} alt={photo.alt} className={styles.large} eager />
         <div className={styles.save}>
           <p className={styles.photoOf} id="photo-title">
@@ -77,7 +77,7 @@ export function PhotoSheet({ photo, onClose }: { photo: OpenPhoto; onClose: () =
         <Button variant="outline" size="control" className={styles.close} onClick={() => dialog.current?.close()}>
           {photos.close}
         </Button>
-      </div>
+      </SheetPanel>
     </Sheet>
   );
 }

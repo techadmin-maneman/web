@@ -1,6 +1,7 @@
 // The share sheet's three steps (boards F2 to F4), drawn from its flow (./share-flow.ts): which card, the lines its own
 // photographs need agreeing to, and the invite's preview with the ways to send it.
 
+import { SheetPanel } from "@maneman/ui/Sheet";
 import { IconButton } from "@maneman/ui/IconButton";
 import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
@@ -111,7 +112,7 @@ export function ConsentStep({ flow, onClose }: StepProps) {
       <button className={styles.close} type="button" onClick={onClose}>
         {refer.close}
       </button>
-      <div className={styles.sheet}>
+      <SheetPanel className={styles.sheet}>
         <h2 className={styles.sheetTitle} id={TITLE_ID}>
           {refer.consent.title}
         </h2>
@@ -149,7 +150,7 @@ export function ConsentStep({ flow, onClose }: StepProps) {
             {refer.consent.instead}
           </Button>
         </div>
-      </div>
+      </SheetPanel>
     </>
   );
 }

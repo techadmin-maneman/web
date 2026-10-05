@@ -24,9 +24,11 @@ const BOTTOMS = [
   ["apps/tech/src/components/sheet.module.css", ".sheet", "a question's two answers"],
   ["apps/tech/src/today/today.module.css", ".screen", "the last job of the day"],
   ["apps/tech/src/waiting/waiting.module.css", ".screen", "the last thing waiting to send"],
-  ["apps/app/src/booking/booking.module.css", ".sheet", "Pay, Continue and Move"],
-  ["apps/app/src/photos/photos.module.css", ".sheet", "Close under a photograph"],
-  ["apps/app/src/refer/refer.module.css", ".sheet", "the invite's last step"],
+  [
+    "packages/ui/sheet.module.css",
+    ".panel",
+    "Pay, Continue and Move, Close under a photograph, and the invite's last step",
+  ],
 ] as const;
 
 describe("the foot of every phone screen", () => {

@@ -98,14 +98,6 @@ div.cell {
 }
 
 /* The sheet (packages/ui/Sheet.tsx): a photograph large, then board D3's download line. */
-.sheet {
-  min-height: 0;
-  padding: var(--sp-22) var(--sp-20) calc(var(--sp-24) + env(safe-area-inset-bottom));
-  overflow-y: auto;
-  background: var(--paper);
-  color: var(--text);
-}
-
 .thumb.large {
   height: auto;
   max-height: var(--photo-max-h);
