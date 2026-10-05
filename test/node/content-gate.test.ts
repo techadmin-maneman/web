@@ -38,8 +38,34 @@ describe("the production gate on Phase 2's copy", () => {
   it("covers each app's content, the site's, the referral landing's and the API's", () => {
     expect(CONTENT_FILES).toEqual({
       site: ["site/src/content/referral.ts", "site/src/content/site.ts"],
-      app: ["apps/app/src/content.ts"],
-      ops: ["apps/ops/src/content.ts"],
+      app: [
+        "apps/app/src/content.ts",
+        "apps/app/src/content/booking.ts",
+        "apps/app/src/content/common.ts",
+        "apps/app/src/content/home.ts",
+        "apps/app/src/content/login.ts",
+        "apps/app/src/content/payments.ts",
+        "apps/app/src/content/photos.ts",
+        "apps/app/src/content/profile.ts",
+        "apps/app/src/content/refer.ts",
+        "apps/app/src/content/visits.ts",
+      ],
+      // The client app's copy and the console's are one file a feature (apps/*/src/content/).
+      ops: [
+        "apps/ops/src/content.ts",
+        "apps/ops/src/content/areas.ts",
+        "apps/ops/src/content/clients.ts",
+        "apps/ops/src/content/common.ts",
+        "apps/ops/src/content/decisions.ts",
+        "apps/ops/src/content/dispatch.ts",
+        "apps/ops/src/content/no-shows.ts",
+        "apps/ops/src/content/referrals.ts",
+        "apps/ops/src/content/settings.ts",
+        "apps/ops/src/content/shell.ts",
+        "apps/ops/src/content/stock.ts",
+        "apps/ops/src/content/tasks.ts",
+        "apps/ops/src/content/technicians.ts",
+      ],
       tech: ["apps/tech/src/content.ts"],
       api: ["src/config/job-sheet.ts", "src/config/message-templates.ts"],
     });
@@ -69,7 +95,7 @@ describe("the production gate on Phase 2's copy", () => {
       });
       expect(build.status).toBe(1);
       expect(build.stderr).toContain("The production build is blocked");
-      expect(build.stderr).toContain(`apps/${app}/src/content.ts`);
+      expect(build.stderr).toContain(`apps/${app}/src/content`);
     },
   );
 });

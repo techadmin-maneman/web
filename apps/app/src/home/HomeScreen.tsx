@@ -382,12 +382,7 @@ function NothingBooked({ me, offline }: { me: Me; offline: boolean }) {
       {me.booking.self_serve || offline ? (
         <BookButton className={styles.book} label={home.nothing.book} message={messages.book} />
       ) : (
-        <ButtonLink
-          variant="primary"
-          size="action"
-          className={styles.book}
-          href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}
-        >
+        <ButtonLink variant="primary" size="action" className={styles.book} href={BOOKING_URL[import.meta.env.MM_ENV]}>
           {home.nothing.book}
         </ButtonLink>
       )}

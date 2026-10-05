@@ -10,7 +10,7 @@ import { areas, BOOKING_URL } from "../content.ts";
 import styles from "./areas.module.css";
 
 const copy = areas.launch;
-const bookingUrl = BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production ?? "";
+const bookingUrl = BOOKING_URL[import.meta.env.MM_ENV];
 
 interface Props {
   /** The panel's head, which names it. */

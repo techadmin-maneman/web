@@ -38,7 +38,7 @@ type Refused = "not_served" | "visit_booked";
 const ERROR_ID = "address-error";
 
 /** The site's /book, where a pincode we do not come to joins the waitlist. */
-const WAITLIST_URL = BOOKING_URL[String(import.meta.env.MM_ENV)] ?? BOOKING_URL.production;
+const WAITLIST_URL = BOOKING_URL[import.meta.env.MM_ENV];
 
 export function AddressForm({
   address,

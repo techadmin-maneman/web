@@ -83,7 +83,7 @@ describe("an address the API will not save", () => {
     const pincode = page.querySelector("#address-pincode");
     expect(pincode?.getAttribute("aria-invalid")).toBe("true");
     expect(document.activeElement).toBe(pincode);
-    expect(link("Join the waitlist")?.getAttribute("href")).toBe("https://maneman.in/book");
+    expect(link("Join the waitlist")?.getAttribute("href")).toBe("http://127.0.0.1:4321/book");
     expect(saved).toBe(0);
   });
 

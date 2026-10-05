@@ -26,7 +26,7 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
             variant="light"
             size="action"
             className={styles.primary}
-            href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}
+            href={BOOKING_URL[import.meta.env.MM_ENV]}
           >
             {copy.book}
           </ButtonLink>

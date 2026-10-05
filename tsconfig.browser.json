@@ -14,6 +14,8 @@
     "e2e/**/*.ts",
     "test/dom/**/*.ts",
     "test/node/dom/**/*.ts",
+    // What each app is built for, which the apps' code these tests import reads.
+    "apps/*/src/env.d.ts",
     "packages/web-kit/api.ts",
     "packages/web-kit/client-errors.ts",
     "packages/web-kit/small-jpeg.ts",
