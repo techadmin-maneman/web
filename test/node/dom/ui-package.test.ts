@@ -63,6 +63,16 @@ describe.each(APPS)("%s", (app) => {
     expect(copies).toEqual([]);
   });
 
+  // P3-33 (UX-14): the code's boxes, a countdown, and focus given back to a new screen's heading.
+  it("keeps no code field, countdown or focus hand-back of its own", () => {
+    const copies = code.filter((path) =>
+      /\bfunction (CodeField|CodeBoxes|useSecondsLeft|useCountdown|focusIfLost)\b|\.replace\(\/\\D\/g, ""\)\.slice\(0, ONE_TIME_CODE/.test(
+        read(path),
+      ),
+    );
+    expect(copies).toEqual([]);
+  });
+
   it("hides words for a screen reader with the shared VisuallyHidden alone", () => {
     const recipes = styles.filter((path) => /clip:\s*rect\(0|clip-path:\s*inset\(50%\)/.test(read(path)));
     expect(recipes).toEqual([]);
