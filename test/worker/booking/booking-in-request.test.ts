@@ -6,7 +6,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { autoRefundsOf } from "../../../src/domain/auto-refunds.ts";
 import { bookUnbookedHolds, confirmBooking, giveBack } from "../../../src/domain/bookings.ts";
 import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../../src/domain/credits.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
 import { settleOwedRefunds } from "../../../src/domain/cancel-refunds.ts";
 import { moveJob } from "../../../src/domain/dispatch.ts";
 import {
@@ -36,10 +35,10 @@ import {
   markDatabase,
   NOW,
   request,
-  savedAddress,
   type TestDependencies,
   deliverRazorpay,
 } from "../helpers.ts";
+import { asClient, client, fittedInAugust, signedIn, technician, type Call } from "../clients.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const NEWCOMER = "55555555-5555-4555-8555-555555555555";
@@ -60,29 +59,13 @@ let messageQueue: ReturnType<typeof fakeQueue>;
 
 const bindings = () => ({ MESSAGE_QUEUE: messageQueue, CRM_QUEUE: fakeQueue() });
 
-function call(
+const call = (
   personId: string,
   path: string,
-  init: { method?: string; body?: object } = {},
+  init: Call = {},
   deps: TestDependencies = fakeDependencies(),
   database: D1Database = env.DB,
-) {
-  const app = appFor("local", deps, {}, "client");
-  return request(
-    app,
-    path,
-    {
-      method: init.method ?? "GET",
-      headers: {
-        Cookie: cookies.get(personId) ?? "",
-        "Content-Type": "application/json",
-        Origin: "https://maneman.test",
-      },
-      ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
-    },
-    { ...bindings(), DB: database },
-  );
-}
+) => asClient(cookies.get(personId) ?? "", path, init, { deps, bindings: { ...bindings(), DB: database } });
 
 /** Razorpay's signed webhook for a payment. */
 async function webhook(event: string, eventId: string, payment: object, deps: TestDependencies = fakeDependencies()) {
@@ -110,27 +93,15 @@ const payment = (id: string, ordered: { holdId: string; orderId: string; amount:
   created_at: Math.floor(madeAt.getTime() / SECOND),
 });
 
-async function client(id: string, mobile: string, name: string) {
-  await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, ?4)")
-    .bind(id, NOW.toISOString(), mobile, name)
-    .run();
-  await savedAddress(id);
-  cookies.set(
-    id,
-    `mm_app=${await openSession(env.DB, { kind: "client", subjectId: id, deviceLabel: null, now: NOW })}`,
-  );
+async function signedInClient(id: string, mobile: string, name: string) {
+  await client(id, mobile, name);
+  cookies.set(id, await signedIn(id));
 }
 
 /** A client fitted in August, so a service visit is theirs to book. */
 async function fittedClient() {
-  await client(PERSON, "+919810000001", "Rohit Malhotra");
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
-     VALUES ('fit-1', 'fit-1', ?1, 'first_fit', 'completed', '2026-08-01T03:30:00.000Z', '2026-08-01T06:30:00.000Z',
-       't1', ?2)`,
-  )
-    .bind(PERSON, NOW.toISOString())
-    .run();
+  await signedInClient(PERSON, "+919810000001", "Rohit Malhotra");
+  await fittedInAugust(PERSON);
 }
 
 /** A paid visit with Imran, a service visit unless `type` says. */
@@ -203,11 +174,7 @@ beforeEach(async () => {
   captureLogs();
   cookies.clear();
   messageQueue = fakeQueue();
-  await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
-  )
-    .bind(NOW.toISOString())
-    .run();
+  await technician();
   await env.DB.prepare(
     "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
   ).run();
@@ -277,7 +244,7 @@ describe("a paid booking", () => {
 
 describe("a free booking", () => {
   it("books a consultation in the request that confirms it", async () => {
-    await client(NEWCOMER, "+919810000005", "Karan Bhatia");
+    await signedInClient(NEWCOMER, "+919810000005", "Karan Bhatia");
     const held = await call(NEWCOMER, "/api/holds", {
       method: "POST",
       body: { type: "consultation", date: "2026-09-24", window: "morning" },
@@ -529,11 +496,7 @@ describe("a client's move in place, when ops change the visit before it is booke
     (await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${table}`).first<{ n: number }>())?.n;
 
   beforeEach(async () => {
-    await env.DB.prepare(
-      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t2', 't2', 'Sameer Bhatt', 'SB', 1, ?1)",
-    )
-      .bind(NOW.toISOString())
-      .run();
+    await technician("t2", "Sameer Bhatt", "SB");
   });
 
   it("gives a free move back and tells the client when ops gave the visit to another technician meanwhile", async () => {
@@ -553,7 +516,7 @@ describe("a client's move in place, when ops change the visit before it is booke
   });
 
   it("refunds a late fee paid after ops gave the visit to another technician, and tells the client", async () => {
-    await client(PERSON, "+919810000001", "Rohit Malhotra");
+    await signedInClient(PERSON, "+919810000001", "Rohit Malhotra");
     await booked(TUESDAY_MORNING, "first_fit");
     const holdId = await moveHold("2026-09-28", "morning", "first_fit");
     const started = await call(PERSON, `/api/appointments/${VISIT}/reschedule`, {

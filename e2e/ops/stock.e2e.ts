@@ -3,12 +3,10 @@
 // Each movement shows what each place holds now beside what it will hold before
 // it is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { answer, fails, IMRAN, json, STOCK, type Answers } from "./fixtures.ts";
-
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/stock": json(STOCK), ...extra });
@@ -152,12 +150,10 @@ test("lists the latest movements, a job's use under the technician who recorded 
 
 test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }) => {
   await open(page);
-  let results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await recording(page).getByLabel("How many").fill("5");
   await recording(page).getByRole("button", { name: "Check it" }).click();
   await expect(recording(page).getByRole("group", { name: "Check the movement" })).toBeVisible();
-  results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

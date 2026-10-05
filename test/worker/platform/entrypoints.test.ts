@@ -5,24 +5,13 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { lastCompletedAt } from "../../../src/domain/cron-runs.ts";
 import worker from "../../../src/index.ts";
+import { fakeBatch } from "../batches.ts";
 import { captureLogs, countRowsRead, fakeQueue, markDatabase } from "../helpers.ts";
 import { insertJob, insertPerson, syntheticJpeg } from "../tryon-fixtures.ts";
 
 beforeEach(() => {
   captureLogs();
 });
-
-function queueBatch(queue: string, bodies: unknown[]) {
-  const messages = bodies.map((body, index) => ({
-    id: `m-${String(index)}`,
-    body,
-    attempts: 1,
-    timestamp: new Date(),
-    ack: vi.fn(),
-    retry: vi.fn(),
-  }));
-  return { queue, messages, ackAll: vi.fn(), retryAll: vi.fn() };
-}
 
 async function booksPaymentOf(paymentId: string): Promise<string | null> {
   return env.DB.prepare("SELECT books_payment_id FROM payments WHERE id = ?1")
@@ -49,11 +38,11 @@ describe("queue handler", () => {
          VALUES ('0b9f1a52-7c0b-4f5b-9a0e-2f4f6f2b1a01', 'p1', '2026-09-21T00:00:00Z', 'form', 'Gurgaon', 'weekday_am', 'crown', 'r')`,
       ),
     ]);
-    const batch = queueBatch("mm-crm-sync-local", [
+    const batch = fakeBatch("mm-crm-sync-local", [
       { lead_id: "0b9f1a52-7c0b-4f5b-9a0e-2f4f6f2b1a01", request_id: "r" },
     ]);
 
-    await worker.queue(batch as unknown as MessageBatch, env);
+    await worker.queue(batch, env);
 
     expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
     const lead = await env.DB.prepare("SELECT sync_state FROM leads").first();
@@ -75,9 +64,9 @@ describe("queue handler", () => {
       uploaded_at: "2026-09-21T00:00:00Z",
     });
     await env.UPLOADS.put(`uploads/${jobId}`, syntheticJpeg(800, 800));
-    const batch = queueBatch("mm-render-local", [{ job_id: jobId, request_id: "r" }]);
+    const batch = fakeBatch("mm-render-local", [{ job_id: jobId, request_id: "r" }]);
 
-    await worker.queue(batch as unknown as MessageBatch, env);
+    await worker.queue(batch, env);
 
     expect(batch.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 5 });
     expect(await env.DB.prepare("SELECT state FROM tryon_jobs").first()).toEqual({ state: "rendering" });
@@ -94,9 +83,9 @@ describe("queue handler", () => {
     )
       .bind(messageId)
       .run();
-    const batch = queueBatch("mm-messaging-local", [{ message_id: messageId, request_id: "r" }]);
+    const batch = fakeBatch("mm-messaging-local", [{ message_id: messageId, request_id: "r" }]);
 
-    await worker.queue(batch as unknown as MessageBatch, env);
+    await worker.queue(batch, env);
 
     expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
     expect(await env.DB.prepare("SELECT state FROM outbound_messages").first()).toEqual({ state: "sent" });
@@ -116,9 +105,9 @@ describe("queue handler", () => {
     ]);
     const logs = captureLogs();
     const rowsRead = countRowsRead();
-    const batch = queueBatch("mm-crm-sync-local", [{ lead_id: leadId, request_id: "r" }]);
+    const batch = fakeBatch("mm-crm-sync-local", [{ lead_id: leadId, request_id: "r" }]);
 
-    await worker.queue(batch as unknown as MessageBatch, env);
+    await worker.queue(batch, env);
     const summary = logs.lines().find((line) => line.event === "queue_batch");
     const read = rowsRead();
     vi.restoreAllMocks();
@@ -130,17 +119,17 @@ describe("queue handler", () => {
 
   it("retries messages from a queue it does not know", async () => {
     await markDatabase();
-    const batch = queueBatch("mm-mystery-local", [{}]);
-    await worker.queue(batch as unknown as MessageBatch, env);
+    const batch = fakeBatch("mm-mystery-local", [{}]);
+    await worker.queue(batch, env);
     expect(batch.retryAll).toHaveBeenCalledOnce();
   });
 
   it("turns a batch away while D1 is being restored, to be delivered again in five minutes", async () => {
     await markDatabase();
     await switchMaintenanceOn(new Date().toISOString());
-    const batch = queueBatch("mm-crm-sync-local", [{ lead_id: "lead-1", request_id: "r" }]);
+    const batch = fakeBatch("mm-crm-sync-local", [{ lead_id: "lead-1", request_id: "r" }]);
 
-    await worker.queue(batch as unknown as MessageBatch, env);
+    await worker.queue(batch, env);
 
     expect(batch.retryAll).toHaveBeenCalledWith({ delaySeconds: 300 });
     expect(batch.messages[0]?.ack).not.toHaveBeenCalled();

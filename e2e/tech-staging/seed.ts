@@ -36,14 +36,13 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { sqlLiteral, sqlRow } from "../../scripts/lib/sql-literal.ts";
+import { addDays, indiaDate } from "../../src/lib/india-time.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
 const DATABASE = "maneman-staging";
 const BUCKET = "mm-staging-client-photos";
 const DAY_MS = 24 * 60 * 60 * 1000;
-/** India is five and a half hours ahead of UTC, all year. */
-const INDIA_OFFSET_MS = 330 * 60 * 1000;
 
 /** Where the global setup leaves the fixtures for the tests, as e2e/app/fitted.ts does. */
 const HANDOVER = "MM_TECH_STAGING";
@@ -132,8 +131,8 @@ export async function query<T>(sql: string): Promise<T[]> {
 }
 
 /** India's calendar date `days` from today. */
-function indiaDate(days: number): string {
-  return new Date(Date.now() + INDIA_OFFSET_MS + days * DAY_MS).toISOString().slice(0, 10);
+function indiaDay(days: number): string {
+  return addDays(indiaDate(new Date()), days);
 }
 
 /** The morning window on an India date, as UTC instants: 10:00 to 11:30 India. */
@@ -150,7 +149,7 @@ export async function seedStaging(): Promise<StagingFixture> {
   const now = new Date().toISOString();
   const [technicianId, personId, addressId] = [id(), id(), id()];
   const jobs = { today: id(), tomorrow: id(), later: id() };
-  const dates = { today: indiaDate(0), tomorrow: indiaDate(1), later: indiaDate(3) };
+  const dates = { today: indiaDay(0), tomorrow: indiaDay(1), later: indiaDay(3) };
 
   // The cookie's token, and the SHA-256 of it that the sessions table holds
   // (src/domain/sessions.ts). The token itself is never stored and never logged.

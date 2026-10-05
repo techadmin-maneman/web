@@ -6,18 +6,15 @@
 // own store rather than the phone's gallery, and leaves that store only when
 // the API has confirmed it.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { anglesOnPhone, fakeTech, heldOnPhone, JOB_ID } from "./fixtures.ts";
 
 const TARGET_BYTES = 250 * 1024;
 /** A thumbnail, at most, as the API takes it (MAX_THUMBNAIL_BYTES, src/domain/tech-photos.ts). */
 const THUMBNAIL_LIMIT = 64 * 1024;
 const BEFORE = `/jobs/${JOB_ID}/before-photos`;
-
-const wcag = (page: Page) =>
-  new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
 
 test("captures the five before angles into the app's own store, never a file input", async ({ page }) => {
   await fakeTech(page);
@@ -32,8 +29,7 @@ test("captures the five before angles into the app's own store, never a file inp
 
   const capture = page.getByRole("button", { name: "Capture" });
   await expect(capture).toBeEnabled();
-  const midway = await wcag(page);
-  expect(midway.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
@@ -200,8 +196,7 @@ test("a frame the phone has no room for can be taken again, and the phone says i
   await expect(page.getByText("That photo didn’t save. Take it again.")).toBeVisible();
   await expect(page.getByText("This phone's storage is full")).toBeVisible();
   await expect(page.getByText(/won’t open its camera/)).toHaveCount(0);
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   // Room again: the same angle is taken, and the warning goes.
   await page.evaluate(() => {

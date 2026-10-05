@@ -9,7 +9,6 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { bookUnbookedHolds, confirmBooking } from "../../../src/domain/bookings.ts";
 import { creditBalance, grantCredits } from "../../../src/domain/credits.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { createCallBudget, type CallBudget } from "../../../src/lib/call-budget.ts";
@@ -23,9 +22,9 @@ import {
   markDatabase,
   NOW,
   request,
-  savedAddress,
   deliverRazorpay,
 } from "../helpers.ts";
+import { asClient, client, fittedInAugust, signedIn, technician, type Call } from "../clients.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const OTHER = "55555555-5555-4555-8555-555555555555";
@@ -36,39 +35,13 @@ const at = (seconds: number) => new Date(NOW.getTime() + seconds * SECOND);
 
 const cookies = new Map<string, string>();
 
-function call(personId: string, path: string, init: { method?: string; body?: object } = {}, now = NOW) {
-  const app = appFor("local", fakeDependencies({ now: () => now }), {}, "client");
-  return request(
-    app,
-    path,
-    {
-      method: init.method ?? "GET",
-      headers: {
-        Cookie: cookies.get(personId) ?? "",
-        "Content-Type": "application/json",
-        Origin: "https://maneman.test",
-      },
-      ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
-    },
-    { MESSAGE_QUEUE: fakeQueue() },
-  );
-}
+const call = (personId: string, path: string, init: Call = {}, now = NOW) =>
+  asClient(cookies.get(personId) ?? "", path, init, { now, bindings: { MESSAGE_QUEUE: fakeQueue() } });
 
 async function fittedPerson(id: string, mobile: string, name: string) {
-  await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, ?4)")
-    .bind(id, NOW.toISOString(), mobile, name)
-    .run();
-  await savedAddress(id);
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
-     VALUES (?1, ?1, ?2, 'first_fit', 'completed', '2026-08-01T03:30:00.000Z', '2026-08-01T06:30:00.000Z', 't1', ?3)`,
-  )
-    .bind(`fit-${id}`, id, NOW.toISOString())
-    .run();
-  cookies.set(
-    id,
-    `mm_app=${await openSession(env.DB, { kind: "client", subjectId: id, deviceLabel: null, now: NOW })}`,
-  );
+  await client(id, mobile, name);
+  await fittedInAugust(id, `fit-${id}`);
+  cookies.set(id, await signedIn(id));
 }
 
 interface Through {
@@ -136,11 +109,7 @@ beforeEach(async () => {
   await markDatabase();
   captureLogs();
   cookies.clear();
-  await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
-  )
-    .bind(NOW.toISOString())
-    .run();
+  await technician();
   await fittedPerson(PERSON, "+919810000001", "Rohit Malhotra");
 });
 

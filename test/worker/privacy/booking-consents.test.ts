@@ -6,19 +6,9 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { HOLD_SECONDS, PAYMENT_GRACE_SECONDS } from "../../../src/config/scheduling.ts";
 import { grantCredits } from "../../../src/domain/credits.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
 import { saltedHash } from "../../../src/lib/hash.ts";
-import {
-  appFor,
-  fakeDependencies,
-  fakeQueue,
-  LOCAL_SETTINGS,
-  markDatabase,
-  NOW,
-  request,
-  savedAddress,
-  deliverRazorpay,
-} from "../helpers.ts";
+import { fakeDependencies, fakeQueue, LOCAL_SETTINGS, markDatabase, NOW, deliverRazorpay } from "../helpers.ts";
+import { asClient, client, fittedInAugust, signedIn, technician } from "../clients.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -28,19 +18,13 @@ const CLIENT_IP = "203.0.113.7";
 const minutes = (count: number) => new Date(NOW.getTime() + count * 60_000);
 
 let cookie: string;
-const app = (minutesLater = 0) => appFor("local", fakeDependencies({ now: () => minutes(minutesLater) }), {}, "client");
-
 const post = (path: string, body: object, minutesLater = 0) =>
-  request(app(minutesLater), path, {
-    method: "POST",
-    headers: {
-      Cookie: cookie,
-      "Content-Type": "application/json",
-      Origin: "https://maneman.test",
-      "CF-Connecting-IP": CLIENT_IP,
-    },
-    body: JSON.stringify(body),
-  });
+  asClient(
+    cookie,
+    path,
+    { method: "POST", body, headers: { "CF-Connecting-IP": CLIENT_IP } },
+    { now: minutes(minutesLater) },
+  );
 
 async function held(body: object = { type: "service", date: "2026-09-24", window: "afternoon" }): Promise<string> {
   const answer = await post("/api/holds", body);
@@ -122,26 +106,11 @@ const audited = async () =>
 
 beforeEach(async () => {
   await markDatabase();
-  await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
-  )
-    .bind(NOW.toISOString())
-    .run();
-  await env.DB.prepare(
-    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
-  )
-    .bind(PERSON, NOW.toISOString())
-    .run();
-  await savedAddress(PERSON);
+  await technician();
+  await client(PERSON);
   // Fitted: a first fit done with Imran, so service visits are what they book.
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
-     VALUES ('fit', 'fit', ?1, 'first_fit', 'completed', '2026-08-01T03:30:00.000Z', '2026-08-01T06:30:00.000Z', 't1',
-       ?2)`,
-  )
-    .bind(PERSON, NOW.toISOString())
-    .run();
-  cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
+  await fittedInAugust(PERSON, "fit");
+  cookie = await signedIn(PERSON);
 });
 
 describe("a paid visit's consents", () => {
@@ -172,7 +141,7 @@ describe("a paid visit's consents", () => {
     ]);
     // The profile then shows each as given, with its date.
     const profile = await (
-      await request(app(5), "/api/profile", { headers: { Cookie: cookie } })
+      await asClient(cookie, "/api/profile", {}, { now: minutes(5) })
     ).json<{
       consents: { purpose: string; granted: boolean; since: string | null }[];
     }>();

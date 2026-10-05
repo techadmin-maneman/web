@@ -26,6 +26,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import sharp from "sharp";
+import { indiaDate } from "../../src/lib/india-time.ts";
 import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
 import { sqlRow } from "../../scripts/lib/sql-literal.ts";
@@ -63,7 +64,7 @@ const HANDOVER = "MM_E2E_FITTED";
 
 /** India's date `days` from today, and the afternoon window's start and end on it (12 to 1:30 pm). */
 function day(days: number): { date: string; start: string; end: string } {
-  const date = new Date(Date.now() + 330 * 60 * 1000 + days * DAY).toISOString().slice(0, 10);
+  const date = indiaDate(new Date(Date.now() + days * DAY));
   return { date, start: `${date}T06:30:00.000Z`, end: `${date}T08:00:00.000Z` };
 }
 

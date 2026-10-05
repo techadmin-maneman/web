@@ -2,9 +2,9 @@
 // its manifest, and able to open offline on the last Home the service worker
 // kept (board B3). No other API answer is kept, and logging out forgets Home.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { signIn } from "./signed-in.ts";
 
 test.use({ serviceWorkers: "allow" });
@@ -67,10 +67,7 @@ test("opens offline on the last Home, with board B3's banner, and Reschedule wai
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Reschedule" })).toBeDisabled();
   await expect(page.getByRole("link", { name: "Add a note" })).toBeVisible();
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await page.context().setOffline(false);
   await expect(page.getByText(OFFLINE)).toBeHidden();

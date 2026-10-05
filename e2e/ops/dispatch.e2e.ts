@@ -9,12 +9,11 @@
 // The board is drawn for the mouse; everything the drag does is done here from
 // the keyboard as well, and that path is what most of these tests walk.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { answer, BOARD, fails, json, MOVED, ROHIT, ROOM, VIKRAM, type Answers, type Call } from "./fixtures.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const BOARD_PATH = "/api/dispatch";
 const MOVE = "/api/dispatch/move";
 const ASSIGN = "/api/dispatch/assign";
@@ -746,28 +745,23 @@ test("keeps every day readable, and the navigation in reach, at 200% zoom", asyn
 
 test("meets WCAG 2.2 AA on the board, the drawer, a job in hand, the picker and a refusal", async ({ page }) => {
   await open(page, { [MOVE_IT]: fails(409, "clash") });
-  const board = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(board.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await press(page, ROHIT_BLOCK);
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
-  const drawer = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(drawer.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await press(page, "Move this visit");
   await expect(page.getByLabel("Or choose where from a list")).toBeVisible();
-  const inHand = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(inHand.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await press(page, TO_SANDEEP);
-  const picker = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(picker.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await page.getByRole("radio", { name: "Running over on an earlier job" }).check();
   await page.getByRole("button", { name: "Move and notify" }).click();
   await expect(page.getByRole("alert")).toBeVisible();
-  const refused = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(refused.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("Escape lets go of the picker, then of the move itself", async ({ page }) => {

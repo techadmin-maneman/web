@@ -3,13 +3,10 @@
 // never one unconfirmed tap, a started job offers nothing but its next step,
 // and the wait counts whether or not the phone has signal.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { atTheDoor, fakeTech, JOB_ID, pageScrolls, ROHITS_PIECE, ROHITS_PROFILE, TOMORROW_JOB_ID } from "./fixtures.ts";
-
-const wcag = (page: Page) =>
-  new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
 
 /** The one gold action at the foot of the screen, which board B5's chain hands on stage by stage. */
 const foot = (page: Page) => page.locator("main > div").last().getByRole("button");
@@ -70,8 +67,7 @@ test("shows the flat, floor, tower, building and landmark, and a way to reach th
     "href",
     "https://wa.me/919810000000",
   );
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("shows the piece on the client's head and the last visit's after photograph (board A3)", async ({ page }) => {
@@ -136,8 +132,7 @@ test("checks in at the door, and records the time and the distance (board B5)", 
   // Every write carries the job's start as the phone holds it, so a job ops moved is refused.
   expect(checkIn?.startsAt).toMatch(/T04:00:00\.000Z$/);
 
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("refuses a check-in from away, and says how far, with no way to close a no-show", async ({ page }) => {
@@ -157,8 +152,7 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
   await expect(page.getByRole("button", { name: "I have arrived" })).toHaveCount(0);
 
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("keeps Close as no-show dim and outlined beside the gold Start job until the wait has run", async ({ page }) => {
@@ -194,8 +188,7 @@ test("asks before closing as a no-show, since ops may charge the client", async 
   await expect(sheet).toContainText("Ops may charge the client");
   // It opens on the safe answer, so one stray Enter charges nobody.
   await expect(sheet.getByRole("button", { name: "Not yet" })).toBeFocused();
-  const asked = await wcag(page);
-  expect(asked.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   // A mis-tap is undone with one tap, and nothing was sent.
   await sheet.getByRole("button", { name: "Not yet" }).click();
@@ -212,8 +205,7 @@ test("asks before closing as a no-show, since ops may charge the client", async 
   await expect(page.getByText("40 m")).toBeVisible();
   await expect(page.getByText(/^Delivered /)).toBeVisible();
   await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/no-show")).length).toBe(1);
-  const closed = await wcag(page);
-  expect(closed.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("a no-show the API refuses as early stays open on the card, and never reads as done", async ({ page }) => {
@@ -352,8 +344,7 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Finish the list to continue" })).toBeDisabled();
   for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
-  const wcagOnChecklist = await wcag(page);
-  expect(wcagOnChecklist.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
   await page.getByRole("button", { name: "Next" }).click();
 
   // Step 3: the consumables' steppers, no keyboard anywhere.
@@ -390,8 +381,7 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   expect(fake.writes.at(-1)?.body).toEqual({ outcome: "partial", reason: "client_stopped_it" });
   expect(new Set(fake.writes.map((write) => write.startsAt)).size).toBe(1);
 
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test.describe("on a 360 × 640 phone", () => {

@@ -1,9 +1,8 @@
 // Boards A1, A2 and A3: the day's jobs, the empty state, the offline banner,
 // and one job's card with its locked version.
 
-import AxeBuilder from "@axe-core/playwright";
-import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import {
   card,
   fakeTech,
@@ -14,9 +13,6 @@ import {
   ROHITS_PIECE,
   todayInIndia,
 } from "./fixtures.ts";
-
-const wcag = (page: Page) =>
-  new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
 
 test("lists the day's jobs in order, with no amount anywhere (board A1)", async ({ page }) => {
   await fakeTech(page);
@@ -40,8 +36,7 @@ test("lists the day's jobs in order, with no amount anywhere (board A1)", async 
 
   // "No money anywhere in the technician app": a badge only.
   await expect(page.locator("body")).not.toContainText("₹");
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 // "CONSULTATION AND FIT · PAYS ONCE FITTED" broke into two ragged columns at 375 and 390 px.
@@ -85,8 +80,7 @@ test("says nothing is booked when the day is empty (board A2)", async ({ page })
   await fakeTech(page, true);
   await page.goto("/");
   await expect(page.getByText("Nothing booked for today")).toBeVisible();
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("shows board A2's banner with no signal, and the card still opens from the phone", async ({ page, context }) => {
@@ -114,8 +108,7 @@ test("shows board A2's banner with no signal, and the card still opens from the 
   await page.getByText("Rohit M.").first().click();
   await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
 
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("says there is no signal when nothing answers, even while the phone says it has a network", async ({ page }) => {
@@ -181,8 +174,7 @@ test("opens a job's card with its address, access notes and the way in (board A3
   );
   await expect(page.getByRole("button", { name: "I have arrived" })).toBeVisible();
 
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("a job further out shows time, type and sector only, and cannot be started", async ({ page }) => {

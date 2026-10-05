@@ -3,12 +3,10 @@
 // host. Cloudflare Access guards that host in staging and production; locally
 // the stub provider lets everyone through as ops@localhost (ADR 0031).
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { answer, json, TASKS, TASKS_READ_ON } from "./fixtures.ts";
-
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 /** Who is signed in when Access stands in front, with the routes their calls go ahead on. */
 const signedIn = (who: string, listed: boolean, mayCall: readonly string[]) =>
@@ -224,10 +222,6 @@ test("meets WCAG 2.2 AA on its sections", async ({ page }) => {
   for (const path of ["/", "/referrals", "/areas"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-    expect(
-      results.violations.map((violation) => violation.id),
-      path,
-    ).toEqual([]);
+    expect(await axeViolations(page), path).toEqual([]);
   }
 });

@@ -5,12 +5,10 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md), and says of a
 // refusal which box it came from.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { answer, CONSUMABLES, fails, json, type Answers } from "./fixtures.ts";
-
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/consumables": json(CONSUMABLES), ...extra });
@@ -169,13 +167,11 @@ test.describe("what each service uses", () => {
 
 test("meets WCAG 2.2 AA, with a change being checked as well", async ({ page }) => {
   await open(page);
-  let results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await page.getByRole("button", { name: "Change Tape strips" }).click();
   await page.getByRole("group", { name: "Change Tape strips" }).getByLabel("Unit").fill("strips");
   await page.getByRole("button", { name: "Save the change" }).click();
   await expect(page.getByRole("group", { name: "Check the change" })).toBeVisible();
-  results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

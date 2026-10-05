@@ -2,9 +2,10 @@
 // phone and replayed in order when the signal returns, and a job that FSM
 // changed underneath says what changed rather than a generic error.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
+import { LOCAL_LOGIN_CODE } from "../../scripts/lib/local-stack.ts";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { atTheDoor, fakeTech, heldOnPhone, JOB_ID, keptOnPhone, todayInIndia, type Fake } from "./fixtures.ts";
 
 /**
@@ -172,7 +173,7 @@ test("keeps a switched-off technician's unsent step, and sends it once he is bac
   fake.signedIn = false;
   await page.getByRole("textbox", { name: "Mobile number" }).fill("9811000000");
   await page.getByRole("button", { name: "Send the code" }).click();
-  await page.getByRole("textbox", { name: "Code" }).fill("246810");
+  await page.getByRole("textbox", { name: "Code" }).fill(LOCAL_LOGIN_CODE);
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect.poll(() => fake.writes.length, { timeout: 15_000 }).toBe(already + 1);
@@ -199,20 +200,14 @@ test("warns when the phone will not promise to keep the queue, and says how long
   await page.getByRole("button", { name: "Back" }).click();
 
   await expect(page.getByText("Unsent work could be lost")).toBeVisible();
-  const onToday = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(onToday.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   // And the queue itself names how long the work has been on the phone alone.
   await page.getByRole("link", { name: /1 action waiting/ }).click();
   await expect(page.getByText("Unsent work could be lost")).toBeVisible();
   await expect(page.getByText(/^Waiting since /)).toBeVisible();
 
-  const onWaiting = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(onWaiting.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("says nothing about keeping the queue when the phone has promised to", async ({ page, context }) => {
@@ -262,10 +257,7 @@ test("accounts plainly for what has not reached us, and says what changed on a s
 
   const movedToSameer = "Ops moved this job to Sameer at 10:40 am.";
   await expect(page.getByText(movedToSameer).first()).toBeVisible();
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   // Not only here: every screen says so, and the card offers nothing to press on with.
   await page.getByRole("button", { name: "Back" }).click();
@@ -351,10 +343,7 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
 
   await expect(page.getByText("Ops moved this job to Sameer at 10:40 am.").first()).toBeVisible();
   await expect(page.getByText(/would not upload|no longer on your list/)).toHaveCount(0);
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   // Deleting never throws away photographs on one tap, and the question opens on the safe answer.
   await page.getByRole("button", { name: "Delete this job's work" }).click();
@@ -417,10 +406,7 @@ test("asks before a sign-out would lose unsent work, sends it first if asked, an
   await account.click();
   await expect(page.getByText("1 action not sent yet")).toBeVisible();
   await expect(page.getByText("Signing out deletes them from this phone, and they never reach us.")).toBeVisible();
-  const asking = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(asking.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   // With no signal the API cannot end the session, so the phone wipes nothing and says so.
   await page.getByRole("button", { name: "Sign out anyway" }).click();
