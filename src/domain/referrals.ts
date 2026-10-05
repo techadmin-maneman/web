@@ -11,6 +11,7 @@ import { NAMING_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { inviteLapsed } from "../policy/invites.ts";
 import { firstNameOf } from "../lib/names.ts";
 import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
+import { insertRow } from "../lib/sql.ts";
 
 /** No 0, O, 1 or I: a code is read aloud and typed. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -197,27 +198,27 @@ export async function attribute(
   const at = input.now.toISOString();
   const id = crypto.randomUUID();
   await db.batch([
-    db
-      .prepare(
-        `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, pincode, attached_by,
-           attach_reason, grant_state, fraud_signals, first_fit_appointment_id, told_notice, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?4, ?4)
-         ON CONFLICT (referred_person_id) DO NOTHING`,
-      )
-      .bind(
+    insertRow(
+      db,
+      "referral_attributions",
+      {
         id,
-        input.invite.code,
-        input.personId,
-        at,
-        input.via,
-        input.pincode,
-        attachedBy?.by ?? null,
-        attachedBy?.reason ?? null,
-        heldForReview === null ? "pending" : "held",
-        heldForReview === null ? null : JSON.stringify([heldForReview.reason]),
-        heldForReview?.firstFitId ?? null,
-        input.toldNotice,
-      ),
+        code: input.invite.code,
+        referred_person_id: input.personId,
+        first_touch_at: at,
+        via: input.via,
+        pincode: input.pincode,
+        attached_by: attachedBy?.by ?? null,
+        attach_reason: attachedBy?.reason ?? null,
+        grant_state: heldForReview === null ? "pending" : "held",
+        fraud_signals: heldForReview === null ? null : JSON.stringify([heldForReview.reason]),
+        first_fit_appointment_id: heldForReview?.firstFitId ?? null,
+        told_notice: input.toldNotice,
+        created_at: at,
+        updated_at: at,
+      },
+      "ON CONFLICT (referred_person_id) DO NOTHING",
+    ),
     ...(attachedBy === undefined
       ? []
       : [auditStatementIfWritten(db, attachedBy.audit, input.now, { table: "referral_attributions", id })]),
