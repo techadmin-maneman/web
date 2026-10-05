@@ -22,6 +22,7 @@ async function selfServeOff(page: Page, also: Record<string, unknown> = {}): Pro
       url: `http://127.0.0.1:${String(PORTS.app)}/api/me`,
       headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
     });
+    if (!answer.ok()) return route.fulfill({ response: answer });
     const me = (await answer.json()) as { booking: Record<string, unknown> };
     await route.fulfill({ response: answer, json: { ...me, ...also, booking: { ...me.booking, self_serve: false } } });
   });

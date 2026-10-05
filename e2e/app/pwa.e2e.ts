@@ -94,7 +94,7 @@ test("says the visit is still booked when the API fails and the phone kept Home"
   await page
     .context()
     .route("**/api/me", (route) =>
-      route.fulfill({ status: 503, json: { error: { code: "unavailable", message: "Down for a moment." } } }),
+      route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "test" } } }),
     );
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toBeVisible();

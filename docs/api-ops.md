@@ -168,6 +168,14 @@ The client's record: who they are, their address, their visits, their money, the
 }
 ```
 
+**400**: invalid_request: the ID is not one
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **404**: not_found: no such client, or the client is outside the caller's cities
 
 ```json
@@ -850,6 +858,14 @@ Request body:
 ```json
 {
   "$ref": "#/components/schemas/Erased"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 

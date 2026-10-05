@@ -4,7 +4,7 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { expect, test } from "../support.ts";
+import { expect, outsideContract, test } from "../support.ts";
 import { fakeTech, heldOnPhone, storeOnPhone } from "./fixtures.ts";
 
 const wcag = (page: Page) =>
@@ -98,7 +98,7 @@ test("wipes the phone and signs out when the session has ended, as a revoked dev
   await page.route("**/api/tech/me", (route) =>
     route.fulfill({
       status: 401,
-      json: { error: { code: "device_revoked", message: "This device was revoked." } },
+      json: { error: { code: "device_revoked", request_id: "test" } },
     }),
   );
   await page.reload();
@@ -251,6 +251,7 @@ test("a screen that fails to draw says so and offers a reload, and the reload lo
   });
 
   // A release sends the day in a shape the screen cannot draw.
+  outsideContract("GET /api/tech/jobs 200");
   fake.malformed = true;
   await page.reload();
   await expect(page.getByText("This screen didn’t open. Nothing you recorded is lost.")).toBeVisible();

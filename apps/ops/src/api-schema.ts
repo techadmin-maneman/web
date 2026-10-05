@@ -245,6 +245,15 @@ export interface paths {
                         "application/json": components["schemas"]["ClientRecord"] | components["schemas"]["ErasedClientRecord"];
                     };
                 };
+                /** @description invalid_request: the ID is not one */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description not_found: no such client, or the client is outside the caller's cities */
                 404: {
                     headers: {
@@ -1338,6 +1347,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Erased"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description access_required: a service token, which names no member of staff */

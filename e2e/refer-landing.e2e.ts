@@ -6,6 +6,7 @@
 // island fetches it — the same fallback that runs if the Worker cannot reach
 // mm-api.
 
+import { HOUSE_CARD } from "../src/config/house-card.ts";
 import AxeBuilder from "@axe-core/playwright";
 import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./booking-area.ts";
@@ -48,6 +49,8 @@ async function mockApi(page: Page, answers: Answers = {}): Promise<Request[]> {
     route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } }),
   );
   await page.route(`**/api/r/${CODE}`, (route) => route.fulfill({ json: answers.invite ?? INVITE }));
+  // The invite's card: the API sends an unknown code's browser to the house card (src/routes/public/referral-landing.ts).
+  await page.route("**/api/og/*", (route) => route.fulfill({ status: 302, headers: { location: HOUSE_CARD } }));
   await page.route("**/api/pincodes/*", (route) => {
     const pincode = route.request().url().split("/").pop();
     return route.fulfill({ json: pincode === SERVED.pincode ? SERVED : UNSERVED });
@@ -63,6 +66,7 @@ async function mockApi(page: Page, answers: Answers = {}): Promise<Request[]> {
         area: SERVED.area,
         credits: true,
         invite: "valid",
+        one_visit: false,
       },
     };
     return route.fulfill({ status: answer.status, json: answer.body });
@@ -249,6 +253,7 @@ test("a code we do not know still books, without the invite's visits", async ({ 
         area: SERVED.area,
         credits: false,
         invite: "unknown",
+        one_visit: false,
       },
     },
   });
@@ -336,6 +341,7 @@ test("a consultation nobody can book outright is confirmed as a request", async 
         area: SERVED.area,
         credits: true,
         invite: "valid",
+        one_visit: false,
       },
     },
   });
@@ -510,6 +516,7 @@ test("pressing again after a lost answer sends the same request key", async ({ p
       area: SERVED.area,
       credits: true,
       invite: "valid",
+      one_visit: false,
     };
     return route.fulfill({ status: 201, json: body });
   });
@@ -555,7 +562,7 @@ async function bookThrough(page: Page): Promise<void> {
 // REQ-06: the invite had lapsed for this friend, which only the booking's answer can say (ADR 0025, item 40).
 test("an invite that has expired for this friend says so once the booking is made", async ({ page }) => {
   const expired = { state: "booked", date: "2026-09-25", window: "morning", area: SERVED.area, credits: false };
-  await mockApi(page, { consultation: { status: 201, body: { ...expired, invite: "expired" } } });
+  await mockApi(page, { consultation: { status: 201, body: { ...expired, invite: "expired", one_visit: false } } });
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
   await expect(page.getByText("Booking received")).toBeVisible();
@@ -637,7 +644,7 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
 
 test("a consultation asked for, not booked, still offers the app, where the request shows", async ({ page }) => {
   const requested = { state: "requested", date: "2026-09-25", window: "morning", area: SERVED.area, credits: true };
-  await mockApi(page, { consultation: { status: 201, body: { ...requested, invite: "valid" } } });
+  await mockApi(page, { consultation: { status: 201, body: { ...requested, invite: "valid", one_visit: false } } });
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
   await expect(page.getByText("Request received")).toBeVisible();

@@ -70,12 +70,12 @@ export default defineConfig({
       name: "390",
       // tech-staging/ is the proof against the deployed API, which has its own
       // config and is never run by CI (playwright.staging.config.ts).
-      testIgnore: ["app/**", "ops/**", "tech/**", "tech-staging/**"],
+      testIgnore: ["app/**", "ops/**", "tech/**", "tech-live/**", "tech-staging/**"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
     },
     {
       name: "1440",
-      testIgnore: ["app/**", "ops/**", "tech/**", "tech-staging/**"],
+      testIgnore: ["app/**", "ops/**", "tech/**", "tech-live/**", "tech-staging/**"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
     {
@@ -121,6 +121,23 @@ export default defineConfig({
         permissions: ["camera"],
         launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
         // The steps stand still, so axe never reads a screen halfway in.
+        reducedMotion: "reduce",
+      },
+    },
+    {
+      // The technician app against the local mm-api, with nothing faked: one technician's day, worked through
+      // (e2e/tech-live/day.e2e.ts, ADR 0075). Its two tests share a technician, so they run in order.
+      name: "tech-live",
+      testMatch: "tech-live/**/*.e2e.ts",
+      fullyParallel: false,
+      // A retry would replay steps the API has already landed, and prove nothing.
+      retries: 0,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 390, height: 844 },
+        baseURL: `http://tech.localhost:${String(PORTS.tech)}`,
+        serviceWorkers: "block",
+        launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
         reducedMotion: "reduce",
       },
     },

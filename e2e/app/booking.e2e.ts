@@ -106,7 +106,7 @@ async function premiumBeside(page: Page, offered: string): Promise<void> {
             services: me.booking.services.flatMap((each) =>
               each.type === "service" && each.tier === "standard" ? [each, PREMIUM] : [each],
             ),
-            next: { type: "service", tier: offered, date: indiaDay(1), window: null },
+            next: { type: "service", tier: offered, due_on: indiaDay(1), date: indiaDay(1), window: null },
           },
         },
   );
@@ -115,7 +115,13 @@ async function premiumBeside(page: Page, offered: string): Promise<void> {
     page,
     /\/api\/availability\?/,
     (days: Record<string, unknown>, url) =>
-      url.searchParams.get("tier") === "premium" ? { ...days, service: PREMIUM, price: PREMIUM.price } : days,
+      url.searchParams.get("tier") === "premium"
+        ? {
+            ...days,
+            service: { tier: PREMIUM.tier, name: PREMIUM.name, minutes: PREMIUM.minutes },
+            price: PREMIUM.price,
+          }
+        : days,
     (url) => {
       url.searchParams.delete("tier");
       return url;
@@ -849,7 +855,7 @@ test("writes the late fee to move a visit as the pay step does, and C7's way to 
 
 test("draws a change's outcome in the serif's one weight, never a made-up bold", async ({ page }) => {
   await page.route(/\/api\/appointments\/[0-9a-f-]{36}\/reschedule$/, (route) =>
-    route.fulfill({ status: 500, json: { error: { code: "internal", request_id: "e2e" } } }),
+    route.fulfill({ status: 500, json: { error: { code: "internal_error", request_id: "e2e" } } }),
   );
   await logIn(page, fittedClient().mobile);
   await page.getByRole("button", { name: "Reschedule" }).click();

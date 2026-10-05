@@ -444,6 +444,7 @@ const recordRoute = createRoute({
   request: { params: clientId },
   responses: {
     200: { description: "The record", ...json(z.union([ClientRecordSchema, ErasedClientRecordSchema])) },
+    400: errorResponse("invalid_request: the ID is not one"),
     404: errorResponse("not_found: no such client, or the client is outside the caller's cities"),
   },
 });
@@ -611,9 +612,7 @@ export function registerOpsClients(app: App): void {
     )
       .bind(mobile)
       .first<PersonRow>();
-    if (person === null || !(await withinRouteReach(c, "client", person.id))) {
-      return refuse(c, "not_found");
-    }
+    if (person === null || !(await withinRouteReach(c, "client", person.id))) return refuse(c, "not_found");
     return c.json({ id: person.id, name: person.name, mobile: person.mobile_e164 }, 200);
   });
 

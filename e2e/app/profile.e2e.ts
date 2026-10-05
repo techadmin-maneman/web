@@ -329,7 +329,9 @@ test("changes the number: a code to each, then it waits for us", async ({ page }
 // would tell the client something untrue about their data (FEA-25).
 test("a consent that did not go through says so, and the switch stays as it was", async ({ page }) => {
   await loggedIn(page);
-  await page.route("**/api/consents/*", (route) => route.fulfill({ status: 503, json: { error: { code: "busy" } } }));
+  await page.route("**/api/consents/*", (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "test" } } }),
+  );
   const visits = page.getByRole("switch", { name: "WhatsApp about your visits" });
   await visits.click();
   await expect(page.getByRole("alert")).toHaveText("That didn’t go through, so nothing has changed. Try again.");
@@ -339,7 +341,7 @@ test("a consent that did not go through says so, and the switch stays as it was"
 test("a deletion request that did not go through says so, and asks again", async ({ page }) => {
   await loggedIn(page);
   await page.route("**/api/deletion-request", (route) =>
-    route.fulfill({ status: 503, json: { error: { code: "busy" } } }),
+    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "test" } } }),
   );
   await page.getByRole("button", { name: "Request deletion" }).click();
   await page.getByRole("button", { name: "Yes, request deletion" }).click();

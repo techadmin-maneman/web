@@ -3,6 +3,7 @@ import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
 import { createApp } from "../../src/app.ts";
 import type { App } from "../../src/http/context.ts";
+import { outsideContract } from "./contract.ts";
 import {
   EXPECTED_DATABASE_NAME,
   SURFACE_HOSTS,
@@ -319,8 +320,17 @@ export function appFor(
   return createApp(config, () => deps, surface);
 }
 
-export function request(app: App, path: string, init?: RequestInit, bindings: Partial<Env> = {}): Promise<Response> {
-  return Promise.resolve(app.request(`https://maneman.test${path}`, init, { ...env, ...bindings }));
+/** Calls the app as a browser would. Every answer is held to the reply its route documents (test/worker/contract.ts). */
+export async function request(
+  app: App,
+  path: string,
+  init?: RequestInit,
+  bindings: Partial<Env> = {},
+): Promise<Response> {
+  const response = await app.request(`https://maneman.test${path}`, init, { ...env, ...bindings });
+  const errors = await outsideContract(app, (init?.method ?? "GET").toUpperCase(), path, response);
+  if (errors.length > 0) throw new Error(`The route answered outside its documented reply:\n${errors.join("\n")}`);
+  return response;
 }
 
 /**

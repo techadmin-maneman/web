@@ -6,7 +6,8 @@
 // (e2e/app/next-visit.ts), a client with a try-on from the site
 // (e2e/app/try-on.ts), the numbers with a consultation still to be confirmed
 // that the login tests take (e2e/app/booked-numbers.ts), and the service area
-// the booking pages read (e2e/booking-area.ts).
+// the booking pages read (e2e/booking-area.ts), and the technician whose day the
+// real-wire run works (e2e/tech-live/day.ts).
 
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -17,6 +18,7 @@ import { seedFitted } from "./app/fitted.ts";
 import { seedNextVisit } from "./app/next-visit.ts";
 import { seedTryOn } from "./app/try-on.ts";
 import { seedBookingArea } from "./booking-area.ts";
+import { seedTechLive } from "./tech-live/day.ts";
 
 /** Each surface playwright.config.ts serves, and the command that builds it. */
 const SURFACES = [
@@ -71,4 +73,6 @@ export default async function globalSetup(): Promise<void> {
   await seedTryOn();
   await seedBookedNumbers();
   await seedBookingArea();
+  // Last: the seeds above retire every e2e technician but their own (e2e/technicians.ts).
+  await seedTechLive();
 }
