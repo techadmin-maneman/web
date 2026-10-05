@@ -3,7 +3,7 @@
 
 import { insertRow } from "../lib/sql.ts";
 
-export interface TypedPerson {
+interface TypedPerson {
   readonly id: string;
   readonly mobile: string;
   readonly name: string;
