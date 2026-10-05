@@ -13,7 +13,12 @@ import { rupees } from "@maneman/web-kit/money";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
-import { BOOKS_ITEM_PAGES, type BooksItem, type BooksItemDetails, type BooksProvider } from "../providers/books.ts";
+import {
+  BOOKS_ITEM_PAGES,
+  type BooksItem,
+  type BooksItemDetails,
+  type BooksProvider,
+} from "../providers/books/index.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { offeredAmong, servicesOnDay, type PricedService, type ServiceOnDay } from "./services.ts";
 

@@ -941,7 +941,7 @@ export const clients = {
       codeHint: "The letters and digits after maneman.in/r/ in the friend's link.",
       reason: "Why",
       reasonHint: "What the client or their friend told you.",
-      /** The rules the API holds an attach to (src/routes/ops-client-referral.ts), the late one the owner's (src/policy/fraud-holds.ts). */
+      /** The rules the API holds an attach to (src/routes/ops/client-referral.ts), the late one the owner's (src/policy/fraud-holds.ts). */
       note: "Logged under your name. Not allowed: the code's own referrer, or a client who already came with an invite. Attached after their first fit, it waits for your review in Referrals.",
       save: "Attach the invite",
       saving: "Attaching",
@@ -2708,7 +2708,7 @@ export const settings = {
       takenBack: "The price is taken back.",
       saved: "Saved.",
     },
-    /** A refusal names the box it came from (src/routes/ops-services.ts, ops-settings.ts); these are said of each. */
+    /** A refusal names the box it came from (src/routes/ops/services.ts, ops-settings.ts); these are said of each. */
     errors: {
       not_permitted: NOT_PERMITTED,
       tier: "No service of this kind has that code, or a code cannot be made from that name. Nothing was changed.",
@@ -2827,7 +2827,7 @@ export const settings = {
       },
       saved: "Saved. The technician app reads it with the next job it opens.",
     },
-    /** A refusal, said of the box it names (src/routes/ops-consumables.ts). */
+    /** A refusal, said of the box it names (src/routes/ops/consumables.ts). */
     errors: {
       not_permitted: NOT_PERMITTED,
       name: "Another consumable has that name, or it does not start with a letter or a digit. Nothing was changed.",
@@ -3080,7 +3080,7 @@ export const stock = {
     none: "Nothing has moved yet.",
     change: (quantity: number) => (quantity > 0 ? `+${String(quantity)}` : String(quantity)),
   },
-  /** A refusal, said of the box it names (src/routes/ops-stock.ts). */
+  /** A refusal, said of the box it names (src/routes/ops/stock.ts). */
   errors: {
     not_permitted: NOT_PERMITTED,
     consumable_code: "That consumable is not in the list any more. Reload the page.",

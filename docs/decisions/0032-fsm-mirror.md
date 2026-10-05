@@ -34,7 +34,7 @@ This ADR grows with P2-M2. Its first part is the connection.
 - `src/providers/fsm.ts` reads appointments, clients, technicians, the catalogue and attachments, and downloads files. Its Zoho side (`fsm-zoho.ts`) uses only the calls the trial tried.
   - It validates the fields it reads with zod, so a changed answer fails loudly instead of being misread.
   - It reads an empty 204 as "none".
-- `src/providers/books.ts` reads an invoice and streams its PDF. Documents are read from Books when a client opens one, never copied to R2. This departs from the prompt's `client-docs` cache, as the Phase 2 plan's R2 budget set out.
+- `src/providers/books/index.ts` reads an invoice and streams its PDF. Documents are read from Books when a client opens one, never copied to R2. This departs from the prompt's `client-docs` cache, as the Phase 2 plan's R2 budget set out.
 
 `FSM_PROVIDER` and `BOOKS_PROVIDER` take `zoho`, `stub` or `none`:
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createLogger } from "../../src/log.ts";
 import { createAlert } from "../../src/providers/alerts.ts";
-import { createStubCrm } from "../../src/providers/crm.ts";
+import { createStubCrm } from "../../src/providers/crm/stub.ts";
 import { verifyTurnstile } from "../../src/providers/turnstile.ts";
 import { crmLead } from "./crm-rules.test.ts";
 import { TURNSTILE_URL, captureLogs, fakeFetch, json } from "./helpers.ts";

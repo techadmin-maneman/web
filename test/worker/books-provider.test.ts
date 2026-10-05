@@ -1,4 +1,4 @@
-// Zoho Books' adapter (src/providers/books-zoho.ts) on a Zoho client of its own. Customers, invoices, items and the
+// Zoho Books' adapter (src/providers/books/zoho.ts) on a Zoho client of its own. Customers, invoices, items and the
 // searches for a payment or a refund are read from answers the org gave (test/fixtures/vendors/books, recorded by
 // scripts/books-proof.ts and scripts/zoho-contract-probe.ts, with no one's details in them); the rest from Books'
 // documentation.
@@ -11,10 +11,10 @@ import { createLogger } from "../../src/log.ts";
 import {
   BOOKS_ITEM_PAGES,
   createBooksProvider,
-  createStubBooks,
   type NewBooksCustomer,
   type NewBooksInvoice,
-} from "../../src/providers/books.ts";
+} from "../../src/providers/books/index.ts";
+import { createStubBooks } from "../../src/providers/books/stub.ts";
 import { NOW, captureLogs, fakeFetch, json, type RecordedCall } from "./helpers.ts";
 import contactAdded from "../fixtures/vendors/books/contact-added.json";
 import contactDeleted from "../fixtures/vendors/books/contact-deleted.json";

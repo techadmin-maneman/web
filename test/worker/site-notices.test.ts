@@ -6,7 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { createLogger } from "../../src/log.ts";
-import type { MessagingProvider } from "../../src/providers/messaging.ts";
+import type { MessagingProvider } from "../../src/providers/messaging/index.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
 import { captureLogs, fakeDependencies, LOCAL_CONFIG, markDatabase, NOW } from "./helpers.ts";
 

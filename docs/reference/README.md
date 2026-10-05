@@ -2,10 +2,10 @@
 
 Copied from the AILabTools harness at `C:\Users\X2\Side projects\AILabTool`, which was tested against the live API on 19 September 2026. CI cannot see that path, so everything the build and tests depend on lives here.
 
-| File                                                                       | Copied from         | Used by                                                                                              |
-| -------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
-| [`ailabtools-api-notes.md`](ailabtools-api-notes.md)                       | `docs/API_NOTES.md` | `src/providers/ailabtools.ts` and its stub. Section 7 holds the measured facts, which beat the docs. |
-| [`../../data/ailabtools-catalog.json`](../../data/ailabtools-catalog.json) | `catalog.json`      | `src/config/presets.ts`: a test fails if a preset names a style that is not in the male catalog.     |
+| File                                                                       | Copied from         | Used by                                                                                                    |
+| -------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| [`ailabtools-api-notes.md`](ailabtools-api-notes.md)                       | `docs/API_NOTES.md` | `src/providers/image/ailabtools.ts` and its stub. Section 7 holds the measured facts, which beat the docs. |
+| [`../../data/ailabtools-catalog.json`](../../data/ailabtools-catalog.json) | `catalog.json`      | `src/config/presets.ts`: a test fails if a preset names a style that is not in the male catalog.           |
 
 Both are verbatim and excluded from Prettier. To refresh them, copy the files again and review the diff. Where this build departs from the harness, and why, is in `docs/decisions/0013-departures-from-the-ailabtools-harness.md`.
 

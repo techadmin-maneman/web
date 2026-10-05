@@ -92,8 +92,8 @@ describe("a pull request touching money or personal data", () => {
   it("counts a migration, a provider, a consent, an erasure and health data", () => {
     const files = [
       "migrations/0068_example.sql",
-      "src/providers/razorpay.ts",
-      "src/providers/books.ts",
+      "src/providers/payments/razorpay.ts",
+      "src/providers/books/index.ts",
       "src/policy/consents.ts",
       "src/domain/erasure.ts",
       "src/domain/hair-profiles.ts",

@@ -7,7 +7,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
-import { createStubPayments, type PaymentsProvider, type StubPayments } from "../../src/providers/payments.ts";
+import { type PaymentsProvider } from "../../src/providers/payments/index.ts";
+import { createStubPayments, type StubPayments } from "../../src/providers/payments/stub.ts";
 import {
   appFor,
   captureLogs,

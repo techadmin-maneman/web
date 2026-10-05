@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import { askRefund, refundReceipt } from "../../src/domain/refunds.ts";
-import type { PaymentsProvider } from "../../src/providers/payments.ts";
+import type { PaymentsProvider } from "../../src/providers/payments/index.ts";
 import { PaymentUnanswered } from "../../src/providers/provider-error.ts";
 
 const ASKED = { amount: 50_000, notes: { appointment_id: "visit-1" }, receipt: "c-visit-1" };

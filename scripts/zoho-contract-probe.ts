@@ -14,8 +14,8 @@
 import { parseArgs } from "node:util";
 import { NO_GST } from "../src/config/gst.ts";
 import type { ZohoBooksSettings, ZohoSettings } from "../src/config/settings.ts";
-import { createBooksProvider, type BooksPdf } from "../src/providers/books.ts";
-import { createZohoLeadFinder } from "../src/providers/zoho-crm.ts";
+import { createBooksProvider, type BooksPdf } from "../src/providers/books/index.ts";
+import { createZohoLeadFinder } from "../src/providers/crm/zoho.ts";
 import { createZohoRequester } from "../src/providers/zoho-http.ts";
 import { writeFixture } from "./lib/vendor-fixtures.ts";
 import { callLogger, tokenTable } from "./lib/zoho-script-deps.ts";

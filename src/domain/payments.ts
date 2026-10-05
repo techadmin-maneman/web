@@ -9,7 +9,7 @@
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { toE164 } from "../lib/mobile.ts";
-import type { RazorpayPayment, RazorpayRefund } from "../providers/razorpay.ts";
+import type { RazorpayPayment, RazorpayRefund } from "../providers/payments/razorpay.ts";
 import { confirmPaidHold } from "./bookings.ts";
 
 export type PaymentStatus = "authorized" | "captured" | "failed" | "refunded" | "partially_refunded";

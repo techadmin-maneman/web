@@ -1,4 +1,4 @@
-// Zoho CRM v8. Only src/providers/crm.ts imports this module. Request shapes
+// Zoho CRM v8. Only src/providers/crm/index.ts imports this module. Request shapes
 // follow Zoho's v8 docs, recorded in docs/decisions/0012-zoho-sync.md:
 //
 //   insert  POST /crm/v8/Leads             { data: [record], trigger: [...], lar_id? }
@@ -10,12 +10,12 @@
 // "trigger": [] turns workflows off; leaving the key out would run them.
 
 import { z } from "zod";
-import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../config/booking.ts";
-import { BOOKED_WINDOW_NAMES, CRM_ORG_HAS_REFERRAL_FIELDS, REFERRAL_LEAD_SOURCE } from "../config/crm.ts";
-import type { ZohoSettings } from "../config/settings.ts";
-import type { Plan } from "../policy/one-visit.ts";
+import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../../config/booking.ts";
+import { BOOKED_WINDOW_NAMES, CRM_ORG_HAS_REFERRAL_FIELDS, REFERRAL_LEAD_SOURCE } from "../../config/crm.ts";
+import type { ZohoSettings } from "../../config/settings.ts";
+import type { Plan } from "../../policy/one-visit.ts";
 
-import type { CrmContact, CrmLead, CrmProvider, CrmSyncResult, LeadSource, LeadStatus } from "./crm.ts";
+import type { CrmContact, CrmLead, CrmProvider, CrmSyncResult, LeadSource, LeadStatus } from "./index.ts";
 import {
   answerOf,
   createZohoRequester,
@@ -24,14 +24,8 @@ import {
   type ZohoAnswer,
   type ZohoRequesterDependencies,
   type ZohoWrite,
-} from "./zoho-http.ts";
-import {
-  assertStatusAllowed,
-  shouldAssign,
-  shouldRunWorkflows,
-  statusForNewRecord,
-  statusForUpdate,
-} from "./crm-rules.ts";
+} from "../zoho-http.ts";
+import { assertStatusAllowed, shouldAssign, shouldRunWorkflows, statusForNewRecord, statusForUpdate } from "./rules.ts";
 
 export const LEAD_SOURCE_NAMES: Readonly<Record<LeadSource, string>> = {
   form: "Booking form",

@@ -16,8 +16,8 @@ import {
 } from "../../src/domain/visit-messages.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
-import type { MessagingProvider, OutboundMessage } from "../../src/providers/messaging.ts";
-import { createStubPayments } from "../../src/providers/payments.ts";
+import type { MessagingProvider, OutboundMessage } from "../../src/providers/messaging/index.ts";
+import { createStubPayments } from "../../src/providers/payments/stub.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {

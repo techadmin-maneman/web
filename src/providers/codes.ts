@@ -4,7 +4,7 @@
 // app offers WhatsApp only. The code is never logged.
 
 import type { Logger } from "../log.ts";
-import type { MessagingProvider, SendResult } from "./messaging.ts";
+import type { MessagingProvider, SendResult } from "./messaging/index.ts";
 
 export type CodeChannel = "whatsapp" | "sms";
 

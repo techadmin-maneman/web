@@ -1,6 +1,6 @@
 // AILabTools, following the measured facts in
 // docs/reference/ailabtools-api-notes.md (section numbers below). Only
-// src/providers/image.ts imports this module.
+// src/providers/image/index.ts imports this module.
 //
 //   submit  POST /api/portrait/effects/hairstyle-editor-pro       (3)  multipart
 //           POST /api/portrait/effects/hairstyle-editor-premium   (4)  multipart
@@ -10,12 +10,12 @@
 // Endpoint A (hairstyle-editor) is dead (7.1) and never called.
 
 import { z } from "zod";
-import type { Endpoint, Preset } from "../config/presets.ts";
-import { MAX_RESULT_BYTES } from "../config/tryon.ts";
-import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
-import type { Logger } from "../log.ts";
-import type { DownloadResult, ImageProvider, PollResult, ProviderColor, RenderFailure, SubmitResult } from "./image.ts";
-import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
+import type { Endpoint, Preset } from "../../config/presets.ts";
+import { MAX_RESULT_BYTES } from "../../config/tryon.ts";
+import { fileExtension, inspectImage } from "../../lib/image-bytes.ts";
+import type { Logger } from "../../log.ts";
+import type { DownloadResult, ImageProvider, PollResult, ProviderColor, RenderFailure, SubmitResult } from "./index.ts";
+import { vendorFetch, VendorUnreachable } from "../vendor-fetch.ts";
 
 export const API_BASE_URL = "https://www.ailabapi.com";
 export const ENDPOINT_PATHS: Readonly<Record<Endpoint, string>> = {

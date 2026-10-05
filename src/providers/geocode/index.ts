@@ -7,8 +7,8 @@
 // spend (docs/decisions/0014-try-on-api.md made the same choice about R2).
 
 import { createGooglePlaces } from "./google-places.ts";
-import { createStubGeocodeFetch, STUB_API_KEY } from "./google-places-stub.ts";
-import type { VendorFetchDependencies } from "./vendor-fetch.ts";
+import { createStubGeocodeFetch, STUB_API_KEY } from "./stub.ts";
+import type { VendorFetchDependencies } from "../vendor-fetch.ts";
 
 /** One line of the suggestion list. */
 export interface Suggestion {

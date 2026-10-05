@@ -9,7 +9,7 @@ import { confirmBooking } from "../../src/domain/bookings.ts";
 import { clawBack, creditBalance, expireCredits, grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
-import { createStubPayments } from "../../src/providers/payments.ts";
+import { createStubPayments } from "../../src/providers/payments/stub.ts";
 import {
   appFor,
   captureLogs,

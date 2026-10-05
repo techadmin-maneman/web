@@ -11,7 +11,7 @@ import { checkIn } from "../../src/policy/check-in.ts";
 import { RULES as CONSENT_RULES } from "../../src/policy/consents.ts";
 import { RULES as NUMBER_CHANGE_RULES } from "../../src/policy/number-change.ts";
 import { createLogger } from "../../src/log.ts";
-import type { MessagingProvider, OutboundMessage, SendResult } from "../../src/providers/messaging.ts";
+import type { MessagingProvider, OutboundMessage, SendResult } from "../../src/providers/messaging/index.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
 import {
   appFor,

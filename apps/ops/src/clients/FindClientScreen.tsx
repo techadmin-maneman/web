@@ -2,7 +2,7 @@
 // of finding one, so this is the console's own: any part of a name, or four
 // digits or more of a number, sent in the request body, never in a path or a
 // query string, so a number stays out of URLs, referrers and logs
-// (src/routes/ops-clients.ts). The matches are listed by name, each with where
+// (src/routes/ops/clients.ts). The matches are listed by name, each with where
 // the client stands and their next visit, so two of one name can be told apart.
 //
 // Every other page's header searches here too. The words and what they found

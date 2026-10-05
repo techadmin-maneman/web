@@ -1,4 +1,4 @@
-// What reaching our own WhatsApp bridge, Evolution, takes (src/providers/evolution.ts), as the settings read it.
+// What reaching our own WhatsApp bridge, Evolution, takes (src/providers/messaging/evolution.ts), as the settings read it.
 
 export interface EvolutionSettings {
   /** https://…, no trailing slash. */

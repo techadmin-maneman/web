@@ -14,14 +14,14 @@ import {
   ENDPOINT_PATHS,
   POLL_PATH,
   createAilabtoolsProvider,
-} from "../../src/providers/ailabtools.ts";
+} from "../../src/providers/image/ailabtools.ts";
 import { createAlert, createLeadNotice } from "../../src/providers/alerts.ts";
-import { createBooksProvider } from "../../src/providers/books.ts";
+import { createBooksProvider } from "../../src/providers/books/index.ts";
 import { createAccessVerifier, ACCESS_TOKEN_HEADER } from "../../src/providers/cloudflare-access.ts";
 import { readDailyUsage } from "../../src/providers/cloudflare-usage.ts";
-import { createEvolutionMessaging } from "../../src/providers/evolution.ts";
+import { createEvolutionMessaging } from "../../src/providers/messaging/evolution.ts";
 import { pingHeartbeat } from "../../src/providers/heartbeat.ts";
-import { createPaymentsProvider } from "../../src/providers/payments.ts";
+import { createPaymentsProvider } from "../../src/providers/payments/index.ts";
 import { verifyTurnstile } from "../../src/providers/turnstile.ts";
 import { createZohoRequester } from "../../src/providers/zoho-http.ts";
 import { captureLogs, fakeFetch, json, NOW, TURNSTILE_URL } from "./helpers.ts";

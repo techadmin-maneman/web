@@ -7,7 +7,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { autoRefundsOf, composeBookingRefunded } from "../../src/domain/auto-refunds.ts";
 import { confirmBooking } from "../../src/domain/bookings.ts";
-import { createStubPayments } from "../../src/providers/payments.ts";
+import { createStubPayments } from "../../src/providers/payments/stub.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import {
   appFor,

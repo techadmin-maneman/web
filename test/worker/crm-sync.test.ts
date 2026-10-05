@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eraseInCrm, handleCrmSyncBatch, syncLead } from "../../src/queues/crm-sync.ts";
 import { createLogger } from "../../src/log.ts";
-import type { CrmContact, CrmLead, CrmProvider } from "../../src/providers/crm.ts";
+import type { CrmContact, CrmLead, CrmProvider } from "../../src/providers/crm/index.ts";
 import {
   NOW,
   captureLogs,

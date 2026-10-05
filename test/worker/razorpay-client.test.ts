@@ -1,12 +1,13 @@
-// The Razorpay client (src/providers/razorpay.ts) against Razorpay's own
+// The Razorpay client (src/providers/payments/razorpay.ts) against Razorpay's own
 // replies, in the shapes its API documents: an order, a refund, and a refusal.
 // Nothing called the real client before (TCD-03); the stub stood in everywhere.
 
 import { describe, expect, it } from "vitest";
 import { createLogger } from "../../src/log.ts";
-import { createPaymentsProvider, createStubPayments } from "../../src/providers/payments.ts";
+import { createPaymentsProvider } from "../../src/providers/payments/index.ts";
+import { createStubPayments } from "../../src/providers/payments/stub.ts";
 import { PaymentUnanswered } from "../../src/providers/provider-error.ts";
-import { RazorpayError } from "../../src/providers/razorpay.ts";
+import { RazorpayError } from "../../src/providers/payments/razorpay.ts";
 import { fakeFetch, json } from "./helpers.ts";
 
 const API = "https://api.razorpay.com/v1";

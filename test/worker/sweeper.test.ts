@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import type { Connection } from "../../src/providers/messaging.ts";
+import type { Connection } from "../../src/providers/messaging/index.ts";
 import { checkAilabCredits, sweep, type SweepEnv } from "../../src/scheduled/sweeper.ts";
 import { NOW, captureLogs, fakeDependencies, fakeQueue, markDatabase } from "./helpers.ts";
 import { insertJob, insertPerson } from "./tryon-fixtures.ts";

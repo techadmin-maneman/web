@@ -31,7 +31,7 @@ So the second hole was the worse one, and the first was narrower than it read.
 
 `leads.loss_extent` is nullable. Every consultation and waitlist entry now leaves a lead, whichever page it came from.
 
-The landing gains no field. It is deliberately short, and a question about hair loss is the kind that loses a friend who arrived through someone else's invite rather than through an advertisement. An invited friend's lead simply carries no extent: `src/providers/zoho-crm.ts` already leaves `Loss_Extent` off a record when it has none, so the CRM shows the field empty rather than wrong.
+The landing gains no field. It is deliberately short, and a question about hair loss is the kind that loses a friend who arrived through someone else's invite rather than through an advertisement. An invited friend's lead simply carries no extent: `src/providers/crm/zoho.ts` already leaves `Loss_Extent` off a record when it has none, so the CRM shows the field empty rather than wrong.
 
 **Migration 0031 changes the column without rebuilding the table**, which is why it runs where 0025 could not:
 

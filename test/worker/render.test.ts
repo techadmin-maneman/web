@@ -1,8 +1,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createLogger } from "../../src/log.ts";
-import { STUB_RENDER_MS, STUB_STALL_MS } from "../../src/providers/ailabtools-stub.ts";
-import { createImageProvider, type ImageProvider } from "../../src/providers/image.ts";
+import { STUB_RENDER_MS, STUB_STALL_MS } from "../../src/providers/image/stub.ts";
+import { createImageProvider, type ImageProvider } from "../../src/providers/image/index.ts";
 import {
   POLL_DELAY_SECONDS,
   RENDER_GIVE_UP_MS,

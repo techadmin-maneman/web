@@ -2,12 +2,12 @@
 // this file knows which implementation runs, and only ailabtools.ts knows
 // AILabTools. The render consumer is the only caller.
 
-import type { Endpoint, Preset } from "../config/presets.ts";
-import type { FailureCode, HairColor } from "../config/tryon.ts";
-import type { ImageType } from "../lib/image-bytes.ts";
-import type { Logger } from "../log.ts";
+import type { Endpoint, Preset } from "../../config/presets.ts";
+import type { FailureCode, HairColor } from "../../config/tryon.ts";
+import type { ImageType } from "../../lib/image-bytes.ts";
+import type { Logger } from "../../log.ts";
 import { createAilabtoolsProvider } from "./ailabtools.ts";
-import { createStubAilabtoolsFetch, STUB_API_KEY } from "./ailabtools-stub.ts";
+import { createStubAilabtoolsFetch, STUB_API_KEY } from "./stub.ts";
 
 /** The colour sent to the provider: a natural shade, or Premium's "keep the original". */
 export type ProviderColor = Exclude<HairColor, "unknown"> | "original";

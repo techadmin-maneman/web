@@ -26,7 +26,7 @@ The `crm-sync` consumer is the only caller of Zoho. The prompt asks that the `la
 - Before inserting, the sync searches by `D1_Person_ID`. So a retry after Zoho accepted the insert, but before D1 recorded the ID, usually updates the record instead of inserting again.
 - **`D1_Person_ID` is unique in Zoho** ("Do not allow duplicate values"). This is the real guarantee against duplicates. The search is not enough on its own: on staging, Zoho's search did not find a new record 25 seconds after it was created, and did by two minutes. An insert that races or repeats is refused with `DUPLICATE_DATA`, the lead is marked failed, and the next attempt finds the record and updates it. `scripts/check-zoho-setup.ts` fails if the field allows duplicates.
 
-**Consent rules** live in `src/providers/crm-rules.ts`, outside the Zoho code, so they hold for any CRM:
+**Consent rules** live in `src/providers/crm/rules.ts`, outside the Zoho code, so they hold for any CRM:
 
 | Case                                 | New record             | Update    | Assignment rule | Workflows              |
 | ------------------------------------ | ---------------------- | --------- | --------------- | ---------------------- |

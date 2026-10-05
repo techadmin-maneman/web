@@ -10,7 +10,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ZohoSettings } from "../../src/config/settings.ts";
 import { createLogger } from "../../src/log.ts";
-import { createZohoCrm } from "../../src/providers/zoho-crm.ts";
+import { createZohoCrm } from "../../src/providers/crm/zoho.ts";
 import { syncLead } from "../../src/queues/crm-sync.ts";
 import { NOW, appFor, fakeDependencies, fakeFetch, fakeQueue, json, markDatabase, request } from "./helpers.ts";
 import { insertPerson } from "./tryon-fixtures.ts";

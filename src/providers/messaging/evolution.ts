@@ -1,5 +1,5 @@
 // WhatsApp through an Evolution API bridge (docs/decisions/0016-whatsapp-through-evolution.md).
-// Only src/providers/messaging.ts sends through this module.
+// Only src/providers/messaging/index.ts sends through this module.
 //
 //   send   POST {base}/message/sendMedia/{instance}   { number, mediatype, mimetype, caption, media, fileName }
 //          POST {base}/message/sendText/{instance}    { number, text }
@@ -11,11 +11,11 @@
 // The bridge downloads the image itself, so mediaUrl must be publicly reachable.
 
 import { z } from "zod";
-import { renderWithStopLink } from "../config/message-templates.ts";
-import { fileExtension } from "../lib/image-bytes.ts";
-import type { Connection, MessagingProvider, SendResult } from "./messaging.ts";
-import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "./vendor-fetch.ts";
-import type { EvolutionSettings } from "../config/evolution.ts";
+import { renderWithStopLink } from "../../config/message-templates.ts";
+import { fileExtension } from "../../lib/image-bytes.ts";
+import type { Connection, MessagingProvider, SendResult } from "./index.ts";
+import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "../vendor-fetch.ts";
+import type { EvolutionSettings } from "../../config/evolution.ts";
 
 /**
  * The bridge answers a media send only after it has fetched the image and

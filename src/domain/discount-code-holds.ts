@@ -5,7 +5,7 @@
 
 import type { VisitType } from "../config/visit-types.ts";
 import { amountOff, discounted, type DiscountTerms } from "../policy/discount-codes.ts";
-import type { PaymentsProvider } from "../providers/payments.ts";
+import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { spendableCredits } from "./credits.ts";
 import { termsOf } from "./discount-codes.ts";
 import {

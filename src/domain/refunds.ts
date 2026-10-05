@@ -2,7 +2,7 @@
 // receipt that no other refund of its payment carries, and Razorpay refuses a second refund under a receipt, so a
 // refund whose answer never came can be asked for again without paying the client twice.
 
-import type { PaymentsProvider, RefundAsked } from "../providers/payments.ts";
+import type { PaymentsProvider, RefundAsked } from "../providers/payments/index.ts";
 import { PaymentUnanswered } from "../providers/provider-error.ts";
 
 /** The most calls a refund makes: asked once, and once more at once when the first gave no answer. */

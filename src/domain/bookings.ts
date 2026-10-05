@@ -18,7 +18,7 @@ import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { createLogger, failureReason, type Logger } from "../log.ts";
-import type { PaymentsProvider } from "../providers/payments.ts";
+import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { refundedMessage, type AutoRefundReason } from "./auto-refunds.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "./credits.ts";

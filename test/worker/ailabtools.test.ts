@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { PRESETS } from "../../src/config/presets.ts";
 import { MAX_RESULT_BYTES } from "../../src/config/tryon.ts";
-import { API_BASE_URL, ENDPOINT_PATHS, createAilabtoolsProvider } from "../../src/providers/ailabtools.ts";
-import { STUB_RENDER_MS, STUB_RESULT_PNG, STUB_STALL_MS } from "../../src/providers/ailabtools-stub.ts";
-import { createImageProvider } from "../../src/providers/image.ts";
+import { API_BASE_URL, ENDPOINT_PATHS, createAilabtoolsProvider } from "../../src/providers/image/ailabtools.ts";
+import { STUB_RENDER_MS, STUB_RESULT_PNG, STUB_STALL_MS } from "../../src/providers/image/stub.ts";
+import { createImageProvider } from "../../src/providers/image/index.ts";
 import { createLogger } from "../../src/log.ts";
 import { NOW, fakeFetch, json } from "./helpers.ts";
 import { syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";

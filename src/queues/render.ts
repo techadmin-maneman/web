@@ -26,7 +26,7 @@ import { checkPhoto } from "../domain/photo.ts";
 import { failJob, loadJob, type JobRow } from "../domain/tryon.ts";
 import { fileExtension } from "../lib/image-bytes.ts";
 import type { Logger } from "../log.ts";
-import type { RenderFailure } from "../providers/image.ts";
+import type { RenderFailure } from "../providers/image/index.ts";
 import { enqueue } from "../domain/enqueue.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";

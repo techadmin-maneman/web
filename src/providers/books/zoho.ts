@@ -1,4 +1,4 @@
-// Zoho Books' API behind BooksProvider (src/providers/books.ts). Amounts are rupees here and paise everywhere else,
+// Zoho Books' API behind BooksProvider (src/providers/books/index.ts). Amounts are rupees here and paise everywhere else,
 // and every path also takes ?organization_id=.
 //
 //   GET    /books/v3/invoices/{id}                   { invoice }; with &accept=pdf, the PDF
@@ -25,7 +25,7 @@
 // item 181). scripts/zoho-contract-probe.ts tries every read on the org.
 
 import { z } from "zod";
-import type { ZohoBooksSettings } from "../config/settings.ts";
+import type { ZohoBooksSettings } from "../../config/settings.ts";
 import type {
   BooksErasure,
   BooksInvoice,
@@ -34,7 +34,7 @@ import type {
   BooksProvider,
   NewBooksCustomer,
   NewBooksInvoice,
-} from "./books.ts";
+} from "./index.ts";
 import {
   answerOf,
   createZohoRequester,
@@ -43,7 +43,7 @@ import {
   type ZohoRequest,
   type ZohoRequesterDependencies,
   type ZohoWrite,
-} from "./zoho-http.ts";
+} from "../zoho-http.ts";
 
 /** How many items a page of Books' list holds, and the most pages one read of the list takes. */
 const BOOKS_ITEMS_A_PAGE = 200;

@@ -13,7 +13,7 @@ import type { BookingWindow } from "../config/scheduling.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { scrubString, type Logger } from "../log.ts";
 import type { Plan } from "../policy/one-visit.ts";
-import type { CrmLead, LeadSource } from "../providers/crm.ts";
+import type { CrmLead, LeadSource } from "../providers/crm/index.ts";
 import { resolveAlertStatement } from "../domain/alerts.ts";
 import { leadNotice } from "../domain/lead-notice.ts";
 import { crmErasureKey, crmLeadKey } from "../policy/alerts.ts";

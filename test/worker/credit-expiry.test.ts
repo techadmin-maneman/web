@@ -9,7 +9,7 @@ import { composeCreditsExpiring, queueCreditReminders } from "../../src/domain/c
 import { clawBack, expireCredits, grantCredits } from "../../src/domain/credits.ts";
 import { createLogger } from "../../src/log.ts";
 import { creditExpiry } from "../../src/policy/referral-reward.ts";
-import type { MessagingProvider } from "../../src/providers/messaging.ts";
+import type { MessagingProvider } from "../../src/providers/messaging/index.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import { captureLogs, fakeDependencies, fakeQueue, LOCAL_CONFIG, markDatabase, NOW } from "./helpers.ts";

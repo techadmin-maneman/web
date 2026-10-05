@@ -18,8 +18,8 @@ import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { PRESETS } from "../src/config/presets.ts";
 import { createLogger } from "../src/log.ts";
-import { createAilabtoolsProvider } from "../src/providers/ailabtools.ts";
-import type { ImageProvider, PollResult } from "../src/providers/image.ts";
+import { createAilabtoolsProvider } from "../src/providers/image/ailabtools.ts";
+import type { ImageProvider, PollResult } from "../src/providers/image/index.ts";
 
 const POLL_EVERY_MS = 5_000;
 const GIVE_UP_AFTER_MS = 240_000;
