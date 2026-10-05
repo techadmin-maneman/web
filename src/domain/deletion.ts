@@ -23,6 +23,7 @@ import type { Composed } from "./visit-messages.ts";
 import { DAY_MS } from "../lib/durations.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
+import { queueMessage } from "./queued-messages.ts";
 
 type DeletionState = "requested" | "done" | "rejected";
 
@@ -178,12 +179,13 @@ function rejectionMessage(
   input: { personId: string; requestId: string; now: Date },
 ): { id: string; statement: D1PreparedStatement } {
   const id = crypto.randomUUID();
-  const statement = db
-    .prepare(
-      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-       VALUES (?1, ?2, ?3, 'deletion_rejected', 'deletion', ?4, 'queued', ?2)`,
-    )
-    .bind(id, input.now.toISOString(), input.personId, input.requestId);
+  const statement = queueMessage(db, {
+    id,
+    personId: input.personId,
+    kind: "deletion_rejected",
+    subject: { kind: "deletion", id: input.requestId },
+    at: input.now.toISOString(),
+  });
   return { id, statement };
 }
 

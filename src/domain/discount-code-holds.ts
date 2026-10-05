@@ -18,6 +18,7 @@ import {
   type Removed,
 } from "./discount-code-uses.ts";
 import type { Price } from "./price-book.ts";
+import type { HoldState } from "./hold-stages.ts";
 
 interface HoldRow {
   id: string;
@@ -26,7 +27,7 @@ interface HoldRow {
   gst_percent: number;
   use_credit: number;
   moves_appointment_id: string | null;
-  state: "held" | "booked" | "released";
+  state: HoldState;
   confirmed_at: string | null;
   razorpay_order_id: string | null;
   expires_at: string;
