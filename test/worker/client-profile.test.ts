@@ -8,7 +8,6 @@ import type { App } from "../../src/http/context.ts";
 import { visitAddress } from "../../src/domain/check-ins.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { checkIn } from "../../src/policy/check-in.ts";
-import { RULES as CONSENT_RULES } from "../../src/policy/consents.ts";
 import { RULES as NUMBER_CHANGE_RULES } from "../../src/policy/number-change.ts";
 import { createLogger } from "../../src/log.ts";
 import type { MessagingProvider, OutboundMessage, SendResult } from "../../src/providers/messaging/index.ts";
@@ -463,7 +462,7 @@ describe("the address pin", () => {
 });
 
 describe("PATCH /api/consents/:purpose", () => {
-  it(CONSENT_RULES[0], async () => {
+  it("switches a purpose either way, each switch its own dated row with the notice seen", async () => {
     const res = await send(client, "PATCH", "/api/consents/photos_referral_cards", { granted: true });
     expect(await res.json()).toEqual({ purpose: "photos_referral_cards", granted: true, since: NOW.toISOString() });
     await send(client, "PATCH", "/api/consents/photos_referral_cards", { granted: false });

@@ -1,4 +1,4 @@
-// Where a consent was given: the owner's ruling of 27 September 2026, in the words src/policy/consents.ts quotes
+// Where a consent was given: the owner's ruling of 27 September 2026 (src/policy/consents.ts)
 // (docs/decisions/0094-where-a-consent-was-given.md).
 
 import { describe, expect, it } from "vitest";
@@ -8,11 +8,10 @@ import {
   CONSENT_SOURCES,
   isStopReply,
   screenAsks,
-  SOURCE_RULE,
 } from "../../src/policy/consents.ts";
 
 describe("where a consent was given", () => {
-  it(SOURCE_RULE, () => {
+  it("records where a consent was given: the site, a booking, the profile or the technician", () => {
     expect(CONSENT_SOURCES).toEqual(
       expect.arrayContaining(["site_booking", "app_booking", "app_profile", "technician"]),
     );

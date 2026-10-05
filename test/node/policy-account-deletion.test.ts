@@ -8,12 +8,11 @@ import {
   DELETION_DECIDED_WITHIN_DAYS,
   erasureRefusal,
   LIVE_VISIT_STATUSES,
-  RULES,
 } from "../../src/policy/account-deletion.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 
 describe("account deletion", () => {
-  it(RULES[0], () => {
+  it("decides a deletion within 7 days, the task due then, and alerts before it is", () => {
     // The 7 days run from the client's request to ops' decision (docs/decisions/0049-dpdp.md), and the erasure
     // that decision makes deletes the photographs at once.
     expect(DELETION_DECIDED_WITHIN_DAYS).toBe(7);

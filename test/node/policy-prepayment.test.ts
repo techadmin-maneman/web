@@ -1,13 +1,13 @@
 // Paying for a visit (src/policy/prepayment.ts), and what that means for the
-// tax invoice FSM raises once the visit is done. Amounts are in paise.
+// tax invoice Books raises once the visit is done. Amounts are in paise.
 
 import { describe, expect, it } from "vitest";
-import { invoiceHold, RULES } from "../../src/policy/prepayment.ts";
+import { invoiceHold } from "../../src/policy/prepayment.ts";
 
 const REPLACEMENT = 1_500_000;
 
 describe("prepayment", () => {
-  describe(RULES[0], () => {
+  describe("the invoice of a visit paid for before it happens", () => {
     it("issues the invoice of a visit that totals what the client paid for it", () => {
       expect(invoiceHold(REPLACEMENT, { soldFor: REPLACEMENT, paidWithCredit: false })).toBeNull();
     });

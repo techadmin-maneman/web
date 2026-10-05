@@ -1,5 +1,4 @@
-// A client's hair profile (src/policy/hair-profile.ts), each rule named by the owner's ruling of 1 October 2026, or
-// by what the build took for the owner to confirm (ADR 0106).
+// A client's hair profile (src/policy/hair-profile.ts; ADR 0106).
 
 import { describe, expect, it } from "vitest";
 import { NOTICES } from "../../src/config/notices.ts";
@@ -7,14 +6,12 @@ import { CONSENT_PURPOSES } from "../../src/policy/consents.ts";
 import {
   ATTACHMENTS,
   COLOURS,
-  DEFAULTS,
   DENSITIES,
   HAIRLINES,
   historyProblems,
   MEASUREMENTS,
   NORWOOD_STAGES,
   REMEDIES,
-  RULES,
   SKIN_AND_ALLERGIES_MAX,
   takesProfile,
   WAVES,
@@ -30,7 +27,7 @@ const history = (remedies: string[], transplantYear: number | null = null) => ({
 });
 
 describe("a client's hair profile", () => {
-  it(RULES[0], () => {
+  it("records the fit spec: Norwood stage, measurements, base, colour, density, wave, hairline and attachment", () => {
     expect(NORWOOD_STAGES).toEqual(["I", "II", "III", "IV", "V", "VI", "VII"]);
     expect(Object.keys(MEASUREMENTS)).toEqual([
       "head_circumference_cm",
@@ -50,7 +47,7 @@ describe("a client's hair profile", () => {
     expect(MEASUREMENTS.head_circumference_cm.min).toBeGreaterThan(MEASUREMENTS.base_length_in.max);
   });
 
-  it(RULES[1], () => {
+  it("takes the remedies tried, none said alone and each named once, with short notes on skin and allergies", () => {
     expect(REMEDIES).toEqual(["none", "minoxidil", "finasteride", "transplant", "other_systems", "other"]);
     expect(historyProblems(history(["minoxidil", "finasteride", "transplant"], 2019), NOW)).toEqual([]);
     expect(historyProblems(history([]), NOW)).toEqual([]);
@@ -64,7 +61,7 @@ describe("a client's hair profile", () => {
     expect(SKIN_AND_ALLERGIES_MAX).toBeLessThanOrEqual(200);
   });
 
-  it(DEFAULTS[0], () => {
+  it("is recorded at a consultation and at a one-visit fit", () => {
     expect(takesProfile("consultation", false)).toBe(true);
     expect(takesProfile("first_fit", true)).toBe(true);
     // A one visit the client declined is a consultation, and it was measured all the same.
@@ -95,7 +92,7 @@ describe("a client's hair profile", () => {
     expect(cardStepsFor("consultation", false, false)).toEqual(stepsFor("consultation"));
   });
 
-  it(RULES[2], () => {
+  it("asks no consent of its own for the history", () => {
     // No purpose of its own: the five the client switches are all there are, and no notice asks for a history.
     expect(CONSENT_PURPOSES).toHaveLength(5);
     expect(NOTICES.filter((notice) => /remed|allerg|health/i.test(notice.text.join(" ")))).toEqual([]);
