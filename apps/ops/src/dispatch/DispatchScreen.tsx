@@ -21,64 +21,28 @@
 // technician's leave and blackout days do; the visit's drawer opens. The address
 // keeps all four as ops change them (./address.ts).
 
-import { Button } from "@maneman/ui/Button";
-import { shortDate } from "@maneman/web-kit/dates";
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import {
-  api,
-  type Answer,
-  type Block,
-  type Board,
-  type BoardQuery,
-  type BoardRow,
-  type BookingWindow,
-  type Landing,
-  type Moved,
-  type MoveReason,
-  type Room,
-} from "../api.ts";
-import { CancelVisit } from "../clients/CancelVisit.tsx";
-import { CloseVisit } from "../clients/CloseVisit.tsx";
-import { LetIn } from "./LetIn.tsx";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api, type Answer, type Board, type BoardQuery, type Landing, type Moved, type MoveReason } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
-import { useAccess, type Access } from "../lib/access.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { useAddressKeeps } from "./address.ts";
-import { BlockDrawer } from "./BlockDrawer.tsx";
-import { TrayDrawer } from "./TrayDrawer.tsx";
 import styles from "./dispatch.module.css";
 import { Grid, type InHand } from "./Grid.tsx";
-import { phoneWords } from "../lib/phone.ts";
 import { dispatchAsked } from "../route.ts";
-import {
-  blockOn,
-  changeOf,
-  mayLetIn,
-  idOf,
-  nameOf,
-  personOf,
-  shownOf,
-  WINDOWS,
-  type BlockJob,
-  type Job,
-  type Target,
-  type VisitChange,
-} from "./job.ts";
+import { blockOn, idOf, shownOf, type Job, type Target } from "./job.ts";
 import { MoveBar } from "./MoveBar.tsx";
 import { MovePicker } from "./MovePicker.tsx";
 import { Toolbar } from "./Toolbar.tsx";
 import { Tray } from "./Tray.tsx";
 import { useBoard } from "./useBoard.ts";
-
-/**
- * Where the job in hand would land, and the days ops blacked out, as the server answered; "unknown" if it could not,
- * and every window is offered.
- */
-type Rooms =
-  | { readonly state: "checking" }
-  | { readonly state: "known"; readonly rooms: readonly Room[]; readonly blackouts: readonly string[] }
-  | { readonly state: "unknown" };
+import { answersTo, foundBy, weekOf } from "./board-view.ts";
+import { ChangePanel, changedNotice, type Changing } from "./ChangePanel.tsx";
+import { doneNotice, refusalOf, STALE, staleWords, type Notice } from "./landing.ts";
+import { NoticeLine } from "./NoticeLine.tsx";
+import { OpenedDrawer } from "./OpenedDrawer.tsx";
+import { isBlackout, landsAtFrom, useRooms, windowsFrom } from "./rooms.ts";
 
 /**
  * A move in hand: the job, the window chosen for it, whether it is being sent, and whether ops chose, after the
@@ -91,171 +55,6 @@ interface Move {
   readonly clearingCheckIn: boolean;
 }
 
-/** A line over the board: what a move did, or why it was refused. A call still to make carries its move. */
-interface Notice {
-  readonly tone: "done" | "refusal";
-  readonly text: string;
-  readonly call: { readonly moveId: string; readonly name: string } | null;
-}
-
-const windowWord = (window: BookingWindow) => dispatch.windows[window] ?? window;
-
-/** "19 to 25 Sep", and "28 Sep to 4 Oct" across a month's end. */
-function weekOf(dates: readonly string[]): string | undefined {
-  const first = dates[0];
-  const last = dates[dates.length - 1];
-  if (first === undefined || last === undefined) return undefined;
-  const from = shortDate(first).slice(4);
-  const to = shortDate(last).slice(4);
-  const sameMonth = from.slice(from.indexOf(" ")) === to.slice(to.indexOf(" "));
-  return dispatch.week(sameMonth ? from.slice(0, from.indexOf(" ")) : from, to);
-}
-
-const includes = (word: string | null, wanted: string) => word?.toLowerCase().includes(wanted) === true;
-
-/** Whether a block answers to what ops searched for: its client, in short or in full, its area or its pincode. */
-const blockAnswersTo = (block: Block, wanted: string): boolean =>
-  [block.client, block.person?.name ?? null, block.sector, block.pincode].some((word) => includes(word, wanted));
-
-/** Whether a row answers to what ops searched for: the technician's name or zone, or a visit on one of his days. */
-function answersTo(row: BoardRow, find: string): boolean {
-  const wanted = find.trim().toLowerCase();
-  if (wanted === "") return true;
-  if (includes(row.name, wanted) || includes(row.zone, wanted)) return true;
-  return row.days.some((day) => day.blocks.some((block) => blockAnswersTo(block, wanted)));
-}
-
-/** The blocks the search found, to outline on the grid; null where it names none, a technician say. */
-function foundBy(board: Board | null, find: string): ((block: Block) => boolean) | null {
-  const wanted = find.trim().toLowerCase();
-  if (wanted === "" || board === null) return null;
-  const any = board.technicians.some((row) =>
-    row.days.some((day) => day.blocks.some((b) => blockAnswersTo(b, wanted))),
-  );
-  return any ? (block) => blockAnswersTo(block, wanted) : null;
-}
-
-/** The windows each day offers the job in hand: the server's answer; every window if it could not answer. */
-function windowsFrom(rooms: Rooms): InHand["windowsAt"] {
-  if (rooms.state === "checking") return () => null;
-  if (rooms.state === "unknown") return () => WINDOWS;
-  return (technicianId, date) =>
-    rooms.rooms.find((room) => room.technician_id === technicianId && room.date === date)?.windows ?? [];
-}
-
-/** The start a move to this target takes, as the server answered; null where it could not say. */
-function landsAtFrom(rooms: Rooms, to: Target): string | null {
-  if (rooms.state !== "known") return null;
-  const room = rooms.rooms.find((each) => each.technician_id === to.technician.technician_id && each.date === to.date);
-  return room?.starts.find((each) => each.window === to.window)?.starts_at ?? null;
-}
-
-const isBlackout = (rooms: Rooms, date: string): boolean => rooms.state === "known" && rooms.blackouts.includes(date);
-
-/**
- * What a move did, in words, from the server's own answer. A message queued is not yet one sent, so the notice says
- * it is on its way, and where it fails the move waits on the Tasks board for a call.
- */
-function doneNotice(job: Job, to: Target, moved: Moved): Notice {
-  const copy = dispatch.landing.moved;
-  const name = nameOf(job);
-  const person = personOf(job);
-  if (moved.client_notice === "messaged") return { tone: "done", text: copy.messaged(name), call: null };
-  if (moved.client_notice === "unchanged") {
-    return { tone: "done", text: copy.unchanged(name, to.technician.name), call: null };
-  }
-  if (moved.client_notice === "call" && person !== null) {
-    return {
-      tone: "done",
-      text: copy.call(name, person.name, phoneWords(person.mobile)),
-      call: { moveId: moved.move_id, name: person.name },
-    };
-  }
-  return { tone: "done", text: copy.noClient(name), call: null };
-}
-
-/** Why a move was refused, in the board's words. Nothing was written either way. */
-function refusalOf(job: Job, to: Target, code: string): string {
-  const copy = dispatch.landing;
-  if (code === "past_day") return copy.pastDay(shortDate(to.date));
-  if (code === "window_passed") return copy.windowPassed(shortDate(to.date), windowWord(to.window));
-  if (code === "blackout") return copy.blackout(shortDate(to.date));
-  if (code === "clash") return copy.clash(to.technician.name, shortDate(to.date), windowWord(to.window));
-  if (code === "on_leave") return copy.onLeave(to.technician.name, shortDate(to.date));
-  if (code === "does_not_fit") {
-    const type = job.kind === "block" ? job.block.type : job.job.type;
-    const typeName = type === null ? nameOf(job) : (dispatch.typeNames[type] ?? type);
-    return copy.doesNotFit(typeName, to.technician.name, shortDate(to.date), windowWord(to.window));
-  }
-  const errors: Readonly<Record<string, string | undefined>> = copy.errors;
-  return errors[code] ?? copy.errors.unknown;
-}
-
-/** Where a job is on a board, and whether it is where the board it was taken from had it. */
-function placeOn(board: Board, job: Job): { readonly words: string; readonly unchanged: boolean } | null {
-  const shown = shownOf(job);
-  for (const row of board.technicians) {
-    for (const day of row.days) {
-      const block = day.blocks.find((each) => each.appointment_id === idOf(job));
-      if (block === undefined) continue;
-      return {
-        words: dispatch.landing.supersededWhere(row.name, shortDate(day.date), windowWord(block.window)),
-        unchanged: row.technician_id === shown.technicianId && block.starts_at === shown.startsAt,
-      };
-    }
-  }
-  return null;
-}
-
-/**
- * What a move refused as stale says, from the board read again: another move
- * of the same job still being written leaves it where it was; a move already
- * made has put it somewhere else.
- */
-function staleWords(job: Job, code: string, now: Board | null): string {
-  const copy = dispatch.landing;
-  if (code === "not_found") return copy.errors.not_found;
-  if (code === "in_progress") return copy.errors.in_progress;
-  const place = now === null ? null : placeOn(now, job);
-  if (place?.unchanged === true) return copy.beingMoved(nameOf(job));
-  return copy.superseded(nameOf(job), place?.words ?? copy.supersededGone);
-}
-
-/** Refusals that mean the job is no longer as the board had it: it is let go, and the board read again. */
-const STALE = new Set(["superseded", "not_found", "in_progress"]);
-
-/** A visit being cancelled, closed by hand, or its technician let in past the geofence, in its own panel. */
-interface Changing {
-  readonly job: BlockJob;
-  readonly change: VisitChange | "let_in";
-}
-
-/** The change a block's visit takes now, if the person's access reaches it. */
-function changeFor(job: BlockJob, access: Access): VisitChange | null {
-  const change = changeOf(job.block, Date.now());
-  if (change === "cancel" && access.mayCall("POST /api/visits/{id}/cancel")) return change;
-  if (change === "close" && access.mayCall("POST /api/visits/{id}/close")) return change;
-  return null;
-}
-
-/** What a cancel or a close by hand did, over the board once its panel closes. */
-function changedNotice(changing: Changing): Notice {
-  const name = nameOf(changing.job);
-  if (changing.change === "let_in") {
-    return { tone: "done", text: dispatch.landing.letIn(changing.job.technician.name, name), call: null };
-  }
-  const text = changing.change === "cancel" ? dispatch.landing.cancelled(name) : dispatch.landing.closedByHand(name);
-  return { tone: "done", text, call: null };
-}
-
-function ChangePanel({ changing, onClose }: { changing: Changing; onClose: (changed: boolean) => void }) {
-  const { job, change } = changing;
-  const name = job.block.person?.name ?? nameOf(job);
-  if (change === "let_in") return <LetIn visitId={idOf(job)} technician={job.technician.name} onClose={onClose} />;
-  if (change === "cancel") return <CancelVisit visitId={idOf(job)} name={name} onClose={onClose} />;
-  return <CloseVisit visitId={idOf(job)} name={name} date={job.date} onClose={onClose} />;
-}
-
 export function DispatchScreen() {
   const [asked] = useState(() => dispatchAsked(window.location.search));
   const [query, setQuery] = useState<BoardQuery>({ from: asked.from, city: asked.city });
@@ -263,14 +62,12 @@ export function DispatchScreen() {
   const [opened, setOpened] = useState<Job | null>(null);
   const [move, setMove] = useState<Move | null>(null);
   const [changing, setChanging] = useState<Changing | null>(null);
-  const [rooms, setRooms] = useState<Rooms>({ state: "checking" });
   const [notice, setNotice] = useState<Notice | null>(null);
   const { loaded, last, refresh, retry } = useBoard(query, move !== null || opened !== null || changing !== null);
   const board = loaded.state === "loaded" ? loaded.value : null;
   const access = useAccess();
   const mayMove = access.mayCall("POST /api/dispatch/move");
   const mayAssign = access.mayCall("POST /api/dispatch/assign");
-  const mayTell = access.mayCall("POST /api/dispatch/moves/{id}/told");
 
   /** What the drawer or the move was opened from, so the keyboard comes back to it. */
   const opener = useRef<HTMLElement | null>(null);
@@ -323,29 +120,8 @@ export function DispatchScreen() {
     else moved.focus();
   }, []);
 
-  // Where the job in hand would land in the week on screen, so the board offers only those windows. It is asked
-  // again for each week the board turns to with the job still in hand, and after a refusal; an answer that comes
-  // back once another job is in hand, or another week is on screen, is dropped.
-  const [roomsAsked, askRooms] = useReducer((asked: number) => asked + 1, 0);
-  const inHandId = move === null ? null : idOf(move.job);
-  const weekFrom = board?.from ?? null;
-  useEffect(() => {
-    if (inHandId === null) return undefined;
-    setRooms({ state: "checking" });
-    if (weekFrom === null) return undefined;
-    let current = true;
-    void api.room(inHandId, weekFrom).then((answer) => {
-      if (!current) return;
-      setRooms(
-        answer.ok
-          ? { state: "known", rooms: answer.body.rooms, blackouts: answer.body.blackouts }
-          : { state: "unknown" },
-      );
-    });
-    return () => {
-      current = false;
-    };
-  }, [inHandId, weekFrom, roomsAsked]);
+  // Where the job in hand would land in the week on screen, so the board offers only those windows.
+  const [rooms, askRooms] = useRooms(move === null ? null : idOf(move.job), board?.from ?? null);
 
   const open = useCallback((job: Job, from: HTMLElement) => {
     opener.current = from;
@@ -353,13 +129,16 @@ export function DispatchScreen() {
     setOpened(job);
   }, []);
 
-  const take = useCallback((job: Job, from: HTMLElement | null, clearingCheckIn = false) => {
-    opener.current = from;
-    setOpened(null);
-    setNotice(null);
-    setMove({ job, to: null, sending: false, clearingCheckIn });
-    askRooms();
-  }, []);
+  const take = useCallback(
+    (job: Job, from: HTMLElement | null, clearingCheckIn = false) => {
+      opener.current = from;
+      setOpened(null);
+      setNotice(null);
+      setMove({ job, to: null, sending: false, clearingCheckIn });
+      askRooms();
+    },
+    [askRooms],
+  );
 
   /** A job taken up, with no window chosen for it yet. */
   const choosing = move?.to === null;
@@ -461,7 +240,7 @@ export function DispatchScreen() {
       setNotice({ tone: "refusal", text: refusalOf(job, to, answer.code), call: null });
       askRooms();
     },
-    [move, refresh, focusBlock],
+    [move, refresh, focusBlock, askRooms],
   );
 
   // Escape lets go of the move in hand when no panel is open; an open panel closes itself.
@@ -533,60 +312,23 @@ export function DispatchScreen() {
         {board !== null && <Tray unassigned={board.unassigned} onOpen={open} onTake={mayAssign ? take : null} />}
       </div>
 
-      {opened?.kind === "unassigned" && (
-        <TrayDrawer
-          each={opened.job}
+      {opened !== null && (
+        <OpenedDrawer
+          opened={opened}
+          access={access}
           onClose={closeDrawer}
-          onAssign={
-            mayAssign
-              ? () => {
-                  take(opened, opener.current);
-                }
-              : null
-          }
-        />
-      )}
-      {opened?.kind === "block" && (
-        <BlockDrawer
-          job={opened}
-          onClose={closeDrawer}
-          onMove={
-            mayMove
-              ? () => {
-                  take(opened, opener.current);
-                }
-              : null
-          }
-          onMoveAnyway={
-            mayMove
-              ? () => {
-                  take(opened, opener.current, true);
-                }
-              : null
-          }
-          onTold={
-            mayTell
-              ? (moveId) => {
-                  setOpened(null);
-                  void told(moveId, opened.block.person?.name ?? nameOf(opened)).then(restore);
-                }
-              : null
-          }
-          change={changeFor(opened, access)}
-          onChange={(change) => {
+          onTake={(job, clearingCheckIn) => {
+            take(job, opener.current, clearingCheckIn);
+          }}
+          onTold={(moveId, name) => {
+            setOpened(null);
+            void told(moveId, name).then(restore);
+          }}
+          onChange={(next) => {
             setOpened(null);
             setNotice(null);
-            setChanging({ job: opened, change });
+            setChanging(next);
           }}
-          onLetIn={
-            mayLetIn(opened.block, Date.now()) && access.mayCall("POST /api/visits/{id}/let-in")
-              ? () => {
-                  setOpened(null);
-                  setNotice(null);
-                  setChanging({ job: opened, change: "let_in" });
-                }
-              : null
-          }
         />
       )}
       {changing !== null && <ChangePanel changing={changing} onClose={(done) => void changed(done)} />}
@@ -603,26 +345,5 @@ export function DispatchScreen() {
         />
       )}
     </Shell>
-  );
-}
-
-/** What a move did or why it was refused; a call still to make carries the button that records it. */
-function NoticeLine({ notice, onTold }: { notice: Notice; onTold: (moveId: string, name: string) => Promise<void> }) {
-  const done = notice.tone === "done";
-  return (
-    <div className={done ? styles.done : styles.refusal} role={done ? "status" : "alert"}>
-      <p className={styles.noticeText}>{notice.text}</p>
-      {notice.call !== null && (
-        <Button
-          variant="outline"
-          size="small"
-          onClick={() => {
-            if (notice.call !== null) void onTold(notice.call.moveId, notice.call.name);
-          }}
-        >
-          {dispatch.landing.told}
-        </Button>
-      )}
-    </div>
   );
 }

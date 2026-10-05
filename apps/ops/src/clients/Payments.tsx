@@ -71,9 +71,9 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
     <Table className={styles.table}>
       <thead>
         <tr>
-          {copy.columns.map((column, index) => (
-            <th key={column} scope="col" className={index === 2 ? styles.figureCell : styles.cell}>
-              {column}
+          {(["date", "what", "amount", "state"] as const).map((column) => (
+            <th key={column} scope="col" className={column === "amount" ? styles.figureCell : styles.cell}>
+              {copy.columns[column]}
             </th>
           ))}
         </tr>
@@ -133,9 +133,9 @@ function LinkTable({ links }: { links: readonly ClientPaymentLink[] }) {
     <Table className={styles.table}>
       <thead>
         <tr>
-          {linkCopy.columns.map((column, index) => (
-            <th key={column} scope="col" className={index === 2 ? styles.figureCell : styles.cell}>
-              {column}
+          {(["sent", "for", "amount", "state"] as const).map((column) => (
+            <th key={column} scope="col" className={column === "amount" ? styles.figureCell : styles.cell}>
+              {linkCopy.columns[column]}
             </th>
           ))}
         </tr>

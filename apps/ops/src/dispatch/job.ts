@@ -9,6 +9,9 @@ import { dispatch } from "../content.ts";
 /** The three windows a day is booked in, in their order (src/config/scheduling.ts). */
 export const WINDOWS: readonly BookingWindow[] = ["morning", "afternoon", "evening"];
 
+/** A window as the board names it. */
+export const windowWord = (window: BookingWindow): string => dispatch.windows[window] ?? window;
+
 export interface BlockJob {
   readonly kind: "block";
   readonly block: Block;
@@ -49,7 +52,8 @@ export const clientOf = (job: Job): string | null => (job.kind === "block" ? job
 /** The client in full, with what reaches him; none for a visit with no client, or one erased. */
 export const personOf = (job: Job): BoardClient | null => (job.kind === "block" ? job.block.person : job.job.person);
 
-const typeOf = (job: Job) => (job.kind === "block" ? job.block.type : job.job.type);
+/** The kind of visit a job is, where it has one. */
+export const typeOf = (job: Job) => (job.kind === "block" ? job.block.type : job.job.type);
 
 /** The sector the job is in, which is as near an address as a block carries. */
 const sectorOf = (job: Job): string | null => (job.kind === "block" ? job.block.sector : job.job.sector);

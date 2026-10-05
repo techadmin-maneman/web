@@ -42,14 +42,7 @@ export function BookNext({
   const { label, message } = wordsFor(type);
   return (
     <>
-      <BookButton
-        className={className}
-        label={label}
-        message={message}
-        {...(type === undefined ? {} : { type })}
-        {...(tier === undefined || tier === null ? {} : { tier })}
-        {...(offer === undefined ? {} : { offer })}
-      />
+      <BookButton className={className} label={label} message={message} type={type} tier={tier} offer={offer} />
       {other !== undefined && me.booking.types.includes(other) && (
         <BookButton
           quiet

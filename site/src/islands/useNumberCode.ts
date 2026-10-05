@@ -3,6 +3,7 @@
 // entered sends what it acts on with the code's ID. A code is for the number it was sent to: another number needs
 // its own.
 
+import { CODE_TEXT } from "../../../src/policy/one-time-code.ts";
 import { useState } from "preact/hooks";
 import { numberCode as words } from "../content/site.ts";
 import { askForNumberCode, verifyNumberCode, type Answer, type NumberCode, type NumberCodeVerify } from "../lib/api.ts";
@@ -13,8 +14,6 @@ interface Sent {
   readonly codeId: string;
   readonly proved: boolean;
 }
-
-const SIX_DIGITS = /^\d{6}$/;
 
 /** The line beneath the code's field for an answer that did not prove the number. */
 function failureOf(answer: Answer<NumberCodeVerify>): string {
@@ -56,7 +55,7 @@ export function useNumberCode() {
   async function confirm(): Promise<string | null> {
     if (sent === null || checking) return null;
     const typed = code.replace(/\D/g, "");
-    if (!SIX_DIGITS.test(typed)) {
+    if (!CODE_TEXT.test(typed)) {
       setFailure(words.incomplete);
       return null;
     }

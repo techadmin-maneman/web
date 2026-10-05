@@ -7,6 +7,7 @@
 // quiet. A piece that has failed has been replaced, so the brass falls on the
 // one that has not.
 
+import { classes } from "@maneman/ui/classes";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
@@ -23,6 +24,9 @@ const HairProfile = lazy(() =>
 
 const copy = clients.pieces;
 
+/** The table's columns, in the board's order. */
+const COLUMNS = ["code", "base", "fitted", "lot", "due", "failure"] as const;
+
 const dateOf = (isoDate: string | null) => (isoDate === null ? clients.unknown : fullDate(isoDate));
 
 function PieceRow({ piece }: { piece: Piece }) {
@@ -35,9 +39,7 @@ function PieceRow({ piece }: { piece: Piece }) {
       <td className={styles.base}>{piece.base ?? clients.unknown}</td>
       <td className={styles.fitted}>{dateOf(piece.fitted_at)}</td>
       <td className={styles.lot}>{piece.supplier_lot ?? clients.unknown}</td>
-      <td className={`${styles.due ?? ""} ${live ? (styles.dueSoon ?? "") : ""}`}>
-        {dateOf(piece.replacement_due_at)}
-      </td>
+      <td className={classes(styles.due, live && styles.dueSoon)}>{dateOf(piece.replacement_due_at)}</td>
       <td className={styles.failure}>
         {piece.failed_at === null ? clients.unknown : copy.failed(longDate(piece.failed_at), piece.failure_reason)}
       </td>
@@ -72,24 +74,11 @@ function PieceTable({ clientId }: { clientId: string }) {
         <Table className={styles.table}>
           <thead>
             <tr>
-              <th scope="col" className={styles.code}>
-                {copy.columns[0]}
-              </th>
-              <th scope="col" className={styles.base}>
-                {copy.columns[1]}
-              </th>
-              <th scope="col" className={styles.fitted}>
-                {copy.columns[2]}
-              </th>
-              <th scope="col" className={styles.lot}>
-                {copy.columns[3]}
-              </th>
-              <th scope="col" className={styles.due}>
-                {copy.columns[4]}
-              </th>
-              <th scope="col" className={styles.failure}>
-                {copy.columns[5]}
-              </th>
+              {COLUMNS.map((column) => (
+                <th key={column} scope="col" className={styles[column]}>
+                  {copy.columns[column]}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>

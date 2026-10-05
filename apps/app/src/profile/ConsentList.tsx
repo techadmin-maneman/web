@@ -14,7 +14,7 @@ import { api, type ConsentPurpose, type Profile } from "../api.ts";
 import { profile } from "../content.ts";
 import styles from "./profile.module.css";
 
-type Consent = Profile["consents"][number];
+export type Consent = Profile["consents"][number];
 
 /** What switching each of these off means, said while it is off. */
 const WHEN_OFF: Partial<Record<ConsentPurpose, string>> = {
@@ -22,9 +22,15 @@ const WHEN_OFF: Partial<Record<ConsentPurpose, string>> = {
   whatsapp_visits: profile.visitsOff,
 };
 
-export function ConsentList({ consents }: { consents: readonly Consent[] }) {
+/** The consents as the profile holds them, which a switch the API recorded changes there. */
+export function ConsentList({
+  consents,
+  onSwitched,
+}: {
+  consents: readonly Consent[];
+  onSwitched: (consent: Consent) => void;
+}) {
   const copy = profile;
-  const [shown, setShown] = useState(consents);
   const [confirming, setConfirming] = useState<ConsentPurpose | null>(null);
   const [failed, setFailed] = useState<ConsentPurpose | null>(null);
   // One switch at a time: each is a row in an append-only ledger, and two taps would be two agreements.
@@ -39,11 +45,7 @@ export function ConsentList({ consents }: { consents: readonly Consent[] }) {
       }
       setFailed(null);
       setConfirming(null);
-      setShown((list) =>
-        list.map((consent) =>
-          consent.purpose === purpose ? { purpose, granted: answer.body.granted, since: answer.body.since } : consent,
-        ),
-      );
+      onSwitched({ purpose, granted: answer.body.granted, since: answer.body.since });
     });
 
   return (
@@ -52,7 +54,7 @@ export function ConsentList({ consents }: { consents: readonly Consent[] }) {
         {copy.agreed}
       </h2>
       <ul className={styles.consents}>
-        {shown.map((consent) => {
+        {consents.map((consent) => {
           const name = copy.purposes[consent.purpose];
           return (
             <li key={consent.purpose} className={styles.consent}>

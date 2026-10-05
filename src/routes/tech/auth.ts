@@ -37,7 +37,7 @@ import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse, type CodeGa
 import { clearTechnicianCookie, setTechnicianCookie, technicianOf } from "../../http/technician-session.ts";
 import { visitorOf } from "../../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
-import { newLoginCode } from "../../policy/one-time-code.ts";
+import { CODE_TEXT, newLoginCode } from "../../policy/one-time-code.ts";
 import { isStagingTestName } from "../../lib/test-names.ts";
 
 /** Why an active technician was refused a code, and what he can do, in ops' words. */
@@ -103,7 +103,7 @@ const TechChallengeSchema = z
   .openapi("TechnicianChallenge");
 
 const TechVerifyRequestSchema = z
-  .object({ challenge_id: z.uuid(), code: z.string().regex(/^\d{6}$/), device_id: DeviceIdSchema })
+  .object({ challenge_id: z.uuid(), code: z.string().regex(CODE_TEXT), device_id: DeviceIdSchema })
   .strict()
   .openapi("TechnicianVerifyRequest");
 

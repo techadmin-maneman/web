@@ -18,6 +18,7 @@ import { openGrievanceInWords } from "../../domain/grievances.ts";
 import { myDataPage } from "../../domain/my-data-page.ts";
 import { takeOne } from "../../domain/rate-limit.ts";
 import { clientOf } from "../../http/client-session.ts";
+import { GRIEVANCE_MAX_CHARS } from "../../policy/grievances.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { GRIEVANCES_PER_DAY } from "../../policy/grievances.ts";
 
@@ -73,7 +74,7 @@ const grievanceRoute = clientRoute({
     body: {
       required: true,
       content: {
-        "application/json": { schema: z.object({ text: z.string().trim().min(1).max(2000) }).strict() },
+        "application/json": { schema: z.object({ text: z.string().trim().min(1).max(GRIEVANCE_MAX_CHARS) }).strict() },
       },
     },
   },

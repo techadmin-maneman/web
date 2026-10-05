@@ -16,6 +16,7 @@
 // him, with his number; and a change of technician alone, which leaves his
 // window as it was, tells him nothing (docs/decisions/0069-dispatch-under-concurrency.md).
 
+import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { Field, TextArea } from "@maneman/ui/Field";
@@ -26,7 +27,7 @@ import type { MoveReason } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
-import { changesTime, nameOf, personOf, startOf, whenOf, type Job, type Target } from "./job.ts";
+import { changesTime, nameOf, personOf, startOf, whenOf, type Job, type Target, windowWord } from "./job.ts";
 
 const AN_HOUR = 60 * 60 * 1000;
 
@@ -62,7 +63,7 @@ function sendLabel(sending: boolean, messaged: boolean): string {
 /** "Sat 20 Sep, 10:30 am" where the board knows the start the move takes; else "Sat 20 Sep, morning". */
 function landsWords(to: Target, landsAt: string | null): string {
   if (landsAt !== null) return `${shortDate(to.date)}, ${indiaClock(landsAt)}`;
-  return `${shortDate(to.date)}, ${dispatch.windows[to.window] ?? to.window}`;
+  return `${shortDate(to.date)}, ${windowWord(to.window)}`;
 }
 
 /** Where the job stands now, by its start: "Fri 19 Sep, 9 am". */
@@ -99,7 +100,7 @@ export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckI
 
   return (
     <Dialog
-      className={`${styles.panel} ${styles.picker}`}
+      className={classes(styles.panel, styles.picker)}
       labelledBy="move-title"
       canClose={!sending}
       onDismiss={onCancel}

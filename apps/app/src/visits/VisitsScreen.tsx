@@ -11,6 +11,7 @@
 // often they have been served, what they have bought, what they have paid, and
 // the month their piece falls due (docs/fidelity-method.md).
 
+import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { fullDate, listMonth, monthInIndia, shortDate, yearInIndia } from "@maneman/web-kit/dates";
@@ -117,7 +118,7 @@ function Record({ history }: { history: Visits["history"] }) {
   const month = due === null ? "" : listMonth(due.month, yearInIndia(now));
   return (
     <section className={styles.record} aria-labelledby="record">
-      <h2 className={`${styles.label ?? ""} ${styles.recordLabel ?? ""}`} id="record">
+      <h2 className={classes(styles.label, styles.recordLabel)} id="record">
         {copy.label}
       </h2>
       {due !== null && (
@@ -176,7 +177,7 @@ function VisitList({ list, me }: { list: Visits; me: Me }) {
       )}
       {past.length > 0 && (
         <>
-          <h2 className={`${styles.label} ${styles.pastLabel}`}>{visits.past}</h2>
+          <h2 className={classes(styles.label, styles.pastLabel)}>{visits.past}</h2>
           <ul className={styles.past}>
             {past.map((visit) => (
               <li key={visit.id}>

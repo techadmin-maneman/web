@@ -6,12 +6,12 @@
 
 import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
-import { forwardRef, useState } from "react";
+import { useState, type Ref } from "react";
 import type { BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
 import type { InHand } from "./Grid.tsx";
-import { nameOf, type Target } from "./job.ts";
+import { nameOf, type Target, windowWord } from "./job.ts";
 
 /** "a first fit, 2 slots": the job's kind and the slots it takes. */
 function sizeOf(inHand: InHand): string {
@@ -35,7 +35,7 @@ function destinationsOf(inHand: InHand, rows: readonly BoardRow[], dates: readon
       (inHand.windowsAt(technician.technician_id, date) ?? []).map((window: BookingWindow) => ({
         key: `${technician.technician_id}/${date}/${window}`,
         target: { technician, date, window },
-        label: dispatch.landing.listOption(technician.name, shortDate(date), dispatch.windows[window] ?? window),
+        label: dispatch.landing.listOption(technician.name, shortDate(date), windowWord(window)),
       })),
     ),
   );
@@ -51,10 +51,7 @@ interface Props {
   readonly onStop: () => void;
 }
 
-export const MoveBar = forwardRef<HTMLDivElement, Props>(function MoveBar(
-  { inHand, checking, rows, dates, onLand, onStop },
-  ref,
-) {
+export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: Props & { ref?: Ref<HTMLDivElement> }) {
   const [chosen, setChosen] = useState("");
   const copy = dispatch.landing;
   const destinations = checking ? [] : destinationsOf(inHand, rows, dates);
@@ -106,4 +103,4 @@ export const MoveBar = forwardRef<HTMLDivElement, Props>(function MoveBar(
       </Button>
     </div>
   );
-});
+}

@@ -5,6 +5,7 @@
 // as an angle not taken does. A client's kept try-on shows its photograph on
 // every visit, and its look until the first fit is photographed (ADR 0084).
 
+import { classes } from "@maneman/ui/classes";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import type { TryOn } from "../api.ts";
 import { photos } from "../content.ts";
@@ -51,7 +52,7 @@ export function TryOnGroup({ tryOn, onOpen }: { tryOn: TryOn; onOpen: (photo: Op
         </h2>
         <p className={styles.groupWhat}>{photos.tryOn.title}</p>
       </div>
-      <div className={`${styles.row} ${styles.pair}`}>
+      <div className={classes(styles.row, styles.pair)}>
         {IMAGES.map((image) => {
           const link = tryOn[image];
           if (link === null) return <div key={image} className={styles.cell} />;

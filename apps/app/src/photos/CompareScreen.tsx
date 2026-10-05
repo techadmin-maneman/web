@@ -4,6 +4,7 @@
 // cross-fades both sides together. It opens on the first visit with
 // photographs against the latest.
 
+import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { ARRIVE } from "@maneman/ui/motion";
@@ -96,7 +97,7 @@ function Sides({ from, to, angle, className }: { from: Visit; to: Visit; angle: 
     );
   };
   return (
-    <div className={`${styles.sides} ${className ?? ""}`}>
+    <div className={classes(styles.sides, className)}>
       {side(to, styles.later ?? "")}
       {side(from, styles.earlier ?? "")}
     </div>

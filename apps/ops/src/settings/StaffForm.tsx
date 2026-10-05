@@ -1,6 +1,7 @@
 // Adding a member of staff, or changing their grants and whether they are let in. The whole list of grants is sent
 // and replaces theirs; the check names each grant given or taken away before anything is saved.
 
+import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type StaffBook, type StaffGrant, type StaffPerson, type StaffSave } from "../api.ts";
@@ -235,7 +236,7 @@ export function StaffForm(props: {
           <p className={styles.hint}>{copy.form.emailHint}</p>
         </div>
       </div>
-      <label className={`${styles.fieldRow} ${styles.once ?? ""}`}>
+      <label className={classes(styles.fieldRow, styles.once)}>
         <input
           className={styles.box}
           type="checkbox"

@@ -458,7 +458,14 @@ export const referrals = {
   table: {
     title: "All referrers",
     /** The board's columns, less "Sent", which nothing counts (docs/fidelity-method.md). */
-    columns: ["Referrer", "Opens", "Consults", "Fits", "Granted", "Redeemed"],
+    columns: {
+      referrer: "Referrer",
+      opens: "Opens",
+      consults: "Consults",
+      fits: "Fits",
+      granted: "Granted",
+      redeemed: "Redeemed",
+    },
     note: "Opens and consultations stay here. The client's tracker shows fits only.",
     // The board draws no empty table.
     empty: "Nobody has a referral code yet.",
@@ -836,7 +843,7 @@ export const clients = {
    */
   payments: {
     title: "Payments and refunds",
-    columns: ["Date", "What", "Amount", "State"],
+    columns: { date: "Date", what: "What", amount: "Amount", state: "State" },
     none: "Nothing paid yet.",
     /** "Service visit of 22 Aug 2027", and a late fee named as one. */
     visit: (type: string, date: string) => `${type} of ${date}`,
@@ -860,7 +867,7 @@ export const clients = {
   /* Our words, all of them: the payment links Razorpay texted the client, and an open one's address to send again. */
   links: {
     title: "Payment links",
-    columns: ["Sent", "For", "Amount", "State"],
+    columns: { sent: "Sent", for: "For", amount: "Amount", state: "State" },
     none: "No payment links yet.",
     unsent: "Not sent",
     /** "Natural hair system, visit of 25 Sep 2027". */
@@ -963,8 +970,15 @@ export const clients = {
   /** Board B1: every piece the client has been fitted with. */
   pieces: {
     title: "Pieces",
-    /** The board's six columns, in its order. */
-    columns: ["Piece", "Base", "Fitted", "Supplier lot", "Replace due", "Failed · reason"],
+    /** The board's six columns. */
+    columns: {
+      code: "Piece",
+      base: "Base",
+      fitted: "Fitted",
+      lot: "Supplier lot",
+      due: "Replace due",
+      failure: "Failed · reason",
+    },
     /** A piece that has failed, as the board writes it: "24 Jun · base split at crown". */
     failed: (date: string, reason: string | null) => (reason === null ? date : `${date} · ${reason}`),
     // The board draws no client without a piece, and every client has none until they are fitted.
@@ -1080,7 +1094,7 @@ export const clients = {
   consents: {
     title: "Consents",
     /** The board's four columns. */
-    columns: ["Purpose", "State", "Date", "Source"],
+    columns: { purpose: "Purpose", state: "State", date: "Date", source: "Source" },
     purposes: {
       photos_own_record: "Photographs taken for the visit record",
       photos_referral_cards: "Photographs on referral cards",

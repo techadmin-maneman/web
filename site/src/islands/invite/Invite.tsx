@@ -14,7 +14,8 @@
 // earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md),
 // which every sentence that gives a count is built from.
 //
-// The pincode check is usePincode.ts, the two forms Consultation.tsx and
+// The invite, the prices and the reward are read by useLandingData.ts, the
+// pincode check is usePincode.ts, the two forms Consultation.tsx and
 // Waitlist.tsx, which send through useTurnstileForm.ts, and the confirmations
 // Done.tsx. Outside production, ?state= opens each state directly (preview.ts).
 //
@@ -22,32 +23,23 @@
 // if the friend leaves and books there later (site/src/lib/remembered-invite.ts).
 
 import { useEffect, useRef, useState } from "preact/hooks";
-import { invitePageTitle, referral } from "../../content/referral.ts";
+import { referral } from "../../content/referral.ts";
 import { booking } from "../../content/site.ts";
 import { PRICES_SHOWN } from "../../lib/flags.ts";
-import {
-  fetchInvite,
-  fetchPublishedPrices,
-  fetchReferralReward,
-  type Invite as InviteAnswer,
-  type PincodeAnswer,
-  type ReferralReward,
-} from "../../lib/api.ts";
-import { cardPath, HOUSE_CARD, isInvite } from "../../lib/invite.ts";
-import { BUILT_WORDS, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "../../lib/prices.ts";
-import { rememberInvite } from "../../lib/remembered-invite.ts";
-import { isReferralReward } from "../../lib/reward.ts";
+import { type Invite as InviteAnswer, type PincodeAnswer } from "../../lib/api.ts";
+import { cardPath, HOUSE_CARD } from "../../lib/invite.ts";
 import { fill } from "../../lib/text.ts";
 import { Consultation, type Plan } from "./Consultation.tsx";
 import { Booked, Listed, type Booking, type Listing } from "./Done.tsx";
 import { onStepChange, pushStep, startAtPincode } from "./history.ts";
 import { HowItWorks } from "./HowItWorks.tsx";
 import styles from "./Invite.module.css";
-import { codeInPath, inviteInPage, pricesInPage, rewardInPage } from "./page.ts";
+import { codeInPath } from "./page.ts";
 import { PincodePanel } from "./PincodePanel.tsx";
 import { Prices } from "./Prices.tsx";
 import { previewNamed, SAMPLE, sampleBooking } from "./preview.ts";
 import { usePincode } from "./usePincode.ts";
+import { useLandingData } from "./useLandingData.ts";
 import { Waitlist } from "./Waitlist.tsx";
 import { CARD_HEIGHT, CARD_WIDTH } from "../../../../src/config/referral-cards.ts";
 
@@ -67,8 +59,6 @@ interface Props {
 
 type State = "arrival" | "booked" | "listed";
 
-/** The card the page shows: the referrer's own while it is live, else our house one. */
-
 /** The site's own page is headed with what it books: the plan chosen, or the waitlist where we do not come yet. */
 function bookingTitle(answer: PincodeAnswer | null, plan: Plan): string {
   if (answer?.served === false) return booking.titleWaitlist;
@@ -83,12 +73,8 @@ function inviteHeading(invite: InviteAnswer | null): string {
 }
 
 export default function Invite(props: Props) {
-  // Null until the invite is known: the page then says only what is true of every invite.
-  const [invite, setInvite] = useState<InviteAnswer | null>(null);
-  // Read before the first draw, so hydrating keeps the figures the Worker wrote into the page.
-  const [prices, setPrices] = useState<PriceWords>(() => pricesInPage() ?? BUILT_WORDS);
-  // Null until it is known: no sentence gives a count without it.
-  const [reward, setReward] = useState<ReferralReward | null>(() => rewardInPage());
+  const invited = (props.mode ?? "invited") === "invited";
+  const { invite, prices, reward } = useLandingData(invited);
   const [state, setState] = useState<State>("arrival");
   // Kept here rather than in the form, so the page's heading follows it and a changed pincode keeps it.
   const [plan, setPlan] = useState<Plan>("consultation");
@@ -97,51 +83,10 @@ export default function Invite(props: Props) {
   const pincode = usePincode();
   const heading = useRef<HTMLHeadingElement>(null);
 
-  const invited = (props.mode ?? "invited") === "invited";
   const name = invited ? (invite?.referrer_first_name ?? null) : null;
   // Only a valid invite carries its visits; the API books any other without them.
   const credits = invited && invite?.state === "valid";
   const unknown = invited && invite?.state === "unknown";
-
-  // The invite: from the page where the Worker wrote it, otherwise from the API.
-  useEffect(() => {
-    if (!invited) return;
-    const written = inviteInPage();
-    if (written !== null) {
-      setInvite(written);
-      return;
-    }
-    const code = codeInPath();
-    if (code === "") return;
-    void fetchInvite(code).then((found) => {
-      if (found.ok && isInvite(found.body)) setInvite(found.body);
-    });
-  }, [invited]);
-
-  useEffect(() => {
-    if (invited && invite?.state === "valid") rememberInvite(codeInPath());
-  }, [invited, invite]);
-
-  // The Worker titles the tab; where it could not look the invite up, the island does once it has.
-  useEffect(() => {
-    if (invited && invite !== null) document.title = invitePageTitle(invite);
-  }, [invited, invite]);
-
-  // The prices: from the page where the Worker wrote them, otherwise from the API.
-  useEffect(() => {
-    if (!PRICES_SHOWN || pricesInPage() !== null) return;
-    void fetchPublishedPrices().then((found) => {
-      if (found.ok && isPublishedPrices(found.body)) setPrices(priceWords(pricesOf(found.body)));
-    });
-  }, []);
-
-  // What a referral earns: from the page where the Worker wrote it, otherwise from the API.
-  useEffect(() => {
-    if (rewardInPage() !== null) return;
-    void fetchReferralReward().then((found) => {
-      if (found.ok && isReferralReward(found.body)) setReward(found.body);
-    });
-  }, []);
 
   useEffect(() => {
     if (!props.allowStateSwitch) return;

@@ -270,9 +270,9 @@ function ReferrersTable({ version }: { version: number }) {
           <Table className={styles.table}>
             <thead>
               <tr>
-                {copy.columns.map((column, index) => (
-                  <th key={column} scope="col" className={index === 0 ? styles.name : styles.figure}>
-                    {column}
+                {(["referrer", "opens", "consults", "fits", "granted", "redeemed"] as const).map((column) => (
+                  <th key={column} scope="col" className={column === "referrer" ? styles.name : styles.figure}>
+                    {copy.columns[column]}
                   </th>
                 ))}
               </tr>

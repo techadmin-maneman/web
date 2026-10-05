@@ -4,6 +4,7 @@
 // (docs/fidelity-method.md). Finding narrows the rows only: the figures at each
 // column's head stay the day's own.
 
+import { classes } from "@maneman/ui/classes";
 import type { Board, BoardQuery } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
@@ -78,7 +79,7 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
           ))}
         </select>
       </div>
-      <div className={`${styles.field ?? ""} ${styles.find ?? ""}`}>
+      <div className={classes(styles.field, styles.find)}>
         <label className={styles.fieldLabel} htmlFor="dispatch-find">
           {copy.find}
         </label>

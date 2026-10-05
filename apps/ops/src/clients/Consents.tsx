@@ -4,6 +4,7 @@
 // (docs/decisions/0094-where-a-consent-was-given.md). Under them, erasing the
 // client, for a request made outside the app.
 
+import { classes } from "@maneman/ui/classes";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
@@ -15,6 +16,9 @@ import styles from "./clients.module.css";
 import { Erase } from "./Erase.tsx";
 
 const copy = clients.consents;
+
+/** The table's columns, in the board's order. */
+const COLUMNS = ["purpose", "state", "date", "source"] as const;
 
 /** Where the consent was given; the board's dash for one never given, and "Not recorded" where nothing says. */
 function sourceOf(consent: Consent): string {
@@ -36,7 +40,7 @@ function ConsentRow({ consent }: { consent: Consent }) {
       <th scope="row" className={styles.purpose}>
         {copy.purposes[consent.purpose]}
       </th>
-      <td className={`${styles.state ?? ""} ${TONE[consent.state]}`}>{copy.states[consent.state]}</td>
+      <td className={classes(styles.state, TONE[consent.state])}>{copy.states[consent.state]}</td>
       <td className={styles.date}>{consent.at === null ? clients.unknown : longDate(consent.at)}</td>
       <td className={styles.source}>{sourceOf(consent)}</td>
     </tr>
@@ -56,18 +60,11 @@ export function Consents({ clientId, name, onErased }: { clientId: string; name:
       <Table className={styles.table}>
         <thead>
           <tr>
-            <th scope="col" className={styles.purpose}>
-              {copy.columns[0]}
-            </th>
-            <th scope="col" className={styles.state}>
-              {copy.columns[1]}
-            </th>
-            <th scope="col" className={styles.date}>
-              {copy.columns[2]}
-            </th>
-            <th scope="col" className={styles.source}>
-              {copy.columns[3]}
-            </th>
+            {COLUMNS.map((column) => (
+              <th key={column} scope="col" className={styles[column]}>
+                {copy.columns[column]}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>

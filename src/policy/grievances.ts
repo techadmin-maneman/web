@@ -5,3 +5,6 @@ export const GRIEVANCES_PER_DAY = 5;
 
 /** The most concerns the profile lists, newest first. */
 export const GRIEVANCES_SHOWN = 5;
+
+/** A concern in the client's own words: room to explain, not a document. */
+export const GRIEVANCE_MAX_CHARS = 2000;

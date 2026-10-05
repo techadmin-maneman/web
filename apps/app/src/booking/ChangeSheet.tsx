@@ -17,7 +17,7 @@ import { methodName } from "../payments/entry.ts";
 import { useSession } from "../session.ts";
 import { BookingSheet } from "./BookingSheet.tsx";
 import { moveButton } from "./late-change.ts";
-import { LateFee } from "./steps.tsx";
+import { LateFee } from "./steps/shared.tsx";
 import styles from "./booking.module.css";
 
 export interface ChangingVisit {

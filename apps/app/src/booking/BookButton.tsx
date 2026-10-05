@@ -93,9 +93,9 @@ export function BookButton({
         <BookingSheet
           type={kind}
           services={services}
-          {...(tier === undefined || tier === null ? {} : { tier })}
-          {...(offer === undefined ? {} : { offer })}
-          {...(from === undefined ? {} : { from })}
+          tier={tier ?? undefined}
+          offer={offer}
+          from={from}
           onClose={(changed) => {
             setOpen(false);
             if (changed) refresh();

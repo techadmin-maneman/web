@@ -5,7 +5,7 @@
  * component gives an element this class beside its own, which sets only the
  * size and the place:
  *
- *   <span className={`${styles.awayMark ?? ""} ${label.caps ?? ""}`}>
+ *   <span className={classes(styles.awayMark, label.caps)}>
  */
 
 .caps {

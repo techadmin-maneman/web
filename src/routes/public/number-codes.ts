@@ -17,7 +17,7 @@ import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../.
 import { checkTurnstile, visitorOf } from "../../http/visitor.ts";
 import { isTestNumber } from "../../domain/test-records.ts";
 import { toE164 } from "../../lib/mobile.ts";
-import { newLoginCode } from "../../policy/one-time-code.ts";
+import { CODE_TEXT, newLoginCode } from "../../policy/one-time-code.ts";
 
 const NumberCodeRequestSchema = z
   .object({
@@ -34,7 +34,7 @@ const NumberCodeSchema = z
   .openapi("NumberCode", { description: "The code is on its way to the number on WhatsApp." });
 
 const VerifyRequestSchema = z
-  .object({ code_id: z.uuid(), code: z.string().regex(/^\d{6}$/) })
+  .object({ code_id: z.uuid(), code: z.string().regex(CODE_TEXT) })
   .strict()
   .openapi("NumberCodeVerifyRequest");
 

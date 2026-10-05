@@ -2,6 +2,7 @@
 // to, and their account: a change of number, support, and deletion.
 
 import { Button } from "@maneman/ui/Button";
+import { classes } from "@maneman/ui/classes";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, type Profile } from "../api.ts";
 import { errors, profile } from "../content.ts";
@@ -10,9 +11,12 @@ import { LogOut } from "../login/LogOut.tsx";
 import { useSession } from "../session.ts";
 import { AddressSection } from "./AddressSection.tsx";
 import { Loading } from "../states/Loading.tsx";
-import { ConsentList } from "./ConsentList.tsx";
+import { ConsentList, type Consent } from "./ConsentList.tsx";
 import { SessionsCard } from "./SessionsCard.tsx";
-import { DataCard, DeletionCard, NumberChangeCard, SupportCard } from "./AccountCards.tsx";
+import { DataCard } from "./DataCard.tsx";
+import { DeletionCard } from "./DeletionCard.tsx";
+import { NumberChangeCard } from "./NumberChangeCard.tsx";
+import { SupportCard } from "./SupportCard.tsx";
 import styles from "./profile.module.css";
 
 export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
@@ -33,13 +37,22 @@ export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
     void load();
   }, [load]);
 
+  /** A switch the API recorded, in the profile as it stands, until the profile is next read. */
+  const switched = (consent: Consent) => {
+    setLoaded((now) =>
+      now === null || now === "failed"
+        ? now
+        : { ...now, consents: now.consents.map((each) => (each.purpose === consent.purpose ? consent : each)) },
+    );
+  };
+
   const { me } = useSession();
   // Fetched again after a change without going back to Loading, so the page stays where the client is.
   function page(): ReactNode {
     if (loaded === null) return <Loading />;
     if (loaded === "failed") {
       return (
-        <div className={`${styles.page} ${styles.failed}`} role="alert">
+        <div className={classes(styles.page, styles.failed)} role="alert">
           <p>{errors.load}</p>
           <Button variant="outline" size="control" className={styles.secondary} onClick={() => void load()}>
             {errors.retry}
@@ -50,7 +63,7 @@ export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
     return (
       <div className={styles.page}>
         <AddressSection address={loaded.address} givenToOps={loaded.address_given_to_ops} onSaved={changed} />
-        <ConsentList consents={loaded.consents} />
+        <ConsentList consents={loaded.consents} onSwitched={switched} />
         <NumberChangeCard
           change={loaded.number_change}
           decided={loaded.number_change_decided}

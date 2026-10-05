@@ -48,21 +48,13 @@ import { apiNow } from "../lib/clock.ts";
 import { loadCheckout, pay, type Paid } from "./checkout.ts";
 import { undecidedOf } from "./consents.ts";
 import { firstOpenFrom, hasLaterDays, openWindow, withDays } from "./days.ts";
-import {
-  AddressStep,
-  ConfirmedStep,
-  DateStep,
-  ExpiredStep,
-  FailedStep,
-  LoadingStep,
-  NotServedStep,
-  paysNothing,
-  PayStep,
-  ServiceStep,
-  TITLE_ID,
-  WaitStep,
-  WindowStep,
-} from "./steps.tsx";
+import { AddressStep, NotServedStep } from "./steps/AddressStep.tsx";
+import { ConfirmedStep, ExpiredStep, FailedStep, WaitStep } from "./steps/OutcomeSteps.tsx";
+import { DateStep } from "./steps/DateStep.tsx";
+import { LoadingStep, paysNothing, TITLE_ID } from "./steps/shared.tsx";
+import { PayStep } from "./steps/PayStep.tsx";
+import { ServiceStep } from "./steps/ServiceStep.tsx";
+import { WindowStep } from "./steps/WindowStep.tsx";
 import styles from "./booking.module.css";
 
 type Step =

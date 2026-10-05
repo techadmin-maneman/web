@@ -24,7 +24,7 @@ import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
-import { isMovable, movesIfCheckInCleared, nameOf, type BlockJob, type VisitChange } from "./job.ts";
+import { isMovable, movesIfCheckInCleared, nameOf, type BlockJob, type VisitChange, windowWord } from "./job.ts";
 import { firstNameOf } from "../../../../src/lib/names.ts";
 
 /** Each action is null when the person's access does not let them take it. */
@@ -63,7 +63,7 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
   const person = block.person;
 
   // A move the client has not heard of still stands, so the block is where it put the visit.
-  const movedTo = `${shortDate(job.date)}, ${dispatch.windows[block.window] ?? block.window}`;
+  const movedTo = `${shortDate(job.date)}, ${windowWord(block.window)}`;
   const referredBy = person === null ? null : person.referred_by;
   const typeName = block.type === null ? dispatch.unknown : (dispatch.typeNames[block.type] ?? dispatch.unknown);
   const rows = [

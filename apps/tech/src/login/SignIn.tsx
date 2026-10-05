@@ -23,6 +23,7 @@
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
 
+import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { fieldDigits, mobileDigits } from "@maneman/web-kit/mobile";
@@ -83,15 +84,15 @@ function CodeBoxes({ value, disabled, onChange }: { value: string; disabled: boo
         value={value}
         disabled={disabled}
         onChange={(event) => {
-          onChange(event.target.value.replace(/\D/g, "").slice(0, 6));
+          onChange(event.target.value.replace(/\D/g, "").slice(0, ONE_TIME_CODE.digits));
         }}
         inputMode="numeric"
         autoComplete="one-time-code"
-        maxLength={6}
+        maxLength={ONE_TIME_CODE.digits}
         aria-label={copy.codeLabel}
       />
       <div className={styles.boxRow} aria-hidden="true">
-        {Array.from({ length: 6 }, (_, index) => (
+        {Array.from({ length: ONE_TIME_CODE.digits }, (_, index) => (
           <div key={index} className={styles.box}>
             {value[index] ?? null}
           </div>
@@ -176,7 +177,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
     onSignedIn();
   }
 
-  const ready = challenge === null ? digits !== null : code.length === 6;
+  const ready = challenge === null ? digits !== null : code.length === ONE_TIME_CODE.digits;
   // Only worth saying before the code has been asked for, and only in the app
   // that caused it: a first sign-in in a browser needs no explanation.
   const quiet = challenge === null && error === null;

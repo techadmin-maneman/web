@@ -2,6 +2,7 @@
 // why a no-show's charge is wrong, once a charge, and ops refund or uphold it. No board draws it, so the sheet is
 // ours, in the note sheet's frame, with placeholder words (docs/fidelity-method.md).
 
+import { DISPUTE_REASON_MAX_CHARS } from "../../../../src/policy/no-show.ts";
 import { Button } from "@maneman/ui/Button";
 import { Sheet } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
@@ -9,9 +10,6 @@ import { api } from "../api.ts";
 import { booking, dispute as copy } from "../content.ts";
 import { focusIfLost } from "../lib/arrival.ts";
 import styles from "./booking.module.css";
-
-/** The most a reason may hold, as the API takes it. */
-const MOST = 300;
 
 type Step = "writing" | "sent" | "already" | "closed" | "failed";
 
@@ -67,7 +65,7 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
               <textarea
                 className={styles.noteInput}
                 rows={4}
-                maxLength={MOST}
+                maxLength={DISPUTE_REASON_MAX_CHARS}
                 required
                 value={text}
                 onChange={(event) => {
