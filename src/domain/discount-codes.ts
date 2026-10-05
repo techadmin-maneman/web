@@ -19,7 +19,7 @@ import {
   type DiscountTerms,
 } from "../policy/discount-codes.ts";
 import { auditStatement, auditStatementIfStamped, type AuditActor, type AuditEntry } from "./audit.ts";
-import { graceEnds } from "./hold-stages.ts";
+import { graceEnds } from "./scheduling.ts";
 
 /** A code's row. */
 export interface CodeRow {

@@ -1,7 +1,7 @@
 // The static server the browser tests and the fidelity harness share (scripts/lib/static-server.ts). Several agents'
 // runs use one machine's ports, so a request it cannot read must be refused, not bring it down.
 
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,9 +19,10 @@ describe("the _headers file", () => {
 describe("the server", () => {
   let origin = "";
   let close: () => void = () => undefined;
+  let root = "";
 
   beforeAll(async () => {
-    const root = mkdtempSync(join(tmpdir(), "mm-static-"));
+    root = mkdtempSync(join(tmpdir(), "mm-static-"));
     writeFileSync(join(root, "index.html"), "<p>home</p>");
     writeFileSync(join(root, "404.html"), "<p>missing</p>");
     const server = await serveDirectory(root, 0);
@@ -30,6 +31,7 @@ describe("the server", () => {
   });
   afterAll(() => {
     close();
+    rmSync(root, { recursive: true, force: true });
   });
 
   it("answers 400 to a path it cannot decode, and goes on serving", async () => {
