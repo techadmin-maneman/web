@@ -626,7 +626,7 @@ export interface WaitlistRequest {
   readonly source: Extract<ConsentSource, "site_waitlist" | "referral_landing">;
 }
 
-export interface Listed {
+interface Listed {
   readonly ok: true;
   /** Null until ops have named the area, and for a pincode we do not know. */
   readonly area: string | null;

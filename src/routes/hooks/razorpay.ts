@@ -54,7 +54,7 @@ const EventSchema = z.object({
     .optional(),
 });
 
-export const razorpayHookRoute = createRoute({
+const razorpayHookRoute = createRoute({
   method: "post",
   path: "/api/hooks/razorpay",
   summary: "Razorpay's webhook: payments and refunds",

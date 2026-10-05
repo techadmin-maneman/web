@@ -10,7 +10,7 @@ import type { LinkDeps } from "./payment-links.ts";
 import { landedOutcome } from "./visit-begun.ts";
 import { closeVisit, durationOf, moveVisit, STEPS, type AppointmentStatus, type ClosedByHand } from "./visit-status.ts";
 
-export type HandOutcome = "done" | "partial";
+type HandOutcome = "done" | "partial";
 
 /** The status a visit closed by hand ends in, as its step moves it (STEPS). */
 const CLOSES_AS = { done: "completed", partial: "terminated" } as const satisfies Record<
@@ -18,7 +18,7 @@ const CLOSES_AS = { done: "completed", partial: "terminated" } as const satisfie
   AppointmentStatus
 >;
 
-export interface HandClose {
+interface HandClose {
   readonly appointmentId: string;
   readonly outcome: HandOutcome;
   readonly startedAt: string;
@@ -27,7 +27,7 @@ export interface HandClose {
   readonly audit: AuditEntry;
 }
 
-export type HandClosed =
+type HandClosed =
   | {
       readonly kind: "closed";
       readonly status: (typeof CLOSES_AS)[HandOutcome];

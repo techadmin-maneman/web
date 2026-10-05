@@ -13,7 +13,7 @@ import { routesOpenTo } from "../../policy/console-routes.ts";
 import { grantJson, GrantSchema } from "./staff.ts";
 
 /** Access's own path on every host it guards: it ends the session and shows the team's page. */
-export const ACCESS_LOGOUT_PATH = "/cdn-cgi/access/logout";
+const ACCESS_LOGOUT_PATH = "/cdn-cgi/access/logout";
 
 const whoamiRoute = createRoute({
   method: "get",

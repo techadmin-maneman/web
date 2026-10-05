@@ -9,12 +9,12 @@ import { visitorOf } from "../../http/visitor.ts";
 import { readStopToken, withdraw } from "../../domain/stop-messages.ts";
 import { MESSAGE_PURPOSES } from "../../policy/consents.ts";
 
-export const StopMessagesRequestSchema = z
+const StopMessagesRequestSchema = z
   .object({ token: z.string().min(1).max(600) })
   .strict()
   .openapi("StopMessagesRequest");
 
-export const StoppedMessagesSchema = z
+const StoppedMessagesSchema = z
   .object({
     purpose: z.enum(MESSAGE_PURPOSES).openapi({
       description: "What is no longer sent. The same answer when it had been stopped already.",
@@ -23,7 +23,7 @@ export const StoppedMessagesSchema = z
   .strict()
   .openapi("StoppedMessages");
 
-export const stopMessagesRoute = createRoute({
+const stopMessagesRoute = createRoute({
   method: "post",
   path: "/api/stop",
   summary: "Stops the messages a reminder's or alert's link names, by withdrawing the consent they were sent under",

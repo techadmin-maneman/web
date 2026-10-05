@@ -129,7 +129,7 @@ export function documentsOf(entry: PaymentDetail): ("invoice" | "receipt")[] {
 }
 
 /** A payment or refund, or a change to the credits, as one row of the Payments list. */
-export type PaymentsRow =
+type PaymentsRow =
   | { readonly kind: "entry"; readonly date: string; readonly entry: Entry }
   | { readonly kind: "credit"; readonly date: string; readonly line: CreditLine };
 

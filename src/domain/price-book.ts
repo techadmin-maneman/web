@@ -99,7 +99,7 @@ export interface PriceRefusal {
 }
 
 /** A price as ops set one: what it prices, from when, and its figures. */
-export interface PriceChange {
+interface PriceChange {
   readonly item: PriceItem;
   readonly tier: string;
   readonly amount_ex_gst: number;
@@ -151,7 +151,7 @@ function checkPrice(
 }
 
 /** A row of the book, named by what it prices and the day it applies from. */
-export interface PriceRowKey {
+interface PriceRowKey {
   readonly item: PriceItem;
   readonly tier: string;
   readonly valid_from: string;

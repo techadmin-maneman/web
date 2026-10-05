@@ -1,5 +1,7 @@
 // Who may log in to the client app, and the one-time-code challenges that let
-// them (docs/decisions/0030-one-time-codes.md).
+// them (docs/decisions/0030-one-time-codes.md). The rule, as the brief states it
+// (docs/prompts/phase2-backend.md, "Business rules, decided"): "Open to any
+// person with a booked consultation or any later appointment. No password."
 
 import type { CodeChannel } from "../providers/codes.ts";
 import {
@@ -12,7 +14,7 @@ import {
   type ChallengeRow,
 } from "./one-time-codes.ts";
 
-export interface EligiblePerson {
+interface EligiblePerson {
   readonly id: string;
   readonly mobileE164: string;
   readonly name: string;

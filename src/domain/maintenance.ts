@@ -4,7 +4,7 @@
 
 import type { AlertOnce } from "./alerts.ts";
 
-export interface Maintenance {
+interface Maintenance {
   readonly reason: string;
   readonly startedAt: string;
 }

@@ -161,7 +161,7 @@ export const queue = {
  * sentence — so these are the app's words for each it can meet
  * (docs/api-tech.md). A field is named in preference to the code.
  */
-export const stopped: Readonly<Record<string, string>> = {
+const stopped: Readonly<Record<string, string>> = {
   // The 409 names the fields that moved and never their values. The new time, once the card read again
   // carries it, and whom a job went to are named by whatStopped below.
   superseded: "This job changed while the phone was offline.",

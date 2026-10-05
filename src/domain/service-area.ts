@@ -69,7 +69,7 @@ export const launchedPincode = (held: Pincode): LaunchedPincode => ({
   launchOn: launchDateOf(held.launched_at),
 });
 
-export interface AreaPincode {
+interface AreaPincode {
   readonly pincode: string;
   readonly area: string;
   readonly city: string;
@@ -82,7 +82,7 @@ export interface AreaPincode {
 }
 
 /** One pincode's two columns, as ops send them, and a new name for its area if they gave one. */
-export interface AreaChange {
+interface AreaChange {
   readonly pincode: string;
   readonly served: boolean;
   readonly launch_on: string | null;
@@ -109,12 +109,12 @@ export async function serviceArea(db: D1Database): Promise<AreaPincode[]> {
 }
 
 /** Why a change cannot be made. */
-export type AreaRefusal =
+type AreaRefusal =
   | { readonly kind: "unknown"; readonly pincodes: readonly string[] }
   | { readonly kind: "launch_in_future"; readonly pincodes: readonly string[] }
   | { readonly kind: "empty_area" };
 
-export interface AreaResult {
+interface AreaResult {
   /** The pincodes this actually altered: served, launch date or name. */
   readonly changed: readonly AreaChange[];
   readonly served: number;
@@ -254,14 +254,14 @@ function setAudit(
 }
 
 /** A pincode ops add: its number, what messages call its area, and the city it is in. */
-export interface NewPincode {
+interface NewPincode {
   readonly pincode: string;
   readonly area: string;
   readonly city: string;
 }
 
 /** Why a pincode cannot be added: we hold it already, or its city is not one of ours. */
-export type AddRefusal = "held" | "unknown_city";
+type AddRefusal = "held" | "unknown_city";
 
 /**
  * Adds a pincode the reference file does not hold, unserved, with the name ops gave its area, in one batch with its

@@ -33,7 +33,7 @@ export const slotsFor = (units: number): number => units / 2;
  * unexpired holds start in, and whether he is away. A visit being moved is left
  * out of its own day, as `occupancy` does with `exceptVisitId`.
  */
-export interface TechnicianDay {
+interface TechnicianDay {
   readonly windows: ReadonlySet<BookingWindow>;
   readonly onLeave: boolean;
 }
@@ -103,7 +103,7 @@ export function targetTime(
  */
 export type MoveRefusal = Exclude<TargetTime, "ahead"> | "on_leave" | "clash" | "does_not_fit" | "blackout";
 
-export interface MoveCheck {
+interface MoveCheck {
   readonly time: TargetTime;
   /** Whether the visit has room in the window, at a start still ahead (src/domain/scheduling.ts). */
   readonly fits: boolean;

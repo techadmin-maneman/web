@@ -54,7 +54,7 @@ import { storedOutcomeOf } from "./job-event-bodies.ts";
 /** The statuses of a job in the list: still live, or closed today so the technician can see what he did. */
 const SHOWN = ["scheduled", "dispatched", "in_progress", "completed", "terminated"] as const;
 
-export interface JobSummary {
+interface JobSummary {
   readonly id: string;
   readonly day: JobDay;
   readonly date: string;
@@ -82,19 +82,19 @@ export interface JobSummary {
   readonly progress: JobState;
 }
 
-export interface JobState {
+interface JobState {
   readonly started_at: string | null;
   readonly outcome: string | null;
 }
 
-export interface JobClient {
+interface JobClient {
   readonly name: string;
   readonly mobile: string;
   readonly note: string | null;
 }
 
 /** The address as the client saved it, the parts ADR 0054 added included: what gets him to the right door. */
-export interface JobAddress {
+interface JobAddress {
   readonly line1: string;
   readonly line2: string | null;
   readonly building: string | null;
@@ -109,7 +109,7 @@ export interface JobAddress {
   readonly lng: number | null;
 }
 
-export interface JobProgress extends JobState {
+interface JobProgress extends JobState {
   readonly checked_in_at: string | null;
   /**
    * When the job may close as a no-show, from the check-in the server holds, so
@@ -123,7 +123,7 @@ export interface JobProgress extends JobState {
 }
 
 /** One of the client's pieces, as board A3's piece card and the piece step's list show it. */
-export interface CardPiece {
+interface CardPiece {
   readonly piece_code: string;
   readonly base: string | null;
   readonly supplier_lot: string | null;
@@ -136,7 +136,7 @@ export interface CardPiece {
 }
 
 /** The client's visit before this one that has after photographs: board A3's "Last visit, after. 22 Aug, Imran." */
-export interface LastVisit {
+interface LastVisit {
   /** YYYY-MM-DD, in India. */
   readonly date: string;
   /** The first name of the technician who did it. */
@@ -144,7 +144,7 @@ export interface LastVisit {
   readonly photo_url: string;
 }
 
-export interface JobDetail extends JobSummary {
+interface JobDetail extends JobSummary {
   /** Null while the job is locked. */
   readonly address: JobAddress | null;
   readonly access_notes: string | null;
@@ -177,7 +177,7 @@ export interface JobDetail extends JobSummary {
 }
 
 /** A one visit's discount code, and who gave it: the client as they booked, ops, or the technician. */
-export interface JobCode {
+interface JobCode {
   readonly code: string;
   readonly given_by: VisitCode["givenBy"];
 }
@@ -189,13 +189,13 @@ interface JobService {
 }
 
 /** A product the client may choose at a one visit: a first fit's service, by its tier and its name. */
-export interface Product {
+interface Product {
   readonly tier: string;
   readonly name: string;
 }
 
 /** The payment link a one visit sent: its address, once Razorpay made it, and whether it is paid. */
-export interface JobPaymentLink {
+interface JobPaymentLink {
   readonly url: string | null;
   readonly paid: boolean;
 }

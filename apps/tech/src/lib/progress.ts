@@ -38,7 +38,7 @@ export function nextStep(job: Job, queued: readonly Queued[]): InJobStep | null 
   return stepsOf(job).find((step) => !sent.has(step)) ?? null;
 }
 
-export const started = (job: Tracked, queued: readonly Queued[]): boolean =>
+const started = (job: Tracked, queued: readonly Queued[]): boolean =>
   job.progress.started_at !== null ||
   queued.some((event) => event.job_id === job.id && event.kind === "start" && event.state === "waiting");
 export const checkedIn = (job: Job, queued: readonly Queued[]): boolean => done(job, queued).has("check_in");
@@ -108,7 +108,7 @@ export function rowState(job: JobSummary, queued: readonly Queued[], heard: JobS
 }
 
 /** Whether ops changed this job under the phone: a write of its came back superseded. */
-export const changedUnder = (jobId: string, queued: readonly Queued[]): boolean =>
+const changedUnder = (jobId: string, queued: readonly Queued[]): boolean =>
   queued.some((event) => event.job_id === jobId && event.state === "superseded");
 
 /**
@@ -133,7 +133,7 @@ export function stageOf(job: Job, queued: readonly Queued[], today: string): Sta
   return "door";
 }
 
-export interface Wait {
+interface Wait {
   /** When the no-show wait ends, in milliseconds; null before any check-in. */
   readonly endsAt: number | null;
   /**

@@ -1,5 +1,6 @@
 // Who may log in to the technician app, and the phone he logs in on
-// (src/policy/technician-login.ts, docs/decisions/0029-sessions.md).
+// (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the
+// designs"; docs/decisions/0029-sessions.md).
 //
 // The code is the client's: same table, same ten minutes, same five wrong
 // attempts (docs/decisions/0030-one-time-codes.md). What differs is the
@@ -12,7 +13,7 @@ import { auditStatement, type AuditEntry } from "./audit.ts";
 import { checkLoginCode } from "./one-time-codes.ts";
 import { newSessionToken, SESSION_TTL_MS } from "./sessions.ts";
 
-export interface FieldTechnician {
+interface FieldTechnician {
   readonly id: string;
   readonly name: string;
   readonly mobileE164: string;
@@ -32,7 +33,7 @@ export async function findFieldTechnician(db: D1Database, mobileE164: string): P
   return row === null ? null : { id: row.id, name: row.name, mobileE164 };
 }
 
-export type TechnicianVerification =
+type TechnicianVerification =
   | { readonly outcome: "verified"; readonly technicianId: string }
   | { readonly outcome: "mismatch"; readonly attemptsLeft: number }
   | { readonly outcome: "closed" };
@@ -47,7 +48,7 @@ export async function verifyTechnicianCode(
 }
 
 /** The phone a technician works from, as the technician_devices row holds it. */
-export interface TechnicianDevice {
+interface TechnicianDevice {
   readonly id: string;
   readonly technicianId: string;
   readonly deviceId: string;
@@ -55,7 +56,7 @@ export interface TechnicianDevice {
 }
 
 /** A session's phone, and whether its technician is still switched on. */
-export interface SessionDevice extends TechnicianDevice {
+interface SessionDevice extends TechnicianDevice {
   readonly technicianActive: boolean;
 }
 
@@ -101,7 +102,7 @@ export async function openTechnicianSession(
 }
 
 /** A technician and the phone he is signed in on, for GET /api/tech/me. */
-export interface SignedInTechnician {
+interface SignedInTechnician {
   readonly name: string;
   readonly deviceId: string;
   readonly label: string | null;
@@ -226,7 +227,7 @@ export async function markWiped(db: D1Database, deviceRowId: string, now: Date):
     .run();
 }
 
-export interface Device {
+interface Device {
   readonly device_id: string;
   readonly label: string | null;
   readonly last_seen_at: string;

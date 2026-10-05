@@ -43,7 +43,7 @@ export async function hadLookSince(db: D1Database, mobileE164: string, since: Da
   return row !== null;
 }
 
-export interface NewClaim {
+interface NewClaim {
   readonly job: JobRow;
   readonly mobileE164: string;
   readonly name: string;

@@ -7,8 +7,7 @@
 import { COPY_LONG_EDGE_PX, MAX_COPY_BYTES, MAX_SIDE_PX, MAX_UPLOAD_BYTES, MIN_SIDE_PX } from "../config/tryon.ts";
 import { inspectImage, type ImageType } from "../lib/image-bytes.ts";
 
-export type PhotoCheck =
-  { readonly ok: true; readonly type: ImageType } | { readonly ok: false; readonly problem: string };
+type PhotoCheck = { readonly ok: true; readonly type: ImageType } | { readonly ok: false; readonly problem: string };
 
 interface Limits {
   readonly name: string;

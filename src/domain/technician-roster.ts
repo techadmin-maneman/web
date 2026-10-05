@@ -65,7 +65,7 @@ export async function rosterTechnician(db: D1Database, id: string): Promise<Rost
 /** Whether another active technician signs in with this number. */
 const NUMBER_TAKEN = "EXISTS (SELECT 1 FROM technicians WHERE mobile_e164 = ?2 AND active = 1 AND id <> ?1)";
 
-export interface NewTechnician {
+interface NewTechnician {
   readonly id: string;
   readonly name: string;
   readonly mobileE164: string;
@@ -102,7 +102,7 @@ export async function addTechnician(
 }
 
 /** What ops change of a technician; a field left out is kept. */
-export interface TechnicianChange {
+interface TechnicianChange {
   readonly name?: string;
   readonly mobileE164?: string;
   readonly zone?: string | null;
@@ -143,7 +143,7 @@ async function numberTaken(db: D1Database, technicianId: string, mobileE164: str
 }
 
 /** A visit a technician switched off no longer holds, as the console lists it. */
-export interface ReturnedVisit {
+interface ReturnedVisit {
   readonly appointment_id: string;
   readonly starts_at: string;
   readonly type: VisitType | null;

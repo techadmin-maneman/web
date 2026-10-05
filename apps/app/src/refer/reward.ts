@@ -7,7 +7,7 @@
 
 import type { Me, Refer } from "../api.ts";
 
-export type Reward = Me["referral_reward"];
+type Reward = Me["referral_reward"];
 
 /** The reward the Home card carries, or null where it carries none. */
 export function rewardOf(me: Partial<Pick<Me, "referral_reward">>): Reward | null {

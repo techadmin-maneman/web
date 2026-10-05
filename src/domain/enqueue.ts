@@ -16,7 +16,7 @@ export type IfLost =
   /** Nothing would: ops are told, once, what to do by hand. */
   | { readonly alertOnce: AlertOnce; readonly alert: RaisedAlert };
 
-export interface EnqueueOptions {
+interface EnqueueOptions {
   readonly log: Logger;
   readonly ifLost: IfLost;
 }

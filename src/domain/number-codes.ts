@@ -32,7 +32,7 @@ export async function createNumberCode(
   return id;
 }
 
-export type NumberCodeCheck =
+type NumberCodeCheck =
   | { readonly outcome: "verified" }
   | { readonly outcome: "mismatch"; readonly attemptsLeft: number }
   | { readonly outcome: "closed" };

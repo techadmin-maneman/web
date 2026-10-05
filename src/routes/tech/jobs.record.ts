@@ -79,7 +79,7 @@ export async function isReplay(c: Ctx, job: WorkableJob): Promise<boolean> {
 }
 
 /** What landing an event came to: the write, or the 409 the route answers. */
-export type StepResult =
+type StepResult =
   | { readonly ok: true; readonly accepted: z.infer<typeof AcceptedSchema> }
   | {
       readonly ok: false;
@@ -157,7 +157,7 @@ export async function writeOf(
 }
 
 /** Records one event, and the step's work, in one batch. */
-export async function recordStep(
+async function recordStep(
   c: Ctx,
   job: WorkableJob,
   kind: JobEventKind,
@@ -168,7 +168,7 @@ export async function recordStep(
   return resultOf(c, write, landing);
 }
 
-export type Refusal = Exclude<Landing, { kind: "landed" }>;
+type Refusal = Exclude<Landing, { kind: "landed" }>;
 
 /** The 409 of a write that may not land. */
 export function refusedOf(c: Ctx, write: EventInput, refusal: Refusal): Extract<StepResult, { ok: false }> {
@@ -191,7 +191,7 @@ export async function resultOf(c: Ctx, write: EventInput, landing: Landing): Pro
   return { ok: true, accepted: await acceptedOf(c, write.job, landing.event, landing.replayed) };
 }
 
-export async function acceptedOf(
+async function acceptedOf(
   c: Ctx,
   job: WorkableJob,
   event: JobEvent,

@@ -203,7 +203,7 @@ export interface Settings {
  * allowance however many days run at it. Expected use is about ten a day
  * (docs/decisions/0054-address-capture.md).
  */
-export const GEOCODE_CEILING_MAX = 1_800;
+const GEOCODE_CEILING_MAX = 1_800;
 
 /**
  * Cloudflare's published Turnstile test secrets. Any of them in production

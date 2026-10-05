@@ -7,7 +7,7 @@ import type { InHand } from "./Grid.tsx";
 import { WINDOWS, type Target } from "./job.ts";
 
 /** As the server answered; "unknown" if it could not, and every window is offered. */
-export type Rooms =
+type Rooms =
   | { readonly state: "checking" }
   | { readonly state: "known"; readonly rooms: readonly Room[]; readonly blackouts: readonly string[] }
   | { readonly state: "unknown" };

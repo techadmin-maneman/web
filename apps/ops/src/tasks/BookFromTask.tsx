@@ -29,7 +29,7 @@ function consultationAsked(detail: readonly string[]): Prefill {
 }
 
 /** What the booking starts from, by the task's group and the one fact it holds; null for a group not done so. */
-export function prefillOf(group: Group, detail: string | null): Prefill | null {
+function prefillOf(group: Group, detail: string | null): Prefill | null {
   const parts = detail?.split(" ") ?? [];
   if (group === "consultation_request") return consultationAsked(parts);
   if (group === "first_fit_to_book") {

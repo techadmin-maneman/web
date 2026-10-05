@@ -23,7 +23,7 @@ export const STANDARD_TIER = "standard";
 
 /** The kinds with a standard service: every kind but the first fit. */
 const STANDARD_KINDS = ["consultation", "service", "replacement"] as const satisfies readonly VisitType[];
-export type StandardKind = (typeof STANDARD_KINDS)[number];
+type StandardKind = (typeof STANDARD_KINDS)[number];
 
 /** Whether a booking of this kind that names no service is for the kind's standard one. */
 export const hasStandardService = (kind: VisitType): kind is StandardKind =>

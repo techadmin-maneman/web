@@ -122,7 +122,7 @@ export const tabs = [
 /** The three windows a visit is booked in (design/phase2/Client App, the windows data). */
 export const WINDOW_NAMES = { morning: "Morning", afternoon: "Afternoon", evening: "Evening" } as const;
 export const WINDOW_HOURS = { morning: "9 am to 12 pm", afternoon: "12 to 4 pm", evening: "4 to 8 pm" } as const;
-export type WindowLabel = keyof typeof WINDOW_NAMES;
+type WindowLabel = keyof typeof WINDOW_NAMES;
 
 /** "Afternoon, 12 to 4 pm", as a visit's card gives its window. */
 export const windowText = (label: WindowLabel) => `${WINDOW_NAMES[label]}, ${WINDOW_HOURS[label]}`;

@@ -21,7 +21,7 @@ const SHRINK = 0.85;
 const SMALLEST_SIDE = 220;
 
 /** The file is not an image the browser can read, or it is too small for the API. */
-export class PhotoRejected extends Error {}
+class PhotoRejected extends Error {}
 
 export interface PreparedPhoto {
   readonly blob: Blob;
@@ -31,7 +31,7 @@ export interface PreparedPhoto {
 }
 
 /** The size that fits within `max` on the longer side, keeping the shape. */
-export function fitWithin(width: number, height: number, max: number): { width: number; height: number } {
+function fitWithin(width: number, height: number, max: number): { width: number; height: number } {
   const scale = Math.min(1, max / Math.max(width, height));
   return { width: Math.round(width * scale), height: Math.round(height * scale) };
 }

@@ -118,7 +118,7 @@ type Success<O extends Outcome> = Extract<O, { readonly ok: true }>;
 const succeeded = <O extends Outcome>(outcome: O): outcome is Success<O> => outcome.ok;
 
 /** What a keyed request came to. */
-export type KeyedRun<O extends Outcome> =
+type KeyedRun<O extends Outcome> =
   /** The key was used before for this same request: its first success, to answer again. */
   | { readonly kind: "replay"; readonly body: Success<O>["body"] }
   /** The first request with this key is still running. */

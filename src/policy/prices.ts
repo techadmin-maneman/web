@@ -4,9 +4,9 @@
 
 import { addDays } from "../lib/india-time.ts";
 
-export const RULES = [
-  "Shown ex-GST as the main figure, with the GST-inclusive amount beside it. Prices come from a price book (below), never from design strings.",
-] as const;
+// Its rules, as the brief states them:
+// - Shown ex-GST as the main figure, with the GST-inclusive amount beside it. Prices come from a price book (below),
+//   never from design strings.
 
 /** The first day a new price can apply from: tomorrow, so a price a client was quoted today never moves under them. */
 export const firstPriceDay = (today: string): string => addDays(today, 1);

@@ -23,12 +23,12 @@ import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { offeredAmong, servicesOnDay, type PricedService, type ServiceOnDay } from "./services.ts";
 
 /** How many items one pass may make or write over. Each is a call from the cron run's budget; the rest wait. */
-export const ITEM_WRITES_A_PASS = 5;
+const ITEM_WRITES_A_PASS = 5;
 
 /** Where ops set a service's name and price. */
 const PRICES_LINK = "/settings/prices";
 
-export interface BooksItemsDeps {
+interface BooksItemsDeps {
   readonly books: BooksProvider;
   readonly alertOnce: AlertOnce;
   readonly resolveAlert: ResolveAlert;
@@ -44,7 +44,7 @@ export interface BooksItemsOptions {
 }
 
 /** What one check found: the services whose item still differs, as kind/tier, and how many items it wrote. */
-export interface ItemsCheck {
+interface ItemsCheck {
   readonly differs: string[];
   readonly written: number;
 }

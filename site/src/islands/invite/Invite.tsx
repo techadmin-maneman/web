@@ -37,7 +37,7 @@ import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
 import { PincodePanel } from "./PincodePanel.tsx";
 import { Prices } from "./Prices.tsx";
-import { previewNamed, SAMPLE, sampleBooking } from "./preview.ts";
+import { usePreview } from "./preview.ts";
 import { usePincode } from "./usePincode.ts";
 import { useLandingData } from "./useLandingData.ts";
 import { Waitlist } from "./Waitlist.tsx";
@@ -88,27 +88,17 @@ export default function Invite(props: Props) {
   const credits = invited && invite?.state === "valid";
   const unknown = invited && invite?.state === "unknown";
 
-  useEffect(() => {
-    if (!props.allowStateSwitch) return;
-    const found = previewNamed(new URLSearchParams(location.search).get("state"));
-    if (found === undefined || found === "arrival") return;
-    if (found === "served") pincode.setAnswer(SAMPLE.served);
-    if (found === "unserved") pincode.setAnswer(SAMPLE.unserved);
-    if (found === "booked" || found === "requested" || found === "expired") {
-      setBooked(sampleBooking(found));
+  usePreview(props.allowStateSwitch, (preview) => {
+    if (preview.kind === "answer") pincode.setAnswer(preview.answer);
+    if (preview.kind === "booked") {
+      setBooked(preview.booking);
       setState("booked");
     }
-    if (found === "listed") {
-      setListed({
-        area: SAMPLE.unserved.area,
-        credits: true,
-        invite: "valid",
-        pincode: SAMPLE.unserved.pincode,
-        alerted: true,
-      });
+    if (preview.kind === "listed") {
+      setListed(preview.listing);
       setState("listed");
     }
-  }, [props.allowStateSwitch]);
+  });
 
   useEffect(() => {
     startAtPincode();

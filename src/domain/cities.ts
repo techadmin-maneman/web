@@ -1,4 +1,4 @@
-export interface City {
+interface City {
   readonly name: string;
   readonly served: boolean;
 }

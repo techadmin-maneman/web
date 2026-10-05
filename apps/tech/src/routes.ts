@@ -8,7 +8,7 @@
 
 import type { paths } from "./api-schema.ts";
 
-export interface TechRoute {
+interface TechRoute {
   readonly method: "GET" | "POST" | "PUT";
   /** The path under the technician host's /api, as the OpenAPI document writes it. */
   readonly path: string;

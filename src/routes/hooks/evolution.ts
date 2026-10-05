@@ -56,7 +56,7 @@ const MessageSchema = z.object({
 const MessagesSchema = z.object({ data: z.union([MessageSchema, z.array(MessageSchema)]).optional() });
 type Message = z.infer<typeof MessageSchema>;
 
-export const evolutionHookRoute = createRoute({
+const evolutionHookRoute = createRoute({
   method: "post",
   path: "/api/hooks/evolution/{token}",
   summary:

@@ -38,7 +38,7 @@ import { customerFor, updateCustomerOf } from "./books-customers.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 
 /** How many of each a pass handles at most. */
-export const PER_PASS = 5;
+const PER_PASS = 5;
 export const RECHECK_AFTER_MS = HOUR_MS;
 /** Outside calls one record may cost: Books' look for it, Books' record, and the alert it may send. */
 export const CALLS_PER_RECORD = 3;
@@ -53,7 +53,7 @@ export interface BooksSyncOptions {
   readonly gst: GstRegistration;
 }
 
-export interface BooksSyncDeps {
+interface BooksSyncDeps {
   readonly books: BooksProvider;
   readonly alertOnce: AlertOnce;
   readonly resolveAlert: ResolveAlert;

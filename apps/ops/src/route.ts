@@ -17,7 +17,7 @@ import { areas, clients, settings, shell, technicians } from "./content.ts";
 import type { Department } from "./settings/grants.ts";
 
 /** The router the apps share (packages/ui/router.tsx): the console's pages take it from here. */
-export { followsHere, go, redirect, usePath, type Click } from "@maneman/ui/router";
+export { followsHere, redirect, usePath } from "@maneman/ui/router";
 
 interface SectionShape {
   readonly page: string;
@@ -106,7 +106,7 @@ const MOVED: Readonly<Record<string, string>> = {
 };
 
 /** Where a page that has moved is now; null for a path that has not moved. */
-export function movedTo(path: string): string | null {
+function movedTo(path: string): string | null {
   if (!Object.hasOwn(MOVED, path)) return null;
   return MOVED[path] ?? null;
 }
@@ -126,7 +126,7 @@ const WITH_TABS: readonly Page[] = ["areas", "clients", "settings", "technicians
 const isPlain = (page: Page): page is PlainPage => !WITH_TABS.includes(page);
 
 /** The page a path names, or null for a path the console has no page at. */
-export function knownRoute(asked: string): Route | null {
+function knownRoute(asked: string): Route | null {
   const path = movedTo(asked) ?? asked;
   const client = CLIENT_PATH.exec(path);
   if (client !== null) return { page: "clients", clientId: client[1] ?? null, tab: clientTabOf(client[2]) };
@@ -160,7 +160,7 @@ export const technicianPath = (technicianId: string, tab: TechnicianTab = TECHNI
  * What a link to the dispatch board asks it to open on: the week from a day, a city, a search narrowing its rows,
  * and a visit whose drawer opens. Null, or an empty search, for this week, every city, every row and no drawer.
  */
-export interface DispatchAsked {
+interface DispatchAsked {
   readonly from: string | null;
   readonly city: string | null;
   readonly find: string;

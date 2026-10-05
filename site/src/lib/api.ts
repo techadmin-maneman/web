@@ -12,14 +12,14 @@ type Body<P extends keyof paths> = paths[P]["post"] extends {
   : never;
 export type Attribution = Schemas["Attribution"];
 export type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
-export type UploadUrlRequest = Schemas["UploadUrlRequest"];
-export type UploadUrlResponse = Schemas["UploadUrlResponse"];
+type UploadUrlRequest = Schemas["UploadUrlRequest"];
+type UploadUrlResponse = Schemas["UploadUrlResponse"];
 export type GenerateRequest = Schemas["GenerateRequest"];
 export type JobStatus = Schemas["JobStatus"];
-export type ClaimRequest = Schemas["ClaimRequest"];
-export type ClaimResponse = Schemas["ClaimResponse"];
-export type TryOnAvailability = Schemas["TryOnAvailability"];
-export type Look = Schemas["Look"];
+type ClaimRequest = Schemas["ClaimRequest"];
+type ClaimResponse = Schemas["ClaimResponse"];
+type TryOnAvailability = Schemas["TryOnAvailability"];
+type Look = Schemas["Look"];
 export type Invite = Schemas["Invite"];
 export type PincodeAnswer = Schemas["PincodeAnswer"];
 export type OpenWindows = Schemas["OpenWindows"];
@@ -28,16 +28,16 @@ export type ReferralReward = Schemas["ReferralReward"];
 export type ReferralConsultation = Schemas["ReferralConsultation"];
 export type ReferralWaitlist = Schemas["ReferralWaitlist"];
 export type Consultation = Schemas["Consultation"];
-export type Waitlist = Schemas["Waitlist"];
+type Waitlist = Schemas["Waitlist"];
 export type TypedAddress = Schemas["TypedAddress"];
-export type NumberCodeRequest = Schemas["NumberCodeRequest"];
+type NumberCodeRequest = Schemas["NumberCodeRequest"];
 export type NumberCode = Schemas["NumberCode"];
 export type NumberCodeVerify = Schemas["NumberCodeVerify"];
 export type StoppedMessages = Schemas["StoppedMessages"];
-export type PublicConsultationRequest = Body<"/api/consultation">;
-export type PublicWaitlistRequest = Body<"/api/waitlist">;
-export type ConsultationRequest = Body<"/api/r/{code}/consultation">;
-export type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
+type PublicConsultationRequest = Body<"/api/consultation">;
+type PublicWaitlistRequest = Body<"/api/waitlist">;
+type ConsultationRequest = Body<"/api/r/{code}/consultation">;
+type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
 
 /**
  * How long a poll waits for its answer. A request stuck on the way is dropped,

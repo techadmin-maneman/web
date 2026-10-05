@@ -27,7 +27,7 @@ import { codeOnVisit, priceAfterCode } from "./discount-code-uses.ts";
 import { priceOf, type Price } from "./price-book.ts";
 
 /** How many a pass bills at most. */
-export const PER_PASS = 5;
+const PER_PASS = 5;
 export const RECHECK_AFTER_MS = HOUR_MS;
 /**
  * Outside calls one visit may cost: the invoice kept on it, the look for one under our reference, the client's
@@ -40,9 +40,9 @@ const DRAFT_ALERT_AFTER_MS = HOUR_MS;
 const FAILURES_BEFORE_ALERT = 3;
 
 /** How many invoices this pass raised, and how many became documents the client may see. */
-export type InvoiceSummary = { raised: number; issued: number };
+type InvoiceSummary = { raised: number; issued: number };
 
-export interface BooksInvoiceDeps {
+interface BooksInvoiceDeps {
   readonly books: BooksProvider;
   readonly alertOnce: AlertOnce;
   readonly resolveAlert: ResolveAlert;
@@ -54,7 +54,7 @@ export interface BooksInvoiceOptions {
 }
 
 /** A visit as its figures are worked out: what it was, of which service, and when. */
-export interface PricedVisit {
+interface PricedVisit {
   readonly id: string;
   readonly type: VisitType | null;
   /** Its service's tier; null where none is known, which is the standard tier's. */
@@ -274,7 +274,7 @@ async function keepInvoice(pass: Pass, appointmentId: string, invoiceId: string)
  * What the visit's discount code takes off before GST, fixed now where it was not yet; null for a visit with no code,
  * or one whose price the book does not have, which the check then holds.
  */
-export async function codeOff(
+async function codeOff(
   db: D1Database,
   visitId: string,
   price: Price | null,
@@ -293,7 +293,7 @@ export async function codeOff(
  * price on the day it happened, less the discount code entered on it. And whether a referral credit paid for it, by
  * the ledger or by the hold that booked it.
  */
-export async function soldVisit(db: D1Database, visit: PricedVisit, off: number): Promise<SoldVisit> {
+async function soldVisit(db: D1Database, visit: PricedVisit, off: number): Promise<SoldVisit> {
   const row = await db
     .prepare(
       `SELECT
@@ -312,7 +312,7 @@ export async function soldVisit(db: D1Database, visit: PricedVisit, off: number)
 }
 
 /** The price book's price for the visit's own service on the day it happened in India; null where there is none. */
-export function listPrice(db: D1Database, visit: PricedVisit): Promise<Price | null> {
+function listPrice(db: D1Database, visit: PricedVisit): Promise<Price | null> {
   if (visit.type === null || visit.window_start === null) return Promise.resolve(null);
   return priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? STANDARD_TIER);
 }

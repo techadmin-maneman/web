@@ -24,8 +24,8 @@ export const DATABASE = "mm-tech";
 /** The one cache the service worker keeps an API answer in, wiped with the database. */
 export const DAY_CACHE = "mm-tech-day";
 
-export const STORES = ["device", "days", "cards", "arrivals", "closures", "starts", "outbox", "frames"] as const;
-export type StoreName = (typeof STORES)[number] & keyof Records;
+const STORES = ["device", "days", "cards", "arrivals", "closures", "starts", "outbox", "frames"] as const;
+type StoreName = (typeof STORES)[number] & keyof Records;
 
 const VERSION = UPGRADES.length;
 

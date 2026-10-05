@@ -42,7 +42,7 @@ The words the code, the database and the API use for the same few things, and wh
 | Word           | Means                                                                                                                                                                                   |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **person**     | Anyone we hold a number for: a row in `people`. The code's word for the row.                                                                                                            |
-| **client**     | A person who may sign in to the app: one with a booked consultation or a later visit (`src/policy/login.ts`). Fitted, a lead or nothing booked (`clientStateOf`).                       |
+| **client**     | A person who may sign in to the app: one with a booked consultation or a later visit (`src/domain/login.ts`). Fitted, a lead or nothing booked (`clientStateOf`).                       |
 | **lead**       | Two meanings: a row in `leads`, what a form or a try-on left, which reaches the CRM; and, as a client's state, a person booked but not yet fitted. The CRM's own record is also a Lead. |
 | **customer**   | The person's record in Books, where invoices and payments are (`books_customer_id`). Books' word, never ours.                                                                           |
 | **technician** | A field technician ops add in the console's Technicians, in `technicians`. He signs in on one phone at a time (ADR 0052).                                                               |

@@ -1,24 +1,42 @@
-// Dead code in mm-api (npm run check:dead): a file nothing imports, or an export nothing uses, not even its own
-// file. The Worker's entries are src/index.ts and the OpenAPI generator; scripts and tests reach into src too.
-// Each src/policy module is an entry of its own: its RULES, the brief's words, may be read by its tests alone.
-// The apps, the site and the packages are not checked here.
+// Dead code (npm run check:dead): a file nothing imports, or an export nothing outside its own file uses, in the
+// Worker, the scripts, the site, the apps and the shared packages.
+//
+// The Worker's entries are src/index.ts, found from wrangler.jsonc, and the OpenAPI generator; the site's are its
+// pages and its Worker; each app's are its page, found from its Vite config, and its service worker; a package's
+// are what its package.json exports. The scripts, the tests and the browser tests reach into all of them, so an
+// export they alone use counts as used: some exist for the tests, and a policy module's RULES for its test to read.
+// The `!` marks what ships, for knip --production, which this check does not run.
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "workspaces": {
     ".": {
       "entry": [
-        "src/index.ts",
-        "src/openapi.ts",
-        "src/policy/*.ts",
+        "src/openapi.ts!",
+        "site/src/pages/**/*.{astro,ts}!",
+        "site/src/worker.ts!",
+        "site/astro.config.ts",
         "scripts/**/*.ts",
         "test/**/*.ts",
         "e2e/**/*.ts",
-        "vitest.config.ts",
+        "vitest*.config.ts",
         "playwright*.config.ts"
       ],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts!", "site/src/**/*.{ts,tsx,astro}!", "scripts/**/*.ts"],
+      "ignore": ["site/src/lib/api-schema.ts"]
+    },
+    "apps/{app,tech}": {
+      "entry": ["sw/sw.ts!"],
+      "project": ["src/**/*.{ts,tsx}!", "sw/**/*.ts!"],
+      "ignore": ["src/api-schema.ts"]
+    },
+    "apps/ops": {
+      "project": ["src/**/*.{ts,tsx}!"],
+      "ignore": ["src/api-schema.ts"]
+    },
+    "packages/*": {
+      "project": ["**/*.{ts,tsx}!"]
     }
   },
   "include": ["exports", "types", "files"],
-  "ignoreExportsUsedInFile": true
+  "ignoreExportsUsedInFile": false
 }

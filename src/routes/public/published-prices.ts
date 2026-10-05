@@ -46,7 +46,7 @@ const PublishedPricesSchema = z
   .strict()
   .openapi("PublishedPrices");
 
-export const publishedPricesRoute = createRoute({
+const publishedPricesRoute = createRoute({
   method: "get",
   path: "/api/published-prices",
   summary: "The prices the site publishes, from the price book, in force today. Cacheable for a minute.",

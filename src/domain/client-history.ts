@@ -16,7 +16,7 @@
 import { indiaDate } from "../lib/india-time.ts";
 
 /** When the piece now in wear falls due, and which piece it is. */
-export interface ReplacementDue {
+interface ReplacementDue {
   /** YYYY-MM-DD, as the piece's row holds it: the date ops order a piece against. */
   readonly on: string;
   /**
@@ -27,7 +27,7 @@ export interface ReplacementDue {
   readonly piece_code: string;
 }
 
-export interface ClientHistory {
+interface ClientHistory {
   /** Every visit done, of whatever kind. */
   readonly visits: number;
   readonly services: number;

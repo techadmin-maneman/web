@@ -85,7 +85,7 @@ export function claimsOf(start: number, units: number, window: BookingWindow): s
 }
 
 /** A visit already booked: its kind, its service's length where the table has it, its times. */
-export interface BookedVisit {
+interface BookedVisit {
   readonly type: VisitType | null;
   /** The length of the service it is, from the services table; null where no service is it. */
   readonly service_minutes: number | null;
@@ -320,14 +320,14 @@ export async function liveVisitOf(
   return paid === null ? null : { date: paid.date, window: paid.window_label };
 }
 
-export interface WindowOffer {
+interface WindowOffer {
   readonly window: BookingWindow;
   /** Who would come: the client's regular technician, another, or nobody (the window is full). */
   readonly with: "regular" | "another" | null;
 }
 
 /** A window of a day, and the technicians free to take the visit in it, the client's regular technician first. */
-export interface WindowTechnicians {
+interface WindowTechnicians {
   readonly window: BookingWindow;
   readonly technicians: Technician[];
 }

@@ -56,7 +56,7 @@ export interface HairProfile {
   readonly history: History | null;
 }
 
-export interface HairProfileVersion extends HairProfile {
+interface HairProfileVersion extends HairProfile {
   readonly recorded_by:
     { readonly kind: "technician"; readonly name: string | null } | { readonly kind: "ops"; readonly staff: string };
   /** The visit it was taken at, its day in India; null for a correction. */
@@ -64,7 +64,7 @@ export interface HairProfileVersion extends HairProfile {
 }
 
 /** What the technician's write came to: the version recorded, or had been, or the fields it was refused for. */
-export type VisitWrite =
+type VisitWrite =
   | {
       readonly kind: "recorded";
       readonly replayed: boolean;
@@ -75,7 +75,7 @@ export type VisitWrite =
   | { readonly kind: "invalid"; readonly fields: string[] };
 
 /** What ops' correction came to: recorded, refused by its fields, or the latest moved on since the form was read. */
-export type Correction =
+type Correction =
   { readonly kind: "recorded" } | { readonly kind: "invalid"; readonly fields: string[] } | { readonly kind: "moved" };
 
 /** The fit spec's columns, in the order the table and the API name them. */

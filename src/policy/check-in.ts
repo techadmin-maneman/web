@@ -43,7 +43,7 @@ export function distanceMetres(from: Point, to: Point): number {
   return Math.round(2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(half))));
 }
 
-export interface CheckIn {
+interface CheckIn {
   readonly distanceM: number;
   readonly radiusM: number;
   readonly passed: boolean;

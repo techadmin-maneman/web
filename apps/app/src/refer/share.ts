@@ -8,7 +8,7 @@
 // (ShareSheet.tsx); these only decide what the tap sends.
 
 /** The name the card is sent under, so a friend who saves it has a file that says what it is. */
-export const INVITE_FILE = "mane-man-invite.jpg";
+const INVITE_FILE = "mane-man-invite.jpg";
 
 /** The card as the file a share sheet takes. */
 export function inviteFile(card: Blob): File {

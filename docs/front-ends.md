@@ -58,7 +58,7 @@ A screen that chooses between several things says so in a function that returns 
 
 ## The client app
 
-What a client does after booking: Home, Visits, Photos, Payments, Refer and Profile (ADR 0043). Only a person with a consultation booked, or a visit since, can sign in (`src/policy/login.ts`).
+What a client does after booking: Home, Visits, Photos, Payments, Refer and Profile (ADR 0043). Only a person with a consultation booked, or a visit since, can sign in (`src/domain/login.ts`).
 
 - **Booking and paying.** A visit is held for ten minutes while the client pays through Razorpay's Checkout, whose hosts the app's policy allows (`apps/app/headers.ts`). The visit is booked once Razorpay's webhook says the money came, in that request (ADR 0110). Where `SELF_SERVE_BOOKING` is off, the API answers `ops_assisted` and the app says booking goes through ops.
 - **Installable, and open offline.** `packages/web-kit/pwa.ts` draws the manifest and icons from the brand kit, with the app's names in `apps/app/pwa.ts`; `apps/app/sw/sw.ts` keeps the app's files and the last Home it was sent, which Home shows offline (board B3).

@@ -72,7 +72,7 @@ export const EXPORT_QUERIES = {
     WHERE subject_kind = 'client' AND subject_id = ?1 ORDER BY created_at`,
 } as const;
 
-export type ExportQuery = keyof typeof EXPORT_QUERIES;
+type ExportQuery = keyof typeof EXPORT_QUERIES;
 
 /** The parts that are one row, or nothing; every other query's part is a list. */
 const ONE_ROW: readonly ExportQuery[] = ["person", "referral"];

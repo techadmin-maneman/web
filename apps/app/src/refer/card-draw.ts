@@ -13,7 +13,7 @@ import {
 } from "./card-layout.ts";
 
 /** The drawings the lockup is made of, as paths, and the box each is drawn in (packages/brand/marks.ts). */
-export interface LockupPaths {
+interface LockupPaths {
   readonly mark: Path2D;
   readonly markBox: ViewBox;
   readonly wordmark: Path2D;

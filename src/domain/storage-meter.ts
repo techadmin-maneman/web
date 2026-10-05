@@ -23,7 +23,7 @@ import type { AlertOnce } from "./alerts.ts";
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;
 
-export interface Meter {
+interface Meter {
   readonly bytes: number;
   /** The last mark ops were told of: 0 before the first. */
   readonly toldPercent: number;

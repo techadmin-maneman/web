@@ -11,7 +11,7 @@ export const RULES = [
 ] as const;
 
 /** How long an entered code keeps its number proved (RULES[1]). */
-export const PROVED_FOR_MS = 30 * MINUTE_MS;
+const PROVED_FOR_MS = 30 * MINUTE_MS;
 
 /** Whether booking this plan from the site needs the number proved (RULES[0], RULES[2]). */
 export function bookingNeedsProof(plan: Plan): boolean {

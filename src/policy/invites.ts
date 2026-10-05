@@ -5,13 +5,12 @@
 
 import { DAY_MS } from "../lib/durations.ts";
 
-export const RULES = [
-  "An invite to an unserved area stays valid config INVITE_TTL_AFTER_LAUNCH_DAYS (365) after that area goes live.",
-  "An expired invite still allows a free consultation, but carries no credits.",
-] as const;
+// Its rules, as the brief states them:
+// - An invite to an unserved area stays valid config INVITE_TTL_AFTER_LAUNCH_DAYS (365) after that area goes live.
+// - An expired invite still allows a free consultation, but carries no credits.
 
 /** How long an invite to an unserved area lasts once the area launches: 12 months, as ruled. */
-export const INVITE_TTL_AFTER_LAUNCH_DAYS = 365;
+const INVITE_TTL_AFTER_LAUNCH_DAYS = 365;
 
 /** Whether an invite from a waitlist lapsed: its area launched more than the TTL before now. */
 export const inviteLapsed = (launchedAt: Date, now: Date): boolean =>

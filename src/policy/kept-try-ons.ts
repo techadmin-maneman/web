@@ -12,9 +12,8 @@
 export const RULING = "Show the before photo always, keep the generated image till the photos for first fit are taken.";
 
 /** Where a kept try-on lives, as the prompt gives the bucket for clients' photographs: what is kept stays until deleted. */
-export const RULES = [
-  "Stored in a new bucket per environment, mm-{env}-client-photos, with no lifecycle rule.",
-] as const;
+// Its rules, as the brief states them:
+// - Stored in a new bucket per environment, mm-{env}-client-photos, with no lifecycle rule.
 
 /** The photo notices that tell the visitor a client's try-on is kept. */
 export const KEEPING_NOTICES: readonly string[] = ["photo-v2", "photo-v3", "photo-v4"];

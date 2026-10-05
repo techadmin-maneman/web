@@ -13,14 +13,14 @@ import { composeCard, firstFitPhotos, type FirstFitPair } from "./card.ts";
 import { houseCard, type Shown } from "./CardPreview.tsx";
 import { forOtherApps, inviteFile } from "./share.ts";
 
-export type Step = "choice" | "consent" | "composing" | "share";
+type Step = "choice" | "consent" | "composing" | "share";
 export type Which = "mine" | "house";
 
 /**
  * A card composed in this sheet: kept as it was made, to share as a file, and shown through a link to it. The link
  * is for the image alone: the app's policy lets no request fetch it (packages/web-kit/headers.ts).
  */
-export interface Made {
+interface Made {
   readonly card: Blob;
   readonly url: string;
 }

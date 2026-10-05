@@ -6,7 +6,7 @@ import { settings } from "../content.ts";
 const copy = settings.staff;
 
 export type Department = StaffGrant["department"];
-export type Level = StaffGrant["level"];
+type Level = StaffGrant["level"];
 
 export const DEPARTMENTS: readonly Department[] = ["operations", "customer_care", "finance", "growth", "admin"];
 export const LEVELS: readonly Level[] = ["view", "act", "manage"];

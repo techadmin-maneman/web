@@ -47,7 +47,7 @@ export function blockOn(board: Pick<Board, "technicians">, appointmentId: string
 }
 
 /** The client the board writes on a block: "Rohit M.". */
-export const clientOf = (job: Job): string | null => (job.kind === "block" ? job.block.client : job.job.client);
+const clientOf = (job: Job): string | null => (job.kind === "block" ? job.block.client : job.job.client);
 
 /** The client in full, with what reaches him; none for a visit with no client, or one erased. */
 export const personOf = (job: Job): BoardClient | null => (job.kind === "block" ? job.block.person : job.job.person);

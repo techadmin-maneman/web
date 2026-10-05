@@ -18,11 +18,8 @@ import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, SUPERSEDED } from "./routes.ts";
 export {
   ALREADY_CLOSED,
   DEVICE_REVOKED,
-  EVENT_KINDS,
   OUT_OF_ORDER,
   pathFor,
-  ROUTES,
-  ROUTES_ASSUMED,
   SUPERSEDED,
   TECHNICIAN_INACTIVE,
   TOO_EARLY_TO_ARRIVE,
@@ -35,22 +32,16 @@ type Schema = components["schemas"];
 
 export type Me = Schema["TechnicianMe"];
 export type Challenge = Schema["TechnicianChallenge"];
-export type Verified = Schema["TechnicianVerify"];
 export type JobSummary = Schema["TechnicianJob"];
 /** A job's card. One an earlier build kept on the phone carries no check-in radius. */
 export type Job = Omit<Schema["TechnicianJobDetail"], "checkin_radius_m"> & {
   readonly checkin_radius_m: Schema["TechnicianJobDetail"]["checkin_radius_m"] | null;
 };
-export type Progress = Schema["TechnicianJobProgress"];
 /** What the day's list carries of a job's progress: when it began and how it closed. */
 export type JobState = Schema["TechnicianJobState"];
-export type Accepted = Schema["TechnicianWriteAccepted"];
 export type CheckIn = Schema["CheckIn"];
-export type NoShowClose = Schema["NoShowClose"];
 export type PieceLookup = Schema["PieceLookup"];
-export type UploadLink = Schema["TechnicianPhotoUrl"];
-export type PhotoTaken = Schema["TechnicianPhotoTaken"];
-export type Day = Schema["TechnicianJobs"];
+type PhotoTaken = Schema["TechnicianPhotoTaken"];
 /** The client's hair profile, which the profile step sends and the piece card reads (ADR 0106). */
 export type HairProfile = Schema["HairProfile"];
 export type FitSpec = Schema["HairFitSpec"];
@@ -61,9 +52,6 @@ export type PieceFitted = Schema["PieceFitted"];
 export type PieceDeclined = Schema["PieceDeclined"];
 export type OutcomeRequest = Schema["OutcomeRequest"];
 
-export type VisitType = NonNullable<JobSummary["type"]>;
-/** No amount ever reaches this app: a badge only (board A1). */
-export type Badge = JobSummary["badge"];
 export type Step = Job["steps"][number];
 export type PartialReason = Job["partial_reasons"][number];
 export type Angle = Schema["TechnicianPhotoUrlRequest"]["angle"];
@@ -80,7 +68,7 @@ export type ErrorCode = Schema["ErrorResponse"]["error"]["code"];
  */
 export type Answer<T> = Answered<T, ErrorCode>;
 
-export interface Write {
+interface Write {
   /** The UUIDv7 that makes this write idempotent, whatever it takes to arrive. */
   readonly eventId: string;
   /** The job's start as the phone held it when the write was queued; null for a write an older build queued. */

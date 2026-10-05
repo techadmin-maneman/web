@@ -18,8 +18,7 @@ const cardKey = (code: string, version: number) => `cards/${code}/v${String(vers
 const cardConsent = (db: D1Database, personId: string): Promise<boolean> =>
   consentGiven(db, personId, "photos_referral_cards");
 
-export type Stored =
-  { readonly version: number } | { readonly problem: "no_consent" | "not_photographed" | "not_a_card" };
+type Stored = { readonly version: number } | { readonly problem: "no_consent" | "not_photographed" | "not_a_card" };
 
 /** Whether the person's first fit is done and photographed: what their card is made from (ADR 0048). */
 async function firstFitPhotographed(db: D1Database, personId: string): Promise<boolean> {

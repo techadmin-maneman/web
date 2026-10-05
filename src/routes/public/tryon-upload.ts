@@ -28,7 +28,7 @@ import { KEEPING_NOTICES } from "../../policy/kept-try-ons.ts";
 import { tryOnRuns } from "../../policy/tryon-delivery.ts";
 import { signToken, verifyToken } from "../../lib/signed-token.ts";
 
-export const UploadUrlRequestSchema = z
+const UploadUrlRequestSchema = z
   .object({
     photo_consent: z.literal(true).openapi({ description: "The photo notice was agreed to." }),
     notice_version: z
@@ -41,7 +41,7 @@ export const UploadUrlRequestSchema = z
   .strict()
   .openapi("UploadUrlRequest");
 
-export const UploadUrlResponseSchema = z
+const UploadUrlResponseSchema = z
   .object({
     job_id: z.uuid(),
     upload_url: z.string().openapi({
@@ -52,7 +52,7 @@ export const UploadUrlResponseSchema = z
   .strict()
   .openapi("UploadUrlResponse");
 
-export const uploadUrlRoute = createRoute({
+const uploadUrlRoute = createRoute({
   method: "post",
   path: "/api/tryon/upload-url",
   summary: "Record the photo consent and get a link to upload one photo",
@@ -69,7 +69,7 @@ export const uploadUrlRoute = createRoute({
   },
 });
 
-export const uploadRoute = createRoute({
+const uploadRoute = createRoute({
   method: "put",
   path: "/api/tryon/upload/{job_id}",
   summary: "Upload the photo: a JPEG or PNG, at most 5 MB and 200 to 4090 px a side",
@@ -85,7 +85,7 @@ export const uploadRoute = createRoute({
   },
 });
 
-export const copyRoute = createRoute({
+const copyRoute = createRoute({
   method: "put",
   path: "/api/tryon/upload/{job_id}/copy",
   summary:

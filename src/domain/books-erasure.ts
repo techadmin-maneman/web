@@ -20,7 +20,7 @@ const CALLS_PER_CUSTOMER = 3;
 /** How long an erasure waits for the client's payments to reach Books. */
 const PAYMENT_WAIT_MS = 24 * 60 * 60 * 1000;
 
-export interface BooksErasurePass {
+interface BooksErasurePass {
   readonly books: BooksProvider;
   readonly alertOnce: AlertOnce;
   readonly log: Logger;

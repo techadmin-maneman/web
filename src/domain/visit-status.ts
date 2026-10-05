@@ -50,7 +50,7 @@ export function moveVisit(db: D1Database, appointmentId: string, step: Step, at:
 }
 
 /** When the job started and ended. A no-show was never started. */
-export interface VisitTimes {
+interface VisitTimes {
   readonly startedAt: string | null;
   readonly endedAt: string | null;
 }

@@ -14,7 +14,7 @@ import type { PlacesReached } from "../policy/access.ts";
 import { reachBinding, withinReach } from "./places.ts";
 
 /** The board's three figures, and what the third leaves out. */
-export interface DayFigures {
+interface DayFigures {
   /** In paise, captured on the day: the board's "Collected today". */
   readonly collected: number;
   /** In paise, asked for on the day and not back with the client yet: "Refunds processing". */
@@ -29,10 +29,10 @@ export interface DayFigures {
   readonly charged: number;
 }
 
-export type ChargeKind = "late_cancellation" | "no_show";
+type ChargeKind = "late_cancellation" | "no_show";
 
 /** One line of "No-shows and late cancellations": who it was, what it was, and the evidence for it. */
-export interface Charge {
+interface Charge {
   readonly id: string;
   readonly kind: ChargeKind;
   /** Null for a visit with no client of ours. */
@@ -49,7 +49,7 @@ export interface Charge {
   readonly technician: string | null;
 }
 
-export interface DayMoney extends DayFigures {
+interface DayMoney extends DayFigures {
   readonly date: string;
   readonly charges: Charge[];
 }

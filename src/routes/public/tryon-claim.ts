@@ -45,7 +45,7 @@ const AttributionSchema = z
   .strict()
   .openapi("Attribution", { description: "Where the visitor came from, as the page saw it. All optional." });
 
-export const ClaimRequestSchema = z
+const ClaimRequestSchema = z
   .object({
     job_id: z.uuid(),
     name: PersonNameSchema,
@@ -70,13 +70,13 @@ export const ClaimRequestSchema = z
   .strict()
   .openapi("ClaimRequest");
 
-export const ClaimResponseSchema = z
+const ClaimResponseSchema = z
   .object({ lead_id: z.uuid() })
   .strict()
   .openapi("ClaimResponse", { description: "Saved: the look goes to this number on WhatsApp once it is made." });
 type ClaimResponse = z.infer<typeof ClaimResponseSchema>;
 
-export const claimRoute = createRoute({
+const claimRoute = createRoute({
   method: "post",
   path: "/api/tryon/claim",
   summary: "The gate: where to send the look on WhatsApp, given before the look is made",

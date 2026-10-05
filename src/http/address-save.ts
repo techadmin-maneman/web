@@ -46,14 +46,14 @@ async function lookupFailed(
   });
 }
 
-export interface Suggestion {
+interface Suggestion {
   readonly place_id: string;
   readonly primary: string;
   readonly secondary: string;
 }
 
 /** The buildings Google suggests, or why there are none: busy, a ceiling reached; unavailable, Google failed. */
-export type Suggested =
+type Suggested =
   | { readonly ok: true; readonly suggestions: Suggestion[] }
   | { readonly ok: false; readonly code: "busy" | "unavailable" };
 

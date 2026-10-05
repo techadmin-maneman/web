@@ -4,15 +4,15 @@
 
 import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
-export const RULES = [
-  "What Book a visit in the console covers: every kind, consultation, first fit, one visit, service, replacement. A paid visit goes out as a payment link; a free or credit visit books at once.",
-] as const;
+// Its rules, as the brief states them:
+// - What Book a visit in the console covers: every kind, consultation, first fit, one visit, service, replacement. A
+//   paid visit goes out as a payment link; a free or credit visit books at once.
 
 /** The longest a link keeps the slot. PLACEHOLDER until the owner rules. */
-export const LINK_OPEN_HOURS = 24;
+const LINK_OPEN_HOURS = 24;
 
 /** A link closes this long before the visit at the latest, so the technician knows of the visit in time. PLACEHOLDER. */
-export const LINK_CLOSES_BEFORE_VISIT_HOURS = 2;
+const LINK_CLOSES_BEFORE_VISIT_HOURS = 2;
 
 /** Razorpay takes no link that closes sooner than this after it is made. */
 const SHORTEST_LINK_MINUTES = 15;

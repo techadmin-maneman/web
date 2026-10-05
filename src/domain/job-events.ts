@@ -91,7 +91,7 @@ export interface EventInput {
 }
 
 /** A write that may land, with what it records. */
-export interface LandingInput extends EventInput {
+interface LandingInput extends EventInput {
   /** What the step records (src/domain/job-record.ts), written in the event's own batch. */
   readonly records: readonly D1PreparedStatement[];
   /** Written in the event's own batch, and only if the event lands: a check-in's own row. */

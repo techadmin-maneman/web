@@ -5,7 +5,7 @@ import { shortDate } from "@maneman/web-kit/dates";
 import { WINDOW_NAMES, type VisitWindow } from "../config/booking.ts";
 import type { LeadSource } from "../providers/crm/index.ts";
 
-export interface NoticeLead {
+interface NoticeLead {
   readonly lead_id: string;
   readonly source: LeadSource;
   readonly city: string | null;

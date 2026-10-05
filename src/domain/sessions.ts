@@ -10,7 +10,7 @@ export const SESSION_TTL_MS = 90 * DAY_MS;
 /** A session's expiry moves on at most this often, so a busy app is not a write per request. */
 export const SESSION_TOUCH_MS = HOUR_MS;
 
-export type SessionKind = "client" | "technician";
+type SessionKind = "client" | "technician";
 
 export interface Session {
   readonly id: string;
@@ -109,7 +109,7 @@ export function deviceLabel(userAgent: string | undefined): string | null {
 }
 
 /** A session as its own client sees it: never the token, nor the hash the cookie is looked up by. */
-export interface SignedIn {
+interface SignedIn {
   /** The session's handle (sessionHandle). */
   readonly id: string;
   readonly device: string | null;

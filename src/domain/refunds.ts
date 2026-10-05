@@ -9,7 +9,7 @@ import { PaymentUnanswered } from "../providers/provider-error.ts";
 export const ASKS = 2;
 
 /** What a refund is for: each has one receipt, so each is made once. */
-export type RefundFor =
+type RefundFor =
   | { readonly kind: "hold"; readonly holdId: string }
   | { readonly kind: "cancel"; readonly appointmentId: string }
   | {

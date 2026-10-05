@@ -31,7 +31,7 @@ const NEEDS_A_REASON = {
   deletion: ["reject"],
 } as const;
 
-export type ReasonedQueue = keyof typeof NEEDS_A_REASON;
+type ReasonedQueue = keyof typeof NEEDS_A_REASON;
 
 /** The longest reason kept: a sentence or two, not a case file. */
 export const REASON_MAX_CHARS = 300;

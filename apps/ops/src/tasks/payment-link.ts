@@ -7,7 +7,7 @@ import { isOneOf } from "../../../../src/lib/one-of.ts";
 export const LINK_STATES = ["sent", "unsent", "refused", "closed"] as const;
 export type LinkState = (typeof LINK_STATES)[number];
 
-export interface OwedLink {
+interface OwedLink {
   readonly state: LinkState;
   /** In paise. */
   readonly amount: number;

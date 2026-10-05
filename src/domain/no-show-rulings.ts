@@ -8,7 +8,7 @@ import { CHARGE_TAKEN, chargeTaken, type ChargeColumns, type NoShowNote } from "
 import { reachBinding, withinReach } from "./places.ts";
 
 /** A case ops have ruled on, with what the ruling did. */
-export interface DecidedCase {
+interface DecidedCase {
   readonly id: string;
   /** Whose visit it was; null once they have been erased. */
   readonly person: { readonly id: string; readonly name: string } | null;

@@ -60,7 +60,7 @@ export interface OpsInputs {
 }
 
 /** What one input is at this moment, and whether anybody set it. */
-export interface SettingState {
+interface SettingState {
   readonly setting: OpsSetting;
   readonly value: SettingValue;
   /** Null while the committed default is in force. */

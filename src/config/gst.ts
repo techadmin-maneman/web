@@ -34,7 +34,7 @@ export const STATE_CODE_FORMAT = /^[A-Z]{2}$/;
 /** Services' accounting codes are six digits, e.g. 999721. */
 export const SAC_FORMAT = /^[0-9]{6}$/;
 
-export interface IndianState {
+interface IndianState {
   readonly name: string;
   /** Its GST code, as Books names a place of supply. */
   readonly code: string;

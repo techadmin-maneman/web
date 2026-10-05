@@ -16,7 +16,7 @@ import { auditStatement, type AuditActor } from "./audit.ts";
 /** The most days one press blacks out: a month, so a typed year cannot close the diary. */
 export const BLACKOUT_MAX_DAYS = 31;
 
-export interface Blackout {
+interface Blackout {
   readonly date: string;
   readonly reason: string;
   /** Null for a day written by the runbook's SQL before the console had a screen for it. */
@@ -53,7 +53,7 @@ function datesBetween(from: string, to: string): string[] {
 }
 
 /** Why a period was refused: the field that is wrong. */
-export type PeriodRefusal = "from" | "to";
+type PeriodRefusal = "from" | "to";
 
 /**
  * A period ops may offer again: from today on, and the right way round. Any length, since it only takes back days

@@ -58,7 +58,7 @@ export type ZohoClientName = "crm" | "books";
 
 const vendorOf = (name: ZohoClientName): Vendor => `zoho-${name}`;
 
-export interface ZohoClient {
+interface ZohoClient {
   readonly clientId: string;
   readonly clientSecret: string;
   readonly refreshToken: string;
@@ -311,7 +311,7 @@ function zohoCodeOf(json: unknown): string {
  * Zoho's error body, as a ZohoError: the code and message of the first record, else of the body, and the field Zoho
  * names, e.g. "Zoho 400 INVALID_DATA: invalid data (field Mobile, expected phone, at $.data[0].Mobile)".
  */
-export function zohoErrorFrom(status: number, json: unknown): ZohoError {
+function zohoErrorFrom(status: number, json: unknown): ZohoError {
   const detail = failedRecord(json);
   const message = typeof detail?.message === "string" ? detail.message : "request failed";
   const field = refusedField(detail?.details);

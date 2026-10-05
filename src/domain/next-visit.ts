@@ -68,7 +68,7 @@ export interface NextOffer {
 }
 
 /** What a client's next visit turns on, read in one statement. */
-export interface NextVisitFacts {
+interface NextVisitFacts {
   /** A visit is booked, or paid for and still to be booked. */
   readonly booked: boolean;
   readonly offer: NextOffer | null;

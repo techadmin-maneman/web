@@ -26,7 +26,7 @@ import { correct, queue, replay, type Queued } from "../store/outbox.ts";
 
 const LOADING: Loaded<Job> = { state: "loading" };
 
-export interface Standing<K extends InJobStep> {
+interface Standing<K extends InJobStep> {
   /** Loading until the outbox has been read as well, so a step being put right starts from what it sent. */
   readonly loaded: Loaded<Job>;
   readonly retry: () => void;

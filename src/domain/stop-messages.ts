@@ -18,7 +18,7 @@ const STOP_LINK_LIFETIME_MS = 365 * DAY_MS;
 const WITHDRAWAL_NOTICE = "withdrawal";
 
 /** Whose consent a stop link withdraws, and which. */
-export interface StopLinkSubject {
+interface StopLinkSubject {
   readonly personId: string;
   readonly purpose: MessagePurpose;
 }
@@ -44,7 +44,7 @@ export async function readStopToken(signingKey: string, token: string, now: Date
   return { personId, purpose };
 }
 
-export interface Withdrawal {
+interface Withdrawal {
   readonly personId: string;
   readonly purposes: readonly MessagePurpose[];
   readonly source: Extract<ConsentSource, "message_link" | "whatsapp_stop">;

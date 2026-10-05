@@ -91,7 +91,7 @@ async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
 /** Whether the client pays money for it: not a free visit, and not one a credit covers. */
 const paidInMoney = (hold: { amount: number; use_credit: number }) => hold.amount > 0 && hold.use_credit !== 1;
 
-export type Started = { readonly kind: "free" } | { readonly kind: "pay"; readonly orderId: string };
+type Started = { readonly kind: "free" } | { readonly kind: "pay"; readonly orderId: string };
 
 /**
  * A hold's price may change while its order is made, by a discount code entered or taken off, or as another booking
@@ -216,7 +216,7 @@ export function confirmPaidHold(db: D1Database, orderId: string, paidAt: string,
 }
 
 /** How a try ended. */
-export type Confirmed = "booked" | "already_booked" | "being_booked" | "not_paid" | "refunded" | "lapsed";
+type Confirmed = "booked" | "already_booked" | "being_booked" | "not_paid" | "refunded" | "lapsed";
 
 interface CapturedPayment {
   razorpay_payment_id: string;
@@ -669,7 +669,7 @@ async function retireReplaced(db: D1Database, hold: HoldRow, now: Date, options:
 }
 
 /** What giving a hold back did with the money. */
-export type GivenBack =
+type GivenBack =
   | { readonly kind: "refunded"; readonly paymentId: string; readonly amount: number }
   | { readonly kind: "refunded_before"; readonly paymentId: string }
   | { readonly kind: "nothing_paid" }
@@ -829,7 +829,7 @@ const UNBOOKED_AFTER_MS = 30 * MINUTE_MS;
 const BOOKED_PER_PASS = 20;
 
 /** The alert a hold raises while it waits unbooked; closed once it is booked or given back. */
-export const unbookedAlertKey = (holdId: string) => `unbooked_hold:${holdId}`;
+const unbookedAlertKey = (holdId: string) => `unbooked_hold:${holdId}`;
 
 interface UnbookedHold {
   readonly id: string;
@@ -849,7 +849,7 @@ async function unbookedHolds(db: D1Database, now: Date): Promise<UnbookedHold[]>
   return results;
 }
 
-export interface UnbookedPass {
+interface UnbookedPass {
   readonly payments: PaymentsProvider;
   readonly alertOnce: AlertOnce;
   readonly resolveAlert: ResolveAlert;

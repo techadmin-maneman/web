@@ -16,7 +16,7 @@ import { sha256Hex } from "../lib/hash.ts";
 import { refuse } from "./errors.ts";
 
 /** __Host-: the browser holds it to this host, over HTTPS, at path /, whatever a page sets. */
-export const TECHNICIAN_COOKIE = "__Host-mm_tech";
+const TECHNICIAN_COOKIE = "__Host-mm_tech";
 
 /** Its name until October 2026, still read until every session it names has lapsed (90 days from last use). */
 const OLD_TECHNICIAN_COOKIE = "mm_tech";

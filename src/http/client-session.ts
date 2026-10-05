@@ -9,7 +9,7 @@ import { findSession, SESSION_TOUCH_MS, SESSION_TTL_MS, touchSession, type Sessi
 import { refuse } from "./errors.ts";
 
 /** __Host-: the browser holds it to this host, over HTTPS, at path /, whatever a page sets. */
-export const CLIENT_COOKIE = "__Host-mm_app";
+const CLIENT_COOKIE = "__Host-mm_app";
 
 /** Its name until October 2026, still read until every session it names has lapsed (90 days from last use). */
 const OLD_CLIENT_COOKIE = "mm_app";

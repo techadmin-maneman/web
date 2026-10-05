@@ -8,8 +8,6 @@
 /** The owner's list of 1 October 2026, item 10 (ADR 0025, item 88). */
 export const RULING = "Try-on images are sent to WhatsApp for privacy, not shown on the site.";
 
-export const RULES = [RULING] as const;
-
 /**
  * One look per WhatsApp number every thirty days: the owner's ruling of 1 October 2026, "One per number, every 30
  * days". The number is known before the look is made, so it is the number, not only the browser's cookie, that is
@@ -26,9 +24,9 @@ export function tryOnRuns(messaging: { readonly enabled: boolean }): boolean {
 }
 
 /** Why a look made now would not reach the visitor's WhatsApp. */
-export type Undelivered = "whatsapp_off" | "held_back" | "number_capped";
+type Undelivered = "whatsapp_off" | "held_back" | "number_capped";
 
-export interface DeliveryCheck {
+interface DeliveryCheck {
   readonly messaging: { readonly enabled: boolean };
   /** Staging's allowlist holds back a message about one of our own scripts' test records (ADR 0097). */
   readonly heldBack: boolean;

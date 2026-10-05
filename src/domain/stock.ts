@@ -32,7 +32,7 @@ export const MOVEMENT_REASONS = ["received", "transferred", "used", "counted", "
 type Reason = (typeof MOVEMENT_REASONS)[number];
 
 /** What ops write, with who and why, so every movement lands with its audit entry. */
-export interface Written {
+interface Written {
   readonly actor: AuditActor;
   readonly requestId: string;
   readonly now: Date;
@@ -115,7 +115,7 @@ async function placeExists(db: D1Database, place: Place): Promise<boolean> {
 }
 
 /** What a place holds of one consumable: the sum of its rows, as its balance keeps it. */
-export async function heldOf(db: D1Database, code: string, place: Place): Promise<number> {
+async function heldOf(db: D1Database, code: string, place: Place): Promise<number> {
   const row = await db
     .prepare("SELECT quantity FROM stock_balances WHERE consumable_code = ?1 AND place = COALESCE(?2, 'central')")
     .bind(code, place)
@@ -279,14 +279,14 @@ export { tellOfLowStock } from "./low-stock.ts";
 // What the Stock screen reads
 // ---------------------------------------------------------------------------
 
-export interface StockPlace {
+interface StockPlace {
   readonly technicianId: string | null;
   /** The technician's name; null for the central store, which the console names. */
   readonly name: string | null;
   readonly active: boolean;
 }
 
-export interface Holding {
+interface Holding {
   readonly code: string;
   readonly technicianId: string | null;
   readonly quantity: number;
@@ -295,7 +295,7 @@ export interface Holding {
   readonly countedAt: string | null;
 }
 
-export interface StockMovement {
+interface StockMovement {
   readonly at: string;
   readonly code: string;
   readonly technicianId: string | null;
@@ -306,7 +306,7 @@ export interface StockMovement {
   readonly note: string | null;
 }
 
-export interface StockView {
+interface StockView {
   /** Every consumable offered, and any retired one a place still holds. */
   readonly consumables: readonly Consumable[];
   /** The central store first, then every active technician's kit, and any other kit still holding stock. */

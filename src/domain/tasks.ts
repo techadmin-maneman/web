@@ -379,7 +379,7 @@ function detailOf(row: Row, schedule: SlotSchedule): string | null {
 /** A replacement is due on a calendar date; everything else waits from an instant. */
 const instantOf = (since: string) => (since.length === 10 ? indiaInstant(since, "00:00").toISOString() : since);
 
-export interface Outstanding {
+interface Outstanding {
   /** The longest wait first. */
   readonly tasks: Task[];
   /** A statement reached READ_CAP, so some task, and every count it belongs to, may be missing. */

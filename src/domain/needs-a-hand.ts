@@ -9,7 +9,7 @@ import { auditStatement, type AuditEntry } from "./audit.ts";
 import { type CrmSyncMessage, type MessagingMessage } from "../config/pipeline.ts";
 
 /** The most open alerts one look reads: far more than ever wait at once, so the list is whole below it. */
-export const ALERTS_READ = 500;
+const ALERTS_READ = 500;
 
 export interface OpenAlert {
   readonly id: string;
@@ -97,7 +97,7 @@ export async function markDone(db: D1Database, alert: OpenAlert, { now, audit }:
   await db.batch(statements);
 }
 
-export type SendAgainEnv = Pick<Env, "DB" | "CRM_QUEUE" | "MESSAGE_QUEUE">;
+type SendAgainEnv = Pick<Env, "DB" | "CRM_QUEUE" | "MESSAGE_QUEUE">;
 
 /**
  * Puts what the alert gave up on back where the sweeper finds it, closes the alert with its audit entry, and puts it

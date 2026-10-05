@@ -98,10 +98,10 @@ const stillTrue = (kind: VisitMessageKind, status: AppointmentStatus): boolean =
  * How long after the technician arrived the client may still be told of it. A check-in that reaches us later, from
  * a phone that had no signal, is past the point: he has been at the door, or gone.
  */
-export const ARRIVAL_NOTICE_WITHIN_MINUTES = 10;
+const ARRIVAL_NOTICE_WITHIN_MINUTES = 10;
 
 /** Why an arrival notice was not sent: the no-show evidence reads it back. */
-export const ARRIVAL_TOO_LATE = "the check-in reached us too late to tell the client";
+const ARRIVAL_TOO_LATE = "the check-in reached us too late to tell the client";
 
 /** The time in India reminders go from, on the day before a visit: "18:00" for the hour 18, "08:00" for 8. */
 export const remindersFrom = (hour: number): string => `${String(hour).padStart(2, "0")}:00`;
@@ -286,7 +286,7 @@ export async function underVisitsConsent(db: D1Database, personId: string, compo
 }
 
 /** Why an arrival or a no-show's ruling is not told: the check-in came before a technician may check in. */
-export const ARRIVED_TOO_EARLY = "the check-in came before the earliest check-in";
+const ARRIVED_TOO_EARLY = "the check-in came before the earliest check-in";
 
 /** The visit a check-in is held against: its booked start, and the technician it is on. */
 interface VisitArrivedAt {
@@ -575,7 +575,7 @@ async function disputeRuling(db: D1Database, appointmentId: string, params: stri
 }
 
 /** What became of the credit a visit was paid with: back in the balance, kept, or none was used. */
-export type VisitCredit = "restored" | "kept" | "none";
+type VisitCredit = "restored" | "kept" | "none";
 
 /**
  * What became of the credit a visit was paid with, as the ledger holds it: a cancel or a ruling that gives it back

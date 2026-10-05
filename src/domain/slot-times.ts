@@ -30,7 +30,7 @@ export interface SlotSchedule {
 }
 
 /** The schedule these changes make; with none, every day keeps the times in code. */
-export function scheduleOf(changes: readonly SlotTimesChange[]): SlotSchedule {
+function scheduleOf(changes: readonly SlotTimesChange[]): SlotSchedule {
   const earliestFirst = [...changes].sort((a, b) => a.appliesFrom.localeCompare(b.appliesFrom));
   const on = (date: string): SlotTimes =>
     earliestFirst.findLast((change) => change.appliesFrom <= date) ?? DEFAULT_SLOT_TIMES;
@@ -70,7 +70,7 @@ export async function loadSlotSchedule(db: D1Database): Promise<SlotSchedule> {
 }
 
 /** The last day any client's visit is booked, or held for payment or to be booked, on; null where there is none. */
-export async function lastBookedDate(db: D1Database): Promise<string | null> {
+async function lastBookedDate(db: D1Database): Promise<string | null> {
   const [visit, hold] = await db.batch<{ last: string | null }>([
     db.prepare(
       `SELECT MAX(window_start) AS last FROM appointments
@@ -93,7 +93,7 @@ export async function earliestChange(db: D1Database, now: Date, horizonDays: num
   return earliestAppliesFrom(indiaDate(now), horizonDays, await lastBookedDate(db), lastChange);
 }
 
-export type SlotTimesSet =
+type SlotTimesSet =
   | { readonly kind: "set"; readonly appliesFrom: string }
   | { readonly kind: "invalid"; readonly problems: readonly string[] }
   /** Before the earliest day a change may apply from, which is said; or a visit was booked there meanwhile. */

@@ -11,7 +11,7 @@ import { createStubGeocodeFetch, STUB_API_KEY } from "./stub.ts";
 import type { VendorFetchDependencies } from "../vendor-fetch.ts";
 
 /** One line of the suggestion list. */
-export interface Suggestion {
+interface Suggestion {
   /** Google's Place ID. Exempt from their caching rule, so this is what we keep. */
   readonly placeId: string;
   /** The building, as the client will recognise it: "Sunrise Greens". */
@@ -24,7 +24,7 @@ export interface Suggestion {
  * A coordinate and the address Google writes for it, both from the Geocoding
  * API and therefore ours to keep indefinitely (ADR 0054).
  */
-export interface ResolvedPlace {
+interface ResolvedPlace {
   readonly placeId: string;
   readonly lat: number;
   readonly lng: number;

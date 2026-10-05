@@ -35,7 +35,7 @@ export function closeCamera(stream: MediaStream | null): void {
   for (const track of stream?.getTracks() ?? []) track.stop();
 }
 
-export interface Captured {
+interface Captured {
   /** The photograph, at or about 250 KB. */
   readonly photo: SmallJpeg;
   /** Its thumbnail, from the same frame. */

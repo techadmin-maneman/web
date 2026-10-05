@@ -14,7 +14,7 @@ export interface KeptSearch {
   readonly found: ClientsFound | null;
 }
 
-export interface RecentClient {
+interface RecentClient {
   readonly id: string;
   readonly name: string;
 }

@@ -76,7 +76,7 @@ export function takesProfile(type: VisitType, oneVisit: boolean): boolean {
   return oneVisit || type === "consultation";
 }
 
-export interface History {
+interface History {
   readonly remedies: readonly string[];
   readonly transplant_year: number | null;
   readonly skin_and_allergies: string | null;

@@ -26,7 +26,7 @@ const SUBJECT_ROUTES: readonly { readonly prefix: string; readonly kind: string 
 const ID = z.uuid();
 
 /** Who Access let in, as the audit log names them: a member of staff by e-mail, or a service token by its client ID. */
-export function auditActorOf(identity: AccessIdentity): AuditActor {
+function auditActorOf(identity: AccessIdentity): AuditActor {
   return identity.kind === "staff" ? { kind: "staff", id: identity.email } : { kind: "service", id: identity.clientId };
 }
 

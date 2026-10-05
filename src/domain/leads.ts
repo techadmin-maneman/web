@@ -17,7 +17,7 @@ export interface LeadAttribution {
   readonly landing_path?: string | undefined;
 }
 
-export interface BookingLead {
+interface BookingLead {
   readonly leadId: string;
   /** Used only if the mobile number is new to us. */
   readonly newPersonId: string;

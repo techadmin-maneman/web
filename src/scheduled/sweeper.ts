@@ -58,7 +58,7 @@ export type SweepEnv = Pick<
   "DB" | "CRM_QUEUE" | "RENDER_QUEUE" | "MESSAGE_QUEUE" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS"
 >;
 
-export interface SweepSummary {
+interface SweepSummary {
   readonly leadsRequeued: number;
   readonly erasuresRequeued: number;
   readonly messagesRequeued: number;
@@ -72,7 +72,7 @@ export interface SweepSummary {
 }
 
 /** What each step is given: the cron run's own, or a test's. */
-export interface SweepContext {
+interface SweepContext {
   readonly env: SweepEnv;
   readonly deps: Dependencies;
   readonly log: Logger;

@@ -14,7 +14,7 @@ import { failedUniqueOn } from "../lib/d1-errors.ts";
 import { revokeOthersStatement } from "./sessions.ts";
 
 export type NumberChangeState = "verifying" | "awaiting_ops" | "confirmed" | "rejected" | "withdrawn";
-export type WhichNumber = "old" | "new";
+type WhichNumber = "old" | "new";
 
 export interface NumberChange {
   readonly id: string;
@@ -71,7 +71,7 @@ export async function openNumberChange(db: D1Database, personId: string): Promis
   return row === null ? null : changeOf(row);
 }
 
-export interface DecidedChange {
+interface DecidedChange {
   readonly state: "confirmed" | "rejected";
   readonly newMobileE164: string;
   readonly decidedAt: string;
@@ -102,12 +102,12 @@ export async function lastDecidedChange(db: D1Database, personId: string, now: D
   };
 }
 
-export async function findNumberChange(db: D1Database, id: string): Promise<NumberChange | null> {
+async function findNumberChange(db: D1Database, id: string): Promise<NumberChange | null> {
   const row = await db.prepare(`SELECT ${COLUMNS} FROM number_change_requests WHERE id = ?1`).bind(id).first<Row>();
   return row === null ? null : changeOf(row);
 }
 
-export interface StartedChange {
+interface StartedChange {
   readonly change: NumberChange;
   readonly codes: Readonly<Record<WhichNumber, { readonly challenge: Challenge; readonly code: string }>>;
 }
@@ -248,7 +248,7 @@ export async function changesAwaitingOps(
   return rows.results.map((row) => ({ ...changeOf(row), oldMobileE164: row.old_mobile_e164 }));
 }
 
-export type Decision = "confirm" | "reject";
+type Decision = "confirm" | "reject";
 
 /**
  * Ops' decision. Confirming moves the person to the new number, unless

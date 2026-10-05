@@ -8,7 +8,7 @@ import { home, VISIT_TYPES, visits, WINDOW_NAMES } from "../content.ts";
 type NextVisitPrompt = Extract<NonNullable<Me["prompt"]>, { kind: "next_visit" }>;
 
 /** The prompt's line, and its button's label. */
-export interface NextVisitWords {
+interface NextVisitWords {
   readonly line: string;
   readonly book: string;
 }

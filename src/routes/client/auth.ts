@@ -34,7 +34,7 @@ import {
 import type { CodeChannel } from "../../providers/codes.ts";
 import { firstNameOf } from "../../lib/names.ts";
 
-export const LoginChallengeSchema = z
+const LoginChallengeSchema = z
   .object({
     challenge_id: z.uuid(),
     channel: z.enum(["whatsapp", "sms"]).openapi({ description: "How the current code was sent." }),
@@ -62,7 +62,7 @@ const VerifyRequestSchema = z
   .strict()
   .openapi("LoginVerifyRequest");
 
-export const LoginVerifySchema = z
+const LoginVerifySchema = z
   .discriminatedUnion("verified", [
     z.object({ verified: z.literal(true), first_name: z.string() }).strict(),
     z
@@ -79,7 +79,7 @@ const challengeAnswer = {
   ...json(LoginChallengeSchema),
 };
 
-export const loginRoute = createRoute({
+const loginRoute = createRoute({
   method: "post",
   path: "/api/auth/otp",
   summary: "Send a login code on WhatsApp. The answer is the same whether or not the number has a booking",
@@ -98,7 +98,7 @@ const SENT_AGAIN_REFUSED =
   `too_early; or rate_limited: this challenge has sent its ${String(MAX_SENDS_PER_CHALLENGE)} codes, or too many ` +
   "codes for this number today, or from this address this hour";
 
-export const resendRoute = createRoute({
+const resendRoute = createRoute({
   method: "post",
   path: "/api/auth/otp/resend",
   summary: "Send a fresh code on WhatsApp, 30 seconds after the last one",
@@ -111,7 +111,7 @@ export const resendRoute = createRoute({
   },
 });
 
-export const smsRoute = createRoute({
+const smsRoute = createRoute({
   method: "post",
   path: "/api/auth/otp/sms",
   summary: "Send a fresh code by SMS instead, 30 seconds after the first",
@@ -125,7 +125,7 @@ export const smsRoute = createRoute({
   },
 });
 
-export const verifyRoute = createRoute({
+const verifyRoute = createRoute({
   method: "post",
   path: "/api/auth/verify",
   summary: "Check a code. The right one opens a session (the mm_app cookie)",
@@ -137,7 +137,7 @@ export const verifyRoute = createRoute({
   },
 });
 
-export const logoutRoute = createRoute({
+const logoutRoute = createRoute({
   method: "post",
   path: "/api/auth/logout",
   summary: "End this session",

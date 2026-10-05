@@ -56,7 +56,7 @@ export const MESSAGE_STATES = ["delivered", "sent", "not_sent", "no_consent", "n
 export type MessageState = (typeof MESSAGE_STATES)[number];
 
 /** The three facts, with what ops need to read the first one by. */
-export interface NoShowCase {
+interface NoShowCase {
   readonly id: string;
   readonly appointment_id: string;
   /** Whose visit it was; null once they have been erased. */
@@ -120,7 +120,7 @@ interface CaseRow {
 }
 
 /** A WhatsApp's row, as far as the no-show evidence reads it. */
-export interface EvidenceMessage {
+interface EvidenceMessage {
   readonly id: string;
   /** queued, sent, skipped or failed; a delivered one is sent, with delivered_at set. */
   readonly state: string;
@@ -159,7 +159,7 @@ export function caseMessage(row: MessageColumns): Omit<EvidenceMessage, "id"> | 
   return { state: row.message_status ?? "", last_error: row.message_error, delivered_at: row.message_delivered_at };
 }
 
-export type Readiness =
+type Readiness =
   | { readonly kind: "ready"; readonly checkIn: LatestArrival; readonly waitStartsAt: Date; readonly waitEndsAt: Date }
   | { readonly kind: "too_early"; readonly waitEndsAt: Date }
   | { readonly kind: "no_check_in" };
@@ -378,7 +378,7 @@ export async function listNoShowCases(
 }
 
 /** The terms in force, which a visit no hold sold is charged under. */
-export type TermsInputs = Pick<OpsInputs, "changeNoticeHours" | "lateChangeCharges" | "noShowCharges">;
+type TermsInputs = Pick<OpsInputs, "changeNoticeHours" | "lateChangeCharges" | "noShowCharges">;
 
 interface OpenCase {
   appointment_id: string;
@@ -438,7 +438,7 @@ async function undecidedCase(db: D1Database, caseId: string): Promise<OpenCase |
 }
 
 /** What charging an undecided case would do, for ops to read before they charge. */
-export interface ChargePreview {
+interface ChargePreview {
   /** In paise: what was paid for the visit, and what the charge keeps of it. The rest is refunded. */
   readonly paid: number;
   readonly kept: number;

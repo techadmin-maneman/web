@@ -16,7 +16,7 @@ export const RULES = [
  * What a booking from the site does with the address typed into it: "saved", as the person's, when they have
  * none; "on_account" when they have one, which is kept and used, and the typed one is not written.
  */
-export type TypedAddress = "saved" | "on_account";
+type TypedAddress = "saved" | "on_account";
 
 export function typedAddress(person: { readonly hasSavedAddress: boolean }): TypedAddress {
   return person.hasSavedAddress ? "on_account" : "saved";

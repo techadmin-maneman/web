@@ -9,7 +9,7 @@ import type { ConsentPurpose, ConsentSource } from "../policy/consents.ts";
 /** Phase 1's agreements, given on the public site, and Phase 2's consents, switched in the client app. */
 export type NoticePurpose = "contact" | "tryon_photo" | "result_delivery" | ConsentPurpose;
 
-export interface Notice {
+interface Notice {
   readonly version: string;
   readonly purpose: NoticePurpose;
   /** Every line of text shown with the agreement, in order. */
@@ -266,7 +266,7 @@ export const NOTICES = [
 ] as const satisfies readonly Notice[];
 
 /** A notice's version: a misspelt one is a type error, never a consent recorded on words nobody was shown. */
-export type NoticeVersion = (typeof NOTICES)[number]["version"];
+type NoticeVersion = (typeof NOTICES)[number]["version"];
 
 /** The lines the referral landing shows, by what they are given for. */
 export const LANDING_NOTICES = {

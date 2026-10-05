@@ -120,7 +120,7 @@ export async function changeableVisitFor(db: D1Database, visitId: string, now: D
 }
 
 /** When the visit's window starts, by the times in force on its day, which the 24 hours count back from. */
-export function windowStartOf(start: Date, schedule: SlotSchedule): Date {
+function windowStartOf(start: Date, schedule: SlotSchedule): Date {
   const { date, window } = schedule.at(start);
   return indiaInstant(date, windowTimesOf(schedule.on(date))[window].start);
 }
@@ -376,7 +376,7 @@ export interface OpsCancel {
   readonly audit: AuditEntry;
 }
 
-export type Cancelled =
+type Cancelled =
   | {
       readonly kind: "cancelled";
       readonly refund: number;

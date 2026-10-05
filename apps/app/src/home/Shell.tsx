@@ -19,7 +19,7 @@ import styles from "./shell.module.css";
 /** A link within the app: the shared one, under the name the pages know it by. */
 export { Link as AppLink } from "@maneman/ui/router";
 
-export type Header =
+type Header =
   | { readonly kind: "home" }
   | { readonly kind: "tab"; readonly title: string; readonly action?: ReactNode }
   | { readonly kind: "back"; readonly title: string; readonly to: string; readonly label: string };

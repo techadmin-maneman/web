@@ -5,7 +5,7 @@
 // (src/domain/tech-jobs.ts). A visit already under way still takes one; one
 // closed, cancelled or gone does not.
 
-export type NoteSaved =
+type NoteSaved =
   | { readonly kind: "saved"; readonly note: string; readonly notedAt: string }
   | { readonly kind: "not_found" }
   | { readonly kind: "closed" };

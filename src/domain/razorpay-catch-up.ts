@@ -26,7 +26,7 @@ import { graceEnds } from "./scheduling.ts";
 import { recordHoldLinkPaid } from "./visit-booking.ts";
 
 /** Holds asked about in one run at most, and one visit's links the same. */
-export const CHECKS_PER_PASS = 5;
+const CHECKS_PER_PASS = 5;
 
 /** Reading a Checkout order's payments is one call; a link is read first, so two. */
 const CALLS_PER_ORDER = 1;
@@ -49,7 +49,7 @@ const REQUEST_ID = "razorpay-catch-up";
 const BOOKING_FOLLOWS = "It is recorded now, and the visit is booked, or refunded if its time has gone.";
 const RECORDED = "It is recorded now as the visit's payment.";
 
-export interface CatchUpDeps {
+interface CatchUpDeps {
   readonly payments: PaymentsProvider;
   readonly alertOnce: AlertOnce;
   readonly log: Logger;

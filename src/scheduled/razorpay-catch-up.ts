@@ -12,7 +12,7 @@ import { type MessagingMessage } from "../config/pipeline.ts";
 
 const REQUEST_ID = "razorpay-catch-up";
 
-export interface CatchUpRun {
+interface CatchUpRun {
   readonly env: Pick<Env, "DB" | "MESSAGE_QUEUE">;
   readonly deps: Dependencies;
   readonly config: StaticConfig;

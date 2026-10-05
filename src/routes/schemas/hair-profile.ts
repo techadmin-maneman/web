@@ -73,7 +73,7 @@ export const HistorySchema = z
     description: "Health information the client told us: our records alone, never Zoho or a log.",
   });
 
-export const FitSpecReadSchema = FitSpecSchema.extend({
+const FitSpecReadSchema = FitSpecSchema.extend({
   product_name: z.union([z.string(), z.null()]).openapi({ description: "The product's name, never its price." }),
 }).openapi("HairFitSpecRead");
 

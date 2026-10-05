@@ -12,7 +12,7 @@ export type Settle = { readonly retryAfterSeconds?: number };
 export const DONE: Settle = {};
 
 /** The first wait after a message's work throws, doubled for each try it has had: 30 s, 60 s, 120 s and so on. */
-export const ERROR_RETRY_SECONDS = 30;
+const ERROR_RETRY_SECONDS = 30;
 
 /** A wait doubled for each try a message has had already: the first delay, 2×, 4× and so on. */
 export const backoffSeconds = (attempts: number, firstDelaySeconds: number): number =>

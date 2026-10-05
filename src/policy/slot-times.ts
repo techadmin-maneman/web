@@ -30,7 +30,7 @@ export interface SlotTimes {
 export const DEFAULT_SLOT_TIMES: SlotTimes = { unitStarts: UNIT_STARTS, dayEnd: DAY_END };
 
 /** The earliest a half-slot may start and the latest a day may end, in India's time. */
-export const DAY_BOUNDS = { earliest: "06:00", latest: "22:00" } as const;
+const DAY_BOUNDS = { earliest: "06:00", latest: "22:00" } as const;
 
 /** Each window's span, from the day's times. */
 export function windowTimesOf(times: SlotTimes): Readonly<Record<BookingWindow, { start: string; end: string }>> {

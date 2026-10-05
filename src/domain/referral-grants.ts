@@ -26,7 +26,7 @@ import { firstNameOf } from "../lib/names.ts";
 
 /** "Karan Bhatia" → "Karan": all the messages and the tracker name a person by. */
 
-export interface ReferralAttribution {
+interface ReferralAttribution {
   readonly id: string;
   readonly code: string;
   readonly referrerId: string;
@@ -41,7 +41,7 @@ export interface ReferralAttribution {
 }
 
 /** Which of the fraud rules a grant meets. */
-export async function fraudSignals(db: D1Database, attribution: ReferralAttribution): Promise<FraudSignal[]> {
+async function fraudSignals(db: D1Database, attribution: ReferralAttribution): Promise<FraudSignal[]> {
   const { referrerId, referredId } = attribution;
   const met = new Set<FraudSignal>();
   const sharedAddress = await db
@@ -159,7 +159,7 @@ function referralCredits(
  * (LIFE-10). A side the reward gives nothing gets no credits; the friend is then told nothing, and the referrer is
  * still told of the fit.
  */
-export function grantStatements(
+function grantStatements(
   db: D1Database,
   attribution: ReferralAttribution,
   reward: ReferralReward,

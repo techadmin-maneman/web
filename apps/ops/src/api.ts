@@ -20,7 +20,6 @@ export type Held = Body<paths["/api/referrals/held"]["get"]>["held"][number];
 export type Referrer = Body<paths["/api/referrers"]["get"]>["referrers"][number];
 export type Area = Body<paths["/api/waitlist"]["get"]>["areas"][number];
 export type Launch = Body<paths["/api/pincodes/{pin}/launch"]["post"]>;
-export type Decision = Body<paths["/api/referrals/{id}/decision"]["post"]>;
 
 export type ClientsFound = Body<paths["/api/clients/find"]["post"]>;
 /** A client's page: their record, or what is kept of them once erased. */
@@ -36,17 +35,16 @@ export type ClientInvoice = ClientRecord["invoices"][number];
 export type AutoRefund = ClientRecord["auto_refunds"][number];
 /** A visit ops book for a client: the windows free for it, what is sent, and what came of it. */
 export type VisitAvailability = Body<paths["/api/visits/availability"]["get"]>;
-export type AvailabilityQuery = NonNullable<paths["/api/visits/availability"]["get"]["parameters"]["query"]>;
+type AvailabilityQuery = NonNullable<paths["/api/visits/availability"]["get"]["parameters"]["query"]>;
 export type VisitToBook = Sent<paths["/api/visits"]["post"]>;
 export type VisitBooked = Body<paths["/api/visits"]["post"]>;
 /** What cancelling a client's visit gives back, free to the client and on their own late terms. */
 export type CancelTerms = Body<paths["/api/visits/{id}/cancel"]["post"]>;
 export type CancelOutcome = CancelTerms["free"];
 export type HandClose = Sent<paths["/api/visits/{id}/close"]["post"]>;
-export type CreditBalance = Body<paths["/api/clients/{id}/credits"]["post"]>;
 export type CreditAdjustment = Sent<paths["/api/clients/{id}/credits"]["post"]>;
 export type ClientInvite = NonNullable<ClientRecord["invite"]>;
-export type InviteAttachment = Sent<paths["/api/clients/{id}/referral"]["post"]>;
+type InviteAttachment = Sent<paths["/api/clients/{id}/referral"]["post"]>;
 export type PhotoVisit = Body<paths["/api/clients/{id}/photos"]["get"]>["visits"][number];
 export type Photo = PhotoVisit["photos"][number];
 export type PhotoView = Body<paths["/api/clients/{id}/photos/view"]["post"]>;
@@ -57,7 +55,7 @@ export type Piece = Body<paths["/api/clients/{id}/pieces"]["get"]>["pieces"][num
 export type ClientHairProfile = Body<paths["/api/clients/{id}/hair-profile"]["get"]>;
 export type HairProfileVersion = ClientHairProfile["versions"][number];
 export type HairProfileView = NonNullable<ClientHairProfile["latest"]>;
-export type HairCorrection = Sent<paths["/api/clients/{id}/hair-profile"]["post"]>;
+type HairCorrection = Sent<paths["/api/clients/{id}/hair-profile"]["post"]>;
 
 export type Tasks = Body<paths["/api/tasks"]["get"]>;
 export type TaskGroup = Tasks["groups"][number];
@@ -86,42 +84,41 @@ export type ChoiceRule = Extract<OpsSetting, { kind: "choice" }>;
 export type SettingValue = OpsSetting["value"];
 /** The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). */
 export type Blackout = Body<paths["/api/blackouts"]["get"]>["blackouts"][number];
-export type BlackoutAdd = Sent<paths["/api/blackouts"]["post"]>;
-export type BlackoutRemove = Sent<paths["/api/blackouts/remove"]["post"]>;
+type BlackoutAdd = Sent<paths["/api/blackouts"]["post"]>;
+type BlackoutRemove = Sent<paths["/api/blackouts/remove"]["post"]>;
 /** Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md). */
 export type DiscountCode = Body<paths["/api/discount-codes"]["get"]>["codes"][number];
 export type DiscountCodesNew = Sent<paths["/api/discount-codes"]["post"]>;
 export type VisitDiscountCode = NonNullable<ClientVisit["discount_code"]>;
 export type Price = Body<paths["/api/prices"]["post"]>["prices"][number];
-export type PriceChange = Sent<paths["/api/prices"]["post"]>;
-export type PriceWithdrawal = Sent<paths["/api/prices/withdraw"]["post"]>;
-export type PriceCorrection = Sent<paths["/api/prices/correct"]["post"]>;
+type PriceChange = Sent<paths["/api/prices"]["post"]>;
+type PriceWithdrawal = Sent<paths["/api/prices/withdraw"]["post"]>;
+type PriceCorrection = Sent<paths["/api/prices/correct"]["post"]>;
 /** The services clients book, kind by kind, each with its prices (docs/decisions/0085-services-ops-can-edit.md). */
 export type ServiceBook = Body<paths["/api/services"]["get"]>;
 export type OpsService = ServiceBook["services"][number];
 export type LateFee = ServiceBook["late_fees"][number];
 export type Kind = OpsService["kind"];
-export type ServiceAdd = Sent<paths["/api/services"]["post"]>;
+type ServiceAdd = Sent<paths["/api/services"]["post"]>;
 export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
 export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
-export type AreaChanged = Body<paths["/api/service-area"]["post"]>;
-export type NewPincode = Sent<paths["/api/pincodes"]["post"]>;
+type NewPincode = Sent<paths["/api/pincodes"]["post"]>;
 
 /** The consumables, each service's expected use, the job sheet, and the stock (docs/decisions/0087-consumables-and-stock.md). */
 export type Consumables = Body<paths["/api/consumables"]["get"]>;
 export type Consumable = Consumables["consumables"][number];
 export type ServiceUse = Consumables["services"][number];
-export type NewConsumable = Sent<paths["/api/consumables"]["post"]>;
-export type ConsumableChange = Sent<paths["/api/consumables/{code}"]["post"]>;
-export type ServiceUsage = Sent<paths["/api/service-usage"]["post"]>;
+type NewConsumable = Sent<paths["/api/consumables"]["post"]>;
+type ConsumableChange = Sent<paths["/api/consumables/{code}"]["post"]>;
+type ServiceUsage = Sent<paths["/api/service-usage"]["post"]>;
 export type JobSheet = Body<paths["/api/job-sheet"]["get"]>;
 export type JobSheetList = JobSheet["partial_reasons"];
 export type JobSheetItemSent = Sent<paths["/api/job-sheet/partial-reasons"]["post"]>["items"][number];
 export type Stock = Body<paths["/api/stock"]["get"]>;
-export type StockDelivery = Sent<paths["/api/stock/deliveries"]["post"]>;
-export type StockTransfer = Sent<paths["/api/stock/transfers"]["post"]>;
-export type StockCount = Sent<paths["/api/stock/counts"]["post"]>;
-export type StockWriteOff = Sent<paths["/api/stock/write-offs"]["post"]>;
+type StockDelivery = Sent<paths["/api/stock/deliveries"]["post"]>;
+type StockTransfer = Sent<paths["/api/stock/transfers"]["post"]>;
+type StockCount = Sent<paths["/api/stock/counts"]["post"]>;
+type StockWriteOff = Sent<paths["/api/stock/write-offs"]["post"]>;
 
 /** The Staff list: who may do what, and whether it is enforced. */
 export type StaffBook = Body<paths["/api/staff"]["get"]>;
@@ -129,7 +126,7 @@ export type StaffPerson = StaffBook["people"][number];
 export type StaffGrant = StaffPerson["grants"][number];
 export type StaffSave = Sent<paths["/api/staff"]["post"]>;
 export type StaffToken = StaffBook["service_tokens"][number];
-export type StaffTokenAdd = Sent<paths["/api/staff/service-tokens"]["post"]>;
+type StaffTokenAdd = Sent<paths["/api/staff/service-tokens"]["post"]>;
 
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
 export type ChargePreview = Body<paths["/api/no-shows/{id}/charge"]["get"]>;
@@ -142,7 +139,7 @@ export type Roster = Body<paths["/api/technicians"]["get"]>;
 export type Technician = Roster["technicians"][number];
 /** A technician as both lists carry him: active, or switched off. */
 export type TechnicianSummary = Roster["switched_off"][number];
-export type NewTechnician = Sent<paths["/api/technicians"]["post"]>;
+type NewTechnician = Sent<paths["/api/technicians"]["post"]>;
 export type TechnicianChange = Sent<paths["/api/technicians/{id}"]["patch"]>;
 /** A visit a technician just switched off no longer holds, which waits on the dispatch board for another. */
 export type ReturnedVisit = Body<paths["/api/technicians/{id}/deactivate"]["post"]>["visits"][number];
@@ -160,7 +157,6 @@ export type Block = BoardDay["blocks"][number];
 export type Unassigned = Board["unassigned"][number];
 export type BoardClient = NonNullable<Block["person"]>;
 export type Moved = Body<paths["/api/dispatch/move"]["post"]>;
-export type ClientNotice = Moved["client_notice"];
 export type Room = Body<paths["/api/dispatch/room"]["get"]>["rooms"][number];
 
 type MoveRequest = Sent<paths["/api/dispatch/move"]["post"]>;

@@ -12,12 +12,12 @@ const TIMEOUT_MS = 5_000;
 
 export type TurnstileResult = "passed" | "rejected" | "unavailable";
 
-export type TurnstileVerdict =
+type TurnstileVerdict =
   | { readonly result: "passed" | "rejected" }
   /** Why the token could not be checked: Cloudflare's status or error code, never the token. */
   | { readonly result: "unavailable"; readonly detail: string };
 
-export interface TurnstileCheck {
+interface TurnstileCheck {
   readonly secret: string;
   /** The token the widget gave the browser. */
   readonly token: string;

@@ -48,11 +48,11 @@ const Answer = z.object({
     .optional(),
 });
 
-export type DailyUsage = Readonly<Record<Allowance, number>>;
+type DailyUsage = Readonly<Record<Allowance, number>>;
 
-export type UsageReading = { readonly usage: DailyUsage } | { readonly unreadable: string };
+type UsageReading = { readonly usage: DailyUsage } | { readonly unreadable: string };
 
-export interface UsageQuery {
+interface UsageQuery {
   readonly token: string;
   readonly accountId: string;
   /** The UTC day, "2026-10-02": the day the allowances count. */

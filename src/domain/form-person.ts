@@ -5,7 +5,7 @@ import type { ConsentSource } from "../policy/consents.ts";
 import { recordConsent } from "./consents.ts";
 
 /** The person a form is from, and the writes that record them and the consent they gave on the page. */
-export interface FormPerson {
+interface FormPerson {
   readonly id: string;
   /** Run in one batch with what the form books, so a refusal leaves nothing behind. */
   readonly statements: D1PreparedStatement[];

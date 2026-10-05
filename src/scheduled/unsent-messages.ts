@@ -21,7 +21,7 @@ const GIVE_UP_MS = DAY_MS;
 /** Most messages handled a run; the next run takes the rest. */
 const BATCH_LIMIT = 100;
 
-export interface UnsentMessagesRun {
+interface UnsentMessagesRun {
   readonly db: D1Database;
   readonly queue: Queue;
   readonly deps: Pick<Dependencies, "messaging" | "alertOnce">;
