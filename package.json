@@ -82,7 +82,7 @@
     "@vitest/coverage-istanbul": "4.1.11",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
-    "astro": "7.3.3",
+    "astro": "7.3.5",
     "docx": "9.8.1",
     "eslint": "10.11.0",
     "eslint-plugin-react-hooks": "7.1.1",
