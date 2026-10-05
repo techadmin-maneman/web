@@ -1,6 +1,6 @@
 // Closing a visit by hand from the console, for work done whose record was lost with the technician's phone before it
 // reached us. Ops say how it went, when the work began and ended on the visit's own day, and how they know
-// (src/routes/ops-visit-changes.ts). No board draws it.
+// (src/routes/ops/visit-changes.ts). No board draws it.
 
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";

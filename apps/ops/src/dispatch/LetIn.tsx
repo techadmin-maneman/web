@@ -1,5 +1,5 @@
 // Letting a technician check in to one visit wherever the geofence puts him, as when the address's pin is a building's,
-// far from its door (src/routes/ops-visit-changes.ts). Ops say why; the reason stays with the visit and is shown with a
+// far from its door (src/routes/ops/visit-changes.ts). Ops say why; the reason stays with the visit and is shown with a
 // no-show's evidence. No board draws it.
 
 import { Button } from "@maneman/ui/Button";

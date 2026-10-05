@@ -1,0 +1,2175 @@
+{
+  "total": {
+    "lines": { "total": 10392, "covered": 3334, "skipped": 0, "pct": 32.08 },
+    "statements": { "total": 12235, "covered": 3896, "skipped": 0, "pct": 31.84 },
+    "functions": { "total": 4317, "covered": 1486, "skipped": 0, "pct": 34.42 },
+    "branches": { "total": 9275, "covered": 2170, "skipped": 0, "pct": 23.39 },
+    "branchesTrue": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/App.tsx": {
+    "lines": { "total": 81, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 25, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 93, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 52, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/api.ts": {
+    "lines": { "total": 63, "covered": 30, "skipped": 0, "pct": 47.61 },
+    "functions": { "total": 50, "covered": 14, "skipped": 0, "pct": 28 },
+    "statements": { "total": 72, "covered": 32, "skipped": 0, "pct": 44.44 },
+    "branches": { "total": 18, "covered": 4, "skipped": 0, "pct": 22.22 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/content.ts": {
+    "lines": { "total": 168, "covered": 168, "skipped": 0, "pct": 100 },
+    "functions": { "total": 117, "covered": 117, "skipped": 0, "pct": 100 },
+    "statements": { "total": 182, "covered": 181, "skipped": 0, "pct": 99.45 },
+    "branches": { "total": 66, "covered": 57, "skipped": 0, "pct": 86.36 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/icons.ts": {
+    "lines": { "total": 7, "covered": 7, "skipped": 0, "pct": 100 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 7, "covered": 7, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/main.tsx": {
+    "lines": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/route.ts": {
+    "lines": { "total": 19, "covered": 14, "skipped": 0, "pct": 73.68 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 26, "covered": 21, "skipped": 0, "pct": 80.76 },
+    "branches": { "total": 35, "covered": 26, "skipped": 0, "pct": 74.28 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/session.ts": {
+    "lines": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/BookButton.tsx": {
+    "lines": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 19, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 37, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/BookNext.tsx": {
+    "lines": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/BookingSheet.tsx": {
+    "lines": { "total": 213, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 58, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 258, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 198, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/ChangeSheet.tsx": {
+    "lines": { "total": 65, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 78, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 80, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/CodeBox.tsx": {
+    "lines": { "total": 43, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 44, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 24, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/DisputeSheet.tsx": {
+    "lines": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 23, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/NoteSheet.tsx": {
+    "lines": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 22, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/checkout.ts": {
+    "lines": { "total": 37, "covered": 37, "skipped": 0, "pct": 100 },
+    "functions": { "total": 11, "covered": 11, "skipped": 0, "pct": 100 },
+    "statements": { "total": 39, "covered": 39, "skipped": 0, "pct": 100 },
+    "branches": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/consents.ts": {
+    "lines": { "total": 10, "covered": 8, "skipped": 0, "pct": 80 },
+    "functions": { "total": 4, "covered": 1, "skipped": 0, "pct": 25 },
+    "statements": { "total": 13, "covered": 10, "skipped": 0, "pct": 76.92 },
+    "branches": { "total": 8, "covered": 6, "skipped": 0, "pct": 75 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/days.ts": {
+    "lines": { "total": 20, "covered": 19, "skipped": 0, "pct": 95 },
+    "functions": { "total": 16, "covered": 14, "skipped": 0, "pct": 87.5 },
+    "statements": { "total": 34, "covered": 32, "skipped": 0, "pct": 94.11 },
+    "branches": { "total": 29, "covered": 25, "skipped": 0, "pct": 86.2 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/late-change.ts": {
+    "lines": { "total": 12, "covered": 12, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "branches": { "total": 16, "covered": 16, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/booking/steps.tsx": {
+    "lines": { "total": 114, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 44, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 133, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 163, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/home/HomeScreen.tsx": {
+    "lines": { "total": 53, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 56, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 83, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/home/ReplacementScreen.tsx": {
+    "lines": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/home/Shell.tsx": {
+    "lines": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/home/TabScreens.tsx": {
+    "lines": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/home/VisitCard.tsx": {
+    "lines": { "total": 38, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 45, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 49, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/home/next-visit-words.ts": {
+    "lines": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 11, "covered": 11, "skipped": 0, "pct": 100 },
+    "branches": { "total": 10, "covered": 9, "skipped": 0, "pct": 90 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/home/one-visit-words.ts": {
+    "lines": { "total": 11, "covered": 11, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "branches": { "total": 11, "covered": 11, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/lib/arrival.ts": {
+    "lines": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/lib/clock.ts": {
+    "lines": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 13, "covered": 12, "skipped": 0, "pct": 92.3 },
+    "branches": { "total": 7, "covered": 6, "skipped": 0, "pct": 85.71 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/lib/money.ts": {
+    "lines": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "branches": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/lib/signed-out.ts": {
+    "lines": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/lib/useSecondsLeft.ts": {
+    "lines": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/lib/visit.ts": {
+    "lines": { "total": 20, "covered": 15, "skipped": 0, "pct": 75 },
+    "functions": { "total": 8, "covered": 6, "skipped": 0, "pct": 75 },
+    "statements": { "total": 27, "covered": 21, "skipped": 0, "pct": 77.77 },
+    "branches": { "total": 28, "covered": 21, "skipped": 0, "pct": 75 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/lib/whatsapp.ts": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/login/CodeField.tsx": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/login/CodeScreen.tsx": {
+    "lines": { "total": 42, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 49, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 58, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/login/HelpScreen.tsx": {
+    "lines": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/login/LogOut.tsx": {
+    "lines": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/login/Login.tsx": {
+    "lines": { "total": 89, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 24, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 95, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 42, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/login/MessageUs.tsx": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/login/MobileScreen.tsx": {
+    "lines": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 17, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/login/linked-mobile.ts": {
+    "lines": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/login/mobile.ts": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/login/turnstile.ts": {
+    "lines": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/payments/EntryScreen.tsx": {
+    "lines": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 55, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/payments/PaymentsScreen.tsx": {
+    "lines": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 29, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/payments/entry.ts": {
+    "lines": { "total": 61, "covered": 52, "skipped": 0, "pct": 85.24 },
+    "functions": { "total": 25, "covered": 23, "skipped": 0, "pct": 92 },
+    "statements": { "total": 83, "covered": 71, "skipped": 0, "pct": 85.54 },
+    "branches": { "total": 98, "covered": 70, "skipped": 0, "pct": 71.42 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/photos/CompareScreen.tsx": {
+    "lines": { "total": 67, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 77, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 33, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/photos/PhotoRow.tsx": {
+    "lines": { "total": 15, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/photos/PhotoSheet.tsx": {
+    "lines": { "total": 19, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 23, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/photos/PhotosScreen.tsx": {
+    "lines": { "total": 15, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 15, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/photos/TryOnGroup.tsx": {
+    "lines": { "total": 25, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 24, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/profile/AccountCards.tsx": {
+    "lines": { "total": 118, "covered": 30, "skipped": 0, "pct": 25.42 },
+    "functions": { "total": 38, "covered": 11, "skipped": 0, "pct": 28.94 },
+    "statements": { "total": 128, "covered": 31, "skipped": 0, "pct": 24.21 },
+    "branches": { "total": 78, "covered": 19, "skipped": 0, "pct": 24.35 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/profile/AddressForm.tsx": {
+    "lines": { "total": 44, "covered": 37, "skipped": 0, "pct": 84.09 },
+    "functions": { "total": 12, "covered": 10, "skipped": 0, "pct": 83.33 },
+    "statements": { "total": 48, "covered": 40, "skipped": 0, "pct": 83.33 },
+    "branches": { "total": 47, "covered": 36, "skipped": 0, "pct": 76.59 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/profile/AddressSection.tsx": {
+    "lines": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/profile/BuildingSearch.tsx": {
+    "lines": { "total": 62, "covered": 44, "skipped": 0, "pct": 70.96 },
+    "functions": { "total": 13, "covered": 11, "skipped": 0, "pct": 84.61 },
+    "statements": { "total": 66, "covered": 44, "skipped": 0, "pct": 66.66 },
+    "branches": { "total": 40, "covered": 19, "skipped": 0, "pct": 47.5 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/profile/ConsentList.tsx": {
+    "lines": { "total": 27, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/profile/ProfileScreen.tsx": {
+    "lines": { "total": 19, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/profile/SessionsCard.tsx": {
+    "lines": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/refer/CardPreview.tsx": {
+    "lines": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/refer/ReferScreen.tsx": {
+    "lines": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 23, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/refer/ShareSheet.tsx": {
+    "lines": { "total": 119, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 38, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 141, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 103, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/refer/TrackerScreen.tsx": {
+    "lines": { "total": 35, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 40, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/refer/card-draw.ts": {
+    "lines": { "total": 26, "covered": 26, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 26, "covered": 26, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/refer/card-layout.ts": {
+    "lines": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/refer/card.ts": {
+    "lines": { "total": 22, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/refer/compose.worker.ts": {
+    "lines": { "total": 15, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 17, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/refer/reward.ts": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/refer/share.ts": {
+    "lines": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 },
+    "branches": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/states/ErrorBoundary.tsx": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/states/LoadFailed.tsx": {
+    "lines": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/states/Loading.tsx": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/states/NotFound.tsx": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/states/PageFailed.tsx": {
+    "lines": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/visits/VisitScreen.tsx": {
+    "lines": { "total": 33, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 38, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 61, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/visits/VisitsScreen.tsx": {
+    "lines": { "total": 39, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 42, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 50, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/app/src/visits/upcoming.ts": {
+    "lines": { "total": 8, "covered": 7, "skipped": 0, "pct": 87.5 },
+    "functions": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "statements": { "total": 12, "covered": 11, "skipped": 0, "pct": 91.66 },
+    "branches": { "total": 9, "covered": 8, "skipped": 0, "pct": 88.88 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/App.tsx": {
+    "lines": { "total": 32, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 52, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/api.ts": {
+    "lines": { "total": 116, "covered": 17, "skipped": 0, "pct": 14.65 },
+    "functions": { "total": 114, "covered": 13, "skipped": 0, "pct": 11.4 },
+    "statements": { "total": 120, "covered": 18, "skipped": 0, "pct": 15 },
+    "branches": { "total": 23, "covered": 5, "skipped": 0, "pct": 21.73 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/content.ts": {
+    "lines": { "total": 401, "covered": 401, "skipped": 0, "pct": 100 },
+    "functions": { "total": 368, "covered": 368, "skipped": 0, "pct": 100 },
+    "statements": { "total": 411, "covered": 403, "skipped": 0, "pct": 98.05 },
+    "branches": { "total": 152, "covered": 82, "skipped": 0, "pct": 53.94 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/main.tsx": {
+    "lines": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/route.ts": {
+    "lines": { "total": 81, "covered": 81, "skipped": 0, "pct": 100 },
+    "functions": { "total": 29, "covered": 29, "skipped": 0, "pct": 100 },
+    "statements": { "total": 109, "covered": 107, "skipped": 0, "pct": 98.16 },
+    "branches": { "total": 90, "covered": 83, "skipped": 0, "pct": 92.22 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/areas/AddPincode.tsx": {
+    "lines": { "total": 36, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 38, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/areas/AreasScreen.tsx": {
+    "lines": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/areas/LaunchPanel.tsx": {
+    "lines": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/areas/Served.tsx": {
+    "lines": { "total": 130, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 57, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 164, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 116, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/areas/Waiting.tsx": {
+    "lines": { "total": 72, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 25, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 81, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 69, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/areas/csv.ts": {
+    "lines": { "total": 35, "covered": 35, "skipped": 0, "pct": 100 },
+    "functions": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 },
+    "statements": { "total": 44, "covered": 42, "skipped": 0, "pct": 95.45 },
+    "branches": { "total": 31, "covered": 27, "skipped": 0, "pct": 87.09 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/areas/rules.ts": {
+    "lines": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/BookVisit.tsx": {
+    "lines": { "total": 80, "covered": 7, "skipped": 0, "pct": 8.75 },
+    "functions": { "total": 42, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 97, "covered": 7, "skipped": 0, "pct": 7.21 },
+    "branches": { "total": 84, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/CancelVisit.tsx": {
+    "lines": { "total": 67, "covered": 63, "skipped": 0, "pct": 94.02 },
+    "functions": { "total": 22, "covered": 22, "skipped": 0, "pct": 100 },
+    "statements": { "total": 76, "covered": 70, "skipped": 0, "pct": 92.1 },
+    "branches": { "total": 60, "covered": 42, "skipped": 0, "pct": 70 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/ClientScreen.tsx": {
+    "lines": { "total": 38, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 44, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 46, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/CloseVisit.tsx": {
+    "lines": { "total": 36, "covered": 32, "skipped": 0, "pct": 88.88 },
+    "functions": { "total": 17, "covered": 16, "skipped": 0, "pct": 94.11 },
+    "statements": { "total": 40, "covered": 34, "skipped": 0, "pct": 85 },
+    "branches": { "total": 24, "covered": 9, "skipped": 0, "pct": 37.5 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/Consents.tsx": {
+    "lines": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/Erase.tsx": {
+    "lines": { "total": 30, "covered": 3, "skipped": 0, "pct": 10 },
+    "functions": { "total": 13, "covered": 1, "skipped": 0, "pct": 7.69 },
+    "statements": { "total": 33, "covered": 3, "skipped": 0, "pct": 9.09 },
+    "branches": { "total": 29, "covered": 2, "skipped": 0, "pct": 6.89 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/FindClientScreen.tsx": {
+    "lines": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 34, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 34, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/GivenAddress.tsx": {
+    "lines": { "total": 93, "covered": 60, "skipped": 0, "pct": 64.51 },
+    "functions": { "total": 28, "covered": 19, "skipped": 0, "pct": 67.85 },
+    "statements": { "total": 103, "covered": 63, "skipped": 0, "pct": 61.16 },
+    "branches": { "total": 67, "covered": 31, "skipped": 0, "pct": 46.26 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/HairProfile.tsx": {
+    "lines": { "total": 103, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 51, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 129, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 97, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/History.tsx": {
+    "lines": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/Invite.tsx": {
+    "lines": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 32, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 35, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/OpenTasks.tsx": {
+    "lines": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 27, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/Payments.tsx": {
+    "lines": { "total": 73, "covered": 25, "skipped": 0, "pct": 34.24 },
+    "functions": { "total": 28, "covered": 10, "skipped": 0, "pct": 35.71 },
+    "statements": { "total": 83, "covered": 28, "skipped": 0, "pct": 33.73 },
+    "branches": { "total": 86, "covered": 21, "skipped": 0, "pct": 24.41 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/Photos.tsx": {
+    "lines": { "total": 63, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 19, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 71, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 38, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/Pieces.tsx": {
+    "lines": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/VisitCode.tsx": {
+    "lines": { "total": 46, "covered": 18, "skipped": 0, "pct": 39.13 },
+    "functions": { "total": 10, "covered": 2, "skipped": 0, "pct": 20 },
+    "statements": { "total": 48, "covered": 19, "skipped": 0, "pct": 39.58 },
+    "branches": { "total": 42, "covered": 12, "skipped": 0, "pct": 28.57 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/clients/Visits.tsx": {
+    "lines": { "total": 66, "covered": 27, "skipped": 0, "pct": 40.9 },
+    "functions": { "total": 28, "covered": 10, "skipped": 0, "pct": 35.71 },
+    "statements": { "total": 82, "covered": 31, "skipped": 0, "pct": 37.8 },
+    "branches": { "total": 82, "covered": 28, "skipped": 0, "pct": 34.14 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/components/Account.tsx": {
+    "lines": { "total": 8, "covered": 2, "skipped": 0, "pct": 25 },
+    "functions": { "total": 3, "covered": 1, "skipped": 0, "pct": 33.33 },
+    "statements": { "total": 10, "covered": 3, "skipped": 0, "pct": 30 },
+    "branches": { "total": 10, "covered": 1, "skipped": 0, "pct": 10 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/components/ClientFinder.tsx": {
+    "lines": { "total": 8, "covered": 5, "skipped": 0, "pct": 62.5 },
+    "functions": { "total": 3, "covered": 1, "skipped": 0, "pct": 33.33 },
+    "statements": { "total": 10, "covered": 5, "skipped": 0, "pct": 50 },
+    "branches": { "total": 4, "covered": 1, "skipped": 0, "pct": 25 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/components/ClosedScreen.tsx": {
+    "lines": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/components/DecisionQueue.tsx": {
+    "lines": { "total": 11, "covered": 11, "skipped": 0, "pct": 100 },
+    "functions": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "statements": { "total": 13, "covered": 13, "skipped": 0, "pct": 100 },
+    "branches": { "total": 9, "covered": 7, "skipped": 0, "pct": 77.77 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/components/Reach.tsx": {
+    "lines": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/components/Shell.tsx": {
+    "lines": { "total": 37, "covered": 29, "skipped": 0, "pct": 78.37 },
+    "functions": { "total": 14, "covered": 11, "skipped": 0, "pct": 78.57 },
+    "statements": { "total": 42, "covered": 32, "skipped": 0, "pct": 76.19 },
+    "branches": { "total": 37, "covered": 22, "skipped": 0, "pct": 59.45 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/deletions/DeletionsScreen.tsx": {
+    "lines": { "total": 44, "covered": 32, "skipped": 0, "pct": 72.72 },
+    "functions": { "total": 20, "covered": 11, "skipped": 0, "pct": 55 },
+    "statements": { "total": 49, "covered": 34, "skipped": 0, "pct": 69.38 },
+    "branches": { "total": 33, "covered": 20, "skipped": 0, "pct": 60.6 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/deletions/ErasureLists.tsx": {
+    "lines": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/BlockDrawer.tsx": {
+    "lines": { "total": 19, "covered": 15, "skipped": 0, "pct": 78.94 },
+    "functions": { "total": 6, "covered": 4, "skipped": 0, "pct": 66.66 },
+    "statements": { "total": 23, "covered": 16, "skipped": 0, "pct": 69.56 },
+    "branches": { "total": 59, "covered": 28, "skipped": 0, "pct": 47.45 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/DispatchScreen.tsx": {
+    "lines": { "total": 235, "covered": 104, "skipped": 0, "pct": 44.25 },
+    "functions": { "total": 70, "covered": 29, "skipped": 0, "pct": 41.42 },
+    "statements": { "total": 290, "covered": 122, "skipped": 0, "pct": 42.06 },
+    "branches": { "total": 240, "covered": 88, "skipped": 0, "pct": 36.66 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/Grid.tsx": {
+    "lines": { "total": 48, "covered": 39, "skipped": 0, "pct": 81.25 },
+    "functions": { "total": 27, "covered": 22, "skipped": 0, "pct": 81.48 },
+    "statements": { "total": 59, "covered": 48, "skipped": 0, "pct": 81.35 },
+    "branches": { "total": 83, "covered": 48, "skipped": 0, "pct": 57.83 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/LetIn.tsx": {
+    "lines": { "total": 20, "covered": 1, "skipped": 0, "pct": 5 },
+    "functions": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 21, "covered": 1, "skipped": 0, "pct": 4.76 },
+    "branches": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/MoveBar.tsx": {
+    "lines": { "total": 17, "covered": 1, "skipped": 0, "pct": 5.88 },
+    "functions": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 20, "covered": 1, "skipped": 0, "pct": 5 },
+    "branches": { "total": 24, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/MovePicker.tsx": {
+    "lines": { "total": 35, "covered": 2, "skipped": 0, "pct": 5.71 },
+    "functions": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 43, "covered": 2, "skipped": 0, "pct": 4.65 },
+    "branches": { "total": 43, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/Toolbar.tsx": {
+    "lines": { "total": 10, "covered": 8, "skipped": 0, "pct": 80 },
+    "functions": { "total": 8, "covered": 6, "skipped": 0, "pct": 75 },
+    "statements": { "total": 11, "covered": 9, "skipped": 0, "pct": 81.81 },
+    "branches": { "total": 12, "covered": 8, "skipped": 0, "pct": 66.66 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/Tray.tsx": {
+    "lines": { "total": 18, "covered": 14, "skipped": 0, "pct": 77.77 },
+    "functions": { "total": 10, "covered": 8, "skipped": 0, "pct": 80 },
+    "statements": { "total": 19, "covered": 15, "skipped": 0, "pct": 78.94 },
+    "branches": { "total": 36, "covered": 23, "skipped": 0, "pct": 63.88 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/TrayDrawer.tsx": {
+    "lines": { "total": 7, "covered": 7, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 7, "covered": 7, "skipped": 0, "pct": 100 },
+    "branches": { "total": 22, "covered": 13, "skipped": 0, "pct": 59.09 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/address.ts": {
+    "lines": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/job.ts": {
+    "lines": { "total": 38, "covered": 38, "skipped": 0, "pct": 100 },
+    "functions": { "total": 18, "covered": 17, "skipped": 0, "pct": 94.44 },
+    "statements": { "total": 51, "covered": 50, "skipped": 0, "pct": 98.03 },
+    "branches": { "total": 56, "covered": 50, "skipped": 0, "pct": 89.28 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/dispatch/useBoard.ts": {
+    "lines": { "total": 53, "covered": 49, "skipped": 0, "pct": 92.45 },
+    "functions": { "total": 10, "covered": 7, "skipped": 0, "pct": 70 },
+    "statements": { "total": 61, "covered": 53, "skipped": 0, "pct": 86.88 },
+    "branches": { "total": 20, "covered": 15, "skipped": 0, "pct": 75 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/grievances/GrievancesScreen.tsx": {
+    "lines": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 24, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/lib/Left.tsx": {
+    "lines": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 5, "covered": 4, "skipped": 0, "pct": 80 },
+    "branches": { "total": 6, "covered": 3, "skipped": 0, "pct": 50 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/lib/access.ts": {
+    "lines": { "total": 24, "covered": 24, "skipped": 0, "pct": 100 },
+    "functions": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "statements": { "total": 32, "covered": 31, "skipped": 0, "pct": 96.87 },
+    "branches": { "total": 14, "covered": 10, "skipped": 0, "pct": 71.42 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/lib/client-search.ts": {
+    "lines": { "total": 25, "covered": 4, "skipped": 0, "pct": 16 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 28, "covered": 4, "skipped": 0, "pct": 14.28 },
+    "branches": { "total": 29, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/lib/due.ts": {
+    "lines": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/lib/load-or-reload.ts": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/lib/phone.ts": {
+    "lines": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "branches": { "total": 8, "covered": 6, "skipped": 0, "pct": 75 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/lib/session.ts": {
+    "lines": { "total": 9, "covered": 6, "skipped": 0, "pct": 66.66 },
+    "functions": { "total": 5, "covered": 4, "skipped": 0, "pct": 80 },
+    "statements": { "total": 13, "covered": 8, "skipped": 0, "pct": 61.53 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/lib/target.ts": {
+    "lines": { "total": 11, "covered": 8, "skipped": 0, "pct": 72.72 },
+    "functions": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "statements": { "total": 14, "covered": 11, "skipped": 0, "pct": 78.57 },
+    "branches": { "total": 7, "covered": 5, "skipped": 0, "pct": 71.42 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/lib/waiting.ts": {
+    "lines": { "total": 26, "covered": 12, "skipped": 0, "pct": 46.15 },
+    "functions": { "total": 9, "covered": 5, "skipped": 0, "pct": 55.55 },
+    "statements": { "total": 30, "covered": 14, "skipped": 0, "pct": 46.66 },
+    "branches": { "total": 8, "covered": 2, "skipped": 0, "pct": 25 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/lib/who.ts": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 2, "covered": 1, "skipped": 0, "pct": 50 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/no-shows/Disputes.tsx": {
+    "lines": { "total": 45, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 15, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 53, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 42, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/no-shows/Distance.tsx": {
+    "lines": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/no-shows/NoShowsScreen.tsx": {
+    "lines": { "total": 114, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 42, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 145, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 123, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/number-changes/NumberChangesScreen.tsx": {
+    "lines": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 30, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/referrals/ReferralsScreen.tsx": {
+    "lines": { "total": 67, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 29, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 76, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 47, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/Blackouts.tsx": {
+    "lines": { "total": 61, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 65, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 51, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/CheckPanel.tsx": {
+    "lines": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/ConsumableForm.tsx": {
+    "lines": { "total": 45, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 52, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 61, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/Consumables.tsx": {
+    "lines": { "total": 37, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 42, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 34, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/DiscountCodeForm.tsx": {
+    "lines": { "total": 62, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 32, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 71, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 95, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/DiscountCodes.tsx": {
+    "lines": { "total": 45, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 19, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 52, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 43, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/JobSheet.tsx": {
+    "lines": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 27, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 22, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/ListEditor.tsx": {
+    "lines": { "total": 61, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 40, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 77, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 46, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/PanelScreens.tsx": {
+    "lines": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/Retirement.tsx": {
+    "lines": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/Rules.tsx": {
+    "lines": { "total": 144, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 70, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 170, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 134, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/ServiceForms.tsx": {
+    "lines": { "total": 140, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 55, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 145, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 122, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/ServiceUsage.tsx": {
+    "lines": { "total": 53, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 29, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 66, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 56, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/Services.tsx": {
+    "lines": { "total": 96, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 47, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 126, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 86, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/SettingsScreen.tsx": {
+    "lines": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/Staff.tsx": {
+    "lines": { "total": 80, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 84, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 76, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/StaffForm.tsx": {
+    "lines": { "total": 56, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 64, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 38, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/grants.ts": {
+    "lines": { "total": 18, "covered": 16, "skipped": 0, "pct": 88.88 },
+    "functions": { "total": 11, "covered": 6, "skipped": 0, "pct": 54.54 },
+    "statements": { "total": 24, "covered": 19, "skipped": 0, "pct": 79.16 },
+    "branches": { "total": 21, "covered": 11, "skipped": 0, "pct": 52.38 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/refusal.ts": {
+    "lines": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 15, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/settings/rule-groups.ts": {
+    "lines": { "total": 11, "covered": 11, "skipped": 0, "pct": 100 },
+    "functions": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 },
+    "statements": { "total": 17, "covered": 17, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/states/States.tsx": {
+    "lines": { "total": 3, "covered": 1, "skipped": 0, "pct": 33.33 },
+    "functions": { "total": 2, "covered": 1, "skipped": 0, "pct": 50 },
+    "statements": { "total": 3, "covered": 1, "skipped": 0, "pct": 33.33 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/stock/StockForm.tsx": {
+    "lines": { "total": 76, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 34, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 96, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 83, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/stock/StockScreen.tsx": {
+    "lines": { "total": 22, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 25, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 46, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/BookFromTask.tsx": {
+    "lines": { "total": 24, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 35, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/CallAboutMove.tsx": {
+    "lines": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "functions": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "statements": { "total": 16, "covered": 16, "skipped": 0, "pct": 100 },
+    "branches": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/NeedsAHand.tsx": {
+    "lines": { "total": 35, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 43, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 35, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/PaymentLinkActions.tsx": {
+    "lines": { "total": 25, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/TaskActions.tsx": {
+    "lines": { "total": 58, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 63, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 50, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/TasksScreen.tsx": {
+    "lines": { "total": 118, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 34, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 146, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 154, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/decided.ts": {
+    "lines": { "total": 13, "covered": 13, "skipped": 0, "pct": 100 },
+    "functions": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "statements": { "total": 16, "covered": 16, "skipped": 0, "pct": 100 },
+    "branches": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/links.ts": {
+    "lines": { "total": 9, "covered": 7, "skipped": 0, "pct": 77.77 },
+    "functions": { "total": 4, "covered": 3, "skipped": 0, "pct": 75 },
+    "statements": { "total": 14, "covered": 10, "skipped": 0, "pct": 71.42 },
+    "branches": { "total": 10, "covered": 6, "skipped": 0, "pct": 60 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/payment-link.ts": {
+    "lines": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/sections.ts": {
+    "lines": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "functions": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "statements": { "total": 19, "covered": 19, "skipped": 0, "pct": 100 },
+    "branches": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/tasks/untold-move.ts": {
+    "lines": { "total": 7, "covered": 7, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "branches": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/technicians/TechnicianForms.tsx": {
+    "lines": { "total": 123, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 37, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 133, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 90, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/technicians/TechnicianKit.tsx": {
+    "lines": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/technicians/TechnicianLeave.tsx": {
+    "lines": { "total": 68, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 23, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 73, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 42, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/technicians/TechnicianPhones.tsx": {
+    "lines": { "total": 36, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 41, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 42, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/technicians/TechnicianScreen.tsx": {
+    "lines": { "total": 33, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 44, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/ops/src/technicians/TechniciansScreen.tsx": {
+    "lines": { "total": 42, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 48, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 47, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/App.tsx": {
+    "lines": { "total": 25, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/api.ts": {
+    "lines": { "total": 33, "covered": 28, "skipped": 0, "pct": 84.84 },
+    "functions": { "total": 23, "covered": 18, "skipped": 0, "pct": 78.26 },
+    "statements": { "total": 36, "covered": 31, "skipped": 0, "pct": 86.11 },
+    "branches": { "total": 9, "covered": 8, "skipped": 0, "pct": 88.88 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/content.ts": {
+    "lines": { "total": 104, "covered": 49, "skipped": 0, "pct": 47.11 },
+    "functions": { "total": 62, "covered": 11, "skipped": 0, "pct": 17.74 },
+    "statements": { "total": 118, "covered": 57, "skipped": 0, "pct": 48.3 },
+    "branches": { "total": 70, "covered": 29, "skipped": 0, "pct": 41.42 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/icons.ts": {
+    "lines": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/main.tsx": {
+    "lines": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/route.ts": {
+    "lines": { "total": 14, "covered": 6, "skipped": 0, "pct": 42.85 },
+    "functions": { "total": 4, "covered": 1, "skipped": 0, "pct": 25 },
+    "statements": { "total": 21, "covered": 6, "skipped": 0, "pct": 28.57 },
+    "branches": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/routes.ts": {
+    "lines": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/session.ts": {
+    "lines": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/camera/CaptureScreen.tsx": {
+    "lines": { "total": 60, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 27, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 79, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 50, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/camera/capture.ts": {
+    "lines": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/camera/useCamera.ts": {
+    "lines": { "total": 33, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 38, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/components/Banners.tsx": {
+    "lines": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 17, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/components/Confirm.tsx": {
+    "lines": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/job/CardFrame.tsx": {
+    "lines": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 17, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/job/JobCard.tsx": {
+    "lines": { "total": 23, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 27, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 56, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/job/JobScreen.tsx": {
+    "lines": { "total": 30, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 35, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 30, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/job/NotHome.tsx": {
+    "lines": { "total": 75, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 29, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 84, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 62, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/job/paid-for.ts": {
+    "lines": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 },
+    "branches": { "total": 17, "covered": 16, "skipped": 0, "pct": 94.11 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/job/receipt.ts": {
+    "lines": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "branches": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/lib/installed.ts": {
+    "lines": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/lib/kind.ts": {
+    "lines": { "total": 17, "covered": 15, "skipped": 0, "pct": 88.23 },
+    "functions": { "total": 4, "covered": 3, "skipped": 0, "pct": 75 },
+    "statements": { "total": 24, "covered": 20, "skipped": 0, "pct": 83.33 },
+    "branches": { "total": 28, "covered": 22, "skipped": 0, "pct": 78.57 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/lib/navigate.ts": {
+    "lines": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 7, "covered": 7, "skipped": 0, "pct": 100 },
+    "branches": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/lib/progress.ts": {
+    "lines": { "total": 57, "covered": 57, "skipped": 0, "pct": 100 },
+    "functions": { "total": 21, "covered": 20, "skipped": 0, "pct": 95.23 },
+    "statements": { "total": 82, "covered": 81, "skipped": 0, "pct": 98.78 },
+    "branches": { "total": 82, "covered": 78, "skipped": 0, "pct": 95.12 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/lib/useDay.ts": {
+    "lines": { "total": 36, "covered": 22, "skipped": 0, "pct": 61.11 },
+    "functions": { "total": 23, "covered": 10, "skipped": 0, "pct": 43.47 },
+    "statements": { "total": 51, "covered": 29, "skipped": 0, "pct": 56.86 },
+    "branches": { "total": 22, "covered": 11, "skipped": 0, "pct": 50 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/lib/useOutbox.ts": {
+    "lines": { "total": 18, "covered": 14, "skipped": 0, "pct": 77.77 },
+    "functions": { "total": 10, "covered": 5, "skipped": 0, "pct": 50 },
+    "statements": { "total": 22, "covered": 15, "skipped": 0, "pct": 68.18 },
+    "branches": { "total": 4, "covered": 1, "skipped": 0, "pct": 25 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/lib/useReplayTriggers.ts": {
+    "lines": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/lib/useScreen.ts": {
+    "lines": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/lib/useSessionLifecycle.ts": {
+    "lines": { "total": 46, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 17, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 60, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/lib/when.ts": {
+    "lines": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 },
+    "functions": { "total": 6, "covered": 5, "skipped": 0, "pct": 83.33 },
+    "statements": { "total": 12, "covered": 11, "skipped": 0, "pct": 91.66 },
+    "branches": { "total": 5, "covered": 3, "skipped": 0, "pct": 60 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/login/SignIn.tsx": {
+    "lines": { "total": 85, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 22, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 94, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 73, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/states/ErrorBoundary.tsx": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/states/States.tsx": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/Checklist.tsx": {
+    "lines": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 24, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/CloseOut.tsx": {
+    "lines": { "total": 38, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 46, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 54, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/Consumables.tsx": {
+    "lines": { "total": 40, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 23, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 49, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 36, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/DiscountCode.tsx": {
+    "lines": { "total": 23, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 24, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/Outcome.tsx": {
+    "lines": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 14, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 35, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 44, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/Piece.tsx": {
+    "lines": { "total": 81, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 32, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 98, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 125, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/Profile.tsx": {
+    "lines": { "total": 60, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 34, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 71, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 44, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/StepFrame.tsx": {
+    "lines": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 17, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/label.ts": {
+    "lines": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/sent-before.ts": {
+    "lines": { "total": 16, "covered": 16, "skipped": 0, "pct": 100 },
+    "functions": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "statements": { "total": 22, "covered": 22, "skipped": 0, "pct": 100 },
+    "branches": { "total": 22, "covered": 22, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/steps/useStep.ts": {
+    "lines": { "total": 27, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 33, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 27, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/store/db.ts": {
+    "lines": { "total": 99, "covered": 93, "skipped": 0, "pct": 93.93 },
+    "functions": { "total": 52, "covered": 43, "skipped": 0, "pct": 82.69 },
+    "statements": { "total": 118, "covered": 107, "skipped": 0, "pct": 90.67 },
+    "branches": { "total": 33, "covered": 22, "skipped": 0, "pct": 66.66 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/store/device.ts": {
+    "lines": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "functions": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "statements": { "total": 12, "covered": 12, "skipped": 0, "pct": 100 },
+    "branches": { "total": 9, "covered": 7, "skipped": 0, "pct": 77.77 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/store/jobs.ts": {
+    "lines": { "total": 40, "covered": 39, "skipped": 0, "pct": 97.5 },
+    "functions": { "total": 24, "covered": 22, "skipped": 0, "pct": 91.66 },
+    "statements": { "total": 59, "covered": 56, "skipped": 0, "pct": 94.91 },
+    "branches": { "total": 23, "covered": 20, "skipped": 0, "pct": 86.95 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/store/outbox.ts": {
+    "lines": { "total": 124, "covered": 121, "skipped": 0, "pct": 97.58 },
+    "functions": { "total": 33, "covered": 31, "skipped": 0, "pct": 93.93 },
+    "statements": { "total": 161, "covered": 152, "skipped": 0, "pct": 94.4 },
+    "branches": { "total": 97, "covered": 87, "skipped": 0, "pct": 89.69 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/store/persist.ts": {
+    "lines": { "total": 9, "covered": 8, "skipped": 0, "pct": 88.88 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 12, "covered": 11, "skipped": 0, "pct": 91.66 },
+    "branches": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/store/replay.ts": {
+    "lines": { "total": 22, "covered": 22, "skipped": 0, "pct": 100 },
+    "functions": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "statements": { "total": 30, "covered": 30, "skipped": 0, "pct": 100 },
+    "branches": { "total": 23, "covered": 22, "skipped": 0, "pct": 95.65 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/store/set-aside.ts": {
+    "lines": { "total": 28, "covered": 27, "skipped": 0, "pct": 96.42 },
+    "functions": { "total": 7, "covered": 6, "skipped": 0, "pct": 85.71 },
+    "statements": { "total": 37, "covered": 34, "skipped": 0, "pct": 91.89 },
+    "branches": { "total": 26, "covered": 21, "skipped": 0, "pct": 80.76 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/store/upgrades.ts": {
+    "lines": { "total": 33, "covered": 33, "skipped": 0, "pct": 100 },
+    "functions": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 },
+    "statements": { "total": 36, "covered": 36, "skipped": 0, "pct": 100 },
+    "branches": { "total": 27, "covered": 26, "skipped": 0, "pct": 96.29 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/store/uuidv7.ts": {
+    "lines": { "total": 12, "covered": 12, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "branches": { "total": 5, "covered": 3, "skipped": 0, "pct": 60 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/store/verdict.ts": {
+    "lines": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 12, "covered": 12, "skipped": 0, "pct": 100 },
+    "branches": { "total": 12, "covered": 12, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/today/JobRow.tsx": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/today/TodayScreen.tsx": {
+    "lines": { "total": 44, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 19, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 50, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 58, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/waiting/Progress.tsx": {
+    "lines": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/waiting/WaitingScreen.tsx": {
+    "lines": { "total": 43, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 56, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 46, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/apps/tech/src/waiting/sets.ts": {
+    "lines": { "total": 26, "covered": 26, "skipped": 0, "pct": 100 },
+    "functions": { "total": 16, "covered": 16, "skipped": 0, "pct": 100 },
+    "statements": { "total": 35, "covered": 34, "skipped": 0, "pct": 97.14 },
+    "branches": { "total": 18, "covered": 16, "skipped": 0, "pct": 88.88 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/brand/colours.ts": {
+    "lines": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/brand/icons.ts": {
+    "lines": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/brand/images.ts": {
+    "lines": { "total": 19, "covered": 19, "skipped": 0, "pct": 100 },
+    "functions": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "statements": { "total": 20, "covered": 20, "skipped": 0, "pct": 100 },
+    "branches": { "total": 4, "covered": 2, "skipped": 0, "pct": 50 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/brand/marks.ts": {
+    "lines": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/Button.tsx": {
+    "lines": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 },
+    "functions": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "statements": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 },
+    "branches": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/Caps.tsx": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/Dialog.tsx": {
+    "lines": { "total": 9, "covered": 5, "skipped": 0, "pct": 55.55 },
+    "functions": { "total": 4, "covered": 2, "skipped": 0, "pct": 50 },
+    "statements": { "total": 11, "covered": 5, "skipped": 0, "pct": 45.45 },
+    "branches": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/ErrorBoundary.tsx": {
+    "lines": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/ErrorRef.tsx": {
+    "lines": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "functions": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "statements": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/Field.tsx": {
+    "lines": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "functions": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "statements": { "total": 11, "covered": 11, "skipped": 0, "pct": 100 },
+    "branches": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/Icon.tsx": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/Mark.tsx": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/Panel.tsx": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "branches": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/Sheet.tsx": {
+    "lines": { "total": 17, "covered": 8, "skipped": 0, "pct": 47.05 },
+    "functions": { "total": 8, "covered": 2, "skipped": 0, "pct": 25 },
+    "statements": { "total": 20, "covered": 8, "skipped": 0, "pct": 40 },
+    "branches": { "total": 21, "covered": 9, "skipped": 0, "pct": 42.85 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/States.tsx": {
+    "lines": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "branches": { "total": 5, "covered": 4, "skipped": 0, "pct": 80 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/Table.tsx": {
+    "lines": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/Tabs.tsx": {
+    "lines": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/VisuallyHidden.tsx": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "branches": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/classes.ts": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/cssToken.ts": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/motion.ts": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/router.tsx": {
+    "lines": { "total": 23, "covered": 8, "skipped": 0, "pct": 34.78 },
+    "functions": { "total": 12, "covered": 4, "skipped": 0, "pct": 33.33 },
+    "statements": { "total": 28, "covered": 9, "skipped": 0, "pct": 32.14 },
+    "branches": { "total": 15, "covered": 10, "skipped": 0, "pct": 66.66 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/sheetHistory.ts": {
+    "lines": { "total": 44, "covered": 44, "skipped": 0, "pct": 100 },
+    "functions": { "total": 12, "covered": 12, "skipped": 0, "pct": 100 },
+    "statements": { "total": 52, "covered": 50, "skipped": 0, "pct": 96.15 },
+    "branches": { "total": 22, "covered": 19, "skipped": 0, "pct": 86.36 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/useAsync.ts": {
+    "lines": { "total": 15, "covered": 15, "skipped": 0, "pct": 100 },
+    "functions": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 },
+    "statements": { "total": 18, "covered": 18, "skipped": 0, "pct": 100 },
+    "branches": { "total": 7, "covered": 5, "skipped": 0, "pct": 71.42 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/useLoad.ts": {
+    "lines": { "total": 12, "covered": 8, "skipped": 0, "pct": 66.66 },
+    "functions": { "total": 6, "covered": 4, "skipped": 0, "pct": 66.66 },
+    "statements": { "total": 18, "covered": 12, "skipped": 0, "pct": 66.66 },
+    "branches": { "total": 12, "covered": 6, "skipped": 0, "pct": 50 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/useModal.ts": {
+    "lines": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 11, "covered": 10, "skipped": 0, "pct": 90.9 },
+    "branches": { "total": 2, "covered": 1, "skipped": 0, "pct": 50 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/ui/useOneAtATime.ts": {
+    "lines": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 11, "covered": 11, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/address.ts": {
+    "lines": { "total": 11, "covered": 11, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 16, "covered": 11, "skipped": 0, "pct": 68.75 },
+    "branches": { "total": 13, "covered": 8, "skipped": 0, "pct": 61.53 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/api.ts": {
+    "lines": { "total": 54, "covered": 54, "skipped": 0, "pct": 100 },
+    "functions": { "total": 15, "covered": 15, "skipped": 0, "pct": 100 },
+    "statements": { "total": 61, "covered": 61, "skipped": 0, "pct": 100 },
+    "branches": { "total": 62, "covered": 58, "skipped": 0, "pct": 93.54 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/client-errors.ts": {
+    "lines": { "total": 24, "covered": 21, "skipped": 0, "pct": 87.5 },
+    "functions": { "total": 8, "covered": 7, "skipped": 0, "pct": 87.5 },
+    "statements": { "total": 26, "covered": 22, "skipped": 0, "pct": 84.61 },
+    "branches": { "total": 18, "covered": 12, "skipped": 0, "pct": 66.66 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/dates.ts": {
+    "lines": { "total": 36, "covered": 36, "skipped": 0, "pct": 100 },
+    "functions": { "total": 19, "covered": 19, "skipped": 0, "pct": 100 },
+    "statements": { "total": 40, "covered": 40, "skipped": 0, "pct": 100 },
+    "branches": { "total": 27, "covered": 16, "skipped": 0, "pct": 59.25 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/guarantee.ts": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/hair-profile.ts": {
+    "lines": { "total": 41, "covered": 37, "skipped": 0, "pct": 90.24 },
+    "functions": { "total": 20, "covered": 19, "skipped": 0, "pct": 95 },
+    "statements": { "total": 56, "covered": 52, "skipped": 0, "pct": 92.85 },
+    "branches": { "total": 74, "covered": 62, "skipped": 0, "pct": 83.78 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/headers.ts": {
+    "lines": { "total": 6, "covered": 3, "skipped": 0, "pct": 50 },
+    "functions": { "total": 5, "covered": 2, "skipped": 0, "pct": 40 },
+    "statements": { "total": 8, "covered": 4, "skipped": 0, "pct": 50 },
+    "branches": { "total": 12, "covered": 6, "skipped": 0, "pct": 50 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/mobile.ts": {
+    "lines": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 },
+    "functions": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "statements": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 },
+    "branches": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/money.ts": {
+    "lines": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/names.ts": {
+    "lines": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 4, "covered": 4, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/pwa.ts": {
+    "lines": { "total": 28, "covered": 13, "skipped": 0, "pct": 46.42 },
+    "functions": { "total": 14, "covered": 8, "skipped": 0, "pct": 57.14 },
+    "statements": { "total": 32, "covered": 16, "skipped": 0, "pct": 50 },
+    "branches": { "total": 15, "covered": 8, "skipped": 0, "pct": 53.33 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/small-jpeg.ts": {
+    "lines": { "total": 35, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 44, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/sw-requests.ts": {
+    "lines": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "branches": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/sw-shell.ts": {
+    "lines": { "total": 23, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 27, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/turnstile.ts": {
+    "lines": { "total": 47, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 54, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/packages/web-kit/whatsapp.ts": {
+    "lines": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/worker.ts": {
+    "lines": { "total": 94, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 22, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 110, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 73, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/content/design-placeholders.ts": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/content/prices.ts": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/content/referral.ts": {
+    "lines": { "total": 38, "covered": 32, "skipped": 0, "pct": 84.21 },
+    "functions": { "total": 19, "covered": 14, "skipped": 0, "pct": 73.68 },
+    "statements": { "total": 49, "covered": 42, "skipped": 0, "pct": 85.71 },
+    "branches": { "total": 41, "covered": 34, "skipped": 0, "pct": 82.92 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/content/service.ts": {
+    "lines": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 9, "covered": 8, "skipped": 0, "pct": 88.88 },
+    "branches": { "total": 2, "covered": 1, "skipped": 0, "pct": 50 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/content/site.ts": {
+    "lines": { "total": 64, "covered": 62, "skipped": 0, "pct": 96.87 },
+    "functions": { "total": 9, "covered": 8, "skipped": 0, "pct": 88.88 },
+    "statements": { "total": 67, "covered": 64, "skipped": 0, "pct": 95.52 },
+    "branches": { "total": 20, "covered": 8, "skipped": 0, "pct": 40 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/BeforeAfter.tsx": {
+    "lines": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/Drawings.tsx": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/NumberCodeField.tsx": {
+    "lines": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/StopMessages.tsx": {
+    "lines": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/useInvalidFocus.ts": {
+    "lines": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/useNumberCode.ts": {
+    "lines": { "total": 36, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 40, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/AddressFieldset.tsx": {
+    "lines": { "total": 25, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/Consultation.tsx": {
+    "lines": { "total": 77, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 92, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 92, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/Done.tsx": {
+    "lines": { "total": 24, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 28, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 43, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/HowItWorks.tsx": {
+    "lines": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/Invite.tsx": {
+    "lines": { "total": 84, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 21, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 103, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 114, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/PincodePanel.tsx": {
+    "lines": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 19, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/Prices.tsx": {
+    "lines": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/Waitlist.tsx": {
+    "lines": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 22, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/fields.tsx": {
+    "lines": { "total": 17, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 18, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 34, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/history.ts": {
+    "lines": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/page.ts": {
+    "lines": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 32, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 30, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/preview.ts": {
+    "lines": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/step.ts": {
+    "lines": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 13, "covered": 13, "skipped": 0, "pct": 100 },
+    "branches": { "total": 16, "covered": 16, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/submit.ts": {
+    "lines": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/useOpenWindows.ts": {
+    "lines": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/usePincode.ts": {
+    "lines": { "total": 40, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 43, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/invite/useTurnstileForm.ts": {
+    "lines": { "total": 65, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 82, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 47, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/Consent.tsx": {
+    "lines": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/Failed.tsx": {
+    "lines": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/Gate.tsx": {
+    "lines": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 26, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/Looks.tsx": {
+    "lines": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/Sent.tsx": {
+    "lines": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/Stage.tsx": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/Title.tsx": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/TryOn.tsx": {
+    "lines": { "total": 171, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 32, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 199, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 141, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/Upload.tsx": {
+    "lines": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 11, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/hooks.ts": {
+    "lines": { "total": 20, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 27, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 16, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/islands/tryon/machine.ts": {
+    "lines": { "total": 35, "covered": 34, "skipped": 0, "pct": 97.14 },
+    "functions": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "statements": { "total": 39, "covered": 38, "skipped": 0, "pct": 97.43 },
+    "branches": { "total": 40, "covered": 39, "skipped": 0, "pct": 97.5 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/address.ts": {
+    "lines": { "total": 9, "covered": 8, "skipped": 0, "pct": 88.88 },
+    "functions": { "total": 9, "covered": 8, "skipped": 0, "pct": 88.88 },
+    "statements": { "total": 13, "covered": 12, "skipped": 0, "pct": 92.3 },
+    "branches": { "total": 7, "covered": 6, "skipped": 0, "pct": 85.71 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/analytics-ids.ts": {
+    "lines": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/analytics.ts": {
+    "lines": { "total": 46, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 10, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 55, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 33, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/api.ts": {
+    "lines": { "total": 35, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 23, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 38, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 15, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/app-link.ts": {
+    "lines": { "total": 7, "covered": 4, "skipped": 0, "pct": 57.14 },
+    "functions": { "total": 2, "covered": 1, "skipped": 0, "pct": 50 },
+    "statements": { "total": 10, "covered": 5, "skipped": 0, "pct": 50 },
+    "branches": { "total": 6, "covered": 2, "skipped": 0, "pct": 33.33 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/attribution.ts": {
+    "lines": { "total": 10, "covered": 10, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 12, "covered": 12, "skipped": 0, "pct": 100 },
+    "branches": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/brand-images.ts": {
+    "lines": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 13, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/build.ts": {
+    "lines": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/byte-range.ts": {
+    "lines": { "total": 29, "covered": 15, "skipped": 0, "pct": 51.72 },
+    "functions": { "total": 3, "covered": 2, "skipped": 0, "pct": 66.66 },
+    "statements": { "total": 40, "covered": 22, "skipped": 0, "pct": 55 },
+    "branches": { "total": 32, "covered": 19, "skipped": 0, "pct": 59.37 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/dates.ts": {
+    "lines": { "total": 14, "covered": 13, "skipped": 0, "pct": 92.85 },
+    "functions": { "total": 5, "covered": 4, "skipped": 0, "pct": 80 },
+    "statements": { "total": 14, "covered": 13, "skipped": 0, "pct": 92.85 },
+    "branches": { "total": 16, "covered": 7, "skipped": 0, "pct": 43.75 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/environment.ts": {
+    "lines": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/flags.ts": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/hair-colour.ts": {
+    "lines": { "total": 101, "covered": 101, "skipped": 0, "pct": 100 },
+    "functions": { "total": 34, "covered": 34, "skipped": 0, "pct": 100 },
+    "statements": { "total": 132, "covered": 129, "skipped": 0, "pct": 97.72 },
+    "branches": { "total": 83, "covered": 70, "skipped": 0, "pct": 84.33 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/hero-film.ts": {
+    "lines": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "functions": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "statements": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 },
+    "branches": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/hero.ts": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/idempotency.ts": {
+    "lines": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/images.ts": {
+    "lines": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/invite.ts": {
+    "lines": { "total": 10, "covered": 4, "skipped": 0, "pct": 40 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 12, "covered": 4, "skipped": 0, "pct": 33.33 },
+    "branches": { "total": 17, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/look-thumbnails.ts": {
+    "lines": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 7, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/open-windows.ts": {
+    "lines": { "total": 13, "covered": 13, "skipped": 0, "pct": 100 },
+    "functions": { "total": 8, "covered": 8, "skipped": 0, "pct": 100 },
+    "statements": { "total": 21, "covered": 21, "skipped": 0, "pct": 100 },
+    "branches": { "total": 18, "covered": 17, "skipped": 0, "pct": 94.44 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/photo.ts": {
+    "lines": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 33, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 12, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/prices.ts": {
+    "lines": { "total": 26, "covered": 24, "skipped": 0, "pct": 92.3 },
+    "functions": { "total": 17, "covered": 15, "skipped": 0, "pct": 88.23 },
+    "statements": { "total": 31, "covered": 29, "skipped": 0, "pct": 93.54 },
+    "branches": { "total": 29, "covered": 27, "skipped": 0, "pct": 93.1 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/publish-gate.ts": {
+    "lines": { "total": 36, "covered": 32, "skipped": 0, "pct": 88.88 },
+    "functions": { "total": 11, "covered": 9, "skipped": 0, "pct": 81.81 },
+    "statements": { "total": 45, "covered": 40, "skipped": 0, "pct": 88.88 },
+    "branches": { "total": 29, "covered": 25, "skipped": 0, "pct": 86.2 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/remembered-invite.ts": {
+    "lines": { "total": 27, "covered": 22, "skipped": 0, "pct": 81.48 },
+    "functions": { "total": 8, "covered": 5, "skipped": 0, "pct": 62.5 },
+    "statements": { "total": 32, "covered": 25, "skipped": 0, "pct": 78.12 },
+    "branches": { "total": 23, "covered": 20, "skipped": 0, "pct": 86.95 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/reward.ts": {
+    "lines": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/site-origin.ts": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/static-files.ts": {
+    "lines": { "total": 33, "covered": 33, "skipped": 0, "pct": 100 },
+    "functions": { "total": 23, "covered": 23, "skipped": 0, "pct": 100 },
+    "statements": { "total": 46, "covered": 46, "skipped": 0, "pct": 100 },
+    "branches": { "total": 19, "covered": 16, "skipped": 0, "pct": 84.21 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/structured-data.ts": {
+    "lines": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 6, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/text.ts": {
+    "lines": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "branches": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/tryon-errors.ts": {
+    "lines": { "total": 12, "covered": 12, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 17, "covered": 17, "skipped": 0, "pct": 100 },
+    "branches": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/tryon.ts": {
+    "lines": { "total": 22, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 5, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 31, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 23, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/turnstile.ts": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/lib/visit.ts": {
+    "lines": { "total": 8, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 9, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/pages/apple-touch-icon.png.ts": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/pages/favicon-[size].png.ts": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/pages/favicon.ico.ts": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/pages/icon-[size].png.ts": {
+    "lines": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 3, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/pages/manifest.webmanifest.ts": {
+    "lines": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 4, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "C:/Users/X2/Maneman projects/Web/site/src/pages/og.png.ts": {
+    "lines": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "functions": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "statements": { "total": 1, "covered": 0, "skipped": 0, "pct": 0 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  }
+}

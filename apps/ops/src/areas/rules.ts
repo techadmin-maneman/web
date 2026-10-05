@@ -1,4 +1,4 @@
-// What the API takes for a pincode and an area's name (src/routes/ops-settings.ts), so a box says so before a send.
+// What the API takes for a pincode and an area's name (src/routes/ops/settings.ts), so a box says so before a send.
 
 /** Six digits, the first 1 to 8. */
 export const PINCODE = /^[1-8]\d{5}$/;

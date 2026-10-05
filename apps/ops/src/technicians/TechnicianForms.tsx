@@ -1,4 +1,4 @@
-// Adding a technician, changing his details, and switching him off or back on (src/routes/ops-technicians.ts).
+// Adding a technician, changing his details, and switching him off or back on (src/routes/ops/technicians.ts).
 // Switching off asks first, since it signs him out at once and hands his visits still to come back to the dispatch
 // board.
 

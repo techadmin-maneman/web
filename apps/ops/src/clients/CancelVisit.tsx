@@ -1,6 +1,6 @@
 // Cancelling a client's visit from the console, from their Visits tab or the dispatch board's drawer. The panel shows
 // what the cancel gives back before anything changes: free to the client, unless ops tick the client's own late terms.
-// It goes only with a reason, which is kept with the cancel (src/routes/ops-visit-changes.ts). No board draws it.
+// It goes only with a reason, which is kept with the cancel (src/routes/ops/visit-changes.ts). No board draws it.
 
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
