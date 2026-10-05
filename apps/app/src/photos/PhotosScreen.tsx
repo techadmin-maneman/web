@@ -10,7 +10,7 @@ import { useState } from "react";
 import { api, type PhotoTimeline } from "../api.ts";
 import { empty, photos, states } from "../content.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
-import { EmptyState } from "../components/TabScreens.tsx";
+import { EmptyState } from "../components/EmptyState.tsx";
 import { TAB_ICONS } from "../icons.ts";
 import { visitName } from "../lib/visit.ts";
 import { PageFailed } from "../states/PageFailed.tsx";

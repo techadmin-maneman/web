@@ -2,7 +2,7 @@
 // beneath it.
 
 import { Icon } from "@maneman/ui/Icon";
-import styles from "./tabs.module.css";
+import styles from "./empty-state.module.css";
 
 /** `tight` sets the lines 12 px apart, as board E3 does, where D3 and F6 set them 14; D3 draws a glyph above. */
 export function EmptyState(props: { lines: readonly [string, string]; tight?: boolean; icon?: string }) {

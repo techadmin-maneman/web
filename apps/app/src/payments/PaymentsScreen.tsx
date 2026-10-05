@@ -18,7 +18,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { api, type CreditLine, type Entry, type Me, type OwedPayment } from "../api.ts";
 import { empty, payments } from "../content.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
-import { EmptyState } from "../components/TabScreens.tsx";
+import { EmptyState } from "../components/EmptyState.tsx";
 import { oneVisitOf } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";

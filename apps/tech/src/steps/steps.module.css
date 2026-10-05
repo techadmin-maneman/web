@@ -15,7 +15,7 @@
 /*
  * Steps slide in 300 ms on the house curve (the board's motion note). Only the
  * way in is drawn, so nothing is left transformed once the step has landed;
- * under prefers-reduced-motion nothing moves (../styles/global.css).
+ * under prefers-reduced-motion nothing moves (packages/ui/base.css).
  */
 .sliding {
   animation: var(--duration-quick) var(--ease-house) backwards step-in;
