@@ -1,42 +1,12 @@
-// Booking in the app (docs/decisions/0045-self-serve-booking.md): the days and
-// windows open for a service (board C2 and C3), and a window held for ten
-// minutes while the client pays (C4). Behind SELF_SERVE_BOOKING: off, every
-// route answers 409 ops_assisted and the app opens WhatsApp to ops instead.
-//
-// A visit may be booked from tomorrow as far ahead as ops' horizon, 45 days to
-// begin with, and a first fit no sooner than ops' lead time after the
-// consultation (docs/decisions/0086-the-next-visit-is-offered.md). The strip
-// is 14 days from the day asked for, within those, and the app asks for later
-// ones up to the last.
+// Booking in the app (docs/decisions/0045-self-serve-booking.md): the windows open for a service, one held for ten
+// minutes while the client pays, and its booking. With self-serve booking off, every route answers ops_assisted. No
+// window is held before the client has given the visit's address, and with `moving` a hold moves one of their visits.
 //
 //   GET    /api/availability?type=&tier=&from=   14 days of the windows the visit can start in, and who could come
 //   POST   /api/holds                      hold a window
 //   GET    /api/holds/:id                  a hold: lapsed, paid, or booked as a visit
 //   DELETE /api/holds/:id                  let it go
 //   POST   /api/bookings                   book a hold: Checkout's order, or, if free, sent to be booked
-//
-// With `moving`, availability and a hold are for moving one of the client's
-// visits (docs/decisions/0046-moving-and-cancelling.md): with its technician,
-// priced at what the move costs now.
-//
-// No slot is held, for a new visit or a move, until the client has given the
-// address the visit goes to, and the hold carries its pincode
-// (docs/decisions/0079-an-address-before-a-slot.md). An address in a pincode we
-// do not come to is answered not_served, with no days and no hold, whether the
-// client typed it, ops saved it, or ops stopped serving it. Booking a new visit also
-// agrees to the photograph purposes the pay step showed, each only while the
-// client has never decided on it, recorded once the booking is confirmed
-// (docs/decisions/0080-consents-given-by-booking.md).
-//
-// Once paid for, a hold keeps its time until it is booked or refunded, and the
-// client can no longer let it go (docs/decisions/0068-a-paid-hold-is-kept.md).
-//
-// A booking is for a service: a kind of visit, and the tier the client chose
-// of it, the kind's standard one where they name none. A first fit has no
-// standard one: it names the hair system, one of those the console offers,
-// and with none offered it is refused as no_product. The hold keeps the
-// service with its price, late fee and length as they are when it is made
-// (docs/decisions/0085-services-ops-can-edit.md). A move keeps its visit's own.
 
 import { selfServeRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";

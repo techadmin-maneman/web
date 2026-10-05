@@ -2,7 +2,7 @@
 // by its own words.
 
 import { describe, expect, it } from "vitest";
-import { WINDOW_TIMES } from "../../src/config/scheduling.ts";
+import { WINDOW_SLOT_MAP, WINDOW_TIMES } from "../../src/config/scheduling.ts";
 import {
   DEFAULT_SLOT_TIMES,
   earliestAppliesFrom,
@@ -86,5 +86,28 @@ describe("when a change of times may apply from", () => {
     expect(earliestAppliesFrom("2026-10-01", 45, null, "2027-01-01")).toBe("2027-01-02");
     // A visit booked inside the horizon changes nothing.
     expect(earliestAppliesFrom("2026-10-01", 45, "2026-10-20", null)).toBe("2026-11-16");
+  });
+});
+
+// The client app offers three windows; a technician's day is eight half-slots. The two designs disagree, so the map
+// between them is written down (docs/decisions/0035-window-slot-map.md).
+describe("the client's windows", () => {
+  it("are 9 to 12, 12 to 4 and 4 to 8, mapped onto the day's eight half-slots", () => {
+    expect(WINDOW_TIMES).toEqual({
+      morning: { start: "09:00", end: "12:00" },
+      afternoon: { start: "12:00", end: "16:00" },
+      evening: { start: "16:00", end: "20:00" },
+    });
+    expect(WINDOW_SLOT_MAP).toEqual({ morning: [0, 1], afternoon: [2, 3, 4, 5], evening: [6, 7] });
+  });
+
+  it("puts a time of day in India in the window it falls in, each window starting where the last one ends", () => {
+    const inWindow = (time: string) => windowAt(time, DEFAULT_SLOT_TIMES);
+    expect(inWindow("09:00")).toBe("morning");
+    expect(inWindow("11:59")).toBe("morning");
+    expect(inWindow("12:00")).toBe("afternoon");
+    expect(inWindow("15:59")).toBe("afternoon");
+    expect(inWindow("16:00")).toBe("evening");
+    expect(inWindow("19:30")).toBe("evening");
   });
 });

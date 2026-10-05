@@ -1,18 +1,6 @@
-// A held window, booked (docs/decisions/0045-self-serve-booking.md, 0068-a-paid-hold-is-kept.md).
-//
-// A paid visit starts as a Razorpay order for the hold. Razorpay's webhook confirms the capture and books the visit in
-// one batch; the request that confirms a free visit books it the same way. A hold the client has paid for, or booked
-// free, keeps its time until it is booked or refunded: one whose request failed part-way is booked by the cron within
-// the half hour. A payment is in time if Razorpay made it before the hold ran out, give or take the grace; one made
-// later is refunded in full, and the client told.
-//
-// A hold that moves a visit (docs/decisions/0046-moving-and-cancelling.md) either moves it in place, once its late fee
-// is paid or at once when free, or books a new visit and cancels the old one, whose payment is kept. A visit the
-// technician has begun is never moved or cancelled this way. A move in place whose visit ops gave to another
-// technician meanwhile, or whose time is no longer free, is given back, and the client told.
-//
-// A visit is booked for the length its hold was made with, and carries the hold's tier, since the hold is what was
-// sold (docs/decisions/0085-services-ops-can-edit.md).
+// A held window, booked (docs/decisions/0068-a-paid-hold-is-kept.md). Razorpay's webhook, or the request for a free
+// visit, books it in one batch; a paid hold keeps its time until it is booked, by the cron if its request failed, or
+// refunded. A hold that moves a visit moves it in place, or books a new one and cancels the old.
 
 import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";

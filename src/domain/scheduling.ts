@@ -1,27 +1,6 @@
-// When a visit can be booked, and holding it while the client pays
-// (docs/decisions/0034-clash-check.md, 0035-window-slot-map.md).
-//
-// A technician's day is eight half-slots. What takes them: slots held
-// (slot_claims), live visits, and leave ops recorded (ADR 0062). A technician
-// holds one live job per window. A hold writes its claims in one batch, and the
-// claims' key stops two holds taking the same time; once a hold is booked, its
-// visit takes the time instead. A visit being moved keeps its technician,
-// and its own time does not count against the move
-// (docs/decisions/0046-moving-and-cancelling.md).
-//
-// A hold keeps its time while it is waiting for payment, for its ten minutes
-// and the grace after them, and from the moment it is paid for (or booked free)
-// until it is booked or refunded, however long that takes
-// (docs/decisions/0068-a-paid-hold-is-kept.md). Nobody's hold lets a paid one
-// go. The days ops black out (visit_blackouts) are not offered at all.
-//
-// A move on the dispatch board claims its new time the same way, in the batch
-// that moves the visit (docs/decisions/0069-dispatch-under-concurrency.md).
-//
-// A visit holds the half-slots its length needs (src/policy/visit-length.ts):
-// a hold, its service's length as it was made; a visit already booked, the
-// longer of its service's length and its booked window
-// (docs/decisions/0085-services-ops-can-edit.md).
+// When a visit can be booked, and holding a window while the client pays (docs/decisions/0034-clash-check.md). A
+// technician's day is eight half-slots, taken by holds' claims, live visits and leave; the claims' key stops two holds
+// taking the same time, and a booked visit then holds it itself. Days ops black out are never offered.
 
 import { failedUniqueOn } from "../lib/d1-errors.ts";
 import {
