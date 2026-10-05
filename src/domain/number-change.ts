@@ -251,12 +251,16 @@ type Decision = "confirm" | "reject";
 
 /**
  * Ops' decision. Confirming moves the person to the new number, unless
- * someone else already holds it, and keeps the number it replaced, which the
+ * another client already holds it, and keeps the number it replaced, which the
  * referral fraud rules compare (src/domain/referral-grants.ts). It signs out
  * every session of theirs but the one that asked, so a phone that went with the
  * old number is signed in no longer. Only a change waiting for ops can be
  * decided. The caller sends a confirmed number on to the client's Books
  * customer and the CRM lead.
+ *
+ * A record that holds the new number but never became a client, with a try-on or a waitlist entry and nothing
+ * booked, gives the number up, since the client has proved it is now theirs. That record keeps what it holds, has no
+ * number, is signed out, and is sent nothing more.
  */
 export async function decideNumberChange(
   db: D1Database,
@@ -281,13 +285,20 @@ export async function decideNumberChange(
   }
 
   const holder = await db
-    .prepare("SELECT id FROM people WHERE mobile_e164 = ?1 AND id != ?2")
+    .prepare(
+      `SELECT id, (client_since IS NULL AND NOT EXISTS (
+         SELECT 1 FROM slot_holds h WHERE h.person_id = people.id AND h.state = 'held')) AS never_a_client
+       FROM people WHERE mobile_e164 = ?1 AND id != ?2`,
+    )
     .bind(change.newMobileE164, change.personId)
-    .first<string>("id");
-  if (holder !== null) return "number_in_use";
+    .first<{ id: string; never_a_client: number }>();
+  if (holder !== null && holder.never_a_client !== 1) return "number_in_use";
   const client = { kind: "client", id: change.personId } as const;
+  const released = holder === null ? [] : releaseNumber(db, holder.id, options.now);
+  const decision = holder === null ? audit : auditStatement(db, releasedIn(options.audit, holder.id), options.now);
   try {
     await db.batch([
+      ...released,
       decide,
       // Read before the next statement moves the person off it.
       db
@@ -297,7 +308,7 @@ export async function decideNumberChange(
         .bind(change.id, change.personId),
       db.prepare("UPDATE people SET mobile_e164 = ?2 WHERE id = ?1").bind(change.personId, change.newMobileE164),
       revokeOthersStatement(db, client, change.sessionId, options.now),
-      audit,
+      decision,
     ]);
   } catch (error) {
     // Someone took the number between the check and the batch: the batch wrote nothing.
@@ -306,3 +317,23 @@ export async function decideNumberChange(
   }
   return decided;
 }
+
+/**
+ * The number taken from a record that never became a client, in the batch that gives it to the client: written over
+ * with a mark of its own, which no message is sent to, and the record signed out. Written only while it is still no
+ * client's, so a record that became one meanwhile keeps its number, and the client's change fails as in use.
+ */
+function releaseNumber(db: D1Database, personId: string, now: Date): D1PreparedStatement[] {
+  return [
+    db
+      .prepare("UPDATE people SET mobile_e164 = 'released:' || id WHERE id = ?1 AND client_since IS NULL")
+      .bind(personId),
+    revokeOthersStatement(db, { kind: "client", id: personId }, null, now),
+  ];
+}
+
+/** The decision's audit entry, naming the record that gave its number up. */
+const releasedIn = (entry: AuditEntry, personId: string): AuditEntry => ({
+  ...entry,
+  detail: { ...entry.detail, released_from: personId },
+});

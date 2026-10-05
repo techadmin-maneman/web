@@ -755,20 +755,66 @@ describe("a number change", () => {
     expect((await start()).res.status).toBe(429);
   });
 
-  it("cannot be confirmed onto a number another person holds", async () => {
+  it("cannot be confirmed onto a number another client holds", async () => {
     const { body } = await start();
     await verify(body.request_id, "old", codeTo(OLD));
     await verify(body.request_id, "new", codeTo(NEW));
-    await env.DB.prepare(
-      "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p2', ?1, ?2, 'Someone', 1)",
-    )
-      .bind(NOW.toISOString(), NEW)
-      .run();
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p2', ?1, ?2, 'Someone', 1)",
+      ).bind(NOW.toISOString(), NEW),
+      // A visit makes them a client.
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
+         VALUES ('v2', 'v2', 'p2', 'consultation', 'completed', ?1, ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
     const res = await send(ops, "POST", `/api/number-changes/${body.request_id}/decision`, {
       decision: "confirm",
       reason: null,
     });
     expect(res.status).toBe(409);
+  });
+
+  it("takes the number from a record that never became a client, which keeps its entry and is signed out", async () => {
+    const { body } = await start();
+    await verify(body.request_id, "old", codeTo(OLD));
+    await verify(body.request_id, "new", codeTo(NEW));
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p2', ?1, ?2, 'Someone', 1)",
+      ).bind(NOW.toISOString(), NEW),
+      env.DB.prepare(
+        `INSERT INTO waitlist_entries (id, pincode, person_id, contact_consent_at, created_at)
+         VALUES ('wl-1', '400050', 'p2', ?1, ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+    const theirPhone = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p2", deviceLabel: null, now: NOW })}`;
+
+    const res = await send(ops, "POST", `/api/number-changes/${body.request_id}/decision`, {
+      decision: "confirm",
+      reason: null,
+    });
+
+    expect(res.status).toBe(200);
+    const numbers = await env.DB.prepare(
+      "SELECT id, mobile_e164 FROM people WHERE id IN ('p1', 'p2') ORDER BY id",
+    ).all();
+    expect(numbers.results).toEqual([
+      { id: "p1", mobile_e164: NEW },
+      { id: "p2", mobile_e164: "released:p2" },
+    ]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM waitlist_entries WHERE person_id = 'p2'").first("n")).toBe(
+      1,
+    );
+    const theirs = await request(client, "/api/me", { headers: { Origin: ORIGIN, Cookie: theirPhone } }, queues);
+    expect(theirs.status).toBe(401);
+    const detail = await env.DB.prepare(
+      "SELECT detail FROM audit_log WHERE subject_id = ?1 AND detail LIKE '%released_from%'",
+    )
+      .bind(body.request_id)
+      .first<string>("detail");
+    expect(JSON.parse(detail ?? "{}")).toMatchObject({ decision: "confirm", released_from: "p2" });
   });
 
   it("needs a reason to be rejected", async () => {

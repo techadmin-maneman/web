@@ -1004,7 +1004,7 @@ Request body:
 }
 ```
 
-**409**: number_in_use: another person holds the new number
+**409**: number_in_use: another client holds the new number
 
 ```json
 {

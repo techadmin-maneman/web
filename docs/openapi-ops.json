@@ -11510,7 +11510,7 @@
             }
           },
           "409": {
-            "description": "number_in_use: another person holds the new number",
+            "description": "number_in_use: another client holds the new number",
             "content": {
               "application/json": {
                 "schema": {

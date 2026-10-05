@@ -85,7 +85,7 @@ const numberChangeDecisionRoute = createRoute({
     200: { description: "Decided", ...json(z.object({ state: z.enum(["confirmed", "rejected"]) }).strict()) },
     400: errorResponse("invalid_request: a rejection needs a reason"),
     404: errorResponse("not_found: no change waiting for ops by that ID in the caller's cities"),
-    409: errorResponse("number_in_use: another person holds the new number"),
+    409: errorResponse("number_in_use: another client holds the new number"),
   },
 });
 

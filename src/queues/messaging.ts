@@ -299,6 +299,8 @@ export async function sendMessage(
   };
 
   if (row.erased_at !== null) return skip("person erased");
+  // A record whose number a client took over (src/domain/number-change.ts) has none to send to.
+  if (!row.mobile_e164.startsWith("+")) return skip("no number");
   if (!messaging.enabled) return skip("messaging is off");
   if (messageHeldBack(messaging, row)) return skip("number not on the allowlist");
   const content = await contentOf(db, config, row, now);

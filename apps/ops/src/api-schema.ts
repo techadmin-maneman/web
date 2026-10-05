@@ -1501,7 +1501,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description number_in_use: another person holds the new number */
+                /** @description number_in_use: another client holds the new number */
                 409: {
                     headers: {
                         [name: string]: unknown;
