@@ -3,6 +3,7 @@
 // has begun. No amount, anywhere. The client is named from the day before the
 // visit, when the job unlocks.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { GLYPHS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
@@ -31,8 +32,8 @@ export function JobRow({
       </span>
       <span className={styles.what}>
         <span className={styles.kind}>
-          <span className={styles.type}>{kindName(job)}</span>
-          <span className={styles.badge}>· {badges[job.badge]}</span>
+          <span className={capsLook(styles.type)}>{kindName(job)}</span>
+          <span className={capsLook(styles.badge)}>· {badges[job.badge]}</span>
         </span>
         {client !== undefined && <span className={styles.who}>{client}</span>}
         <span className={styles.where}>{where(job.sector)}</span>

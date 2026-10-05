@@ -6,6 +6,7 @@
 // untold, and this is how they are told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A pincode
 // the service area does not hold is added first, with its area's name and its city.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Table } from "@maneman/ui/Table";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, listDate, yearInIndia } from "@maneman/web-kit/dates";
@@ -145,7 +146,7 @@ function AddPanel({
   }, []);
   return (
     <section className={styles.launch} aria-labelledby="add" ref={panel} tabIndex={-1}>
-      <p className={styles.launchLabel} id="add">
+      <p className={capsLook(styles.launchLabel)} id="add">
         {areas.add.label(area.pincode)}
       </p>
       <AddPincode pincode={area.pincode} cities={cities} onAdded={onAdded} onCancel={onCancel} />
@@ -173,7 +174,7 @@ function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; o
       </th>
       <td className={styles.area}>
         {isHeld(area) ? areaName(area) : <span className={styles.notHeld}>{waitlist.notHeld}</span>}
-        {area.served && <span className={styles.live}>{waitlist.live}</span>}
+        {area.served && <span className={capsLook(styles.live)}>{waitlist.live}</span>}
       </td>
       <td className={styles.count}>{area.waiting}</td>
       <td className={styles.oldest}>

@@ -112,11 +112,6 @@
   cursor: pointer;
 }
 
-.choose:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* A technician who runs over the length their visits were planned for, in the oxblood the board letters it in. */
 .over {
   color: var(--error-on-paper);
@@ -131,8 +126,6 @@
 
 /* Away today, in the small capitals the board letters its own labels in. */
 .away {
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-15);
   color: var(--text-muted);
@@ -164,11 +157,6 @@
   font-size: var(--fs-14);
   color: var(--text);
   text-underline-offset: var(--sp-4);
-}
-
-.back:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .pageTitle {
@@ -322,11 +310,8 @@
 /* Phones and Leave, in the small capitals the board letters its group names in. */
 .sectionTitle {
   margin: 0 0 var(--sp-8);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-15);
-  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
@@ -462,11 +447,6 @@
   font-size: var(--fs-13);
   color: var(--text);
   text-underline-offset: var(--sp-4);
-}
-
-.show:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .leaveNote {

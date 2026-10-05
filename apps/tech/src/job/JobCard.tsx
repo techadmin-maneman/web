@@ -12,6 +12,7 @@
 // The last visit's photograph is fetched each time the card is open and never
 // kept: the API answers it `no-store`, and the service worker leaves it alone.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { addressLine } from "@maneman/web-kit/address";
@@ -75,7 +76,7 @@ function ProfileCard({ profile }: { profile: HairProfile | null }) {
   if (lines.length === 0) return null;
   return (
     <section className={styles.piece} aria-labelledby="profile-title">
-      <h2 className={styles.pieceTitle} id="profile-title">
+      <h2 className={capsLook(styles.pieceTitle)} id="profile-title">
         {copy.profileTitle}
       </h2>
       <Rows lines={lines} />
@@ -89,7 +90,7 @@ function PieceCard({ job }: { job: Job }) {
   const inProfile = profileNamesAnother(job);
   return (
     <section className={styles.piece} aria-labelledby="piece-title">
-      <h2 className={styles.pieceTitle} id="piece-title">
+      <h2 className={capsLook(styles.pieceTitle)} id="piece-title">
         {copy.piece.title}
       </h2>
       {paid !== null && <Rows lines={[{ key: copy.piece.rows.paidFor, value: paid }]} />}
@@ -147,7 +148,7 @@ export function JobCard({ job }: { job: Job }) {
   if (job.address === null) {
     return (
       <section className={styles.locked}>
-        <p className={styles.lockedTitle}>{copy.locked.title}</p>
+        <p className={capsLook(styles.lockedTitle)}>{copy.locked.title}</p>
         <p className={styles.lockedBody}>{copy.locked.opens(job.unlocks_at)}</p>
         <p className={styles.sector}>{where(job.sector)}</p>
       </section>

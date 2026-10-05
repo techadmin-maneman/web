@@ -195,10 +195,7 @@
 .panelLabel,
 .failedLabel {
   margin-bottom: var(--sp-14);
-  font-family: var(--font-serif);
   font-size: var(--fs-14);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   color: var(--text-muted);
 }
 
@@ -549,10 +546,7 @@ img.card {
 
 .eyebrow {
   margin: 0;
-  font-family: var(--font-serif);
   font-size: var(--fs-15);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   color: var(--ink-muted);
 }
 

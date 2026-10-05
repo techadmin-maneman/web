@@ -6,6 +6,7 @@
 // it (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A code switched off stays listed, with who
 // switched it off, and its uses stay on record.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate, shortDate } from "@maneman/web-kit/dates";
@@ -183,12 +184,7 @@ export function DiscountCodes() {
   const codes = refreshed ?? loaded.value.codes;
 
   return (
-    <section className={styles.panel} aria-labelledby="discount-codes">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="discount-codes">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="discount-codes" title={copy.title} className={styles.panel}>
       <p className={styles.note}>{copy.note}</p>
       {mayMake && <DiscountCodeForm today={today} most={most} onMade={() => void refresh()} />}
       <FindForm finding={finding} onFind={find} />
@@ -201,6 +197,6 @@ export function DiscountCodes() {
           ))}
         </ul>
       )}
-    </section>
+    </Panel>
   );
 }

@@ -18,6 +18,7 @@
 // the tap. A no-show can close only once the API holds the check-in, since it
 // runs the wait on its own clock too (ADR 0065).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
@@ -182,7 +183,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
 
       {!here && !failed && (
         <section className={styles.stage}>
-          <p className={styles.stageLabel}>{copy.arrived.step}</p>
+          <p className={capsLook(styles.stageLabel)}>{copy.arrived.step}</p>
           <p className={styles.stageBody}>{copy.arrived.body(job.checkin_radius_m)}</p>
           {saysWhenItOpens && (
             <p className={styles.stageWarn} role="status">
@@ -199,7 +200,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
 
       {failed && (
         <section className={styles.failed} role="alert">
-          <p className={styles.failedLabel}>{copy.failed.title}</p>
+          <p className={capsLook(styles.failedLabel)}>{copy.failed.title}</p>
           <p className={styles.failedLine}>
             {arrival.distance_m === null ? copy.failed.unmeasured : copy.failed.away(metres(arrival.distance_m))}
           </p>
@@ -220,7 +221,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
 
       {here && (
         <section className={styles.stage}>
-          <p className={styles.stageLabel}>{copy.waiting.step}</p>
+          <p className={capsLook(styles.stageLabel)}>{copy.waiting.step}</p>
           {wait.endsAt !== null && <p className={styles.timer}>{countdown(left)}</p>}
           <p className={styles.stageNote} role="status">
             {waitLine(job, { begun: waitBegun, confirmed: wait.confirmed, over: mayClose })}
@@ -250,7 +251,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
 
       {here && (
         <section className={styles.stage}>
-          <p className={styles.stageLabel}>{copy.appears.title}</p>
+          <p className={capsLook(styles.stageLabel)}>{copy.appears.title}</p>
           {job.client !== null && (
             <p className={styles.failedLine}>{copy.appears.atTheDoor(firstNameOf(job.client.name))}</p>
           )}

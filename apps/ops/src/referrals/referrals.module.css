@@ -47,11 +47,6 @@
   text-underline-offset: var(--sp-4);
 }
 
-.person:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .when,
 .late {
   font-size: var(--fs-14);
@@ -73,8 +68,6 @@
 }
 
 .signal {
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
   color: var(--error-on-paper);

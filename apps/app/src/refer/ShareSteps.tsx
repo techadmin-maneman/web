@@ -1,6 +1,7 @@
 // The share sheet's three steps (boards F2 to F4), drawn from its flow (./share-flow.ts): which card, the lines its own
 // photographs need agreeing to, and the invite's preview with the ways to send it.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { SheetPanel } from "@maneman/ui/Sheet";
 import { IconButton } from "@maneman/ui/IconButton";
 import { classes } from "@maneman/ui/classes";
@@ -182,14 +183,14 @@ export function ShareStep({ flow, onClose }: StepProps) {
         {refer.close}
       </button>
       <div className={styles.screenBody}>
-        <h2 className={styles.eyebrow} id={TITLE_ID}>
+        <h2 className={capsLook(styles.eyebrow)} id={TITLE_ID}>
           {refer.preview.title}
         </h2>
         <Bubble state={flow.state} card={flow.card} />
         <Problem line={flow.problem} className={styles.inkProblem} />
         {shareFailed !== null && (
           <div className={styles.failed} role="alert">
-            <p className={styles.failedLabel}>{refer.preview.failed.label}</p>
+            <p className={capsLook(styles.failedLabel)}>{refer.preview.failed.label}</p>
             <p>{refer.preview.failed.line}</p>
             <button className={styles.retry} type="button" onClick={() => void flow.sharing(shareFailed)}>
               {refer.preview.failed.retry}
@@ -197,7 +198,7 @@ export function ShareStep({ flow, onClose }: StepProps) {
           </div>
         )}
         <section className={styles.via} aria-labelledby="share-via">
-          <h3 className={styles.eyebrow} id="share-via">
+          <h3 className={capsLook(styles.eyebrow)} id="share-via">
             {refer.preview.via}
           </h3>
           <div className={styles.ways}>

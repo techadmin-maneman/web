@@ -14,18 +14,6 @@
   gap: var(--sp-24);
 }
 
-.panel {
-  border: var(--hairline) solid var(--paper-line);
-}
-
-.panelHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: var(--sp-14) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--text);
-}
-
 .panelTitle {
   margin: 0;
   font-family: var(--font-serif);
@@ -51,11 +39,6 @@
   text-decoration: underline;
   text-underline-offset: var(--sp-4);
   cursor: pointer;
-}
-
-.overdueJump:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .empty {
@@ -123,11 +106,8 @@
 
 .groupName {
   margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
-  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
@@ -152,11 +132,6 @@
   text-decoration-color: var(--paper-line);
   text-underline-offset: var(--sp-4);
   cursor: pointer;
-}
-
-.fold:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* ---- One task ------------------------------------------------------------- */
@@ -216,11 +191,6 @@ a.subject {
   text-decoration: underline;
 }
 
-a.subject:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .sub {
   font-size: var(--fs-14);
   color: var(--text-muted);
@@ -232,11 +202,6 @@ a.subject:focus-visible {
   text-decoration: underline;
   text-decoration-color: var(--paper-line);
   text-underline-offset: var(--sp-4);
-}
-
-.decide:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* A group longer than the board lists: its count is all of them, the rows the longest waits. */
@@ -296,11 +261,6 @@ a.subject:focus-visible {
   cursor: pointer;
 }
 
-.act:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .form {
   display: flex;
   flex-direction: column;
@@ -317,11 +277,6 @@ a.subject:focus-visible {
   font: inherit;
   font-size: var(--fs-14);
   color: var(--text);
-}
-
-.select:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .reason {

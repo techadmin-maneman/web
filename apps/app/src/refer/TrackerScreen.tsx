@@ -4,6 +4,7 @@
 // Whether an invite was opened is the friend's business, so it is never shown here. Empty, it offers the invite
 // (F6); the revoke of the client's own card sits at the foot.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -57,7 +58,7 @@ function RevokeCard({ onRevoked }: { onRevoked: () => void }) {
   }
   return (
     <section className={styles.panel} aria-labelledby="revoke" aria-busy={busy}>
-      <p className={styles.panelLabel}>{copy.open}</p>
+      <p className={capsLook(styles.panelLabel)}>{copy.open}</p>
       <h2 className={styles.panelTitle} id="revoke">
         {copy.title}
       </h2>

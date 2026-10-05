@@ -34,8 +34,6 @@
 
 .badge {
   margin-left: auto;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-15);
   color: var(--paper);
@@ -110,9 +108,6 @@
 
 .lockedTitle {
   margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
   color: var(--ink-muted);
 }
@@ -139,11 +134,7 @@
 
 .pieceTitle {
   margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-15);
-  font-weight: var(--weight-regular);
   color: var(--ink-muted);
 }
 
@@ -227,11 +218,7 @@
 
 .changedTitle {
   margin: 0 0 var(--sp-14);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-15);
-  font-weight: var(--weight-regular);
   color: var(--error-on-ink);
 }
 
@@ -258,9 +245,6 @@
 .stageLabel,
 .failedLabel {
   margin: 0 0 var(--sp-14);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
   color: var(--ink-muted);
 }
@@ -341,10 +325,4 @@
 .atFoot {
   height: var(--tech-primary);
   margin-top: 0;
-}
-
-.outline:focus-visible,
-.second:focus-visible {
-  outline: var(--focus-width) solid var(--paper);
-  outline-offset: var(--focus-offset);
 }

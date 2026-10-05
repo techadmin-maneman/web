@@ -8,6 +8,7 @@
 // (CancelVisit.tsx) or close by hand one whose technician's phone was lost (CloseVisit.tsx). Each visit to come links
 // to its place on the dispatch board. Beneath the visits, any booking that refunded its payment by itself, and why.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
@@ -222,7 +223,7 @@ function VisitTable({
 }) {
   return (
     <section className={styles.visitList} aria-label={title}>
-      <h3 className={styles.sectionTitle}>{title}</h3>
+      <h3 className={capsLook(styles.sectionTitle)}>{title}</h3>
       {visits.length === 0 ? (
         <p className={styles.empty}>{empty}</p>
       ) : (
@@ -274,7 +275,7 @@ function AutoRefunds({ refunds }: { refunds: readonly AutoRefund[] }) {
   const words = copy.autoRefunds;
   return (
     <section className={styles.visitList} aria-labelledby="auto-refunds">
-      <h3 className={styles.sectionTitle} id="auto-refunds">
+      <h3 className={capsLook(styles.sectionTitle)} id="auto-refunds">
         {words.title}
       </h3>
       <ul className={styles.refundList}>

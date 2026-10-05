@@ -78,11 +78,6 @@
   accent-color: var(--ink);
 }
 
-.radio:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .kindsLegend {
   padding: 0;
   font-size: var(--fs-14);

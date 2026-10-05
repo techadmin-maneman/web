@@ -98,13 +98,6 @@
   color: var(--text);
 }
 
-.tool:focus-visible,
-.select:focus-visible,
-.input:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* ---- Board A1: technicians down, seven days across ----------------------- */
 
 .grid {
@@ -471,10 +464,6 @@
 
 .trayTitle {
   margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  font-weight: var(--weight-regular);
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-15);
   color: var(--text-muted);
 }
@@ -515,8 +504,6 @@
 }
 
 .trayType {
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   color: var(--text-muted);
   white-space: nowrap;
@@ -632,11 +619,6 @@
   box-shadow: inset 0 0 0 var(--sp-3) var(--paper);
 }
 
-.radio:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* What the move does, behind the board's brass rule. */
 .consequence {
   margin: var(--sp-18) 0 0;
@@ -684,8 +666,6 @@
 /* "Prepaid", in brass small capitals at the drawer's head. */
 .badge {
   flex-shrink: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
   color: var(--brass-text);
@@ -743,13 +723,6 @@
 
 .icon {
   flex-shrink: 0;
-  width: var(--sp-16);
-  height: var(--sp-16);
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 /* ---- A narrow window, or 200% zoom: the tray goes beneath the grid (VIS-22) --- */

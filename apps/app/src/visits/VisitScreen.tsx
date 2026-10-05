@@ -6,6 +6,7 @@
 // next visit (board B1), with Reschedule and Add a note until it begins. A
 // visit that is not the client's says so, rather than offering to try again.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
@@ -103,7 +104,7 @@ function NoShow({ visitId, note, onDisputed }: { visitId: string; note: NoShowNo
   const copy = visits.detail.noShow;
   return (
     <section className={styles.noShow} aria-labelledby="no-show">
-      <h2 className={styles.label} id="no-show">
+      <h2 className={capsLook(styles.label)} id="no-show">
         {copy.label}
       </h2>
       <p className={styles.noShowLine}>{copy.line(note.waited_minutes)}</p>
@@ -148,7 +149,7 @@ function PastVisit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => 
       {visit.no_show !== null && <NoShow visitId={visit.id} note={visit.no_show} onDisputed={onChanged} />}
       {photographed && (
         <section aria-labelledby="photographs">
-          <h2 className={styles.label} id="photographs">
+          <h2 className={capsLook(styles.label)} id="photographs">
             {copy.photographs}
           </h2>
           <PhotoRow set={visit.photos} date={visit.date} onOpen={setOpen} />

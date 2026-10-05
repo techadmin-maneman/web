@@ -3,6 +3,7 @@
 // sheet's date and window, then pays whatever the move costs. Cancelling is confirmed on the terms shown; if the
 // 24 hours ran out meanwhile, the new terms are shown instead.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { fullDate, indiaDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { Button, ButtonLink } from "@maneman/ui/Button";
@@ -228,7 +229,7 @@ export function ChangeSheet(props: {
         )}
         {step.kind === "cancelled" && (
           <div role="status">
-            <p className={styles.caption}>{change.cancel.done}</p>
+            <p className={capsLook(styles.caption)}>{change.cancel.done}</p>
             <h2 className={styles.outcome} id="change-title">
               {change.cancel.doneLine(name)}
             </h2>

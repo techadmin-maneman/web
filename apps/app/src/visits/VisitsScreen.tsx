@@ -11,6 +11,7 @@
 // often they have been served, what they have bought, what they have paid, and
 // the month their piece falls due (docs/fidelity-method.md).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
@@ -38,7 +39,7 @@ function UpcomingCard({ date, parts, prepaid }: { date: string; parts: readonly 
     <>
       <span className={styles.cardHead}>
         <span className={styles.cardDate}>{shortDate(date)}</span>
-        {prepaid && <span className={styles.prepaid}>{visits.prepaid}</span>}
+        {prepaid && <span className={capsLook(styles.prepaid)}>{visits.prepaid}</span>}
       </span>
       <span className={styles.cardWhat}>{parts.join(" · ")}</span>
     </>
@@ -165,7 +166,7 @@ function VisitList({ list, me }: { list: Visits; me: Me }) {
   const upcoming = upcomingEntries(list.upcoming, me.consultation, me.being_booked);
   return (
     <>
-      <h2 className={styles.label}>{visits.upcoming}</h2>
+      <h2 className={capsLook(styles.label)}>{visits.upcoming}</h2>
       {upcoming.length === 0 ? (
         <p className={styles.none}>{visits.none}</p>
       ) : (

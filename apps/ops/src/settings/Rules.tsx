@@ -11,6 +11,7 @@
 // Nothing is sent until ops have seen the change: each figure that moves, the
 // old beside the new, and only the second press sends it, as a price is set.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { Button } from "@maneman/ui/Button";
@@ -605,18 +606,13 @@ export function Rules() {
   };
 
   return (
-    <section className={styles.panel} aria-labelledby="rules">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="rules">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="rules" title={copy.title} className={styles.panel}>
       <JumpList sections={sections} />
       {sections.map((section) => (
         <GroupSection key={section.id} section={section} allowed={allowed} onSaved={keep}>
           {section.id === CONSOLE_GROUP && <Storage />}
         </GroupSection>
       ))}
-    </section>
+    </Panel>
   );
 }

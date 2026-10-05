@@ -3,6 +3,8 @@
 // details, the block drawer's two ways to the client, and Assign, which takes
 // the job up as a drag from the tray does.
 
+import { capsLook } from "@maneman/ui/Caps";
+import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
@@ -46,7 +48,7 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
             {askedWord(each)} · {dispatch.tray.offered(offeredWord(each.date, each.offered_window))}
           </p>
         </div>
-        <span className={styles.badge}>{copy.badges[each.badge] ?? each.badge}</span>
+        <span className={capsLook(styles.badge)}>{copy.badges[each.badge] ?? each.badge}</span>
       </div>
       <div className={styles.drawerBody}>
         <dl className={styles.rows}>
@@ -75,9 +77,7 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d={ICONS.whatsapp} />
-                </svg>
+                <Icon d={ICONS.whatsapp} size={16} className={styles.icon} />
                 {copy.whatsapp(firstNameOf(person.name))}
               </ButtonLink>
               <OpsLink

@@ -6,6 +6,7 @@
 // a payment held or a payment link unpaid; ops may then erase all the same, saying they will settle it by hand today.
 // From then on the client's page shows only what is kept of them.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
@@ -124,7 +125,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
 
   return (
     <section className={styles.erase} aria-label={copy.title}>
-      <h3 className={styles.eraseTitle}>{copy.title}</h3>
+      <h3 className={capsLook(styles.eraseTitle)}>{copy.title}</h3>
       <p className={styles.note}>{copy.note}</p>
       {erasing.step === "confirming" && (
         <Confirm

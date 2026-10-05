@@ -148,15 +148,8 @@
   text-decoration-color: var(--text);
 }
 
-.choose:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .live {
   margin-left: var(--sp-8);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
   color: var(--brass-text);
@@ -168,17 +161,8 @@
   padding: var(--sp-22);
 }
 
-/* The panel takes focus as it opens, so it is read from its head and scrolled into view. */
-.launch:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .launchLabel {
   margin: 0 0 var(--sp-14);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -234,11 +218,6 @@
   color: var(--text);
 }
 
-.named a:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 /* The day a technician starts coming, which the launch's API takes and the board does not draw (OPS-22). */
 .field {
   margin-top: var(--sp-16);
@@ -263,11 +242,6 @@
   font: inherit;
   font-size: var(--fs-15);
   font-variant-numeric: tabular-nums;
-}
-
-.launchDate:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .fieldHint {
@@ -332,9 +306,4 @@
   color: var(--text);
   font: inherit;
   font-size: var(--fs-15);
-}
-
-.box:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }

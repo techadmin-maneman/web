@@ -28,11 +28,6 @@
   text-decoration: underline;
 }
 
-.name:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .when {
   margin: var(--sp-3) 0 0;
   font-size: var(--fs-14);
@@ -91,11 +86,6 @@
   font: inherit;
   font-size: var(--fs-15);
   resize: vertical;
-}
-
-.reasonField:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 .reasonHint {

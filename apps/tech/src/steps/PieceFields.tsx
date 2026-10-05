@@ -1,6 +1,7 @@
 // The piece step's parts (./Piece.tsx): a one visit's choice, what the client paid for, the label with its lookup and
 // the client's pieces to pick from, the base and the lot, and on a replacement the piece that came off.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import type { Job, PieceLookup } from "../api.ts";
@@ -36,7 +37,7 @@ export function ChoiceList({
   ];
   return (
     <section className={styles.field} aria-labelledby="client-choice-title">
-      <h2 className={styles.fieldTitle} id="client-choice-title">
+      <h2 className={capsLook(styles.fieldTitle)} id="client-choice-title">
         {oneVisit.choice}
       </h2>
       {products.length === 0 && <p className={styles.note}>{oneVisit.noProducts}</p>}
@@ -67,7 +68,7 @@ export function PaidFor({ job }: { job: Job }) {
   const inProfile = profileNamesAnother(job);
   return (
     <section className={styles.field} aria-labelledby="paid-for-title">
-      <h2 className={styles.fieldTitle} id="paid-for-title">
+      <h2 className={capsLook(styles.fieldTitle)} id="paid-for-title">
         {jobCopy.piece.rows.paidFor}
       </h2>
       <p className={styles.paidFor}>{paid}</p>
@@ -249,7 +250,7 @@ export function OldPiece(props: {
 }) {
   return (
     <section className={styles.field} aria-labelledby="old-piece-title">
-      <h2 className={styles.fieldTitle} id="old-piece-title">
+      <h2 className={capsLook(styles.fieldTitle)} id="old-piece-title">
         {copy.piece.old.title}
       </h2>
       <label className={styles.fieldLabel} htmlFor="old-piece-code">

@@ -2,6 +2,7 @@
 // badge — a body that scrolls, and the one action fixed at the foot, where a
 // gloved thumb finds it on every screen.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -59,7 +60,7 @@ export function CardFrame({ job, foot, children }: { job: Job; foot: ReactNode; 
           </h1>
           <p className={styles.when}>{whenOf(job)}</p>
         </div>
-        <span className={styles.badge}>{badges[job.badge]}</span>
+        <span className={capsLook(styles.badge)}>{badges[job.badge]}</span>
       </header>
 
       <div className={styles.body}>{children}</div>

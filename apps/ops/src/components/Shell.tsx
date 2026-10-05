@@ -4,6 +4,7 @@
 // the sections by department, shows only those the person may open, and says
 // how many tasks wait in each.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { Link } from "@maneman/ui/router";
@@ -99,7 +100,7 @@ function DepartmentSections({ department, current, mayCall, waiting }: Departmen
   const nameId = `nav-${department}`;
   return (
     <div className={styles.department}>
-      <p className={styles.departmentName} id={nameId}>
+      <p className={capsLook(styles.departmentName)} id={nameId}>
         {shell.departments[department]}
       </p>
       <ul className={styles.sections} aria-labelledby={nameId}>
@@ -123,7 +124,7 @@ function Navigation({ current }: { current: SectionPath }) {
     <nav className={styles.nav} aria-label={shell.title}>
       <div className={styles.brand}>
         <Mark className={styles.mark} />
-        <span className={styles.brandName}>{shell.title}</span>
+        <span className={capsLook(styles.brandName)}>{shell.title}</span>
       </div>
       {DEPARTMENTS.map((department) => (
         <DepartmentSections

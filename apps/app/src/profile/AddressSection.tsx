@@ -3,6 +3,7 @@
 // address the client gave ops on the phone says so, so the client can check what
 // was typed for them (docs/decisions/0092-task-owners.md).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import { addressLine, given } from "@maneman/web-kit/address";
@@ -37,7 +38,7 @@ export function AddressSection({
 
   return (
     <section aria-labelledby="where">
-      <h2 className={styles.label} id="where" ref={heading}>
+      <h2 className={capsLook(styles.label)} id="where" ref={heading}>
         {copy.where}
       </h2>
       {editing ? (

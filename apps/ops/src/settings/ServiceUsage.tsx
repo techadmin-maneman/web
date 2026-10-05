@@ -6,6 +6,7 @@
 // list is sent at once, and the check shows each consumable whose figure
 // changes, old beside new (ADR 0071). An empty box is none.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -75,12 +76,7 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
 
   const checking = step.step === "checking" || step.step === "saving";
   return (
-    <section className={styles.panel} aria-labelledby="service-usage">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="service-usage">
-          {words.title}
-        </h2>
-      </div>
+    <Panel titleId="service-usage" title={words.title} className={styles.panel}>
       <p className={styles.note}>{words.note}</p>
       <fieldset className={styles.group}>
         <legend className={styles.ruleTitle}>{service === undefined ? words.title : serviceName(service)}</legend>
@@ -181,6 +177,6 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
           </p>
         )}
       </fieldset>
-    </section>
+    </Panel>
   );
 }

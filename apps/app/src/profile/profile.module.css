@@ -11,10 +11,6 @@
 .label,
 .cardLabel {
   margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   color: var(--text-muted);
 }
 

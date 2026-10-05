@@ -6,6 +6,7 @@
 // "Ask us for it", which asks ops on WhatsApp until the app can tell the
 // client itself. A refund past its working days says it is late.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -155,7 +156,7 @@ function Detail({ entry }: { entry: EntryDetail }) {
           {payments.message}
         </a>
       )}
-      <h2 className={styles.label}>{payments.documents}</h2>
+      <h2 className={capsLook(styles.label)}>{payments.documents}</h2>
       <div className={styles.documents}>
         {entry.kind === "payment" ? (
           <PaymentDocuments entry={entry} today={today} />

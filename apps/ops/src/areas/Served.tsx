@@ -13,6 +13,7 @@
 // panel Waiting uses first (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 // A pincode the file does not hold is added beneath the table.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -120,15 +121,16 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   const checking = saving.step === "checking" || (saving.step === "saving" && launching.length > 0);
 
   return (
-    <section className={styles.panel} aria-labelledby="area">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="area">
-          {copy.title}
-        </h2>
+    <Panel
+      titleId="area"
+      title={copy.title}
+      className={styles.panel}
+      actions={
         <Button variant="outline" size="small" className={styles.quiet} onClick={download}>
           {copy.download}
         </Button>
-      </div>
+      }
+    >
       <p className={styles.note}>{copy.note}</p>
 
       <CityTabs
@@ -217,7 +219,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           )}
         </fieldset>
       )}
-    </section>
+    </Panel>
   );
 }
 

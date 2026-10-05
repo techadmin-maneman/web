@@ -3,6 +3,7 @@
 // what is left. A code that does not apply is told only that. The box is shut while the sheet is busy paying; once
 // Checkout is closed unpaid, the code may change again, and the next Pay makes a new order for the new price.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type Hold } from "../api.ts";
@@ -104,7 +105,7 @@ export function CodeBox(props: {
         void apply();
       }}
     >
-      <label className={styles.label} htmlFor="discount-code">
+      <label className={capsLook(styles.label)} htmlFor="discount-code">
         {copy.label}
       </label>
       <div className={styles.codeRow}>

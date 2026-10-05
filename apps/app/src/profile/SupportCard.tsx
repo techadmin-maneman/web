@@ -1,5 +1,6 @@
 // The account's support card (board G2): WhatsApp, where the team answers.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
@@ -10,7 +11,7 @@ export function SupportCard() {
   const copy = profile.support;
   return (
     <section className={styles.card} aria-labelledby="support">
-      <h2 className={styles.cardLabel} id="support">
+      <h2 className={capsLook(styles.cardLabel)} id="support">
         {copy.label}
       </h2>
       <a className={styles.whatsapp} href={whatsappChat(whatsapp.number)} rel="noopener">

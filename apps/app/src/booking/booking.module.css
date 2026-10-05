@@ -50,10 +50,7 @@
 }
 
 .step {
-  font-family: var(--font-serif);
   font-size: var(--fs-14);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   color: var(--text-muted);
 }
 
@@ -463,11 +460,7 @@
 
 .label {
   margin: var(--sp-20) 0 0;
-  font-family: var(--font-serif);
   font-size: var(--fs-15);
-  font-weight: var(--weight-regular);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   color: var(--text-muted);
 }
 
@@ -643,10 +636,7 @@
 /* Board C6. Within the sheet, so its margin outweighs the sheet's own for a paragraph. */
 .sheet .caption {
   margin-bottom: var(--sp-14);
-  font-family: var(--font-serif);
   font-size: var(--fs-14);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   color: var(--text-muted);
 }
 
@@ -691,10 +681,7 @@
 }
 
 .confirmedLabel {
-  font-family: var(--font-serif);
   font-size: var(--fs-14);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   color: var(--ink-muted);
 }
 

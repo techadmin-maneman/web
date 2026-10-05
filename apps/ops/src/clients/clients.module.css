@@ -101,13 +101,6 @@
 /* The brand's WhatsApp glyph is a line, drawn as board A3's drawer draws it. */
 .icon {
   flex-shrink: 0;
-  width: var(--sp-16);
-  height: var(--sp-16);
-  fill: none;
-  stroke: currentcolor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 /* The number, which calls the client from a phone and reads as the rest of the line elsewhere. */
@@ -213,11 +206,6 @@
   text-underline-offset: var(--sp-4);
 }
 
-.foundName:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .foundTitle {
   margin: 0 0 var(--sp-8);
   font-size: var(--fs-14);
@@ -272,11 +260,7 @@
 
 .sectionTitle {
   margin: 0 0 var(--sp-8);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
-  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
@@ -305,11 +289,6 @@
   text-decoration: underline;
   text-decoration-color: var(--paper-line);
   text-underline-offset: var(--sp-4);
-}
-
-.boardLink:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* A visit left partly done that ops closed without a follow-up, beneath its state. */
@@ -457,11 +436,6 @@
   background: var(--ink);
 }
 
-.radio:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
-}
-
 .done {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
@@ -525,9 +499,6 @@
 
 .eyebrow {
   margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -553,9 +524,6 @@
 /* The phase, which the board does not name: it draws one set of five angles. */
 .phase {
   margin: var(--sp-14) 0 var(--sp-8);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -677,11 +645,8 @@
 
 .eraseTitle {
   margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
-  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
@@ -697,11 +662,6 @@
   font-size: var(--fs-14);
   color: var(--text);
   text-decoration: underline;
-}
-
-.erasedBack:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
-  outline-offset: var(--focus-offset);
 }
 
 /* ---- History: the record in figures, which the board draws no tab for ----- */

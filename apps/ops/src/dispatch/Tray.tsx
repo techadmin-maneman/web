@@ -9,6 +9,7 @@
 // board draws it. An empty tray folds to a rail, so a laptop's width goes to
 // the week's days.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { BookingWindow, Unassigned } from "../api.ts";
@@ -35,7 +36,7 @@ function TrayLines({ each }: { each: Unassigned }) {
     <>
       <span className={styles.trayTop}>
         <span>{each.person?.name ?? nameOf({ kind: "unassigned", job: each })}</span>
-        <span className={styles.trayType}>
+        <span className={capsLook(styles.trayType)}>
           {each.type === null ? dispatch.unknown : (dispatch.typeNames[each.type] ?? each.type)}
         </span>
       </span>
@@ -98,7 +99,7 @@ export function Tray({ unassigned, onOpen, onTake }: Props) {
       aria-labelledby="unassigned"
     >
       <div className={styles.trayHead}>
-        <h2 className={styles.trayTitle} id="unassigned">
+        <h2 className={capsLook(styles.trayTitle)} id="unassigned">
           {dispatch.tray.title}
         </h2>
         <span className={styles.count}>{unassigned.length}</span>

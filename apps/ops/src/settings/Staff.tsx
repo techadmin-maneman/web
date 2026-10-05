@@ -2,6 +2,7 @@
 // in. No board draws it, so it is laid out as the other Settings panels are. The API narrows the list to the places
 // its viewer may see, and refuses a change beyond their own.
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -49,12 +50,7 @@ function Enforcement({ book, onChanged }: PanelProps) {
   };
 
   return (
-    <section className={styles.panel} aria-labelledby="staff-enforcement">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="staff-enforcement">
-          {words.title}
-        </h2>
-      </div>
+    <Panel titleId="staff-enforcement" title={words.title} className={styles.panel}>
       <p className={styles.note}>{on ? words.on : words.off}</p>
       {setBy !== null && setAt !== null && (
         <p className={styles.note}>{words.setBy(whoWords(setBy), longDate(setAt))}</p>
@@ -95,7 +91,7 @@ function Enforcement({ book, onChanged }: PanelProps) {
           {refusalOf(words.errors, step)}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }
 
@@ -112,12 +108,7 @@ function People({ book, onChanged }: PanelProps) {
   };
 
   return (
-    <section className={styles.panel} aria-labelledby="staff-people">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="staff-people">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="staff-people" title={copy.title} className={styles.panel}>
       <p className={styles.note}>{copy.note}</p>
       <Table className={styles.table}>
         <thead>
@@ -197,7 +188,7 @@ function People({ book, onChanged }: PanelProps) {
           {copy.saved}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }
 
@@ -349,12 +340,7 @@ function TokenForm({ onChanged }: { onChanged: (book: StaffBook) => void }) {
 function ServiceTokens({ book, onChanged }: PanelProps) {
   const words = copy.tokens;
   return (
-    <section className={styles.panel} aria-labelledby="staff-tokens">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="staff-tokens">
-          {words.title}
-        </h2>
-      </div>
+    <Panel titleId="staff-tokens" title={words.title} className={styles.panel}>
       <p className={styles.note}>{words.note}</p>
       {book.service_tokens.length === 0 ? (
         <p className={styles.note}>{words.none}</p>
@@ -366,7 +352,7 @@ function ServiceTokens({ book, onChanged }: PanelProps) {
         </ul>
       )}
       {book.may_run_access ? <TokenForm onChanged={onChanged} /> : <p className={styles.note}>{words.onlyNational}</p>}
-    </section>
+    </Panel>
   );
 }
 

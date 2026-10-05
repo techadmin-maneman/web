@@ -8,6 +8,7 @@
 // lands. One action is open at a time, in the block it acts on, and each shows what it changes before it is sent
 // (./ServiceForms.tsx).
 
+import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -466,16 +467,11 @@ export function Services() {
   };
 
   return (
-    <section className={styles.panel} aria-labelledby="services">
-      <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle} id="services">
-          {copy.title}
-        </h2>
-      </div>
+    <Panel titleId="services" title={copy.title} className={styles.panel}>
       <p className={styles.note}>{copy.note}</p>
       {current.kinds.map(({ kind }) => (
         <KindSection key={kind} kind={kind} opened={opened} />
       ))}
-    </section>
+    </Panel>
   );
 }

@@ -11,6 +11,7 @@
 // changed; a started job offers its next step and nothing of the door's; a
 // closed one reads as closed.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import type { ReactNode } from "react";
@@ -39,7 +40,7 @@ function whatChanged(job: Job, queued: readonly Queued[]): string {
 function Changed({ job, queued }: { job: Job; queued: readonly Queued[] }) {
   return (
     <section className={styles.changed} role="alert" aria-labelledby="changed-title">
-      <h2 className={styles.changedTitle} id="changed-title">
+      <h2 className={capsLook(styles.changedTitle)} id="changed-title">
         {copy.changed.title}
       </h2>
       <p className={styles.changedLine}>{whatChanged(job, queued)}</p>
