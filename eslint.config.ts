@@ -180,7 +180,7 @@ export default defineConfig(
   },
   {
     // An error's message is read in one place, src/lib/d1-errors.ts: matching its words anywhere else read every
-    // UNIQUE failure as a lost window (CQ-31).
+    // UNIQUE failure as a lost window.
     files: ["src/**/*.ts"],
     ignores: ["src/lib/d1-errors.ts"],
     rules: {
@@ -207,6 +207,19 @@ export default defineConfig(
     // A test file past 500 lines is warned of: one that long is several, each easier to find a failure in.
     files: ["test/**/*.ts", "e2e/**/*.ts"],
     rules: { "no-console": "off", "max-lines": sized("warn", TEST_LINES) },
+  },
+  {
+    // A cast hid a consumer's changed signature from the compiler.
+    files: ["test/worker/**/*.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "TSAsExpression[typeAnnotation.typeName.name='MessageBatch']",
+          message: "Build a queue's batch with fakeBatch (test/worker/batches.ts).",
+        },
+      ],
+    },
   },
   {
     // A screen that picks between three things says so in a function that returns early.

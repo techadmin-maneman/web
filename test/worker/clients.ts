@@ -43,6 +43,8 @@ export async function signedIn(personId: string, now = NOW): Promise<string> {
 export interface Call {
   readonly method?: string;
   readonly body?: unknown;
+  /** More of the browser's headers, as the address Cloudflare saw it call from. */
+  readonly headers?: Readonly<Record<string, string>>;
 }
 
 export interface Calling {
@@ -60,7 +62,7 @@ export function asClient(cookie: string, path: string, call: Call = {}, calling:
     path,
     {
       method: call.method ?? "GET",
-      headers: { Cookie: cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
+      headers: { Cookie: cookie, "Content-Type": "application/json", Origin: "https://maneman.test", ...call.headers },
       ...(call.body === undefined ? {} : { body: JSON.stringify(call.body) }),
     },
     calling.bindings,

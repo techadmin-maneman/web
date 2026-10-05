@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { eraseInCrm, handleCrmSyncBatch, syncLead } from "../../../src/queues/crm-sync.ts";
 import { createLogger } from "../../../src/log.ts";
 import type { CrmContact, CrmLead, CrmProvider } from "../../../src/providers/crm/index.ts";
@@ -12,6 +12,7 @@ import {
   phaseOneLead,
   stubCrmThatFails,
 } from "../helpers.ts";
+import { fakeBatch } from "../batches.ts";
 import { MAX_SYNC_ATTEMPTS, QUICK_RETRY_DELAY_SECONDS } from "../../../src/config/pipeline.ts";
 
 const log = createLogger();
@@ -319,17 +320,7 @@ const openAlertKeys = () =>
     .then((answer) => answer.results.map((row) => row.key));
 
 describe("crm-sync: the queue batch", () => {
-  function batchOf(bodies: unknown[]) {
-    const messages = bodies.map((body, index) => ({
-      id: `m-${String(index)}`,
-      body,
-      attempts: 1,
-      timestamp: new Date(),
-      ack: vi.fn(),
-      retry: vi.fn(),
-    }));
-    return { queue: "mm-crm-sync-local", messages, ackAll: vi.fn(), retryAll: vi.fn() };
-  }
+  const batchOf = (bodies: unknown[]) => fakeBatch("mm-crm-sync-local", bodies);
 
   it("acknowledges a synced lead and sends a first failure back for a delayed retry", async () => {
     const ok = await phaseOneLead();
@@ -346,7 +337,7 @@ describe("crm-sync: the queue batch", () => {
       { lead_id: failing, request_id: "r2" },
     ]);
 
-    await handleCrmSyncBatch(batch as unknown as MessageBatch, env.DB, fakeDependencies({ crm }), log);
+    await handleCrmSyncBatch(batch, env.DB, fakeDependencies({ crm }), log);
 
     expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
     expect(batch.messages[0]?.retry).not.toHaveBeenCalled();
@@ -361,12 +352,7 @@ describe("crm-sync: the queue batch", () => {
     await env.DB.prepare("UPDATE leads SET sync_attempts = 1 WHERE id = ?").bind(leadId).run();
     const batch = batchOf([{ lead_id: leadId, request_id: "sweeper" }]);
 
-    await handleCrmSyncBatch(
-      batch as unknown as MessageBatch,
-      env.DB,
-      fakeDependencies({ crm: stubCrmThatFails("down") }),
-      log,
-    );
+    await handleCrmSyncBatch(batch, env.DB, fakeDependencies({ crm: stubCrmThatFails("down") }), log);
 
     expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
     expect(batch.messages[0]?.retry).not.toHaveBeenCalled();
@@ -379,7 +365,7 @@ describe("crm-sync: the queue batch", () => {
     const crm = recordingCrm();
     const batch = batchOf([{ erase_person_id: personId, request_id: "r1" }]);
 
-    await handleCrmSyncBatch(batch as unknown as MessageBatch, env.DB, fakeDependencies({ crm }), log);
+    await handleCrmSyncBatch(batch, env.DB, fakeDependencies({ crm }), log);
 
     expect(crm.erasures).toEqual([{ personId, knownId: null }]);
     expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
@@ -406,7 +392,7 @@ describe("crm-sync: the queue batch", () => {
       { lead_id: ok, request_id: "r2" },
     ]);
 
-    await handleCrmSyncBatch(batch as unknown as MessageBatch, flaky, fakeDependencies(), log);
+    await handleCrmSyncBatch(batch, flaky, fakeDependencies(), log);
 
     expect(batch.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
     expect(batch.messages[1]?.ack).toHaveBeenCalledOnce();
@@ -415,7 +401,7 @@ describe("crm-sync: the queue batch", () => {
 
   it("drops a malformed message instead of retrying it forever", async () => {
     const batch = batchOf([{ lead: "nope" }]);
-    await handleCrmSyncBatch(batch as unknown as MessageBatch, env.DB, fakeDependencies(), log);
+    await handleCrmSyncBatch(batch, env.DB, fakeDependencies(), log);
     expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
   });
 });
@@ -563,10 +549,10 @@ describe("crm-sync: a changed number, address or invite", () => {
 
   function update(crm: CrmProvider, attempts = 1, more: { invite_attached?: true } = {}) {
     const body = { update_person_id: PERSON, request_id: "r", ...more };
-    const message = { id: "m1", body, attempts, ack: vi.fn(), retry: vi.fn() };
-    const batch = { queue: "mm-crm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
+    const batch = fakeBatch("mm-crm-sync-local", [body], { attempts });
+    const [message] = batch.messages;
     const deps = fakeDependencies({ crm });
-    return { message, deps, done: handleCrmSyncBatch(batch as unknown as MessageBatch, env.DB, deps, log) };
+    return { message, deps, done: handleCrmSyncBatch(batch, env.DB, deps, log) };
   }
 
   it("writes the person's number and city, as D1 has them now, onto their record", async () => {

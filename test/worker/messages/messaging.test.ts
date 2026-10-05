@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { Settings } from "../../../src/config/settings.ts";
 import type { StaticConfig } from "../../../src/guard.ts";
 import { verifyToken } from "../../../src/lib/signed-token.ts";
@@ -18,6 +18,7 @@ import {
   json,
   markDatabase,
 } from "../helpers.ts";
+import { fakeBatch } from "../batches.ts";
 import { insertJob, insertPerson } from "../tryon-fixtures.ts";
 
 const log = createLogger();
@@ -238,23 +239,12 @@ describe("messaging: the queue batch", () => {
     const id = "00000000-0000-4000-8000-00000000000a";
     await queuedMessage(id);
     const { provider } = recordingProvider({ ok: false, transient: true, detail: "HTTP 503" });
-    const messages = [{ message_id: id, request_id: "r" }, { nope: true }].map((body, index) => ({
-      id: String(index),
-      body,
-      attempts: 1,
+    const batch = fakeBatch("mm-messaging-local", [{ message_id: id, request_id: "r" }, { nope: true }], {
       timestamp: NOW,
-      ack: vi.fn(),
-      retry: vi.fn(),
-    }));
-    const batch = { queue: "mm-messaging-local", messages, ackAll: vi.fn(), retryAll: vi.fn() };
+    });
+    const { messages } = batch;
 
-    await handleMessagingBatch(
-      batch as unknown as MessageBatch,
-      env.DB,
-      config(),
-      fakeDependencies({ messaging: provider }),
-      log,
-    );
+    await handleMessagingBatch(batch, env.DB, config(), fakeDependencies({ messaging: provider }), log);
 
     expect(messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
     expect(messages[1]?.ack).toHaveBeenCalledOnce();
@@ -279,36 +269,18 @@ describe("messaging: the queue batch", () => {
       ).bind(id, NOW.toISOString()),
     ]);
     const deps = fakeDependencies();
-    const delivery = (attempts: number) => ({
-      id: String(attempts),
-      body: { message_id: id, request_id: "r" },
-      attempts,
-      timestamp: NOW,
-      ack: vi.fn(),
-      retry: vi.fn(),
-    });
-    const deliver = (each: ReturnType<typeof delivery>) =>
-      handleMessagingBatch(
-        {
-          queue: "mm-messaging-local",
-          messages: [each],
-          ackAll: vi.fn(),
-          retryAll: vi.fn(),
-        } as unknown as MessageBatch,
-        env.DB,
-        config(),
-        deps,
-        log,
-      );
+    const delivery = (attempts: number) =>
+      fakeBatch("mm-messaging-local", [{ message_id: id, request_id: "r" }], { attempts, timestamp: NOW });
+    const deliver = (batch: ReturnType<typeof delivery>) => handleMessagingBatch(batch, env.DB, config(), deps, log);
 
     const third = delivery(MAX_SEND_ATTEMPTS - 1);
     await deliver(third);
-    expect(third.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
+    expect(third.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
     expect(await message(id)).toMatchObject({ state: "queued" });
 
     const fourth = delivery(MAX_SEND_ATTEMPTS);
     await deliver(fourth);
-    expect(fourth.ack).toHaveBeenCalledOnce();
+    expect(fourth.messages[0]?.ack).toHaveBeenCalledOnce();
     expect(await message(id)).toMatchObject({ state: "failed", last_error: "could not be sent: Invalid time value" });
     expect(deps.alerts).toEqual([
       expect.stringContaining(`Message ${id} (consultation_confirmation) failed after 4 attempts`) as string,
