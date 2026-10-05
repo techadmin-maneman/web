@@ -4,7 +4,7 @@
 
 import { failedUniqueOn } from "../lib/d1-errors.ts";
 import { inTakingOrder, tieRange } from "./technician-choice.ts";
-import { graceEnds, ownUnpaid } from "./unpaid-holds.ts";
+import { graceEnds, keepingItsTime, ownUnpaid, paidNotBooked } from "./hold-stages.ts";
 import {
   PAYMENT_GRACE_SECONDS,
   UNITS_PER_DAY,
@@ -122,7 +122,7 @@ export interface Moving {
   readonly technicianId: string;
 }
 
-export { graceEndOf, graceEnds } from "./unpaid-holds.ts";
+export { graceEndOf, graceEnds } from "./hold-stages.ts";
 
 /**
  * What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. The visit
@@ -151,7 +151,7 @@ export async function occupancy(
     db
       .prepare(
         `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
-         WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR ${graceEnds("h")} > ?3)
+         WHERE c.date BETWEEN ?1 AND ?2 AND ${keepingItsTime("h", "?3")}
            AND h.id IS NOT ?4 AND NOT (?5 IS NOT NULL AND ${ownUnpaid("h", "?5")})`,
       )
       .bind(from, to, now.toISOString(), exceptHoldId, ownUnpaidOf)
@@ -212,8 +212,7 @@ export async function occupancy(
 
 /** A visit booked and still to happen. */
 const STILL_TO_HAPPEN = "deleted_at IS NULL AND status IN ('scheduled', 'dispatched', 'in_progress')";
-/** A hold paid for, or booked free, on its way to being a visit. */
-const PAID_HOLD = "state = 'held' AND confirmed_at IS NOT NULL";
+const PAID_HOLD = paidNotBooked("slot_holds");
 
 /** What decides the types a client ?1 may book, in one statement. */
 const STAGE = `SELECT

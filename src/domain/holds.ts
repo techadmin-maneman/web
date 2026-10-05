@@ -21,6 +21,7 @@ import { consentGiven } from "./consents.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
 import { graceEndOf, graceEnds, heldMinutes, visitTimes } from "./scheduling.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
+import { paidNotBooked } from "./hold-stages.ts";
 
 interface HoldRow {
   id: string;
@@ -181,7 +182,7 @@ export async function bookingUnderWay(db: D1Database, personId: string): Promise
   const row = await db
     .prepare(
       `SELECT id, type, date, window_label, amount, use_credit, one_visit FROM slot_holds
-       WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
+       WHERE person_id = ?1 AND ${paidNotBooked("slot_holds")} AND moves_appointment_id IS NULL
        ORDER BY date, start_unit LIMIT 1`,
     )
     .bind(personId)

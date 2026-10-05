@@ -26,6 +26,7 @@ import {
 } from "../policy/next-visit.ts";
 import { closedIfSentBy } from "../policy/one-visit.ts";
 import { dueAt, type Slas, type TaskGroup } from "../policy/tasks.ts";
+import { paidNotBooked } from "./hold-stages.ts";
 
 /** A visit to come, by its id and its start. */
 export interface TaskVisit {
@@ -271,7 +272,7 @@ const OUTSTANDING = [
         WHERE later.person_id = s.person_id AND later.window_start > s.visit_start AND later.deleted_at IS NULL
           AND later.status NOT IN ('cancelled', 'terminated'))
      AND NOT EXISTS (
-       SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
+       SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND ${paidNotBooked("h")})
   UNION ALL
   SELECT 'first_fit_to_book', s.person_id, s.person_id, pe.name, s.consulted_start,
          date(s.consulted_start, '+330 minutes', ?6), NULL, ${FIRST_FIT_EPISODE}
@@ -286,7 +287,7 @@ const OUTSTANDING = [
         WHERE later.person_id = s.person_id AND later.window_start > s.consulted_start AND later.deleted_at IS NULL
           AND later.status NOT IN ('cancelled', 'terminated'))
      AND NOT EXISTS (
-       SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
+       SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND ${paidNotBooked("h")})
 `),
 
   // A one visit's payment link still unpaid (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): whether

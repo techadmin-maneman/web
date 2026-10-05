@@ -68,6 +68,7 @@ import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";
 import { firstUnitAfter, unitAt, type SlotTimes } from "../policy/slot-times.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
+import { paidNotBooked } from "./hold-stages.ts";
 
 /** Seven days, as the board shows them. */
 export const BOARD_DAYS = 7;
@@ -595,8 +596,7 @@ interface LiveJob {
  * Whether a move the client has paid for, or booked free, waits to be booked onto visit `a`. It is booked onto the visit
  * as it was when the client chose the time, so ops' move waits for it.
  */
-const CLIENT_MOVING = `EXISTS (SELECT 1 FROM slot_holds h
-  WHERE h.moves_appointment_id = a.id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)`;
+const CLIENT_MOVING = `EXISTS (SELECT 1 FROM slot_holds h WHERE h.moves_appointment_id = a.id AND ${paidNotBooked("h")})`;
 
 /** A job still to finish; null for one done, cancelled, deleted, or with no type or time. */
 function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null> {

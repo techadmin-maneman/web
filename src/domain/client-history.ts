@@ -13,7 +13,7 @@
 // (src/domain/client-visits.ts). A visit terminated did not happen and is
 // counted nowhere.
 
-import { indiaDate } from "../lib/india-time.ts";
+import { indiaDate, monthOf } from "../lib/india-time.ts";
 
 /** When the piece now in wear falls due, and which piece it is. */
 interface ReplacementDue {
@@ -114,6 +114,6 @@ export async function clientHistory(db: D1Database, personId: string): Promise<C
     replacement_due:
       row.due_on === null || row.due_piece === null
         ? null
-        : { on: row.due_on, month: row.due_on.slice(0, 7), piece_code: row.due_piece },
+        : { on: row.due_on, month: monthOf(row.due_on), piece_code: row.due_piece },
   };
 }
