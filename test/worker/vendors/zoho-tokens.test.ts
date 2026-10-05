@@ -126,16 +126,22 @@ describe("the access token", () => {
 
   it("is asked for by one caller at a time; another waits for it rather than asking for its own", async () => {
     let answer: (response: Response) => void = () => undefined;
+    let reached: () => void = () => undefined;
+    const asked = new Promise<void>((resolve) => {
+      reached = resolve;
+    });
     const { request, tokenCalls } = requester({
       [TOKEN_URL]: () =>
         new Promise<Response>((resolve) => {
           answer = resolve;
+          reached();
         }),
       [LEADS_URL]: () => json({ data: [] }),
     });
     const first = request("search", "/crm/v8/Leads");
     const second = request("search", "/crm/v8/Leads");
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // Zoho is answered only once the token has been asked for, whatever the machine's speed.
+    await asked;
     answer(issued("only"));
 
     await Promise.all([first, second]);
