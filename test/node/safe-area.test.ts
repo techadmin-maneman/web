@@ -15,8 +15,11 @@ function ruleFor(file: string, selector: string): string {
 }
 
 const BOTTOMS = [
-  ["apps/tech/src/steps/steps.module.css", ".foot", "Next, Capture and Retake, and the close-out's Next job"],
-  ["apps/tech/src/job/job.module.css", ".foot", "I have arrived and Start job"],
+  [
+    "apps/tech/src/components/frame.module.css",
+    ".foot",
+    "Next, Capture and Retake, the close-out's Next job, I have arrived and Start job",
+  ],
   ["apps/tech/src/login/login.module.css", ".screen", "Send the code and Sign in"],
   ["apps/tech/src/components/sheet.module.css", ".sheet", "a question's two answers"],
   ["apps/tech/src/today/today.module.css", ".screen", "the last job of the day"],
