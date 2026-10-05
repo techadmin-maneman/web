@@ -6,7 +6,7 @@ import { BOOKING_DAYS, type BookingWindow } from "../config/scheduling.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import { planStartsIn, type Plan } from "../policy/one-visit.ts";
 import { siteVisit } from "./public-booking.ts";
-import { availability } from "./scheduling.ts";
+import { availability } from "./availability.ts";
 
 /** A day the form offers, and whether booking each of its windows would be taken. */
 interface OpenDay {

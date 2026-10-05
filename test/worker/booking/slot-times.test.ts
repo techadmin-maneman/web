@@ -4,7 +4,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { heldVisitTimes, occupancy } from "../../../src/domain/scheduling.ts";
+import { heldVisitTimes } from "../../../src/domain/visit-times.ts";
+import { occupancy } from "../../../src/domain/occupancy.ts";
 import { loadSlotSchedule, setSlotTimes } from "../../../src/domain/slot-times.ts";
 import { DEFAULT_SLOT_TIMES, type SlotTimes } from "../../../src/policy/slot-times.ts";
 import { markDatabase, NOW } from "../helpers.ts";

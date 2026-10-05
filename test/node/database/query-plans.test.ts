@@ -59,7 +59,9 @@ const PAYMENT_PATH = [
   "src/domain/bookings.ts",
   "src/domain/payments.ts",
   "src/domain/visit-changes.ts",
-  "src/domain/scheduling.ts",
+  "src/domain/hold-slot.ts",
+  "src/domain/occupancy.ts",
+  "src/domain/visit-times.ts",
   "src/domain/services.ts",
   "src/routes/client/payments.ts",
 ];

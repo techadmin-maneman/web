@@ -2,7 +2,7 @@
 // the owner's words as docs/archive/owner-answers-2026-09-27.md records it ("Services, as the console will hold them"). Each
 // service carries its own length (the services table, docs/decisions/0085-services-ops-can-edit.md). A visit is
 // booked for that long, and the day, counted in half-slots (docs/decisions/0035-window-slot-map.md), keeps the
-// half-slots that length needs. src/domain/scheduling.ts places a visit by them, for booking and dispatch alike.
+// half-slots that length needs. src/domain/occupancy.ts places a visit by them, for booking and dispatch alike.
 
 import { UNITS_PER_DAY } from "../config/scheduling.ts";
 

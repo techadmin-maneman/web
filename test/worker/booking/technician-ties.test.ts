@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { holdSlot } from "../../../src/domain/scheduling.ts";
+import { holdSlot } from "../../../src/domain/hold-slot.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 
 const ADITYA = "t1";
