@@ -35,17 +35,13 @@ import type { BooksProvider } from "../providers/books/index.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { customerFor, updateCustomerOf } from "./books-customers.ts";
-import { HOUR_MS } from "../lib/durations.ts";
+import { rupees } from "@maneman/web-kit/money";
+import { FAILURES_BEFORE_ALERT, PER_PASS, RECHECK_AFTER_MS, tellFailure as tellPassFailure } from "./vendor-pass.ts";
 
-/** How many of each a pass handles at most. */
-const PER_PASS = 5;
-export const RECHECK_AFTER_MS = HOUR_MS;
 /** Outside calls one record may cost: Books' look for it, Books' record, and the alert it may send. */
 export const CALLS_PER_RECORD = 3;
 /** Outside calls one customer may cost: Books' write, and the alert it may send. */
 export const CALLS_PER_CUSTOMER = 2;
-/** A failure other than a refusal is told once it has happened this many times, an hour apart. */
-const FAILURES_BEFORE_ALERT = 3;
 
 export interface BooksSyncOptions {
   readonly refundAccountId: string | null;
@@ -565,28 +561,22 @@ function linkOf(record: FailedRecord): string {
   return aboutTheCustomer ? `/clients/${record.personId}` : paymentsTab(record.personId);
 }
 
-/** Logs the failure, and tells ops of a refusal at once and of any other failure on its third time. */
-async function tellFailure(pass: Pass, record: FailedRecord, error: unknown): Promise<void> {
-  const idField = ID_FIELDS[record.kind];
-  const link = linkOf(record);
-  if (isRefusal(error)) {
-    pass.log.warn(`books_${record.kind}_refused`, { [idField]: record.id, status: error.status, code: error.code });
-    await pass.deps.alertOnce({
-      key: `books_${record.kind}_refused:${record.id}`,
-      // Books' own words; its status and code go to the log above.
-      message: `Books refused ${record.what}, saying "${error.said}". ${record.then}`,
-      link,
-    });
-    return;
-  }
-  pass.log.warn(`books_${record.kind}_failed`, { [idField]: record.id, error });
-  await pass.deps.alertOnce({
-    key: `books_${record.kind}_failed:${record.id}`,
-    message: `Books has failed ${String(FAILURES_BEFORE_ALERT)} times on ${record.what}: ${describe(error)}. ${record.then}`,
-    link,
-    after: FAILURES_BEFORE_ALERT,
-  });
-}
+/** Tells ops a record did not reach Books: Books' refusal at once, any other failure on its third time. */
+const tellFailure = (pass: Pass, record: FailedRecord, error: unknown): Promise<void> =>
+  tellPassFailure(
+    pass,
+    {
+      event: `books_${record.kind}`,
+      id: record.id,
+      idField: ID_FIELDS[record.kind],
+      link: linkOf(record),
+      // Books' own words; its status and code go to the log.
+      refused: (said) => `Books refused ${record.what}, saying "${said}". ${record.then}`,
+      failed: (failure) =>
+        `Books has failed ${String(FAILURES_BEFORE_ALERT)} times on ${record.what}: ${describe(failure)}. ${record.then}`,
+    },
+    error,
+  );
 
 /** Once a record goes through, whatever was told about it is over. */
 async function closeFailures(pass: Pass, record: FailedRecord): Promise<void> {
@@ -626,5 +616,3 @@ async function claimToApply(pass: Pass, paymentId: string): Promise<boolean> {
 async function markApplied(pass: Pass, paymentId: string): Promise<void> {
   await pass.db.prepare("UPDATE payments SET books_applied_at = ?1 WHERE id = ?2").bind(pass.at, paymentId).run();
 }
-
-const rupees = (paise: number): string => `Rs. ${String(paise / 100)}`;

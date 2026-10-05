@@ -9,7 +9,6 @@ import { markCustomerChanged } from "../../src/domain/books-customers.ts";
 import {
   CALLS_PER_CUSTOMER,
   CALLS_PER_RECORD,
-  RECHECK_AFTER_MS,
   syncBooks,
   type BooksSyncOptions,
   type BooksSyncSummary,
@@ -20,6 +19,7 @@ import { type BooksInvoice, type BooksProvider } from "../../src/providers/books
 import { createStubBooks, type StubBooks } from "../../src/providers/books/stub.ts";
 import { ZohoError } from "../../src/providers/zoho-http.ts";
 import { captureLogs, NOW } from "./helpers.ts";
+import { RECHECK_AFTER_MS } from "../../src/domain/vendor-pass.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -334,8 +334,8 @@ describe("payments and refunds", () => {
       expect(told).toEqual([
         expect.stringMatching(
           new RegExp(
-            `^Payment ${PAYMENT} \\(Books stub-payment-.+\\) was Rs\\. 30000, and invoice inv-41 owed Rs\\. 12000 of ` +
-              "it, so Rs\\. 18000 has nothing to be set against\\. It stays in Books as credit owed to the client",
+            `^Payment ${PAYMENT} \\(Books stub-payment-.+\\) was Rs\\. 30,000, and invoice inv-41 owed Rs\\. 12,000 of ` +
+              "it, so Rs\\. 18,000 has nothing to be set against\\. It stays in Books as credit owed to the client",
           ),
         ) as string,
       ]);
@@ -464,7 +464,7 @@ describe("payments and refunds", () => {
       expect(told).toEqual([
         expect.stringMatching(
           new RegExp(
-            `^Payment ${PAYMENT} \\(Books stub-payment-.+\\) has nothing to be set against: visit ${VISIT} was cancelled and Rs\\. 4000 of it kept\\.`,
+            `^Payment ${PAYMENT} \\(Books stub-payment-.+\\) has nothing to be set against: visit ${VISIT} was cancelled and Rs\\. 4,000 of it kept\\.`,
           ),
         ) as string,
       ]);
@@ -486,7 +486,7 @@ describe("payments and refunds", () => {
       await chargedNoShow(400000);
       await pass(createStubBooks(), "books-customer-9");
       expect(told).toEqual([
-        expect.stringContaining(`has nothing to be set against: visit ${VISIT} was a no-show and Rs. 4000 of it kept.`),
+        expect.stringContaining(`has nothing to be set against: visit ${VISIT} was a no-show and Rs. 4,000 of it kept.`),
       ]);
     });
 
@@ -502,7 +502,7 @@ describe("payments and refunds", () => {
         expect.stringMatching(
           new RegExp(
             `^Payment ${SECOND} \\(Books stub-payment-.+\\) has nothing to be set against: it is the late fee for ` +
-              `moving visit ${VISIT}, and Rs\\. 30000 of it kept\\.`,
+              `moving visit ${VISIT}, and Rs\\. 30,000 of it kept\\.`,
           ),
         ) as string,
       ]);

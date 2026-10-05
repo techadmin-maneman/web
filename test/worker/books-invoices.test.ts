@@ -5,12 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { NO_GST, type GstRegistration } from "../../src/config/gst.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
-import {
-  CALLS_PER_VISIT,
-  raiseBooksInvoices,
-  RECHECK_AFTER_MS,
-  type BooksInvoiceOptions,
-} from "../../src/domain/books-invoices.ts";
+import { CALLS_PER_VISIT, raiseBooksInvoices, type BooksInvoiceOptions } from "../../src/domain/books-invoices.ts";
 import { syncBooks } from "../../src/domain/books-sync.ts";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
@@ -18,6 +13,7 @@ import { type BooksInvoice, type BooksProvider } from "../../src/providers/books
 import { createStubBooks, type StubBooks } from "../../src/providers/books/stub.ts";
 import { ZohoError } from "../../src/providers/zoho-http.ts";
 import { captureLogs, NOW } from "./helpers.ts";
+import { RECHECK_AFTER_MS } from "../../src/domain/vendor-pass.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";

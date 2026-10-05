@@ -2,7 +2,7 @@
 // become paise only then; and the check's lines, which say what will be made before anything is.
 
 import { shortDate } from "@maneman/web-kit/dates";
-import { rupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { isCodeText } from "../../../../src/policy/discount-codes.ts";
 import type { DiscountCodesNew } from "../api.ts";
 import { settings } from "../content.ts";
@@ -43,8 +43,6 @@ export const EMPTY: Draft = {
   oncePerClient: true,
 };
 
-const paise = (rupeesTyped: string): number => Math.round(Number(rupeesTyped) * 100);
-
 /** A box left empty is a limit left out. */
 const optional = (text: string): string | null => (text.trim() === "" ? null : text.trim());
 
@@ -65,8 +63,8 @@ export function requestOf(draft: Draft): DiscountCodesNew {
   return {
     ...(draft.how === "typed" ? { code: draft.code.trim() } : { count: Number(draft.count) }),
     kind: draft.kind,
-    value: draft.kind === "percent" ? Number(draft.value) : paise(draft.value),
-    ...(draft.kind === "percent" && cap !== null ? { cap: paise(cap) } : {}),
+    value: draft.kind === "percent" ? Number(draft.value) : paiseFromRupees(draft.value),
+    ...(draft.kind === "percent" && cap !== null ? { cap: paiseFromRupees(cap) } : {}),
     covers: [...draft.covers],
     ...(expiresOn === null ? {} : { expires_on: expiresOn }),
     ...usesOf(draft),

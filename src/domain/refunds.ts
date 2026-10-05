@@ -4,6 +4,7 @@
 
 import type { PaymentsProvider, RefundAsked } from "../providers/payments/index.ts";
 import { PaymentUnanswered } from "../providers/provider-error.ts";
+import { rupees } from "@maneman/web-kit/money";
 
 /** The most calls a refund makes: asked once, and once more at once when the first gave no answer. */
 export const ASKS = 2;
@@ -79,6 +80,6 @@ export function refundLeftToOps(
   }
   return (
     `Razorpay did not answer the refund of ${what} (payment ${paymentId}), so it may have been made. Look at the ` +
-    `payment in Razorpay, and refund it by hand only if no refund of Rs. ${String(amount / 100)} is there.`
+    `payment in Razorpay, and refund it by hand only if no refund of ${rupees(amount)} is there.`
   );
 }

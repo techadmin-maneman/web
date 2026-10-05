@@ -6,6 +6,7 @@
 
 import { hasStandardService, STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import type { OneVisitState } from "./one-visit.ts";
+import { slugOf } from "../lib/slug.ts";
 
 export const RULES = [
   "every service belongs to one of four kinds (consultation, first fit, service visit, replacement), and the kind decides the technician's steps, the booking rules and which fees apply; within a kind ops add, rename, describe, price, reorder and retire services from the console, each synced to Books; a new kind needs a release.",
@@ -58,14 +59,7 @@ const CODE_LENGTH = 32;
  * renamed to, so its prices stay its own.
  */
 export function tierCodeOf(name: string): string | null {
-  const code = name
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^[^a-z]+/, "")
-    .slice(0, CODE_LENGTH)
-    .replace(/_+$/, "");
+  const code = slugOf(name, CODE_LENGTH).replace(/^[^a-z]+/, "");
   return code === "" ? null : code;
 }
 
