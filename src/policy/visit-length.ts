@@ -6,10 +6,6 @@
 
 import { UNITS_PER_DAY } from "../config/scheduling.ts";
 
-export const RULES = [
-  "each service carries its own length, starting from its kind's (consultation 60 minutes, service 90, replacement 135, first fit 180), and the scheduler reserves that length.",
-] as const;
-
 /**
  * The work a half-slot is counted as. The design's blocks are 45 minutes a half-slot: a service visit's 90 minutes is
  * one slot, a replacement's 135 a slot and a half, a first fit's 180 two (VISIT_BLOCKS, src/config/scheduling.ts).

@@ -1,5 +1,4 @@
-// The dispatch board's clash check and move reasons, each rule named by the
-// prompt's own words (src/policy/dispatch.ts).
+// The dispatch board's clash check and move reasons (src/policy/dispatch.ts).
 
 import { describe, expect, it } from "vitest";
 import { SLOTS_PER_DAY, UNITS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../../src/config/scheduling.ts";
@@ -9,7 +8,6 @@ import {
   keepsTheClientsNotice,
   MOVE_REASONS,
   moveRefusal,
-  RULES,
   slotsFor,
   targetTime,
 } from "../../src/policy/dispatch.ts";
@@ -24,14 +22,14 @@ const FITS = { time: "ahead", fits: true, blackoutWithoutReason: false } as cons
 const NO_ROOM = { ...FITS, fits: false };
 
 describe("dispatch", () => {
-  it(RULES[0], () => {
+  it("divides each day into 4 slots, counted as 8 half-slots", () => {
     expect(SLOTS_PER_DAY).toBe(4);
     expect(UNITS_PER_DAY).toBe(8); // counted in halves, so a replacement's block is whole
   });
 
   // Each block's size comes from its service's length (src/policy/visit-length.ts), and the kinds' own lengths
   // give the prompt's four (docs/decisions/0085-services-ops-can-edit.md).
-  it(RULES[1], () => {
+  it("sizes each kind's block in slots: consultation 1, service 1, replacement 1.5, first fit 2", () => {
     const sized = (type: keyof typeof VISIT_BLOCKS) => slotsFor(unitsFor(VISIT_BLOCKS[type].minutes));
     expect(sized("consultation")).toBe(1);
     expect(sized("service")).toBe(1);
@@ -48,7 +46,7 @@ describe("dispatch", () => {
     expect(VISIT_BLOCKS.first_fit.minutes).toBe(180);
   });
 
-  it(RULES[2], () => {
+  it("never gives a technician two live jobs in one window on one date", () => {
     expect(clashes(day("afternoon"), "afternoon")).toBe(true);
     expect(clashes(day("afternoon"), "morning")).toBe(false);
     expect(clashes(day(), "afternoon")).toBe(false);
@@ -56,7 +54,7 @@ describe("dispatch", () => {
     expect(clashes(day("morning", "evening"), "afternoon")).toBe(false);
   });
 
-  // RULES[3] ends "messages the client with the new window". A WhatsApp message
+  // A move tells the client of its new window. A WhatsApp message
   // about a visit goes only to a client who agreed to them (whatsapp_visits), so
   // any other is told by a call from ops, and a change of technician alone
   // leaves the window, and the client, as they were (ADR 0069).
@@ -68,7 +66,7 @@ describe("dispatch", () => {
     expect(clientNotice({ timeChanged: true, client: null })).toBe("no_client");
   });
 
-  it(RULES[3], () => {
+  it("takes a move's reason from the design's five, in its order", () => {
     expect([...MOVE_REASONS]).toEqual([
       "technician_unavailable",
       "client_asked",

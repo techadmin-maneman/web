@@ -1,4 +1,4 @@
-// The login code's rules, each named by the prompt's own words (src/policy/one-time-code.ts).
+// The login code (src/policy/one-time-code.ts).
 
 import { describe, expect, it } from "vitest";
 import {
@@ -6,7 +6,6 @@ import {
   CODE_TTL_MS,
   newLoginCode,
   ONE_TIME_CODE,
-  RULES,
   smsOfferedAt,
   whatsappResendAt,
 } from "../../src/policy/one-time-code.ts";
@@ -14,7 +13,7 @@ import {
 const AT = new Date("2026-09-22T10:00:00Z");
 
 describe("the one-time code", () => {
-  it(RULES[0], () => {
+  it("makes six-digit codes, keeping leading zeros", () => {
     const codes = Array.from({ length: 2_000 }, newLoginCode);
     expect(codes.every((code) => /^\d{6}$/.test(code))).toBe(true);
     expect(codes.some((code) => code.startsWith("0"))).toBe(true); // leading zeros are kept
@@ -22,15 +21,15 @@ describe("the one-time code", () => {
     expect(ONE_TIME_CODE.digits).toBe(6);
   });
 
-  it(RULES[1], () => {
+  it("offers SMS 30 seconds after the code is sent", () => {
     expect(smsOfferedAt(AT)).toEqual(new Date("2026-09-22T10:00:30Z"));
   });
 
-  it(RULES[2], () => {
+  it("voids a code after five wrong attempts", () => {
     expect([0, 1, 2, 3, 4, 5, 6].map(attemptsLeft)).toEqual([5, 4, 3, 2, 1, 0, 0]);
   });
 
-  it(RULES[3], () => {
+  it("sends a WhatsApp code again only after 30 seconds", () => {
     expect(whatsappResendAt(AT)).toEqual(new Date("2026-09-22T10:00:30Z"));
   });
 

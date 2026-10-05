@@ -1,5 +1,4 @@
-// The times of a working day's half-slots, which ops set in the console (src/policy/slot-times.ts), each rule named
-// by its own words.
+// The times of a working day's half-slots, which ops set in the console (src/policy/slot-times.ts).
 
 import { describe, expect, it } from "vitest";
 import { WINDOW_SLOT_MAP, WINDOW_TIMES } from "../../src/config/scheduling.ts";
@@ -7,7 +6,6 @@ import {
   DEFAULT_SLOT_TIMES,
   earliestAppliesFrom,
   firstUnitAfter,
-  RULES,
   slotTimesProblems,
   unitAt,
   windowAt,
@@ -21,7 +19,7 @@ const LATER: SlotTimes = {
 };
 
 describe("a day's times", () => {
-  it(RULES[0], () => {
+  it("reads the windows and half-slots from the times ops set", () => {
     expect(windowTimesOf(DEFAULT_SLOT_TIMES)).toEqual(WINDOW_TIMES);
     expect(windowTimesOf(LATER)).toEqual({
       morning: { start: "10:00", end: "12:30" },
@@ -59,7 +57,7 @@ describe("a day's times", () => {
     ]);
   });
 
-  it(RULES[2], () => {
+  it("refuses a half-slot shorter than the 45 minutes it is counted as", () => {
     // Half-hour half-slots: a 90-minute visit at 09:30 and another at 10:30 would overlap from 10:30 to 11:00.
     const halfHours: SlotTimes = {
       unitStarts: ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30"],
@@ -78,7 +76,7 @@ describe("a day's times", () => {
 });
 
 describe("when a change of times may apply from", () => {
-  it(RULES[1], () => {
+  it("applies changed times only after the last day a client can book and the last visit booked", () => {
     // Nothing booked: the day after the last a client can book, 45 days from tomorrow.
     expect(earliestAppliesFrom("2026-10-01", 45, null, null)).toBe("2026-11-16");
     // A visit booked further out, or a change already set further out, pushes it past them.

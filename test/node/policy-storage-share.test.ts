@@ -10,20 +10,12 @@ import {
   markReached,
   PHASE_2_SHARE_BYTES,
   SHARE_BYTES,
-  RULES,
   RUNAWAY_CEILING_BYTES,
 } from "../../src/policy/storage-share.ts";
 
 const GB = 1e9;
 
 describe("the photographs' share of R2", () => {
-  it("quotes the owner's ruling on the runway", () => {
-    expect(RULES).toEqual([
-      "pay for R2 beyond the free tier when it fills",
-      "warns ops at 50% and 80% of the share, and R2's paid storage is accepted as the share fills",
-    ]);
-  });
-
   it("is ADR 0039's 4 GB, which staging and production share between them", () => {
     expect(PHASE_2_SHARE_BYTES).toBe(4 * GB);
     expect(SHARE_BYTES.staging + SHARE_BYTES.production).toBe(PHASE_2_SHARE_BYTES);

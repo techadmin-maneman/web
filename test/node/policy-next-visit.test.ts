@@ -1,4 +1,4 @@
-// The next visit, offered in the app and booked by the client, each rule named by the owner's own words
+// The next visit, offered in the app and booked by the client
 // (src/policy/next-visit.ts; ADR 0025, item 69; docs/archive/owner-answers-2026-09-27.md). The days are India's calendar days.
 
 import { describe, expect, it } from "vitest";
@@ -19,7 +19,6 @@ import {
   offeredWindow,
   pastTheHorizon,
   remindedIfDoneBetween,
-  RULES,
   serviceDue,
 } from "../../src/policy/next-visit.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
@@ -29,7 +28,7 @@ const TODAY = "2026-09-21";
 const TOMORROW = "2026-09-22";
 
 describe("the next visit", () => {
-  it(RULES[0], () => {
+  it("makes the next service due 30 days on, with a reminder 7 days before and an At-risk task 7 days after", () => {
     // Due 30 days after the last first fit, service or replacement.
     expect(NEXT_VISIT_DAYS.service_cadence).toBe(30);
     expect(serviceDue("2026-09-10", NEXT_VISIT_DAYS)).toBe("2026-10-10");
@@ -41,20 +40,20 @@ describe("the next visit", () => {
   });
 
   // "If the client's piece falls due before, offer the replacement instead."
-  it(RULES[2], () => {
+  it("offers a replacement when the hair system falls due by the service's day, and a service otherwise", () => {
     expect(nextVisitType("2026-10-10", "2026-10-05")).toBe("replacement");
     expect(nextVisitType("2026-10-10", "2026-10-10")).toBe("replacement");
     expect(nextVisitType("2026-10-10", "2026-10-11")).toBe("service");
     expect(nextVisitType("2026-10-10", null)).toBe("service");
   });
 
-  it(RULES[1], () => {
+  it("offers the next visit on its due day, or tomorrow once that has passed", () => {
     // Offered on the day it falls due, or tomorrow once that has passed: the client books it, on the day they choose.
     expect(offeredDay("2026-10-10", TOMORROW)).toBe("2026-10-10");
     expect(offeredDay("2026-09-01", TOMORROW)).toBe(TOMORROW);
   });
 
-  it(RULES[6], () => {
+  it("offers whichever falls due first, the service or the hair system, and an overdue one for tomorrow", () => {
     // A service past its due day keeps that day, and is offered for tomorrow.
     expect(nextVisitAfter("2026-08-01", null, TOMORROW, NEXT_VISIT_DAYS)).toEqual({
       type: "service",
@@ -83,7 +82,7 @@ describe("the next visit", () => {
     expect(nextVisitAfter("2026-09-10", "2026-10-11", TOMORROW, NEXT_VISIT_DAYS)).toMatchObject({ type: "service" });
   });
 
-  it(RULES[3], () => {
+  it("opens the fit the day after the consultation, unless ops set a lead time", () => {
     expect(NEXT_VISIT_DAYS.first_fit_lead).toBe(0);
     // No minimum: tomorrow, the first day anything is booked on, even after a consultation done today.
     expect(firstFitOpens(TODAY, TOMORROW, NEXT_VISIT_DAYS)).toBe(TOMORROW);
@@ -92,13 +91,13 @@ describe("the next visit", () => {
     expect(firstFitOpens("2026-09-01", TOMORROW, { ...NEXT_VISIT_DAYS, first_fit_lead: 10 })).toBe(TOMORROW);
   });
 
-  it(RULES[4], () => {
+  it("puts a fit still to book on the Tasks board 7 days after its consultation", () => {
     expect(TASK_GROUPS).toContain("first_fit_to_book");
     expect(firstFitToBookFrom("2026-09-10", NEXT_VISIT_DAYS)).toBe("2026-09-17");
     expect(firstFitToBookIfConsultedBy(TODAY, NEXT_VISIT_DAYS)).toBe("2026-09-14");
   });
 
-  it(RULES[5], () => {
+  it("lets a client book 45 days ahead, so the next service is bookable the day the last visit closes", () => {
     expect(NEXT_VISIT_DAYS.horizon).toBe(45);
     const last = lastBookableDay(TOMORROW, NEXT_VISIT_DAYS);
     expect(last).toBe("2026-11-05");

@@ -1,10 +1,6 @@
 // The Workers Free plan's daily allowances that can run out in a day, and when ops are warned. Past one, Cloudflare
 // refuses that kind of work until midnight UTC. Staging and production share one account, and so each allowance.
 
-export const RULES = [
-  "ops are told once when the account has used 70% of a daily allowance, and again only on a later day",
-] as const;
-
 /** Per Cloudflare's pricing pages. Each starts again at midnight UTC. */
 export const DAILY_ALLOWANCES = {
   queueOperations: 10_000,

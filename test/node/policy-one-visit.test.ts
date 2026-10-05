@@ -1,5 +1,4 @@
-// A consultation and fit in one visit (src/policy/one-visit.ts), each rule named by the owner's words of 1 October
-// 2026, or by what the build took for the owner to confirm (ADR 0025, items 89 and 90).
+// A consultation and fit in one visit (src/policy/one-visit.ts; ADR 0025, items 89 and 90).
 
 import { describe, expect, it } from "vitest";
 import { FIRST_FIT_WINDOWS, windowsFor } from "../../src/config/scheduling.ts";
@@ -13,7 +12,6 @@ import {
   paidAtTheVisit,
   paymentLinkClosesAt,
   PLANS,
-  RULES,
 } from "../../src/policy/one-visit.ts";
 import { stepsFor } from "../../src/policy/in-job-steps.ts";
 
@@ -22,7 +20,7 @@ const WINDOW_STARTS = new Date("2026-09-24T03:30:00Z");
 const LATE = new Date("2026-09-24T01:30:00Z");
 
 describe("a consultation and fit in one visit", () => {
-  it(RULES[0], () => {
+  it("sells the consultation alone or with the fit, which takes a first fit's steps and windows", () => {
     expect(PLANS).toEqual(["consultation", "one_visit"]);
     // The fit comes with the consultation's steps: the first fit's, its piece step, with the client's choice, first.
     expect([...stepsFor("first_fit", true)].sort()).toEqual([...stepsFor("first_fit")].sort());
@@ -34,7 +32,7 @@ describe("a consultation and fit in one visit", () => {
     expect(windowsFor("first_fit")).toEqual([...ONE_VISIT_WINDOWS]);
   });
 
-  it(RULES[1], () => {
+  it("takes payment at the visit once the client is fitted, and nothing if they decline", () => {
     expect(paidAtTheVisit("booked")).toBe(true);
     expect(paidAtTheVisit("fitted")).toBe(true);
     expect(paidAtTheVisit("declined")).toBe(false);
@@ -44,7 +42,7 @@ describe("a consultation and fit in one visit", () => {
     expect(paymentBadge({ onCredit: false, free: false, oneVisit: false })).toBe("prepaid");
   });
 
-  it(RULES[2], () => {
+  it("holds no payment, so a late move, a cancel or a no-show costs nothing", () => {
     expect(ONE_VISIT_TERMS).toMatchObject({ lateCharge: "nothing", noShowCharge: "nothing" });
     expect(noticeAt(WINDOW_STARTS, LATE, ONE_VISIT_TERMS.noticeHours)).toBe("late");
     // Inside the notice, a move is free and a cancel gives back all there is to give back, which is nothing.
@@ -55,7 +53,7 @@ describe("a consultation and fit in one visit", () => {
     expect(isDisputable({ kept: 0, creditSpent: false })).toBe(false);
   });
 
-  it(RULES[3], () => {
+  it("closes the payment link 14 days after it is made", () => {
     const made = new Date("2026-09-21T06:30:00.000Z");
     const closes = new Date("2026-10-05T06:30:00.000Z");
     expect(paymentLinkClosesAt(made)).toEqual(closes);

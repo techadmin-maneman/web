@@ -1,4 +1,4 @@
-// The services clients book, each rule named by the owner's own words of 27 September 2026
+// The services clients book
 // (src/policy/services.ts; docs/decisions/0085-services-ops-can-edit.md).
 
 import { describe, expect, it } from "vitest";
@@ -9,14 +9,13 @@ import {
   isServiceDescription,
   namesMoreThanItsKind,
   retireRefusal,
-  RULES,
   SERVICE_NAME,
   tierCodeOf,
   PRICE_TIER,
 } from "../../src/policy/services.ts";
 
 describe("the services", () => {
-  it(RULES[0], () => {
+  it("keeps the four kinds in code, and codes each service ops add from its first name", () => {
     // The kinds are code, four of them, each with its standard tier from the start.
     expect(VISIT_TYPES).toEqual(["consultation", "first_fit", "service", "replacement"]);
     expect(PRICE_TIER.test(STANDARD_TIER)).toBe(true);
@@ -30,7 +29,7 @@ describe("the services", () => {
     expect(tierCodeOf("A very long name for a service that nobody would ever type")).toHaveLength(32);
   });
 
-  it(RULES[1], () => {
+  it("stops offering a retired service from its date", () => {
     expect(isOffered(null, "2026-10-01")).toBe(true);
     expect(isOffered("2026-10-01", "2026-09-30")).toBe(true);
     // From the day it is retired from, nobody sees it or books it.

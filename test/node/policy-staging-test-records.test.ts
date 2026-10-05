@@ -1,12 +1,12 @@
-// A record one of our own scripts made, named by the rule's own words (src/policy/staging-test-records.ts).
+// A record one of our own scripts made (src/policy/staging-test-records.ts).
 
 import { describe, expect, it } from "vitest";
 import { firstNameOf } from "../../src/lib/names.ts";
 import { isStagingTestName, withoutTestMark } from "../../src/lib/test-names.ts";
-import { RULES, testRecordAtCreation } from "../../src/policy/staging-test-records.ts";
+import { testRecordAtCreation } from "../../src/policy/staging-test-records.ts";
 
 describe("a staging test record", () => {
-  it(RULES[0], () => {
+  it("knows a record our own scripts made by its name", () => {
     for (const name of ["Staging test", "Load test", "Staging test technician", "Load test friend"]) {
       expect(isStagingTestName(name), name).toBe(true);
     }
@@ -27,7 +27,7 @@ describe("a staging test record", () => {
   });
 
   // Every test record's first name was "Staging", so a staging invite read "Staging sent you this".
-  it(RULES[2], () => {
+  it("shows a test record's name without its mark", () => {
     expect(withoutTestMark("Staging test Asha Verma")).toBe("Asha Verma");
     expect(withoutTestMark("Load test  friend")).toBe("friend");
     expect(firstNameOf("Staging test Arjun Mehta")).toBe("Arjun");

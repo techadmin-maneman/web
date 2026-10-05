@@ -1,5 +1,5 @@
 // The client's profile and ops' side of it (docs/decisions/0042-client-profile.md),
-// against the rules in src/policy/consents.ts and number-change.ts. Every
+// against the rules in src/policy/consents.ts and src/domain/number-change.ts. Every
 // number here is made up.
 
 import { env } from "cloudflare:workers";
@@ -9,7 +9,7 @@ import { visitAddress } from "../../src/domain/check-ins.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { checkIn } from "../../src/policy/check-in.ts";
 import { RULES as CONSENT_RULES } from "../../src/policy/consents.ts";
-import { RULES as NUMBER_CHANGE_RULES } from "../../src/policy/number-change.ts";
+
 import { createLogger } from "../../src/log.ts";
 import type { MessagingProvider, OutboundMessage, SendResult } from "../../src/providers/messaging/index.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
@@ -586,7 +586,7 @@ describe("a number change", () => {
   const verify = (requestId: string, number: "old" | "new", code: string) =>
     send(client, "POST", "/api/number-change/verify", { request_id: requestId, number, code });
 
-  it(NUMBER_CHANGE_RULES[0], async () => {
+  it("sends a code to both the old number and the new", async () => {
     const { res } = await start();
     expect(res.status).toBe(202);
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual([OLD, NEW]);
@@ -638,7 +638,7 @@ describe("a number change", () => {
     expect(deps.sentCodes).toEqual([]);
   });
 
-  it(NUMBER_CHANGE_RULES[1], async () => {
+  it("waits for ops to confirm a change, and changes the number only then", async () => {
     const { body } = await start();
     expect(await (await verify(body.request_id, "old", codeTo(OLD))).json()).toMatchObject({
       state: "verifying",
