@@ -306,6 +306,38 @@ describe("POST /api/holds", () => {
     expect(moved.id).toBeDefined();
   });
 
+  // A client whose app closed before they paid, and who comes back inside the hold's life: the hold they are asking
+  // for lets their unpaid one go, so it stands in nobody's way, theirs least of all.
+  it("offers a client their own unpaid window, and holds it again with their regular technician", async () => {
+    const rohit = await client();
+    expect(await (await hold(rohit, TUESDAY_AFTERNOON)).json()).toMatchObject({
+      technician: { name: "Imran Qureshi" },
+    });
+    const other = await client();
+    expect(await (await hold(other, TUESDAY_AFTERNOON)).json()).toMatchObject({
+      technician: { name: "Sandeep Rawat" },
+    });
+
+    const offered = await (
+      await request(app, "/api/availability?type=service&from=2026-09-22", { headers: { Cookie: rohit.cookie } })
+    ).json<{ days: { windows: { window: string; with: string | null }[] }[] }>();
+    expect(offered.days[0]?.windows[1]).toMatchObject({ window: "afternoon", with: "regular" });
+    const again = await hold(rohit, TUESDAY_AFTERNOON);
+    expect(again.status).toBe(201);
+    expect(await again.json()).toMatchObject({ technician: { name: "Imran Qureshi" } });
+  });
+
+  it("keeps the time of a client's hold already at Checkout, which a payment may yet land on", async () => {
+    const rohit = await client();
+    await hold(rohit, TUESDAY_AFTERNOON);
+    await env.DB.prepare("UPDATE slot_holds SET razorpay_order_id = 'order_e2e' WHERE person_id = ?1")
+      .bind(rohit.id)
+      .run();
+    expect(await (await hold(rohit, TUESDAY_AFTERNOON)).json()).toMatchObject({
+      technician: { name: "Sandeep Rawat" },
+    });
+  });
+
   // The countdown and the grace are ops' to set; a hold keeps the ones it was made with
   // (docs/decisions/0088-every-policy-in-the-console.md).
   const paymentHold = (minutes: { countdown: number; grace: number }) =>
