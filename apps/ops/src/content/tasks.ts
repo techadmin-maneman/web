@@ -1,8 +1,11 @@
 // Tasks (board D2): every queue ops work through, a payment link's state, and the alerts that need a hand.
 
+import type { TaskGroup } from "../api.ts";
 import type { LinkState } from "../tasks/payment-link.ts";
 import { NOT_PERMITTED } from "./common.ts";
 import { DEPARTMENT_NAMES } from "./shell.ts";
+
+type Group = TaskGroup["group"];
 
 /** Where a payment link still owed stands, as the Tasks board says it. */
 const PAYMENT_LINK_STATES: Readonly<Record<LinkState, string>> = {
@@ -10,6 +13,22 @@ const PAYMENT_LINK_STATES: Readonly<Record<LinkState, string>> = {
   unsent: "link not sent yet",
   refused: "Razorpay refused the link: send one from its dashboard",
   closed: "link closed unpaid",
+};
+
+/**
+ * The section each task is decided in, and a way to its row
+ * there. The board draws no way of acting on a task; the section itself
+ * decides nothing.
+ */
+const DECIDE: Readonly<Partial<Record<Group, string>>> = {
+  untold_move: "Open it in Dispatch",
+  leave_conflict: "Move it in Dispatch",
+  referral_review: "Decide it in Referrals",
+  no_show_decision: "Rule on it in Payments",
+  no_show_dispute: "Rule on it in Payments",
+  number_change: "Decide it in Number changes",
+  erasure_request: "Decide it in Deletion requests",
+  grievance: "Answer it in Concerns",
 };
 
 /**
@@ -54,7 +73,7 @@ export const tasks = {
     payment_owed: "Payment owed",
     // A group the board does not draw: money owed back that no refund has reached.
     payment_to_refund: "Payment to refund",
-  } as Readonly<Record<string, string>>,
+  } satisfies Readonly<Record<Group, string>>,
   /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */
   visit: (date: string) => `Visit of ${date}`,
   /** A disputed charge whose client has since been erased. */
@@ -63,21 +82,7 @@ export const tasks = {
   unknown: "Client unknown",
   /** The client's page, which the board draws no way to. */
   open: (name: string) => `Open ${name}`,
-  /**
-   * The section each task is decided in, and a way to its row
-   * there. The board draws no way of acting on a task; the section itself
-   * decides nothing.
-   */
-  decide: {
-    untold_move: "Open it in Dispatch",
-    leave_conflict: "Move it in Dispatch",
-    referral_review: "Decide it in Referrals",
-    no_show_decision: "Rule on it in Payments",
-    no_show_dispute: "Rule on it in Payments",
-    number_change: "Decide it in Number changes",
-    erasure_request: "Decide it in Deletion requests",
-    grievance: "Answer it in Concerns",
-  } as Readonly<Record<string, string>>,
+  decide: DECIDE,
   /** A group longer than the board lists: its count is all of them. */
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
   /** A group shows its five longest waits until ops ask for the rest. */

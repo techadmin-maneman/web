@@ -136,8 +136,21 @@ function subOf(group: Group, task: Task, now: Date): string {
     if (payment === "") return tasks.unknown;
     return copy.payment_to_refund(rupees(Number(amount)), payment, why);
   }
-  if (group === "grievance") return copy.grievance;
-  return group === "number_change" ? copy.number_change : copy.erasure_request;
+  switch (group) {
+    case "grievance":
+      return copy.grievance;
+    case "number_change":
+      return copy.number_change;
+    case "erasure_request":
+      return copy.erasure_request;
+    default:
+      return unknownGroup(group);
+  }
+}
+
+/** A group this console does not know: it compiles only once every group the API names has its line above. */
+function unknownGroup(_group: never): string {
+  return tasks.unknown;
 }
 
 /** What a disputed charge kept: its amount in paise, or, where it kept no money, the credit it spent. */
@@ -243,7 +256,7 @@ function GroupCard({ group, unfolded, onFold, rowOf }: GroupProps) {
   const listed = group.tasks.length;
   const folds = listed > ROWS_FOLDED;
   const shown = folds && !unfolded ? group.tasks.slice(0, ROWS_FOLDED) : group.tasks;
-  const name = tasks.groups[group.group] ?? group.group;
+  const name = tasks.groups[group.group];
   const listId = `group-${group.group}`;
 
   return (
