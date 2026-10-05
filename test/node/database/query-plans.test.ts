@@ -17,6 +17,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import { graceEnds, keepingItsTime, ownUnpaid, paidNotBooked } from "../../../src/domain/hold-stages.ts";
 
 /**
  * Each module the entry imports, and each one those import in turn: every statement the entry could run is in one of
@@ -164,6 +165,14 @@ interface Statement {
 
 const collapsed = (text: string): string => text.replace(/\s+/g, " ");
 
+/** The SQL fragments the queries about holds share, written out as each call site's arguments ask. */
+const FRAGMENTS: Readonly<Record<string, (...names: string[]) => string>> = {
+  graceEnds,
+  keepingItsTime,
+  ownUnpaid,
+  paidNotBooked,
+};
+
 /** The SQL of every .prepare() in a file, with `${…}` filled from the file's own constants where it can be. */
 function statementsIn(file: string): Statement[] {
   const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.ES2022, true);
@@ -174,6 +183,11 @@ function statementsIn(file: string): Statement[] {
     if (node === undefined) return null;
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
     if (ts.isIdentifier(node)) return textOf(constants.get(node.text));
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const fragment = FRAGMENTS[node.expression.text];
+      // A name passed at run time, as `now`, plans the same as a parameter.
+      if (fragment !== undefined) return fragment(...node.arguments.map((argument) => textOf(argument) ?? "?"));
+    }
     if (!ts.isTemplateExpression(node)) return null;
     // A list of placeholders built at run time plans the same as a single NULL.
     return node.templateSpans.reduce(
