@@ -103,7 +103,7 @@ Past the runway, R2 bills on the owner's ruling; the runway is now when ops are 
   - `test/node/migration-0055.test.ts`: the backfill.
   - `test/worker/storage-meter.test.ts`: the counting, a rewrite and two deletes at once counted once, and the alerts.
   - `test/worker/kept-try-ons.test.ts`, `test/worker/referral-cards.test.ts`: each store and delete of a copy, a look and a card counted, and a look kept once however often its sweep runs.
-  - `test/worker/field-operations.test.ts`: the upload limit, the ceiling, and the thumbnail's upload, claimed on its own take.
+  - `test/worker/field-photos.test.ts`: the upload limit, the ceiling, and the thumbnail's upload, claimed on its own take.
   - `test/worker/client-visits.test.ts`: the thumbnail's link and its fallback.
   - `test/worker/erasure.test.ts`: retakes and thumbnails erased.
   - `test/worker/visit-photos.test.ts`: FSM's size, and a retake from FSM.
