@@ -5,9 +5,9 @@
 // technician until one is added and none has logged in. The clock is fixed to
 // the day the fixture's leave is read against.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import {
   answer,
   fails,
@@ -29,7 +29,6 @@ import {
   type OpsReply,
 } from "./fixtures.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const IMRAN = "88000000-0000-4000-8000-000000000001";
 const SANDEEP = "88000000-0000-4000-8000-000000000002";
 const FAIZAN = "88000000-0000-4000-8000-000000000003";
@@ -484,24 +483,20 @@ test("meets WCAG 2.2 AA on the roster and the page, with a revoke, the leave for
   page,
 }) => {
   await open(page);
-  const roster = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(roster.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
-  const asking = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(asking.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await main.getByRole("link", { name: "Leave", exact: true }).click();
   await main.getByRole("button", { name: "Record leave for Imran Qureshi" }).click();
-  const recording = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(recording.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await backToRoster(page);
   const sandeep = await pageOf(page, "Sandeep Yadav", "Leave");
   await sandeep.getByRole("button", { name: "Take back Sandeep Yadav's leave, 2 Oct 2027 to 6 Oct 2027" }).click();
-  const checking = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(checking.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 // ---- Adding, changing and switching off a technician ---------------------------------------------------------
@@ -547,8 +542,7 @@ test("adds a technician, whose number signs in at once", async ({ page }) => {
   });
   await expect(form).toBeHidden();
   await expect(page.getByRole("status")).toContainText("Naveen Rao is added. He can sign in now.");
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("refuses a number another active technician signs in with, and keeps what was typed", async ({ page }) => {
@@ -643,8 +637,7 @@ test("switches a technician off only once asked, and lists the visits he no long
   await expect(main.getByRole("button", { name: "Switch Imran Qureshi back on" })).toBeVisible();
   // Switched off, he has no phone signed in and no leave to record: his page is his details alone.
   await expect(main.getByRole("navigation", { name: /^Imran Qureshi:/ })).toBeHidden();
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   // He is off the roster's table, and listed apart.
   await backToRoster(page);

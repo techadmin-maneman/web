@@ -2,13 +2,10 @@
 // served as the mm-tech Worker serves it, under its own policy, on the
 // technician surface's host, at the width its boards are drawn at.
 
-import AxeBuilder from "@axe-core/playwright";
-import type { Page } from "@playwright/test";
+import { LOCAL_LOGIN_CODE } from "../../scripts/lib/local-stack.ts";
 import { expect, outsideContract, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { fakeTech, heldOnPhone, storeOnPhone } from "./fixtures.ts";
-
-const wcag = (page: Page) =>
-  new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
 
 test("opens on the sign-in, as the Prototype draws it", async ({ page }) => {
   await page.goto("/");
@@ -49,8 +46,7 @@ test("keeps the design's column on a wide screen, centred", async ({ page }) => 
 test("the sign-in meets WCAG 2.2 AA", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("says why an app opened from the home screen is signed out, and nothing of the kind in a tab", async ({
@@ -71,8 +67,7 @@ test("says why an app opened from the home screen is signed out, and nothing of 
   await page.reload();
   await expect(page.getByText(/This is the app on your home screen/)).toBeVisible();
 
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("signs the phone out and forgets everything it held", async ({ page }) => {
@@ -201,10 +196,9 @@ test("a code the API has closed takes the sign-in back to sending one, not to a 
   await page.getByRole("textbox", { name: "Mobile number" }).fill("9811000000");
   await page.getByRole("button", { name: "Send the code" }).click();
   await expect(page.getByRole("button", { name: "Change number" })).toBeVisible();
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
-  await page.getByRole("textbox", { name: "Code" }).fill("246810");
+  await page.getByRole("textbox", { name: "Code" }).fill(LOCAL_LOGIN_CODE);
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.getByRole("alert")).toHaveText("That code no longer works. Send the code again.");
@@ -212,7 +206,7 @@ test("a code the API has closed takes the sign-in back to sending one, not to a 
 
   fake.codeClosed = false;
   await page.getByRole("button", { name: "Send the code" }).click();
-  await page.getByRole("textbox", { name: "Code" }).fill("246810");
+  await page.getByRole("textbox", { name: "Code" }).fill(LOCAL_LOGIN_CODE);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
 });
@@ -255,8 +249,7 @@ test("a screen that fails to draw says so and offers a reload, and the reload lo
   fake.malformed = true;
   await page.reload();
   await expect(page.getByText("This screen didn’t open. Nothing you recorded is lost.")).toBeVisible();
-  const results = await wcag(page);
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   fake.malformed = false;
   await page.getByRole("button", { name: "Reload" }).click();

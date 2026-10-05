@@ -5,10 +5,10 @@
 // try-on is theirs to keep, and the empty state's lines for visit photographs
 // follow it.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { fullDate, indiaDate } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { logIn } from "./signed-in.ts";
 import { tryOnClient } from "./try-on.ts";
 
@@ -57,10 +57,7 @@ test("Photos shows a booked client's before photo beside its look, each kept, ea
 
   await photo.click();
   await expect(page.getByRole("dialog", { name: `Your photo · ${date}` })).toBeVisible();
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("the tab meets WCAG 2.2 AA with a try-on above the empty state", async ({ page }) => {
@@ -68,8 +65,5 @@ test("the tab meets WCAG 2.2 AA with a try-on above the empty state", async ({ p
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
   await tab(page, "Photos").click();
   await expect(page.getByText("Your try-on")).toBeVisible();
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

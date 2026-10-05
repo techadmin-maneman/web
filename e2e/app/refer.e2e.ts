@@ -6,11 +6,11 @@
 // app loads (stubShareSheet), taking files or not, as a phone's does.
 
 import { readFileSync } from "node:fs";
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import sharp from "sharp";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { expect, outsideContract, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { holdOpen } from "./one-tap.ts";
 import { logIn, signIn } from "./signed-in.ts";
@@ -72,10 +72,7 @@ const cardWithInvite = (size: number) => ({
 });
 
 const scan = async (page: Page) => {
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 };
 
 async function toRefer(page: Page) {

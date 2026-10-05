@@ -3,14 +3,12 @@
 // client's first fit (e2e/app/fitted.ts) is answered as one, charged its late fee, and the dispute's route is answered
 // too; each answer is held to the API's contract (e2e/contract.ts).
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { assertInContract } from "../contract.ts";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
-
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 type Dispute = "open" | "refunded" | "upheld" | null;
 
@@ -112,11 +110,9 @@ test("says only that the charge was refunded, once ops refund it", async ({ page
 test("meets WCAG 2.2 AA with the charge, and with its dispute open", async ({ page }) => {
   await charged(page, null);
   await expect(page.getByRole("button", { name: "Dispute this charge" })).toBeVisible();
-  const page1 = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(page1.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await page.getByRole("button", { name: "Dispute this charge" }).click();
   await expect(page.getByRole("dialog", { name: "Dispute this charge" })).toBeVisible();
-  const sheet = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(sheet.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

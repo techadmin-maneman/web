@@ -2,9 +2,9 @@
 // one. A paid visit goes out as a payment link; anything else is booked at once. The API is answered from here, so
 // the windows and the outcome read the same on every run; each reply is held to docs/openapi-ops.json.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import {
   answer,
   CLIENT,
@@ -19,7 +19,6 @@ import {
   type OpsReply,
 } from "./fixtures.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const AVAILABILITY: Call = "GET /api/visits/availability";
 const BOOK: Call = "POST /api/visits";
 const HOLD = "44000000-0000-4000-8000-000000000001";
@@ -102,8 +101,7 @@ test("books a fitted client's service visit in a window someone is free in, send
   ]);
   await booking.getByLabel("Technician", { exact: true }).selectOption({ label: "Sandeep Rawat" });
   await expect(booking).toContainText("A payment link goes to them by SMS");
-  const results = await new AxeBuilder({ page }).include("dialog").withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page, (axe) => axe.include("dialog"))).toEqual([]);
 
   await booking.getByRole("button", { name: "Book it" }).click();
   await expect(booking.getByRole("status")).toContainText("Payment link sent for Rs. 2,000.");
@@ -211,6 +209,5 @@ test("lists a booking that refunded its payment by itself beneath the visits, an
   const item = page.getByRole("region", { name: "Refunded bookings" }).getByRole("listitem");
   await expect(item).toContainText("Service visit, 24 Sep 2027 · Rs. 2,000");
   await expect(item).toContainText("Refunded automatically on 22 Sep 2027: paid after the hold lapsed.");
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

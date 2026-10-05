@@ -10,6 +10,7 @@ import {
   SUBMIT_ATTEMPTS,
 } from "../../../src/config/pipeline.ts";
 import { advanceJob, handleRenderBatch, type RenderEnv } from "../../../src/queues/render.ts";
+import { fakeBatch } from "../batches.ts";
 import { NOW, captureLogs, fakeDependencies, fakeQueue, markDatabase } from "../helpers.ts";
 import { insertJob, insertPerson, syntheticJpeg } from "../tryon-fixtures.ts";
 
@@ -400,17 +401,7 @@ describe("render: failures", () => {
 });
 
 describe("render: the queue batch", () => {
-  function batchOf(bodies: unknown[]) {
-    const messages = bodies.map((body, index) => ({
-      id: `m-${String(index)}`,
-      body,
-      attempts: 1,
-      timestamp: NOW,
-      ack: vi.fn(),
-      retry: vi.fn(),
-    }));
-    return { queue: "mm-render-local", messages, ackAll: vi.fn(), retryAll: vi.fn() };
-  }
+  const batchOf = (bodies: unknown[]) => fakeBatch("mm-render-local", bodies, { timestamp: NOW });
 
   it("retries a running job with a delay, acks a finished one, and drops a malformed message", async () => {
     const running = "00000000-0000-4000-8000-000000000001";
@@ -423,7 +414,7 @@ describe("render: the queue batch", () => {
       { nonsense: true },
     ]);
 
-    await handleRenderBatch(batch as unknown as MessageBatch, renderEnv(), fakeDependencies(), log, OPTIONS);
+    await handleRenderBatch(batch, renderEnv(), fakeDependencies(), log, OPTIONS);
 
     expect(batch.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: POLL_DELAY_SECONDS.early });
     expect(batch.messages[0]?.ack).not.toHaveBeenCalled();
@@ -440,13 +431,7 @@ describe("render: the queue batch", () => {
     };
     const batch = batchOf([{ job_id: id, request_id: "r" }]);
 
-    await handleRenderBatch(
-      batch as unknown as MessageBatch,
-      renderEnv(),
-      fakeDependencies({ image: broken }),
-      log,
-      OPTIONS,
-    );
+    await handleRenderBatch(batch, renderEnv(), fakeDependencies({ image: broken }), log, OPTIONS);
 
     expect(batch.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
   });

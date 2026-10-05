@@ -2,9 +2,9 @@
 // checked before it can strand the close-out, the piece step takes what the
 // pieces tab needs, and every step says where the technician is.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import {
   atTheDoor,
   fakeTech,
@@ -19,9 +19,6 @@ import {
   type Fake,
   type Step,
 } from "./fixtures.ts";
-
-const wcag = (page: Page) =>
-  new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
 
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
@@ -125,14 +122,14 @@ test("draws nothing in gold but the one primary action", async ({ page }) => {
   for (const item of await items.all()) await item.click();
   await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
   expect(await gilded(page)).toEqual(["Next"]);
-  expect((await wcag(page)).violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
   await page.getByRole("button", { name: "Partial · pick a reason" }).click();
   await page.getByRole("button", { name: "Client stopped it partway" }).click();
   expect(await gilded(page)).toEqual(["Next"]);
-  expect((await wcag(page)).violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("names the checklist for the visit it is on", async ({ page }) => {
@@ -174,8 +171,7 @@ test.describe("the consumables step", () => {
     await expect(another).toHaveAttribute("aria-expanded", "false");
     await another.click();
     await expect(page.getByRole("button", { name: "Add Shampoo sachet" })).toBeVisible();
-    const results = await wcag(page);
-    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
 
     await page.getByRole("button", { name: "Add Bonding glue" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Bonding glue: 1" })).toBeAttached();
@@ -401,8 +397,7 @@ test.describe("the piece (board B3, step 4)", () => {
     );
     await expect(page.getByRole("button", { name: "Say why it failed to continue" })).toBeDisabled();
     await page.getByRole("textbox", { name: "Why it failed" }).fill("Lifted at the front");
-    const results = await wcag(page);
-    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
 
     await page.getByRole("button", { name: "Next" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
@@ -522,7 +517,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(
       page.getByRole("button", { name: "Choose the hair system, or that the client decided against it" }),
     ).toBeDisabled();
-    expect((await wcag(page)).violations).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
 
     await page.getByRole("button", { name: "Mane Man Natural" }).click();
     await expect(page.getByRole("button", { name: "Mane Man Natural" })).toHaveAttribute("aria-pressed", "true");
@@ -538,7 +533,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.getByRole("button", { name: "Decided against it", exact: true }).click();
     await expect(page.getByText("Nothing is fitted. The visit ends as a free consultation.")).toBeVisible();
     await expect(page.getByRole("textbox", { name: "The new piece's label" })).toHaveCount(0);
-    expect((await wcag(page)).violations).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
     await page.getByRole("button", { name: "Next" }).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
@@ -583,7 +578,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(page.getByText(/payment link/)).toHaveCount(0);
     await expect(page.getByText(/AUDTEST/)).toHaveCount(0);
     await expect(page.getByLabel("Discount code, if the client has one")).toHaveCount(0);
-    expect((await wcag(page)).violations).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
 
     await page.getByRole("button", { name: "Next" }).click();
     await expect(page.getByText("Rohit M. · free consultation")).toBeVisible();
@@ -620,7 +615,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await box.fill("WEDDNG25");
     await page.getByRole("button", { name: "Apply code" }).click();
     await expect(page.getByText("Code WEDDNG25 applied. The payment link will take it off.")).toBeVisible();
-    expect((await wcag(page)).violations).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
     expect(asked).toEqual([{ code: "wrong1" }, { code: "WEDDNG25" }]);
     // Asked straight, never queued in the outbox.
     expect(writesTo(fake, "discount-code")).toHaveLength(0);
@@ -631,7 +626,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await expect(page.getByText("Code AUDTEST applied at booking. The payment link will take it off.")).toBeVisible();
     await expect(page.getByLabel("Discount code, if the client has one")).toHaveCount(0);
-    expect((await wcag(page)).violations).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
   });
 
   test("names the job a consultation and fit, paid for once fitted", async ({ page }) => {
@@ -661,7 +656,7 @@ test.describe("the client's hair profile", () => {
 
   test("takes the fit spec, then the history, and sends them as one", async ({ page }) => {
     const fake = await atTheProfile(page);
-    expect((await wcag(page)).violations).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
     await page.getByRole("button", { name: "IV", exact: true }).click();
     await page.getByRole("textbox", { name: "Circumference" }).fill("57.5");
     await page.getByRole("textbox", { name: "Width" }).fill("8");
@@ -690,7 +685,7 @@ test.describe("the client's hair profile", () => {
     await page.getByRole("button", { name: "Transplant" }).click();
     await page.getByRole("textbox", { name: "The transplant's year" }).fill("2019");
     await page.getByRole("textbox", { name: "Skin conditions and allergies" }).fill("Dry at the crown");
-    expect((await wcag(page)).violations).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
     await next(page).click();
 
     // A consultation takes no after photographs, so the outcome follows.

@@ -7,6 +7,7 @@ import { uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
 import type { App } from "../../../src/http/context.ts";
 import { openTechnicianSession } from "../../../src/domain/technicians.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "../helpers.ts";
+import { visit } from "../visits.ts";
 
 export const PERSON = "11111111-1111-4111-8111-111111111111";
 export const TODAY_JOB = "22222222-2222-4222-8222-222222222221";
@@ -30,26 +31,8 @@ export let deps: TestDependencies;
 export let messageQueue: ReturnType<typeof fakeQueue>;
 export let cookie: string;
 
-export async function insertJob(
-  id: string,
-  options: { start: string; technician?: string | null; type?: string },
-): Promise<void> {
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id,
-       service_city, service_pincode, synced_at)
-     VALUES (?1, ?1, ?2, ?3, 'scheduled', ?4, ?5, ?6, 'Gurgaon', '122018', ?7)`,
-  )
-    .bind(
-      id,
-      PERSON,
-      options.type ?? "service",
-      options.start,
-      new Date(Date.parse(options.start) + 90 * 60_000).toISOString(),
-      options.technician === undefined ? IMRAN : options.technician,
-      NOW.toISOString(),
-    )
-    .run();
-}
+export const insertJob = (id: string, options: { start: string; technician?: string | null; type?: string }) =>
+  visit(id, { person: PERSON, ...options, technician: options.technician === undefined ? IMRAN : options.technician });
 
 /** The day every field test starts from: two technicians, a client, two jobs and a signed-in phone. */
 export function useFieldDay(): void {

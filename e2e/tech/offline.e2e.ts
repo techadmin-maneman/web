@@ -6,9 +6,9 @@
 // API on the browser context instead, because a worker's own calls reach
 // browserContext.route() and not page.route().
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { fakeTech, JOB_ID, todayInIndia } from "./fixtures.ts";
 
 test.use({ serviceWorkers: "allow" });
@@ -58,10 +58,7 @@ test("opens with no connection at all, from the shell and today's jobs it cached
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
   await expect(page.getByText("No signal · working offline")).toBeVisible();
 
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("opens on a signal that never answers, from the shell and what the phone holds, without waiting on it", async ({

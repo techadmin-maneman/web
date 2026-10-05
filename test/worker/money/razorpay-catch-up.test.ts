@@ -4,23 +4,20 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { openSession } from "../../../src/domain/sessions.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
 import type { RazorpayPayment } from "../../../src/providers/payments/razorpay.ts";
 import { CRON_JOBS, runCronJobs } from "../../../src/scheduled/cron.ts";
 import {
-  appFor,
   captureLogs,
   fakeDependencies,
   fakeQueue,
   LOCAL_CONFIG,
   markDatabase,
   NOW,
-  request,
-  savedAddress,
   type TestDependencies,
 } from "../helpers.ts";
+import { asClient, client, fittedInAugust, signedIn, technician } from "../clients.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -68,13 +65,8 @@ function runAt(deps: TestDependencies) {
 
 /** A hold for a service visit, and the Razorpay order the app opened Checkout with. */
 async function heldAndOrdered() {
-  const app = appFor("local", fakeDependencies({ payments }), {}, "client");
   const call = (path: string, body: object) =>
-    request(app, path, {
-      method: "POST",
-      headers: { Cookie: cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
-      body: JSON.stringify(body),
-    });
+    asClient(cookie, path, { method: "POST", body }, { deps: fakeDependencies({ payments }) });
   const held = await call("/api/holds", { type: "service", date: "2026-09-24", window: "afternoon" });
   expect(held.status).toBe(201);
   const hold = await held.json<{ id: string }>();
@@ -120,23 +112,11 @@ beforeEach(async () => {
   payments = createStubPayments();
   ordersRead = [];
   linksRead = [];
-  await env.DB.batch([
-    env.DB.prepare(
-      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
-    ).bind(NOW.toISOString()),
-    env.DB.prepare(
-      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
-    ).bind(PERSON, NOW.toISOString()),
-    // Fitted in August, so a service visit is theirs to book.
-    env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
-       VALUES ('fit-1', 'fit-1', ?1, 'first_fit', 'completed', '2026-08-01T03:30:00.000Z', '2026-08-01T06:30:00.000Z',
-         't1', ?2)`,
-    ).bind(PERSON, NOW.toISOString()),
-  ]);
-  await savedAddress(PERSON);
-  const session = await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW });
-  cookie = `mm_app=${session}`;
+  await technician();
+  await client(PERSON);
+  // Fitted in August, so a service visit is theirs to book.
+  await fittedInAugust(PERSON);
+  cookie = await signedIn(PERSON);
 });
 
 describe("a hold paid at Checkout whose webhook never came", () => {

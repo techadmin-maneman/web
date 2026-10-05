@@ -1,10 +1,10 @@
+import { axeViolations } from "./a11y.ts";
 // The site's own booking page against a mocked API, so every answer the API can
 // give is covered (docs/decisions/0051-booking-from-the-site.md). It is the
 // referral landing without the invite: e2e/refer-landing.e2e.ts covers that one,
 // and e2e/book-api.e2e.ts books against the real local API. It books with an
 // invite only when this browser remembers one (docs/decisions/0089-an-invite-is-not-lost.md).
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./booking-area.ts";
 import {
@@ -212,10 +212,7 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   await expect(page.getByText(/^Starts in the morning or the afternoon\./)).toBeVisible();
   // The page's heading follows what it books.
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a consultation and fit");
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
@@ -227,10 +224,7 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   await expect(page.getByText("Sent on WhatsApp to +91 98100 00000.", { exact: false })).toBeVisible();
   await expect(page.getByLabel("WhatsApp code")).toBeFocused();
   expect(requests).toHaveLength(0);
-  const withCode = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(withCode.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
   await enterNumberCode(page, "Confirm and book");
 
   await expect(page.getByText("Booking received")).toBeVisible();
@@ -316,10 +310,7 @@ test("says a wrong code under its box, and what a right one takes off once booke
   await expect(box).toBeFocused();
   await expect(box).toHaveAccessibleDescription(/^That discount code doesn’t apply\./);
   await expect(page.getByText(refusal)).toHaveCount(1);
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   applies = true;
   await box.fill(" WEDDNG25 ");
@@ -543,10 +534,7 @@ test("a friend who opened an invite books here with it, and is told the invite's
   await expect(page.getByText("Booking received")).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, invite_told: true });
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
   // Used, it is forgotten: a second booking from this browser carries nothing.
   expect(await remembered(page)).toBeNull();
 });
@@ -789,10 +777,7 @@ test("draws full days and windows closed, and starts on the first open one", asy
   await expect(windows.getByText("Full", { exact: true })).toBeVisible();
   await expect(windows.getByRole("radio", { name: /^Afternoon/ })).toBeChecked();
   expect(asked[0]?.searchParams.toString()).toBe("pincode=122018&plan=consultation");
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await fillAndBook(page);
   await expect(page.getByText("Booking received")).toBeVisible();

@@ -9,6 +9,7 @@ import type { App } from "../../../src/http/context.ts";
 import { recordUtilisation } from "../../../src/domain/dispatch.ts";
 import { NO_VISITS_CONSENT } from "../../../src/domain/visit-messages.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
+import { visit } from "../visits.ts";
 
 const ROHIT = "11111111-1111-4111-8111-111111111111";
 const IMRAN = "33333333-3333-4333-8333-333333333331";
@@ -36,7 +37,7 @@ type Kind = keyof typeof MINUTES;
 let ops: App;
 let messageQueue: ReturnType<typeof fakeQueue>;
 
-async function insertJob(
+const insertJob = (
   id: string,
   options: {
     type: Kind;
@@ -46,28 +47,13 @@ async function insertJob(
     status?: string;
     city?: string;
     pincode?: string;
-    /** A visit FSM never held, whose record is our own database. */
   },
-): Promise<void> {
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id,
-       service_city, service_pincode, synced_at)
-     VALUES (?1, ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
-  )
-    .bind(
-      id,
-      options.person === undefined ? ROHIT : options.person,
-      options.type,
-      options.status ?? "scheduled",
-      options.start,
-      new Date(Date.parse(options.start) + MINUTES[options.type] * 60_000).toISOString(),
-      options.technician,
-      options.city ?? "Gurgaon",
-      options.pincode ?? "122018",
-      NOW.toISOString(),
-    )
-    .run();
-}
+) =>
+  visit(id, {
+    ...options,
+    person: options.person === undefined ? ROHIT : options.person,
+    minutes: MINUTES[options.type],
+  });
 
 beforeEach(async () => {
   await markDatabase();
