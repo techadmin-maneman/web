@@ -34,8 +34,10 @@ export function Failed({
   retry,
   onRetry,
   button = "outline",
+  polite = false,
   className,
   messageClassName,
+  retryClassName,
   reference = null,
 }: {
   message: string;
@@ -43,16 +45,19 @@ export function Failed({
   onRetry: () => void;
   /** The retry's look: outlined by default, on the ground the app draws. */
   button?: ButtonVariant;
+  /** Said when the reader is next free rather than at once: a page waiting for the connection, which is no fault. */
+  polite?: boolean;
   className?: string;
   messageClassName?: string;
+  retryClassName?: string;
   /** The failed call's reference (./ErrorRef.tsx), under the line. */
   reference?: ReactNode;
 }) {
   return (
-    <div className={classes(styles.failed, className)} role="alert">
+    <div className={classes(styles.failed, className)} role={polite ? "status" : "alert"}>
       <p className={classes(styles.message, messageClassName)}>{message}</p>
       {reference}
-      <Button variant={button} size="small" onClick={onRetry}>
+      <Button variant={button} size="small" className={retryClassName} onClick={onRetry}>
         {retry}
       </Button>
     </div>
