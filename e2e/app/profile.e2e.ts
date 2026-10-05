@@ -1,9 +1,9 @@
 // The client app's profile (boards G1 and G2), against the local mm-api, logged
 // in with the local fixed code (OTP_FIXED_CODE in playwright.config.ts).
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, randomMobile, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { holdOpen } from "./one-tap.ts";
 import { CODE, logIn, signIn } from "./signed-in.ts";
 
@@ -229,10 +229,7 @@ test("says an address was given to us on the phone, so the client can check it",
   await expect(page.getByText("Flat 1203, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("You gave us this address on the phone on 21 Sep 2026.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit address and access notes" })).toBeVisible();
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("lands on where we come once the address is saved", async ({ page }) => {
@@ -563,10 +560,7 @@ test("lists where the client is signed in, and signs another browser out", async
 test("meets WCAG 2.2 AA, with the address form and the card's lines open", async ({ page }) => {
   await loggedIn(page);
   const scan = async () => {
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-      .analyze();
-    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
   };
   await scan();
   await page.getByRole("button", { name: "Add your address and access notes" }).click();

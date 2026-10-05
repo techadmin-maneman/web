@@ -3,12 +3,11 @@
 // grant into the held state from outside. The clock is fixed to the day the
 // fixture's holds are read against, so "3 days held" reads the same on every run.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { answer, fails, HELD, json, REFERRERS, TASKS_READ_ON, type Call } from "./fixtures.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = "Rohit Malhotra → Vikram Sethi";
 const GRANT = HELD.held[0]?.id ?? "";
 const DECIDE: Call = `POST /api/referrals/${GRANT}/decision`;
@@ -186,14 +185,12 @@ test("says so when the queue cannot be loaded, and loads it on Try again", async
 
 test("meets WCAG 2.2 AA with a queue, and with a rejection open", async ({ page }) => {
   await open(page, json({ state: "rejected" }));
-  const full = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(full.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await page
     .getByRole("listitem")
     .filter({ hasText: FIRST })
     .getByRole("button", { name: "Reject", exact: true })
     .click();
-  const rejecting = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(rejecting.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

@@ -12,6 +12,7 @@
 // The API's own rules, so the fake cannot drift from them: the card's steps, and the piece label it refuses a write for.
 import { isPieceCode } from "../../src/config/pieces.ts";
 import { cardStepsFor } from "../../src/policy/in-job-steps.ts";
+import { indiaDate } from "../../src/lib/india-time.ts";
 import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page, Route } from "@playwright/test";
 import type { paths } from "../../apps/tech/src/api-schema.ts";
@@ -54,7 +55,7 @@ export const TOMORROW_JOB_ID = "a0000000-0000-4000-8000-000000000004";
 
 /** Today's calendar date in India, as the app asks the backend for it. */
 export function todayInIndia(now: Date = new Date()): string {
-  return new Date(now.getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
+  return indiaDate(now);
 }
 
 export function dayBefore(date: string): string {

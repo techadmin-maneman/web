@@ -10,6 +10,7 @@ import type { App } from "../../../src/http/context.ts";
 import { openTechnicianSession } from "../../../src/domain/technicians.ts";
 import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { syntheticJpeg } from "../tryon-fixtures.ts";
+import { visit } from "../visits.ts";
 
 /** The most round trips to D1 a card may wait on in turn. It waited on 15 when each read waited for the one before. */
 const CARD_TRIPS = 7;
@@ -26,29 +27,8 @@ const SAMEER = "33333333-3333-4333-8333-333333333332";
 let tech: App;
 let cookie: string;
 
-async function insertJob(
-  id: string,
-  options: { start: string; technician?: string; type?: string; status?: string },
-): Promise<void> {
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
-       window_end, technician_id, service_city, service_pincode, fsm_modified_at, synced_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'Scheduled', ?7, ?8, ?9, 'Gurgaon', '122018', ?10, ?10)`,
-  )
-    .bind(
-      id,
-      `ap-${id}`,
-      `wo-${id}`,
-      PERSON,
-      options.type ?? "service",
-      options.status ?? "scheduled",
-      options.start,
-      new Date(Date.parse(options.start) + 90 * 60_000).toISOString(),
-      options.technician ?? IMRAN,
-      NOW.toISOString(),
-    )
-    .run();
-}
+const insertJob = (id: string, options: { start: string; technician?: string; type?: string; status?: string }) =>
+  visit(id, { person: PERSON, ...options, technician: options.technician ?? IMRAN });
 
 /** One after photograph of a visit, in the bucket and in the rows that name it. */
 async function afterPhoto(appointmentId: string, angle: string, marker: string): Promise<void> {

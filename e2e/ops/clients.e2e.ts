@@ -4,9 +4,9 @@
 // view, and their consents, which ops read and never change. The API is answered from e2e/ops/fixtures.ts,
 // since no route seeds a client's pieces or photographs.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import {
   answer,
   CLIENT,
@@ -29,7 +29,6 @@ import {
   type OpsReply,
 } from "./fixtures.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const RECORD_PATH = `/api/clients/${CLIENT.id}` as const;
 const READ_RECORD: Call = `GET ${RECORD_PATH}`;
 const READ_PIECES: Call = `GET ${RECORD_PATH}/pieces`;
@@ -310,8 +309,7 @@ test("lists what waits on Tasks for the client under the head, each with a way t
   await expect(
     openForClient(page).getByRole("link", { name: "Decide it in Number changes · Number change" }),
   ).toHaveAttribute("href", "/number-changes#change-94000000-0000-4000-8000-000000000009");
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("says when nothing waits on Tasks for the client", async ({ page }) => {
@@ -389,8 +387,7 @@ test.describe("the client's hair profile", () => {
       /^21 Sep 2027 · Imran, at the consultation/,
     ]);
     await expect(page.getByRole("row").filter({ hasText: "MM-STD-4417-B" })).toBeVisible();
-    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
   });
 
   test("corrects it as a new version, the form starting from the latest", async ({ page }) => {
@@ -405,8 +402,7 @@ test.describe("the client's hair profile", () => {
     await section(page).getByRole("button", { name: "Correct the profile" }).click();
     const colour = page.getByRole("combobox", { name: "Colour" });
     await expect(colour).toHaveValue("2");
-    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
 
     await colour.selectOption({ label: "#3" });
     const sent = page.waitForRequest(
@@ -541,8 +537,7 @@ test("records an address the client gives on the phone, with the building found,
   await form.getByLabel("Sector or area").fill("Sector 65");
   await form.getByLabel("City").fill("Gurgaon");
   await form.getByLabel("Pincode").fill("122018");
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
   await form.getByRole("button", { name: "Save their address" }).click();
 
   await expect(page.getByText("Flat 1203, Tower C, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
@@ -617,8 +612,7 @@ test("enters a discount code on a visit not yet paid for, says when one does not
   await row.getByRole("button", { name: "Apply" }).click();
   await expect(row).toContainText("WEDDNG25, Rs. 500 off");
   await expect(row).toContainText("by ops");
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await row.getByRole("button", { name: "Take the discount code off the visit of 25 Sep 2027" }).click();
   await expect(row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" })).toBeVisible();
@@ -842,8 +836,7 @@ test("attaches an invite to a client who came with none, with why, and shows it 
   await invite.getByLabel("Invite code").fill("rm4k7p");
   await expect(attach).toBeDisabled();
   await invite.getByLabel("Why").fill("Told us Rohit sent him");
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
   const sent = page.waitForRequest((request) => request.url().endsWith("/referral") && request.method() === "POST");
   await attach.click();
   expect((await sent).postDataJSON()).toEqual({ code: "rm4k7p", reason: "Told us Rohit sent him" });
@@ -1021,8 +1014,7 @@ test("names a consent given by booking, and says where a place was not recorded"
   await expect(row("Photographs taken for the visit record")).toContainText("Booking");
   await expect(row("Photographs on referral cards")).toContainText("Not recorded");
   await expect(row("WhatsApp about visits")).toContainText("Invite");
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("says when the client has asked to be erased, and leaves it to Deletion requests", async ({ page }) => {
@@ -1159,11 +1151,7 @@ test("says so when the client cannot be loaded, and loads them on Try again", as
 
 test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", async ({ page }) => {
   const clean = async (label: string) => {
-    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-    expect(
-      results.violations.map((violation) => violation.id),
-      label,
-    ).toEqual([]);
+    expect(await axeViolations(page), label).toEqual([]);
   };
 
   await answer(page, { [FIND]: json({ clients: [FOUND], more: false }) });

@@ -5,9 +5,9 @@
 // e2e/ops/fixtures.ts, since no route can open a case from outside: a
 // technician's phone closes a job as a no-show.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import {
   answer,
   CHARGE_PREVIEW,
@@ -23,7 +23,6 @@ import {
   type Call,
 } from "./fixtures.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = "Visit of Sun 19 Sep";
 const SECOND = "Visit of Mon 20 Sep";
 const QUEUE = "No-shows waiting for a decision";
@@ -572,14 +571,12 @@ test("meets WCAG 2.2 AA with the day's money, a disputed charge and a queue, and
 }) => {
   await open(page);
   await expect(disputeCard(page)).toBeVisible();
-  const full = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(full.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Nobody came down");
   await first.getByRole("button", { name: "Charge", exact: true }).click();
-  const asking = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(asking.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 /** Who is signed in once the Staff list is enforced: Finance nationally at `level`, and the calls that opens. */

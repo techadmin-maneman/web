@@ -4,12 +4,12 @@
 // stand-in that e2e/support.ts gives every app test. Numbers are random.
 
 import type { Page } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
 import { DUMMY_TOKEN, expect, randomMobile, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
+import { CODE } from "./signed-in.ts";
 import { bookedNumber } from "./booked-numbers.ts";
 import { holdOpen } from "./one-tap.ts";
 
-const CODE = "246810";
 const WRONG = "135791";
 
 async function sendCode(page: Page, mobile: string): Promise<void> {
@@ -360,10 +360,7 @@ test("an invalid number is caught before it is sent", async ({ page }) => {
 
 test("each login screen, and Home, meets WCAG 2.2 AA", async ({ page }) => {
   const scan = async () => {
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-      .analyze();
-    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
   };
   await sendCode(page, bookedNumber());
   await scan();

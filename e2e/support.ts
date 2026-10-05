@@ -3,6 +3,7 @@
 // gives every client app test the stand-in Turnstile its first screen needs.
 
 import { test as base, expect, type Page } from "@playwright/test";
+import { LOCAL_LOGIN_CODE } from "../scripts/lib/local-stack.ts";
 import sharp from "sharp";
 import { drawnHead, HEAD_HEIGHT, HEAD_WIDTH, type Rgb } from "../test/node/drawn-head.ts";
 import { contractErrors, type Surface } from "./contract.ts";
@@ -170,7 +171,7 @@ export async function throughToGate(page: Page): Promise<void> {
 }
 
 /** The WhatsApp code the local API sends every number (OTP_FIXED_CODE); a mocked API takes any. */
-export const NUMBER_CODE = "246810";
+export const NUMBER_CODE = LOCAL_LOGIN_CODE;
 /** The code's ID a mocked API answers with. */
 export const NUMBER_CODE_ID = "33333333-3333-4333-8333-333333333333";
 

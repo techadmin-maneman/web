@@ -3,28 +3,23 @@
 // already holds photographs, a referral card and a client's kept try-on, as
 // staging's does. Every name and number is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0055_")) ?? "";
+const THIS = migrationNamed("0055_");
 
 const AT = "2026-09-21T06:30:00.000Z";
 
 function migrated(held: string): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) db.exec(readFileSync(`migrations/${file}`, "utf8"));
+  const db = databaseBefore(THIS);
   db.exec(`
     INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('client', '${AT}', '+919810000001', 'Rohit');
     INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, fsm_modified_at, synced_at)
       VALUES ('a1', 'ap-1', 'client', 'service', 'completed', 'Completed', '${AT}', '${AT}');
     INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES ('s1', 'a1', 'after', '${AT}');`);
   db.exec(held);
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
+  apply(db, THIS);
   return db;
 }
 

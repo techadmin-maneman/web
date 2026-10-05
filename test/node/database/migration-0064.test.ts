@@ -1,25 +1,16 @@
 // Migration 0064: a client's hair profile (docs/decisions/0106-a-clients-hair-profile.md), applied to a database that
 // already holds a client, a visit and a technician, as staging's does. Every name and number is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0064_")) ?? "";
+const THIS = migrationNamed("0064_");
 
 const AT = "2026-10-01T06:30:00.000Z";
 
 function migrated(): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) {
-    db.exec("BEGIN");
-    db.exec(readFileSync(`migrations/${file}`, "utf8"));
-    db.exec("COMMIT");
-  }
+  const db = databaseBefore(THIS);
   db.exec(`
     INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', '${AT}', '+919810000001', 'A Client');
     INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
@@ -27,9 +18,7 @@ function migrated(): DatabaseSync {
     INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at, synced_at)
       VALUES ('a1', 'ap-1', 'p1', 'consultation', 'in_progress', 'In Progress', '${AT}', '${AT}', '${AT}');
   `);
-  db.exec("BEGIN");
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
-  db.exec("COMMIT");
+  apply(db, THIS);
   return db;
 }
 

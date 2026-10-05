@@ -2,29 +2,18 @@
 // Nobody who used the console may be locked out by it, and a service token is never listed as a person. Every address
 // and ID is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0069_")) ?? "";
+const THIS = migrationNamed("0069_");
 
 const AT = "2026-10-01T06:30:00.000Z";
 
 function migrated(history: string): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) {
-    db.exec("BEGIN");
-    db.exec(readFileSync(`migrations/${file}`, "utf8"));
-    db.exec("COMMIT");
-  }
+  const db = databaseBefore(THIS);
   db.exec(history);
-  db.exec("BEGIN");
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
-  db.exec("COMMIT");
+  apply(db, THIS);
   return db;
 }
 

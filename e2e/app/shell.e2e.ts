@@ -2,10 +2,10 @@
 // mm-app Worker serves it, under its own policy, on the client surface's host,
 // and the frame every signed-in page shares.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 import sharp from "sharp";
 import { expect, outsideContract, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 
@@ -80,10 +80,7 @@ test("says board B3's error when the API cannot be reached, with a way to try ag
   await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toBeVisible();
   await expect(page).toHaveTitle("We couldn’t load your visit. · Mane Man");
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute("href", "https://wa.me/919007973247");
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await page.unroute("**/api/me");
   await page.getByRole("button", { name: "Try again" }).click();
@@ -119,10 +116,7 @@ test("keeps its column to a large phone's width on a wide screen, centred", asyn
 
 test("meets WCAG 2.2 AA", async ({ page }) => {
   await page.goto("/");
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("names each page in the browser's title, and takes focus to its heading", async ({ page }) => {

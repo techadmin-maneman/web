@@ -8,9 +8,9 @@
 // The refusals are the API's own shape: invalid_request, with the fields it
 // names (src/http/errors.ts).
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import {
   answer,
   BLACKOUTS,
@@ -24,8 +24,6 @@ import {
   SETTINGS,
   type Answers,
 } from "./fixtures.ts";
-
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 const ROUTES: Answers = {
   "GET /api/settings": json(SETTINGS),
@@ -251,8 +249,7 @@ test.describe("the rules", () => {
     await jump.getByRole("link", { name: "Referrals" }).click();
     await expect(page).toHaveURL(/\/settings#referrals$/);
     await expect(section(page, "Referrals")).toBeInViewport();
-    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
   });
 
   test("sends a section's changes with one Save, after showing every figure that moves", async ({ page }) => {
@@ -354,8 +351,7 @@ test.describe("the rules", () => {
     await expect(check.getByRole("listitem")).toHaveText([
       "Booking and the next visit · Between service visits: 30 days → 28 days.",
     ]);
-    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
 
     const request = posted(page, "/api/settings/booking_days");
     await check.getByRole("button", { name: "Save" }).click();
@@ -1128,10 +1124,6 @@ test("keeps every panel inside its frame, at the width the console is drawn", as
 test("meets WCAG 2.2 AA on every panel", async ({ page }) => {
   for (const path of PANELS) {
     await open(page, path);
-    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-    expect(
-      results.violations.map((violation) => violation.id),
-      path,
-    ).toEqual([]);
+    expect(await axeViolations(page), path).toEqual([]);
   }
 });
