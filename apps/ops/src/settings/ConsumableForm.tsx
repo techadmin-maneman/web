@@ -5,7 +5,7 @@
 // before anything is sent (ADR 0071). Every box holds text: an empty level is
 // no level, never a nought.
 
-import { classes } from "@maneman/ui/classes";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -65,43 +65,6 @@ function changes(was: Consumable, draft: Draft): string[] {
 
 type Step = { readonly step: "editing" | "checking" | "saving" } | ({ readonly step: "failed" } & Failure);
 
-function Field(props: {
-  id: string;
-  label: string;
-  hint?: string;
-  value: string;
-  inputMode?: "decimal" | "numeric";
-  maxLength: number;
-  className: string | undefined;
-  onChange: (text: string) => void;
-}) {
-  const hint = `${props.id}-hint`;
-  return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel} htmlFor={props.id}>
-        {props.label}
-      </label>
-      <input
-        className={props.className}
-        id={props.id}
-        type="text"
-        inputMode={props.inputMode}
-        maxLength={props.maxLength}
-        value={props.value}
-        aria-describedby={props.hint === undefined ? undefined : hint}
-        onChange={(event) => {
-          props.onChange(event.target.value);
-        }}
-      />
-      {props.hint !== undefined && (
-        <p className={styles.hint} id={hint}>
-          {props.hint}
-        </p>
-      )}
-    </div>
-  );
-}
-
 export function ConsumableForm({
   consumable,
   maxUnitCost,
@@ -116,7 +79,6 @@ export function ConsumableForm({
 }) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(consumable));
   const [step, setStep] = useState<Step>({ step: "editing" });
-  const id = consumable === null ? "consumable-new" : `consumable-${consumable.code}`;
   const ready =
     draft.name.trim() !== "" &&
     draft.unit.trim() !== "" &&
@@ -161,55 +123,76 @@ export function ConsumableForm({
         {consumable === null ? form.addTitle : form.changeTitle(consumable.name)}
       </legend>
       <div className={styles.fields}>
-        <Field
-          id={`${id}-name`}
-          label={form.name}
-          hint={form.nameHint}
-          value={draft.name}
-          maxLength={60}
-          className={styles.text}
-          onChange={edit("name")}
-        />
-        <Field
-          id={`${id}-unit`}
-          label={form.unit}
-          hint={form.unitHint}
-          value={draft.unit}
-          maxLength={20}
-          className={styles.number}
-          onChange={edit("unit")}
-        />
-        <Field
-          id={`${id}-cost`}
-          label={form.cost}
-          hint={form.costHint(rupees(maxUnitCost))}
-          value={draft.cost}
-          inputMode="decimal"
-          maxLength={10}
-          className={classes(styles.number, styles.amount)}
-          onChange={edit("cost")}
-        />
+        <Field label={form.name} hint={form.nameHint} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.areaBox}
+              maxLength={60}
+              value={draft.name}
+              onChange={(event) => {
+                edit("name")(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+        <Field label={form.unit} hint={form.unitHint} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.figureBox}
+              maxLength={20}
+              value={draft.unit}
+              onChange={(event) => {
+                edit("unit")(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+        <Field label={form.cost} hint={form.costHint(rupees(maxUnitCost))} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.amountBox}
+              inputMode="decimal"
+              maxLength={10}
+              value={draft.cost}
+              onChange={(event) => {
+                edit("cost")(event.target.value);
+              }}
+            />
+          )}
+        </Field>
       </div>
       <div className={styles.fields}>
-        <Field
-          id={`${id}-kit`}
-          label={form.kit}
-          hint={form.levelHint}
-          value={draft.kit}
-          inputMode="numeric"
-          maxLength={6}
-          className={styles.number}
-          onChange={edit("kit")}
-        />
-        <Field
-          id={`${id}-central`}
-          label={form.central}
-          value={draft.central}
-          inputMode="numeric"
-          maxLength={6}
-          className={styles.number}
-          onChange={edit("central")}
-        />
+        <Field label={form.kit} hint={form.levelHint} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.figureBox}
+              inputMode="numeric"
+              maxLength={6}
+              value={draft.kit}
+              onChange={(event) => {
+                edit("kit")(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+        <Field label={form.central} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.figureBox}
+              inputMode="numeric"
+              maxLength={6}
+              value={draft.central}
+              onChange={(event) => {
+                edit("central")(event.target.value);
+              }}
+            />
+          )}
+        </Field>
       </div>
       {checking && (
         <CheckPanel

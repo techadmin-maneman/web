@@ -14,7 +14,13 @@
 // Its look is the ops console's (board C1's reason), with the edge ADR 0025,
 // item 36 rules for every field; a caller's own class places it.
 
-import { useId, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import {
+  useId,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from "react";
 import { classes } from "./classes.ts";
 import styles from "./field.module.css";
 
@@ -73,9 +79,27 @@ export function Field({
   );
 }
 
-/** A line of text to type: the field's box, its height the caller's. */
+/** A line of text to type, the tap's height; its width is the caller's. */
 export function TextInput({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...rest} className={classes(styles.box, className)} />;
+  return <input {...rest} className={classes(styles.box, styles.line, className)} />;
+}
+
+/**
+ * A figure to type: a count, a price in rupees, a share, its digits lined up. A number box by default; a caller that
+ * takes a figure as text, to keep what was typed, says type="text".
+ */
+export function NumberInput({ className, type = "number", ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...rest} type={type} className={classes(styles.box, styles.line, styles.figure, className)} />;
+}
+
+/** A day to pick, the whole date shown beside the picker's button. */
+export function DateInput({ className, ...rest }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  return <input {...rest} type="date" className={classes(styles.box, styles.line, styles.figure, className)} />;
+}
+
+/** One of a few, with the one arrow every select in the apps draws. */
+export function Select({ className, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select {...rest} className={classes(styles.box, styles.line, styles.select, className)} />;
 }
 
 /** More than a line: a reason, an answer to a client. Its height is the caller's; it does not stretch. */

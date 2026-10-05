@@ -27,6 +27,29 @@
     color: var(--text);
   }
 
+  /* One line: a text, a figure, a date or a choice, the tap's height. */
+  .line {
+    height: var(--tap);
+    padding: 0 var(--sp-10);
+  }
+
+  .figure {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .select {
+    padding-right: var(--sp-30);
+    appearance: none;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--text) 50%),
+      linear-gradient(135deg, var(--text) 50%, transparent 50%);
+    background-position:
+      calc(100% - var(--sp-15)) 50%,
+      calc(100% - var(--sp-10)) 50%;
+    background-size: var(--sp-5) var(--sp-5);
+    background-repeat: no-repeat;
+  }
+
   .box:focus-visible {
     outline-offset: calc(-1 * var(--focus-width));
   }

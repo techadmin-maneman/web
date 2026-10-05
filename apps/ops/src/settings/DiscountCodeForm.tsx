@@ -9,7 +9,8 @@
 
 import { Button } from "@maneman/ui/Button";
 import { classes } from "@maneman/ui/classes";
-import { useState, type ReactNode } from "react";
+import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
+import { useState } from "react";
 import { CODE_LENGTH } from "../../../../src/policy/discount-codes.ts";
 import { api, type DiscountCodesNew } from "../api.ts";
 import { settings } from "../content.ts";
@@ -39,73 +40,59 @@ type Step =
 /** A change to some of the draft's boxes. */
 type Edit = (change: Partial<Draft>) => void;
 
-/** The id of a box's hint, which the box is described by. */
-const hintOf = (id: string) => `${id}-hint`;
-
-function Field(props: { id: string; label: string; hint?: string; error?: string | null; children: ReactNode }) {
-  const error = props.error ?? null;
-  return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel} htmlFor={props.id}>
-        {props.label}
-      </label>
-      {props.children}
-      {props.hint !== undefined && (
-        <p className={error === null ? styles.hint : styles.fieldError} id={hintOf(props.id)}>
-          {error ?? props.hint}
-        </p>
-      )}
-    </div>
-  );
-}
-
 /** One code ops type, or how many are generated. */
 function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: Edit }) {
   return (
     <div className={styles.fields}>
-      <Field id="code-how" label={copy.how}>
-        <select
-          id="code-how"
-          className={styles.select}
-          value={draft.how}
-          onChange={(event) => {
-            edit({ how: event.target.value === "generated" ? "generated" : "typed" });
-          }}
-        >
-          <option value="typed">{copy.typed}</option>
-          <option value="generated">{copy.generated}</option>
-        </select>
+      <Field label={copy.how} className={styles.field}>
+        {(control) => (
+          <Select
+            {...control}
+            className={styles.choiceBox}
+            value={draft.how}
+            onChange={(event) => {
+              edit({ how: event.target.value === "generated" ? "generated" : "typed" });
+            }}
+          >
+            <option value="typed">{copy.typed}</option>
+            <option value="generated">{copy.generated}</option>
+          </Select>
+        )}
       </Field>
       {draft.how === "typed" ? (
-        <Field id="code-text" label={copy.code} hint={copy.codeHint} error={codeError(draft)}>
-          <input
-            id="code-text"
-            className={styles.text}
-            type="text"
-            autoCapitalize="characters"
-            aria-describedby={hintOf("code-text")}
-            aria-invalid={codeError(draft) !== null}
-            maxLength={CODE_LENGTH.max}
-            value={draft.code}
-            onChange={(event) => {
-              edit({ code: event.target.value });
-            }}
-          />
+        <Field
+          label={copy.code}
+          hint={codeError(draft) === null ? copy.codeHint : undefined}
+          error={codeError(draft)}
+          className={styles.field}
+        >
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.areaBox}
+              autoCapitalize="characters"
+              maxLength={CODE_LENGTH.max}
+              value={draft.code}
+              onChange={(event) => {
+                edit({ code: event.target.value });
+              }}
+            />
+          )}
         </Field>
       ) : (
-        <Field id="code-count" label={copy.count} hint={copy.countHint(most)}>
-          <input
-            id="code-count"
-            className={styles.number}
-            type="number"
-            aria-describedby={hintOf("code-count")}
-            min={1}
-            max={most}
-            value={draft.count}
-            onChange={(event) => {
-              edit({ count: event.target.value });
-            }}
-          />
+        <Field label={copy.count} hint={copy.countHint(most)} className={styles.field}>
+          {(control) => (
+            <NumberInput
+              {...control}
+              className={styles.figureBox}
+              min={1}
+              max={most}
+              value={draft.count}
+              onChange={(event) => {
+                edit({ count: event.target.value });
+              }}
+            />
+          )}
         </Field>
       )}
     </div>
@@ -116,45 +103,48 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
 function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
   return (
     <div className={styles.fields}>
-      <Field id="code-kind" label={copy.takesOff}>
-        <select
-          id="code-kind"
-          className={styles.select}
-          value={draft.kind}
-          onChange={(event) => {
-            edit({ kind: event.target.value === "amount" ? "amount" : "percent", cap: "" });
-          }}
-        >
-          <option value="percent">{copy.percent}</option>
-          <option value="amount">{copy.amount}</option>
-        </select>
-      </Field>
-      <Field id="code-value" label={draft.kind === "percent" ? copy.value : copy.rupeesOff}>
-        <input
-          id="code-value"
-          className={classes(styles.number, draft.kind === "amount" && styles.amount)}
-          type="number"
-          min={1}
-          max={draft.kind === "percent" ? 100 : undefined}
-          value={draft.value}
-          onChange={(event) => {
-            edit({ value: event.target.value });
-          }}
-        />
-      </Field>
-      {draft.kind === "percent" && (
-        <Field id="code-cap" label={copy.cap} hint={copy.capHint}>
-          <input
-            id="code-cap"
-            className={classes(styles.number, styles.amount)}
-            type="number"
-            aria-describedby={hintOf("code-cap")}
-            min={1}
-            value={draft.cap}
+      <Field label={copy.takesOff} className={styles.field}>
+        {(control) => (
+          <Select
+            {...control}
+            className={styles.choiceBox}
+            value={draft.kind}
             onChange={(event) => {
-              edit({ cap: event.target.value });
+              edit({ kind: event.target.value === "amount" ? "amount" : "percent", cap: "" });
+            }}
+          >
+            <option value="percent">{copy.percent}</option>
+            <option value="amount">{copy.amount}</option>
+          </Select>
+        )}
+      </Field>
+      <Field label={draft.kind === "percent" ? copy.value : copy.rupeesOff} className={styles.field}>
+        {(control) => (
+          <NumberInput
+            {...control}
+            className={draft.kind === "amount" ? styles.amountBox : styles.figureBox}
+            min={1}
+            max={draft.kind === "percent" ? 100 : undefined}
+            value={draft.value}
+            onChange={(event) => {
+              edit({ value: event.target.value });
             }}
           />
+        )}
+      </Field>
+      {draft.kind === "percent" && (
+        <Field label={copy.cap} hint={copy.capHint} className={styles.field}>
+          {(control) => (
+            <NumberInput
+              {...control}
+              className={styles.amountBox}
+              min={1}
+              value={draft.cap}
+              onChange={(event) => {
+                edit({ cap: event.target.value });
+              }}
+            />
+          )}
         </Field>
       )}
     </div>
@@ -192,32 +182,32 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
   return (
     <>
       <div className={styles.fields}>
-        <Field id="code-expires" label={copy.expires} hint={copy.expiresHint}>
-          <input
-            id="code-expires"
-            className={styles.date}
-            type="date"
-            aria-describedby={hintOf("code-expires")}
-            min={today}
-            value={draft.expiresOn}
-            onChange={(event) => {
-              edit({ expiresOn: event.target.value });
-            }}
-          />
-        </Field>
-        {!isBatch(draft) && (
-          <Field id="code-uses" label={copy.maxUses} hint={copy.maxUsesHint}>
-            <input
-              id="code-uses"
-              className={styles.number}
-              type="number"
-              aria-describedby={hintOf("code-uses")}
-              min={1}
-              value={draft.maxUses}
+        <Field label={copy.expires} hint={copy.expiresHint} className={styles.field}>
+          {(control) => (
+            <DateInput
+              {...control}
+              className={styles.dateBox}
+              min={today}
+              value={draft.expiresOn}
               onChange={(event) => {
-                edit({ maxUses: event.target.value });
+                edit({ expiresOn: event.target.value });
               }}
             />
+          )}
+        </Field>
+        {!isBatch(draft) && (
+          <Field label={copy.maxUses} hint={copy.maxUsesHint} className={styles.field}>
+            {(control) => (
+              <NumberInput
+                {...control}
+                className={styles.figureBox}
+                min={1}
+                value={draft.maxUses}
+                onChange={(event) => {
+                  edit({ maxUses: event.target.value });
+                }}
+              />
+            )}
           </Field>
         )}
       </div>
