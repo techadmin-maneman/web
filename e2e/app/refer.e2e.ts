@@ -87,7 +87,7 @@ async function toRefer(page: Page) {
 test("Refer: the invite, the house card, the preview, and the empty tracker", async ({ page }) => {
   await toRefer(page);
   await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
-  // CP-11 of the audit, 2 October 2026: "No other discount applies", which the owner's ruling of 1 October undid.
+  // "No other discount applies", which the owner's ruling of 1 October undid.
   await expect(page.getByText(/discount/i)).toHaveCount(0);
 
   await page.getByRole("button", { name: "Share an invite" }).click();
@@ -224,7 +224,7 @@ test("shows a client's stored card in the preview, and sends that card", async (
   await page.getByRole("button", { name: "Share an invite" }).click();
   const theirOwn = page.getByRole("radio", { name: /My before and after/ });
   await expect(theirOwn).toBeChecked();
-  // UX-32 of the audit, 2 October 2026: the two cards are native radio buttons, which the arrow keys move between.
+  // The two cards are native radio buttons, which the arrow keys move between.
   await theirOwn.focus();
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("radio", { name: /A Mane Man example/ })).toBeChecked();
@@ -265,7 +265,7 @@ test("says when the phone refused the card's share, and nothing when the client 
   expect(await sharedSoFar(page)).toHaveLength(1);
 });
 
-// CP-41 and UX-32 of the audit, 2 October 2026: their own card was offered with no first-fit photographs to make it
+// Their own card was offered with no first-fit photographs to make it
 // of, and ended in an error. This client's first fit has an after photograph and no before (e2e/app/fitted.ts).
 test("offers their own card only once the first fit's photographs are in", async ({ page }) => {
   await toRefer(page);
@@ -471,8 +471,8 @@ test("draws a lead's empty Refer, with no count, where the Home carries no rewar
 });
 
 // Board B2: before their first fit a client has nothing to vouch for, and the invite's own words would not be
-// true, so Refer is reachable but empty (CLI-07). CP-12 of the audit, 2 October 2026: it told them nobody they
-// referred had been fitted.
+// true, so Refer is reachable but empty. It once
+// told them that nobody they referred had been fitted.
 test("a client not yet fitted sees Refer's empty state, with no invite to send", async ({ page }) => {
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
@@ -482,7 +482,7 @@ test("a client not yet fitted sees Refer's empty state, with no invite to send",
   await scan(page);
 });
 
-// CP-12 of the audit, 2 October 2026: an invited friend was never reminded in the app of the visits the invite
+// An invited friend was never reminded in the app of the visits the invite
 // promised them.
 test("a client not yet fitted who came with an invite is told what it gives them at their fit", async ({ page }) => {
   await changed(page, "/api/me", (me) => ({ ...me, pending_invite: { referrer_first_name: "Rohit" } }));

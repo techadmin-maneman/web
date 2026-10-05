@@ -1,7 +1,7 @@
 // The service-area file the console takes back and hands out
 // (apps/ops/src/areas/csv.ts). A file that leaves a column out must not
-// switch every pincode off (FEO-03), and a list opened in a spreadsheet must
-// not run anything written into it (SEC-03).
+// switch every pincode off, and a list opened in a spreadsheet must
+// not run anything written into it.
 
 import { describe, expect, it } from "vitest";
 import { readServiceAreaCsv, serviceAreaCsv } from "../../apps/ops/src/areas/csv.ts";

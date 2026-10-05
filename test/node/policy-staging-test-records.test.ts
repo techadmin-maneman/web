@@ -12,7 +12,7 @@ describe("a staging test record", () => {
     }
   });
 
-  // PS-35 and the owner's decision 23: the mark is stored when a record is made, on staging alone.
+  // The owner's decision 23: the mark is stored when a record is made, on staging alone.
   it("is marked when made on staging with a test name, and never elsewhere", () => {
     expect(testRecordAtCreation("staging", "Staging test Asha")).toBe(true);
     expect(testRecordAtCreation("staging", "Asha Verma")).toBe(false);
@@ -26,7 +26,7 @@ describe("a staging test record", () => {
     }
   });
 
-  // CP-24: every test record's first name was "Staging", so a staging invite read "Staging sent you this".
+  // Every test record's first name was "Staging", so a staging invite read "Staging sent you this".
   it(RULES[2], () => {
     expect(withoutTestMark("Staging test Asha Verma")).toBe("Asha Verma");
     expect(withoutTestMark("Load test  friend")).toBe("friend");

@@ -4,7 +4,7 @@
 // which no other origin may use through it.
 //
 // `connect-src 'self'` holds while photographs are confirmed through mm-api. If
-// P2-M4's upload route hands the phone a presigned R2 URL to PUT to, that host
+// The technician API's upload route hands the phone a presigned R2 URL to PUT to, that host
 // is added here and nowhere else (docs/prompts/phase2-frontend.md, Security).
 
 import type { AppPolicy } from "@maneman/web-kit/headers";

@@ -51,7 +51,7 @@ describe("the ops console's routes", () => {
     ]);
   });
 
-  // MON-16 and OIA-08 of the audit, 2 October 2026: the day's money sat under "No-shows".
+  // The day's money sat under "No-shows".
   it("names the money section Payments, at the address it has always had", () => {
     expect(SECTION_NAMES[routeOf("/no-shows").page]).toBe("Payments");
     expect(titleOf(routeOf("/no-shows"))).toBe("Payments · Mane Man operations");
@@ -72,7 +72,7 @@ describe("the ops console's routes", () => {
     expect(routeOf(`/clients/${CLIENT}/photos`)).toEqual({ page: "clients", clientId: CLIENT, tab: "photos" });
   });
 
-  // OIA-10 of the audit, 2 October 2026: a client's page opened on an empty Pieces tab, and so did every bare link.
+  // A client's page opened on an empty Pieces tab, and so did every bare link.
   it("opens a client's page on their visits, and names the tab of every link to it", () => {
     expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "visits" });
     expect(routeOf(`/clients/${CLIENT}`)).toEqual({ page: "clients", clientId: CLIENT, tab: "visits" });
@@ -81,7 +81,7 @@ describe("the ops console's routes", () => {
     expect(routeOf(clientPath(CLIENT, "payments"))).toEqual({ page: "clients", clientId: CLIENT, tab: "payments" });
   });
 
-  // OIA-13 of the audit, 2 October 2026: launching an area had two homes, Waitlist and Settings › Service area.
+  // Launching an area had two homes, Waitlist and Settings › Service area.
   it("opens Areas on Waiting, and Served at its own path", () => {
     expect(routeOf("/areas")).toEqual({ page: "areas", tab: "waiting" });
     expect(routeOf(areasPath("served"))).toEqual({ page: "areas", tab: "served" });
@@ -124,7 +124,7 @@ describe("the ops console's routes", () => {
     expect(dispatchAsked("?from=next-week")).toEqual(nothing);
   });
 
-  // OIA-03, BK-21: the board kept its week and city out of the address, and no link could open a visit on it.
+  // The board kept its week and city out of the address, and no link could open a visit on it.
   it("links to the dispatch board on a city and a visit as well, and reads every part back", () => {
     const asked = { from: "2027-10-04", city: "Gurgaon", find: "Rohit", visit: VISIT };
     const path = dispatchPath(asked);

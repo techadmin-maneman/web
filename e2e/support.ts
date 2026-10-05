@@ -34,7 +34,7 @@ export function outsideContract(...routes: string[]): void {
 export const test = base.extend<{ contentSecurityPolicy: undefined; appTurnstile: undefined; apiContract: undefined }>({
   // Every JSON answer the page had from /api/*, a fake's or the local mm-api's, held to the committed OpenAPI
   // document (e2e/contract.ts): a fake that drifts from the API, or a route that answers what it never documented,
-  // fails the test it shows in (CQ-54).
+  // fails the test it shows in.
   apiContract: [
     async ({ page }, use, testInfo) => {
       const surface = SURFACES[testInfo.project.name];

@@ -1,5 +1,5 @@
-// A failed call's reference on the console's and the technician app's failure states (packages/ui/ErrorRef.tsx;
-// PLAT-43): the start of the API's request ID, which the person quotes, and a button that copies all of it.
+// A failed call's reference on the console's and the technician app's failure states (packages/ui/ErrorRef.tsx): the
+// start of the API's request ID, which the person quotes, and a button that copies all of it.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";

@@ -2,7 +2,7 @@
 // a fake cannot answer what mm-api never would: a route it does not have, a status
 // it does not send, or a body of another shape. Every object is read as closed,
 // as the zod schemas write them, so a fake that adds a field the API never sends
-// fails too (TCD-01).
+// fails too.
 //
 // The same documents type the fakes at compile time: each fixture `satisfies`
 // its route's reply (Reply below), and this file checks the rest as they are sent.

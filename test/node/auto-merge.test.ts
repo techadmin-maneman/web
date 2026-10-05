@@ -67,7 +67,7 @@ describe("a pull request merging itself", () => {
 describe("a pull request touching money or personal data", () => {
   const refunds = { ...PULL, files: ["src/domain/refunds.ts", "test/worker/refunds.test.ts"] };
 
-  // The audit's case (PLAT-91, CQ-73): nobody added the hold label, and the pull request merged on green.
+  // The audit's case: nobody added the hold label, and the pull request merged on green.
   it("waits for the reviewed label with no label of any kind on it", () => {
     expect(mergeVerdict(refunds, FULL)).toEqual({
       merge: false,

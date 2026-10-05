@@ -2,7 +2,7 @@
 // column, a dialog that opens a panel over the page, and a panel headed by its
 // title and its count. Each is one native <dialog> or <section>, labelled by
 // its heading, as every sheet and dialog of the three apps was before, each
-// written three times over (DS-23).
+// written three times over.
 
 import { readFileSync } from "node:fs";
 import { createElement } from "react";

@@ -103,7 +103,7 @@ describe("crm-sync: syncing a lead", () => {
     expect(await leadRow(leadId)).toMatchObject({ sync_state: "synced", last_sync_error: null });
   });
 
-  // LIFE-11: the CRM could not tell an invited friend from an organic booking, nor the window a Phase 2 form booked
+  // The CRM could not tell an invited friend from an organic booking, nor the window a Phase 2 form booked
   // (ADR 0060 says marketing sees "the person, the source, the day and the invite").
   it("sends the invite a friend came with, and the window their booking asked for", async () => {
     const leadId = await phaseOneLead();
@@ -132,7 +132,7 @@ describe("crm-sync: syncing a lead", () => {
     expect(crm.calls[0]?.lead).toMatchObject({ inviteCode: "RM7K2Q", askedWindow: "afternoon" });
   });
 
-  // MON-23: while booking is off, the lead carried neither the one visit nor the code given for it.
+  // While booking is off, the lead carried neither the one visit nor the code given for it.
   it("sends the plan the request asked for, and the code given for a one visit", async () => {
     const leadId = await phaseOneLead();
     const person = await env.DB.prepare("SELECT id FROM people").first<string>("id");
@@ -250,7 +250,7 @@ describe("crm-sync: syncing a lead", () => {
   });
 });
 
-// PS-26, CP-03: the try-on's gate promises no marketing, so its leads stay out of the CRM, where sales work.
+// The try-on's gate promises no marketing, so its leads stay out of the CRM, where sales work.
 describe("crm-sync: a try-on", () => {
   /** The lead the gate leaves for this number, the person made if they are new. */
   async function tryOnLead(mobileE164 = "+919810000001"): Promise<string> {
@@ -385,7 +385,7 @@ describe("crm-sync: the queue batch", () => {
     expect(batch.messages[0]?.ack).toHaveBeenCalledOnce();
   });
 
-  // CQ-23: a D1 read outside any catch rejected the whole batch, and every message came back at once.
+  // A D1 read outside any catch rejected the whole batch, and every message came back at once.
   it("tries again a message D1 failed, and still syncs the rest of the batch", async () => {
     const ok = await phaseOneLead();
     let failed = false;
@@ -543,7 +543,7 @@ describe("crm-sync: erasing a person", () => {
   });
 });
 
-// LIFE-12: a confirmed change of number stayed in D1, and the CRM lead kept the old one. An invite ops attach is
+// A confirmed change of number stayed in D1, and the CRM lead kept the old one. An invite ops attach is
 // sent the same way (docs/decisions/0089-an-invite-is-not-lost.md).
 describe("crm-sync: a changed number, address or invite", () => {
   const PERSON = "44444444-4444-4444-8444-444444444444";

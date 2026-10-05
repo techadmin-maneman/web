@@ -38,7 +38,7 @@ describe("the production site build", () => {
       "  - the privacy page's wording is not approved",
       "  - the terms page's wording is not approved",
     ]);
-    // The sentences counsel has still to see are marked in the site's content, and refused with the rest (CQ-43).
+    // The sentences counsel has still to see are marked in the site's content, and refused with the rest.
     expect(problems.slice(4)).toEqual([expect.stringMatching(/^ {2}- site\/src\/content\/site\.ts: \d+ lines marked/)]);
   });
 

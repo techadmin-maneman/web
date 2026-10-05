@@ -152,7 +152,7 @@ export function DispatchScreen() {
     setMove((held) => (held === null || held.sending ? held : { ...held, to }));
   }, []);
 
-  /** Back to the board with the job still in hand. Not while it is being sent: it could be sent twice (FEO-04). */
+  /** Back to the board with the job still in hand. Not while it is being sent: it could be sent twice. */
   const unpick = useCallback(() => {
     setMove((held) => (held === null || held.sending ? held : { ...held, to: null }));
   }, []);

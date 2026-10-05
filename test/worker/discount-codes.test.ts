@@ -163,7 +163,7 @@ describe("Settings · Discount codes", () => {
     expect(await again.json()).toMatchObject({ error: { code: "code_off" } });
   });
 
-  // MON-53: "SPR" found nothing while SPRTEST was there.
+  // "SPR" found nothing while SPRTEST was there.
   it("finds the codes that begin with what is typed, however old", async () => {
     await make();
     await make({ code: "FVEPC", value: 5 });

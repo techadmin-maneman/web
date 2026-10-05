@@ -163,7 +163,7 @@ describe("GET /api/availability", () => {
     });
   });
 
-  // A window inside the notice is still sold, and marked (MON-08, BK-11).
+  // A window inside the notice is still sold, and marked.
   it("marks only the windows inside the notice ops set, and none where the kind costs nothing to change late", async () => {
     type Marks = { change_notice_hours: number; days: { windows: { change_charged: boolean }[] }[] };
     const opsSet = (name: string, value: unknown) =>
@@ -274,7 +274,7 @@ describe("POST /api/holds", () => {
     });
   });
 
-  // PLAT-15: each D1 read is a round trip to the database's region, so the hold's reads that need nothing from each
+  // Each D1 read is a round trip to the database's region, so the hold's reads that need nothing from each
   // other go together.
   it("waits on few round trips to D1", async () => {
     const rohit = await client();
@@ -455,7 +455,7 @@ describe("POST /api/holds", () => {
     expect((await hold(rohit, move)).status).toBe(201);
   });
 
-  // BK-08: no route in the app read the service area, so a client whose address was out of it held, paid and booked.
+  // No route in the app read the service area, so a client whose address was out of it held, paid and booked.
   describe("for an address in a pincode we do not come to", () => {
     const addressAt = (personId: string, pincode: string) =>
       env.DB.prepare(
@@ -529,7 +529,7 @@ describe("what a client may book, and when (docs/decisions/0068-a-paid-hold-is-k
       days: { date: string; price: { amount: number }; windows: { with: string | null }[] }[];
     }>();
 
-  it("offers no second first fit while one is still to happen, nor starts paying for one (LIFE-09)", async () => {
+  it("offers no second first fit while one is still to happen, nor starts paying for one", async () => {
     const lead = await client(true);
     const first = await (
       await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-24", window: "morning" })
@@ -548,7 +548,7 @@ describe("what a client may book, and when (docs/decisions/0068-a-paid-hold-is-k
     expect(paying.status).toBe(409);
   });
 
-  it("offers nothing, and holds nothing, on a day ops blacked out (BIZ-25)", async () => {
+  it("offers nothing, and holds nothing, on a day ops blacked out", async () => {
     await env.DB.prepare("INSERT INTO visit_blackouts (date, reason) VALUES ('2026-09-23', 'Dussehra')").run();
     const rohit = await client();
     const { days } = await availability(rohit);
@@ -560,7 +560,7 @@ describe("what a client may book, and when (docs/decisions/0068-a-paid-hold-is-k
     expect((await hold(rohit, { type: "service", date: "2026-09-23", window: "afternoon" })).status).toBe(409);
   });
 
-  it("prices each day at the price in force on it (OPS-14)", async () => {
+  it("prices each day at the price in force on it", async () => {
     await env.DB.prepare(
       "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('service', 'standard', 210000, 0, '2026-09-25')",
     ).run();

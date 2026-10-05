@@ -1,6 +1,6 @@
 // What the client app says of a consultation and fit in one visit's money, and what ops do with its link: the price
 // once fitted, after the visit's code, on Home and Visits; the payment owed once fitted, on Home and Payments; and
-// the link copied from the Tasks board or texted again. MON-21, BK-15, UX-08, CP-01. NOW is Monday 21 September 2026,
+// the link copied from the Tasks board or texted again. NOW is Monday 21 September 2026,
 // 12 noon in India; the visit is on Thursday the 24th. Every name, number and price is made up.
 
 import { env } from "cloudflare:workers";

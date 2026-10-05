@@ -56,7 +56,7 @@ describe("the phone's store", () => {
     ]);
   });
 
-  // CQ-45: one jobs store held five kinds of record, told apart by their keys, and earlier shapes were mended on read.
+  // One jobs store held five kinds of record, told apart by their keys, and earlier shapes were mended on read.
   it("moves what the first release's jobs store held into a store each, in today's shape", async () => {
     const row = { id: "a", starts_at: "t" };
     const card = { id: "a", partial_reasons: ["piece_not_ready"], checklist: [{ id: "c", label: "C" }] };

@@ -98,7 +98,7 @@ describe("erasure reaches Phase 2's data", () => {
     expect(lead).toEqual({ source: "form", loss_extent: null, gclid: null, landing_path: null });
   });
 
-  // The Books customer kept the client's name, mobile and addresses (PS-02).
+  // The Books customer kept the client's name, mobile and addresses.
   it("erases the client's Books customer through the Books pass", async () => {
     await env.DB.prepare("UPDATE people SET books_customer_id = 'books-1' WHERE id = ?1").bind(PERSON).run();
     await eraseByMobile(MOBILE, NOW);
@@ -190,7 +190,7 @@ describe("GET /api/me/export", () => {
     expect(audit).toEqual({ action: "data.export" });
   });
 
-  // PS-21 of the audit, 2 October 2026: what the export left out.
+  // What the export left out.
   it("gives the door, the client's note, how they reached us, their hair system, invite, sign-ins and requests", async () => {
     await phase2Data();
     await everythingElseHeld();
@@ -238,7 +238,7 @@ describe("GET /api/me/export", () => {
   });
 });
 
-/** A row in each table PS-21 found missing from the export, beside phase2Data's. */
+/** A row in each table the export once missed, beside phase2Data's. */
 async function everythingElseHeld(): Promise<void> {
   const at = NOW.toISOString();
   await env.DB.batch([
@@ -335,7 +335,7 @@ describe("grievances", () => {
     expect((await resolve("again")).status).toBe(404);
   });
 
-  // PS-22: once the app reloaded, a client saw nothing of the concern they raised, nor ops' answer.
+  // Once the app reloaded, a client saw nothing of the concern they raised, nor ops' answer.
   it("are listed on the client's profile, open and then with ops' answer", async () => {
     const deps = fakeDependencies();
     const client = appFor("local", deps, {}, "client");
@@ -398,7 +398,7 @@ describe("grievances", () => {
     expect(await texts()).toEqual(["open-1", "open-2", "open-3", "open-4", "open-5"]);
   });
 
-  // PS-65: one client could raise concerns without end, each a message in the team chat.
+  // One client could raise concerns without end, each a message in the team chat.
   it("take five new ones a day from a client, where the same words still open are not a new one", async () => {
     const client = appFor("local", fakeDependencies(), {}, "client");
     for (const n of [1, 2, 3, 4, 5]) {

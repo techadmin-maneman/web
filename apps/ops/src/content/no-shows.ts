@@ -183,7 +183,7 @@ export const noShows = {
     /**
      * The board draws no note beneath the queue, and no amount anywhere. A charge costs what the booking
      * was sold to cost a no-show, set in Settings apart from a late cancel (ADR 0096); a waiver gives back what ops set
-     * it to, which the owner ruled on 27 September 2026 is the payment and the credit (BIZ-28; ADR 0088).
+     * it to, which the owner ruled on 27 September 2026 is the payment and the credit (ADR 0088).
      */
     note: (waiver: { readonly payment: "refunded" | "kept"; readonly credit: "returned" | "spent" }) =>
       "Charging keeps what the booking says a no-show costs and refunds the rest; waiving " +

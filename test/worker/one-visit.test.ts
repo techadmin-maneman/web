@@ -122,7 +122,7 @@ describe("the technician's card", () => {
     const checklist = (card.checklist as { id: string }[]).map((item) => item.id);
     expect(checklist.slice(0, 3)).toEqual(["scalp_checked", "measurements_taken", "options_shown"]);
     expect(checklist).toContain("piece_set");
-    // FLD-37: the consultation's alone, for a client who decides against the fit.
+    // The consultation's alone, for a client who decides against the fit.
     const ifDeclined = (card.checklist_if_declined as { id: string }[]).map((item) => item.id);
     expect(ifDeclined).toEqual(["scalp_checked", "measurements_taken", "options_shown"]);
     expect(JSON.stringify(card)).not.toContain("4500000");
@@ -136,7 +136,7 @@ describe("the technician's card", () => {
     expect(answer.status).toBe(202);
   });
 
-  // FLD-37: the choice comes first, so the checklist after it knows whether anything is fitted.
+  // The choice comes first, so the checklist after it knows whether anything is fitted.
   it("takes the client's choice before the checklist, and says on the card what they chose", async () => {
     const job = await oneVisit();
     await job.workTo("piece");
@@ -206,7 +206,7 @@ describe("closing a one visit the client was fitted at", () => {
     expect(await closeAsDone(job).then((answer) => answer.json())).toMatchObject({ replayed: true });
 
     expect(await visitRow()).toEqual({ type: "first_fit", tier: NATURAL.tier, one_visit: "fitted" });
-    // MON-30, CP-19: the product as a hair system, and a reference a person can read, not the visit's ID.
+    // The product as a hair system, and a reference a person can read, not the visit's ID.
     expect(payments.made.links).toEqual([
       {
         amount: NATURAL.amount,
@@ -223,7 +223,7 @@ describe("closing a one visit the client was fitted at", () => {
     expect(card).toMatchObject({ payment_link: { url: expect.stringMatching(/^https:\/\/rzp\.io\//) as string } });
   });
 
-  // MON-45, PS-47: a link took payment, and Razorpay kept reminding the client, however long it went unpaid.
+  // A link took payment, and Razorpay kept reminding the client, however long it went unpaid.
   it(RULES[3], async () => {
     const job = await oneVisit();
     await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
@@ -238,7 +238,7 @@ describe("closing a one visit the client was fitted at", () => {
     expect(await owed(TWO_WEEKS_ON)).toMatch(reads("closed"));
   });
 
-  // MON-45, PS-46: on staging a test record's made-up number, very likely a stranger's, was texted "pay Rs. 30,000".
+  // On staging a test record's made-up number, very likely a stranger's, was texted "pay Rs. 30,000".
   it(STAGING_RULES[3], async () => {
     const logs = captureLogs();
     const payments = createStubPayments();
@@ -466,7 +466,7 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     expect(tasks.filter((task) => task.group === "payment_owed")).toEqual([]);
   });
 
-  // CP-54: the largest payment in the product was the only one we never confirmed.
+  // The largest payment in the product was the only one we never confirmed.
   it("queues the client's receipt once, however often the payment is told of, whatever their consent", async () => {
     const linkId = await fittedAndClosed(createStubPayments());
     await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-1");
@@ -544,7 +544,7 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     expect(await linkRow()).toMatchObject({ paid_at: "2026-09-22T08:57:15.000Z" });
   });
 
-  // MON-45, PS-47: the visit's own link stayed payable, with Razorpay's reminders, once the visit was paid another way.
+  // The visit's own link stayed payable, with Razorpay's reminders, once the visit was paid another way.
   it("cancels the visit's own link once the client pays one ops made by hand", async () => {
     const own = await fittedAndClosed(createStubPayments());
     const payments = createStubPayments();

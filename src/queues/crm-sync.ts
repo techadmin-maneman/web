@@ -124,7 +124,7 @@ interface LeadRow {
 
 /**
  * The window a Phase 2 booking asked for, for lead `l`: the request the site's form left while self-serve booking
- * is off, else the slot it held, for the day it proposed (LIFE-11). A Phase 1 lead carries its own choice instead.
+ * is off, else the slot it held, for the day it proposed. A Phase 1 lead carries its own choice instead.
  */
 const ASKED_WINDOW = `(SELECT asked FROM (
     SELECT requested_window AS asked, created_at FROM consultation_requests

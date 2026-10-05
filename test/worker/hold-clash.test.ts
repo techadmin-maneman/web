@@ -22,7 +22,7 @@ beforeEach(async () => {
   ]);
 });
 
-// BK-46, CQ-31: a new number's person written twice at once broke people's unique key, which read as the window gone.
+// A new number's person written twice at once broke people's unique key, which read as the window gone.
 describe("a hold whose batch fails on another table's key", () => {
   it("is told as the failure it is, not as a window taken", async () => {
     const twice = env.DB.prepare(

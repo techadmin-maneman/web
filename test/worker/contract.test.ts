@@ -38,7 +38,7 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
     expect(renderApiMarkdown(buildOpenApiDocument(surface))).toBe(markdown.replace(/\r\n/g, "\n"));
   });
 
-  // P3-44: eight bodies were optional, so a request sent without JSON reached its handler as an empty one.
+  // Eight bodies were optional, so a request sent without JSON reached its handler as an empty one.
   it("requires the body of every write that takes one", () => {
     const generated = buildOpenApiDocument(surface);
     const optional = Object.entries(generated.paths ?? {}).flatMap(([path, item]) =>
@@ -153,7 +153,7 @@ describe("the error codes", () => {
     expect(unnamed).toEqual([]);
   });
 
-  // P3-44: each code's status was read from the documents; now the routes answer it from one table, held to them here.
+  // Each code's status was read from the documents; now the routes answer it from one table, held to them here.
   it("each answer with the status ERROR_STATUS gives it, on every surface", () => {
     const elsewhere = errorAnswers().flatMap(({ where, status, description }) =>
       codesNamedIn(description)

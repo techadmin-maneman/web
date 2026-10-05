@@ -183,7 +183,7 @@ describe("GET /api/photos's try-ons", () => {
     expect((await tryOns()).map((tryOn) => tryOn.id)).toEqual(["job-claimed"]);
   });
 
-  // PS-10: anyone could type the client's number at the gate before it asked for a code, so such a try-on may hold a
+  // Anyone could type the client's number at the gate before it asked for a code, so such a try-on may hold a
   // stranger's photograph.
   it("leaves out a try-on whose claim no code proved, and opens none of its images", async () => {
     await madeLook("job-unproved", 30 * MINUTE, { number_proved_at: null });
@@ -247,7 +247,7 @@ describe("GET /api/photos/try-on/{image}/{token}", () => {
     expect((await request(later, photoUrl, { headers: { Cookie: cookie } })).status).toBe(404);
   });
 
-  // PS-59: the site's result links share a day's ceiling; a client's own looks are counted per client instead.
+  // The site's result links share a day's ceiling; a client's own looks are counted per client instead.
   it("opens a client's images past the site's result-read ceiling, up to the client's own day's count", async () => {
     const tryOn = await stored();
     client = appFor(

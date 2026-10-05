@@ -30,7 +30,7 @@ describe("what a refusal means for the round", () => {
     expect(classify(refused(425, "too_early_to_close"))).toEqual({ kind: "too_early", code: "too_early_to_close" });
   });
 
-  // FLD-46: an out_of_order on a photograph's upload link was reported as a rejected photograph.
+  // An out_of_order on a photograph's upload link was reported as a rejected photograph.
   it("stops the job when it changed under the phone, has closed, went out of order or is gone", () => {
     const moved = { technician: "Vikram", at: "t" };
     expect(classify(refused(409, "superseded", { fields: ["technician"], moved }))).toEqual({

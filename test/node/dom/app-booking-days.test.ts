@@ -92,7 +92,7 @@ describe("the days the date step marks inside the notice", () => {
     return { ...open, windows: [morning] };
   };
 
-  it("marks a day with an open window that is already charged to change (MON-08, BK-11)", () => {
+  it("marks a day with an open window that is already charged to change", () => {
     expect(dayInsideNotice(withMorning("another", true))).toBe(true);
     expect(dayInsideNotice(withMorning("another", false))).toBe(false);
   });
@@ -102,7 +102,7 @@ describe("the days the date step marks inside the notice", () => {
   });
 });
 
-describe("the window step's button (MON-33, UX-06, CP-05)", () => {
+describe("the window step's button", () => {
   it("goes on to payment for a day with a price", () => {
     expect(windowContinue(day("2026-10-05", true))).toBe("Continue to payment");
   });

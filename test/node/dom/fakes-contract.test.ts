@@ -1,6 +1,6 @@
 // The ops console's and the technician app's browser tests answer the API
 // themselves (e2e/ops/fixtures.ts, e2e/tech/fixtures.ts). Nothing kept those
-// answers honest but care (TCD-01): here every one of them is validated against
+// answers honest but care: here every one of them is validated against
 // the committed OpenAPI document, as e2e/contract.ts also does for each reply
 // the browser tests send. A change to a route that leaves a fake behind fails
 // here, before any browser runs.

@@ -73,7 +73,7 @@ describe("the dispatch board's words", () => {
   });
 });
 
-// OIA-21 and CP-28: ops read "0.00 GB in R2", "Set by 5ef59a45….access" and the board's design notes.
+// Ops read "0.00 GB in R2", "Set by 5ef59a45….access" and the board's design notes.
 describe("what the console shows ops", () => {
   /** Every string content.ts can put on screen: its strings, and what its functions write for sample values. */
   function shown(value: unknown, out: string[]): string[] {

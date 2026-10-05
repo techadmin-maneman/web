@@ -1,6 +1,6 @@
 // A client search, from any page, kept in the history entry rather than the
 // address: Back to the Clients page finds its results again, and a number never
-// reaches an address bar, a referrer or a log (OIA-15).
+// reaches an address bar, a referrer or a log.
 //
 // The clients opened this session, the latest first, are kept for the Clients
 // page to offer again: ids and names alone, in sessionStorage, so they go when

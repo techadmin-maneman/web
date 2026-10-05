@@ -1,5 +1,5 @@
 // What the client app says of a document it cannot open yet, and of a refund still on its way, against the time
-// that has passed (CLI-25). "Usually ready within the hour" of a visit done sixty days ago, and "5 to 7 working
+// that has passed. "Usually ready within the hour" of a visit done sixty days ago, and "5 to 7 working
 // days" of a refund begun eighteen days ago, were both untrue.
 
 import { describe, expect, it } from "vitest";
@@ -68,7 +68,7 @@ describe("a payment's invoice not yet raised", () => {
     expect(missingInvoice(payment({}), "2030-09-12")).toBe("invoiceAfterVisit");
   });
 
-  // A prepaid first fit a week away said "The invoice is taking longer than it should" (MON-20).
+  // A prepaid first fit a week away said "The invoice is taking longer than it should".
   it("comes after the visit for a booking still being made, which has no visit yet", () => {
     expect(missingInvoice(booked(true), "2030-09-12")).toBe("invoiceAfterVisit");
   });
@@ -93,7 +93,7 @@ describe("a payment's documents", () => {
     expect(documentsOf(payment({ purpose: "late_fee" }))).toEqual(["receipt"]);
   });
 
-  // A payment refunded in full offered "Tax invoice", which said it was taking longer than it should (MON-20).
+  // A payment refunded in full offered "Tax invoice", which said it was taking longer than it should.
   it("are the receipt alone for a payment refunded in full, or a booking refunded before it became a visit", () => {
     expect(documentsOf(payment({ status: "refunded" }))).toEqual(["receipt"]);
     expect(documentsOf(booked(false))).toEqual(["receipt"]);

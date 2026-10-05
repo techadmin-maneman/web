@@ -56,13 +56,13 @@ describe("the message class table", () => {
     expect(messageClass("visit_reminder")).toBe("automatic");
   });
 
-  // PS-29: the answer to a STOP reply reaches the number that sent it, as any answer does.
+  // The answer to a STOP reply reaches the number that sent it, as any answer does.
   it("classes the answer to a STOP reply as answering", () => {
     expect(messageClass("messages_stopped")).toBe("answering");
   });
 });
 
-// PS-29: a reminder or the launch alert gave no way to stop it without signing in.
+// A reminder or the launch alert gave no way to stop it without signing in.
 describe("the link that stops a message", () => {
   it("ends the reminders and the launch alert, each withdrawing the consent it was sent under", () => {
     expect(STOP_LINKS).toEqual({

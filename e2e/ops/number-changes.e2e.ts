@@ -32,7 +32,7 @@ test("shows both numbers, the day it was asked for, and that each was proven", a
   await expect(only).toContainText("A code went to both numbers, and both were entered.");
 });
 
-// OIA-16: the change is confirmed with the client on the new number, which had to be copied by hand.
+// The change is confirmed with the client on the new number, which had to be copied by hand.
 test("reaches the client on the new number, on WhatsApp or by phone", async ({ page }) => {
   await open(page);
   const only = queue(page).getByRole("listitem");
@@ -46,7 +46,7 @@ test("reaches the client on the new number, on WhatsApp or by phone", async ({ p
   );
 });
 
-// A number change once showed no age at all (OPS-08); it falls due when the Tasks board says it does.
+// A number change once showed no age at all; it falls due when the Tasks board says it does.
 test("says how long the change has left, as the Tasks board counts it", async ({ page }) => {
   await open(page);
   await expect(queue(page).getByRole("listitem")).toContainText("1 day left");
@@ -103,7 +103,7 @@ test("moves the keyboard into the reason as it opens, and to the heading once de
   await expect(page.getByRole("heading", { name: "Waiting for a decision" })).toBeFocused();
 });
 
-// The Tasks board links a number change to its row here (OPS-05).
+// The Tasks board links a number change to its row here.
 test("brings the change a task named into view, and gives it the keyboard", async ({ page }) => {
   await open(page, undefined, `/number-changes#change-${CHANGE}`);
   await expect(queue(page).getByRole("listitem")).toBeFocused();

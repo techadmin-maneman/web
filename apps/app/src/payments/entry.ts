@@ -36,7 +36,7 @@ export function methodName(method: string | null, form: "short" | "long"): strin
 
 /**
  * The list's line under the name: "22 Aug · UPI"; for a refund what it gave back, "14 Sep · First fit"; and for a
- * visit the client was not home for, "19 Sep · not home, we waited 16 min" (LIFE-07).
+ * visit the client was not home for, "19 Sep · not home, we waited 16 min".
  */
 export function entryMeta(entry: Entry, thisYear: number): string {
   const date = listDate(entry.date, thisYear);

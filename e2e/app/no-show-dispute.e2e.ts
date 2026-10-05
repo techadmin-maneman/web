@@ -83,7 +83,7 @@ test("says the days to dispute have passed, when they pass while the sheet is op
   );
 });
 
-// A charge past its days once showed no Dispute button and no reason why (MON-17).
+// A charge past its days once showed no Dispute button and no reason why.
 test("says when the days to dispute the charge ended, and offers no dispute", async ({ page }) => {
   await charged(page, null, "2026-09-17T09:30:00.000Z");
   await expect(page.getByText("The days to dispute this charge ended on Thu 17 Sep.")).toBeVisible();

@@ -1,4 +1,4 @@
-// Each app's features import only the shared layers (P3-42, CQ-44): the files at the top of src/, components/, lib/,
+// Each app's features import only the shared layers: the files at the top of src/, components/, lib/,
 // states/, styles/ and content/, the technician app's store/, and another feature only through its index.ts, which
 // says what the feature offers. A feature that reaches into another's files is how moving one broke the next.
 

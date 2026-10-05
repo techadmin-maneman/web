@@ -95,7 +95,7 @@ function rulingOf(note: NoShowNote): string {
 }
 
 /**
- * A visit the client was not home for (LIFE-07): that we came and waited, what was ruled, and where a dispute of
+ * A visit the client was not home for: that we came and waited, what was ruled, and where a dispute of
  * the charge stands, the way to raise one, or when the time to raise one ended.
  */
 function NoShow({ visitId, note, onDisputed }: { visitId: string; note: NoShowNote; onDisputed: () => void }) {

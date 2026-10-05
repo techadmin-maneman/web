@@ -1,5 +1,5 @@
-// Free service visits running out: the WhatsApp reminders a month and a week before their last day (MON-35, PS-38,
-// CP-40), and the pass that closes them once they have, however long the cron was down (MON-54). NOW is Monday
+// Free service visits running out: the WhatsApp reminders a month and a week before their last day,
+// and the pass that closes them once they have, however long the cron was down. NOW is Monday
 // 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";

@@ -1,4 +1,4 @@
-// What axe cannot see in the client app (UX-18): a page that scrolls sideways when the screen is 320 px wide (WCAG
+// What axe cannot see in the client app: a page that scrolls sideways when the screen is 320 px wide (WCAG
 // 1.4.10), and a control that takes the keyboard without drawing that it has (2.4.7).
 
 import type { Page } from "@playwright/test";

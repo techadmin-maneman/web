@@ -316,11 +316,11 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(pay.getByText(/^Held for \d:\d\d$/)).toBeVisible();
   await expect(pay.getByText("Rs. 2,000", { exact: true })).toBeVisible();
-  // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it (MON-19).
+  // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it.
   await expect(pay.getByText(/GST/)).toHaveCount(0);
   // The first window open may already be inside the notice, by the time of day the test runs.
   await expect(pay.getByText(new RegExp(`${FREE_UNTIL.source}|${INSIDE_NOTICE.source}`))).toBeVisible();
-  // MON-44: Checkout lists the ways to pay, so the sheet offers no choice Checkout would ignore.
+  // Checkout lists the ways to pay, so the sheet offers no choice Checkout would ignore.
   await expect(pay.getByRole("radiogroup")).toHaveCount(0);
   await expect(pay.getByText("Imran never handles money.")).toBeVisible();
   // Already switched on, so the sheet does not ask again.
@@ -523,7 +523,7 @@ test("goes back to the address, saying why, when the API holds no slot for want 
   await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
 });
 
-// BK-08: an address in a pincode we do not come to was held, paid for and booked.
+// An address in a pincode we do not come to was held, paid for and booked.
 test("offers no day at an address we do not come to, but the address to change and the waitlist", async ({ page }) => {
   await profileAs(page, {});
   await page.route(/\/api\/availability\?/, (route) =>
@@ -556,7 +556,7 @@ test("puts Pay above what booking also agrees to, one tap away, while neither is
   const first = pay.getByText(
     "By booking this visit, you also agree to photographs taken for your visit record and used on referral cards.",
   );
-  // MON-43, BK-63, UX-12, CP-42: on a 390 px phone the notice's six lines pushed Pay off the screen.
+  // On a 390 px phone the notice's six lines pushed Pay off the screen.
   await expect(payButton).toBeInViewport();
   await expect(agrees).toBeInViewport();
   expect(await bottomOf(payButton)).toBeLessThanOrEqual(await topOf(agrees));
@@ -620,7 +620,7 @@ test("offers every service of the kind it books, the one offered chosen, with ho
   await expect(kind).toContainText("2 hours");
   // The line ops wrote for a service sits under its name; one with none shows its name alone.
   await expect(kind).toContainText("A deeper clean and a fresh bond.");
-  // Once GST applies, what is charged leads and its split sits beneath (MON-32).
+  // Once GST applies, what is charged leads and its split sits beneath.
   await expect(kind).toContainText("Rs. 3,540");
   await expect(kind).toContainText("Rs. 3,000 + Rs. 540 GST");
   await expect(visits.getByRole("link")).toHaveCount(0);
@@ -710,7 +710,7 @@ test("says a late change keeps the payment, never a late fee, where the booking 
 /** A free_until already past: the window starts inside the notice the visit is sold under. */
 const PASSED = () => new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
-// MON-08, BK-11, CP-02: a visit sold inside its notice said "Free to move until" a time already gone.
+// A visit sold inside its notice said "Free to move until" a time already gone.
 test("says a visit sold inside its notice is charged to change from now, never free until a time gone", async ({
   page,
 }) => {
@@ -780,7 +780,7 @@ test("marks the days and windows inside the notice, which are still sold", async
   await scanOf(page);
 });
 
-// MON-33, BK-16, UX-06, CP-05: a free booking went through "Continue to payment" and "Pay and confirm" for Rs. 0.
+// A free booking went through "Continue to payment" and "Pay and confirm" for Rs. 0.
 test("takes a visit that costs nothing to Confirm, never to a payment", async ({ page }) => {
   const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
   await passedThrough(page, /\/api\/availability\?/, (days: { days: object[] }) => ({
@@ -1017,7 +1017,7 @@ test("fetches Home again when the sheet is closed after paying, before the booki
   await home;
 });
 
-// MON-43, BK-63, UX-12: a step that ends with a Close of its own showed the sheet's as well, two of one name.
+// A step that ends with a Close of its own showed the sheet's as well, two of one name.
 test("shows one Close, its own, when a paid visit could not be booked", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await refundedAfterPaying(page);
@@ -1077,7 +1077,7 @@ function lastPayBy(page: Page): () => string {
   return () => payBy;
 }
 
-// While Checkout is open the phone lets nothing go: a payment made in the grace after the countdown books (MON-03).
+// While Checkout is open the phone lets nothing go: a payment made in the grace after the countdown books.
 test("keeps the hold while Checkout is open past the countdown, and books the payment made in it", async ({ page }) => {
   await checkoutLeftOpen(page);
   await confirmedByRazorpay(page);
@@ -1216,7 +1216,7 @@ async function scanOf(page: Page): Promise<void> {
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 }
 
-// A11Y-23: axe read C2 to C4 only; board C6's states, where a client is told something went wrong, went unread.
+// Axe read C2 to C4 only; board C6's states, where a client is told something went wrong, went unread.
 test("the payment's outcomes meet WCAG 2.2 AA: failed, the slot gone back, and confirmed", async ({ page }) => {
   await fakeCheckout(page, "failed");
   await page.clock.install();

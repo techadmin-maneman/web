@@ -196,7 +196,7 @@ test("books a consultation asked for from its Tasks row, on the day and window a
   await expect(tasks.getByRole("listitem")).toHaveCount(0);
 });
 
-// MON-14: a booking that refunded its payment by itself showed nowhere in the console.
+// A booking that refunded its payment by itself showed nowhere in the console.
 test("lists a booking that refunded its payment by itself beneath the visits, and why", async ({ page }) => {
   const refunded = {
     hold_id: "66000000-0000-4000-8000-000000000002",

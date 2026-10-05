@@ -1,7 +1,7 @@
 // The refresh token a script mints its Zoho access tokens from: its own, never the Worker's.
 //
 // Zoho mints at most ten access tokens in ten minutes from one refresh token. A script run by hand that shared the
-// Worker's took the Worker's Zoho calls down with it during the P2-M2 proof (docs/open-points.md, item 32), so the owner ruled on
+// Worker's took the Worker's Zoho calls down with it during a proof on staging (docs/open-points.md, item 32), so the owner ruled on
 // 27 September 2026 that scripts and proofs have a Self Client refresh token of their own. The Worker's may still be
 // used, but only on purpose: `--use-worker-token`, for when the scripts' token is lost and a script must run now.
 

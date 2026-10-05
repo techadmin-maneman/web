@@ -4,7 +4,7 @@
 //
 // A link within an app changes the path in place, unless the click asks for
 // something else -- a new tab, a new window, a download -- which is left to the
-// browser (FEO-31).
+// browser.
 
 import { useEffect, useState, type ReactNode } from "react";
 import { afterSheets, atSheetEntry } from "./sheetHistory.ts";

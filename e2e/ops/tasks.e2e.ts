@@ -30,8 +30,7 @@ const row = (page: Page, heading: string) => list(page).getByRole("listitem").fi
 /** The groups' names, as each department lists them. */
 const groupNames = (page: Page) => list(page).getByRole("heading", { level: 4 });
 
-// The groups were one 484 px column on a 1440 px screen, money between a call about a move and a job on a day off
-// (OIA-02).
+// The groups were one 484 px column on a 1440 px screen, money between a call about a move and a job on a day off.
 test("stands each group under its department, in the navigation's order, side by side", async ({ page }) => {
   await open(page);
   await expect(list(page).getByRole("heading", { level: 3 })).toHaveText([
@@ -71,7 +70,7 @@ test("writes how long each has left in words, and marks what has run over", asyn
   await expect(row(page, "Ashish Gill")).toContainText("1 day left");
 });
 
-// On staging, 19 to 29 rows of one group pushed every other group out of sight (OIA-02).
+// On staging, 19 to 29 rows of one group pushed every other group out of sight.
 test("shows a group's five longest waits, the rest on asking, and unfolds it for an overdue task past them", async ({
   page,
 }) => {
@@ -306,13 +305,13 @@ test("names a one visit asked for, and a fitted client's payment still owed, wit
   const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
-  // MON-21: a client who lost the SMS is texted the link again from the row.
+  // A client who lost the SMS is texted the link again from the row.
   await answer(page, { "POST /api/payment-links/{id}/resend": json({ outcome: "resent" }) });
   await row(page, "Nikhil Suri").getByRole("button", { name: "Send again · Nikhil Suri" }).click();
   await expect(row(page, "Nikhil Suri").getByRole("status")).toHaveText("Texted to them again.");
 });
 
-// MON-05, MON-13: money owed back that no refund reached waited nowhere.
+// Money owed back that no refund reached waited nowhere.
 test("lists each payment to refund, why, and what is owed back, and leads to the client's payments", async ({
   page,
 }) => {
@@ -352,7 +351,7 @@ test("lists each payment to refund, why, and what is owed back, and leads to the
   );
 });
 
-// A no-show once named its technician alone and led nowhere (OPS-05).
+// A no-show once named its technician alone and led nowhere.
 test("names the client of a no-show, and leads to their visits and to the case", async ({ page }) => {
   await open(page);
   const noShow = row(page, "Imran Qureshi attended");
@@ -365,7 +364,7 @@ test("names the client of a no-show, and leads to their visits and to the case",
   expect(new URL(page.url()).hash).toBe("#case-66000000-0000-4000-8000-000000000001");
 });
 
-// A client's claim for money back once waited on No-shows alone: no row here, no count, no link (OIA-07).
+// A client's claim for money back once waited on No-shows alone: no row here, no count, no link.
 test("names a disputed charge and what it kept, and leads to the dispute in Payments", async ({ page }) => {
   const dispute = (id: string, person: { id: string; name: string } | null, kept: string) => ({
     id,
@@ -419,7 +418,7 @@ test("reaches the client's page from the task that is about them, on the tab it 
   expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/pieces");
 });
 
-// A referral review once led to the referrer's page, where nothing can be decided (OPS-05).
+// A referral review once led to the referrer's page, where nothing can be decided.
 test("leads each task to the row it is decided on, in the section that decides it", async ({ page }) => {
   await open(page);
   const links = [
@@ -442,7 +441,7 @@ test("leads each task to the row it is decided on, in the section that decides i
   await expect(row(page, "Kunal Mehta").getByRole("link")).toHaveCount(1);
 });
 
-// A grievance was promised an answer in thirty days and waited on no board at all (OPS-08).
+// A grievance was promised an answer in thirty days and waited on no board at all.
 test("counts an open grievance down, and leads to it in Grievances", async ({ page }) => {
   await open(page, {
     overdue: 0,
@@ -477,7 +476,7 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
   );
 });
 
-// The counts were cut at 200 tasks across every group, and said nothing of it (FEO-07).
+// The counts were cut at 200 tasks across every group, and said nothing of it.
 test("counts a group whole when it lists only its longest waits, and says when it could not count", async ({
   page,
 }) => {
@@ -615,7 +614,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
   expect(reasons).toEqual([{ reason: "Moving to Pune; wants no more visits." }]);
 });
 
-// OIA-03, BK-21: the call about a move was recorded only from a block ops had to find on the board, and both of the
+// The call about a move was recorded only from a block ops had to find on the board, and both of the
 // board's tasks opened this week's bare board.
 test("records a call about a move from its row, and opens each of the board's tasks on its visit", async ({ page }) => {
   const MOVE = "99000000-0000-4000-8000-000000000001";
@@ -671,7 +670,7 @@ test("records a call about a move from its row, and opens each of the board's ta
   });
 
   const vikram = row(page, "Vikram Sethi");
-  // BK-20: the row says why he was not told, so the call starts from the right place.
+  // The row says why he was not told, so the call starts from the right place.
   await expect(vikram).toContainText("; has not agreed to WhatsApp");
   await expect(vikram.getByRole("link", { name: "Call +91 98100 04418 · Vikram Sethi" })).toHaveAttribute(
     "href",

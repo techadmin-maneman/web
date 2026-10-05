@@ -268,7 +268,7 @@ describe("GET /api/visits", () => {
     expect((await get("/api/visits", false)).status).toBe(401);
   });
 
-  // MON-10: Home and Visits never said which hair system a first fit was for.
+  // Home and Visits never said which hair system a first fit was for.
   it("names the hair system a first fit was sold as, and nothing for a kind's standard service", async () => {
     const id = (await seed([booked("ap-next")]))["ap-next"];
     await env.DB.batch([
@@ -298,7 +298,7 @@ describe("GET /api/visits", () => {
 });
 
 // A visit stays the client's until it is closed. One that dropped out of both lists once its window
-// ended left Home saying nothing was booked, and offering the booking again (LIFE-03).
+// ended left Home saying nothing was booked, and offering the booking again.
 describe("a visit not yet closed", () => {
   // NOW is 12:00 on Monday 21 September in India.
   const yesterday = booked("ap-yesterday", {
@@ -345,7 +345,7 @@ describe("a visit not yet closed", () => {
 
 // Board B1's one prompt, in the owner's order (src/policy/home-prompt.ts): an address to give while something is
 // booked, then the next service due and not booked, then an invoice just issued, which is also a line of its own
-// beneath whichever prompt leads, then a replacement falling due within reach (LIFE-08).
+// beneath whichever prompt leads, then a replacement falling due within reach.
 describe("GET /api/me's prompt and invoice line", () => {
   const personId = async () =>
     (await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1").bind(MOBILE).first<{ id: string }>())?.id ??
@@ -475,7 +475,7 @@ describe("GET /api/me's prompt and invoice line", () => {
     });
   });
 
-  // PLAT-15: the app waits on Home each time it opens, and each D1 read is a round trip to the database's region. The
+  // The app waits on Home each time it opens, and each D1 read is a round trip to the database's region. The
   // reads that need nothing from each other go together, so Home waits on a few trips, not one for each read.
   it("waits on few round trips to D1, even with the replacement leading, the longest way through", async () => {
     await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
@@ -725,7 +725,7 @@ describe("GET /api/visits/:id and the photographs", () => {
     expect(await held("ap-credit")).toBe("credit");
   });
 
-  // LIFE-07: a no-show read as an ordinary past visit, with no outcome, no charge and no word.
+  // A no-show read as an ordinary past visit, with no outcome, no charge and no word.
   it("says the client was not home, how long we waited, and what ops ruled", async () => {
     const ids = await seed([
       booked("ap-missed", {

@@ -166,7 +166,7 @@ describe("an address already on the account", () => {
   });
 });
 
-// BK-25: the visit goes to the address on the account, so where we do not come to it nothing is booked.
+// The visit goes to the address on the account, so where we do not come to it nothing is booked.
 describe("an address on the account in a pincode we do not come to", () => {
   beforeEach(async () => {
     await consentToVisitMessages();

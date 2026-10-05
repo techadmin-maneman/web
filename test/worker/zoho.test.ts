@@ -165,7 +165,7 @@ describe("Zoho: a person the CRM already has", () => {
     ]);
   });
 
-  // ADR 0050 admits a stored ID the CRM no longer has blocked the person's sync for good (audit INT-18).
+  // ADR 0050 admits a stored ID the CRM no longer has blocked the person's sync for good.
   describe("whose record D1 knows by an ID the CRM no longer has", () => {
     const invalidId = () =>
       json({
@@ -301,7 +301,7 @@ describe("Zoho: access tokens", () => {
     await expect(failure).rejects.toMatchObject({ code: "UNREACHABLE", refusal: false });
   });
 
-  // CQ-03: an answer that failed our schema reached ops as a bare zod dump naming neither the step nor the answer.
+  // An answer that failed our schema reached ops as a bare zod dump naming neither the step nor the answer.
   it("names where a search answer differs from what is read, and none of its values", async () => {
     const { crm } = zoho({
       [TOKEN_URL]: () => tokenIssued(),
@@ -339,7 +339,7 @@ describe("Zoho record and note contents", () => {
     expect(record).not.toHaveProperty("Proposed_Visit_Date");
   });
 
-  // LIFE-11. Zoho refuses a pick-list value it does not have, so the fields wait for scripts/ops/setup-crm.ts.
+  // Zoho refuses a pick-list value it does not have, so the fields wait for scripts/ops/setup-crm.ts.
   describe("an invited friend's booking", () => {
     const invited = crmLead({ firstChoiceWindow: null, inviteCode: "RM7K2Q", askedWindow: "afternoon" });
 
@@ -366,7 +366,7 @@ describe("Zoho record and note contents", () => {
     });
   });
 
-  // MON-23: while booking is off, the lead carried neither the one visit nor the code given for it.
+  // While booking is off, the lead carried neither the one visit nor the code given for it.
   describe("a consultation and fit in one visit, with a discount code", () => {
     const oneVisit = crmLead({ firstChoiceWindow: null, plan: "one_visit", discountCode: "TENPC" });
 

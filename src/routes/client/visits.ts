@@ -105,7 +105,7 @@ const PhotoSetSchema = z
     description: "Each angle in the order front, top, left, right, hair; missing angles left out.",
   });
 
-/** A visit the client was not home for, as their visit page and their Payments say it (LIFE-07). */
+/** A visit the client was not home for, as their visit page and their Payments say it. */
 export const NoShowNoteSchema = z
   .object({
     decision: z.enum(NO_SHOW_DECISIONS).openapi({

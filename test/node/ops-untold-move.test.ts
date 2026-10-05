@@ -1,5 +1,5 @@
 // The Tasks board's line for a move the client has not heard of names why, so ops know whether he never agreed to
-// WhatsApp or the message failed (BK-20, CP-09).
+// WhatsApp or the message failed.
 
 import { describe, expect, it } from "vitest";
 import { dispatch } from "../../apps/ops/src/content.ts";

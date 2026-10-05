@@ -29,7 +29,7 @@ function sentences(given: ReferralReward | null, name: string | null = "Rohit"):
   ].filter((sentence): sentence is string => sentence !== null);
 }
 
-// PS-24: /book says who is told of the fit before it sends the invite this browser remembers. An attribution records
+// /book says who is told of the fit before it sends the invite this browser remembers. An attribution records
 // these words by version: if a test here fails because the words changed, add a version to TOLD_NOTICES.
 describe(`what /book says of the invite this browser remembers (${TOLD_NOTICES.book})`, () => {
   it("says who is told of the fit, with the friend's visits as ops set them", () => {

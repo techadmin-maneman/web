@@ -34,7 +34,7 @@
 // So is a client's dispute of a no-show's charge: a claim for money back waits on this board until ops rule on it.
 
 //
-// So is a job still booked on a day its technician is away (OPS-07): leave
+// So is a job still booked on a day its technician is away: leave
 // recorded after a job was assigned moves nothing (ADR 0062), so it waits for
 // ops until they move it or take the leave back.
 //
@@ -48,7 +48,7 @@
 // them, or that could not be sent (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): the owner ruled
 // that it is paid for at the visit, so one unpaid after it is owed, and ops follow it up.
 //
-// A visit left partly done is the prompt's own (BIZ-21): "Partial reasons. …
+// A visit left partly done is the prompt's own: "Partial reasons. …
 // ops need the full set because these drive the task queue." It waits with the
 // technician's reason until the client has another visit booked after it to
 // finish what was left. A no-show is its own outcome, and its own group.

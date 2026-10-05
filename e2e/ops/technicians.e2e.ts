@@ -96,7 +96,7 @@ test("lists every active technician with the zone the board draws", async ({ pag
   await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText("—");
 });
 
-// Each technician took some 270 px with his phones and leave beneath him: 34,000 px for 168 (OPS-11).
+// Each technician took some 270 px with his phones and leave beneath him: 34,000 px for 168.
 test("gives each technician one row of the board's height, however many phones and days off", async ({ page }) => {
   await open(page);
   for (const name of ["Imran Qureshi", "Sandeep Yadav", "Faizan Ali"]) {
@@ -167,7 +167,7 @@ test("reads as a gap, never as a nought, when the phone timed none of the jobs",
 
 // Nothing records what a technician is trained for, so the board's fifth column
 // holds leave instead (docs/open-points.md, item 59). The design note that said so
-// beneath the table was ours, not ops', and is gone (OIA-21).
+// beneath the table was ours, not ops', and is gone.
 test("puts Leave where the board draws Skill, with no design note beneath the table", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("columnheader", { name: "Skill" })).toBeHidden();
@@ -185,7 +185,7 @@ test("says in the roster when a technician's next leave begins, or until when he
   await page.reload();
   const away = page.getByRole("row").filter({ hasText: "Sandeep Yadav" }).getByText("Away to 6 Oct");
   await expect(away).toBeVisible();
-  // In the board's small capitals, not in sans capitals (VIS-23).
+  // In the board's small capitals, not in sans capitals.
   await expect(away).toHaveCSS("font-variant-caps", "all-small-caps");
 });
 
@@ -248,7 +248,7 @@ test("names each phone, says when it was last used, and whether it is signed in,
   await expect(faizan.getByText("No phone logged in.")).toBeVisible();
 });
 
-// FLD-25: a revoke stops him signing in on any phone, since his code reaches the lost phone too; ops let him back.
+// A revoke stops him signing in on any phone, since his code reaches the lost phone too; ops let him back.
 test("says when a revoke stopped him signing in, and lets him in again", async ({ page }) => {
   const [imran, ...others] = TECHNICIANS.technicians;
   const stopped = {

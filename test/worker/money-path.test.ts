@@ -1,8 +1,8 @@
 // A client who pays inside the hold gets the visit, or, paying too late, an
 // automatic refund; nothing is booked twice (docs/decisions/0068-a-paid-hold-is-kept.md).
 // Razorpay's webhook books the visit itself, and the cron books one whose request failed part-way
-// (test/worker/booking-without-fsm.test.ts). The scenarios are the audit's (24 September 2026, W1 to W10), each at
-// the moment it went wrong. NOW is Monday 21 September 2026, 12 noon in India, and a hold lasts ten minutes. Every
+// (test/worker/booking-without-fsm.test.ts). Each scenario is set at
+// the moment it once went wrong. NOW is Monday 21 September 2026, 12 noon in India, and a hold lasts ten minutes. Every
 // name and number here is made up.
 
 import { env } from "cloudflare:workers";
@@ -144,7 +144,7 @@ beforeEach(async () => {
   await fittedPerson(PERSON, "+919810000001", "Rohit Malhotra");
 });
 
-describe("a payment made inside the hold whose webhook lands after it (W1)", () => {
+describe("a payment made inside the hold whose webhook lands after it", () => {
   it("is booked, judged on Razorpay's time for the payment, not on when the webhook came", async () => {
     const ordered = await heldAndOrdered(PERSON);
     const payments = createStubPayments();
@@ -164,7 +164,7 @@ describe("a payment made inside the hold whose webhook lands after it (W1)", () 
 });
 
 // A payment may land on a hold's order until its grace ends, so until then neither the app's lapse nor the client's
-// next hold lets that hold go (MON-03, BK-03).
+// next hold lets that hold go.
 describe("a hold with a Razorpay order, let go before its grace ends", () => {
   const letGo = (holdId: string, now: Date) => call(PERSON, `/api/holds/${holdId}`, { method: "DELETE" }, now);
 
@@ -215,7 +215,7 @@ describe("a hold with a Razorpay order, let go before its grace ends", () => {
   });
 });
 
-// A payment made in time whose webhook lands only after the hold was let go at the end of its grace (MON-03).
+// A payment made in time whose webhook lands only after the hold was let go at the end of its grace.
 describe("a payment made in time, heard of after its hold was let go", () => {
   const otherHolds = async (date: string, window: string) => {
     await fittedPerson(OTHER, "+919810000005", "Karan Bhatia");
@@ -290,7 +290,7 @@ describe("a payment made in the grace its hold was made with", () => {
   });
 });
 
-describe("a paid hold whose webhook could not book it (W2)", () => {
+describe("a paid hold whose webhook could not book it", () => {
   it("keeps its time when another client holds after its ten minutes, and is booked by the half-hour pass", async () => {
     await fittedPerson(OTHER, "+919810000005", "Karan Bhatia");
     const ordered = await heldAndOrdered(PERSON);
@@ -323,7 +323,7 @@ describe("a paid hold whose webhook could not book it (W2)", () => {
   });
 });
 
-describe("the public form, with a client's number, while that client's hold is paid (W3)", () => {
+describe("the public form, with a client's number, while that client's hold is paid", () => {
   it("neither lets the hold go nor renames the client", async () => {
     await env.DB.prepare(
       "INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
@@ -398,7 +398,7 @@ async function replacementHold(): Promise<string> {
 
 const oldVisitStatus = () => env.DB.prepare("SELECT status FROM appointments WHERE id = ?1").bind(OLD_VISIT).first();
 
-describe("a credit-covered move inside 24 hours (W4)", () => {
+describe("a credit-covered move inside 24 hours", () => {
   it("spends the credit once, tells the client once, and cancels the old visit", async () => {
     await lateServiceVisit();
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
@@ -416,7 +416,7 @@ describe("a credit-covered move inside 24 hours (W4)", () => {
   });
 });
 
-describe("order.paid and payment.captured for one payment (W9)", () => {
+describe("order.paid and payment.captured for one payment", () => {
   it("books the visit once, on the capture", async () => {
     const ordered = await heldAndOrdered(PERSON);
     await webhook("payment.captured", "evt_w9a", payment("pay_w9", ordered, at(30)), at(31));
@@ -436,7 +436,7 @@ async function paidHold(paymentId: string) {
 const booking = (holdId: string, seconds: number, payments = createStubPayments()) =>
   confirmBooking(env.DB, payments, holdId, at(seconds), {});
 
-describe("booking a paid hold twice at once (INT-01, BIZ-05)", () => {
+describe("booking a paid hold twice at once", () => {
   it("books it once when two tries take it at the same moment", async () => {
     const { holdId } = await paidHold("pay_i4");
     const both = await Promise.all([booking(holdId, 40), booking(holdId, 40)]);
@@ -456,7 +456,7 @@ describe("booking a paid hold twice at once (INT-01, BIZ-05)", () => {
   });
 });
 
-describe("the half-hour pass over paid holds (BIZ-06)", () => {
+describe("the half-hour pass over paid holds", () => {
   it("books a paid hold neither booked nor refunded half an hour on, and tells ops nothing", async () => {
     const { holdId } = await paidHold("pay_s1");
     const deps = fakeDependencies();
@@ -484,7 +484,7 @@ describe("the half-hour pass over paid holds (BIZ-06)", () => {
   });
 });
 
-// MON-12: after an outage the runbook has ops refund, from Razorpay's dashboard, a payment whose capture never came.
+// After an outage the runbook has ops refund, from Razorpay's dashboard, a payment whose capture never came.
 describe("a refund of a payment whose capture never reached us", () => {
   /** A hold paid for inside its ten minutes, then refunded in full from Razorpay's dashboard an hour on. */
   async function refundedInDashboard() {
@@ -527,7 +527,7 @@ describe("a refund of a payment whose capture never reached us", () => {
   });
 });
 
-describe("GST once a price carries it (W7, BIZ-07)", () => {
+describe("GST once a price carries it", () => {
   it("shows the Payments tab the figure before GST, and the rate, that the hold charged", async () => {
     await env.DB.prepare(
       "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('service', 'standard', 200000, 18, '2026-09-23')",
@@ -548,7 +548,7 @@ describe("GST once a price carries it (W7, BIZ-07)", () => {
   });
 });
 
-describe("where a visit booked from the site is (LIFE-04, CLI-14)", () => {
+describe("where a visit booked from the site is", () => {
   it("carries the pincode booked at onto the visit", async () => {
     await env.DB.prepare(
       "INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",

@@ -1,5 +1,5 @@
-// What the technician's card and piece step say the client paid for (apps/tech/src/lib/paid-for.ts). MON-10 and
-// FLD-14: a client paid for Mane Man Essential and the card said only "First fit", with nothing to warn him when the
+// What the technician's card and piece step say the client paid for (apps/tech/src/lib/paid-for.ts).
+// A client paid for Mane Man Essential and the card said only "First fit", with nothing to warn him when the
 // hair profile named another product.
 
 import { describe, expect, it } from "vitest";

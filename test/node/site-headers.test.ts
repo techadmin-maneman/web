@@ -85,7 +85,7 @@ describe("the content security policy", () => {
 describe("the headers file", () => {
   it("sends HSTS, the referrer policy and no camera, except on /try", () => {
     const file = headersFile("production", "default-src 'self'");
-    // SEC-02: the same as the apps send (packages/web-kit/headers.ts), for every host under the site's.
+    // The same as the apps send (packages/web-kit/headers.ts), for every host under the site's.
     expect(file).toContain("  Strict-Transport-Security: max-age=63072000; includeSubDomains\n");
     expect(file).toContain("  Referrer-Policy: strict-origin-when-cross-origin\n");
     expect(file).toMatch(/\/\*\n[\s\S]*Permissions-Policy: camera=\(\),/);
@@ -100,7 +100,7 @@ describe("the headers file", () => {
   });
 });
 
-// PLAT-64: a security researcher found no contact (RFC 9116).
+// A security researcher found no contact (RFC 9116).
 describe("security.txt", () => {
   it("names the site's published contact, and lapses a year after the build that wrote it", () => {
     const built = new Date("2026-10-05T00:00:00.000Z");

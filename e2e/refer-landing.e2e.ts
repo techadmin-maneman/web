@@ -124,7 +124,7 @@ test("the invite names the referrer, and a served pincode opens the consultation
   expect(sent.turnstile_token).toBeTruthy();
 });
 
-// FEO-17: the booking is the conversion paid campaigns are bought for. FEO-24: the invite's code is a person's, so no
+// The booking is the conversion paid campaigns are bought for. The invite's code is a person's, so no
 // tag reads it, in the address or anywhere else.
 test("a booking through the invite is counted, with nothing personal and no code", async ({ page }) => {
   await mockApi(page);
@@ -230,7 +230,7 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   await page.getByRole("button", { name: "Add me to the list" }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
-  // They asked to be told, so they are promised a message, naming the pincode they gave (BK-37).
+  // They asked to be told, so they are promised a message, naming the pincode they gave.
   await expect(page.getByText("We’ll message you on WhatsApp when we start coming to 400050.")).toBeVisible();
   await expect(page.getByText("Rohit’s invite holds for 12 months from when we start coming to 400050.")).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({
@@ -259,7 +259,7 @@ test("a code we do not know still books, without the invite's visits", async ({ 
   });
   await visit(page, `/r/${CODE}`);
 
-  // BK-62, CP-24: headed as /book is, with no line saying there is an invite above the one saying there is not.
+  // Headed as /book is, with no line saying there is an invite above the one saying there is not.
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a free consultation");
   await expect(page).toHaveTitle("Book a free consultation — Mane Man");
   await expect(page.getByText("You have an invite")).toBeHidden();
@@ -291,7 +291,7 @@ test("a code we do not know promises nothing to hold on the waitlist either", as
   await expect(page.getByText(/invite stays valid/)).toHaveCount(0);
 });
 
-// FEO-18: the invite could not be fetched, which says nothing about the code. The page neither calls it unknown
+// The invite could not be fetched, which says nothing about the code. The page neither calls it unknown
 // nor promises its visits, and it books as ever.
 test("an invite that cannot be fetched is neither refused nor promised", async ({ page }) => {
   await mockApi(page);
@@ -422,7 +422,7 @@ test("the form will not send without the address, a name, a number and the agree
   expect(requests).toHaveLength(0);
 });
 
-// A11Y-18: the answer used to replace the focused button, dropping focus to the page and saying nothing. CLI-08: a
+// The answer used to replace the focused button, dropping focus to the page and saying nothing. A
 // mistyped pincode could only be undone by reloading the page.
 test("the pincode's answer is announced, and the pincode can be changed", async ({ page }) => {
   await mockApi(page);
@@ -441,7 +441,7 @@ test("the pincode's answer is announced, and the pincode can be changed", async 
   await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
 });
 
-// A11Y-16: what must be filled in says so to a screen reader, before any error.
+// What must be filled in says so to a screen reader, before any error.
 test("the fields the form needs are marked as required", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
@@ -473,7 +473,7 @@ function outlineOf(page: Page, drawn: "label" | "box"): Promise<string> {
   }, drawn);
 }
 
-// A11Y-8: the radios and checkboxes are hidden and drawn, so the keyboard's focus must be drawn too.
+// The radios and checkboxes are hidden and drawn, so the keyboard's focus must be drawn too.
 test("a keyboard user sees which day, window and agreement has focus", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
@@ -502,7 +502,7 @@ test("a keyboard user sees which day, window and agreement has focus", async ({ 
   expect(await outlineOf(page, "box")).toBe("solid 2px");
 });
 
-// FEO-21: a retap after the answer was lost is the same request, so it carries the same key.
+// A retap after the answer was lost is the same request, so it carries the same key.
 test("pressing again after a lost answer sends the same request key", async ({ page }) => {
   await mockApi(page);
   const keys: (string | undefined)[] = [];
@@ -535,7 +535,7 @@ test("pressing again after a lost answer sends the same request key", async ({ p
   expect(keys[1]).toBe(keys[0]);
 });
 
-// FEO-35: Turnstile's script failing to load once used to fail every booking until the page was reloaded.
+// Turnstile's script failing to load once used to fail every booking until the page was reloaded.
 test("Turnstile that failed to load is tried again when the form is sent", async ({ page }) => {
   const requests = await mockApi(page);
   let failed = false;
@@ -559,7 +559,7 @@ async function bookThrough(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Book the consultation" }).click();
 }
 
-// REQ-06: the invite had lapsed for this friend, which only the booking's answer can say (ADR 0025, item 40).
+// The invite had lapsed for this friend, which only the booking's answer can say (ADR 0025, item 40).
 test("an invite that has expired for this friend says so once the booking is made", async ({ page }) => {
   const expired = { state: "booked", date: "2026-09-25", window: "morning", area: SERVED.area, credits: false };
   await mockApi(page, { consultation: { status: 201, body: { ...expired, invite: "expired", one_visit: false } } });
@@ -571,7 +571,7 @@ test("an invite that has expired for this friend says so once the booking is mad
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
-// PS-06: the booking ends the same for every number, sending its details to the number on WhatsApp, and opening the
+// The booking ends the same for every number, sending its details to the number on WhatsApp, and opening the
 // client app with the number filled in; the code is still asked for there.
 test("a booking sends the details to WhatsApp, and opens the app with the number filled in", async ({ page }) => {
   await mockApi(page);
@@ -617,7 +617,7 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   await expect(
     plan.getByText(/Choose your hair system with your technician and have it fitted there and then\./),
   ).toBeVisible();
-  // CP-20: the form's heading follows what it books.
+  // The form's heading follows what it books.
   await expect(page.getByRole("heading", { level: 2, name: "Book a consultation and fit" })).toBeVisible();
   // The morning or the afternoon: the first fit's three hours cannot start in the evening.
   await expect(page.getByRole("group", { name: "Window" }).getByRole("radio")).toHaveCount(2);
@@ -652,7 +652,7 @@ test("a consultation asked for, not booked, still offers the app, where the requ
   await expect(page.getByRole("link", { name: "Open the app" })).toBeVisible();
 });
 
-// CLI-21, VIS-11: at 1440 the card sits beside the headline (board C5), and no field runs the width of the page.
+// At 1440 the card sits beside the headline (board C5), and no field runs the width of the page.
 test("the desktop page is board C5's two columns, and its fields keep to their column", async ({ page }) => {
   const width = page.viewportSize()?.width ?? 0;
   test.skip(width < 1024, "board C5 is the desktop page");
@@ -671,7 +671,7 @@ test("the desktop page is board C5's two columns, and its fields keep to their c
   }
 });
 
-// BK-62: on a phone the pincode, the one field a friend must fill, is on the first screen, above how it works.
+// On a phone the pincode, the one field a friend must fill, is on the first screen, above how it works.
 test("on a phone the pincode comes before how it works, on the first screen", async ({ page }) => {
   const size = page.viewportSize() ?? { width: 0, height: 0 };
   test.skip(size.width >= 1024, "board C5 puts how it works in the other column");
@@ -685,7 +685,7 @@ test("on a phone the pincode comes before how it works, on the first screen", as
   expect((pincode?.y ?? 0) + (pincode?.height ?? 0)).toBeLessThanOrEqual(size.height);
 });
 
-// A11Y-03: at 320 px, the narrowest phone WCAG asks for, nothing is cut off and the page does not scroll sideways.
+// At 320 px, the narrowest phone WCAG asks for, nothing is cut off and the page does not scroll sideways.
 test("the form fits a 320 px screen", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await mockApi(page);

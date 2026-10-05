@@ -4,8 +4,7 @@
 // Each entry names the number's unit, what it may be, and the committed value
 // it falls back to. The committed value stays where it always was -- in
 // src/policy/ beside the rule it belongs to, or in src/config/ -- so the rules
-// still read as rules and test/node/policy-quotes.test.ts still holds them to
-// the prompt word for word. This file says which of those numbers ops may
+// still read as rules. This file says which of those numbers ops may
 // change and how far, and nothing else.
 //
 // Prices, their GST and the service area are not here. They have dated tables

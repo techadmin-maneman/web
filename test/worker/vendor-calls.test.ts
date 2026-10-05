@@ -1,5 +1,5 @@
-// Every adapter's calls go through vendorFetch, so each leaves one `vendor_call` line naming its vendor and step
-// (PLAT-44). During the 69-hour WhatsApp outage and the Google key's refusal the logs held no such line for those
+// Every adapter's calls go through vendorFetch, so each leaves one `vendor_call` line naming its vendor and step.
+// During the 69-hour WhatsApp outage and the Google key's refusal the logs held no such line for those
 // vendors, and the cause had to be found from outside. Google's own calls are pinned in test/node/google-places.test.ts.
 
 import { env } from "cloudflare:workers";
@@ -285,7 +285,7 @@ describe("Razorpay", () => {
     expect(JSON.stringify(logs.lines())).not.toMatch(/key-secret|rzp_test_abc/);
   });
 
-  // CQ-03: Razorpay's answers were read with a bare parse, whose ZodError named neither the step nor the answer.
+  // Razorpay's answers were read with a bare parse, whose ZodError named neither the step nor the answer.
   it("names where an order it cannot read differs, and the step that got no answer", async () => {
     const unreadable = razorpay(fakeFetch({ [`${API}/orders`]: () => json({ entity: "order" }) }).fetch);
     await expect(unreadable.createOrder(ORDER)).rejects.toThrow(
@@ -326,7 +326,7 @@ describe("Zoho Books", () => {
     return createBooksProvider("zoho", SETTINGS, { db: env.DB, fetch: http.fetch, now: () => NOW, log });
   }
 
-  // CQ-03: Books' payments, refunds and invoices were read with a bare parse.
+  // Books' payments, refunds and invoices were read with a bare parse.
   it("names where a recorded payment's or refund's answer differs from what is read, and none of its values", async () => {
     const books = zohoBooks({
       [`${BOOKS_API}/customerpayments/payment-1/refunds`]: () =>

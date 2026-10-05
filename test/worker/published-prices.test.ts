@@ -26,7 +26,7 @@ beforeEach(async () => {
 });
 
 describe("GET /api/published-prices", () => {
-  // FEO-22: the site typed ₹25,000, ₹1,500 and ₹17,000 while the book held ₹30,000, ₹2,000 and ₹15,000.
+  // The site typed ₹25,000, ₹1,500 and ₹17,000 while the book held ₹30,000, ₹2,000 and ₹15,000.
   it("answers the standard tier's figures in force today, with and without GST, cacheable for a minute", async () => {
     const response = await request(appFor("local", today()), "/api/published-prices");
 

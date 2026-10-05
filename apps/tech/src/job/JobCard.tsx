@@ -156,7 +156,7 @@ export function JobCard({ job }: { job: Job }) {
   }
 
   const client = job.client;
-  /** What the client asked the technician to know, from their app (REQ-04). */
+  /** What the client asked the technician to know, from their app. */
   const clientNote = client?.note ?? null;
   return (
     <>

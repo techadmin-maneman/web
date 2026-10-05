@@ -108,7 +108,7 @@ describe("the account of what has not reached us", () => {
     ]);
   });
 
-  // BK-43: a job ops moved is named by the start the technician knew, which only the write still holds.
+  // A job ops moved is named by the start the technician knew, which only the write still holds.
   it("keeps the start the stopped write was sent with", () => {
     const sentWith = {
       state: "superseded",
@@ -125,7 +125,7 @@ describe("the account of what has not reached us", () => {
     expect(account(queue)[0]?.stopped?.moved).toEqual(moved);
   });
 
-  // PLAT-43: the waiting screen shows it, for the technician to quote.
+  // The waiting screen shows it, for the technician to quote.
   it("keeps the API's ID for a refusal", () => {
     const refused = { state: "refused", note: "piece_code", fields: [], request_id: "0192a8e4-aaaa" } as const;
     expect(account([event(1, "a", refused)])[0]?.stopped?.requestId).toBe("0192a8e4-aaaa");

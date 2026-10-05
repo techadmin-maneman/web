@@ -275,7 +275,7 @@ describe("payments and refunds", () => {
       expect(await openAlerts()).toEqual({ n: 0 });
     });
 
-    // MON-50, PLAT-31: a run that outlasts five minutes overlaps the next.
+    // A run that outlasts five minutes overlaps the next.
     it("records a payment once when two passes run at the same time", async () => {
       await payment();
       const stub = createStubBooks();
@@ -324,7 +324,7 @@ describe("payments and refunds", () => {
       expect(books.made.applied).toHaveLength(1);
     });
 
-    // MON-15: what the invoice did not owe stayed in Books as the client's credit, and nobody was told.
+    // What the invoice did not owe stayed in Books as the client's credit, and nobody was told.
     it("applies no more than the invoice still owes, and tells ops once of what is left over", async () => {
       await payment();
       await invoiced("inv-41");
@@ -421,7 +421,7 @@ describe("payments and refunds", () => {
     });
   });
 
-  // MON-15 and the audit's M4: money kept on a visit no invoice will ever be raised for sat in Books as the client's
+  // Money kept on a visit no invoice will ever be raised for sat in Books as the client's
   // credit, and only a late cancel's was told.
   describe("money kept, with nothing to set it against", () => {
     async function cancelled(kind: "cancelled" | "replaced", kept: number) {
@@ -727,7 +727,7 @@ describe("the pass makes each client's Books customer", () => {
     expect(books.made.customers).toEqual([]);
   });
 
-  // P1-20's contact half: once GST is on, Books splits the tax by the client's state.
+  // Once GST is on, Books splits the tax by the client's state.
   it("names the client's state as their place of contact once GST is on, and the state registered in without a city", async () => {
     await payment();
     await savedAddress("Delhi", "110017");

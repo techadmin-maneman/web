@@ -40,7 +40,7 @@ describe("the technician app's content", () => {
     expect(sources.filter((path) => readFileSync(path, "utf8").includes("@maneman/web-kit/money"))).toEqual([]);
   });
 
-  // FLD-59, UX-35: the label's field drew a barcode, though the owner ruled a label is typed, never scanned.
+  // The label's field drew a barcode, though the owner ruled a label is typed, never scanned.
   it("draws no barcode: a piece's label is typed", () => {
     expect(sources.filter((path) => readFileSync(path, "utf8").includes("pieceId"))).toEqual([]);
   });
@@ -78,7 +78,7 @@ describe("a job ops gave to another technician", () => {
   });
 });
 
-// BK-43, FLD-38, UX-25, CP-36: the banner read "4446a6e4 · Ops moved this job to another time." once the moved job
+// The banner read "4446a6e4 · Ops moved this job to another time." once the moved job
 // locked again, with no client name left on the phone and no word of where the job went.
 describe("a job ops moved to another time", () => {
   /** 11:30 am in India on Thursday 14 January 2027. */
@@ -124,7 +124,7 @@ describe("a job ops moved to another time", () => {
   });
 });
 
-// FLD-56, CP-36: on the day before, a locked card said it opened "the day before"; the API's unlocks_at says when.
+// On the day before, a locked card said it opened "the day before"; the API's unlocks_at says when.
 describe("a locked card", () => {
   /** 11:30 am in India on Thursday 14 January 2027. */
   const NOW = new Date("2027-01-14T06:00:00.000Z");
@@ -145,7 +145,7 @@ describe("a locked card", () => {
   });
 });
 
-// FLD-61, CP-38: the door said "within 200 m" whatever radius ops had set.
+// The door said "within 200 m" whatever radius ops had set.
 describe("the door", () => {
   it("says the radius ops set, and no number on a card kept without one", () => {
     expect(notHome.arrived.body(350)).toBe("Tap at the door. We record the time and check you are within 350 m.");

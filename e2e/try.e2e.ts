@@ -83,7 +83,7 @@ test.describe("upload", () => {
     await expect(page.locator('input[type="file"][capture="user"]')).toHaveCount(1);
   });
 
-  // UX-39: on a phone the caption sat across the oval's lower corner brackets.
+  // On a phone the caption sat across the oval's lower corner brackets.
   test("the frame's caption sits below the oval and its brackets", async ({ page }) => {
     await open(page, "upload");
     const oval = await page.locator('svg:has(use[href="#oval"])').boundingBox();
@@ -105,7 +105,7 @@ test.describe("upload", () => {
   test("a photograph too small for the API is refused before anything is sent", async ({ page }) => {
     const calls: string[] = [];
     page.on("request", (request) => {
-      // On arrival the page asks whether this browser has had its look, and whether the try-on runs (CLI-29); the
+      // On arrival the page asks whether this browser has had its look, and whether the try-on runs; the
       // photograph never leaves.
       const arrival = ["/api/tryon/look", "/api/tryon/availability"].some((path) => request.url().endsWith(path));
       if (request.url().includes("/api/tryon/") && !arrival) calls.push(request.url());
@@ -132,7 +132,7 @@ test.describe("consent", () => {
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "stage");
   });
 
-  // CP-07: /try has no footer, so the line names none.
+  // /try has no footer, so the line names none.
   test("the words privacy notice link to /privacy, and nothing else is added", async ({ page }) => {
     await open(page, "consent");
     await expect(page.getByRole("link", { name: "privacy notice" })).toHaveAttribute("href", "/privacy");
@@ -152,7 +152,7 @@ test.describe("stage and looks", () => {
   test("six looks; the button changes once one is picked, and goes on to the gate", async ({ page }) => {
     await open(page, "looks");
     await expect(page.getByRole("radio")).toHaveCount(6);
-    // UX-22: until all six looks have a picture, no empty box stands in for one.
+    // Until all six looks have a picture, no empty box stands in for one.
     await expect(page.getByText("Preview", { exact: true })).toHaveCount(0);
     await expect(page.locator("[data-screen] fieldset img")).toHaveCount(0);
     const next = page.getByRole("button", { name: "Choose one to continue" });
@@ -180,7 +180,7 @@ test.describe("gate", () => {
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
   });
 
-  // BK-28: a number starting with 5 is not a mobile, and the gate says so at the field.
+  // A number starting with 5 is not a mobile, and the gate says so at the field.
   test("a gate half filled in says what is missing, focused, then sends the look", async ({ page }) => {
     await open(page, "gate");
     await page.getByLabel("Mobile").fill("98100");
@@ -208,7 +208,7 @@ test.describe("gate", () => {
     else expect(image?.x ?? 0).toBeLessThan(form?.x ?? 0);
   });
 
-  // UX-39: on a phone an empty frame sat under the form, its label across the gilt divider.
+  // On a phone an empty frame sat under the form, its label across the gilt divider.
   test("hides the empty frame under 600 px, and keeps its label inside its half above", async ({ page }) => {
     await open(page, "gate");
     const label = page.getByText("For your WhatsApp only");

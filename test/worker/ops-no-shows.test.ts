@@ -268,7 +268,7 @@ describe("POST /api/no-shows/:id/decision", () => {
     expect((await cases())[0]?.decision).toBe("undecided");
   });
 
-  // LIFE-07: the client was never told of the missed visit or of what ops decided.
+  // The client was never told of the missed visit or of what ops decided.
   it("queues the client's WhatsApp about the ruling with it", async () => {
     const messages = fakeQueue();
     const answer = await request(
@@ -296,7 +296,7 @@ describe("POST /api/no-shows/:id/decision", () => {
     expect(messages.sent).toEqual([{ message_id: queued.results[0]?.id, request_id: expect.any(String) as string }]);
   });
 
-  // BIZ-28: the owner ruled on 27 September 2026 that a waiver gives back the payment and the credit.
+  // The owner ruled on 27 September 2026 that a waiver gives back the payment and the credit.
   it("gives back the payment and the credit when ops waive a no-show", async () => {
     const payments = createStubPayments();
     const app = appFor("local", fakeDependencies({ payments }), {}, "ops");
@@ -587,7 +587,7 @@ describe("what charging a no-show costs the client", () => {
     expect(await recorded()).toEqual({ charge: "late_fee", kept_amount: 315000, refund_amount: 1260000 });
   });
 
-  // The charge was once asked about as "Charge Rohit Malhotra for the visit of Sat 19 Sep?", with no figure (MON-17).
+  // The charge was once asked about as "Charge Rohit Malhotra for the visit of Sat 19 Sep?", with no figure.
   it("says before a charge what it will keep and refund, as the charge then does", async () => {
     await as("first_fit");
     await paid(3000000);
@@ -810,7 +810,7 @@ describe("what charging a no-show costs the client", () => {
   });
 });
 
-// After a charge the page once still said "Nothing was charged today", and the case was gone (MON-17).
+// After a charge the page once still said "Nothing was charged today", and the case was gone.
 describe("GET /api/no-shows/decided", () => {
   const decided = async () => (await (await request(ops, "/api/no-shows/decided")).json<{ cases: unknown[] }>()).cases;
 

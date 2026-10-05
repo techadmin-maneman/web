@@ -1,7 +1,7 @@
 // The brand's colours as values, for what is drawn outside a stylesheet at
 // build time: the apps' icons and manifests, the site's card images and
 // favicons, and the house referral card. Each is read from tokens.css by its
-// name, so a colour has one value wherever it is drawn (DS-19). A page reads
+// name, so a colour has one value wherever it is drawn. A page reads
 // its colours from its own stylesheet instead (packages/ui/cssToken.ts).
 
 /** A colour token's value in `tokens`, the text of tokens.css: colourOf("--ink", tokens) → "#16233a". */

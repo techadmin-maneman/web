@@ -42,7 +42,7 @@ describe("when the hero film plays by itself", () => {
     expect(playsByItself(false, { saveData: false, effectiveType: "4g" })).toBe(true);
   });
 
-  // UX-20, PLAT-65: phones on prepaid data downloaded the film before the visitor chose anything.
+  // Phones on prepaid data downloaded the film before the visitor chose anything.
   it.each(["slow-2g", "2g", "3g"])("waits for Play on %s", (effectiveType) => {
     expect(playsByItself(false, { effectiveType })).toBe(false);
   });

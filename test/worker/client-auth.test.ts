@@ -214,7 +214,7 @@ describe("POST /api/auth/otp", () => {
     );
   });
 
-  // PS-35: the mark is read from the person, so a record renamed "Staging test" is still a real one.
+  // The mark is read from the person, so a record renamed "Staging test" is still a real one.
   it("sends a code to a record named 'Staging test' that was never marked a test record", async () => {
     const RENAMED = "+919810000051";
     await env.DB.batch([
@@ -262,7 +262,7 @@ describe("POST /api/auth/otp", () => {
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual([BOOKED]);
   });
 
-  // PS-12, FLD-27: twenty numbers nobody knows used to lock their address out for the day, an office or a carrier's
+  // Twenty numbers nobody knows used to lock their address out for the day, an office or a carrier's
   // shared address with it, so one stranger's typos stopped every client there signing in.
   it("keeps answering an address that asks for many numbers nobody knows, and sends its client's code", async () => {
     const address = { "CF-Connecting-IP": "203.0.113.50" };
@@ -454,7 +454,7 @@ describe("sending the code again", () => {
     return statuses;
   }
 
-  // PS-12: resends skipped the number's day, so five challenges of five sends put 25 codes on one number a day.
+  // Resends skipped the number's day, so five challenges of five sends put 25 codes on one number a day.
   it("counts every code sent again against the number's day, so a number gets five codes a day at most", async () => {
     expect(await spendTheDay("98100 00001", "203.0.113.60")).toEqual([202, 202, 202, 202, 202, 429, 429]);
     expect(deps.sentCodes).toHaveLength(5);

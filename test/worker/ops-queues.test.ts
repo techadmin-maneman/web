@@ -1,8 +1,8 @@
 // Every queue on the ops console falls due on the day the Tasks board says it
-// does (OPS-08). The same request once had two deadlines: an erasure was due
+// does. The same request once had two deadlines: an erasure was due
 // "Today" on the Tasks board and had "5 days left" on Deletion requests, and a
 // grievance, promised an answer in thirty days, was on no board at all, and so
-// was a disputed charge, which borrowed a no-show's allowance (OIA-07). NOW is
+// was a disputed charge, which borrowed a no-show's allowance. NOW is
 // Monday 21 September 2026, 12 noon in India. Nothing here is a real person.
 
 import { env } from "cloudflare:workers";
@@ -156,7 +156,7 @@ describe("a queue's deadline", () => {
     for (const [id, due] of inTheQueues) expect(due, id).toBe(onTheBoard.get(id));
   });
 
-  // OIA-18 of the audit, 2 October 2026: an erased client's grievance stayed in Grievances, shown under "erased:<id>",
+  // An erased client's grievance stayed in Grievances, shown under "erased:<id>",
   // while the Tasks board counted one fewer.
   it("lists nothing of a client erased with it still open, in any section, as the Tasks board lists nothing", async () => {
     await env.DB.prepare(
@@ -176,7 +176,7 @@ describe("a queue's deadline", () => {
     expect((await queuesDue()).get(CHANGE)).toBe("2026-09-22T05:10:00.000Z");
   });
 
-  // Board C1 writes how long a grant has been held ("3 days held"), not the day of the first fit (OPS-16).
+  // Board C1 writes how long a grant has been held ("3 days held"), not the day of the first fit.
   it("says when a held grant started waiting", async () => {
     const held = await (await request(ops, "/api/referrals/held")).json<{ held: Record<string, unknown>[] }>();
     expect(held.held[0]).toMatchObject({ held_since: "2026-09-17T08:00:00.000Z", due: "2026-09-19T08:00:00.000Z" });

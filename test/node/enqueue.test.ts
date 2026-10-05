@@ -1,4 +1,4 @@
-// Putting work on a queue once its change is saved never throws (PLAT-24, CQ-25): a message the queue refuses is
+// Putting work on a queue once its change is saved never throws: a message the queue refuses is
 // logged, and left to a sweeper or told to ops once; a long run goes in batches the queue takes.
 
 import { describe, expect, it, vi } from "vitest";

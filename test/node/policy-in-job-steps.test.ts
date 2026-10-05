@@ -70,7 +70,7 @@ describe("the steps of a job", () => {
     expect(stepBefore("after_photos", "replacement", toConsumables, {})).toBe("piece");
   });
 
-  // FLD-37: a declined one visit's checklist asked for the fit's items, since the choice came after it.
+  // A declined one visit's checklist asked for the fit's items, since the choice came after it.
   it("takes a one visit's choice, at the piece, before its checklist, and then the rest in order", () => {
     expect(stepsFor("first_fit", true)).toEqual([
       "before_photos",

@@ -7,7 +7,7 @@
 //
 // While the API is asked, the page shows board B3's loading. Offline with no
 // Home kept, a phone that signed out opens on the login; any other client
-// sees board B3's error, since their visit may still be booked (CLI-31).
+// sees board B3's error, since their visit may still be booked.
 
 import { useCallback, useEffect, useState } from "react";
 import { api, forgetHome, keptHome, onSessionEnded, type Me } from "./api.ts";

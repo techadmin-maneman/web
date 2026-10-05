@@ -1,4 +1,4 @@
-// scripts/ is grouped by who runs each script, and its README says what each does and whether it writes (CQ-62): no
+// scripts/ is grouped by who runs each script, and its README says what each does and whether it writes: no
 // script lies loose at the top, and the README names every one.
 
 import { readdirSync, readFileSync } from "node:fs";

@@ -70,7 +70,7 @@ export const home = {
     invoice: (what: string, date: string) => `The invoice for your ${what.toLowerCase()} on ${date} is ready.`,
     openInvoice: "Open the invoice",
   },
-  /** A visit not yet closed, once it has begun (LIFE-03). Our words: the design draws neither. */
+  /** A visit not yet closed, once it has begun. Our words: the design draws neither. */
   stages: { in_progress: "Today · in progress", done: "Done · notes on the way", closing: "Wrapping up" },
   next: {
     label: "Your next visit",

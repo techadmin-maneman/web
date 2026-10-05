@@ -75,7 +75,7 @@ describe("the register", () => {
     expect(COMMITTED.pieceCycleDays[DEFAULT_KEY]).toBe(DEFAULT_PIECE_CYCLE_DAYS);
   });
 
-  // OPS-19 of the audit, 24 September 2026: ops were shown "no show decision" and "PLACEHOLDER STANDARD".
+  // Ops were shown "no show decision" and "PLACEHOLDER STANDARD".
   const fixedKeys = (setting: OpsSetting): readonly string[] =>
     setting.keys === null || setting.keys === "open" ? [] : setting.keys;
 

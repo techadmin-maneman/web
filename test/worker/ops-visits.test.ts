@@ -309,7 +309,7 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
       service: { tier: NATURAL.tier, name: NATURAL.name },
       link: { open_until: "2026-09-22T06:30:00.000Z" },
     });
-    // MON-30: the client reads a reference on Razorpay's page that their receipt repeats, not the hold's ID.
+    // The client reads a reference on Razorpay's page that their receipt repeats, not the hold's ID.
     expect(payments.made.links).toEqual([
       {
         amount: NATURAL.amount,
@@ -335,7 +335,7 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     expect(payments.made.orders).toEqual([]);
   });
 
-  // MON-45, PS-46: staging texted every link, whoever the number belonged to.
+  // Staging texted every link, whoever the number belonged to.
   it("makes the link but has Razorpay text it only to a number on staging's allowlist", async () => {
     await rohit("fitted");
     const logs = captureLogs();

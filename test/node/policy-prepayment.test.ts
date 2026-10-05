@@ -12,7 +12,7 @@ describe("prepayment", () => {
       expect(invoiceHold(REPLACEMENT, { soldFor: REPLACEMENT, paidWithCredit: false })).toBeNull();
     });
 
-    // The staging org's Replacement item was Rs. 30,000 against the price book's Rs. 15,000 (audit INT-03).
+    // The staging org's Replacement item was Rs. 30,000 against the price book's Rs. 15,000.
     it("holds as a draft an invoice that totals anything else, which a credit note alone could undo", () => {
       expect(invoiceHold(2 * REPLACEMENT, { soldFor: REPLACEMENT, paidWithCredit: false })).toBe("price_differs");
       expect(invoiceHold(REPLACEMENT - 100, { soldFor: REPLACEMENT, paidWithCredit: false })).toBe("price_differs");
@@ -22,7 +22,7 @@ describe("prepayment", () => {
       expect(invoiceHold(REPLACEMENT, { soldFor: null, paidWithCredit: false })).toBe("price_unknown");
     });
 
-    // Interim until the CA rules how a credit visit is invoiced (audit BIZ-08, open point 14).
+    // Interim until the CA rules how a credit visit is invoiced (open point 14).
     it("never issues an invoice for a visit a referral credit paid for, whatever it totals", () => {
       expect(invoiceHold(REPLACEMENT, { soldFor: REPLACEMENT, paidWithCredit: true })).toBe("paid_with_credit");
       expect(invoiceHold(0, { soldFor: 0, paidWithCredit: true })).toBe("paid_with_credit");

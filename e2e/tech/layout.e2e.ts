@@ -1,4 +1,4 @@
-// What axe cannot see in the technician app (UX-18): a screen that scrolls sideways on a phone 320 px wide (WCAG
+// What axe cannot see in the technician app: a screen that scrolls sideways on a phone 320 px wide (WCAG
 // 1.4.10). Its board is drawn at 390; the narrowest phones in use are 320.
 
 import { expect, test } from "../support.ts";

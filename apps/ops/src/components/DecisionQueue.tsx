@@ -1,7 +1,7 @@
 // A queue of things waiting on ops' decision, as board C1 draws its review
 // queue and every queue after it is built (docs/fidelity-method.md): the
 // panel headed by its title and how many wait, a row for each with the
-// decision on that row, and a note beneath (FEO-28).
+// decision on that row, and a note beneath.
 //
 // A decided row leaves the queue at once; the count follows it, and so does
 // the keyboard, to the heading, rather than to the top of the page, where a

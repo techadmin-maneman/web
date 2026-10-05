@@ -1,4 +1,4 @@
-// FLD-63, UX-03: a refused step opens again with what it sent, not blank, so nothing is typed twice at the door
+// A refused step opens again with what it sent, not blank, so nothing is typed twice at the door
 // (apps/tech/src/steps/sent-before.ts).
 
 import { describe, expect, it } from "vitest";

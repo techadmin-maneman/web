@@ -124,7 +124,7 @@ describe("the day's list", () => {
     expect(jobs.map((job) => job.slots)).toEqual([1, 2, 1.5]);
   });
 
-  // FLD-61, CP-38: "9 am · consultation · 1 slot" told the technician nothing about a 60-minute visit.
+  // "9 am · consultation · 1 slot" told the technician nothing about a 60-minute visit.
   it("says how long each visit is booked for, in minutes", async () => {
     await insertJob(LAST_VISIT, { start: "2026-09-21T09:30:00.000Z", type: "first_fit" });
     await insertJob(OLDER_VISIT, { start: "2026-09-21T11:30:00.000Z", type: "consultation" });
@@ -138,7 +138,7 @@ describe("the day's list", () => {
     expect(await card(OLDER_VISIT)).toMatchObject({ minutes: 60 });
   });
 
-  // MON-10, FLD-14: a client paid for Mane Man Essential, and the card said only "First fit".
+  // A client paid for Mane Man Essential, and the card said only "First fit".
   it("names the service a visit was sold as, and none for a kind's standard one or a one visit still to choose", async () => {
     await env.DB.batch([
       env.DB.prepare(
@@ -180,7 +180,7 @@ describe("the day's list", () => {
     expect(jobs.map((job) => job.service)).toEqual([{ tier: "natural", name: "Mane Man Natural replacement" }, null]);
   });
 
-  // FLD-42: Today names each client from the list, rather than once each card has arrived in turn.
+  // Today names each client from the list, rather than once each card has arrived in turn.
   it("names the client of a job once it unlocks, as its card does, and nobody before then", async () => {
     const today = await (await get("/api/tech/jobs?date=2026-09-21")).json<{ jobs: Record<string, unknown>[] }>();
     const later = await (await get("/api/tech/jobs?date=2026-09-25")).json<{ jobs: Record<string, unknown>[] }>();
@@ -191,7 +191,7 @@ describe("the day's list", () => {
     expect(later.jobs).toEqual([expect.objectContaining({ id: LATER_JOB, unlocked: false, client_name: null })]);
   });
 
-  // FLD-36, UX-04: a second phone read "In progress" for a job its card had closed, while FSM held the close-out back.
+  // A second phone read "In progress" for a job its card had closed, while FSM held the close-out back.
   it("says when each job began and how it closed, from the steps that landed, whatever its status says yet", async () => {
     await insertJob(LAST_VISIT, { start: "2026-09-21T09:30:00.000Z" });
     await insertJob(OLDER_VISIT, { start: "2026-09-21T11:30:00.000Z" });
@@ -238,7 +238,7 @@ describe("the card", () => {
     expect(await card(TODAY_JOB)).toMatchObject({ no_show_wait_min: 15 });
   });
 
-  // FLD-61, CP-38: the door said "within 200 m" whatever radius ops had set.
+  // The door said "within 200 m" whatever radius ops had set.
   it("carries the check-in radius ops set, for the door to say", async () => {
     expect(await card(TODAY_JOB)).toMatchObject({ checkin_radius_m: 200 });
 
@@ -343,7 +343,7 @@ describe("the card", () => {
     expect((await card(LATER_JOB)).reminder).toBeNull();
   });
 
-  // FLD-35, UX-26: a reminder skipped for a test record read "messaged on WhatsApp, not delivered", with a tick.
+  // A reminder skipped for a test record read "messaged on WhatsApp, not delivered", with a tick.
   describe("counts only a WhatsApp that went to the client", () => {
     async function message(id: string, kind: string, state: string, createdAt: string): Promise<void> {
       await env.DB.prepare(
@@ -371,7 +371,7 @@ describe("the card", () => {
     });
   });
 
-  // PLAT-15: each D1 read is a round trip to the database's region, so the card's reads that need nothing from each
+  // Each D1 read is a round trip to the database's region, so the card's reads that need nothing from each
   // other go together.
   it("waits on few round trips to D1, however much it carries", async () => {
     await insertJob(LAST_VISIT, { start: "2026-08-22T05:00:00.000Z", technician: SAMEER, status: "completed" });
@@ -384,7 +384,7 @@ describe("the card", () => {
   });
 });
 
-// FLD-18, PS-09: cards never locked again, and the list served any date, so a lost phone could read every client the
+// Cards never locked again, and the list served any date, so a lost phone could read every client the
 // technician had ever visited.
 describe("a job gone by", () => {
   it("is read on yesterday's list, and no list before it is", async () => {

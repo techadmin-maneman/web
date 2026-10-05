@@ -91,7 +91,7 @@ export function knownCode(login: LoginSettings, testRecord: boolean): string | n
   return login.fixedCode;
 }
 
-/** A number change's two codes: the known code proves only the number a test record already has, never the new one (PS-35). */
+/** A number change's two codes: the known code proves only the number a test record already has, never the new one. */
 export function numberChangeCodes(
   login: LoginSettings,
   testRecord: boolean,

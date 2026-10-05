@@ -29,7 +29,7 @@ async function expectNames(links: Locator, names: readonly string[]): Promise<vo
   }
 }
 
-// OIA-01 of the audit, 2 October 2026: twelve flat sections, no counts, and the day's inbox sixth.
+// Twelve flat sections, no counts, and the day's inbox sixth.
 test("opens on Tasks, with the sections under their departments and what waits in each", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": json(TASKS) });
@@ -72,7 +72,7 @@ test("shows a person only the sections their access opens, and opens on the firs
   ).toBeVisible();
 });
 
-// OIA-13 of the audit, 2 October 2026: launching an area had two homes, the waitlist and Settings › Service area.
+// Launching an area had two homes, the waitlist and Settings › Service area.
 test("opens the waitlist and the service area at their old addresses, as the tabs of Areas", async ({ page }) => {
   for (const [old, now] of [
     ["/settings/area", /\/areas\/served$/],
@@ -92,7 +92,7 @@ test("opens the waitlist and the service area at their old addresses, as the tab
   await expect(tabs.getByRole("link", { name: "Waiting" })).toHaveAttribute("aria-current", "page");
 });
 
-// OIA-22 and UX-29: changing section dropped the focus to the page, and nothing led past the navigation.
+// Changing section dropped the focus to the page, and nothing led past the navigation.
 test("moves the keyboard to a new page's heading, and offers a way past the navigation", async ({ page }) => {
   await page.goto("/areas");
   await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
@@ -107,7 +107,7 @@ test("moves the keyboard to a new page's heading, and offers a way past the navi
   await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeFocused();
 });
 
-// OPS-20 of the audit, 24 September 2026: every page was titled "Mane Man operations" (WCAG 2.4.2).
+// Every page was titled "Mane Man operations" (WCAG 2.4.2).
 test("titles each page by what it is", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Tasks · Mane Man operations");
@@ -142,7 +142,7 @@ test("tells a person the enforced Staff list does not name that the console is c
   await expect(page.getByText("Your access does not reach this page.")).toHaveCount(0);
 });
 
-// OPS-18 and VIS-20: the title sat on the header's baseline, high in its 56 px.
+// The title sat on the header's baseline, high in its 56 px.
 test("centres the section's name in the header", async ({ page }) => {
   await page.goto("/areas");
   const header = await page.getByRole("banner").boundingBox();
@@ -152,7 +152,7 @@ test("centres the section's name in the header", async ({ page }) => {
   expect(Math.abs(middle(title) - middle(header))).toBeLessThanOrEqual(2);
 });
 
-// FEO-12: a spent Access session sent every call to Access's login page, and the console said "You are offline".
+// A spent Access session sent every call to Access's login page, and the console said "You are offline".
 test("says the sign-in has run out when Access turns a call away, and offers the reload that signs in", async ({
   page,
 }) => {
@@ -166,7 +166,7 @@ test("says the sign-in has run out when Access turns a call away, and offers the
   await expect(page.getByText("You are offline")).toHaveCount(0);
 });
 
-// FEO-31: a Ctrl-click was swallowed, so a section could not be opened in a tab of its own.
+// A Ctrl-click was swallowed, so a section could not be opened in a tab of its own.
 test("leaves a click that asks for a new tab to the browser", async ({ page, context }) => {
   await page.goto("/");
   // Settled on Tasks first: a click while / still sends the page there can land before the link answers it.

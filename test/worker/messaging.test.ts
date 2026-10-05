@@ -79,7 +79,7 @@ describe("messaging: sending a result", () => {
     });
     expect(sent[0]?.media?.type).toBe("image/png");
     const link = new URL(sent[0]?.media?.url ?? "");
-    // The site answers /api/* on its own origin, locally at :4321 as the browser tests serve it (LIFE-17).
+    // The site answers /api/* on its own origin, locally at :4321 as the browser tests serve it.
     expect(link.origin).toBe("http://localhost:4321");
     const token = link.pathname.replace("/api/result/", "");
     const key = LOCAL_SETTINGS.tryon.linkSigningKey;

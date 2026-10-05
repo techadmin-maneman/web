@@ -3252,7 +3252,7 @@ export interface components {
                 since: string | null;
             }[];
             number_change: components["schemas"]["NumberChange"] | null;
-            /** @description What ops decided about the client's latest change of number, for 30 days after, while no other change is under way. A rejection once vanished from the app (OPS-09). */
+            /** @description What ops decided about the client's latest change of number, for 30 days after, while no other change is under way. A rejection once vanished from the app. */
             number_change_decided: {
                 /** @enum {string} */
                 state: "confirmed" | "rejected";
@@ -3623,7 +3623,7 @@ export interface components {
                 /** @description In paise: what was kept. */
                 amount: number;
             } | null;
-            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
+            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled. */
             no_show: components["schemas"]["NoShowNote"] | null;
             /** @description The discount code the visit was paid with; null for none, and on a late fee. */
             discount_code: {
@@ -3778,7 +3778,7 @@ export interface components {
                 /** @description In paise: what was kept. */
                 amount: number;
             } | null;
-            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
+            /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled. */
             no_show: components["schemas"]["NoShowNote"] | null;
             /** @description The discount code the visit was paid with; null for none, and on a late fee. */
             discount_code: {

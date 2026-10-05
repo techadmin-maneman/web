@@ -64,7 +64,7 @@ function ruleNamed(name: string): FixtureRule {
   return rule;
 }
 
-// The storage meter (docs/decisions/0093-the-storage-meter.md). OIA-12: it headed every tab of Settings.
+// The storage meter (docs/decisions/0093-the-storage-meter.md). It headed every tab of Settings.
 test("says what photos and referral cards hold, and the database, under The console and nowhere else", async ({
   page,
 }) => {
@@ -94,7 +94,7 @@ test.describe("the rules", () => {
     await expect(radius).toContainText("50 to 1000 metres, a whole number");
   });
 
-  // OPS-19 of the audit, 24 September 2026: ops were shown "src/policy/check-in.ts".
+  // Ops were shown "src/policy/check-in.ts".
   test("says who set a rule, and says when nobody has, without a word of the code", async ({ page }) => {
     await open(page);
     await expect(page.getByText("Set by ops@maneman.in on 20 Sep 2027")).toBeVisible();
@@ -102,7 +102,7 @@ test.describe("the rules", () => {
     await expect(page.getByRole("main")).not.toContainText("src/");
   });
 
-  // OIA-21 and CP-28: an hour read "18 hour of the day, in India", and a token's setter its 40-character ID.
+  // An hour read "18 hour of the day, in India", and a token's setter its 40-character ID.
   test("shows an hour of the day as a clock, and a service token as one", async ({ page }) => {
     const reminders = {
       ...ruleNamed("checkin_radius_m"),
@@ -185,7 +185,7 @@ test.describe("the rules", () => {
     await expect(save).toBeDisabled();
   });
 
-  // OIA-25 and UX-45: a figure past its bounds left Save grey with no reason.
+  // A figure past its bounds left Save grey with no reason.
   test("says beside the box why a figure past its bounds cannot be saved", async ({ page }) => {
     await open(page);
     const radius = page.getByLabel("Check-in radius");
@@ -197,7 +197,7 @@ test.describe("the rules", () => {
     await expect(radius).not.toHaveAttribute("aria-invalid", "true");
   });
 
-  // FEO-06: the refusal named its field and the console dropped it, so every refusal read the same.
+  // The refusal named its field and the console dropped it, so every refusal read the same.
   test("names the box the API refused", async ({ page }) => {
     await open(page, "/settings", {
       "POST /api/settings/no_show_wait_min": fails(400, "invalid_request", ["no_show_wait_min.first_fit"]),
@@ -211,7 +211,7 @@ test.describe("the rules", () => {
     );
   });
 
-  // OIA-12 of the audit, 2 October 2026: seventeen rules on one page, each with its own Save, in no order.
+  // Seventeen rules on one page, each with its own Save, in no order.
   test("groups the rules by subject, each section a link away", async ({ page }) => {
     await open(page);
     const jump = page.getByRole("navigation", { name: "Policies by subject" });
@@ -473,7 +473,7 @@ test.describe("the services and their prices", () => {
     await expect(visit.getByRole("row").filter({ hasText: "Rs. 1,500" })).toContainText("1 Jan 2026");
   });
 
-  // OPS-15: GST opened at nought and the amount blank, whatever the item, so an 18% item was saved GST-free.
+  // GST opened at nought and the amount blank, whatever the item, so an 18% item was saved GST-free.
   test("starts a new price from the price in force, its GST included", async ({ page }) => {
     await open(page, "/prices");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
@@ -481,7 +481,7 @@ test.describe("the services and their prices", () => {
     await expect(page.getByLabel("GST", { exact: true })).toHaveValue("18");
   });
 
-  // MON-34: a new price once started from today, and changed what clients had been quoted that day.
+  // A new price once started from today, and changed what clients had been quoted that day.
   test("starts a new price from tomorrow, and offers no earlier day", async ({ page }) => {
     await open(page, "/prices");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
@@ -531,7 +531,7 @@ test.describe("the services and their prices", () => {
     await expect(page.getByRole("button", { name: "Check the change" })).toBeEnabled();
   });
 
-  // OIA-25: a day typed before tomorrow reached the check, and was refused only when sent.
+  // A day typed before tomorrow reached the check, and was refused only when sent.
   test("refuses a day before tomorrow beside the box, before anything is checked", async ({ page }) => {
     await open(page, "/prices");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
@@ -746,7 +746,7 @@ test.describe("the service area, Areas' Served tab", () => {
     await expect(page.getByRole("status").filter({ hasText: "One pincode changed." })).toBeVisible();
   });
 
-  // OPS-13: launch messages read "we now come to Sec91", with no way to say it better.
+  // Launch messages read "we now come to Sec91", with no way to say it better.
   test("sends a better name for an area, and refuses one a spreadsheet would run", async ({ page }) => {
     await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
@@ -771,7 +771,7 @@ test.describe("the service area, Areas' Served tab", () => {
     await expect(page.getByRole("checkbox", { name: "Served 110024" })).toBeChecked();
   });
 
-  // FEO-02: serving a pincode here sent none of the launch alerts the waitlist's launch sends. OIA-13: it had a
+  // Serving a pincode here sent none of the launch alerts the waitlist's launch sends. It had a
   // launch panel of its own; it now opens the one Waiting uses.
   test("says who serving a pincode will message, and messages them only once ops agree", async ({ page }) => {
     await open(page, "/areas/served", {
@@ -810,7 +810,7 @@ test.describe("the service area, Areas' Served tab", () => {
       buffer: Buffer.from(csv),
     });
 
-  // FEO-01: the table kept the old values after an upload, and the next Save put them back.
+  // The table kept the old values after an upload, and the next Save put them back.
   test("puts a file's changes in the table, so the one Save sends the file's values", async ({ page }) => {
     await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 0 }),
@@ -831,7 +831,7 @@ test.describe("the service area, Areas' Served tab", () => {
     await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
   });
 
-  // BK-38 of the audit, 2 October 2026: a pincode served from a later day was served at once.
+  // A pincode served from a later day was served at once.
   test("will not serve a pincode from a day still to come", async ({ page }) => {
     await page.clock.setFixedTime(new Date("2026-10-04T06:00:00.000Z"));
     await open(page, "/areas/served");
@@ -841,7 +841,7 @@ test.describe("the service area, Areas' Served tab", () => {
     await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
   });
 
-  // BK-36 and OIA-13: no screen could add a pincode the reference file does not hold.
+  // No screen could add a pincode the reference file does not hold.
   test("adds a pincode the file does not hold, unserved, in its city's list", async ({ page }) => {
     const added = {
       pincode: "400050",
@@ -876,7 +876,7 @@ test.describe("the service area, Areas' Served tab", () => {
     await expect(form.getByRole("button", { name: "Add it" })).toBeDisabled();
   });
 
-  // FEO-03: a file without its served column switched every pincode in it off.
+  // A file without its served column switched every pincode in it off.
   test("refuses a file that leaves out one of its three columns", async ({ page }) => {
     await open(page, "/areas/served");
     await upload(page, "pincode,launch_on\n110017,2026-09-01\n");
@@ -892,7 +892,7 @@ test.describe("the blackout days", () => {
     const diwali = page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Diwali" });
     await expect(diwali).toContainText("Added by ops@maneman.in on 20 Sep 2027");
     await expect(diwali).toContainText("3 visits are still booked on these days. Move them on the dispatch board.");
-    // OIA-03, BK-21: the way to those visits opens the board on the run's first day.
+    // The way to those visits opens the board on the run's first day.
     await expect(diwali.getByRole("link", { name: "Show on board: Fri 29 Oct to Sat 30 Oct" })).toHaveAttribute(
       "href",
       "/dispatch?from=2027-10-29",
@@ -1060,7 +1060,7 @@ test.describe("the discount codes", () => {
     await expect(page.getByRole("alert")).toHaveText("A code is 4 to 16 letters and figures, with no spaces or signs.");
   });
 
-  // MON-53: AUDITTEST reached "Make these codes?" before the API refused it.
+  // AUDITTEST reached "Make these codes?" before the API refused it.
   test("says beside the box when a typed code cannot be one, before anything is checked", async ({ page }) => {
     await open(page, "/discount-codes");
     const form = page.getByRole("form", { name: "Make codes" });
@@ -1091,7 +1091,7 @@ test.describe("the discount codes", () => {
   });
 });
 
-// FEO-33 and VIS-21: the fields ran past the panel and cut "consultation" and the date's year.
+// The fields ran past the panel and cut "consultation" and the date's year.
 test("keeps every panel inside its frame, at the width the console is drawn", async ({ page }) => {
   for (const path of PANELS) {
     await open(page, path);

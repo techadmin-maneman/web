@@ -1,4 +1,4 @@
-// The cron's hourly look at what the Cloudflare account has used today of the free plan's daily allowances (PLAT-13).
+// The cron's hourly look at what the Cloudflare account has used today of the free plan's daily allowances.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";

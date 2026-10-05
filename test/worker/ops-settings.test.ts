@@ -488,7 +488,7 @@ describe("the price book", () => {
     expect(service.map((price) => price.valid_from)).toEqual(["2026-10-01", "2026-09-22", "2026-01-01"]);
   });
 
-  // BIZ-10 of the audit, 24 September 2026: a row nothing reads is a price nobody is charged.
+  // A row nothing reads is a price nobody is charged.
   it("refuses an item the book does not price", async () => {
     const answer = await post("/api/prices", {
       item: "consultaton",
@@ -513,7 +513,7 @@ describe("the price book", () => {
     expect(await answer.json()).toMatchObject({ error: { fields: ["valid_from"] } });
   });
 
-  // MON-34 of the audit, 2 October 2026: a price from today changed what a client had been quoted that day.
+  // A price from today changed what a client had been quoted that day.
   it("takes a new price from tomorrow at the earliest, and leaves today's as it was", async () => {
     const change = { item: "late_fee_first_fit", tier: "standard", amount_ex_gst: 600_000, gst_percent: 0 };
     const today = await post("/api/prices", { ...change, valid_from: "2026-09-21" });
@@ -551,7 +551,7 @@ describe("the price book", () => {
     );
   });
 
-  // BIZ-10 again: a price for a tier no service carries is a price nobody could ever be sold.
+  // A price for a tier no service carries is a price nobody could ever be sold.
   it("refuses a tier no service of the kind carries, and names the box", async () => {
     const answer = await post("/api/prices", {
       item: "first_fit",
@@ -591,7 +591,7 @@ describe("the price book", () => {
     });
   });
 
-  // MON-34 again: the first price of a service was recorded as from -1.
+  // The first price of a service once was recorded as from -1.
   it("records from as null where the book had no price for it", async () => {
     await post("/api/services", { kind: "first_fit", name: "Lace" });
     await post("/api/prices", {
@@ -667,7 +667,7 @@ describe("the service area", () => {
     });
   });
 
-  // BK-38 of the audit, 2 October 2026: a pincode served from a later day was served at once, so /book took bookings
+  // A pincode served from a later day was served at once, so /book took bookings
   // there before its launch day.
   it("refuses to serve a pincode from a day still to come, and changes nothing", async () => {
     const answer = await post("/api/service-area", {
@@ -697,7 +697,7 @@ describe("the service area", () => {
     expect(renamed.status).toBe(200);
   });
 
-  // BK-38: the two ways to launch disagreed on the launch date; both now launch through one function, from the day
+  // The two ways to launch disagreed on the launch date; both now launch through one function, from the day
   // given or today.
   it("dates a pincode it begins serving from today, where no day is given", async () => {
     await post("/api/service-area", { changes: [{ pincode: "122018", served: true, launch_on: null }] });
@@ -727,7 +727,7 @@ describe("the service area", () => {
   });
 });
 
-// BK-36 and OIA-13 of the audit, 2 October 2026: no screen could add a pincode, so the waitlist could not open the
+// No screen could add a pincode, so the waitlist could not open the
 // areas people asked for.
 describe("adding a pincode", () => {
   beforeEach(async () => {
@@ -790,7 +790,7 @@ describe("adding a pincode", () => {
   });
 });
 
-// A price set for a day still to come is a decision somebody has to be able to take back before it lands (OPS-15).
+// A price set for a day still to come is a decision somebody has to be able to take back before it lands.
 describe("withdrawing a price still to come", () => {
   const OCTOBER = {
     item: "service",
@@ -843,7 +843,7 @@ describe("withdrawing a price still to come", () => {
 
 /**
  * Serving a pincode from Settings is a launch, whichever screen does it
- * (FEO-02): the people waiting there who asked to be told are told, once, as
+ *: the people waiting there who asked to be told are told, once, as
  * the waitlist's own launch tells them (docs/decisions/0048-referrals.md).
  */
 describe("serving a pincode people are waiting for", () => {
@@ -933,7 +933,7 @@ describe("serving a pincode people are waiting for", () => {
 /**
  * An area's name, which a launch message, the waitlist and the dispatch board
  * all read. It starts as the shortest of the pincode's post offices, "until ops
- * give better ones" (docs/decisions/0048-referrals.md); OPS-13.
+ * give better ones" (docs/decisions/0048-referrals.md).
  */
 describe("the name ops give an area", () => {
   const PERSON = "44444444-4444-4444-8444-444444444441";

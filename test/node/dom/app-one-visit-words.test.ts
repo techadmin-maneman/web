@@ -1,5 +1,5 @@
 // What the client app's card says of a consultation and fit in one visit (apps/app/src/home/one-visit-words.ts), and
-// what it calls the visit and how long it says it is. BK-15 and CP-01: it read "First fit · 180 minutes", with no price
+// what it calls the visit and how long it says it is. It read "First fit · 180 minutes", with no price
 // and no word of the link it is paid by.
 
 import { describe, expect, it } from "vitest";

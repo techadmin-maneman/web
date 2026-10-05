@@ -1,4 +1,4 @@
-// Migration 0026 adds the field-operations tables (the plan's P2-M4). What the
+// Migration 0026 adds the field-operations tables. What the
 // schema itself must hold, whatever the code around it does: a replayed job
 // event lands once, a check-in records its distance whether it passed or not, a
 // move carries a reason from the design's list, and no row points at a job, a

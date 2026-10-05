@@ -15,7 +15,7 @@ import { dayStrip, stripMonths } from "../../site/src/lib/dates.ts";
 import { keyPerRequest } from "../../site/src/lib/idempotency.ts";
 import { anyOpen, chosenSlot, dayOpen, isOpen, type OpenDays } from "../../site/src/lib/open-windows.ts";
 
-// FEO-21: a key that changed on every press protected nothing.
+// A key that changed on every press protected nothing.
 describe("idempotency keys", () => {
   it("are the same for the same request pressed again, and new once anything in it changes", () => {
     const keyFor = keyPerRequest();
@@ -77,7 +77,7 @@ describe("the address a consultation is at", () => {
     expect(missingParts(typed)).toEqual(["flat", "line1", "city"]);
   });
 
-  // BK-28, UX-21: a refusal naming an address part was said by the button, with nothing marked.
+  // A refusal naming an address part was said by the button, with nothing marked.
   it("marks the parts left out once the form is checked, and the parts the API refused by its names", () => {
     const typed = { ...emptyAddress("Gurgaon"), flat: "Flat 402" };
     expect(partsToMark(typed, false, [])).toEqual([]);
@@ -109,7 +109,7 @@ describe("the address a consultation is at", () => {
   });
 });
 
-// BK-60, UX-33: the strip read "Sat 3 … Fri 16" with no month, to the eye and to a screen reader.
+// The strip read "Sat 3 … Fri 16" with no month, to the eye and to a screen reader.
 describe("the date strip", () => {
   it("reads each day out in full, with its month", () => {
     const [first] = dayStrip("2026-10-03", 14);
@@ -124,7 +124,7 @@ describe("the date strip", () => {
   });
 });
 
-// BK-60, UX-38: Back left the page and lost the form; each step is now an entry in the history.
+// Back left the page and lost the form; each step is now an entry in the history.
 describe("the page's steps in the browser's history", () => {
   const answer = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
 
@@ -140,7 +140,7 @@ describe("the page's steps in the browser's history", () => {
   });
 });
 
-// BK-26: every day and window was drawn open, so a full one failed only after the whole form was filled in.
+// Every day and window was drawn open, so a full one failed only after the whole form was filled in.
 describe("the days and windows open", () => {
   const OPEN = { morning: true, afternoon: true, evening: true };
   const SHUT = { morning: false, afternoon: false, evening: false };

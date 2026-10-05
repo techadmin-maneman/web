@@ -105,7 +105,7 @@ function NoteOnWhatsApp({ message }: { message: string }) {
 }
 
 /**
- * Add a note: kept on the visit for the technician's card while self-serve booking is on (REQ-04), else sent to ops
+ * Add a note: kept on the visit for the technician's card while self-serve booking is on, else sent to ops
  * on WhatsApp. Tapped offline, it opens WhatsApp, which keeps the note until the phone is back online. A sheet
  * already open stays open when the connection drops, with what the client has written.
  */

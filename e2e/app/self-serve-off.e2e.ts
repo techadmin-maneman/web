@@ -3,7 +3,7 @@
 // is on, so the switch is turned off in the one answer the app reads it from,
 // /api/me, and everything else is the local mm-api's. Off, no booking sheet
 // opens anywhere: booking and changing a visit go to ops on WhatsApp, with a
-// message ready, and a first consultation is booked on the public site (REQ-14).
+// message ready, and a first consultation is booked on the public site.
 
 import type { Page } from "@playwright/test";
 import { PORTS } from "../../scripts/lib/local-stack.ts";

@@ -4,7 +4,7 @@
 // Empty, board E3's lines.
 //
 // Among them, as the board lists a visit a credit covered, every change to the
-// service-visit credits (LIFE-14): one about a visit opens that visit's page.
+// service-visit credits: one about a visit opens that visit's page.
 //
 // Above them, a consultation and fit in one visit the client was fitted at and
 // has not paid for, opening the link Razorpay texted.

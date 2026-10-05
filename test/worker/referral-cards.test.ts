@@ -111,7 +111,7 @@ describe("the referral card", () => {
     expect(house.headers.get("Location")).toBe(HOUSE_CARD);
   });
 
-  // PS-54: a preview reveals a referrer's card, so guessing codes through it spends the address's misses too.
+  // A preview reveals a referrer's card, so guessing codes through it spends the address's misses too.
   it("gives the house card for every code to an address past its misses, and the card to anyone else", async () => {
     await consent("photos_referral_cards", true);
     await put(jpegOf(1200, 630));
@@ -127,7 +127,7 @@ describe("the referral card", () => {
     expect((await preview(CODE, "198.51.100.4")).status).toBe(200);
   });
 
-  // PS-63: any 1200 x 630 JPEG became a client's public card; a card is made from their first fit's photographs.
+  // Any 1200 x 630 JPEG became a client's public card; a card is made from their first fit's photographs.
   it("refuses a card until a photograph of the client's first fit is stored", async () => {
     await consent("photos_referral_cards", true);
     await env.DB.prepare("DELETE FROM photos").run();
@@ -309,7 +309,7 @@ describe("the waitlist and a launch", () => {
     expect(second.sent).toEqual([]);
   });
 
-  // BK-27 and CP-25 of the audit, 2 October 2026: a launch named the area by its post office's name.
+  // A launch named the area by its post office's name.
   it("names the city in the launch alert, and to ops, until ops name the area", async () => {
     await waiting(true, false);
     expect(await (await request(ops(), "/api/waitlist")).json()).toMatchObject({
@@ -322,7 +322,7 @@ describe("the waitlist and a launch", () => {
     );
   });
 
-  // The waitlist was read whole, however many pincodes people were waiting in (FEO-16).
+  // The waitlist was read whole, however many pincodes people were waiting in.
   it("lists the longest-waiting pincodes, a page at most, and says when there are more", async () => {
     await env.DB.prepare(
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000002', 'Karan Bhatia')",
@@ -373,7 +373,7 @@ describe("the waitlist and a launch", () => {
     await env.DB.batch(statements.flat());
   }
 
-  // BCL-06 and PLAT-24 of the audit, 2 October 2026: over a hundred alerts went to the queue in one batch, which it
+  // Over a hundred alerts once went to the queue in one batch, which it
   // refuses, and the launch answered 500 although it had been made.
   it("queues a long waitlist's alerts in batches the queue takes, a hundred at most", async () => {
     await waiting(true);
@@ -406,7 +406,7 @@ describe("the waitlist and a launch", () => {
     expect(alert).toEqual({ state: "queued" });
   });
 
-  // BK-38 of the audit, 2 October 2026: a launch dated to a later day served the pincode at once, so its alerts went
+  // A launch dated to a later day served the pincode at once, so its alerts went
   // out and /book took bookings before the day.
   it("refuses a launch dated to a day still to come, and sends nothing", async () => {
     await waiting(true);
@@ -419,7 +419,7 @@ describe("the waitlist and a launch", () => {
     expect(pincode).toEqual({ served: 0, launched_at: null });
   });
 
-  // BK-38: the waitlist kept an earlier launch date where Settings overwrote it. Both launch through one function: a
+  // The waitlist kept an earlier launch date where Settings overwrote it. Both launch through one function: a
   // pincode that begins serving is dated from the launch day, and one already live keeps its date.
   it("dates a pincode it begins serving from the launch day, and keeps the date of one already live", async () => {
     await waiting(true);
@@ -435,7 +435,7 @@ describe("the waitlist and a launch", () => {
     expect(kept).toEqual({ launched_at: "2026-09-20T18:30:00.000Z" });
   });
 
-  // BK-36 and OIA-13 of the audit, 2 October 2026: every pincode on staging's waitlist was outside the service area,
+  // Every pincode on staging's waitlist was outside the service area,
   // so "Mark live" answered "We have no such pincode", and no screen could add one.
   it("adds a pincode people wait in that the service area does not hold, then launches it and tells them", async () => {
     await waiting(true);
@@ -523,7 +523,7 @@ describe("ops' referrers", () => {
     });
   });
 
-  // Every referrer was read at once, with a subquery a figure for every row (FEO-16).
+  // Every referrer was read at once, with a subquery a figure for every row.
   it("answers a page of referrers at a time, the busiest first, and says when there are more", async () => {
     const statements = Array.from({ length: REFERRERS_PAGE }, (_, n) => {
       const id = `77777777-7777-4777-8777-${String(n).padStart(12, "0")}`;

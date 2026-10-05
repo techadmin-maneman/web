@@ -74,7 +74,7 @@ export default function TryOn(props: Props) {
 
   // ?state= opens a screen with stand-ins, outside production. Otherwise Turnstile is readied, and the API asked
   // whether this browser has had its look and whether the try-on runs, so the visitor is not asked for a photograph
-  // the API would refuse (CLI-29).
+  // the API would refuse.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const wanted = screenNamed(props.allowStateSwitch ? params.get("state") : null);

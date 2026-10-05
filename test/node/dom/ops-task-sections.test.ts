@@ -1,5 +1,5 @@
 // The Tasks board in sections (apps/ops/src/tasks/sections.ts): each group under the department that decides it, in
-// the navigation's order, and the first task past its day, which the head's overdue count goes to (OIA-02).
+// the navigation's order, and the first task past its day, which the head's overdue count goes to.
 
 import { describe, expect, it } from "vitest";
 import type { TaskGroup } from "../../../apps/ops/src/api.ts";
@@ -34,7 +34,7 @@ describe("the Tasks board's sections", () => {
   });
 
   // On staging, 29 rows of one group stood between "Call about a move" and "Job on a day off", and data-rights
-  // deadlines were mixed in with sales follow-ups, in one list (OIA-02).
+  // deadlines were mixed in with sales follow-ups, in one list.
   it("puts each group under its department, in the navigation's order, each keeping the policy's order", () => {
     const sections = sectionsOf([
       group("untold_move", 1),

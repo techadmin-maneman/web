@@ -1,4 +1,4 @@
-// Settings › Rules by subject (apps/ops/src/settings/rule-groups.ts). OIA-12 of the audit, 2 October 2026: the rules
+// Settings › Rules by subject (apps/ops/src/settings/rule-groups.ts). The rules
 // were one page of seventeen, in no order a person would look for one.
 
 import { describe, expect, it } from "vitest";

@@ -1,5 +1,5 @@
 // Migration 0085 links each check-in that passed to the job event it landed as, so a no-show's wait runs only from a
-// check-in whose event still stands, and a check-in sent again is answered from its own row (FLD-11). Every name and
+// check-in whose event still stands, and a check-in sent again is answered from its own row. Every name and
 // number is made up.
 
 import { readdirSync, readFileSync } from "node:fs";

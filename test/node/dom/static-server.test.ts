@@ -1,5 +1,5 @@
 // The static server the browser tests and the fidelity harness share (scripts/lib/static-server.ts). Several agents'
-// runs use one machine's ports, so a request it cannot read must be refused, not bring it down (FEO-35).
+// runs use one machine's ports, so a request it cannot read must be refused, not bring it down.
 
 import { mkdtempSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";

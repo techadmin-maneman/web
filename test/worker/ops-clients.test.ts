@@ -175,7 +175,7 @@ describe("GET /api/clients/{id}", () => {
     });
   });
 
-  // MON-14: a refund the booking made by itself showed nowhere in the console.
+  // A refund the booking made by itself showed nowhere in the console.
   it("lists a booking that refunded its payment by itself, and why, and none that ops refunded", async () => {
     await record();
     const refundedAt = "2026-09-21T06:43:00.000Z";
@@ -250,7 +250,7 @@ describe("GET /api/clients/{id}", () => {
     expect(await answer.json()).toMatchObject({ error: { code: "not_found" } });
   });
 
-  // PS-18, OIA-18 and CP-35 of the audit, 2 October 2026: an erased client's page read "We could not load this", and
+  // An erased client's page read "We could not load this", and
   // the alerts that linked to it led nowhere.
   it("answers what is kept of a client once erased: when, their visits and their money, nothing naming them", async () => {
     await record();
@@ -316,7 +316,7 @@ describe("GET /api/clients/{id}", () => {
   });
 });
 
-// MON-16 and OIA-08 of the audit, 2 October 2026: the Payments tab showed neither a payment link nor an invoice, and a
+// The Payments tab showed neither a payment link nor an invoice, and a
 // client who lost Razorpay's text could not be sent the link again.
 describe("GET /api/clients/{id}, its payment links and invoices", () => {
   const FIT = "22222222-2222-4222-8222-222222222223";
@@ -415,7 +415,7 @@ describe("GET /api/clients/{id}, its payment links and invoices", () => {
     ]);
   });
 
-  // MON-45, PS-47: a one visit's link closes 14 days after Razorpay made it.
+  // A one visit's link closes 14 days after Razorpay made it.
   it("says a one visit's link closed unpaid once its 14 days are up", async () => {
     await finishedVisit(FIT, "first_fit", "2026-09-04T04:30:00.000Z", "fitted");
     await env.DB.prepare(
@@ -495,7 +495,7 @@ describe("GET /api/clients/{id}/photos", () => {
 
 /**
  * One opening of a client's photographs is one entry in the log, whose time is
- * the server's (OPS-17). It once wrote an entry for every image, ten for one
+ * the server's. It once wrote an entry for every image, ten for one
  * visit and ten more on every return to the tab, and the console lettered the
  * browser's own clock as the time it was logged.
  */
@@ -691,7 +691,7 @@ describe("POST /api/clients/search", () => {
   });
 });
 
-// A client could be found only by typing their whole number exactly (OPS-04).
+// A client could be found only by typing their whole number exactly.
 describe("POST /api/clients/find", () => {
   const find = (text: string) =>
     request(ops, "/api/clients/find", {
@@ -718,7 +718,7 @@ describe("POST /api/clients/find", () => {
     });
   });
 
-  // OIA-15: two clients of one name could be told apart only by their number.
+  // Two clients of one name could be told apart only by their number.
   it("says where each client stands, and when their next visit is", async () => {
     await record();
     await upcomingVisit();

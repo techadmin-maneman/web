@@ -51,7 +51,7 @@ const ADDRESS = {
   access_notes: "Gate 2, visitor parking",
 };
 
-/** What every number is answered for 23 September's morning, whether we know it or not (PS-06). */
+/** What every number is answered for 23 September's morning, whether we know it or not. */
 const BOOKED_MORNING = {
   state: "booked",
   date: "2026-09-23",
@@ -141,7 +141,7 @@ describe("POST /api/consultation", () => {
     });
   });
 
-  // PLAT-15: each D1 read is a round trip to the database's region, so the booking's reads that need nothing from each
+  // Each D1 read is a round trip to the database's region, so the booking's reads that need nothing from each
   // other go together. The request's log line says how many it waited on.
   it("waits on few round trips to D1", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
@@ -198,7 +198,7 @@ describe("POST /api/consultation", () => {
     }
   });
 
-  // PS-57: our WhatsApp messages greet people by this name, so it is never a link or a number.
+  // Our WhatsApp messages greet people by this name, so it is never a link or a number.
   it("refuses a name that is not letters, naming it, and books nothing", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
     const body = {
@@ -335,7 +335,7 @@ describe("the address the consultation is at", () => {
   });
 
   // The form needs no login, only a number: whoever types one must not move where that person's visits go.
-  // PS-06: the page answers as it would for a new number, and only the number's owner is told, on WhatsApp.
+  // The page answers as it would for a new number, and only the number's owner is told, on WhatsApp.
   it("never replaces the address a person already has: the visit goes to it, and only WhatsApp says so", async () => {
     await env.DB.prepare(
       `INSERT INTO people (id, created_at, mobile_e164, name, zoho_lead_id)
@@ -370,7 +370,7 @@ describe("the address the consultation is at", () => {
     expect(messages.sent).toHaveLength(2);
   });
 
-  describe("on the account of a number we know (BK-25)", () => {
+  describe("on the account of a number we know", () => {
     beforeEach(async () => {
       await env.DB.prepare(
         "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p-known', ?1, '+919810000002', 'Karan Bhatia')",
@@ -477,7 +477,7 @@ describe("the address the consultation is at", () => {
   });
 });
 
-// BK-27 and CP-25 of the audit, 2 October 2026: an area nobody had named was called by its post office's name.
+// An area nobody had named was called by its post office's name.
 describe("an area ops have not named yet", () => {
   it("is booked as its city", async () => {
     await pincode("110048", "Masjid Moth", "Delhi", true, false);
@@ -544,7 +544,7 @@ describe("POST /api/waitlist", () => {
     ]);
   });
 
-  // ADR 0041 lists the waitlist confirmation among Phase 2's messages; nothing wrote one (REQ-03).
+  // ADR 0041 lists the waitlist confirmation among Phase 2's messages; nothing wrote one.
   it("queues one WhatsApp confirming the place on the list, however often the number joins", async () => {
     await pincode("400050", "Bandra", "Mumbai", false);
     const messages = fakeQueue();
@@ -653,7 +653,7 @@ describe("an invite the browser remembered", () => {
     ]);
   });
 
-  // BK-30 of the audit, 2 October 2026: a booking that failed after the hold was written answered 500, and the invite
+  // A booking that failed after the hold was written answered 500, and the invite
   // and the lead were never recorded. The cron books the hold half an hour on.
   it("attributes the invite and leaves the lead when the booking fails after the hold is written", async () => {
     const crm = fakeQueue();
@@ -682,7 +682,7 @@ describe("an invite the browser remembered", () => {
     expect(hold).toEqual({ state: "held", confirmed: 1 });
   });
 
-  // PS-24: the friend is told who hears of their fit before /book sends the invite, or the invite is not sent.
+  // The friend is told who hears of their fit before /book sends the invite, or the invite is not sent.
   it("books without the invite when the form did not say who is told of the fit", async () => {
     const answer = await book("RM4K7P", {});
     expect(answer.status).toBe(201);
@@ -755,7 +755,7 @@ describe("an invite the browser remembered", () => {
 
 // A form anyone can fill in with a number (docs/decisions/0068-a-paid-hold-is-kept.md).
 // The page answers it as it would a new number, so it never says whose a number is; its owner is told the rest on
-// WhatsApp (PS-06, BK-31).
+// WhatsApp.
 describe("a number the site already knows", () => {
   const book = (body: object, settings = {}) =>
     request(
@@ -806,7 +806,7 @@ describe("a number the site already knows", () => {
     expect(await told()).toEqual(["consultation_confirmation", "consultation_exists"]);
   });
 
-  it("is never renamed by the form (BIZ-03)", async () => {
+  it("is never renamed by the form", async () => {
     await book({ date: "2026-09-23", window: "morning" });
     await request(
       site(),
@@ -818,7 +818,7 @@ describe("a number the site already knows", () => {
     });
   });
 
-  it("books no consultation for a client past them, and tells them on WhatsApp to book in the app (BK-31)", async () => {
+  it("books no consultation for a client past them, and tells them on WhatsApp to book in the app", async () => {
     await fittedClient();
     const answer = await book({ date: "2026-09-23", window: "morning" });
     expect(answer.status).toBe(201);
@@ -845,7 +845,7 @@ describe("a number the site already knows", () => {
     expect(await told()).toEqual(["book_in_app"]);
   });
 
-  it("leaves no person, consent or address behind when the window has gone (ARCH-05)", async () => {
+  it("leaves no person, consent or address behind when the window has gone", async () => {
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
     const answer = await book({ date: "2026-09-23", window: "morning" });
     expect(answer.status).toBe(409);
@@ -854,7 +854,7 @@ describe("a number the site already knows", () => {
     expect(await count("SELECT COUNT(*) AS n FROM addresses")).toBe(0);
   });
 
-  it("asks ops instead, holding nothing, on a day the price book charges for a consultation (BIZ-10)", async () => {
+  it("asks ops instead, holding nothing, on a day the price book charges for a consultation", async () => {
     await env.DB.prepare(
       "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('consultation', 'standard', 50000, 0, '2026-09-23')",
     ).run();
@@ -864,7 +864,7 @@ describe("a number the site already knows", () => {
     expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(1);
   });
 
-  it("holds nothing on a day ops blacked out (BIZ-25)", async () => {
+  it("holds nothing on a day ops blacked out", async () => {
     await env.DB.prepare("INSERT INTO visit_blackouts (date, reason) VALUES ('2026-09-23', 'Dussehra')").run();
     const answer = await book({ date: "2026-09-23", window: "morning" });
     expect(answer.status).toBe(409);
@@ -901,7 +901,7 @@ describe("a consultation and fit in one visit", () => {
     proved = await provedNumberCode("+919810000002");
   });
 
-  // PS-10: the one visit sends a technician with stock, and recorded a consent and a person, for any number typed.
+  // The one visit sends a technician with stock, and recorded a consent and a person, for any number typed.
   it("is refused, and writes nothing, without a code that proved the number in the last 30 minutes", async () => {
     const other = await provedNumberCode("+919810000003");
     const stale = await provedNumberCode("+919810000002", new Date(NOW.getTime() - 31 * 60_000));
@@ -1098,7 +1098,7 @@ describe("a consultation and fit in one visit", () => {
   });
 });
 
-// BK-26: the form drew every day and window, so a full one failed only after the whole form was filled.
+// The form drew every day and window, so a full one failed only after the whole form was filled.
 describe("GET /api/availability/public", () => {
   type Open = { plan: string; days: { date: string; windows: Record<string, boolean> }[] };
   const ALL_OPEN = { morning: true, afternoon: true, evening: true };
@@ -1231,7 +1231,7 @@ describe("GET /api/availability/public", () => {
 });
 
 // The site sends one Idempotency-Key per submission, so pressing again after the answer was lost on the way gets the
-// first answer back rather than a second booking (FEO-21; docs/decisions/0011-lead-api.md).
+// first answer back rather than a second booking (docs/decisions/0011-lead-api.md).
 describe("the Idempotency-Key", () => {
   const keyed = (body: object, key: string) => ({
     method: "POST",

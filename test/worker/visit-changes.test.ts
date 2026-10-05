@@ -248,7 +248,6 @@ describe("POST /api/appointments/:id/cancel", () => {
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 2600000 }]);
   });
 
-  // BIZ-09 of the audit, 24 September 2026.
   it("keeps the late fee the visit was booked under, whatever the price book says since", async () => {
     await booked("first_fit", TUESDAY_MORNING, 3000000);
     await env.DB.prepare(
@@ -268,7 +267,6 @@ describe("POST /api/appointments/:id/cancel", () => {
     expect(move).toMatchObject({ cost: "late_fee", price: { amount: 400000 } });
   });
 
-  // W5 of the audit, 24 September 2026 (BIZ-11).
   it("gives no credit back to a grant the guarantee refund took back, even when the cancel is free", async () => {
     await booked("service", THURSDAY_NOON, 0);
     await env.DB.prepare("DELETE FROM payments").run();

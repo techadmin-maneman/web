@@ -90,8 +90,7 @@ const PaymentEntrySchema = z
         description: 'Kept under the 24-hour rule, with its evidence: "cancelled 9:14 am, visit was 10 am".',
       }),
     no_show: z.union([NoShowNoteSchema, z.null()]).openapi({
-      description:
-        "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07).",
+      description: "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled.",
     }),
     discount_code: z
       .union([

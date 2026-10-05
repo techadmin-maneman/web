@@ -1,4 +1,4 @@
-// Every answer a Worker test has from a route, held to the reply the route documents (CQ-54): a handler that misses a
+// Every answer a Worker test has from a route, held to the reply the route documents: a handler that misses a
 // field its schema promises, or answers a status the route never documented, fails the test that met it. The browser
 // tests check the same against the committed documents (e2e/contract.ts); this checks every route the Worker tests
 // reach, against the schemas the documents are written from.

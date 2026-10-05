@@ -1,4 +1,4 @@
-// What the console shows of a client once erased (PS-18, OIA-18 and CP-35 of the audit, 2 October 2026): their page
+// What the console shows of a client once erased: their page
 // once read "We could not load this. Try again", which reads as a fault, and a deletion decided in the queue said
 // nothing at all. Every name and number here is made up.
 

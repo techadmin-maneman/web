@@ -1,7 +1,7 @@
 /*
  * The boards' label: the serif in small capitals, 0.12em apart, in the muted
  * ink. It names a group or a state -- "Leave", a task group, "Prepaid" -- and
- * is never the sans in capitals, which the boards do not draw (DS-07). A
+ * is never the sans in capitals, which the boards do not draw. A
  * component gives an element this class beside its own, which sets only the
  * size and the place:
  *

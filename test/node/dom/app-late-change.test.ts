@@ -21,7 +21,7 @@ const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 };
 const MOVE = { cost: "free", paid: 236000, credit: null } as unknown as MoveTerms;
 
 describe("the pay step's promise", () => {
-  it("knows a visit sold inside its notice is charged to change from the moment it is booked (MON-08, BK-11, CP-02)", () => {
+  it("knows a visit sold inside its notice is charged to change from the moment it is booked", () => {
     expect(insideNotice(HOLD, NOW)).toBe(true);
     expect(insideNotice({ free_until: "2026-10-02T03:30:00.000Z" }, Date.parse("2026-10-02T03:30:00Z"))).toBe(true);
     expect(insideNotice({ free_until: "2026-10-03T03:30:00.000Z" }, NOW)).toBe(false);
@@ -53,7 +53,7 @@ describe("the pay step's promise", () => {
   });
 });
 
-describe("the move sheet's button (MON-33, BK-16, UX-06, CP-05)", () => {
+describe("the move sheet's button", () => {
   it("only picks a new date for a consultation inside the notice, which moves free", () => {
     expect(moveButton({ cost: "free" })).toBe("Pick a new date");
   });

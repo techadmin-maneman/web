@@ -1,6 +1,6 @@
 // A page's states (packages/ui): the shape of what is coming, a failure with a
 // way to try again, and what stands in for a screen that failed to draw. The
-// three apps wrote each of these for themselves (DS-23, FEA-40); now each app
+// three apps wrote each of these for themselves; now each app
 // gives them its own words and look, and the parts that must not differ --
 // what a screen reader is told, and that a render error never blanks the
 // screen -- are written once. The console's table and tabs are here too.

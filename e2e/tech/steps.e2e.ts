@@ -439,7 +439,7 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   await expect(page.getByText("The piece's label was not accepted.")).toBeVisible();
   await page.getByRole("button", { name: "Correct it" }).click();
 
-  // FLD-63: the step opens as it was sent, so only the label is typed again.
+  // The step opens as it was sent, so only the label is typed again.
   await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
   await expect(page.getByText("We couldn’t record the label you gave. Correct it and tap Next.")).toBeVisible();
   const label = page.getByRole("textbox", { name: "The new piece's label" });
@@ -455,7 +455,7 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   await expect(page.getByText("Everything has reached us.")).toBeVisible();
 });
 
-// FLD-63: a refused outcome opened with nothing chosen, and the technician chose it all again at the door.
+// A refused outcome opened with nothing chosen, and the technician chose it all again at the door.
 test("a refused outcome opens as it was chosen", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
@@ -545,7 +545,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     expect(writesTo(fake, "piece")[0]?.body).toEqual({ declined: true });
   });
 
-  // FLD-37: the fit's items are never asked of a technician who fitted nothing.
+  // The fit's items are never asked of a technician who fitted nothing.
   test("runs the consultation's checklist alone once the client decided against the fit", async ({ page }) => {
     const fake = await onTheChoice(page);
     await page.getByRole("button", { name: "Decided against it", exact: true }).click();
@@ -574,7 +574,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(checklistItems(page)).toHaveCount(9);
   });
 
-  // MON-52, CP-37: a declined visit offers no code and promises no link, and closes as what it became.
+  // A declined visit offers no code and promises no link, and closes as what it became.
   test("ends a declined visit as a free consultation, with no code asked for, and closes as one", async ({ page }) => {
     const fake = await atTheOutcome(page, { declined: true }, { code: "AUDTEST", given_by: "client" });
     await page.getByRole("button", { name: "Done", exact: true }).click();
@@ -666,7 +666,7 @@ test.describe("the client's hair profile", () => {
     await page.getByRole("textbox", { name: "Circumference" }).fill("57.5");
     await page.getByRole("textbox", { name: "Width" }).fill("8");
     await page.getByRole("textbox", { name: "Length" }).fill("10");
-    // FLD-61, UX-35: the suppliers' order, not #1 … #8 then #1B.
+    // The suppliers' order, not #1 … #8 then #1B.
     await expect(page.getByRole("region", { name: "Colour", exact: true }).getByRole("button")).toHaveText([
       "#1",
       "#1B",

@@ -67,7 +67,7 @@ describe("a photograph set on its way", () => {
     ]);
   });
 
-  // FLD-15: a set read "0 of 5 sent" while photographs were already on the server.
+  // A set read "0 of 5 sent" while photographs were already on the server.
   it("counts a photograph whose thumbnail is still to go as sent: the photograph has reached us", () => {
     const up: Frame = { ...frame("a", "before", "top", 0), take: "t" };
     const [set] = photoSets([up, frame("a", "before", "left", 1)], [setWrite("a", "before_photos")]);
@@ -76,7 +76,7 @@ describe("a photograph set on its way", () => {
   });
 });
 
-// FLD-15, UX-03: a refused set is taken again with only its refused angles, and what reached us counted.
+// A refused set is taken again with only its refused angles, and what reached us counted.
 describe("the angles of a set already taken", () => {
   it("are the frames on the phone, in the order taken, while the set is being taken", () => {
     const taken = anglesTaken([frame("a", "before", "left", 2), frame("a", "before", "front", 1)], [], "a", "before");

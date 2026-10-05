@@ -1,8 +1,8 @@
 // The brand's colours drawn outside a stylesheet -- the apps' icons and
 // manifests, the site's card images, the house referral card, Razorpay's
 // window, each page's theme colour -- are read from tokens.css, never written
-// again as a hex value that the token tests cannot see (DS-19: the referral
-// card's gold slipped through that gap).
+// again as a hex value that the token tests cannot see (the referral
+// card's gold once slipped through that gap).
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -40,7 +40,7 @@ describe("a colour drawn outside a stylesheet", () => {
   });
 });
 
-// A page's head names its theme colour's token, and the build writes in the value (packages/web-kit/pwa.ts, UX-43).
+// A page's head names its theme colour's token, and the build writes in the value (packages/web-kit/pwa.ts).
 describe("each app's theme colour", () => {
   it.each([
     ["apps/app/index.html", "--ink"],

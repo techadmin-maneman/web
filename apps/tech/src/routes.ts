@@ -40,7 +40,7 @@ export const ROUTES: readonly TechRoute[] = [
 
 /**
  * Nothing. The shell assumed `GET /tech/me` and `POST /tech/auth/logout`
- * because P2-M4's list did not write them; the API now has both, so there is
+ * because the technician API's first list did not write them; the API now has both, so there is
  * no route left that only the app believes in (`docs/open-points.md`, item 132).
  */
 export const ROUTES_ASSUMED: readonly TechRoute[] = [];

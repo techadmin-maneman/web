@@ -1,5 +1,5 @@
 // A move the client has not heard of, settled from its row on the Tasks board (apps/ops/src/tasks/CallAboutMove.tsx):
-// the number to call, and "Told by phone", which closes the task. OIA-03 and BK-21: ops had to open the dispatch board
+// the number to call, and "Told by phone", which closes the task. Ops had to open the dispatch board
 // and hunt for the block to record the call.
 
 import { act, createElement } from "react";

@@ -85,7 +85,7 @@ async function visit(status = "dispatched", type = "service") {
   ]);
 }
 
-describe("the arrival notice (BIZ-22)", () => {
+describe("the arrival notice", () => {
   it("tells the client his technician has arrived", async () => {
     await visit();
     await consent("whatsapp_visits", true);
@@ -126,7 +126,7 @@ describe("the arrival notice (BIZ-22)", () => {
   });
 });
 
-describe("the no-show ruling (LIFE-07)", () => {
+describe("the no-show ruling", () => {
   /** Karan's service visit, which Imran waited 15 minutes at, closed as a no-show and ruled on. */
   async function ruled(decision: "undecided" | "charged" | "waived", paid: "payment" | "credit" | "nothing") {
     await visit("terminated");
@@ -249,7 +249,7 @@ describe("the no-show ruling (LIFE-07)", () => {
     expect((await send(await ruled("charged", "nothing"))).text).toBe(`${MISSED} Book a new time in the Mane Man app.`);
   });
 
-  // A waiver gives back what the visit took, as the owner ruled on 27 September 2026 (BIZ-28).
+  // A waiver gives back what the visit took, as the owner ruled on 27 September 2026.
   it("says a waiver charges nothing, and that the payment is on its way back", async () => {
     expect((await send(await ruled("waived", "payment"))).text).toBe(
       `${MISSED} There's no charge: we've refunded Rs. 2,000 to your UPI (5 to 7 working days).`,
@@ -348,7 +348,7 @@ describe("the no-show ruling (LIFE-07)", () => {
   });
 });
 
-describe("the waitlist confirmation (REQ-03)", () => {
+describe("the waitlist confirmation", () => {
   /** Someone listed in Bandra, whose area ops have named unless `named` is false. */
   async function listed(launchAlert: boolean, named = true) {
     await env.DB.batch([
@@ -373,7 +373,7 @@ describe("the waitlist confirmation (REQ-03)", () => {
     );
   });
 
-  // CP-25 of the audit, 2 October 2026: "you are on our list for 400050", a bare pincode.
+  // "you are on our list for 400050", a bare pincode.
   it("names the pincode as one until ops name the area", async () => {
     const sent = await send(await listed(false, false));
     expect(sent.text).toBe("Hi Karan, you're on our list for pincode 400050. We don't cover it yet.");

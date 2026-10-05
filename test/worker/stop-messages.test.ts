@@ -1,4 +1,4 @@
-// Stopping our WhatsApp messages as easily as agreeing to them (PS-29): the link at the foot of a reminder or the
+// Stopping our WhatsApp messages as easily as agreeing to them: the link at the foot of a reminder or the
 // launch alert, which withdraws its consent from the site's /stop page without signing in; the launch alert, which
 // reads the consent again when it is sent; and the answer to a STOP reply.
 

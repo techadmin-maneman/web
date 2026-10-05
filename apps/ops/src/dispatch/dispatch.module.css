@@ -8,8 +8,8 @@
  * or a service visit sits on light paper, each sized by the slots it takes.
  *
  * The grid scrolls under its header row and its technicians' column, which stay
- * put (OPS-10), and a day never narrows past --local-day: on a narrow window, or
- * at 200% zoom, the grid scrolls sideways and the tray goes beneath it (VIS-22).
+ * put, and a day never narrows past --local-day: on a narrow window, or
+ * at 200% zoom, the grid scrolls sideways and the tray goes beneath it.
  */
 
 /* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
@@ -17,7 +17,7 @@
   --local-tech: 104px; /* the column the technician and their zone stand in */
   --local-tray: 236px; /* the unassigned tray down the right */
   --local-cell: 88px; /* one technician's day */
-  --local-day: 96px; /* the narrowest a day's column goes before the grid scrolls sideways (VIS-22) */
+  --local-day: 96px; /* the narrowest a day's column goes before the grid scrolls sideways */
 }
 
 .area {
@@ -201,7 +201,7 @@
   background: var(--paper-shade);
 }
 
-/* Board A1's "Leave" mark, in the boards' label (components/label.module.css), not sans capitals (DS-07). */
+/* Board A1's "Leave" mark, in the boards' label (components/label.module.css), not sans capitals. */
 .awayMark {
   display: block;
   margin-bottom: var(--sp-2);
@@ -209,7 +209,7 @@
 }
 
 /*
- * A day off with jobs still booked on it (OPS-07): the same label, in the
+ * A day off with jobs still booked on it: the same label, in the
  * oxblood the board gives what needs doing. Two classes, so it outranks the
  * shared label's muted ink whichever stylesheet loads last.
  */
@@ -733,7 +733,7 @@
   flex-shrink: 0;
 }
 
-/* ---- A narrow window, or 200% zoom: the tray goes beneath the grid (VIS-22) --- */
+/* ---- A narrow window, or 200% zoom: the tray goes beneath the grid --- */
 
 @media (max-width: 1000px) {
   .area {

@@ -86,7 +86,7 @@ export function readServiceAreaCsv(text: string): CsvRead {
 /**
  * A cell as the list writes it. One a spreadsheet would run as a formula -- it
  * opens with = + - @, a tab or a carriage return -- starts with an apostrophe,
- * so it is shown as the text it is (SEC-03). One holding a comma, a quote or a
+ * so it is shown as the text it is. One holding a comma, a quote or a
  * line break is quoted, with its quotes doubled.
  */
 function cell(value: string): string {

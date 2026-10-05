@@ -1,6 +1,6 @@
 // The apps' one button (packages/ui/Button.tsx): every look it has answers a
 // press, a pointer resting on it, being unusable and being busy, which no
-// button of the three apps did before (DS-22). A busy button says so to a
+// button of the three apps did before. A busy button says so to a
 // screen reader; that a second tap does nothing is test/dom/ui-button.test.ts.
 // A screen's own class places a button and never colours it, since a class of
 // the app's own wins over every look here and would erase them.

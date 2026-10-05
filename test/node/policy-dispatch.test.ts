@@ -111,7 +111,7 @@ describe("dispatch", () => {
     expect(moveRefusal(away(), "evening", NO_ROOM)).toBe("on_leave");
   });
 
-  // BK-17, FLD-23: at 09:58 four visits moved to that morning all landed at 09:00, and a move to yesterday went through.
+  // At 09:58 four visits moved to that morning all landed at 09:00, and a move to yesterday went through.
   it("reads a day gone, and today's window once every start in it has passed, as no longer ahead", () => {
     // At 12:00 the afternoon's first start (half-slot 2) is under way and its next (3) is still to come.
     const noon = { date: "2026-10-02", firstUnitAhead: 3 };

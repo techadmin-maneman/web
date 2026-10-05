@@ -9,7 +9,7 @@ describe("updatedDevVars", () => {
     expect(update).toEqual({ text: "A=mine\nB=new\n", added: ["B"], filled: [] });
   });
 
-  // LIFE-17: a .dev.vars made before the webhook had a local secret kept it empty, and the webhook answered 404.
+  // A .dev.vars made before the webhook had a local secret kept it empty, and the webhook answered 404.
   it("fills a key left empty that the example now gives a value, and no other", () => {
     const update = updatedDevVars("A=\nB=\nC=set\n", "A=placeholder\nB=\nC=other\n");
     expect(update).toEqual({ text: "A=placeholder\nB=\nC=set\n", added: [], filled: ["A"] });

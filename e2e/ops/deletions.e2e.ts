@@ -114,7 +114,7 @@ test("keeps the account when the confirmation is called off", async ({ page }) =
   await ask(page);
   await page.getByRole("button", { name: "Keep the account" }).click();
   await expect(row(page, "Rohit Malhotra").getByRole("button", { name: DELETE })).toBeVisible();
-  // The keyboard goes back to the button that asked, not to the top of the page (FEO-13).
+  // The keyboard goes back to the button that asked, not to the top of the page.
   await expect(row(page, "Rohit Malhotra").getByRole("button", { name: DELETE })).toBeFocused();
 });
 
@@ -126,7 +126,7 @@ test("moves the keyboard to the queue's heading once a request is decided", asyn
   await expect(page.getByRole("heading", { name: "Waiting for a decision" })).toBeFocused();
 });
 
-// The Tasks board links an erasure request to its row here (OPS-05).
+// The Tasks board links an erasure request to its row here.
 test("brings the request a task named into view, and gives it the keyboard", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/deletion-requests": json(DELETION_REQUESTS) });

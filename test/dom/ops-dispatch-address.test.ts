@@ -1,6 +1,6 @@
 // The dispatch board's place in the address (apps/ops/src/dispatch/address.ts): a link opens the board on a week and
 // a visit, with the visit's drawer open, and the address keeps the week, the city, the search and the open visit as
-// ops change them. OIA-03 and BK-21: links from Tasks landed on this week's bare board, and Back from a client reset it.
+// ops change them. Links from Tasks landed on this week's bare board, and Back from a client reset it.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";

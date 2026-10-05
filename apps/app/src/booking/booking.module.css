@@ -480,7 +480,7 @@
 }
 
 /* Boards C7 and C8: the change, and what it costs. */
-/* Add a note (REQ-04), in the change sheet's frame: the design draws no sheet behind the button. */
+/* Add a note, in the change sheet's frame: the design draws no sheet behind the button. */
 .noteForm {
   display: flex;
   flex-direction: column;

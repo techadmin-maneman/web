@@ -1,5 +1,5 @@
-// The client app's Your data card: the concerns the client raised, with our answers (PS-22), and the day's limit on
-// new ones (PS-65).
+// The client app's Your data card: the concerns the client raised, with our answers, and the day's limit on
+// new ones.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";

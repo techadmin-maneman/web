@@ -3,7 +3,7 @@
 // every route the app calls must be one `docs/openapi-tech.json` writes, at the
 // method it writes it at, and nothing may be left assumed.
 //
-// It also pins the four things P2-M4 and the app's shell disagreed about
+// It also pins the four things the technician API and the app's shell disagreed about
 // (`docs/open-points.md`, item 132), so neither side can quietly drop one.
 
 import { readFileSync } from "node:fs";
@@ -78,7 +78,7 @@ describe("what each of the outbox's events sends", () => {
   });
 });
 
-describe("what P2-M4 and the app's shell disagreed about", () => {
+describe("what the technician API and the app's shell disagreed about", () => {
   it("has GET /api/tech/me, which the app asks every time it opens", () => {
     expect(document.paths["/api/tech/me"]?.get).toBeDefined();
     expect(document.components.schemas.TechnicianMe).toBeDefined();
