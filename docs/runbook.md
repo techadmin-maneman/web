@@ -666,6 +666,10 @@ docker run -d --name maneman-runner --restart unless-stopped --shm-size=2g \
 
 Then each job's `runs-on` names its label, `[self-hosted, maneman]`, in place of `ubuntu-latest`, and the test above changes with them. A second runner takes its own name and volume (`-e RUNNER_NAME=maneman-pc-2`, `-v maneman-runner-2:…`): without a name the entrypoint registers `maneman-pc`, and `--replace` would take the first one's place.
 
+### Flaky browser tests
+
+A pull request's run retries a failed browser test once, and passes when the retry does. Every night at 3 am in India, `nightly-browser.yml` runs every browser-test project on `main` with `--fail-on-flaky-tests`, so a test that passed only on its retry fails that run, and GitHub e-mails whoever watches the repository. The run's `playwright-traces` artifact holds the failed attempt. Fix the test, or the race it found, before the next one; the run can be started by hand from the Actions tab.
+
 ## Staying on the free tier
 
 The rules are in `docs/decisions/0009-stay-inside-cloudflare-free-tier.md`. The account is on Workers Free, where everything except R2 stops at its limit instead of billing.

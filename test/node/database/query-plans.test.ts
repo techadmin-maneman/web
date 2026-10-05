@@ -143,6 +143,8 @@ const UNPLANNED = [
   { file: "src/domain/places.ts", source: "FROM ${table} record WHERE record.id = ?1" },
   // The cities of the tasks a look at the board found: each record by its key. The cron never runs it.
   { file: "src/domain/places.ts", source: "FROM ${RECORD_PLACES[kind].table} record WHERE record.id IN" },
+  // One row inserted from an object's columns, its conflict clause at most reading the row's own key.
+  { file: "src/lib/sql.ts", source: 'tail === "" ? sql : `${sql} ${tail}`' },
 ];
 
 /** Where test/worker/jobs/cron-reads.test.ts keeps the history a cron run is measured against. */
