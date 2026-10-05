@@ -322,7 +322,7 @@ test.describe("the piece (board B3, step 4)", () => {
     page,
   }) => {
     await onThePiece(page);
-    const label = page.getByRole("textbox", { name: "The new piece's label" });
+    const label = page.getByRole("textbox", { name: "The new piece’s label" });
 
     await label.fill("mm-std-7193 c");
     await expect(label).toHaveValue("MM-STD-7193-C");
@@ -330,7 +330,9 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await label.fill("MM-STD-71");
     await expect(page.getByRole("button", { name: "Check the label to continue" })).toBeDisabled();
-    await expect(page.getByText("A label reads MM, the base, the number and a letter: MM-STD-4417-B.")).toBeVisible();
+    await expect(
+      page.getByText("Type it as the tag reads: MM, the base code, a number and a letter, as in MM-STD-4417-B."),
+    ).toBeVisible();
   });
 
   test("says what a first fit was paid for, and warns when the hair profile names another product", async ({
@@ -353,13 +355,13 @@ test.describe("the piece (board B3, step 4)", () => {
 
   test("the label field is the whole of its 64 px box, so a gloved tap lands in it", async ({ page }) => {
     await onThePiece(page);
-    const box = await page.getByRole("textbox", { name: "The new piece's label" }).boundingBox();
+    const box = await page.getByRole("textbox", { name: "The new piece’s label" }).boundingBox();
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(60);
   });
 
   test("with no signal says the label is not checked, rather than unknown", async ({ page }) => {
     const fake = await onThePiece(page);
-    await page.getByRole("textbox", { name: "The new piece's label" }).fill("MM-STD-7193-C");
+    await page.getByRole("textbox", { name: "The new piece’s label" }).fill("MM-STD-7193-C");
     fake.online = false;
     await page.getByRole("button", { name: "Check the label" }).click();
 
@@ -372,7 +374,7 @@ test.describe("the piece (board B3, step 4)", () => {
 
   test("will not record another client's piece", async ({ page }) => {
     await onThePiece(page);
-    await page.getByRole("textbox", { name: "The new piece's label" }).fill("MM-STD-9999-Z");
+    await page.getByRole("textbox", { name: "The new piece’s label" }).fill("MM-STD-9999-Z");
     await page.getByRole("button", { name: "Check the label" }).click();
 
     await expect(page.getByRole("alert").filter({ hasText: "That piece isn’t this client’s." })).toBeVisible();
@@ -388,7 +390,7 @@ test.describe("the piece (board B3, step 4)", () => {
     const fake = await onThePiece(page);
 
     // The new piece: typed, with its base and lot, which the pieces tab reads.
-    await page.getByRole("textbox", { name: "The new piece's label" }).fill("MM-STD-5120-A");
+    await page.getByRole("textbox", { name: "The new piece’s label" }).fill("MM-STD-5120-A");
     await page.getByRole("textbox", { name: "Base" }).fill("PLACEHOLDER_STANDARD");
     await page.getByRole("textbox", { name: "Supplier lot" }).fill("LOT-5120");
 
@@ -434,13 +436,13 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   ]);
 
   await page.goto("/waiting");
-  await expect(page.getByText("The piece's label was not accepted.")).toBeVisible();
+  await expect(page.getByText("The piece’s label wasn’t accepted.")).toBeVisible();
   await page.getByRole("button", { name: "Correct it" }).click();
 
   // The step opens as it was sent, so only the label is typed again.
   await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
   await expect(page.getByText("We couldn’t record the label you gave. Correct it and tap Next.")).toBeVisible();
-  const label = page.getByRole("textbox", { name: "The new piece's label" });
+  const label = page.getByRole("textbox", { name: "The new piece’s label" });
   await expect(label).toHaveValue("MM-STD-7193 C");
   await expect(page.getByRole("textbox", { name: "Supplier lot" })).toHaveValue("LOT-5120");
   await label.fill("MM-STD-7193-C");
@@ -470,7 +472,7 @@ test("a refused outcome opens as it was chosen", async ({ page }) => {
   ]);
 
   await page.goto("/waiting");
-  await expect(page.getByText("That reason was not accepted.")).toBeVisible();
+  await expect(page.getByText("That reason wasn’t accepted.")).toBeVisible();
   await page.getByRole("button", { name: "Correct it" }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
@@ -524,7 +526,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
     await page.getByRole("button", { name: "Mane Man Natural" }).click();
     await expect(page.getByRole("button", { name: "Mane Man Natural" })).toHaveAttribute("aria-pressed", "true");
-    await page.getByRole("textbox", { name: "The new piece's label" }).fill("MM-NAT-5120-A");
+    await page.getByRole("textbox", { name: "The new piece’s label" }).fill("MM-NAT-5120-A");
     await page.getByRole("button", { name: "Next" }).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
@@ -535,7 +537,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     const fake = await onTheChoice(page);
     await page.getByRole("button", { name: "Decided against it", exact: true }).click();
     await expect(page.getByText("Nothing is fitted. The visit ends as a free consultation.")).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "The new piece's label" })).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "The new piece’s label" })).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
     await page.getByRole("button", { name: "Next" }).click();
 
@@ -565,7 +567,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   test("runs the consultation's checklist and the fit's for a client being fitted", async ({ page }) => {
     await onTheChoice(page);
     await page.getByRole("button", { name: "Mane Man Natural" }).click();
-    await page.getByRole("textbox", { name: "The new piece's label" }).fill("MM-NAT-5120-A");
+    await page.getByRole("textbox", { name: "The new piece’s label" }).fill("MM-NAT-5120-A");
     await page.getByRole("button", { name: "Next" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" })).toBeVisible();
@@ -686,7 +688,7 @@ test.describe("the client's hair profile", () => {
     await expect(page.getByRole("heading", { level: 1, name: "History" })).toBeVisible();
     await page.getByRole("button", { name: "Minoxidil" }).click();
     await page.getByRole("button", { name: "Transplant" }).click();
-    await page.getByRole("textbox", { name: "The transplant's year" }).fill("2019");
+    await page.getByRole("textbox", { name: "The transplant’s year" }).fill("2019");
     await page.getByRole("textbox", { name: "Skin conditions and allergies" }).fill("Dry at the crown");
     expect(await axeViolations(page)).toEqual([]);
     await next(page).click();

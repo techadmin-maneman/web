@@ -39,7 +39,7 @@ export const signIn = {
   // installed iPhone app has its own cookie jar, so the first sign-in inside it
   // is a second one and looks like the account has gone (ADR 0053's update).
   installed:
-    "This is the app on your home screen, and it signs in separately from the browser. Sign in once more here and use this one from now on. Anything the browser was still sending goes up from the browser.",
+    "The home-screen app signs in on its own. Sign in here once, then use this app. Anything still sending from the browser goes up from there.",
 } as const;
 
 export const today = {
@@ -57,7 +57,7 @@ export const today = {
   },
   offline: {
     title: "No signal · working offline",
-    body: "Today's jobs and cards are on the phone. Photos go up when signal returns.",
+    body: "Today’s jobs and cards are on the phone. Photos go up when signal returns.",
   },
   // The board draws no failure for the day's list.
   failed: "The day’s jobs didn’t load.",
@@ -91,7 +91,7 @@ export const leaving = {
 /** When the phone has no room left for what the app must keep: a photograph, a step. */
 export const storage = {
   // Neither file draws a phone that is full.
-  title: "This phone's storage is full",
+  title: "This phone’s storage is full",
   body: "Nothing more can be kept on it until there is room. Delete photos or apps you don’t need, then try again.",
 } as const;
 
@@ -118,7 +118,7 @@ export const atRisk = {
 
 export const queue = {
   waiting: (count: number) => `${String(count)} photo ${count === 1 ? "set" : "sets"} waiting`,
-  never: "Never written to this phone's gallery.",
+  never: "Never saved to this phone’s gallery.",
   retry: "Retry",
   states: {
     uploading: "Uploading",
@@ -141,7 +141,7 @@ export const queue = {
   since: (time: string) => `Waiting since ${time}`,
   // The board draws no deletion. It lets go of work, so it asks first.
   forget: {
-    open: "Delete this job's work",
+    open: "Delete this job’s work",
     title: "Delete this job’s work?",
     what: (photos: number, actions: number) => {
       const held: string[] = [];
@@ -165,7 +165,7 @@ const stopped: Readonly<Record<string, string>> = {
   // The 409 names the fields that moved and never their values. The new time, once the card read again
   // carries it, and whom a job went to are named by whatStopped below.
   superseded: "This job changed while the phone was offline.",
-  technician: "This job is someone else's now.",
+  technician: "This job is someone else’s now.",
   time: "Ops moved this job to another time.",
   status: "This job was cancelled while the phone was offline.",
   out_of_order: "A step reached us before the one ahead of it.",
@@ -175,12 +175,12 @@ const stopped: Readonly<Record<string, string>> = {
   photo_rejected: "The photos wouldn’t upload.",
   not_found: "This job is no longer on your list, so what it holds can’t reach us.",
   already_closed: "This job is closed, so what it holds can’t reach us.",
-  piece_code: "The piece's label was not accepted.",
-  old_piece: "The label of the piece that came off was not accepted.",
+  piece_code: "The piece’s label wasn’t accepted.",
+  old_piece: "The label of the piece that came off wasn’t accepted.",
   // A one visit's product, no longer offered when the step reached us (ADR 0105).
   product: "That product isn’t offered that day.",
-  done: "A checklist item was not recognised.",
-  reason: "That reason was not accepted.",
+  done: "A checklist item wasn’t recognised.",
+  reason: "That reason wasn’t accepted.",
   invalid_request: "We couldn’t record this.",
   unknown: "We couldn’t record this.",
 } as const;
@@ -273,7 +273,7 @@ export const job = {
   // The design draws no landmark; the client types it as they like, so it shows as typed.
   landmark: "Landmark",
   // The design draws no client's note; the client leaves one in their app.
-  clientNote: (who: string, note: string) => `${who}'s note: ${note}`,
+  clientNote: (who: string, note: string) => `${who}’s note: ${note}`,
   // The board draws no way to reach the client from the card.
   call: (who: string) => `Call ${who}`,
   whatsApp: (who: string) => `WhatsApp ${who}`,
@@ -290,7 +290,7 @@ export const job = {
   // The board draws what changed on the queue alone (board A2).
   changed: {
     title: "This job changed",
-    body: "Nothing more of it can be sent from this phone. Waiting to reach us says what it still holds.",
+    body: "This phone can send nothing more for it. Waiting to reach us shows what it still holds.",
   },
   locked: {
     title: "Not yet",
@@ -342,7 +342,7 @@ export const notHome = {
     away: (km: string) => `You are ${km} from the address.`,
     // The board draws a distance; an address with no coordinates has none (ADR 0036).
     unmeasured: "We couldn’t measure how far you are from the address.",
-    body: "Get to the door and tap again. At the door and still refused? Ask ops to let you check in. No-show can’t be recorded from here.",
+    body: "Get to the door and tap again. Still refused at the door? Ask ops to let you check in. A no-show can’t be recorded from here.",
     action: "Try again",
   },
   waiting: {
@@ -354,7 +354,7 @@ export const notHome = {
     over: "The wait is over.",
     // The board draws the check running, not one waiting for signal. The API counts the wait from when
     // the check-in reaches it as well as from the tap (ADR 0065), so a no-show cannot close before it has.
-    fromTap: "No signal. The wait counts from your tap, and closing as a no-show needs signal, since we count it too.",
+    fromTap: "No signal. The wait counts from your tap, but closing as a no-show needs signal.",
     // The board draws no no-show refused.
     early: "Our clock says the wait hasn’t run out yet. Try again in a minute.",
     close: "Close as no-show",
@@ -457,10 +457,10 @@ export const steps = {
   },
   piece: {
     // The owner ruled out a barcode and a QR code on 24 September 2026, so the code is typed, never scanned.
-    label: "The new piece's label",
+    label: "The new piece’s label",
     placeholder: "MM-STD-4417-B",
     // The board draws no label typed wrong.
-    malformed: "A label reads MM, the base, the number and a letter: MM-STD-4417-B.",
+    malformed: "Type it as the tag reads: MM, the base code, a number and a letter, as in MM-STD-4417-B.",
     checkFirst: "Check the label to continue",
     look: "Check the label",
     unknown: "We don’t know that label. It goes on the job as you typed it.",
@@ -547,7 +547,7 @@ export const oneVisit = {
   name: "Consultation and fit",
   nameLower: "consultation and fit",
   checklist: "Consultation and fit checklist",
-  choice: "The client's choice",
+  choice: "The client’s choice",
   declined: "Decided against it",
   // Ops offer no hair system for the visit's day, so there is nothing to choose from.
   noProducts: "No hair system is offered for this visit. Speak to ops before you fit anything.",
@@ -634,7 +634,7 @@ export const profile = {
     natural: "Natural",
     receded: "Receded",
     straight: "Straight",
-    widows_peak: "Widow's peak",
+    widows_peak: "Widow’s peak",
   } satisfies Words<"hairline">,
   attachments: { tape: "Tape", glue: "Glue", both: "Tape and glue" } satisfies Words<"attachment">,
   remedies: {
@@ -652,7 +652,7 @@ export const profile = {
   history: {
     title: "History",
     remedies: "Remedies tried",
-    year: "The transplant's year",
+    year: "The transplant’s year",
     skin: "Skin conditions and allergies",
   },
   // The card's rows from the profile: the board's Tier, as the hair system, Colour, Adhesive and Scalp, and the base's size.
@@ -669,7 +669,7 @@ export const profile = {
 
 export const types = {
   consultation: "Consultation",
-  service: "Service",
+  service: "Service visit",
   replacement: "Replacement",
   first_fit: "First fit",
 } as const;
@@ -677,7 +677,7 @@ export const types = {
 /** The job card writes the type in lower case, in its line: "9:30 am · service" (board A3). */
 export const typesLower = {
   consultation: "consultation",
-  service: "service",
+  service: "service visit",
   replacement: "replacement",
   first_fit: "first fit",
 } as const;

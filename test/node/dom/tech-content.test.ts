@@ -11,6 +11,9 @@ import type { HeldJob } from "../../../apps/tech/src/store/jobs.ts";
 const SOURCE = "apps/tech/src";
 const DESIGN = readFileSync("design/phase2/Technician App.dc.html", "utf8");
 
+/** The app sets apostrophes curly, as its house style, where the design types them straight. */
+const plain = (text: string) => text.replaceAll("’", "'");
+
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name).replace(/\\/g, "/");
@@ -23,7 +26,7 @@ const sources = files(SOURCE).filter((path) => path.endsWith(".ts") || path.ends
 describe("the technician app's content", () => {
   it("says the design's words for the offline banner", () => {
     expect(DESIGN).toContain(today.offline.title);
-    expect(DESIGN).toContain(today.offline.body);
+    expect(DESIGN).toContain(plain(today.offline.body));
   });
 
   it("says the design's words for the empty day", () => {
@@ -71,7 +74,7 @@ describe("a job ops gave to another technician", () => {
   });
 
   it("names nobody where the API named nobody, and says a cancelled job was cancelled", () => {
-    expect(givenAway(null)).toBe("This job is someone else's now.");
+    expect(givenAway(null)).toBe("This job is someone else’s now.");
     expect(whatStopped({ note: "superseded", fields: ["status", "technician"], moved: null }, NOW)).toBe(
       "This job was cancelled while the phone was offline.",
     );

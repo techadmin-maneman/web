@@ -194,7 +194,7 @@ test("a frame the phone has no room for can be taken again, and the phone says i
   });
   await capture.click();
   await expect(page.getByText("That photo didn’t save. Take it again.")).toBeVisible();
-  await expect(page.getByText("This phone's storage is full")).toBeVisible();
+  await expect(page.getByText("This phone’s storage is full")).toBeVisible();
   await expect(page.getByText(/won’t open its camera/)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 
@@ -204,7 +204,7 @@ test("a frame the phone has no room for can be taken again, and the phone says i
   });
   await capture.click();
   await expect(page.getByText("1 of 5")).toBeVisible();
-  await expect(page.getByText("This phone's storage is full")).toHaveCount(0);
+  await expect(page.getByText("This phone’s storage is full")).toHaveCount(0);
 });
 
 test("a camera the phone refused can be asked for again", async ({ page }) => {
@@ -236,5 +236,5 @@ test("the frames waiting show on the waiting screen, with the design's line abou
   // A frame goes up only with the set it belongs to, so this one waits.
   await page.goto("/waiting");
   await expect(page.getByText("1 photo set waiting")).toBeVisible();
-  await expect(page.getByText("Never written to this phone's gallery.")).toBeVisible();
+  await expect(page.getByText("Never saved to this phone’s gallery.")).toBeVisible();
 });

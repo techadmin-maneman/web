@@ -38,10 +38,10 @@ interface PendingInvite {
 export function notYetFittedLines(reward: Reward | null, invite: PendingInvite | null): readonly [string, string] {
   const theirs = reward?.friend_visits ?? 0;
   if (invite === null || theirs === 0) return ["Your invite opens after your first fit.", promiseOf(reward)];
-  const whose = invite.referrer_first_name === null ? "Your friend's invite" : `${invite.referrer_first_name}'s invite`;
+  const whose = invite.referrer_first_name === null ? "Your friend’s invite" : `${invite.referrer_first_name}’s invite`;
   const arrive = theirs === 1 ? "arrives" : "arrive";
   return [
-    `${whose}: your ${freeServiceVisits(theirs)} ${arrive} when you're fitted.`,
+    `${whose}: your ${freeServiceVisits(theirs)} ${arrive} when you’re fitted.`,
     "Your own invite opens after your first fit.",
   ];
 }
@@ -87,7 +87,7 @@ export const refer = {
     body: (reward: Reward | null) => {
       const friend = reward?.friend_visits ?? 0;
       if (friend === 0) return "Home-fitted hair systems across Delhi NCR.";
-      return `Home-fitted hair systems across Delhi NCR. ${serviceVisits(friend)} free when you're fitted.`;
+      return `Home-fitted hair systems across Delhi NCR. ${serviceVisits(friend)} free when you’re fitted.`;
     },
     domain: "maneman.in",
     // In place of the board's message.
@@ -113,7 +113,7 @@ export const refer = {
     unnamed: "A friend",
     when: (month: string) => `Fitted ${month}`,
     each: (visits: number) => (visits === 1 ? "1 visit earned" : `${String(visits)} visits earned`),
-    only: "Friends show here once they're fitted.",
+    only: "Friends show here once they’re fitted.",
     none: "Nobody you have referred has been fitted yet.",
     back: "Back to refer",
   },

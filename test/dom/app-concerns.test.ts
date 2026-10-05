@@ -123,7 +123,7 @@ describe("the concerns a client raised", () => {
     draw([]);
     await sendConcern("One more thing.");
     expect(page.querySelector('[role="alert"]')?.textContent).toBe(
-      "You have reached today's limit. Send it tomorrow, or message us on WhatsApp.",
+      "You’ve reached today’s limit. Send it tomorrow, or message us on WhatsApp.",
     );
     expect(page.querySelector("textarea")?.value).toBe("One more thing.");
     expect(raised).toBe(0);

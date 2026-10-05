@@ -100,7 +100,7 @@ test("shows board A2's banner with no signal, and the card still opens from the 
 
   await expect(page.getByText("No signal · working offline")).toBeVisible();
   await expect(
-    page.getByText("Today's jobs and cards are on the phone. Photos go up when signal returns."),
+    page.getByText("Today’s jobs and cards are on the phone. Photos go up when signal returns."),
   ).toBeVisible();
   await expect(page.getByText("Rohit M.").first()).toBeVisible();
 

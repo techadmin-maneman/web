@@ -126,7 +126,7 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
 
   await stopped.getByRole("link", { name: "See what is waiting" }).click();
   await expect(page.getByText("Before photos · 4 of 5 sent")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Delete this job's work" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete this job’s work" })).toBeVisible();
   await page.getByRole("button", { name: "Retake photos" }).click();
 
   // Only the refused angle is asked for: the four that reached us count.
@@ -262,7 +262,7 @@ test("accounts plainly for what has not reached us, and says what changed on a s
   // Not only here: every screen says so, and the card offers nothing to press on with.
   await page.getByRole("button", { name: "Back" }).click();
   await expect(
-    page.getByRole("alert").filter({ hasText: `9:30 am service · Sector 65: ${movedToSameer}` }),
+    page.getByRole("alert").filter({ hasText: `9:30 am service visit · Sector 65: ${movedToSameer}` }),
   ).toBeVisible();
   await page.getByRole("listitem").filter({ hasText: "Rohit M." }).click();
   await expect(page.getByRole("heading", { level: 2, name: "This job changed" })).toBeVisible();
@@ -275,7 +275,7 @@ test("accounts plainly for what has not reached us, and says what changed on a s
 
   // Read and dealt with: the job's queue goes, and nothing is left waiting.
   await page.goto("/waiting");
-  await page.getByRole("button", { name: "Delete this job's work" }).click();
+  await page.getByRole("button", { name: "Delete this job’s work" }).click();
   await page.getByRole("button", { name: "Delete them" }).click();
   await expect(page.getByText("Everything has reached us.")).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 0 });
@@ -297,7 +297,9 @@ test("says which job moved to another time, and to when", async ({ page }) => {
 
   // Start job has gone on to the before photos, where the banner says it.
   const movedLine = "Ops moved this job to 10:30 am today.";
-  await expect(page.getByRole("alert").filter({ hasText: `9:30 am service · Sector 65: ${movedLine}` })).toBeVisible();
+  await expect(
+    page.getByRole("alert").filter({ hasText: `9:30 am service visit · Sector 65: ${movedLine}` }),
+  ).toBeVisible();
 
   await page.goto(`/jobs/${JOB_ID}`);
   const changed = page.getByRole("alert").filter({ has: page.getByRole("heading", { name: "This job changed" }) });
@@ -346,13 +348,13 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
   expect(await axeViolations(page)).toEqual([]);
 
   // Deleting never throws away photographs on one tap, and the question opens on the safe answer.
-  await page.getByRole("button", { name: "Delete this job's work" }).click();
+  await page.getByRole("button", { name: "Delete this job’s work" }).click();
   await expect(page.getByText("This deletes 5 photos and 1 action from this phone.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Keep them" })).toBeFocused();
   await page.keyboard.press("Enter");
   expect(await heldOnPhone(page)).toMatchObject({ frames: 5 });
 
-  await page.getByRole("button", { name: "Delete this job's work" }).click();
+  await page.getByRole("button", { name: "Delete this job’s work" }).click();
   await page.getByRole("button", { name: "Delete them" }).click();
   await expect(page.getByText("Everything has reached us.")).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ frames: 0, outbox: 0 });

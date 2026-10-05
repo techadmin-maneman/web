@@ -83,10 +83,10 @@ export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
  * (docs/prompts/phase2-backend.md, "Booking"). Our wording, all of it.
  */
 export const messages = {
-  reschedule: (what: string, date: string) => `I would like to move my ${what.toLowerCase()} on ${date}.`,
+  reschedule: (what: string, date: string) => `I’d like to move my ${what.toLowerCase()} on ${date}.`,
   note: (what: string, date: string) => `A note about my ${what.toLowerCase()} on ${date}: `,
-  book: "I would like to book my next visit.",
-  bookFirstFit: "I would like to book my first fit.",
+  book: "I’d like to book my next visit.",
+  bookFirstFit: "I’d like to book my first fit.",
   bookReplacement: "I’d like to book my replacement hair system.",
   document: (what: string, reference: string) => `Please send me the ${what.toLowerCase()} for ${reference}.`,
   // A visit's invoice that has not come in the day it should have.
@@ -94,7 +94,7 @@ export const messages = {
   // A refund that has taken longer than Razorpay's working days.
   lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} hasn’t arrived.`,
   // A client moving to another city while a visit is booked.
-  moveCity: "I am moving to another city and have a visit booked.",
+  moveCity: "I’m moving to another city and have a visit booked.",
 } as const;
 
 export const empty = {

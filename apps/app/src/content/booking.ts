@@ -73,7 +73,7 @@ export const booking = {
     held: (time: string) => `Held for ${time}`,
     // Board C4 says "Free to move until"; cancelling is free until then too.
     freeUntil: (when: string) => `Free to move or cancel until ${when}.`,
-    afterThat: " After that it is charged.",
+    afterThat: " After that, changes are charged.",
     /** No board draws it. A visit sold already inside its notice says what a change costs at once. */
     insideNotice: {
       /** Followed by the fee's GST split, where there is one, and a full stop. */
@@ -234,11 +234,12 @@ export const dispute = {
  * the app says 5 to 7 (ADR 0025, item 28).
  */
 export const change = {
-  visit: (weekday: string) => `${weekday}'s visit`,
+  visit: (weekday: string) => `${weekday}’s visit`,
   move: {
     title: (visit: string) => `Move ${visit}`,
     free: (amount: string) => `Free to move. Your ${amount} carries over.`,
-    charged: (amount: string) => `Charged. The ${amount} isn’t refunded and the new visit is paid separately.`,
+    charged: (amount: string) =>
+      `This is a late change: your ${amount} isn’t refunded, and the new visit is paid separately.`,
     pick: "Pick a new date",
     accept: "Move and accept charge",
     keep: "Keep it",
@@ -249,7 +250,8 @@ export const change = {
     carriesOver: (amount: string) => `Your ${amount} carries over.`,
     creditCarriesOver: "Your free service visit carries over.",
     cancelInstead: "Cancel the visit instead",
-    creditCharged: "Charged. The free service visit isn’t returned and the new visit is paid separately.",
+    creditCharged:
+      "This is a late change: your free service visit isn’t returned, and the new visit is paid separately.",
   },
   cancel: {
     title: (visit: string) => `Cancel ${visit}`,
@@ -258,7 +260,7 @@ export const change = {
     keep: "Keep it",
     lessFee: (fee: string, amount: string, destination: string) =>
       `The late fee of ${fee} is kept. ${amount} back to your ${destination} in 5 to 7 working days.`,
-    charged: (amount: string) => `Charged. The ${amount} isn’t refunded.`,
+    charged: (amount: string) => `This is a late cancellation: your ${amount} isn’t refunded.`,
     nothingPaid: "Nothing was paid, so nothing is charged.",
     accept: "Cancel and accept charge",
     creditBack: "Your free service visit comes back.",
@@ -282,5 +284,5 @@ export const change = {
   moveItem: (what: string) => `${what} · moved`,
   lateFeeItem: (what: string) => `Late fee · ${what.toLowerCase()}`,
   confirmMove: "Confirm the move",
-  destination: "UPI",
+  destination: "payment method",
 } as const;

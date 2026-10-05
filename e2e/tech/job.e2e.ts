@@ -145,7 +145,7 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
   await expect(page.getByText("Check-in failed")).toBeVisible();
   await expect(page.getByText("You are 1.4 km from the address.")).toBeVisible();
   await expect(
-    page.getByText(/^Get to the door and tap again\. At the door and still refused\? Ask ops to let you check in\./),
+    page.getByText(/^Get to the door and tap again\. Still refused at the door\? Ask ops to let you check in\./),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Close as no-show" })).toHaveCount(0);
   // Board B5 draws the failure with its own outlined Try again, and no second gold "I have arrived" beside it.
@@ -316,7 +316,7 @@ test("tomorrow's job shows its day, and cannot be checked in to today", async ({
   await atTheDoor(page);
   await page.goto(`/jobs/${TOMORROW_JOB_ID}`);
 
-  await expect(page.getByText(/^Tomorrow · 10 am · service · 90 min$/)).toBeVisible();
+  await expect(page.getByText(/^Tomorrow · 10 am · service visit · 90 min$/)).toBeVisible();
   await expect(page.getByText("This job is tomorrow. Arrive and start it on the day.")).toBeVisible();
   await expect(page.getByRole("button", { name: "I have arrived" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Start job" })).toHaveCount(0);

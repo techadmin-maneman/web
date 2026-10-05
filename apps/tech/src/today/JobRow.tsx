@@ -33,7 +33,12 @@ export function JobRow({
       <span className={styles.what}>
         <span className={styles.kind}>
           <span className={capsLook(styles.type)}>{kindName(job)}</span>
-          <span className={capsLook(styles.badge)}>· {badges[job.badge]}</span>
+          {/* The one visit's badge is too long to share a line: it takes its own, with no dot to start it. */}
+          {job.badge === "at_visit" ? (
+            <span className={capsLook(styles.badgeLine)}>{badges.at_visit}</span>
+          ) : (
+            <span className={capsLook(styles.badge)}>· {badges[job.badge]}</span>
+          )}
         </span>
         {client !== undefined && <span className={styles.who}>{client}</span>}
         <span className={styles.where}>{where(job.sector)}</span>

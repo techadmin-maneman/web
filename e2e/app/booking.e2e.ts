@@ -42,7 +42,7 @@ const FIRST_FIT = { amount_ex_gst: 3000000, amount: 3540000, gst_percent: 18 };
 const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 };
 const LATE_FEE_LINE = "Moving inside 24 hours costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST). The balance carries over.";
 /** The pay step's promise for a visit ahead of its notice, and for one already inside it, whose payment is kept. */
-const FREE_UNTIL = /^Free to move or cancel until .+\. After that it is charged\.$/;
+const FREE_UNTIL = /^Free to move or cancel until .+\. After that, changes are charged\.$/;
 const INSIDE_NOTICE =
   /^This visit is less than 24 hours away: if you move or cancel it, the Rs\. [\d,]+ paid isn’t refunded\.$/;
 
@@ -807,7 +807,7 @@ test("says a visit moves or cancels free at any time where the booking is sold s
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(pay.getByText("Free to move or cancel at any time.")).toBeVisible();
-  await expect(pay.getByText(/After that it is charged/)).toHaveCount(0);
+  await expect(pay.getByText(/After that, changes are charged/)).toHaveCount(0);
 });
 
 test("says a credit is gone after a late cancel only where the booking is sold so", async ({ page }) => {
@@ -849,7 +849,7 @@ test("writes the late fee to move a visit as the pay step does, and C7's way to 
   );
   await logIn(page, fittedClient().mobile);
   await page.getByRole("button", { name: "Reschedule" }).click();
-  const sheet = page.getByRole("dialog", { name: /^Move \w+day's visit$/ });
+  const sheet = page.getByRole("dialog", { name: /^Move \w+day’s visit$/ });
   await expect(sheet.getByText(LATE_FEE_LINE)).toBeVisible();
   const instead = await sheet.getByRole("button", { name: "Cancel the visit instead" }).boundingBox();
   expect(instead?.height).toBeGreaterThanOrEqual(44);
