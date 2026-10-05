@@ -20,6 +20,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { changingClients, seedChanging } from "../e2e/app/changing.ts";
 import { fittedClient, seedFitted, wrangler } from "../e2e/app/fitted.ts";
+import { indiaDate } from "../src/lib/india-time.ts";
 import { seedBookingArea } from "../e2e/booking-area.ts";
 import { LOCAL_HAIR_SYSTEMS } from "../src/config/local-hair-systems.ts";
 import { LOCAL_LOGIN_CODE, PORTS } from "./lib/local-stack.ts";
@@ -29,11 +30,10 @@ import { sqlRow } from "./lib/sql-literal.ts";
 const TECHNICIAN = { id: "local-technician", fsmId: "local-resource-1", mobile: "9810099001", name: "Sandeep Yadav" };
 const CLIENT = { id: "local-client", addressId: "local-client-address", mobile: "9810099002", name: "Neha Kapoor" };
 
-const INDIA_OFFSET_MS = 330 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** India's calendar date `days` from today. */
-const indiaDate = (days: number) => new Date(Date.now() + INDIA_OFFSET_MS + days * DAY_MS).toISOString().slice(0, 10);
+const indiaDay = (days: number) => indiaDate(new Date(Date.now() + days * DAY_MS));
 
 /** A visit's window on an India date, as UTC: the morning is 10:00 to 11:30, the afternoon 2:00 to 3:30. */
 const WINDOWS = {
@@ -102,7 +102,7 @@ function products(now: string): string[] {
        ${LOCAL_HAIR_SYSTEMS.map(({ tier, name }, index) => sqlRow("first_fit", tier, name, 180, index + 1, "seed", now)).join(", ")};`,
     `INSERT OR IGNORE INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES
        ${LOCAL_HAIR_SYSTEMS.map(({ tier, price }) => sqlRow("first_fit", tier, price, 0, "2026-01-01")).join(", ")};`,
-    `UPDATE services SET retired_date = '${indiaDate(0)}', updated_by = 'seed', updated_at = '${now}'
+    `UPDATE services SET retired_date = '${indiaDay(0)}', updated_by = 'seed', updated_at = '${now}'
        WHERE kind = 'first_fit' AND tier = 'standard' AND retired_date IS NULL;`,
   ];
 }
@@ -139,7 +139,7 @@ async function seedTechnician(): Promise<void> {
        WHERE technician_id = '${TECHNICIAN.id}' AND fsm_id LIKE 'local-%' AND status = 'scheduled';`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        service_city, service_pincode, synced_at) VALUES
-       ${visit(indiaDate(0), "morning")}, ${visit(indiaDate(0), "afternoon")}, ${visit(indiaDate(1), "morning")};`,
+       ${visit(indiaDay(0), "morning")}, ${visit(indiaDay(0), "afternoon")}, ${visit(indiaDay(1), "morning")};`,
     ...consumables(now),
     ...products(now),
   ];

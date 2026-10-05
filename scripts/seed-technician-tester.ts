@@ -23,20 +23,13 @@
 // his jobs are visits like any other: each step he sends lands as it would on a
 // real job.
 
-import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { parseArgs, promisify } from "node:util";
+import { parseArgs } from "node:util";
+import { indiaDate } from "../src/lib/india-time.ts";
+import { d1Execute, d1Query } from "./lib/d1.ts";
 import { clearTester } from "./lib/technician-tester.ts";
 import { sqlLiteral, sqlRow } from "./lib/sql-literal.ts";
 
-const run = promisify(execFile);
-const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
-const DATABASE = "maneman-staging";
 const DAY_MS = 24 * 60 * 60 * 1000;
-/** India is five and a half hours ahead of UTC, all year. */
-const INDIA_OFFSET_MS = 330 * 60 * 1000;
 
 /**
  * The mark on every row this script writes: a row whose `fsm_id` begins with this
@@ -60,56 +53,28 @@ if (!/^[6-9]\d{9}$/.test(mobile)) {
 }
 const mobileE164 = `+91${mobile}`;
 
-const wrangler = (...args: string[]) => run(process.execPath, [WRANGLER, ...args], { cwd: resolve(".") });
-
 /**
  * Runs SQL on the staging database. A file, not a command, so quoting is the
  * file's problem and not the shell's, and so the number never reaches a command
  * line. It is tried twice, as e2e/tech-staging/seed.ts is: D1 has answered a
  * statement with `{"D1_RESET_DO":true}` and done nothing.
  */
-async function execute(statements: readonly string[]): Promise<void> {
-  const folder = await mkdtemp(join(tmpdir(), "mm-tech-tester-"));
+function execute(statements: readonly string[]): void {
   try {
-    const file = join(folder, "statements.sql");
-    await writeFile(file, statements.join("\n"));
-    try {
-      await wrangler("d1", "execute", DATABASE, "--env", "staging", "--remote", "--file", file);
-    } catch {
-      await wrangler("d1", "execute", DATABASE, "--env", "staging", "--remote", "--file", file);
-    }
-  } finally {
-    await rm(folder, { recursive: true, force: true });
+    d1Execute("staging", statements);
+  } catch {
+    d1Execute("staging", statements);
   }
 }
 
-/** Reads rows from the staging database. */
-async function query<T>(sql: string): Promise<T[]> {
-  const { stdout } = await wrangler(
-    "d1",
-    "execute",
-    DATABASE,
-    "--env",
-    "staging",
-    "--remote",
-    "--json",
-    "--command",
-    sql,
-  );
-  // wrangler prints its banner before the JSON when the terminal is not a TTY.
-  const start = stdout.indexOf("[");
-  if (start < 0) throw new Error("the staging query answered nothing that looks like JSON");
-  const answers = JSON.parse(stdout.slice(start)) as { results: T[] }[];
-  return answers[0]?.results ?? [];
-}
-
 /** India's calendar date `days` from today. */
-const indiaDate = (days: number) => new Date(Date.now() + INDIA_OFFSET_MS + days * DAY_MS).toISOString().slice(0, 10);
+const indiaDay = (days: number) => indiaDate(new Date(Date.now() + days * DAY_MS));
 
 /** The morning window on an India date, as UTC instants: 10:00 to 11:30 India, a service visit's 90 minutes. */
 const morning = (date: string) => ({ start: `${date}T04:30:00.000Z`, end: `${date}T06:00:00.000Z` });
 
-const existing = await query<{ id: string; fsm_id: string; name: string }>(
+const existing = d1Query<{ id: string; fsm_id: string; name: string }>(
+  "staging",
   `SELECT id, fsm_id, name FROM technicians WHERE mobile_e164 = ${sqlLiteral(mobileE164)};`,
 );
 const ours = existing.filter((technician) => technician.fsm_id.startsWith(FSM_ID_PREFIX));
@@ -120,10 +85,11 @@ if (options.clear) {
     process.exit(0);
   }
   const ids = ours.map((technician) => sqlLiteral(technician.id)).join(", ");
-  const people = await query<{ person_id: string }>(
+  const people = d1Query<{ person_id: string }>(
+    "staging",
     `SELECT DISTINCT person_id FROM appointments WHERE technician_id IN (${ids}) AND person_id IS NOT NULL;`,
   );
-  await execute(
+  execute(
     clearTester(
       ours.map((technician) => technician.id),
       people.map((person) => person.person_id),
@@ -148,7 +114,7 @@ const tag = id().slice(0, 8);
 const now = new Date().toISOString();
 const [technicianId, personId, addressId] = [id(), id(), id()];
 const jobs = { today: id(), tomorrow: id(), later: id() };
-const dates = { today: indiaDate(0), tomorrow: indiaDate(1), later: indiaDate(3) };
+const dates = { today: indiaDay(0), tomorrow: indiaDay(1), later: indiaDay(3) };
 
 // A random ten-digit test number for the invented client, as every staging fixture since M2 has used.
 const clientMobile = `9${String(Math.floor(Math.random() * 1e9)).padStart(9, "0")}`;
@@ -170,7 +136,7 @@ const appointment = (jobId: string, date: string) => {
   );
 };
 
-await execute([
+execute([
   `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
      VALUES ${sqlRow(technicianId, `${FSM_ID_PREFIX}${tag}`, "Test Technician", "TT", 1, ZONE, mobileE164, now, 1)};`,
   `INSERT INTO people (id, created_at, mobile_e164, name, contactable, test_record)

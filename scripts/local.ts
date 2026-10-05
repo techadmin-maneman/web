@@ -6,7 +6,6 @@
 //   npm run pay:local [-- <hold-id>]          Razorpay's signed webhook for the last booking held, as if paid by UPI
 //   npm run close:local [-- <visit-id> [--partial]]   a technician closing a visit; alone, lists them
 
-import { execFileSync } from "node:child_process";
 import { createHmac, randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { d1Query } from "./lib/d1.ts";
