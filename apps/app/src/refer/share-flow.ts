@@ -1,15 +1,16 @@
 // What the share sheet (./ShareSheet.tsx) does, apart from how it draws it: the card chosen, the consent its own
-// photographs need, the card composed and stored, and the share itself (docs/decisions/0048-referrals.md).
+// photographs need, the card made, and the share itself (docs/decisions/0048-referrals.md).
 //
-// Their card is composed first, then the consent recorded, then the card stored: nothing is agreed to for a card the
-// phone could not make. Every step that changes what the invite shows waits for the API's answer, and a refusal says
-// so and changes nothing: an invite must never carry photographs the client thinks are gone.
+// The consent is recorded first where it is still to give, then the API makes the card from the client's first fit's
+// photographs, and the phone reads it back to send as a file: the phone never makes or sends a card itself. Every
+// step that changes what the invite shows waits for the API's answer, and a refusal says so and changes nothing: an
+// invite must never carry photographs the client thinks are gone.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useRef, useState } from "react";
-import { api, cardUrl, putCard, storedCard, type Refer } from "../api.ts";
+import { api, cardUrl, makeCard, storedCard, type Refer } from "../api.ts";
 import { refer } from "../content.ts";
-import { composeCard, firstFitPhotos, type FirstFitPair } from "./card.ts";
+import { firstFitPhotos, type FirstFitPair } from "./card.ts";
 import { houseCard, type Shown } from "./CardPreview.tsx";
 import { forOtherApps, inviteFile } from "./share.ts";
 
@@ -134,17 +135,11 @@ export function useShareFlow(opened: Refer) {
     if (fresh.ok) setState(fresh.body);
   }
 
-  /** Their own card: composed, then the consent recorded if it is still to give, then stored. */
+  /** Their own card: the consent recorded if it is still to give, then the card made, then read back to send. */
   const makeTheirOwn = (consentToo: boolean) =>
     once(async () => {
       setStep("composing");
       setProblem(null);
-      const photos = pair ?? (await api.photos().then((answer) => (answer.ok ? firstFitPhotos(answer.body) : null)));
-      const card = photos === null ? null : await composeCard(photos);
-      if (card === null) {
-        await toShare("house", refer.cardFailed);
-        return;
-      }
       if (consentToo) {
         const consent = await api.switchConsent("photos_referral_cards", true, "app_share_sheet");
         if (!consent.ok) {
@@ -154,12 +149,14 @@ export function useShareFlow(opened: Refer) {
         }
         changed.current = true;
       }
-      const stored = await putCard(card);
-      if (!stored.ok) {
-        if (consentToo) await changedInvite();
+      const made = await makeCard();
+      const stored = made.ok ? await storedCard(made.body.version) : null;
+      if (stored?.ok !== true) {
+        if (consentToo || made.ok) await changedInvite();
         await toShare("house", refer.cardFailed);
         return;
       }
+      const card = stored.body;
       const justMade = { card, url: URL.createObjectURL(card) };
       setMade(justMade);
       await changedInvite();

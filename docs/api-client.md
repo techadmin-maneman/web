@@ -1662,11 +1662,11 @@ The client's own card while it is live: the JPEG the invite shows
 }
 ```
 
-### PUT /api/refer/card
+### POST /api/refer/card
 
-Upload the client's referral card: the body is the JPEG itself
+Make the client's referral card from their first fit's front photographs, before and after
 
-**200**: Stored as the card's next version
+**200**: Made, and stored as the card's next version
 
 ```json
 {
@@ -1691,7 +1691,7 @@ Upload the client's referral card: the body is the JPEG itself
 }
 ```
 
-**403**: not_fitted: Refer opens once the client's first fit is done, or no photograph of their first fit is stored
+**403**: not_fitted: Refer opens once the client's first fit is done, or no front photograph of their first fit, before and after, is stored
 
 ```json
 {
@@ -1707,7 +1707,7 @@ Upload the client's referral card: the body is the JPEG itself
 }
 ```
 
-**422**: photo_invalid_file: not a 1200 x 630 JPEG under 300 KB
+**503**: unavailable: the card could not be made just now
 
 ```json
 {

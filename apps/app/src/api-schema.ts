@@ -2610,8 +2610,9 @@ export interface paths {
                 };
             };
         };
-        /** Upload the client's referral card: the body is the JPEG itself */
-        put: {
+        put?: never;
+        /** Make the client's referral card from their first fit's front photographs, before and after */
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -2620,7 +2621,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Stored as the card's next version */
+                /** @description Made, and stored as the card's next version */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2640,7 +2641,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_fitted: Refer opens once the client's first fit is done, or no photograph of their first fit is stored */
+                /** @description not_fitted: Refer opens once the client's first fit is done, or no front photograph of their first fit, before and after, is stored */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2658,8 +2659,8 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description photo_invalid_file: not a 1200 x 630 JPEG under 300 KB */
-                422: {
+                /** @description unavailable: the card could not be made just now */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2669,7 +2670,6 @@ export interface paths {
                 };
             };
         };
-        post?: never;
         /** Take the client's card down: new opens show the house card */
         delete: {
             parameters: {

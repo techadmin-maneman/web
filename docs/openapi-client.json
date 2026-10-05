@@ -7022,11 +7022,11 @@
       }
     },
     "/api/refer/card": {
-      "put": {
-        "summary": "Upload the client's referral card: the body is the JPEG itself",
+      "post": {
+        "summary": "Make the client's referral card from their first fit's front photographs, before and after",
         "responses": {
           "200": {
-            "description": "Stored as the card's next version",
+            "description": "Made, and stored as the card's next version",
             "content": {
               "application/json": {
                 "schema": {
@@ -7055,7 +7055,7 @@
             }
           },
           "403": {
-            "description": "not_fitted: Refer opens once the client's first fit is done, or no photograph of their first fit is stored",
+            "description": "not_fitted: Refer opens once the client's first fit is done, or no front photograph of their first fit, before and after, is stored",
             "content": {
               "application/json": {
                 "schema": {
@@ -7074,8 +7074,8 @@
               }
             }
           },
-          "422": {
-            "description": "photo_invalid_file: not a 1200 x 630 JPEG under 300 KB",
+          "503": {
+            "description": "unavailable: the card could not be made just now",
             "content": {
               "application/json": {
                 "schema": {

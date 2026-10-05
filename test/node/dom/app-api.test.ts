@@ -3,7 +3,7 @@
 // and whose clock a hold is counted on (apps/app/src/lib/clock.ts).
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api, onSessionEnded, putCard } from "../../../apps/app/src/api.ts";
+import { api, makeCard, onSessionEnded } from "../../../apps/app/src/api.ts";
 import { apiNow } from "../../../apps/app/src/lib/clock.ts";
 
 afterEach(() => {
@@ -90,9 +90,9 @@ describe("a signal that never answers", () => {
     expect(answer.value).toMatchObject({ ok: false, status: 0, code: "offline" });
   });
 
-  it("is waited on for a minute while the referral card goes up", async () => {
+  it("is waited on for a minute while the API makes the referral card", async () => {
     neverAnswering();
-    const answer = settled(putCard(new Blob(["jpeg"], { type: "image/jpeg" })));
+    const answer = settled(makeCard());
     await vi.advanceTimersByTimeAsync(59_999);
     expect(answer.value).toBeUndefined();
     await vi.advanceTimersByTimeAsync(1);

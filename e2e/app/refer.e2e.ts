@@ -12,7 +12,6 @@ import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { expect, outsideContract, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
-import { holdOpen } from "./one-tap.ts";
 import { logIn, signIn } from "./signed-in.ts";
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"] });
@@ -294,17 +293,27 @@ async function firstFitPair(page: Page, before: string, after: string) {
   );
 }
 
-// "Without consent, the first option opens F3 instead of selecting." And nothing is agreed to for a card the
-// phone could not make: here the first fit's photographs cannot be read.
-test("asks for the consent before choosing their own card, and records none when the card cannot be made", async ({
+// "Without consent, the first option opens F3 instead of selecting." The consent goes first, then the API is asked
+// for the card; here it cannot make one, and the example is sent instead.
+test("asks for the consent before choosing their own card, and sends the example when the card cannot be made", async ({
   page,
 }) => {
-  await firstFitPair(page, "/e2e/unreadable-before.jpg", "/e2e/unreadable-after.jpg");
-  // The photographs fetched to build the card are held until both taps are in, so the second lands mid-build.
+  await firstFitPair(page, "/e2e/before.jpg", "/e2e/after.jpg");
+  // The card is held until both taps are in, so the second lands while the first is still at work.
   const building = Promise.withResolvers<undefined>();
-  await page.route("**/e2e/unreadable-*.jpg", async (route) => {
-    if (route.request().resourceType() === "fetch") await building.promise;
-    await route.fulfill({ status: 404 });
+  let builds = 0;
+  await page.route("**/api/refer/card", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    builds += 1;
+    await building.promise;
+    return route.fulfill({ status: 503, json: { error: { code: "unavailable", message: "not just now" } } });
+  });
+  let consents = 0;
+  await page.route("**/api/consents/*", (route) => {
+    consents += 1;
+    return route.fulfill({
+      json: { purpose: "photos_referral_cards", granted: true, since: new Date().toISOString() },
+    });
   });
   await toRefer(page);
   await page.getByRole("button", { name: "Share an invite" }).click();
@@ -312,12 +321,6 @@ test("asks for the consent before choosing their own card, and records none when
   await expect(page.getByRole("heading", { name: "Before you send your own photos" })).toBeVisible();
   await expect(page.getByText("Your first name appears on your invite.")).toBeVisible();
 
-  const consents = await holdOpen(page, "**/api/consents/*");
-  // A card is built from the photographs fetched for it, apart from those the card's drawing shows.
-  let builds = 0;
-  page.on("request", (sent) => {
-    if (sent.resourceType() === "fetch" && sent.url().endsWith("/e2e/unreadable-before.jpg")) builds += 1;
-  });
   const allow = page.getByRole("button", { name: "Allow for referral cards" });
   await allow.click();
   // Forced, because the tap this guards against is one the client makes whether it is taken or not.
@@ -326,29 +329,26 @@ test("asks for the consent before choosing their own card, and records none when
 
   await expect(page.getByRole("heading", { name: "Preview · what your friend sees" })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveText("We couldn’t make your card, so we’ve used our example instead.");
-  expect({ consents: consents.asked(), builds }).toEqual({ consents: 0, builds: 1 });
+  expect({ consents, builds }).toEqual({ consents: 1, builds: 1 });
 });
 
-// The whole of their own card: composed in a Worker from the two front photographs, then the consent recorded,
-// then the card stored, once each however often Allow is tapped. The photographs and the store are answered here,
-// so the shared client is left with the house card.
-test("makes their own card, records one consent and stores one card, when Allow is tapped twice", async ({ page }) => {
-  const block = async (background: string) =>
-    sharp({ create: { width: 600, height: 800, channels: 3, background } })
-      .jpeg()
-      .toBuffer();
-  const [before, after] = await Promise.all([block("#131c2e"), block("#1a2740")]);
+// The whole of their own card: the consent recorded, then the card made by the API and read back to send, once each
+// however often Allow is tapped. The card is answered here, so the shared client is left with the house card.
+test("makes their own card, records one consent and asks for one card, when Allow is tapped twice", async ({
+  page,
+}) => {
+  const card = await sharp({ create: { width: 1200, height: 630, channels: 3, background: "#1a2740" } })
+    .jpeg()
+    .toBuffer();
   await firstFitPair(page, "/e2e/before.jpg", "/e2e/after.jpg");
-  await page.route("**/e2e/before.jpg", (route) => route.fulfill({ body: before, contentType: "image/jpeg" }));
-  await page.route("**/e2e/after.jpg", (route) => route.fulfill({ body: after, contentType: "image/jpeg" }));
-  const stored: number[] = [];
-  await page.route("**/api/refer/card", async (route) => {
-    if (route.request().method() !== "PUT") return route.continue();
-    stored.push(route.request().postDataBuffer()?.byteLength ?? 0);
-    return route.fulfill({ json: { version: 2 } });
+  const asked: string[] = [];
+  await page.route("**/api/refer/card*", (route) => {
+    const request = route.request();
+    asked.push(`${request.method()} ${new URL(request.url()).search}`);
+    if (request.method() === "POST") return route.fulfill({ json: { version: 2 } });
+    return route.fulfill({ body: card, contentType: "image/jpeg" });
   });
-  // The consent itself is answered here too, so the shared client is not left agreeing to anything. The card is
-  // composed before it is asked for, so a second tap lands while the first is still at work.
+  // The consent itself is answered here too, so the shared client is not left agreeing to anything.
   let consents = 0;
   const sent: unknown[] = [];
   await page.route("**/api/consents/*", (route) => {
@@ -371,16 +371,13 @@ test("makes their own card, records one consent and stores one card, when Allow 
   await expect(preview).toBeVisible();
   await expect(preview.getByRole("alert")).toHaveCount(0);
   await expect(preview.locator("img").first()).toHaveAttribute("src", /^blob:/);
-  expect({ consents, stored: stored.length }).toEqual({ consents: 1, stored: 1 });
+  expect({ consents, asked }).toEqual({ consents: 1, asked: ["POST ", "GET ?v=2"] });
   // Kept as given on the share sheet (docs/decisions/0094-where-a-consent-was-given.md).
   expect(sent).toEqual([{ granted: true, source: "app_share_sheet" }]);
-  // A JPEG, and under the 300 KB WhatsApp takes.
-  expect(stored[0]).toBeGreaterThan(0);
-  expect(stored[0]).toBeLessThan(300 * 1024);
 
-  // The card just made is the one sent, kept as it was made: the page may not fetch its own blob: link.
+  // The card the API made is the one sent, as it read back: the page may not fetch its own blob: link.
   await preview.getByRole("link", { name: "WhatsApp" }).click();
-  await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(stored[0] ?? 0)]);
+  await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(card.byteLength)]);
 });
 
 /**

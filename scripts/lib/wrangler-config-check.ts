@@ -71,6 +71,8 @@ const FREE_TIER_KEYS: ReadonlySet<string> = new Set([
   "r2_buckets",
   "queues.producers",
   "queues.consumers",
+  // Refused past 5,000 transformations a month on the Free plan, never billed: a client's referral card.
+  "images",
   "version_metadata",
 ]);
 

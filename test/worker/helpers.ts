@@ -23,6 +23,7 @@ import { createAccessVerifier } from "../../src/providers/cloudflare-access.ts";
 import { createLogger } from "../../src/log.ts";
 import { type CrmProvider } from "../../src/providers/crm/index.ts";
 import { createStubCrm } from "../../src/providers/crm/stub.ts";
+import { recordingCards } from "./cards.ts";
 import { createImageProvider } from "../../src/providers/image/index.ts";
 import type { CodeChannel } from "../../src/providers/codes.ts";
 import { createStubBooks } from "../../src/providers/books/stub.ts";
@@ -299,6 +300,7 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
     sentCodes,
     books: createStubBooks(),
     payments: createStubPayments(),
+    cards: recordingCards(),
     ...overrides,
   };
 }

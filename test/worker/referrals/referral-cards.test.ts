@@ -1,6 +1,6 @@
 // The referral card, its preview image, the waitlist, a pincode launch and ops' funnel
 // (docs/decisions/0048-referrals.md). NOW is Monday 21 September 2026, 12 noon in India. Every name and number
-// here is made up, and the card is bytes, never a photograph.
+// here is made up, and the photographs and the card are bytes, never images.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -22,6 +22,7 @@ import {
   request,
   fittedAndPhotographed,
 } from "../helpers.ts";
+import { jpegOf, recordingCards } from "../cards.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const FRIEND = "22222222-2222-4222-8222-222222222222";
@@ -32,19 +33,6 @@ const client = () => appFor("local", fakeDependencies(), {}, "client");
 const site = () => appFor("local", fakeDependencies(), {}, "public");
 const ops = () => appFor("local", fakeDependencies(), {}, "ops");
 
-/** A JPEG's bytes as far as its frame header: enough to read its size, and nothing of anyone. */
-function jpegOf(width: number, height: number): Uint8Array {
-  const bytes = new Uint8Array(20);
-  const view = new DataView(bytes.buffer);
-  bytes.set([0xff, 0xd8, 0xff, 0xc0], 0);
-  view.setUint16(4, 11); // the frame header's length
-  bytes[6] = 8; // bits a sample
-  view.setUint16(7, height);
-  view.setUint16(9, width);
-  bytes.set([0xff, 0xd9], 17);
-  return bytes;
-}
-
 async function consent(purpose: string, granted: boolean, personId = PERSON) {
   await env.DB.prepare(
     `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
@@ -54,11 +42,11 @@ async function consent(purpose: string, granted: boolean, personId = PERSON) {
     .run();
 }
 
-const put = (body: Uint8Array) =>
-  request(client(), "/api/refer/card", {
-    method: "PUT",
-    headers: { Cookie: cookie, "Content-Type": "image/jpeg", Origin: "https://maneman.test" },
-    body,
+/** The client asks for their card; the API makes it with `deps`' composer. */
+const make = (deps = fakeDependencies()) =>
+  request(appFor("local", deps, {}, "client"), "/api/refer/card", {
+    method: "POST",
+    headers: { Cookie: cookie, Origin: "https://maneman.test" },
   });
 
 const card = () =>
@@ -74,7 +62,22 @@ beforeEach(async () => {
   )
     .bind(PERSON, NOW.toISOString())
     .run();
-  await fittedAndPhotographed(PERSON);
+  // The first fit, with its front photograph after; then the one before it.
+  const fit = await fittedAndPhotographed(PERSON);
+  const before = crypto.randomUUID();
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES (?1, ?2, 'before', ?3)").bind(
+      before,
+      fit,
+      NOW.toISOString(),
+    ),
+    env.DB.prepare(
+      `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, taken_at, created_at)
+       VALUES (?1, ?2, 'front', ?3, 'image/jpeg', 1000, ?4, ?4)`,
+    ).bind(crypto.randomUUID(), before, `visits/${fit}/before-front.jpg`, NOW.toISOString()),
+  ]);
+  await env.CLIENT_PHOTOS.put(`visits/${fit}/before-front.jpg`, "the front, before");
+  await env.CLIENT_PHOTOS.put(`visits/${fit}/after-front.jpg`, "the front, after");
   await env.DB.prepare("INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)")
     .bind(CODE, PERSON, NOW.toISOString())
     .run();
@@ -82,11 +85,15 @@ beforeEach(async () => {
 });
 
 describe("the referral card", () => {
-  it("is stored with the client's consent, shown as the invite's preview, and taken down on a revoke", async () => {
-    expect((await put(jpegOf(1200, 630))).status).toBe(409);
+  it("is made from the first fit's front photographs with the client's consent, shown, and taken down", async () => {
+    const deps = fakeDependencies({ cards: recordingCards() });
+    expect((await make(deps)).status).toBe(409);
     await consent("photos_referral_cards", true);
-    const stored = await put(jpegOf(1200, 630));
+    const stored = await make(deps);
     expect(await stored.json()).toEqual({ version: 2 });
+    expect((deps.cards as ReturnType<typeof recordingCards>).composed).toEqual([
+      { before: "the front, before", after: "the front, after" },
+    ]);
     expect(await card()).toMatchObject({ card_state: "personal", card_version: 2, card_key: `cards/${CODE}/v2.jpg` });
     // Counted on the storage meter (docs/decisions/0093-the-storage-meter.md).
     expect((await readMeter(env.DB)).bytes).toBe(jpegOf(1200, 630).byteLength);
@@ -114,7 +121,7 @@ describe("the referral card", () => {
   // A preview reveals a referrer's card, so guessing codes through it spends the address's misses too.
   it("gives the house card for every code to an address past its misses, and the card to anyone else", async () => {
     await consent("photos_referral_cards", true);
-    await put(jpegOf(1200, 630));
+    await make();
     const preview = (code: string, address: string) =>
       request(site(), `/api/og/${code}.jpg`, { headers: { "CF-Connecting-IP": address } });
 
@@ -127,26 +134,27 @@ describe("the referral card", () => {
     expect((await preview(CODE, "198.51.100.4")).status).toBe(200);
   });
 
-  // Any 1200 x 630 JPEG became a client's public card; a card is made from their first fit's photographs.
-  it("refuses a card until a photograph of the client's first fit is stored", async () => {
+  // Any 1200 x 630 JPEG the client uploaded became their public card; now the API makes it from their photographs.
+  it("refuses a card until the first fit's front photographs, before and after, are stored", async () => {
     await consent("photos_referral_cards", true);
-    await env.DB.prepare("DELETE FROM photos").run();
-    const refused = await put(jpegOf(1200, 630));
+    await env.DB.prepare("DELETE FROM photos WHERE r2_key LIKE '%before-front.jpg'").run();
+    const refused = await make();
     expect(refused.status).toBe(403);
     expect(await refused.json()).toMatchObject({ error: { code: "not_fitted" } });
     expect(await card()).toMatchObject({ card_state: "house", card_version: 1 });
   });
 
-  it("refuses anything that is not a 1200 by 630 JPEG", async () => {
+  it("answers unavailable, and keeps no card, when it cannot be made", async () => {
     await consent("photos_referral_cards", true);
-    expect((await put(jpegOf(1080, 1080))).status).toBe(422);
-    expect((await put(new Uint8Array([1, 2, 3]))).status).toBe(422);
+    const failing = { compose: () => Promise.reject(new Error("Images said 9422")) };
+    expect((await make(fakeDependencies({ cards: failing }))).status).toBe(503);
+    expect((await make(fakeDependencies({ cards: recordingCards(jpegOf(1080, 1080)) }))).status).toBe(503);
     expect(await card()).toMatchObject({ card_state: "house", card_version: 1 });
   });
 
   it("comes down when the consent is switched off, and when the client is erased", async () => {
     await consent("photos_referral_cards", true);
-    await put(jpegOf(1200, 630));
+    await make();
     const off = await request(client(), "/api/consents/photos_referral_cards", {
       method: "PATCH",
       headers: { Cookie: cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
@@ -157,10 +165,10 @@ describe("the referral card", () => {
     expect((await readMeter(env.DB)).bytes).toBe(0);
 
     await consent("photos_referral_cards", true);
-    await put(jpegOf(1200, 630));
+    await make();
     expect((await card())?.card_state).toBe("personal");
     // A new card replaces the one before it, which is counted no more.
-    await put(jpegOf(1200, 630));
+    await make();
     expect((await readMeter(env.DB)).bytes).toBe(jpegOf(1200, 630).byteLength);
     await eraseByMobile("+919810000001", NOW);
     expect(await card()).toMatchObject({ card_state: "house", card_key: null });
@@ -176,7 +184,7 @@ describe("the client's own card, from the client app's host", () => {
 
   it("is the stored card, for its owner alone, kept a day on their phone", async () => {
     await consent("photos_referral_cards", true);
-    await put(jpegOf(1200, 630));
+    await make();
 
     const answer = await own();
     expect(answer.status).toBe(200);
@@ -193,7 +201,7 @@ describe("the client's own card, from the client app's host", () => {
   it("answers 404 with no card of theirs, and once a revoke takes it down", async () => {
     expect((await own()).status).toBe(404);
     await consent("photos_referral_cards", true);
-    await put(jpegOf(1200, 630));
+    await make();
     await request(client(), "/api/refer/card", {
       method: "DELETE",
       headers: { Cookie: cookie, Origin: "https://maneman.test" },
@@ -208,7 +216,7 @@ describe("the client's own card, from the client app's host", () => {
   // down: the route itself must not answer a card its owner no longer agrees to.
   it("answers 404 once the consent is off, even for a card still stored", async () => {
     await consent("photos_referral_cards", true);
-    await put(jpegOf(1200, 630));
+    await make();
     await consent("photos_referral_cards", false);
 
     expect((await card())?.card_state).toBe("personal");
@@ -217,7 +225,7 @@ describe("the client's own card, from the client app's host", () => {
 
   it("answers nothing once the client is erased: the session ends, and a new one finds no card", async () => {
     await consent("photos_referral_cards", true);
-    await put(jpegOf(1200, 630));
+    await make();
     await eraseByMobile("+919810000001", NOW);
 
     expect((await own()).status).toBe(401);

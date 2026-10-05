@@ -7,16 +7,8 @@
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { drawCard } from "../../../apps/app/src/refer/card-draw.ts";
-import {
-  CARD_HEIGHT,
-  CARD_WIDTH,
-  HALF_WIDTH,
-  LOCKUP,
-  RULE_WIDTH,
-  viewBoxOf,
-} from "../../../apps/app/src/refer/card-layout.ts";
-import { MARK, WORDMARK_SMALL } from "../../../packages/brand/marks.ts";
+import { CARD_HEIGHT, CARD_WIDTH, HALF_WIDTH, LOCKUP, RULE_WIDTH } from "../../../apps/app/src/refer/card-layout.ts";
+import { CARD_OVERLAY_PNG } from "../../../src/config/card-overlay.ts";
 
 const BOARD = readFileSync("design/phase2/Referral and Waitlist.dc.html", "utf8");
 const A1 = BOARD.slice(BOARD.indexOf("A1 · Personal"), BOARD.indexOf("A2 · House sample"));
@@ -37,65 +29,45 @@ describe("board A1", () => {
   });
 });
 
-/** A canvas that writes down what is drawn on it, and in what colour. */
-function recorder() {
-  const drawn: string[] = [];
-  let fillStyle = "";
-  let origin = { x: 0, y: 0, scale: 1 };
-  const context = {
-    set fillStyle(value: string) {
-      fillStyle = value;
-    },
-    fillRect: (x: number, y: number, width: number, height: number) =>
-      drawn.push(`rect ${fillStyle} ${String([x, y, width, height])}`),
-    save: () => undefined,
-    restore: () => {
-      origin = { x: 0, y: 0, scale: 1 };
-    },
-    beginPath: () => undefined,
-    rect: () => undefined,
-    clip: () => undefined,
-    drawImage: () => drawn.push("photo"),
-    translate: (x: number, y: number) => {
-      origin = { ...origin, x: origin.x + x * origin.scale, y: origin.y + y * origin.scale };
-    },
-    scale: (by: number) => {
-      origin = { ...origin, scale: origin.scale * by };
-    },
-    fill: (path: string, rule: string) =>
-      drawn.push(
-        `${path} ${fillStyle} ${rule} at ${origin.x.toFixed(1)},${origin.y.toFixed(1)} x${origin.scale.toFixed(3)}`,
-      ),
+/** An image's pixel, as red, green, blue and alpha. */
+async function pixels(bytes: Buffer) {
+  const { data, info } = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  return (x: number, y: number) => {
+    const at = (y * info.width + x) * info.channels;
+    return [data[at] ?? 0, data[at + 1] ?? 0, data[at + 2] ?? 0, data[at + 3] ?? 0];
   };
-  return { context: context as unknown as CanvasRenderingContext2D, drawn };
 }
 
-describe("the card the phone composes", () => {
-  it("puts one gilt rule 2 px wide down the middle, and the lockup in the bottom right corner", () => {
-    const { context, drawn } = recorder();
-    const photo = { width: 600, height: 800 } as unknown as ImageBitmap;
-    drawCard(
-      context,
-      { before: photo, after: photo },
-      {
-        mark: "mark" as unknown as Path2D,
-        markBox: viewBoxOf(MARK.viewBox),
-        wordmark: "wordmark" as unknown as Path2D,
-        wordmarkBox: viewBoxOf(WORDMARK_SMALL.viewBox),
-      },
-      COLOURS,
-    );
+const near = (rgb: number[], hex: string) =>
+  rgb
+    .slice(0, 3)
+    .every((value, index) => Math.abs(value - Number.parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16)) < 24);
+
+describe("the overlay the API draws a client's card with", () => {
+  const overlay = Buffer.from(CARD_OVERLAY_PNG, "base64");
+
+  it("is clear over both photographs, with one gilt rule 2 px wide down the middle", async () => {
+    expect(await sharp(overlay).metadata()).toMatchObject({ format: "png", width: CARD_WIDTH, height: CARD_HEIGHT });
+    const pixel = await pixels(overlay);
     expect(HALF_WIDTH).toBe(599);
-    expect(drawn).toEqual([
-      `rect ${COLOURS.ink} 0,0,${String(CARD_WIDTH)},${String(CARD_HEIGHT)}`,
-      "photo",
-      "photo",
-      `rect ${COLOURS.gilt} 599,0,2,630`,
-      // 1200 − 40 − (44 + 18 + 140) = 958 across, and 630 − 34 − 48 = 548 down, as an SVG sets it: whole and centred.
-      `mark ${COLOURS.gilt} evenodd at 958.0,548.1 x0.220`,
-      // 958 + 44 + 18 = 1020 across and centred on the mark's line; its box starts 3 units left of and above it.
-      `wordmark ${COLOURS.paper} nonzero at 1021.4,561.2 x0.217`,
-    ]);
+    expect(pixel(300, 315)[3]).toBe(0);
+    expect(pixel(900, 315)[3]).toBe(0);
+    for (const x of [HALF_WIDTH, HALF_WIDTH + RULE_WIDTH - 1]) {
+      expect(near(pixel(x, 315), COLOURS.gilt)).toBe(true);
+      expect(pixel(x, 315)[3]).toBe(255);
+    }
+  });
+
+  it("carries the gilt mark and the paper wordmark in the bottom right corner", async () => {
+    const pixel = await pixels(overlay);
+    const anyIn = (left: number, top: number, width: number, height: number, hex: string) =>
+      Array.from({ length: width * height }, (_, index) =>
+        pixel(left + (index % width), top + Math.floor(index / width)),
+      ).some((rgba) => near(rgba, hex) && rgba[3] === 255);
+    // 1200 − 40 − (44 + 18 + 140) = 958 across, and 630 − 34 − 48 = 548 down; the wordmark centred on the mark's line.
+    expect(anyIn(958, 548, 44, 48, COLOURS.gilt)).toBe(true);
+    expect(anyIn(1020, 560, 140, 23, COLOURS.paper)).toBe(true);
+    expect(LOCKUP).toMatchObject({ right: 40, bottom: 34, gap: 18 });
   });
 });
 
