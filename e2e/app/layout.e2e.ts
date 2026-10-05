@@ -39,7 +39,7 @@ test("draws where the keyboard is on every control of Home, in the order they co
     const drawn = await ringDrawn(page);
     if (drawn === null) continue;
     seen += 1;
-    const name = await page.evaluate(() => document.activeElement?.textContent?.trim().slice(0, 40) ?? "");
+    const name = await page.evaluate(() => document.activeElement?.textContent.trim().slice(0, 40) ?? "");
     expect(drawn, `"${name}" takes the keyboard without a ring`).toBe(true);
   }
   expect(seen).toBeGreaterThan(3);
