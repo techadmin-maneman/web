@@ -1,9 +1,8 @@
-import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useState } from "preact/hooks";
 import type { LossExtent } from "../../../../src/config/booking.ts";
 import { ONE_VISIT_WINDOWS } from "../../../../src/policy/one-visit.ts";
 import { referral } from "../../content/referral.ts";
-import { numberCode as numberCodeWords, whatsapp } from "../../content/site.ts";
+import { numberCode as numberCodeWords } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
 import {
   addressToSend,
@@ -20,13 +19,14 @@ import {
   type ErrorCode,
   type ReferralConsultation,
 } from "../../lib/api.ts";
-import { dayStrip, indiaTomorrow, stripMonths } from "../../lib/dates.ts";
-import { anyOpen, chosenSlot, dayOpen, isOpen, type Slot } from "../../lib/open-windows.ts";
+import { dayStrip, indiaTomorrow } from "../../lib/dates.ts";
+import { anyOpen, chosenSlot, type Slot } from "../../lib/open-windows.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { NumberCodeField, type CodeFieldClasses } from "../NumberCodeField.tsx";
 import { useNumberCode } from "../useNumberCode.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
+import { DayStrip, DiscountCode, PlanChoice, WindowChoice } from "./ConsultationFields.tsx";
 import type { Booking } from "./Done.tsx";
 import { ExtentFieldset, ForPincode, PersonFieldset, RememberedInvite, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
@@ -182,10 +182,6 @@ export function Consultation(props: ConsultationProps) {
     );
   }
 
-  const choices = consultation.plan;
-  const options = choices.options.filter((option) => option.id === "consultation" || oneVisitOffered);
-  const nothingOpen = !anyOpen(open.days, windowIds);
-
   function bookWithoutInvite() {
     if (remembered !== null) forgetInvite(remembered);
     setRemembered(null);
@@ -204,118 +200,29 @@ export function Consultation(props: ConsultationProps) {
         <ForPincode text={fill(consultation.forPincode, { pincode })} onChange={props.onChangePincode} />
       </div>
 
-      <fieldset class={styles.group}>
-        <legend class={`caps ${styles.legend}`}>{choices.legend}</legend>
-        <div class={styles.windows}>
-          {options.map((option) => (
-            <label key={option.id} class={`${styles.window} ${plan === option.id ? styles.windowOn : ""}`}>
-              <input
-                type="radio"
-                name="plan"
-                class="visually-hidden"
-                checked={plan === option.id}
-                onChange={() => {
-                  props.onPlanChange(option.id);
-                }}
-              />
-              <span class={styles.windowLabel}>{option.label}</span>
-            </label>
-          ))}
-        </div>
-        {plan === "one_visit" && <p class={styles.planNote}>{choices.note}</p>}
-        {!oneVisitOffered && <p class={styles.planNote}>{choices.notYet}</p>}
-      </fieldset>
+      <PlanChoice plan={plan} oneVisitOffered={oneVisitOffered} onPlanChange={props.onPlanChange} />
 
-      {takesCode && (
-        <div>
-          <label class={styles.label} for="invite-consultation-code">
-            {consultation.code.label}
-          </label>
-          <input
-            id="invite-consultation-code"
-            class={`${styles.input} ${codeRefused ? styles.bad : ""}`}
-            value={code}
-            autocomplete="off"
-            autocapitalize="characters"
-            spellcheck={false}
-            aria-invalid={codeRefused}
-            aria-describedby={
-              codeRefused
-                ? "invite-consultation-code-error invite-consultation-code-hint"
-                : "invite-consultation-code-hint"
-            }
-            onInput={(event) => {
-              setCode(event.currentTarget.value);
-            }}
-          />
-          {codeRefused && (
-            <div id="invite-consultation-code-error" class={styles.error}>
-              {referral.errors.codeNotApplicable}
-            </div>
-          )}
-          <p id="invite-consultation-code-hint" class={styles.hint}>
-            {consultation.code.hint}
-          </p>
-        </div>
-      )}
+      {takesCode && <DiscountCode code={code} refused={codeRefused} onCode={setCode} />}
 
-      <fieldset class={styles.group}>
-        <legend class={`caps ${styles.legend}`}>{consultation.date}</legend>
-        {nothingOpen && (
-          <p class={styles.planNote}>
-            {consultation.noneOpen}{" "}
-            <a href={whatsappChat(whatsapp.number)} target="_blank" rel="noopener">
-              {consultation.noneOpenAction}
-            </a>
-          </p>
-        )}
-        <p class={styles.months}>{stripMonths(days)}</p>
-        <div class={styles.dates}>
-          {days.map((day) => (
-            <label key={day.date} class={`${styles.day} ${slot.date === day.date ? styles.dayOn : ""}`}>
-              <input
-                type="radio"
-                name="date"
-                class="visually-hidden"
-                aria-label={day.label}
-                checked={slot.date === day.date}
-                disabled={!dayOpen(open.days, day.date, windowIds)}
-                onChange={() => {
-                  setPicked({ date: day.date, window: slot.window });
-                }}
-              />
-              <span class={styles.dayName}>{day.weekday}</span>
-              <span class={styles.dayNumber}>{day.number}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <DayStrip
+        days={days}
+        slot={slot}
+        open={open.days}
+        windowIds={windowIds}
+        nothingOpen={!anyOpen(open.days, windowIds)}
+        onDay={(date) => {
+          setPicked({ date, window: slot.window });
+        }}
+      />
 
-      <fieldset class={styles.group}>
-        <legend class={`caps ${styles.legend}`}>{consultation.window}</legend>
-        <div class={styles.windows}>
-          {windows.map((option) => {
-            const { id } = option;
-            const windowOpen = isOpen(open.days, slot.date, id);
-            return (
-              <label key={id} class={`${styles.window} ${slot.window === id ? styles.windowOn : ""}`}>
-                <input
-                  type="radio"
-                  name="window"
-                  class="visually-hidden"
-                  checked={slot.window === id}
-                  disabled={!windowOpen}
-                  onChange={() => {
-                    setPicked({ date: slot.date, window: id });
-                  }}
-                />
-                <span class={styles.windowLabel}>{option.label}</span>
-                <span class={styles.windowHours}>{windowOpen ? option.hours : consultation.full}</span>
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
+      <WindowChoice
+        windows={windows}
+        slot={slot}
+        open={open.days}
+        onWindow={(window) => {
+          setPicked({ date: slot.date, window });
+        }}
+      />
 
       <AddressFieldset
         address={address}
