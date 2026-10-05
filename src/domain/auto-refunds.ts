@@ -7,7 +7,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
-import { heldVisitTimes } from "./scheduling.ts";
+import { heldVisitTimes } from "./visit-times.ts";
 import { DESTINATIONS, underVisitsConsent, type Composed } from "./visit-messages.ts";
 
 /** Why a booking refunded its hold by itself. */

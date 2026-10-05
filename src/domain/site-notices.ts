@@ -9,7 +9,7 @@ import { type MessageKind } from "../config/message-kinds.ts";
 import { consentGiven } from "./consents.ts";
 import { currentAddress } from "./profile.ts";
 import { isServed } from "./service-area.ts";
-import { bookableTypes, liveVisitOf, type LiveVisit } from "./scheduling.ts";
+import { bookableTypes, liveVisitOf, type LiveVisit } from "./availability.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { hoursOfWindow, NO_VISITS_CONSENT, type Composed } from "./visit-messages.ts";
 import { isOneOf } from "../lib/one-of.ts";

@@ -72,7 +72,8 @@ import { currentAddress, firstAddressStatement, type Address } from "./profile.t
 import { formPerson, personWithMobile } from "./form-person.ts";
 import { checkForOneVisit, codeOnHold, useOnNewHold, type OneVisitCode } from "./discount-code-holds.ts";
 import { attribute, hasAskedForAVisit, type Invite, type InviteState, type Via } from "./referrals.ts";
-import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } from "./scheduling.ts";
+import { availability, bookableTypes, liveVisitOf } from "./availability.ts";
+import { holdSlot, type HeldService } from "./hold-slot.ts";
 import { saveBookingLead, type LeadAttribution } from "./leads.ts";
 import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { waitlistConfirmation } from "./waitlist.ts";

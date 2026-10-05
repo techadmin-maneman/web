@@ -22,7 +22,7 @@ import { recordBookingConsents } from "./booking-consents.ts";
 import { linkPaid } from "./payment-links.ts";
 import { recordPayment } from "./payments.ts";
 import { ASKS } from "./refunds.ts";
-import { graceEnds } from "./scheduling.ts";
+import { graceEnds } from "./hold-stages.ts";
 import { recordHoldLinkPaid } from "./visit-booking.ts";
 
 /** Holds asked about in one run at most, and one visit's links the same. */

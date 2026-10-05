@@ -46,7 +46,7 @@ import { refundAtOnce, type Canceller, type OwedRefund, type RefundDeps } from "
 import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { lateFeeOn, priceOf, type Price } from "./price-book.ts";
-import { bookedMinutes } from "./scheduling.ts";
+import { bookedMinutes } from "./occupancy.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { visitBegun } from "./visit-begun.ts";
 import { visitMessageOnChange } from "./visit-messages.ts";

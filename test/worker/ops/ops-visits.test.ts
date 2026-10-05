@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { startBooking } from "../../../src/domain/bookings.ts";
 import { creditBalance, grantCredits } from "../../../src/domain/credits.ts";
 import { makeCodes, type NewCodes } from "../../../src/domain/discount-codes.ts";
-import { holdSlot } from "../../../src/domain/scheduling.ts";
+import { holdSlot } from "../../../src/domain/hold-slot.ts";
 import { outstandingTasks } from "../../../src/domain/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
