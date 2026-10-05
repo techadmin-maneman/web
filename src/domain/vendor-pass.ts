@@ -14,7 +14,7 @@ export const RECHECK_AFTER_MS = HOUR_MS;
 export const FAILURES_BEFORE_ALERT = 3;
 
 /** One record a pass could not write, as the log and ops are told of it. */
-export interface PassFailure {
+interface PassFailure {
   /** What the log's events and the alerts' keys call it: "invoice", "books_customer". */
   readonly event: string;
   readonly id: string;

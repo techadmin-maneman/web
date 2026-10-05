@@ -486,7 +486,9 @@ describe("payments and refunds", () => {
       await chargedNoShow(400000);
       await pass(createStubBooks(), "books-customer-9");
       expect(told).toEqual([
-        expect.stringContaining(`has nothing to be set against: visit ${VISIT} was a no-show and Rs. 4,000 of it kept.`),
+        expect.stringContaining(
+          `has nothing to be set against: visit ${VISIT} was a no-show and Rs. 4,000 of it kept.`,
+        ),
       ]);
     });
 
