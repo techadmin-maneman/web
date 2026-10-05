@@ -17,6 +17,7 @@ import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
 import { moveVisit } from "./visit-status.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
+import { paidNotBooked } from "./hold-stages.ts";
 
 export interface ConfirmOptions {
   /** Queues a message about the visit once its row is written (src/domain/visit-messages.ts). */
@@ -828,8 +829,7 @@ interface UnbookedHold {
 async function unbookedHolds(db: D1Database, now: Date): Promise<UnbookedHold[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, person_id FROM slot_holds
-       WHERE state = 'held' AND confirmed_at IS NOT NULL AND queued_at <= ?1
+      `SELECT id, person_id FROM slot_holds WHERE ${paidNotBooked("slot_holds")} AND queued_at <= ?1
        ORDER BY queued_at LIMIT ?2`,
     )
     .bind(new Date(now.getTime() - UNBOOKED_AFTER_MS).toISOString(), BOOKED_PER_PASS)
