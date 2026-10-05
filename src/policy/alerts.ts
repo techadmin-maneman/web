@@ -29,6 +29,7 @@ export const CUSTOMER_CARE_KINDS = [
   "contact_sync",
   "deletion_waiting",
   "books_erasure",
+  "crm_contact_erasure",
 ];
 
 const FINANCE_KINDS = [
