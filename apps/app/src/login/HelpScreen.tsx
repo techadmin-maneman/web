@@ -2,6 +2,7 @@
 // choice rather than by the API's answer, so it never says whether a number
 // has a booking (docs/decisions/0030-one-time-codes.md).
 
+import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
 import { ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
@@ -14,9 +15,7 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
   return (
     <main className={styles.screen}>
       <div className={styles.top}>
-        <button className={styles.back} type="button" onClick={onBack} aria-label={copy.back}>
-          <Icon d={ICONS.back} size={22} />
-        </button>
+        <IconButton className={styles.back} d={ICONS.back} size={22} label={copy.back} onClick={onBack} />
       </div>
       <div className={styles.body}>
         <h1 className={styles.helpTitle}>{copy.title}</h1>

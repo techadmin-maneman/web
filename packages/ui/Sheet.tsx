@@ -31,6 +31,14 @@ function useBackCloses(dialog: RefObject<HTMLDialogElement | null>, onCancel: ((
   );
 }
 
+/**
+ * The sheet itself, on paper, as the client app's boards draw it: it scrolls when it is taller than the screen, and
+ * keeps clear of the phone's home bar. A sheet's own class sets what its steps hold.
+ */
+export function SheetPanel({ className, children }: { readonly className?: string; readonly children: ReactNode }) {
+  return <div className={classes(styles.panel, className)}>{children}</div>;
+}
+
 export function Sheet({
   ref,
   labelledBy,

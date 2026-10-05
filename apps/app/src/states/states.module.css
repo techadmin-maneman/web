@@ -38,15 +38,7 @@
   padding: 0 var(--sp-20);
 }
 
+/* The shared failure (@maneman/ui/States), at the app's reading size. */
 .pageFailed {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--sp-16);
-  padding: var(--sp-24) var(--sp-20);
   font-size: var(--fs-16);
-}
-
-.pageFailed p {
-  margin: 0;
 }

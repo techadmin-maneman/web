@@ -33,6 +33,7 @@ import { go } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { keptArrival, keptClosed } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
+import frame from "../components/frame.module.css";
 import styles from "./steps.module.css";
 
 /** Five angles before and five after: the ten the board counts. */
@@ -101,7 +102,7 @@ export function CloseOut({ id }: { id: string }) {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
     return (
-      <main className={styles.screen}>
+      <main className={frame.screen}>
         <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />
       </main>
     );
@@ -111,7 +112,7 @@ export function CloseOut({ id }: { id: string }) {
   const outcome = outcomeOf(job, waiting.events);
   if (outcome === null) {
     return (
-      <main className={styles.screen}>
+      <main className={frame.screen}>
         <Failed
           message={copy.notClosed}
           retry={copy.backToJob}
@@ -133,7 +134,7 @@ export function CloseOut({ id }: { id: string }) {
   const later = day.state === "loaded" ? nextAfter(day.value, job.starts_at) : null;
 
   return (
-    <main className={styles.screen}>
+    <main className={frame.screen}>
       <section className={styles.close}>
         <p className={styles.closeLabel}>{copy.label}</p>
         <Icon className={styles.closeTick} d={ICONS.tick} size={28} stroke={STROKE} />
@@ -154,11 +155,11 @@ export function CloseOut({ id }: { id: string }) {
         )}
       </section>
 
-      <div className={styles.foot}>
+      <div className={frame.foot}>
         <Button
           variant="gold"
           size="action"
-          className={styles.action}
+          className={frame.action}
           onClick={() => {
             go(later === null ? "/" : `/jobs/${later.id}`);
           }}

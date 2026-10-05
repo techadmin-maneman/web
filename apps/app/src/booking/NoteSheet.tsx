@@ -5,7 +5,7 @@
 
 import { CLIENT_NOTE_MAX_CHARS } from "../../../../src/policy/client-notes.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
-import { Sheet } from "@maneman/ui/Sheet";
+import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.ts";
 import { booking, note as copy } from "../content.ts";
@@ -59,7 +59,7 @@ export function NoteSheet(props: {
       <button className={styles.close} type="button" onClick={close}>
         {booking.close}
       </button>
-      <div className={styles.sheet}>
+      <SheetPanel className={styles.sheet}>
         {step.kind === "writing" && (
           <form
             className={styles.noteForm}
@@ -127,7 +127,7 @@ export function NoteSheet(props: {
             </ButtonLink>
           </div>
         )}
-      </div>
+      </SheetPanel>
     </Sheet>
   );
 }

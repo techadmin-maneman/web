@@ -4,6 +4,7 @@
 // cross-fades both sides together. It opens on the first visit with
 // photographs against the latest.
 
+import { iconButtonLook } from "@maneman/ui/IconButton";
 import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
@@ -166,7 +167,7 @@ function Compare({ visits, earliest, latest }: { visits: readonly Visit[]; earli
   return (
     <div className={styles.compare}>
       <header className={styles.header}>
-        <AppLink className={styles.back} to="/photos" label={photos.back}>
+        <AppLink className={iconButtonLook(styles.back)} to="/photos" label={photos.back}>
           <Icon d={ICONS.back} size={22} />
         </AppLink>
         <h1 className={styles.title}>{photos.compare}</h1>

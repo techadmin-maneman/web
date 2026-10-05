@@ -1,5 +1,6 @@
 // A2: the code (design/phase2/Client App, board A2).
 
+import { IconButton } from "@maneman/ui/IconButton";
 import { apiNow } from "../lib/clock.ts";
 import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
 import { classes } from "@maneman/ui/classes";
@@ -129,9 +130,7 @@ export function CodeScreen(props: Props) {
   return (
     <main className={styles.screen}>
       <div className={styles.top}>
-        <button className={styles.back} type="button" onClick={props.onBack} aria-label={copy.back}>
-          <Icon d={ICONS.back} size={22} />
-        </button>
+        <IconButton className={styles.back} d={ICONS.back} size={22} label={copy.back} onClick={props.onBack} />
       </div>
       <form
         className={classes(styles.body, styles.form)}

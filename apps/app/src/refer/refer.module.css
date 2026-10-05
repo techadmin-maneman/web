@@ -269,17 +269,8 @@
 }
 
 .back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--tap);
-  height: var(--tap);
   margin-left: calc(-1 * var(--sp-11));
-  padding: 0;
-  border: 0;
-  background: none;
   color: var(--text);
-  cursor: pointer;
 }
 
 .screenTitle {
@@ -478,15 +469,6 @@ img.card {
   font-size: var(--fs-15);
   color: var(--paper);
   cursor: pointer;
-}
-
-.sheet {
-  min-height: 0;
-  padding: var(--sp-24) var(--sp-20) calc(var(--sp-26) + env(safe-area-inset-bottom));
-  overflow-y: auto;
-  background: var(--paper);
-  color: var(--text);
-  --focus-colour: var(--ink);
 }
 
 .sheetTitle {

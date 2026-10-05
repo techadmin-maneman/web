@@ -25,15 +25,6 @@
   cursor: pointer;
 }
 
-.sheet {
-  min-height: 0;
-  padding: var(--sp-22) var(--sp-20) calc(var(--sp-24) + env(safe-area-inset-bottom));
-  overflow-y: auto;
-  background: var(--paper);
-  color: var(--text);
-  --focus-colour: var(--ink);
-}
-
 .sheet p,
 .sheet h2 {
   margin: 0;

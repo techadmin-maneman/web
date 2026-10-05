@@ -8,6 +8,7 @@
 // where it stands, a refused photograph set retaken; deleting the job's work asks
 // a second time, since what it deletes never reaches us.
 
+import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
@@ -27,6 +28,7 @@ import { useSession } from "../session.ts";
 import { account, forget, replay, type EventKind, type JobAccount } from "../store/outbox.ts";
 import { Progress } from "./Progress.tsx";
 import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "./sets.ts";
+import frame from "../components/frame.module.css";
 import styles from "./waiting.module.css";
 
 const PHOTO_STEPS: ReadonlySet<InJobStep> = new Set(["before_photos", "after_photos"]);
@@ -88,17 +90,17 @@ export function WaitingScreen() {
 
   return (
     <main className={styles.screen}>
-      <header className={styles.head}>
-        <button
+      <header className={frame.head}>
+        <IconButton
           className={styles.back}
-          type="button"
-          aria-label={copy.back}
+          d={ICONS.back}
+          size={24}
+          stroke={STROKE}
+          label={copy.back}
           onClick={() => {
             go("/");
           }}
-        >
-          <Icon d={ICONS.back} size={24} stroke={STROKE} />
-        </button>
+        />
         <h1 className={styles.title} ref={heading} tabIndex={-1}>
           {copy.title}
         </h1>

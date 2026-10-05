@@ -17,6 +17,7 @@
     "./ErrorRef": "./ErrorRef.tsx",
     "./Field": "./Field.tsx",
     "./Icon": "./Icon.tsx",
+    "./IconButton": "./IconButton.tsx",
     "./Mark": "./Mark.tsx",
     "./motion": "./motion.ts",
     "./Panel": "./Panel.tsx",

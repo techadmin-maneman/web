@@ -2,8 +2,8 @@
 // badge — a body that scrolls, and the one action fixed at the foot, where a
 // gloved thumb finds it on every screen.
 
+import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
-import { Icon } from "@maneman/ui/Icon";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
@@ -13,6 +13,7 @@ import { kindName, kindNameLower } from "../lib/kind.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go } from "../route.ts";
+import frame from "../components/frame.module.css";
 import styles from "./job.module.css";
 
 /** The day, written only when it is not today: "Tomorrow", or "Fri 27 Sep". */
@@ -40,18 +41,18 @@ function nameOf(job: Job): string {
 export function CardFrame({ job, foot, children }: { job: Job; foot: ReactNode; children: ReactNode }) {
   const heading = useScreen(nameOf(job));
   return (
-    <main className={styles.screen}>
-      <header className={styles.head}>
-        <button
+    <main className={frame.screen}>
+      <header className={frame.head}>
+        <IconButton
           className={styles.back}
-          type="button"
-          aria-label={copy.back}
+          d={ICONS.back}
+          size={24}
+          stroke={STROKE}
+          label={copy.back}
           onClick={() => {
             go("/");
           }}
-        >
-          <Icon d={ICONS.back} size={24} stroke={STROKE} />
-        </button>
+        />
         <div className={styles.headWho}>
           <h1 className={styles.name} ref={heading} tabIndex={-1}>
             {nameOf(job)}
@@ -63,7 +64,7 @@ export function CardFrame({ job, foot, children }: { job: Job; foot: ReactNode; 
 
       <div className={styles.body}>{children}</div>
 
-      {foot !== null && <div className={styles.foot}>{foot}</div>}
+      {foot !== null && <div className={frame.foot}>{foot}</div>}
     </main>
   );
 }

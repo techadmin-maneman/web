@@ -15,15 +15,20 @@ function ruleFor(file: string, selector: string): string {
 }
 
 const BOTTOMS = [
-  ["apps/tech/src/steps/steps.module.css", ".foot", "Next, Capture and Retake, and the close-out's Next job"],
-  ["apps/tech/src/job/job.module.css", ".foot", "I have arrived and Start job"],
+  [
+    "apps/tech/src/components/frame.module.css",
+    ".foot",
+    "Next, Capture and Retake, the close-out's Next job, I have arrived and Start job",
+  ],
   ["apps/tech/src/login/login.module.css", ".screen", "Send the code and Sign in"],
   ["apps/tech/src/components/sheet.module.css", ".sheet", "a question's two answers"],
   ["apps/tech/src/today/today.module.css", ".screen", "the last job of the day"],
   ["apps/tech/src/waiting/waiting.module.css", ".screen", "the last thing waiting to send"],
-  ["apps/app/src/booking/booking.module.css", ".sheet", "Pay, Continue and Move"],
-  ["apps/app/src/photos/photos.module.css", ".sheet", "Close under a photograph"],
-  ["apps/app/src/refer/refer.module.css", ".sheet", "the invite's last step"],
+  [
+    "packages/ui/sheet.module.css",
+    ".panel",
+    "Pay, Continue and Move, Close under a photograph, and the invite's last step",
+  ],
 ] as const;
 
 describe("the foot of every phone screen", () => {

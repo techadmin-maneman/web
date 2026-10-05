@@ -3,11 +3,12 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A price's boxes start from the price in force, its
 // GST included: a GST box that opened at nought once made an 18% item GST-free without anyone seeing it.
 
+import { CheckPanel } from "./CheckPanel.tsx";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { addDays, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { settings } from "../content.ts";
 import { PRICE_TIER, tierCodeOf } from "../../../../src/policy/services.ts";
@@ -45,13 +46,9 @@ function refusalOf(
   return errors[failure.code] ?? copy.errors.unknown ?? "";
 }
 
-/**
- * The check before anything is sent: a group named by its title, which takes focus as it opens, so it is read at
- * once and never opens out of sight.
- */
+/** The check before anything is sent, headed by its title, with the change beneath. */
 function Check(props: {
-  readonly id: string;
-  readonly title?: string;
+  readonly title: string;
   readonly children: ReactNode;
   readonly busy: boolean;
   readonly send: string;
@@ -59,25 +56,18 @@ function Check(props: {
   readonly onSend: () => void;
   readonly onBack: () => void;
 }) {
-  const panel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    panel.current?.focus();
-  }, []);
   return (
-    <div className={styles.check} ref={panel} tabIndex={-1} role="group" aria-labelledby={props.id}>
-      <p className={props.title === undefined ? styles.checkLine : styles.checkTitle} id={props.id}>
-        {props.title ?? props.children}
-      </p>
-      {props.title !== undefined && props.children}
-      <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.save} disabled={props.busy} onClick={props.onSend}>
-          {props.busy ? copy.saving : props.send}
-        </Button>
-        <Button variant="outline" size="small" className={styles.quiet} disabled={props.busy} onClick={props.onBack}>
-          {props.back}
-        </Button>
-      </div>
-    </div>
+    <CheckPanel
+      title={props.title}
+      send={props.send}
+      sending={copy.saving}
+      back={props.back}
+      busy={props.busy}
+      onSend={props.onSend}
+      onBack={props.onBack}
+    >
+      {props.children}
+    </CheckPanel>
   );
 }
 
@@ -276,7 +266,6 @@ export function PriceForm(props: {
         <FormButtons ready={ready} onNext={steps.check} onCancel={props.onCancel} />
       ) : (
         <Check
-          id={`price-check-${key}`}
           title={check.title}
           busy={steps.step === "saving"}
           send={form.setPrice}
@@ -327,16 +316,15 @@ export function TakeBack(props: {
   }, props.onDone);
   return (
     <>
-      <Check
-        id={`take-back-${target.item}-${target.tier}`}
+      <CheckPanel
+        lines={[check.takeBack(longDate(row.valid_from))]}
         busy={steps.step === "saving"}
         send={check.takeBackConfirm}
+        sending={copy.saving}
         back={check.keep}
         onSend={steps.go}
         onBack={props.onKeep}
-      >
-        {check.takeBack(longDate(row.valid_from))}
-      </Check>
+      />
       {steps.failed !== null && (
         <p className={styles.error} role="alert">
           {refusalOf(steps.failed, { ...copy.errors, ...copy.takeBackErrors })}
@@ -390,7 +378,6 @@ export function RenameForm(props: {
         />
       ) : (
         <Check
-          id={`${id}-check`}
           title={check.title}
           busy={steps.step === "saving"}
           send={check.send}
@@ -448,7 +435,6 @@ export function DescribeForm(props: {
         <FormButtons ready={line.trim() !== was} onNext={steps.check} onCancel={props.onCancel} />
       ) : (
         <Check
-          id={`${id}-check`}
           title={check.title}
           busy={steps.step === "saving"}
           send={check.send}
@@ -512,7 +498,6 @@ export function LengthForm(props: {
         />
       ) : (
         <Check
-          id={`${id}-check`}
           title={check.title}
           busy={steps.step === "saving"}
           send={check.send}
@@ -569,7 +554,6 @@ export function RetireForm(props: {
         <FormButtons ready={from !== ""} onNext={steps.check} onCancel={props.onCancel} />
       ) : (
         <Check
-          id={`${id}-check`}
           title={check.title}
           busy={steps.step === "saving"}
           send={check.send}
@@ -600,16 +584,15 @@ export function RestoreCheck(props: {
   }, props.onDone);
   return (
     <>
-      <Check
-        id={`restore-${service.kind}-${service.tier}`}
+      <CheckPanel
+        lines={[check.restore(service.name)]}
         busy={steps.step === "saving"}
         send={check.send}
+        sending={copy.saving}
         back={check.back}
         onSend={steps.go}
         onBack={props.onKeep}
-      >
-        {check.restore(service.name)}
-      </Check>
+      />
       <Refused failed={steps.failed} />
     </>
   );
@@ -635,16 +618,15 @@ export function OrderCheck(props: {
   }, props.onDone);
   return (
     <>
-      <Check
-        id={`order-${props.kind}`}
+      <CheckPanel
+        lines={[check.order(copy.kinds[props.kind] ?? props.kind, names(props.was), names(props.now))]}
         busy={steps.step === "saving"}
         send={check.send}
+        sending={copy.saving}
         back={check.back}
         onSend={steps.go}
         onBack={props.onKeep}
-      >
-        {check.order(copy.kinds[props.kind] ?? props.kind, names(props.was), names(props.now))}
-      </Check>
+      />
       <Refused failed={steps.failed} />
     </>
   );
@@ -734,7 +716,6 @@ export function AddForm(props: {
         <FormButtons ready={ready} onNext={steps.check} onCancel={props.onCancel} />
       ) : (
         <Check
-          id={`${id}-check`}
           title={check.title}
           busy={steps.step === "saving"}
           send={check.send}

@@ -11,10 +11,11 @@
 // Nothing is sent until ops have seen the change: each figure that moves, the
 // old beside the new, and only the second press sends it, as a price is set.
 
+import { CheckPanel } from "./CheckPanel.tsx";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { HOUR_OF_DAY } from "../../../../src/config/setting-units.ts";
 import { api, type ChoiceRule, type NumberRule, type OpsSetting, type SettingValue } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
@@ -329,49 +330,35 @@ function setLine(rule: OpsSetting): string {
 
 /** The old figure beside the new, for every one the section's change moves, before anything is sent. */
 function Check({
-  id,
   changes,
   busy,
   onSend,
   onBack,
 }: {
-  id: string;
   changes: readonly Change[];
   busy: boolean;
   onSend: () => void;
   onBack: () => void;
 }) {
-  const panel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    panel.current?.focus();
-  }, []);
-  const title = `${id}-check`;
   const toStandard = changes.filter((change) => change.value === null);
   const moved = changes.flatMap(({ rule, value }) => movedBy(rule, value ?? rule.default));
   return (
-    <div className={styles.check} ref={panel} tabIndex={-1} role="group" aria-labelledby={title}>
-      <p className={styles.checkTitle} id={title}>
-        {copy.confirm.title}
-      </p>
-      {toStandard.map(({ rule }) => (
-        <p key={rule.name} className={styles.checkLine}>
-          {copy.confirm.standard(rule.title)}
-        </p>
-      ))}
+    <CheckPanel
+      title={copy.confirm.title}
+      lines={toStandard.map(({ rule }) => copy.confirm.standard(rule.title))}
+      send={copy.confirm.send}
+      sending={copy.saving}
+      back={copy.confirm.back}
+      busy={busy}
+      onSend={onSend}
+      onBack={onBack}
+    >
       <ul className={styles.checkList}>
         {moved.map((each) => (
           <li key={each.key}>{copy.confirm.change(each.label, each.was, each.now)}</li>
         ))}
       </ul>
-      <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.save} disabled={busy} onClick={onSend}>
-          {busy ? copy.saving : copy.confirm.send}
-        </Button>
-        <Button variant="outline" size="small" className={styles.quiet} disabled={busy} onClick={onBack}>
-          {copy.confirm.back}
-        </Button>
-      </div>
-    </div>
+    </CheckPanel>
   );
 }
 
@@ -546,7 +533,6 @@ function GroupSection({ section, allowed, onSaved, children }: GroupSectionProps
 
       {checking && (
         <Check
-          id={id}
           changes={saving.changes}
           busy={saving.step === "saving"}
           onSend={() => void send(saving.changes)}

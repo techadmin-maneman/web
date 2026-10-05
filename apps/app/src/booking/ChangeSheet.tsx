@@ -6,7 +6,7 @@
 import { fullDate, indiaDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { Button, ButtonLink } from "@maneman/ui/Button";
-import { Sheet } from "@maneman/ui/Sheet";
+import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type BookableType, type CancelTerms, type Me, type MoveTerms } from "../api.ts";
@@ -156,7 +156,7 @@ export function ChangeSheet(props: {
       <button className={styles.close} type="button" onClick={close}>
         {booking.close}
       </button>
-      <div className={styles.sheet}>
+      <SheetPanel className={styles.sheet}>
         {step.kind === "loading" && (
           <>
             <VisuallyHidden as="h2" id="change-title">
@@ -264,7 +264,7 @@ export function ChangeSheet(props: {
             </Button>
           </div>
         )}
-      </div>
+      </SheetPanel>
     </Sheet>
   );
 }

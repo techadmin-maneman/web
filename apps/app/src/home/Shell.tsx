@@ -3,6 +3,7 @@
 // The header is Home's mark and profile button, a tab's title, or a way back
 // with the page's title. Each page pads itself, as its board does.
 
+import { iconButtonLook } from "@maneman/ui/IconButton";
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { classes } from "@maneman/ui/classes";
@@ -57,7 +58,7 @@ function PageHeader({ header }: { header: Header }) {
     case "back":
       return (
         <header className={classes(styles.header, styles.titled)}>
-          <Link className={styles.back} to={header.to} label={header.label}>
+          <Link className={iconButtonLook(styles.back)} to={header.to} label={header.label}>
             <Icon d={ICONS.back} size={22} />
           </Link>
           <h1 className={styles.name}>{header.title}</h1>

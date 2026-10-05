@@ -8,28 +8,11 @@
   background: var(--ink-deep);
 }
 
-.head {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--sp-16);
-  align-items: center;
-  min-height: var(--tech-min);
-  padding: var(--sp-8) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
 .back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: var(--tech-min);
-  height: var(--tech-min);
+  --icon-button-size: var(--tech-min);
+
   margin-left: calc(-1 * var(--sp-12));
-  border: 0;
-  background: transparent;
   color: var(--paper);
-  cursor: pointer;
 }
 
 .title {
