@@ -20,6 +20,9 @@ interface Erasure {
   readonly why: string;
 }
 
+/** Where an erasure goes after our own database, each with when it was done there and the tries it took. */
+const ERASURE_REACHES = ["crm", "fsm", "books", "crm_contact"];
+
 const OUR_KEYS = "Our own keys to the record, which say nothing about the client.";
 
 const HAIR_PROFILE_FIELDS = [
@@ -50,16 +53,12 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "fsm_contact_id",
       "books_customer_id",
       "erased_at",
-      "crm_erased_at",
-      "crm_erasure_attempts",
+      ...ERASURE_REACHES.flatMap((place) => [`${place}_erased_at`, `${place}_erasure_attempts`]),
       "crm_erasure_error",
-      "fsm_erased_at",
-      "fsm_erasure_attempts",
       "files_erased_at",
       "books_checked_at",
-      "books_erased_at",
-      "books_erasure_attempts",
       "books_details_changed_at",
+      "crm_contact_id",
       "client_since",
       "test_record",
     ],

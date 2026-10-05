@@ -149,6 +149,11 @@ export interface BooksProvider {
   /** Writes a client's details as they now are over their customer. */
   updateCustomer(customerId: string, customer: NewBooksCustomer): Promise<void>;
   /**
+   * The CRM Contact Books' own CRM integration made of the customer (ADR 0110), which an erasure must reach as well;
+   * null until it has synced, or where Books has no such customer.
+   */
+  crmContactOf(customerId: string): Promise<string | null>;
+  /**
    * Deletes the customer. Books keeps one a document or payment names, so that one is renamed "Erased client", its
    * contact person, number, e-mail and addresses cleared, and marked inactive. One call, or three for that one.
    */
@@ -184,6 +189,7 @@ export function createBooksProvider(
     recordRefund: off,
     upsertCustomer: off,
     updateCustomer: off,
+    crmContactOf: off,
     eraseCustomer: off,
     findInvoice: off,
     createInvoice: off,

@@ -490,6 +490,48 @@ describe("Zoho: erasing a person", () => {
   });
 });
 
+describe("Zoho: erasing a client's Contact", () => {
+  const CONTACTS_URL = "https://www.zohoapis.in/crm/v8/Contacts";
+
+  it("blanks every field that could say who they were, with workflows off, then deletes it", async () => {
+    const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [CONTACTS_URL]: () => updated("contact-9") });
+
+    expect(await crm.eraseContact("contact-9")).toEqual({ found: true });
+
+    expect(calls.map((call) => `${call.method} ${new URL(call.url).pathname}`)).toEqual([
+      "POST /oauth/v2/token",
+      "PUT /crm/v8/Contacts/contact-9",
+      "DELETE /crm/v8/Contacts/contact-9",
+    ]);
+    const [blank = {}] = bodyOf(calls[1]).data as Record<string, unknown>[];
+    expect(bodyOf(calls[1]).trigger).toEqual([]);
+    expect(blank).toMatchObject({ First_Name: null, Mobile: null, Email: null, Mailing_Street: null, Other_Zip: null });
+    expect(Object.entries(blank).filter(([, value]) => value !== null)).toEqual([
+      ["Last_Name", "Erased"],
+      ["Email_Opt_Out", true],
+    ]);
+  });
+
+  it("finds nothing to erase where the CRM no longer has the Contact, and deletes nothing", async () => {
+    const gone = () =>
+      json({
+        data: [{ code: "INVALID_DATA", status: "error", message: "the id given seems to be invalid", details: {} }],
+      });
+    const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [CONTACTS_URL]: gone });
+
+    expect(await crm.eraseContact("contact-gone")).toEqual({ found: false });
+    expect(calls.filter((call) => call.method === "DELETE")).toEqual([]);
+  });
+
+  it("passes on a token without the Contacts scopes, so the erasure is tried again and then told", async () => {
+    const refused = () =>
+      json({ code: "OAUTH_SCOPE_MISMATCH", message: "invalid oauth scope to access this URL", status: "error" }, 401);
+    const { crm } = zoho({ [TOKEN_URL]: () => tokenIssued(), [CONTACTS_URL]: refused });
+
+    await expect(crm.eraseContact("contact-9")).rejects.toThrow("OAUTH_SCOPE_MISMATCH");
+  });
+});
+
 describe("Zoho: the CRM's one read on its own", () => {
   it("finds a person's Lead by their person ID, answers null for one it does not have, and only reads", async () => {
     const http = fakeFetch({

@@ -13,6 +13,7 @@
 //   GET    /books/v3/customerpayments/{id}/refunds   { payment_refunds }; POST records one
 //   PUT    /books/v3/contacts                        keyed by X-Unique-Identifier-Key/-Value and X-Upsert:
 //                                                    201 added or 200 saved, { contact }
+//   GET    /books/v3/contacts/{id}                   { contact }: zcrm_contact_id, the CRM Contact Books' sync made
 //   PUT    /books/v3/contacts/{id}                   the contact persons sent replace those held
 //   DELETE /books/v3/contacts/{id}                   400 code 3000 while a document or payment names it
 //   POST   /books/v3/contacts/{id}/inactive
@@ -286,7 +287,10 @@ const ERASED_CUSTOMER = {
   shipping_address: BLANK_ADDRESS,
 };
 
-type Customers = Pick<BooksProvider, "upsertCustomer" | "updateCustomer" | "eraseCustomer">;
+/** A customer as Books' own CRM integration links it: the CRM Contact it made, empty until it has synced. */
+const LinkedToCrm = z.object({ zcrm_contact_id: z.string().nullish() });
+
+type Customers = Pick<BooksProvider, "upsertCustomer" | "updateCustomer" | "crmContactOf" | "eraseCustomer">;
 
 function customerCalls({ request, at, read }: BooksApi): Customers {
   const contact = (id: string, tail = "") => at(`/contacts/${encodeURIComponent(id)}${tail}`);
@@ -316,6 +320,11 @@ function customerCalls({ request, at, read }: BooksApi): Customers {
 
     async updateCustomer(customerId, customer) {
       await request("update_customer", contact(customerId), { method: "PUT", body: customerBody(customer) });
+    },
+
+    async crmContactOf(customerId) {
+      const linked = await orNull(() => read("crm_contact_of", contact(customerId), LinkedToCrm, ["contact"]));
+      return filledOrNull(linked?.zcrm_contact_id);
     },
 
     async eraseCustomer(customerId): Promise<BooksErasure> {

@@ -815,22 +815,22 @@ The provider's new calls, run through the real adapter against the owner's org w
 
 Run once staging is switched (docs/runbook.md, "Staging left FSM"), as a real user with staging's test records, backdating rather than waiting. Not run yet.
 
-| #   | Check                                                                    | Answer |
-| --- | ------------------------------------------------------------------------ | ------ |
-| 1   | A consultation booked on the site                                        |        |
-| 2   | A paid first fit booked in the app                                       |        |
-| 3   | A visit booked by ops                                                    |        |
-| 4   | A dispatch move and a reassign                                           |        |
-| 5   | A technician's whole day on a phone                                      |        |
-| 6   | A partial job                                                            |        |
-| 7   | A no-show                                                                |        |
-| 8   | A cancel with a refund                                                   |        |
-| 9   | The invoice issued and the payment applied; the receipt and the PDF open |        |
-| 10  | The CRM Contact appears after Books' Instant Sync, with "MM person ID"   |        |
-| 11  | An erasure blanks the Books customer, and the CRM Contact follows        |        |
-| 12  | A technician added in the console signs in                               |        |
+| #   | Check                                                                         | Answer |
+| --- | ----------------------------------------------------------------------------- | ------ |
+| 1   | A consultation booked on the site                                             |        |
+| 2   | A paid first fit booked in the app                                            |        |
+| 3   | A visit booked by ops                                                         |        |
+| 4   | A dispatch move and a reassign                                                |        |
+| 5   | A technician's whole day on a phone                                           |        |
+| 6   | A partial job                                                                 |        |
+| 7   | A no-show                                                                     |        |
+| 8   | A cancel with a refund                                                        |        |
+| 9   | The invoice issued and the payment applied; the receipt and the PDF open      |        |
+| 10  | The CRM Contact appears after Books' Instant Sync, with "MM person ID"        |        |
+| 11  | An erasure blanks the Books customer, then blanks and deletes the CRM Contact |        |
+| 12  | A technician added in the console signs in                                    |        |
 
-If check 11 fails, the CRM Contact is blanked directly instead: CRM Contacts access (open point 21), about a day's work.
+Check 11 needs the Worker's CRM token with the Contacts scopes (open point 21); without them the Contact's erasure alerts ops after ten tries.
 
 ## Zoho's answers, read through the adapters, 4 October 2026
 

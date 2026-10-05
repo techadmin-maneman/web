@@ -18,6 +18,10 @@ export function createStubCrm(log: Logger): CrmProvider {
       log.info("crm_stub_erase", { person_id: personId });
       return Promise.resolve({ found: knownCrmLeadId !== null });
     },
+    eraseContact: (contactId) => {
+      log.info("crm_stub_erase_contact", { crm_contact_id: contactId });
+      return Promise.resolve({ found: true });
+    },
     updateContact: (contact, knownCrmLeadId) => {
       log.info("crm_stub_update_contact", { person_id: contact.personId });
       return Promise.resolve({ crmLeadId: knownCrmLeadId });
