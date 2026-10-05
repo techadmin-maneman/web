@@ -136,6 +136,16 @@ export const firstFitDue = (consultationDay: string, days: NextVisitDays): strin
 export const firstFitOpens = (consultationDay: string, tomorrow: string, days: NextVisitDays): string =>
   offeredDay(firstFitDue(consultationDay, days), tomorrow);
 
+/**
+ * The figures the horizon must reach: the app offers the next service from the day of the visit before, on the day it
+ * falls due, and a first fit on the day its lead time ends; a day past the horizon could be offered and never booked.
+ */
+const WITHIN_HORIZON = ["service_cadence", "first_fit_lead"] as const;
+
+/** The figures that reach past the horizon, so the app would offer a day it cannot book; none for figures that fit. */
+export const pastTheHorizon = (days: NextVisitDays): NextVisitDayKey[] =>
+  WITHIN_HORIZON.filter((key) => days[key] > days.horizon);
+
 /** The last day a visit may be booked on in the app: `horizon` days, counted from tomorrow. */
 export const lastBookableDay = (tomorrow: string, days: NextVisitDays): string => addDays(tomorrow, days.horizon - 1);
 

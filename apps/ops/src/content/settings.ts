@@ -234,6 +234,8 @@ export const settings = {
      * so a refusal speaks for its own rule only.
      */
     outside: (field: string) => `${field} is outside what this rule allows, so it was not saved.`,
+    conflict: (field: string, reached: string) =>
+      `“${field}” must be at least “${reached}”, or a client is offered a day they cannot book. It was not saved.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "That figure is outside what this rule allows, so it was not saved.",

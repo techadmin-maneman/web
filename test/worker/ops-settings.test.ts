@@ -402,6 +402,21 @@ describe("the next visit's days", () => {
     expect((await auditFor("setting.change")).results).toHaveLength(0);
   });
 
+  // With services every 60 days and a horizon of 45, Home offered a day the sheet could not show.
+  it("refuses figures that fit their own bounds but not each other, naming the box and the one it must reach", async () => {
+    const value = { ...NEXT_VISIT_DAYS, service_cadence: 60, horizon: 45 };
+    const answer = await post("/api/settings/booking_days", { value });
+    expect(answer.status).toBe(422);
+    expect(await answer.json()).toMatchObject({
+      error: { code: "figures_conflict", fields: ["booking_days.horizon", "booking_days.service_cadence"] },
+    });
+    const lead = { ...NEXT_VISIT_DAYS, first_fit_lead: 30, service_cadence: 14, horizon: 20 };
+    expect(await (await post("/api/settings/booking_days", { value: lead })).json()).toMatchObject({
+      error: { fields: ["booking_days.horizon", "booking_days.first_fit_lead"] },
+    });
+    expect((await named("booking_days")).value).toEqual(NEXT_VISIT_DAYS);
+  });
+
   it("wants every figure, and refuses a set that leaves one out", async () => {
     const { invoice_prompt: _left_out, ...short } = NEXT_VISIT_DAYS;
     expect((await post("/api/settings/booking_days", { value: short })).status).toBe(400);

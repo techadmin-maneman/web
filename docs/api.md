@@ -1360,7 +1360,8 @@ Razorpay's webhook: payments and refunds
             "code_exists",
             "slot_times_too_soon",
             "not_permitted",
-            "last_admin"
+            "last_admin",
+            "figures_conflict"
           ]
         },
         "request_id": {

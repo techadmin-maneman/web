@@ -143,6 +143,8 @@ export const ERROR_CODES = [
   // The Staff list: the caller's grants do not reach this, or a change would leave nobody with Admin MANAGE nationally.
   "not_permitted",
   "last_admin",
+  // A rule's figures each within their bounds, but not together: fields names the box, then the one it must reach.
+  "figures_conflict",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
@@ -271,6 +273,7 @@ export const ERROR_STATUS = {
   slot_times_too_soon: 409,
   not_permitted: 403,
   last_admin: 409,
+  figures_conflict: 422,
 } as const satisfies Record<ErrorCode, ContentfulStatusCode>;
 
 /** A refusal: the code, answered with its own status and the request's ID, and the fields it names. */

@@ -105,7 +105,8 @@
                   "code_exists",
                   "slot_times_too_soon",
                   "not_permitted",
-                  "last_admin"
+                  "last_admin",
+                  "figures_conflict"
                 ]
               },
               "request_id": {
@@ -3145,7 +3146,8 @@
                   "code_exists",
                   "slot_times_too_soon",
                   "not_permitted",
-                  "last_admin"
+                  "last_admin",
+                  "figures_conflict"
                 ]
               },
               "request_id": {
@@ -14166,6 +14168,16 @@
           },
           "403": {
             "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "figures_conflict: fields names a box, then the box its figure must reach",
             "content": {
               "application/json": {
                 "schema": {
