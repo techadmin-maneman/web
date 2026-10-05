@@ -339,7 +339,7 @@ describe("POST /api/no-shows/:id/decision", () => {
     );
 
     expect(deps.alerts).toEqual([
-      `The refund of Rs. 2000 for visit ${VISIT}, a no-show waived, failed (its payment could not be read). ` +
+      `The refund of Rs. 2,000 for visit ${VISIT}, a no-show waived, failed (its payment could not be read). ` +
         `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
@@ -710,7 +710,7 @@ describe("what charging a no-show costs the client", () => {
     await charge(createStubPayments(), deps);
 
     expect(deps.alerts).toEqual([
-      `The refund of Rs. 26000 for visit ${VISIT}, a no-show charged, failed (Razorpay payment pay_visit). ` +
+      `The refund of Rs. 26,000 for visit ${VISIT}, a no-show charged, failed (Razorpay payment pay_visit). ` +
         `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     // The charge stands: the ruling is recorded whatever Razorpay says.

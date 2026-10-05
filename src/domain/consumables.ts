@@ -12,6 +12,7 @@
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { allServices, serviceOf } from "./services.ts";
+import { freshCode } from "../lib/slug.ts";
 import { insertRow } from "../lib/sql.ts";
 
 export interface Consumable {
@@ -66,18 +67,7 @@ export const isOffered = (consumable: Consumable, today: string): boolean =>
   consumable.retiredDate === null || consumable.retiredDate > today;
 
 /** A new consumable's code, from its name: "Tape strips" is tape_strips, a second tape_strips_2. */
-function codeFor(name: string, taken: ReadonlySet<string>): string {
-  const base =
-    name
-      .normalize("NFKD")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "")
-      .slice(0, 32) || "consumable";
-  let code = base;
-  for (let next = 2; taken.has(code); next += 1) code = `${base}_${String(next)}`;
-  return code;
-}
+const codeFor = (name: string, taken: ReadonlySet<string>): string => freshCode(name, 32, "consumable", taken);
 
 /** What ops write, with who and why, so every change lands with its audit entry. */
 interface Written {

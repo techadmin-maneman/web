@@ -8,7 +8,7 @@ import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { Button } from "@maneman/ui/Button";
 import { addDays, longDate } from "@maneman/web-kit/dates";
-import { rupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState, type ReactNode } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { settings } from "../content.ts";
@@ -138,7 +138,7 @@ export function PriceForm(props: {
   const change = {
     item: target.item,
     tier: target.tier,
-    amount_ex_gst: Math.round(Number(rupeesTyped) * 100),
+    amount_ex_gst: paiseFromRupees(rupeesTyped),
     gst_percent: Number(gst),
     valid_from: from,
   };

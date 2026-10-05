@@ -8,6 +8,7 @@ import { paymentsTab, type AlertOnce } from "./alerts.ts";
 import { askRefund, refundLeftToOps, refundReceipt, type RefundOutcome } from "./refunds.ts";
 import { visitPayment, type VisitPayment } from "./visit-changes.ts";
 import { creditOfVisit } from "./visit-messages.ts";
+import { rupees } from "@maneman/web-kit/money";
 
 /** Money going back to the client once a ruling is written. */
 export interface NoShowRefund {
@@ -88,7 +89,7 @@ export async function refundNoShow(
     // The payment could not be read, so nothing was asked of Razorpay.
   }
   if (outcome === "refunded") return;
-  const what = `Rs. ${String(amount / 100)} for visit ${refund.appointmentId}, a no-show ${refund.why}`;
+  const what = `${rupees(amount)} for visit ${refund.appointmentId}, a no-show ${refund.why}`;
   await deps.alertOnce({
     key: `no_show_refund_failed:${refund.why}:${refund.appointmentId}`,
     message:

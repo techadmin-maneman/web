@@ -12,6 +12,7 @@
 import { CHECKLIST, JOB_SHEET_BOUNDS, PARTIAL_REASONS, type JobSheetItem } from "../config/job-sheet.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
+import { freshCode } from "../lib/slug.ts";
 
 /** One list as it stands. */
 export interface JobSheetList {
@@ -129,18 +130,7 @@ type ListSaved = { readonly ok: true; readonly list: JobSheetList } | { readonly
  * second of the same words scalp_checked_2. It never changes after, so a
  * rename keeps what phones and summaries already hold.
  */
-function codeFor(label: string, taken: ReadonlySet<string>): string {
-  const base =
-    label
-      .normalize("NFKD")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "")
-      .slice(0, 40) || "item";
-  let code = base;
-  for (let next = 2; taken.has(code); next += 1) code = `${base}_${String(next)}`;
-  return code;
-}
+const codeFor = (label: string, taken: ReadonlySet<string>): string => freshCode(label, 40, "item", taken);
 
 /** What is wrong with a list ops sent, by the field a form can point at; none when it may be saved. */
 function refusalsOf(which: ListName, sent: readonly ItemSent[], known: ReadonlySet<string>): string[] {

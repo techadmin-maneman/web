@@ -8,7 +8,7 @@
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
-import { rupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Consumable, type Consumables } from "../api.ts";
 import { settings } from "../content.ts";
@@ -41,7 +41,6 @@ const draftOf = (consumable: Consumable | null): Draft =>
         central: consumable.reorder_central === null ? "" : String(consumable.reorder_central),
       };
 
-const paiseOf = (text: string) => Math.round(Number(text) * 100);
 const levelOf = (text: string) => (text.trim() === "" ? null : Number(text));
 const levelWords = (level: number | null) => (level === null ? form.confirm.noLevel : String(level));
 
@@ -51,8 +50,8 @@ function changes(was: Consumable, draft: Draft): string[] {
   const lines: string[] = [];
   if (draft.name.trim() !== was.name) lines.push(line(fields.name, was.name, draft.name.trim()));
   if (draft.unit.trim() !== was.unit) lines.push(line(fields.unit, was.unit, draft.unit.trim()));
-  if (paiseOf(draft.cost) !== was.unit_cost) {
-    lines.push(line(fields.cost, rupees(was.unit_cost), rupees(paiseOf(draft.cost))));
+  if (paiseFromRupees(draft.cost) !== was.unit_cost) {
+    lines.push(line(fields.cost, rupees(was.unit_cost), rupees(paiseFromRupees(draft.cost))));
   }
   if (levelOf(draft.kit) !== was.reorder_kit) {
     lines.push(line(fields.kit, levelWords(was.reorder_kit), levelWords(levelOf(draft.kit))));
@@ -83,7 +82,7 @@ export function ConsumableForm({
     draft.name.trim() !== "" &&
     draft.unit.trim() !== "" &&
     RUPEES.test(draft.cost.trim()) &&
-    paiseOf(draft.cost) <= maxUnitCost &&
+    paiseFromRupees(draft.cost) <= maxUnitCost &&
     [draft.kit, draft.central].every((level) => level.trim() === "" || WHOLE.test(level.trim()));
   const checking = step.step === "checking" || step.step === "saving";
   const edit = (field: keyof Draft) => (text: string) => {
@@ -96,7 +95,7 @@ export function ConsumableForm({
     const fields = {
       name: draft.name.trim(),
       unit: draft.unit.trim(),
-      unit_cost: paiseOf(draft.cost),
+      unit_cost: paiseFromRupees(draft.cost),
       reorder_kit: levelOf(draft.kit),
       reorder_central: levelOf(draft.central),
     };
@@ -112,7 +111,7 @@ export function ConsumableForm({
   const lines =
     consumable === null
       ? [
-          form.confirm.adding(draft.name.trim(), draft.unit.trim(), rupees(paiseOf(draft.cost))),
+          form.confirm.adding(draft.name.trim(), draft.unit.trim(), rupees(paiseFromRupees(draft.cost))),
           copy.levels(levelOf(draft.kit), levelOf(draft.central)),
         ]
       : changes(consumable, draft);

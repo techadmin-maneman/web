@@ -17,3 +17,6 @@ export function rupeeFigure(paise: number): string {
 export function rupees(paise: number): string {
   return `Rs. ${rupeeFigure(paise)}`;
 }
+
+/** "499.50", as a form takes rupees, → 49950: the paise the API counts in, to the nearest paisa. */
+export const paiseFromRupees = (typed: string): number => Math.round(Number(typed) * 100);

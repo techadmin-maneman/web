@@ -9,6 +9,7 @@ import type { Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments/index.ts";
 import { paymentsTab, type AlertOnce } from "./alerts.ts";
 import { ASKS, askRefund, refundLeftToOps, refundReceipt } from "./refunds.ts";
+import { rupees } from "@maneman/web-kit/money";
 
 export interface RefundDeps {
   readonly payments: PaymentsProvider;
@@ -73,7 +74,7 @@ async function settleRefund(
       outcome: asked.kind,
       error: asked.error,
     });
-    const what = `Rs. ${String(owed.amount / 100)} for visit ${owed.appointmentId}, cancelled by ${owed.cancelledBy}`;
+    const what = `${rupees(owed.amount)} for visit ${owed.appointmentId}, cancelled by ${owed.cancelledBy}`;
     // Keyed on the visit, so ops are told once and a second refund by hand is not asked for.
     await deps.alertOnce({
       key: `cancel_refund_failed:${owed.appointmentId}`,

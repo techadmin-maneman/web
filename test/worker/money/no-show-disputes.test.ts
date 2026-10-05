@@ -401,7 +401,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
 
     expect(answer.status).toBe(200);
     expect(deps.alerts).toEqual([
-      `The refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute, failed (Razorpay payment ` +
+      `The refund of Rs. 4,000 for visit ${VISIT}, a no-show refunded on dispute, failed (Razorpay payment ` +
         `pay_visit). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     expect(await env.DB.prepare("SELECT key FROM alerts").first()).toEqual({
@@ -422,9 +422,9 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
 
     expect(answer.status).toBe(200);
     expect(deps.alerts).toEqual([
-      `Razorpay did not answer the refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute (payment ` +
+      `Razorpay did not answer the refund of Rs. 4,000 for visit ${VISIT}, a no-show refunded on dispute (payment ` +
         "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
-        `refund of Rs. 4000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
+        `refund of Rs. 4,000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -447,7 +447,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
 
     expect(answer.status).toBe(200);
     expect(deps.alerts).toEqual([
-      `The refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute, failed (its payment could not be ` +
+      `The refund of Rs. 4,000 for visit ${VISIT}, a no-show refunded on dispute, failed (its payment could not be ` +
         `read). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });

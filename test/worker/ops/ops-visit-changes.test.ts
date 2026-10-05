@@ -315,7 +315,7 @@ describe("POST /api/visits/:id/cancel: what it refuses", () => {
     expect(answer.status).toBe(200);
     expect(await statusOf()).toBe("cancelled");
     expect(deps.alerts).toEqual([
-      `The refund of Rs. 2000 for visit ${VISIT}, cancelled by ops, failed (Razorpay payment pay_visit). ` +
+      `The refund of Rs. 2,000 for visit ${VISIT}, cancelled by ops, failed (Razorpay payment pay_visit). ` +
         `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });

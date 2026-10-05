@@ -20,15 +20,12 @@ import { failureReason, type Logger } from "../log.ts";
 import { discounted } from "../policy/discount-codes.ts";
 import { invoiceHold, type InvoiceHold, type SoldVisit } from "../policy/prepayment.ts";
 import type { BooksInvoice, BooksProvider, NewBooksInvoice } from "../providers/books/index.ts";
-import { isRefusal } from "../providers/provider-error.ts";
+import { FAILURES_BEFORE_ALERT, PER_PASS, RECHECK_AFTER_MS, tellFailure as tellPassFailure } from "./vendor-pass.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "./alerts.ts";
 import { customerFor } from "./books-customers.ts";
 import { codeOnVisit, priceAfterCode } from "./discount-code-uses.ts";
 import { priceOf, type Price } from "./price-book.ts";
 
-/** How many a pass bills at most. */
-const PER_PASS = 5;
-export const RECHECK_AFTER_MS = HOUR_MS;
 /**
  * Outside calls one visit may cost: the invoice kept on it, the look for one under our reference, the client's
  * customer, the invoice's making, its sending, and an alert.
@@ -36,8 +33,6 @@ export const RECHECK_AFTER_MS = HOUR_MS;
 export const CALLS_PER_VISIT = 6;
 /** The client is told their invoice comes within the hour of the visit. */
 const DRAFT_ALERT_AFTER_MS = HOUR_MS;
-/** A failure other than a refusal is told once it has happened this many times, an hour apart. */
-const FAILURES_BEFORE_ALERT = 3;
 
 /** How many invoices this pass raised, and how many became documents the client may see. */
 type InvoiceSummary = { raised: number; issued: number };
@@ -388,27 +383,23 @@ async function tellUnpriced(pass: Pass, visit: Visit): Promise<void> {
   });
 }
 
-/** Logs it, and tells ops of a refusal at once and of any other failure on its third time. */
-async function tellFailure(pass: Pass, visit: Visit, error: unknown): Promise<void> {
-  if (isRefusal(error)) {
-    pass.log.warn("invoice_refused", { appointment_id: visit.id, status: error.status, code: error.code });
-    await pass.deps.alertOnce({
-      key: `invoice_refused:${visit.id}`,
-      message:
-        `Books refused the invoice of visit ${visit.id}, saying "${error.said}". It is tried again each hour, or ` +
-        "raise it in Books by hand.",
+/** Tells ops a visit's invoice failed: Books' refusal at once, any other failure on its third time. */
+const tellFailure = (pass: Pass, visit: Visit, error: unknown): Promise<void> =>
+  tellPassFailure(
+    pass,
+    {
+      event: "invoice",
+      id: visit.id,
+      idField: "appointment_id",
       link: linkTo(visit),
-    });
-    return;
-  }
-  pass.log.warn("invoice_failed", { appointment_id: visit.id, error });
-  await pass.deps.alertOnce({
-    key: `invoice_failed:${visit.id}`,
-    message: `The invoice pass has failed ${String(FAILURES_BEFORE_ALERT)} times on visit ${visit.id}: ${failureReason(error, 200)}.`,
-    link: linkTo(visit),
-    after: FAILURES_BEFORE_ALERT,
-  });
-}
+      refused: (said) =>
+        `Books refused the invoice of visit ${visit.id}, saying "${said}". It is tried again each hour, or raise it in ` +
+        "Books by hand.",
+      failed: (failure) =>
+        `The invoice pass has failed ${String(FAILURES_BEFORE_ALERT)} times on visit ${visit.id}: ${failureReason(failure, 200)}.`,
+    },
+    error,
+  );
 
 function endedOverAnHourAgo(pass: Pass, visit: Visit): boolean {
   if (visit.window_end === null) return true;
