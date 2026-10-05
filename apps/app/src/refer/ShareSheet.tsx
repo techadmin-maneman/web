@@ -11,7 +11,7 @@
 import { Sheet } from "@maneman/ui/Sheet";
 import { useEffect, useRef } from "react";
 import type { Refer } from "../api.ts";
-import { focusIfLost } from "../lib/arrival.ts";
+import { focusIfLost } from "@maneman/ui/arrival";
 import { useShareFlow } from "./share-flow.ts";
 import { ChoiceStep, ConsentStep, ShareStep, TITLE_ID } from "./ShareSteps.tsx";
 import styles from "./refer.module.css";

@@ -8,7 +8,7 @@ import { useRef, useState } from "react";
 import { addressLine, given } from "@maneman/web-kit/address";
 import type { Address } from "../api.ts";
 import { profile } from "../content.ts";
-import { focusIfLost } from "../lib/arrival.ts";
+import { focusIfLost } from "@maneman/ui/arrival";
 import { AddressForm } from "./AddressForm.tsx";
 import styles from "./profile.module.css";
 

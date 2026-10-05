@@ -5,6 +5,7 @@
   "description": "The React parts the Phase 2 apps share: the base stylesheet, the icon and the mark, buttons, sheets, fields, rows, tables, tabs, a page's states, and the hooks behind them. Each app brings its own React.",
   "type": "module",
   "exports": {
+    "./arrival": "./arrival.ts",
     "./base.css": "./base.css",
     "./Button": "./Button.tsx",
     "./Caps": "./Caps.tsx",
@@ -27,6 +28,7 @@
     "./useAsync": "./useAsync.ts",
     "./useLoad": "./useLoad.ts",
     "./useOneAtATime": "./useOneAtATime.ts",
+    "./useSecondsLeft": "./useSecondsLeft.ts",
     "./VisuallyHidden": "./VisuallyHidden.tsx"
   },
   "dependencies": {

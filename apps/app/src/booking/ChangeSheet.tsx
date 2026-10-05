@@ -11,7 +11,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type BookableType, type CancelTerms, type Me, type MoveTerms } from "../api.ts";
 import { booking, change, states } from "../content.ts";
-import { focusIfLost } from "../lib/arrival.ts";
+import { focusIfLost } from "@maneman/ui/arrival";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { methodName } from "../payments/entry.ts";
 import { useSession } from "../session.ts";

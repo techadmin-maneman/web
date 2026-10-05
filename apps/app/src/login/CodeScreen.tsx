@@ -1,5 +1,6 @@
 // A2: the code (design/phase2/Client App, board A2).
 
+import { apiNow } from "../lib/clock.ts";
 import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
 import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
@@ -10,7 +11,7 @@ import { useEffect, useRef, useState, type RefCallback } from "react";
 import type { LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
 import { BUBBLE } from "../icons.ts";
-import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
+import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import { CodeField } from "@maneman/ui/CodeField";
 import styles from "./login.module.css";
 import { MessageUs } from "./MessageUs.tsx";
@@ -107,8 +108,8 @@ export function CodeScreen(props: Props) {
   // Counted from when this code was sent, so the help screen and back do not start the count again.
   const resendAt = props.sentAt + challenge.resend_in_s * 1000;
   const smsAt = props.sentAt + (challenge.sms_in_s ?? 0) * 1000;
-  const resendIn = useSecondsLeft(resendAt);
-  const smsIn = useSecondsLeft(smsAt);
+  const resendIn = useSecondsLeft(resendAt, apiNow);
+  const smsIn = useSecondsLeft(smsAt, apiNow);
   const closed = problem?.kind === "closed" || (problem?.kind === "mismatch" && problem.left === 0);
   useSmsCode(challenge.channel === "sms", setCode);
 

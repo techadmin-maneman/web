@@ -43,7 +43,7 @@ import {
   type Wanted,
 } from "../api.ts";
 import { booking } from "../content.ts";
-import { focusIfLost } from "../lib/arrival.ts";
+import { focusIfLost } from "@maneman/ui/arrival";
 import { apiNow } from "../lib/clock.ts";
 import { loadCheckout, pay, type Paid } from "./checkout.ts";
 import { undecidedOf } from "./consents.ts";
