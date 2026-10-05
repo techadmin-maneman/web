@@ -210,11 +210,7 @@
 
 .fieldTitle {
   margin: 0 0 var(--sp-14);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-15);
-  font-weight: var(--weight-regular);
   color: var(--ink-muted);
 }
 
@@ -465,9 +461,6 @@
 
 .closeLabel {
   margin: 0 0 var(--sp-16);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
   color: var(--ink-muted);
 }

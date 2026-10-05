@@ -8,6 +8,7 @@
 // Each name in a held pair is a way to that client's page, and each grant says
 // how long it has been held, as the board writes it.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -88,7 +89,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
       </div>
       <ul className={styles.signals}>
         {grant.signals.map((signal) => (
-          <li key={signal} className={styles.signal}>
+          <li key={signal} className={capsLook(styles.signal)}>
             {copy.signals[signal]}
           </li>
         ))}

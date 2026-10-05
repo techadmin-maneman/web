@@ -6,6 +6,7 @@
 // first, and offers to send it. With no signal the session stays open and
 // nothing is wiped, and it says so (apps/tech/src/App.tsx).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
@@ -194,7 +195,7 @@ export function TodayScreen() {
 
       {day.state === "loaded" && jobs.length === 0 && (
         <div className={styles.empty}>
-          <p className={styles.emptyLabel}>{copy.empty.label}</p>
+          <p className={capsLook(styles.emptyLabel)}>{copy.empty.label}</p>
           <p className={styles.emptyTitle}>{copy.empty.title}</p>
           <p className={styles.emptyBody}>
             {tomorrowJobs.length === 0 || tomorrowJobs[0] === undefined

@@ -9,6 +9,7 @@
 // technicians here (./TechnicianForms.tsx); those switched off are listed
 // beneath the table.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -66,7 +67,8 @@ function LeaveCell({ leave, today }: { leave: readonly Leave[]; today: string })
   const next = leave[0];
   if (next === undefined) return <span className={styles.none}>{technicians.unknown}</span>;
   const year = Number(today.slice(0, 4));
-  if (next.from <= today) return <span className={styles.away}>{technicians.away(listDate(next.to, year))}</span>;
+  if (next.from <= today)
+    return <span className={capsLook(styles.away)}>{technicians.away(listDate(next.to, year))}</span>;
   return <span>{technicians.from(listDate(next.from, year))}</span>;
 }
 
@@ -74,7 +76,7 @@ function LeaveCell({ leave, today }: { leave: readonly Leave[]; today: string })
 function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
   return (
     <section className={styles.off} aria-labelledby="switched-off">
-      <h3 className={styles.sectionTitle} id="switched-off">
+      <h3 className={capsLook(styles.sectionTitle)} id="switched-off">
         {technicians.switchedOff}
       </h3>
       <ul className={styles.offList}>

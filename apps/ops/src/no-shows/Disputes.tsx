@@ -4,6 +4,7 @@
 // gives back what the charge took; the client is told the ruling either way, never the note. A dispute waits on the
 // Tasks board too, whose link opens its row here.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, minutesBetween, shortDate } from "@maneman/web-kit/dates";
@@ -121,7 +122,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
   return (
     <section aria-labelledby={titleId}>
       <div className={styles.caseHead}>
-        <p className={styles.disputeLabel}>{copy.label}</p>
+        <p className={capsLook(styles.disputeLabel)}>{copy.label}</p>
         <Left due={each.due} now={now} />
       </div>
       <h3 className={styles.disputeTitle} id={titleId}>

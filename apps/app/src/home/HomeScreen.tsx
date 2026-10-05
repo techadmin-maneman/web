@@ -10,6 +10,7 @@
 // beneath that (src/domain/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, listDate, monthInIndia, shortDate } from "@maneman/web-kit/dates";
@@ -72,7 +73,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   if (visit !== null) {
     return (
       <section aria-labelledby="next">
-        <h1 className={styles.label} id="next">
+        <h1 className={capsLook(styles.label)} id="next">
           {home.next.label}
         </h1>
         <VisitCard visit={visit} />
@@ -135,7 +136,7 @@ function Consultation(props: {
   return (
     <>
       <section aria-labelledby="consultation">
-        <h1 className={styles.label} id="consultation">
+        <h1 className={capsLook(styles.label)} id="consultation">
           {oneVisit ? copy.labelOneVisit : copy.label}
         </h1>
         <div className={styles.card}>
@@ -165,7 +166,7 @@ function OneVisit({ visit }: { visit: NonNullable<Me["next_visit"]> }) {
   return (
     <>
       <section aria-labelledby="next">
-        <h1 className={styles.label} id="next">
+        <h1 className={capsLook(styles.label)} id="next">
           {home.oneVisit.label}
         </h1>
         <VisitCard visit={visit} />
@@ -178,7 +179,7 @@ function OneVisit({ visit }: { visit: NonNullable<Me["next_visit"]> }) {
 function WhatToExpect({ steps }: { steps: readonly string[] }) {
   return (
     <section className={styles.expect} aria-labelledby="expect">
-      <h2 className={styles.label} id="expect">
+      <h2 className={capsLook(styles.label)} id="expect">
         {home.expect.label}
       </h2>
       <ol className={styles.steps}>
@@ -203,7 +204,7 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
   const copy = home.beingBooked;
   return (
     <section aria-labelledby="next">
-      <h1 className={styles.label} id="next">
+      <h1 className={capsLook(styles.label)} id="next">
         {home.next.label}
       </h1>
       <div className={styles.card}>
@@ -222,7 +223,7 @@ function PaymentOwed({ owed }: { owed: NonNullable<Me["payment_owed"]> }) {
   const copy = home.owed;
   return (
     <section className={styles.prompt} aria-labelledby="owed">
-      <h2 className={styles.label} id="owed">
+      <h2 className={capsLook(styles.label)} id="owed">
         {copy.label}
       </h2>
       <p className={styles.owedLine}>{copy.line(owed.product, rupees(owed.amount))}</p>
@@ -364,7 +365,7 @@ function Involves() {
 function NothingNext({ promptBooks }: { promptBooks: boolean }) {
   return (
     <section className={styles.nothing} aria-labelledby="next">
-      <h1 className={styles.label} id="next">
+      <h1 className={capsLook(styles.label)} id="next">
         {home.next.label}
       </h1>
       <p>{home.next.none}</p>

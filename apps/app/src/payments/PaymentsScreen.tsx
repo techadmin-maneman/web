@@ -9,6 +9,7 @@
 // Above them, a consultation and fit in one visit the client was fitted at and
 // has not paid for, opening the link Razorpay texted.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { listDate, yearInIndia } from "@maneman/web-kit/dates";
@@ -118,7 +119,7 @@ function OwedRow({ owed, thisYear }: { owed: OwedPayment; thisYear: number }) {
 function Owed({ owed, thisYear }: { owed: readonly OwedPayment[]; thisYear: number }) {
   return (
     <section aria-labelledby="owed">
-      <h2 className={styles.owedLabel} id="owed">
+      <h2 className={capsLook(styles.owedLabel)} id="owed">
         {payments.owed.label}
       </h2>
       <ul className={styles.list}>

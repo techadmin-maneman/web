@@ -15,6 +15,7 @@
 // to cost a no-show once ops rule, under whoever Access says is signed in
 // (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { type Loaded, useLoad } from "@maneman/ui/useLoad";
@@ -138,7 +139,7 @@ function Money() {
           <dd className={styles.amount}>{rupees(day.charged)}</dd>
         </div>
       </dl>
-      <h3 className={styles.chargesTitle}>{copy.charges.title}</h3>
+      <h3 className={capsLook(styles.chargesTitle)}>{copy.charges.title}</h3>
       <Charges charges={day.charges} today={isToday} />
     </section>
   );

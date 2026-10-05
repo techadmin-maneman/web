@@ -6,6 +6,7 @@
 // (docs/decisions/0089-an-invite-is-not-lost.md). No board draws it
 // (docs/fidelity-method.md).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
@@ -157,7 +158,7 @@ export function Invite({
   const mayAttach = useAccess().mayCall("POST /api/clients/{id}/referral");
   return (
     <section className={styles.invite} aria-labelledby="invite">
-      <h3 className={styles.sectionTitle} id="invite">
+      <h3 className={capsLook(styles.sectionTitle)} id="invite">
         {copy.title}
       </h3>
       {invite !== null && <Details invite={invite} news={news} />}

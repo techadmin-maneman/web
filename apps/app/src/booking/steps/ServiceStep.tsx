@@ -1,5 +1,6 @@
 // The service, for a client with more than one open to them (ADR 0085).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import type { OfferedService } from "../../api.ts";
 import { booking, VISIT_TYPES } from "../../content.ts";
@@ -29,7 +30,7 @@ export function ServiceStep(props: {
       <Heading title={title} step={booking.step(1, 3 + props.before)} />
       {kinds.map((kind) => (
         <div key={kind} className={styles.kind}>
-          <h3 className={styles.label} id={`booking-kind-${kind}`}>
+          <h3 className={capsLook(styles.label)} id={`booking-kind-${kind}`}>
             {VISIT_TYPES[kind]}
           </h3>
           <div className={styles.windows} role="radiogroup" aria-labelledby={`booking-kind-${kind}`}>

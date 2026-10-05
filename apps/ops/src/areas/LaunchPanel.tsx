@@ -2,6 +2,7 @@
 // the press that sends it. Nothing is sent before that press
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useEffect, useRef, type ReactNode } from "react";
 import { areas, BOOKING_URL } from "../content.ts";
@@ -43,7 +44,7 @@ export function LaunchPanel(props: Props) {
   }, []);
   return (
     <section className={styles.launch} aria-labelledby="launch" ref={panel} tabIndex={-1}>
-      <p className={styles.launchLabel} id="launch">
+      <p className={capsLook(styles.launchLabel)} id="launch">
         {label}
       </p>
       <p className={styles.launchTitle}>{copy.title(alerts)}</p>

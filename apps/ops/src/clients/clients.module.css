@@ -260,11 +260,7 @@
 
 .sectionTitle {
   margin: 0 0 var(--sp-8);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
-  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
@@ -503,9 +499,6 @@
 
 .eyebrow {
   margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -531,9 +524,6 @@
 /* The phase, which the board does not name: it draws one set of five angles. */
 .phase {
   margin: var(--sp-14) 0 var(--sp-8);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -655,11 +645,8 @@
 
 .eraseTitle {
   margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
-  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 

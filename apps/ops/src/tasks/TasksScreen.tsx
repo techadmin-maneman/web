@@ -31,6 +31,7 @@
 // Above the tasks, "Needs a hand" lists the alerts ops were told of and not yet
 // put right (NeedsAHand.tsx).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -248,7 +249,7 @@ function GroupCard({ group, unfolded, onFold, rowOf }: GroupProps) {
   return (
     <div className={styles.group}>
       <div className={styles.groupHead}>
-        <h4 className={styles.groupName}>{name}</h4>
+        <h4 className={capsLook(styles.groupName)}>{name}</h4>
         <span className={styles.count}>{group.count}</span>
       </div>
       <ul className={styles.tasks} id={listId}>

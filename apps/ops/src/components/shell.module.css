@@ -42,7 +42,6 @@
 .departmentName {
   margin: 0;
   padding: 0 var(--sp-20) var(--sp-4);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-13);
   color: var(--ink-muted);
@@ -64,9 +63,6 @@
 }
 
 .brandName {
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-15);
   color: var(--paper);
 }

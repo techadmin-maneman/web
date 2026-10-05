@@ -16,6 +16,7 @@
 // board draws; one the client declined closes as a free consultation
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
@@ -136,7 +137,7 @@ export function CloseOut({ id }: { id: string }) {
   return (
     <main className={frame.screen}>
       <section className={styles.close}>
-        <p className={styles.closeLabel}>{copy.label}</p>
+        <p className={capsLook(styles.closeLabel)}>{copy.label}</p>
         <Icon className={styles.closeTick} d={ICONS.tick} size={28} stroke={STROKE} />
         <h1 className={styles.closeWho} ref={heading} tabIndex={-1}>
           {copy.who(who, closedAs(job, outcome, waiting.events))}

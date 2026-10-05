@@ -119,10 +119,6 @@
 .chargesTitle {
   margin: var(--sp-16) 0 0;
   padding: 0 var(--sp-20);
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }
@@ -313,9 +309,6 @@
 
 .disputeLabel {
   margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-14);
   color: var(--text-muted);
 }

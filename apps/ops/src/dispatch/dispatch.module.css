@@ -464,10 +464,6 @@
 
 .trayTitle {
   margin: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
-  font-weight: var(--weight-regular);
-  letter-spacing: var(--tracking-14);
   font-size: var(--fs-15);
   color: var(--text-muted);
 }
@@ -508,8 +504,6 @@
 }
 
 .trayType {
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   color: var(--text-muted);
   white-space: nowrap;
@@ -672,8 +666,6 @@
 /* "Prepaid", in brass small capitals at the drawer's head. */
 .badge {
   flex-shrink: 0;
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
   color: var(--brass-text);

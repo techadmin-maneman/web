@@ -14,6 +14,7 @@
 // check-in. A visit still ahead can be cancelled for the client here, and one
 // whose time has come closed by hand, each in its own panel.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
@@ -92,7 +93,7 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
             )}
           </p>
         </div>
-        <span className={styles.badge}>{copy.badges[block.badge] ?? block.badge}</span>
+        <span className={capsLook(styles.badge)}>{copy.badges[block.badge] ?? block.badge}</span>
       </div>
       <div className={styles.drawerBody}>
         <dl className={styles.rows}>

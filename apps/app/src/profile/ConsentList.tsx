@@ -6,6 +6,7 @@
 // would tell the client something untrue about their data. Where switching a
 // purpose off leaves something as it was, a line says so.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
@@ -50,7 +51,7 @@ export function ConsentList({
 
   return (
     <section aria-labelledby="agreed" aria-busy={busy}>
-      <h2 className={styles.label} id="agreed">
+      <h2 className={capsLook(styles.label)} id="agreed">
         {copy.agreed}
       </h2>
       <ul className={styles.consents}>

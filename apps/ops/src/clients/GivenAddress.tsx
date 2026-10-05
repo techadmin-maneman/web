@@ -6,6 +6,7 @@
 // (docs/decisions/0054-address-capture.md). The search is an addition, never a
 // gate: an address typed without it saves, with no pin. No board draws any of it.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -272,7 +273,7 @@ export function GivenAddressForm({
         void save();
       }}
     >
-      <h3 className={styles.title} id={`${formId}-title`}>
+      <h3 className={capsLook(styles.title)} id={`${formId}-title`}>
         {copy.title}
       </h3>
       <p className={styles.hint}>{copy.note}</p>

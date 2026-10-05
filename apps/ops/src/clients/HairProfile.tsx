@@ -4,6 +4,7 @@
 //
 // A correction is the whole profile as it now stands, sent as a new version, so the form starts from the latest.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, Field, TextInput } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -127,7 +128,7 @@ function byWhom(version: HairProfileVersion): string {
 function Versions({ versions }: { versions: readonly HairProfileVersion[] }) {
   return (
     <section className={styles.versions} aria-labelledby="hair-profile-versions">
-      <h4 className={styles.subtitle} id="hair-profile-versions">
+      <h4 className={capsLook(styles.subtitle)} id="hair-profile-versions">
         {copy.versions}
       </h4>
       <ol className={styles.versionList}>
@@ -266,7 +267,7 @@ function CorrectionForm({
         void save();
       }}
     >
-      <h4 className={styles.subtitle} id={`${formId}-title`}>
+      <h4 className={capsLook(styles.subtitle)} id={`${formId}-title`}>
         {copy.formTitle}
       </h4>
       <p className={styles.hint}>{copy.formNote}</p>
@@ -277,7 +278,7 @@ function CorrectionForm({
         })}
       </div>
       <fieldset className={styles.history}>
-        <legend className={styles.subtitle}>{copy.history}</legend>
+        <legend className={capsLook(styles.subtitle)}>{copy.history}</legend>
         {REMEDIES.map((remedy) => (
           <Checkbox
             key={remedy}
@@ -367,7 +368,7 @@ export function HairProfile({ clientId }: { clientId: string }) {
   const page = saved ?? loaded.value;
   return (
     <section className={styles.profile} aria-labelledby="hair-profile-title">
-      <h3 className={styles.title} id="hair-profile-title">
+      <h3 className={capsLook(styles.title)} id="hair-profile-title">
         {copy.title}
       </h3>
       {moved && (

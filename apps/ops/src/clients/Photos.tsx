@@ -9,6 +9,7 @@
 // asked for, since a client of some years has a great many. The opening is held
 // by the client's page, so leaving this tab and coming back is the same view.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -157,7 +158,7 @@ function VisitPhotos({ visit, shown }: Visit) {
         if (ofPhase.length === 0) return null;
         return (
           <div key={phase}>
-            <p className={styles.phase}>{copy.phases[phase]}</p>
+            <p className={capsLook(styles.phase)}>{copy.phases[phase]}</p>
             <div className={styles.grid}>
               {ofPhase.map((each) => (
                 <Tile key={each.photo.id} shown={each} visit={visit} />
@@ -175,7 +176,7 @@ function VisitPhotos({ visit, shown }: Visit) {
 function Before({ view }: { view: PhotoView }) {
   return (
     <section className={styles.before} aria-labelledby="photos-before">
-      <h4 className={styles.phase} id="photos-before">
+      <h4 className={capsLook(styles.phase)} id="photos-before">
         {copy.before}
       </h4>
       {view.before.length === 0 ? (
@@ -218,7 +219,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
   if (state.step === "open") {
     return (
       <section className={styles.photos} aria-label={copy.title(name)}>
-        <p className={styles.eyebrow}>{copy.opened(indiaClock(state.view.logged_at))}</p>
+        <p className={capsLook(styles.eyebrow)}>{copy.opened(indiaClock(state.view.logged_at))}</p>
         <p className={styles.caption}>{copy.basis}</p>
         {state.shown.map((each) => (
           <VisitPhotos key={each.visit.visit_id} visit={each.visit} shown={each.shown} />
@@ -231,7 +232,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
 
   return (
     <section className={styles.photos} aria-label={copy.title(name)}>
-      <p className={styles.eyebrow}>{copy.locked}</p>
+      <p className={capsLook(styles.eyebrow)}>{copy.locked}</p>
       <h3 className={styles.photosTitle}>{copy.title(name)}</h3>
       <p className={styles.caption}>{copy.basis}</p>
       <p className={styles.warning}>{copy.warning(firstNameOf(name))}</p>

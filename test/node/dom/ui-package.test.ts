@@ -63,6 +63,12 @@ describe.each(APPS)("%s", (app) => {
     expect(copies).toEqual([]);
   });
 
+  // P3-35 (UX-15): the boards' small-caps label is Caps's look; a screen's class sets its size and colour alone.
+  it("keeps no small-caps label recipe of its own", () => {
+    const recipes = styles.filter((path) => /font-variant-caps:\s*all-small-caps/.test(read(path)));
+    expect(recipes).toEqual([]);
+  });
+
   // P3-35 (UX-15): an icon from the set is drawn by the shared Icon, at the set's stroke or the one it is given.
   it("draws no icon from the set by hand", () => {
     const own = code.filter((path) => /<path d=\{ICONS\./.test(read(path)));

@@ -10,6 +10,7 @@
 // Figures are typed, to one decimal, and checked against the API's ranges before Next takes them. Everything else is
 // one tap, and a second tap on what is chosen takes it off.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { useId, useState } from "react";
 import type { FitSpec, HairProfile, History, Job, ProfileRequest } from "../api.ts";
 import { job as jobCopy, profile as copy, steps as stepsCopy } from "../content.ts";
@@ -99,7 +100,7 @@ function Chips<T extends string | number>({
   const titleId = useId();
   return (
     <section className={styles.field} aria-labelledby={titleId}>
-      <h2 className={styles.fieldTitle} id={titleId}>
+      <h2 className={capsLook(styles.fieldTitle)} id={titleId}>
         {title}
       </h2>
       <div className={styles.chips}>
@@ -205,13 +206,13 @@ function FitFields({
         onChoose={choose("norwood_stage")}
       />
       <section className={styles.field} aria-labelledby={headId}>
-        <h2 className={styles.fieldTitle} id={headId}>
+        <h2 className={capsLook(styles.fieldTitle)} id={headId}>
           {copy.sections.head}
         </h2>
         <div className={styles.figures}>{HEAD.map(figure)}</div>
       </section>
       <section className={styles.field} aria-labelledby={baseId}>
-        <h2 className={styles.fieldTitle} id={baseId}>
+        <h2 className={capsLook(styles.fieldTitle)} id={baseId}>
           {copy.sections.base}
         </h2>
         <div className={styles.figures}>{BASE.map(figure)}</div>

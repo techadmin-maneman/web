@@ -1,5 +1,6 @@
 // The account's deletion card (board G2): a request to delete the account, which ops carry out or reject.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
@@ -104,7 +105,7 @@ export function DeletionCard({
 
   return (
     <section className={styles.card} aria-labelledby="deletion">
-      <h2 className={styles.cardLabel} id="deletion">
+      <h2 className={capsLook(styles.cardLabel)} id="deletion">
         {copy.label}
       </h2>
       <p className={styles.cardBody}>{copy.body}</p>

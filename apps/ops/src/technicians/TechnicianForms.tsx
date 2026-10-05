@@ -2,6 +2,7 @@
 // Switching off asks first, since it signs him out at once and hands his visits still to come back to the dispatch
 // board.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -432,7 +433,7 @@ export function Details({
 
   return (
     <section className={styles.section} aria-labelledby="details-title">
-      <h3 className={styles.sectionTitle} id="details-title">
+      <h3 className={capsLook(styles.sectionTitle)} id="details-title">
         {copy.title}
       </h3>
       {!active && <p className={styles.offNote}>{technicians.switchOn.note}</p>}

@@ -8,6 +8,7 @@
 // the visits and the reason, and the server writes the ledger's entry and its
 // audit entry together; the balance it answers is shown, and heads the page.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -235,7 +236,7 @@ function CreditForm({
 
   return (
     <section className={styles.credits} aria-labelledby="credits">
-      <h3 className={styles.sectionTitle} id="credits">
+      <h3 className={capsLook(styles.sectionTitle)} id="credits">
         {creditCopy.title}
       </h3>
       <dl className={styles.address}>
@@ -354,15 +355,15 @@ export function MoneyRecords({
   return (
     <>
       <section className={styles.visitList} aria-label={copy.title}>
-        <h3 className={styles.sectionTitle}>{copy.title}</h3>
+        <h3 className={capsLook(styles.sectionTitle)}>{copy.title}</h3>
         <PaymentTable payments={payments} />
       </section>
       <section className={styles.visitList} aria-label={linkCopy.title}>
-        <h3 className={styles.sectionTitle}>{linkCopy.title}</h3>
+        <h3 className={capsLook(styles.sectionTitle)}>{linkCopy.title}</h3>
         <LinkTable links={links} />
       </section>
       <section className={styles.visitList} aria-label={invoiceCopy.title}>
-        <h3 className={styles.sectionTitle}>{invoiceCopy.title}</h3>
+        <h3 className={capsLook(styles.sectionTitle)}>{invoiceCopy.title}</h3>
         <InvoiceTable invoices={invoices} />
       </section>
     </>

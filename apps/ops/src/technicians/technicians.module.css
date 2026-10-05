@@ -126,8 +126,6 @@
 
 /* Away today, in the small capitals the board letters its own labels in. */
 .away {
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-15);
   color: var(--text-muted);
@@ -312,11 +310,8 @@
 /* Phones and Leave, in the small capitals the board letters its group names in. */
 .sectionTitle {
   margin: 0 0 var(--sp-8);
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-15);
-  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 

@@ -1,6 +1,7 @@
 // The account's data card: a copy of the client's data, and a concern raised and answered
 // (docs/decisions/0049-dpdp.md).
 
+import { capsLook } from "@maneman/ui/Caps";
 import { GRIEVANCE_MAX_CHARS } from "../../../../src/policy/grievances.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -134,7 +135,7 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
 
   return (
     <section className={styles.card} aria-labelledby="data">
-      <h2 className={styles.cardLabel} id="data">
+      <h2 className={capsLook(styles.cardLabel)} id="data">
         {copy.label}
       </h2>
       <p className={styles.cardBody}>{copy.body}</p>

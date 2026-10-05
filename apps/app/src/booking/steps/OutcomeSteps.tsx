@@ -1,5 +1,6 @@
 // Boards C5 and C6: what came of paying, the hold that ran out, the booking confirmed, and a wait.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
@@ -22,7 +23,7 @@ export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => vo
   return (
     // Busy while the payment is being started again, so a screen reader is told the step is working.
     <div aria-busy={busy}>
-      <p className={styles.caption}>{copy.label}</p>
+      <p className={capsLook(styles.caption)}>{copy.label}</p>
       <div className={styles.failed}>
         <div role="alert">
           <h2 className={styles.outcome} id={TITLE_ID}>
@@ -44,7 +45,7 @@ export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => vo
 export function ExpiredStep({ onPickAgain }: { onPickAgain: () => void }) {
   return (
     <div role="alert">
-      <p className={styles.caption}>{booking.expired.label}</p>
+      <p className={capsLook(styles.caption)}>{booking.expired.label}</p>
       <h2 className={styles.outcome} id={TITLE_ID}>
         {booking.expired.title}
       </h2>
@@ -86,7 +87,7 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
   const when = `${weekdayDate(hold.date)}, ${WINDOW_HOURS[hold.window]}`;
   return (
     <div className={styles.confirmed} role="status">
-      <h2 className={styles.confirmedLabel} id={TITLE_ID}>
+      <h2 className={capsLook(styles.confirmedLabel)} id={TITLE_ID}>
         {moved ? change.moved : copy.label}
       </h2>
       <Icon className={styles.confirmedTick} d={ICONS.tick} size={26} />

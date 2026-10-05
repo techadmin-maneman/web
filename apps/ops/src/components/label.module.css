@@ -9,8 +9,6 @@
  */
 
 .caps {
-  font-family: var(--font-serif);
-  font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   color: var(--text-muted);
 }

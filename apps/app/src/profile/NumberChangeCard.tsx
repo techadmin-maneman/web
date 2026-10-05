@@ -1,6 +1,7 @@
 // The account's change of mobile number (board G2): both numbers proved by a code each, then ops decide. The design
 // draws the card's first state; the ones after it are written in the same card, with placeholder words.
 
+import { capsLook } from "@maneman/ui/Caps";
 import { ONE_TIME_CODE } from "../../../../src/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
 import { codeDigits } from "@maneman/ui/CodeField";
@@ -235,7 +236,7 @@ export function NumberChangeCard({
 
   return (
     <section className={styles.card} aria-labelledby="change">
-      <h2 className={styles.cardLabel} id="change">
+      <h2 className={capsLook(styles.cardLabel)} id="change">
         {copy.label}
       </h2>
       {change?.state === "awaiting_ops" && (
