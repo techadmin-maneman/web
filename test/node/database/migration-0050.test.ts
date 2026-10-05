@@ -2,16 +2,13 @@
 // holding a hold and a visit, as staging's does, and held to what the Worker already deployed writes. Every name
 // and number is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 import { VISIT_BLOCKS } from "../../../src/config/scheduling.ts";
 import { VISIT_TYPE_NAMES, VISIT_TYPES } from "../../../src/config/visit-types.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0050_")) ?? "";
+const THIS = migrationNamed("0050_");
 
 const AT = "2026-09-21T06:30:00.000Z";
 
@@ -22,9 +19,7 @@ const HOLD = `INSERT INTO slot_holds (id, person_id, type, date, window_label, t
     '${AT}', '${AT}');`;
 
 function migrated(): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) db.exec(readFileSync(`migrations/${file}`, "utf8"));
+  const db = databaseBefore(THIS);
   db.exec(`INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('client', '${AT}', '+919810000001', 'Rohit');
     INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'sr-1', 'Imran', 'I', 1, '${AT}');
     INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
@@ -33,7 +28,7 @@ function migrated(): DatabaseSync {
         '${AT}', '${AT}');
     INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at, synced_at)
       VALUES ('a1', 'ap-1', 'client', 'service', 'scheduled', 'Scheduled', '${AT}', '${AT}', '${AT}');`);
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
+  apply(db, THIS);
   return db;
 }
 

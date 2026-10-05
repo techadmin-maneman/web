@@ -1,14 +1,11 @@
 // Migration 0088: when the chat was last told of each alert, and the open alerts whose subject is gone closed, applied
 // to a database that already holds alerts as staging's does. Every ID is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.endsWith("_alerts_retold.sql")) ?? "";
+const THIS = migrationNamed("_alerts_retold.sql");
 
 const AT = "2026-10-02T06:30:00.000Z";
 const TOLD = "2026-10-02T06:35:00.000Z";
@@ -20,13 +17,7 @@ function alert(key: string): string {
 
 function migrated(): DatabaseSync {
   expect(THIS).not.toBe("");
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) {
-    db.exec("BEGIN");
-    db.exec(readFileSync(`migrations/${file}`, "utf8"));
-    db.exec("COMMIT");
-  }
+  const db = databaseBefore(THIS);
   db.exec(`
     INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
       VALUES ('t1', 'resource-1', 'A Technician', 'AT', 1, '${AT}');
@@ -52,9 +43,7 @@ function migrated(): DatabaseSync {
     ${alert("whatsapp_bridge")}
     UPDATE alerts SET told_at = '${TOLD}';
   `);
-  db.exec("BEGIN");
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
-  db.exec("COMMIT");
+  apply(db, THIS);
   return db;
 }
 

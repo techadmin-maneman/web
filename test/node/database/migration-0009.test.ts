@@ -3,18 +3,12 @@
 // append-only, and the purposes must stay checked. D1 is SQLite, so this
 // applies the real migration files to an in-memory SQLite database.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
+import { apply, databaseThrough } from "./migrations.ts";
 
 function migratedTo(last: string): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name <= last)) db.exec(readFileSync(`migrations/${file}`, "utf8"));
+  const db = databaseThrough(last);
   return db;
 }
 
@@ -37,7 +31,7 @@ describe("migration 0009", () => {
     insertConsent(db, "c-result", "result_delivery");
     const before = db.prepare("SELECT * FROM consents ORDER BY id").all();
 
-    db.exec(readFileSync("migrations/0009_consents_v2.sql", "utf8"));
+    apply(db, "0009_consents_v2.sql");
 
     expect(db.prepare("SELECT * FROM consents ORDER BY id").all()).toEqual(before);
   });

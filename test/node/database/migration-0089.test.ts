@@ -1,30 +1,19 @@
 // Migration 0089: the generic "First fit" migration 0050 seeded is retired everywhere, and nothing else changes.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.endsWith("_retire_generic_first_fit.sql")) ?? "";
+const THIS = migrationNamed("_retire_generic_first_fit.sql");
 
 function upTo(): DatabaseSync {
   expect(THIS).not.toBe("");
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) {
-    db.exec("BEGIN");
-    db.exec(readFileSync(`migrations/${file}`, "utf8"));
-    db.exec("COMMIT");
-  }
+  const db = databaseBefore(THIS);
   return db;
 }
 
 function applyThis(db: DatabaseSync): void {
-  db.exec("BEGIN");
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
-  db.exec("COMMIT");
+  apply(db, THIS);
 }
 
 const retiredDates = (db: DatabaseSync) =>

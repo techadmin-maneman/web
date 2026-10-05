@@ -2,13 +2,9 @@
 // check-in whose event still stands, and a check-in sent again is answered from its own row. Every name and
 // number is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
+import { apply, databaseBefore } from "./migrations.ts";
 
 const AT = "2026-09-21T07:30:00.000Z";
 const LATER = "2026-09-21T07:45:00.000Z";
@@ -28,13 +24,7 @@ const event = (id: string, technician: string, at: string, superseded: 0 | 1) =>
  * that failed the geofence, one refused as superseded, and one by another technician.
  */
 function beforeTheLink(): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < "0085")) {
-    db.exec("BEGIN");
-    db.exec(readFileSync(`migrations/${file}`, "utf8"));
-    db.exec("COMMIT");
-  }
+  const db = databaseBefore("0085");
   db.exec(`
     INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
       VALUES ('t1', 'resource-1', 'A Technician', 'AT', 1, 'Gurgaon', '+919810000009', '${AT}'),
@@ -54,9 +44,7 @@ function beforeTheLink(): DatabaseSync {
 
 function migrated(): DatabaseSync {
   const db = beforeTheLink();
-  db.exec("BEGIN");
-  db.exec(readFileSync("migrations/0085_checkin_job_event.sql", "utf8"));
-  db.exec("COMMIT");
+  apply(db, "0085_checkin_job_event.sql");
   return db;
 }
 
