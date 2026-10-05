@@ -77,7 +77,7 @@ describe("job visibility", () => {
   it("marks what a job was paid with by a badge, and never an amount", () => {
     // Free, on a visit that costs nothing, is a badge too.
     expect([...PAYMENT_BADGES]).toEqual(["prepaid", "credit", "free", "at_visit"]);
-    // No answer to a technician carries an amount: test/worker/field-operations.test.ts reads the API's own.
+    // No answer to a technician carries an amount: test/worker/field-day.test.ts reads the API's own.
   });
 
   it("badges a visit a credit paid for as Credit, one that costs nothing as Free, and any other as Prepaid", () => {

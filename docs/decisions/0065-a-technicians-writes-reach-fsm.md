@@ -22,7 +22,7 @@ The audit of 24 September 2026 found that no job worked in the technician app co
 
 **A transition FSM does not offer is taken as written only when FSM is already past it.** The appointment's status is read again: Dispatched or later for Dispatch, In Progress or closed for Start Work, Completed for Complete Work, Terminated for Terminate. That is the case of ops moving a job in FSM's own screen before the phone's write arrived, and nothing of the technician's is lost. Anything else throws, so the queue retries it and alerts after the fifth attempt, as every other FSM write here does.
 
-**The stub offers what the org offers, by status.** `STUB_TRANSITIONS` gives a scheduled appointment the trial's four, a dispatched one Start Work, one in progress Complete Work, and a closed one nothing; each transition moves the stub's appointment on. A wrong name now fails `test/worker/field-operations.test.ts`, which closes a job as done and asserts "Complete Work".
+**The stub offers what the org offers, by status.** `STUB_TRANSITIONS` gives a scheduled appointment the trial's four, a dispatched one Start Work, one in progress Complete Work, and a closed one nothing; each transition moves the stub's appointment on. A wrong name failed the field tests, which closed a job as done and asserted "Complete Work"; that test went with FSM (ADR 0110).
 
 **When FSM takes a step, the mirror takes its status at once** (`src/domain/job-sheet.ts`). The board and the client's app follow the job without waiting for FSM's webhook, whose full read comes after and agrees.
 
