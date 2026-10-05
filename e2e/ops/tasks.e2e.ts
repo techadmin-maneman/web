@@ -101,8 +101,8 @@ test("shows a group's five longest waits, the rest on asking, and unfolds it for
 
 test("names the one fact each group turns on", async ({ page }) => {
   await open(page);
-  // The piece's label and the day its replacement fell due.
-  await expect(row(page, "Kunal Mehta")).toContainText("MM-STD-4417-K · due 17 Sep 2027");
+  // The piece's label, the day its order goes in, and the day it is to be replaced.
+  await expect(row(page, "Kunal Mehta")).toContainText("MM-STD-4417-K · order by 19 Sep 2027, replace by 17 Oct 2027");
   // The fraud rule, lettered as the referral queue letters it.
   await expect(row(page, "Karan Bose")).toContainText("Monthly cap exceeded");
   await expect(row(page, "Vikram Sethi")).toContainText("Both numbers proven by code");

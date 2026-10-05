@@ -1016,6 +1016,10 @@
               "other"
             ]
           },
+          "not_home": {
+            "type": "boolean",
+            "description": "Closed because nobody was home: a no-show."
+          },
           "stage": {
             "anyOf": [
               {
@@ -1084,6 +1088,7 @@
           "type",
           "service",
           "status",
+          "not_home",
           "stage",
           "prepaid",
           "technician",
@@ -2101,6 +2106,10 @@
               "other"
             ]
           },
+          "not_home": {
+            "type": "boolean",
+            "description": "Closed because nobody was home: a no-show."
+          },
           "stage": {
             "anyOf": [
               {
@@ -2255,6 +2264,7 @@
           "type",
           "service",
           "status",
+          "not_home",
           "stage",
           "prepaid",
           "technician",
