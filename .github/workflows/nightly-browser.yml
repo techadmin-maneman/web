@@ -1,0 +1,45 @@
+# Every night, the browser tests on main, with a flaky test failing the run. A pull request's run retries a failed
+# test once and passes when the retry does, so a test that fails some of the time never shows there; here it fails
+# the run, and GitHub tells whoever watches the repository (docs/runbook.md, "Flaky browser tests").
+name: nightly browser tests
+
+on:
+  schedule:
+    # 3 am in India.
+    - cron: "30 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    name: browser tests, a flaky one failing the run
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Chromium and WebKit for Playwright
+        run: npx playwright install --with-deps chromium webkit
+      - name: Local secrets, and every migration applied to an empty D1
+        run: |
+          node scripts/dev/ensure-dev-vars.ts
+          npm run db:local
+      - name: Build the site and the Phase 2 apps (local)
+        run: |
+          npm run build:site -- --env local
+          npm run build:app -- --env local
+          npm run build:ops -- --env local
+          npm run build:tech -- --env local
+      - name: Every browser-test project, each failure retried once, and a pass on the retry counted as a failure
+        run: npm run test:e2e -- --fail-on-flaky-tests
+      - name: Traces of failed and flaky tests
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
