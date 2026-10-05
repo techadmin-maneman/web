@@ -38,6 +38,7 @@ import { copyKey, keptLookKey } from "./kept-try-ons.ts";
 import { deleteCounted, deleteUnder } from "./storage-meter.ts";
 import { recordEvent } from "./tryon.ts";
 import { type CrmSyncMessage } from "../config/pipeline.ts";
+import { paidNotBooked } from "./hold-stages.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;
@@ -137,8 +138,7 @@ export async function erasureBlockers(db: D1Database, personId: string, now: Dat
   const { results: bookings } = await db
     .prepare(
       `SELECT id, type, date, window_label AS window FROM slot_holds
-       WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
-       ORDER BY date, start_unit`,
+       WHERE person_id = ?1 AND ${paidNotBooked("slot_holds")} AND moves_appointment_id IS NULL ORDER BY date, start_unit`,
     )
     .bind(personId)
     .all<ErasureBlockers["bookings"][number]>();
@@ -464,7 +464,7 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
       .bind(personId),
     ...opsWordsAbout(db, personId),
     // Their first name on a referral, which the referrer's tracker shows until now; blank, it reads "A friend",
-    // which says nothing of the erasure (LIFE-13). Counsel may rule it can stay (docs/open-points.md, item 63).
+    // which says nothing of the erasure. Counsel may rule it can stay (docs/open-points.md, item 63).
     db
       .prepare("UPDATE referral_attributions SET friend_first_name = NULL WHERE referred_person_id = ?1")
       .bind(personId),

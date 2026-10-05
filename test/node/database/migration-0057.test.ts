@@ -3,14 +3,11 @@
 // check-ins, as staging's does, and then written to as the Worker deployed before it writes. Every name and number
 // is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0057_")) ?? "";
+const THIS = migrationNamed("0057_");
 
 const AT = "2026-09-21T06:30:00.000Z";
 
@@ -24,13 +21,7 @@ function consent(db: DatabaseSync, noticeVersion: string, purpose: string, grant
 
 /** The database before this migration: a consent on every notice there is, and a check-in with a case on it. */
 function beforeThisMigration(): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) {
-    db.exec("BEGIN");
-    db.exec(readFileSync(`migrations/${file}`, "utf8"));
-    db.exec("COMMIT");
-  }
+  const db = databaseBefore(THIS);
   db.exec(`
     INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', '${AT}', '+919810000001', 'A Client');
     INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
@@ -65,9 +56,7 @@ function beforeThisMigration(): DatabaseSync {
 
 function migrated(): DatabaseSync {
   const db = beforeThisMigration();
-  db.exec("BEGIN");
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
-  db.exec("COMMIT");
+  apply(db, THIS);
   return db;
 }
 

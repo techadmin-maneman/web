@@ -1,5 +1,5 @@
 // Paying for a visit (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rule as the prompt states it, and what it means for the tax invoice. The payment is taken in
+// Every visit is prepaid at booking, and technicians never handle money: what that means for the tax invoice. The payment is taken in
 // src/domain/bookings.ts before anything is booked; the invoice is held or issued in src/domain/books-invoices.ts.
 //
 // A visit is paid for before it happens, so its tax invoice records a sale
@@ -10,10 +10,6 @@
 // An invoice raised in Books is issued only then. Otherwise it stays a draft, which
 // can still be corrected or deleted, and ops are told
 // (docs/decisions/0070-vendor-correctness.md).
-
-export const RULES = [
-  "Every visit is prepaid at booking. Technicians never handle money, and no amount to collect is ever sent to FSM.",
-] as const;
 
 /** Why an invoice raised in Books stays a draft rather than being issued. */
 export type InvoiceHold =

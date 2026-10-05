@@ -12,7 +12,7 @@
 // That sum is kept in stock_balances, a row for each consumable at each place,
 // which the database moves in the same statement as each row of the ledger is
 // written (migration 0053), so what a place holds is read without its history.
-// It names the central store 'central', and a kit by its technician's ID.
+// It names the central store CENTRAL_STORE, and a kit by its technician's ID.
 //
 // A place that falls to a consumable's reorder level raises one alert, for
 // that kit or for the store, listing everything low there, and the Stock
@@ -26,6 +26,9 @@ import { isWithin } from "./places.ts";
 
 /** Where stock is kept: a technician's kit, by his ID, or the central store, null. */
 export type Place = string | null;
+
+/** The central store's place, as the ledger and the balances write it. */
+const CENTRAL_STORE = "central";
 
 /** Why a row moved stock: a delivery, a transfer, a job's use, a count's difference, or a loss. */
 export const MOVEMENT_REASONS = ["received", "transferred", "used", "counted", "written_off"] as const;
@@ -82,7 +85,7 @@ function movementStatement(db: D1Database, movement: Movement, written: Written)
 
 /** What a place, `?4`, holds of a consumable, `?2`, as a statement about one movement reads it. */
 const HELD_THERE = `SELECT COALESCE((SELECT quantity FROM stock_balances
-  WHERE consumable_code = ?2 AND place = COALESCE(?4, 'central')), 0)`;
+  WHERE consumable_code = ?2 AND place = COALESCE(?4, '${CENTRAL_STORE}')), 0)`;
 
 /**
  * A count's row, `id`, written only while the place still holds what the count was worked out from. It answers the
@@ -117,7 +120,9 @@ async function placeExists(db: D1Database, place: Place): Promise<boolean> {
 /** What a place holds of one consumable: the sum of its rows, as its balance keeps it. */
 async function heldOf(db: D1Database, code: string, place: Place): Promise<number> {
   const row = await db
-    .prepare("SELECT quantity FROM stock_balances WHERE consumable_code = ?1 AND place = COALESCE(?2, 'central')")
+    .prepare(
+      `SELECT quantity FROM stock_balances WHERE consumable_code = ?1 AND place = COALESCE(?2, '${CENTRAL_STORE}')`,
+    )
     .bind(code, place)
     .first<{ quantity: number }>();
   return row?.quantity ?? 0;
@@ -152,8 +157,8 @@ export async function transfer(
       db,
       entry("stock.transfer", input.code, written, {
         quantity: input.quantity,
-        from: input.from ?? "central",
-        to: input.to ?? "central",
+        from: input.from ?? CENTRAL_STORE,
+        to: input.to ?? CENTRAL_STORE,
       }),
       written.now,
     ),
@@ -223,7 +228,7 @@ async function writeCount(
     reason: "counted",
     note: input.note,
   };
-  const detail = { place: input.place ?? "central", counted: input.counted, ...found };
+  const detail = { place: input.place ?? CENTRAL_STORE, counted: input.counted, ...found };
   const [row] = await db.batch([
     countStatement(db, id, movement, found.held, written),
     auditStatementIfWritten(db, entry("stock.count", input.code, written, detail), written.now, {
@@ -245,7 +250,7 @@ export async function writeOff(
   await db.batch([
     auditStatement(
       db,
-      entry("stock.write_off", input.code, written, { place: input.place ?? "central", quantity: input.quantity }),
+      entry("stock.write_off", input.code, written, { place: input.place ?? CENTRAL_STORE, quantity: input.quantity }),
       written.now,
     ),
     movementStatement(
@@ -370,7 +375,7 @@ export async function stockView(
   const [balances, technicians, recent] = await Promise.all([
     db
       .prepare(
-        `SELECT consumable_code, NULLIF(place, 'central') AS technician_id, quantity, counted_at FROM stock_balances`,
+        `SELECT consumable_code, NULLIF(place, '${CENTRAL_STORE}') AS technician_id, quantity, counted_at FROM stock_balances`,
       )
       .all<BalanceRow>(),
     db

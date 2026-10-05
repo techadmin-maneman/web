@@ -4,7 +4,7 @@
 // payment's state only ever moves forward, and each refund is kept once.
 //
 // No card data is kept. A UPI handle is kept only as a keyed hash, which the
-// fraud rules compare (P2-M3); it is never shown.
+// fraud rules compare; it is never shown.
 
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";

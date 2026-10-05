@@ -17,7 +17,7 @@ import { unitsFor } from "../../../src/policy/visit-length.ts";
 const day = (...windows: BookingWindow[]) => ({ windows: new Set(windows), onLeave: false });
 /** The same technician, away that day (ADR 0062). */
 const away = (...windows: BookingWindow[]) => ({ ...day(...windows), onLeave: true });
-/** Whether the visit's block has room in the window, as src/domain/scheduling.ts answers it, on a day ahead. */
+/** Whether the visit's block has room in the window, as src/domain/occupancy.ts answers it, on a day ahead. */
 const FITS = { time: "ahead", fits: true, blackoutWithoutReason: false } as const;
 const NO_ROOM = { ...FITS, fits: false };
 

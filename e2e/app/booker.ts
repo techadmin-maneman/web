@@ -6,6 +6,7 @@
 //
 // e2e/global-setup.ts seeds the client once, after the fitted client, whose technician this one's fit names.
 
+import { indiaDate } from "../../src/lib/india-time.ts";
 import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS } from "../technicians.ts";
 import { wrangler } from "./fitted.ts";
@@ -30,7 +31,7 @@ export async function seedBooker(): Promise<void> {
   const now = new Date().toISOString();
   const [person, fit] = [crypto.randomUUID(), crypto.randomUUID()];
   const mobile = randomMobile();
-  const fitted = new Date(Date.now() + 330 * 60 * 1000 - 60 * DAY).toISOString().slice(0, 10);
+  const fitted = indiaDate(new Date(Date.now() - 60 * DAY));
   const sql = [
     `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${sqlRow(person, now, `+91${mobile}`, "Rohit Malhotra")};`,
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,

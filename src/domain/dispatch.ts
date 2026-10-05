@@ -55,19 +55,22 @@ import {
   bookedMinutes,
   claimsOf,
   fitsAt,
-  lettingGo,
   loadBlackouts,
   occupancy,
   placement,
-  visitTimes,
   type Day,
-} from "./scheduling.ts";
+} from "./occupancy.ts";
+import { lettingGo } from "./hold-slot.ts";
+import { visitTimes } from "./visit-times.ts";
 import { latestConsentSql } from "./consents.ts";
 import { begunPastArrival, visitBegun } from "./visit-begun.ts";
 import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";
 import { firstUnitAfter, unitAt, type SlotTimes } from "../policy/slot-times.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
+import { paidNotBooked } from "./hold-stages.ts";
+import { statusIn, VISIT_NOT_BEGUN } from "../config/statuses.ts";
+import { creditSpentOn } from "./visit-facts.ts";
 
 /** Seven days, as the board shows them. */
 export const BOARD_DAYS = 7;
@@ -172,8 +175,7 @@ const LATEST_VISITS_CONSENT = latestConsentSql("a.person_id", "whatsapp_visits")
  * (src/domain/tasks.ts).
  */
 export const UNTOLD_MOVE = `m.fsm_write_state = 'written' AND m.was_start <> m.now_start AND m.told_at IS NULL
-  AND m.now_start = a.window_start
-  AND (m.message_id IS NULL OR EXISTS (
+  AND m.now_start = a.window_start AND (m.message_id IS NULL OR EXISTS (
     SELECT 1 FROM outbound_messages o WHERE o.id = m.message_id AND o.state IN ('skipped', 'failed')))
   AND NOT EXISTS (
     SELECT 1 FROM dispatch_moves later
@@ -216,7 +218,7 @@ const BOARD_JOBS = `
        JOIN referral_codes code ON code.code = r.code
        JOIN people referrer ON referrer.id = code.person_id
      WHERE r.referred_person_id = a.person_id AND referrer.erased_at IS NULL) AS referred_by,
-    EXISTS (SELECT 1 FROM credit_ledger l WHERE l.kind = 'redeem' AND l.source_id = a.id) AS on_credit,
+    ${creditSpentOn("a.id")} AS on_credit,
     (SELECT COALESCE(h.change_notice_hours, ?4) FROM slot_holds h
      WHERE h.appointment_id = a.id AND h.state = 'booked' ORDER BY h.updated_at DESC LIMIT 1) AS sold_notice_hours,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
@@ -224,8 +226,7 @@ const BOARD_JOBS = `
                 AND b.valid_from <= date(a.window_start, '+330 minutes')
               ORDER BY b.valid_from DESC LIMIT 1), 0) AS free,
     ${landed("check_in")} AS checked_in, ${landed("start")} AS started, ${landed("outcome")} AS closed
-  FROM appointments a
-  LEFT JOIN people p ON p.id = a.person_id
+  FROM appointments a LEFT JOIN people p ON p.id = a.person_id
   LEFT JOIN technicians t ON t.id = a.technician_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
@@ -595,8 +596,7 @@ interface LiveJob {
  * Whether a move the client has paid for, or booked free, waits to be booked onto visit `a`. It is booked onto the visit
  * as it was when the client chose the time, so ops' move waits for it.
  */
-const CLIENT_MOVING = `EXISTS (SELECT 1 FROM slot_holds h
-  WHERE h.moves_appointment_id = a.id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)`;
+const CLIENT_MOVING = `EXISTS (SELECT 1 FROM slot_holds h WHERE h.moves_appointment_id = a.id AND ${paidNotBooked("h")})`;
 
 /** A job still to finish; null for one done, cancelled, deleted, or with no type or time. */
 function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null> {
@@ -776,7 +776,7 @@ function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null
        VALUES (?1,
          (SELECT a.id FROM appointments a
           WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.deleted_at IS NULL
-            AND a.status IN ('scheduled', 'dispatched') AND NOT ${begun} AND NOT ${CLIENT_MOVING}),
+            AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND NOT ${begun} AND NOT ${CLIENT_MOVING}),
          ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10, ?11)`,
     )
     .bind(

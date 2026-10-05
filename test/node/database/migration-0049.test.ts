@@ -3,21 +3,16 @@
 // already holds a job's consumables by name, as staging's may. Every name and
 // number is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0049_")) ?? "";
+const THIS = migrationNamed("0049_");
 
 const AT = "2026-09-21T06:30:00.000Z";
 
 function migrated(): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) db.exec(readFileSync(`migrations/${file}`, "utf8"));
+  const db = databaseBefore(THIS);
   db.exec(`
     INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'r1', 'Imran', 'IQ', 1, '${AT}');
     INSERT INTO appointments (id, fsm_id, type, status, fsm_status, technician_id, fsm_modified_at, synced_at)
@@ -28,7 +23,7 @@ function migrated(): DatabaseSync {
         '${AT}', '${AT}', '${AT}');
     INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at)
       VALUES ('u1', 'a1', 'e1', 'Adhesive', 2, '${AT}');`);
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
+  apply(db, THIS);
   db.exec(
     `INSERT INTO consumables (code, name, unit, unit_cost, created_at, updated_at)
      VALUES ('tape_strips', 'Tape strips', 'strip', 1200, '${AT}', '${AT}')`,

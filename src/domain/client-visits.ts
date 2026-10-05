@@ -20,6 +20,8 @@ import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { landedOutcome, visitBegun } from "./visit-begun.ts";
 import { ANGLES, type Angle, type Phase } from "./visit-photos.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
+import { PAYMENT_HELD, statusIn } from "../config/statuses.ts";
+import { creditSpentOn } from "./visit-facts.ts";
 
 /** The three windows the client app offers (docs/prompts/phase2-frontend.md), by the hour a visit starts in India. */
 type VisitWindowLabel = "morning" | "afternoon" | "evening";
@@ -85,9 +87,8 @@ interface AppointmentRow {
  * wholly sent back, or a booking a credit covered. Read here, never written.
  */
 const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id AND p.kind = 'visit'
-    AND p.status IN ('captured', 'partially_refunded'))
-  OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = a.person_id AND h.appointment_id = a.id
-    AND h.state = 'booked' AND h.use_credit = 1))`;
+    AND ${statusIn("p.status", PAYMENT_HELD)})
+  OR ${creditSpentOn("a.id")})`;
 
 const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.service_city,
   a.service_pincode, (SELECT s.name FROM services s WHERE s.kind = a.type AND s.tier = a.tier) AS service_name,
@@ -301,10 +302,7 @@ async function invoiceHeld(
 ): Promise<InvoiceHeld | null> {
   if (row.status !== "completed" || row.invoice_issued_at !== null) return null;
   const credit = await db
-    .prepare(
-      `SELECT EXISTS (SELECT 1 FROM credit_ledger WHERE kind = 'redeem' AND source_kind = 'appointment' AND source_id = ?1)
-         OR EXISTS (SELECT 1 FROM slot_holds WHERE appointment_id = ?1 AND use_credit = 1) AS paid_with_credit`,
-    )
+    .prepare(`SELECT ${creditSpentOn("?1")} AS paid_with_credit`)
     .bind(row.id)
     .first<{ paid_with_credit: number }>();
   if (credit?.paid_with_credit === 1) return "credit";

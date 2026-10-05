@@ -17,6 +17,9 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import * as STATUSES from "../../../src/config/statuses.ts";
+import { graceEnds, keepingItsTime, ownUnpaid, paidNotBooked } from "../../../src/domain/hold-stages.ts";
+import { creditSpentOn } from "../../../src/domain/visit-facts.ts";
 
 /**
  * Each module the entry imports, and each one those import in turn: every statement the entry could run is in one of
@@ -58,7 +61,9 @@ const PAYMENT_PATH = [
   "src/domain/bookings.ts",
   "src/domain/payments.ts",
   "src/domain/visit-changes.ts",
-  "src/domain/scheduling.ts",
+  "src/domain/hold-slot.ts",
+  "src/domain/occupancy.ts",
+  "src/domain/visit-times.ts",
   "src/domain/services.ts",
   "src/routes/client/payments.ts",
 ];
@@ -138,6 +143,8 @@ const UNPLANNED = [
   { file: "src/domain/places.ts", source: "FROM ${table} record WHERE record.id = ?1" },
   // The cities of the tasks a look at the board found: each record by its key. The cron never runs it.
   { file: "src/domain/places.ts", source: "FROM ${RECORD_PLACES[kind].table} record WHERE record.id IN" },
+  // One row inserted from an object's columns, its conflict clause at most reading the row's own key.
+  { file: "src/lib/sql.ts", source: 'tail === "" ? sql : `${sql} ${tail}`' },
 ];
 
 /** Where test/worker/jobs/cron-reads.test.ts keeps the history a cron run is measured against. */
@@ -162,6 +169,20 @@ interface Statement {
 
 const collapsed = (text: string): string => text.replace(/\s+/g, " ");
 
+/** The SQL fragments the queries share, written out as each call site's arguments ask. */
+const FRAGMENTS: Readonly<Record<string, (...names: never[]) => string>> = {
+  creditSpentOn,
+  graceEnds,
+  keepingItsTime,
+  ownUnpaid,
+  paidNotBooked,
+  statusIn: STATUSES.statusIn,
+  statusNotIn: STATUSES.statusNotIn,
+};
+
+/** A status set a fragment is handed, by its name in src/config/statuses.ts. */
+const STATUS_SETS = new Map<string, unknown>(Object.entries(STATUSES));
+
 /** The SQL of every .prepare() in a file, with `${…}` filled from the file's own constants where it can be. */
 function statementsIn(file: string): Statement[] {
   const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.ES2022, true);
@@ -172,6 +193,13 @@ function statementsIn(file: string): Statement[] {
     if (node === undefined) return null;
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
     if (ts.isIdentifier(node)) return textOf(constants.get(node.text));
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const fragment = FRAGMENTS[node.expression.text];
+      // A name passed at run time, as `now`, plans the same as a parameter.
+      const argumentOf = (argument: ts.Expression) =>
+        (ts.isIdentifier(argument) ? STATUS_SETS.get(argument.text) : undefined) ?? textOf(argument) ?? "?";
+      if (fragment !== undefined) return fragment(...(node.arguments.map(argumentOf) as never[]));
+    }
     if (!ts.isTemplateExpression(node)) return null;
     // A list of placeholders built at run time plans the same as a single NULL.
     return node.templateSpans.reduce(

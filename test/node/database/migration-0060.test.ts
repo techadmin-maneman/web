@@ -7,14 +7,11 @@
 // The file is found by its name, not its number, which a migration merged first
 // may move on.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.endsWith("_flat_task_reads.sql")) ?? "";
+const THIS = migrationNamed("_flat_task_reads.sql");
 
 const AT = "2026-09-21T06:30:00.000Z";
 const DUE = "2026-09-01T00:00:00.000Z";
@@ -69,9 +66,7 @@ const followedUp = (db: DatabaseSync, visitId: string) =>
  * Then this migration.
  */
 function migrated(): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  const before = MIGRATIONS.slice(0, MIGRATIONS.indexOf(THIS));
-  for (const file of before) db.exec(readFileSync(`migrations/${file}`, "utf8"));
+  const db = databaseBefore(THIS);
   for (const id of ["p1", "p2"]) {
     db.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?, ?, ?, ?)").run(
       id,
@@ -87,7 +82,7 @@ function migrated(): DatabaseSync {
   piece(db, "piece-2", "p2", DUE);
   visit(db, "part-b", { person_id: "p2", window_start: "2026-08-15T04:30:00.000Z" });
   partialVisit(db, "v-b", "part-b");
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
+  apply(db, THIS);
   return db;
 }
 

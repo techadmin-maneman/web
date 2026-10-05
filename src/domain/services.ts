@@ -2,7 +2,7 @@
 // it (src/policy/services.ts): the kind is code, and the services within it are ops', named, timed, ordered and
 // retired from a day in the console. The price book prices each by its kind and tier (src/domain/price-book.ts), so
 // a service keeps every price it was ever sold at, and a hold copies its service's price, late fee and length as it
-// is made (src/domain/scheduling.ts), so nothing already sold moves with a change here.
+// is made (src/domain/hold-slot.ts), so nothing already sold moves with a change here.
 //
 // Every change is written in one batch with its audit entry (ADR 0031): a change that is not recorded does not
 // happen. Books' items follow the services, by each one's own item (src/domain/books-items.ts).

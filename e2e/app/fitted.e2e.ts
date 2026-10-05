@@ -3,11 +3,11 @@
 // with the client in its mirrors (e2e/app/fitted.ts). The tests share the
 // client, and only read.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { fullDate, listMonth, shortDate } from "../../packages/web-kit/dates.ts";
 import { assertInContract } from "../contract.ts";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 
@@ -173,10 +173,7 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   // app's own page on what a replacement involves.
   await expect(page.getByRole("link", { name: "See what that involves" })).toHaveAttribute("href", "/replacement");
   await expect(page.getByRole("button", { name: "Book the replacement" })).toBeVisible();
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await tab(page, "Visits").click();
   await expect(page.getByText("Service visit · Done · notes on the way · Imran")).toBeVisible();
@@ -398,10 +395,7 @@ test("a payment made with a discount code names the code, and what it took off",
 test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   const client = fittedClient();
   const scan = async () => {
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-      .analyze();
-    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+    expect(await axeViolations(page)).toEqual([]);
   };
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { name: "Your next visit" })).toBeVisible();
@@ -459,10 +453,7 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await expect(card).toContainText("We’ll message you on WhatsApp when it’s booked.");
   await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 // D-04: while FSM held a booking, Home said it was being booked and Visits said "Nothing booked yet.". A
@@ -503,10 +494,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   await expect(card).toContainText("Consultation and fit · 9 am to 12 pm");
   await expect(card).not.toContainText("We are booking your visit.");
   await expect(page.getByText("Nothing booked yet.")).toHaveCount(0);
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 // A consultation and fit in one visit read "First fit · 180 minutes", with no price and no
@@ -535,10 +523,7 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   await expect(page.getByRole("region", { name: "What to expect" })).toContainText(
     "Choose your hair system, fitted there and then.",
   );
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await tab(page, "Visits").click();
   await expect(page.getByRole("main").getByRole("link").first()).toContainText("Consultation and fit · 12 to 4 pm");
@@ -573,8 +558,5 @@ test("Home and Payments show a payment owed once fitted, with the link to pay by
   const toPay = page.getByRole("region", { name: "To pay" });
   await expect(toPay.getByRole("link")).toHaveAttribute("href", owed.url);
   await expect(toPay).toContainText("Rs. 45,000");
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

@@ -7,36 +7,17 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../../src/config/message-templates.ts";
 import { confirmBooking } from "../../../src/domain/bookings.ts";
 import { clawBack, creditBalance, expireCredits, grantCredits } from "../../../src/domain/credits.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
 import { composeVisitMessage } from "../../../src/domain/visit-messages.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
-import {
-  appFor,
-  captureLogs,
-  fakeDependencies,
-  fakeQueue,
-  leaseRefused,
-  markDatabase,
-  NOW,
-  request,
-  savedAddress,
-} from "../helpers.ts";
+import { captureLogs, fakeDependencies, fakeQueue, leaseRefused, markDatabase, NOW } from "../helpers.ts";
+import { asClient, client, fittedInAugust, signedIn, technician } from "../clients.ts";
+import { createLogger } from "../../../src/log.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 
 let cookie: string;
-const app = () => appFor("local", fakeDependencies(), {}, "client");
 const post = (path: string, body: object, bindings = {}) =>
-  request(
-    app(),
-    path,
-    {
-      method: "POST",
-      headers: { Cookie: cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
-      body: JSON.stringify(body),
-    },
-    bindings,
-  );
+  asClient(cookie, path, { method: "POST", body }, { bindings });
 
 async function credits(visits: number) {
   await grantCredits(env.DB, { personId: PERSON, visits, source: "ops", sourceId: "o1", now: NOW }).run();
@@ -60,31 +41,16 @@ async function bookService(
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
-  await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
-  )
-    .bind(NOW.toISOString())
-    .run();
-  await env.DB.prepare(
-    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
-  )
-    .bind(PERSON, NOW.toISOString())
-    .run();
-  await savedAddress(PERSON);
+  await technician();
+  await client(PERSON);
   // Fitted, so service visits are what they book.
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
-     VALUES ('fit', 'fit', ?1, 'first_fit', 'completed', '2026-08-01T03:30:00.000Z', '2026-08-01T06:30:00.000Z', 't1',
-       ?2)`,
-  )
-    .bind(PERSON, NOW.toISOString())
-    .run();
+  await fittedInAugust(PERSON, "fit");
   await env.DB.prepare(
     "INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at) VALUES ('c1', ?1, 'whatsapp_visits', 'whatsapp-visits-v1', 1, ?2)",
   )
     .bind(PERSON, NOW.toISOString())
     .run();
-  cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
+  cookie = await signedIn(PERSON);
 });
 
 describe("booking with a credit", () => {
@@ -125,10 +91,9 @@ describe("one credit pays for one visit", () => {
     }>();
   /** Taken on the credit, with the visit left for the half-hour pass to write: the request lost D1 just then. */
   const bookLater = (holdId: string) => book(holdId, { DB: leaseRefused(env.DB) });
-  const get = async (path: string) =>
-    (await request(app(), path, { headers: { Cookie: cookie, Origin: "https://maneman.test" } })).json();
+  const get = async (path: string) => (await asClient(cookie, path)).json();
   const confirm = (holdId: string, now = NOW, options = {}) =>
-    confirmBooking(env.DB, createStubPayments(), holdId, now, options);
+    confirmBooking({ db: env.DB, payments: createStubPayments(), now: now, ...options, log: createLogger() }, holdId);
   const redeems = async () =>
     (await env.DB.prepare("SELECT source_id FROM credit_ledger WHERE kind = 'redeem'").all()).results;
 

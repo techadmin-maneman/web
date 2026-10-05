@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { VISIT_BLOCKS } from "../../../src/config/scheduling.ts";
 import type { VisitType } from "../../../src/config/visit-types.ts";
-import { placement } from "../../../src/domain/scheduling.ts";
+import { placement } from "../../../src/domain/occupancy.ts";
 import { unitsFor } from "../../../src/policy/visit-length.ts";
 import { DEFAULT_SLOT_TIMES, unitAt, windowAt } from "../../../src/policy/slot-times.ts";
 import { openSession } from "../../../src/domain/sessions.ts";

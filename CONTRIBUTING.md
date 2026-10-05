@@ -27,6 +27,7 @@ One page on getting a change from your laptop to staging. `README.md` says what 
 - A module's header is one to three lines on what it owns.
 - Point to at most one ADR from a file or a rule, where the decision behind it is not obvious.
 - No history: no audit's finding IDs, no milestone or package tags, no dated rulings, no board codes, and no settled open point's number. The history is in the ADRs, `docs/open-points.md` and git. A test title says the behaviour it checks.
+- `test/node/architecture/no-audit-ids.test.ts` fails on an audit ID in code, tests, styles or the API documents.
 
 ## Keep it small
 

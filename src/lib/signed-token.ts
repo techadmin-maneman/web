@@ -6,6 +6,7 @@
 //   <subject, base64url>.<expiry, Unix seconds>.<HMAC-SHA256, base64url>
 
 import { fromBase64Url, toBase64Url } from "./base64url.ts";
+import { hmacKey } from "./hash.ts";
 
 export type TokenPurpose =
   | "upload"
@@ -59,8 +60,7 @@ export async function verifyToken(
   if (await crypto.subtle.verify("HMAC", await purposeKey(secret, purpose), signature, signed)) return subject;
   // A token signed with the secret itself, before each purpose had its key, holds until its own expiry or this day.
   const legacy =
-    now.getTime() < LEGACY_KEY_UNTIL &&
-    (await crypto.subtle.verify("HMAC", await importKey(secret), signature, signed));
+    now.getTime() < LEGACY_KEY_UNTIL && (await crypto.subtle.verify("HMAC", await hmacKey(secret), signature, signed));
   return legacy ? subject : null;
 }
 
@@ -84,11 +84,4 @@ async function purposeKey(secret: string, purpose: TokenPurpose): Promise<Crypto
 
 function message(purpose: TokenPurpose, subject: string, expires: string): Uint8Array {
   return encoder.encode(`${purpose}\n${subject}\n${expires}`);
-}
-
-function importKey(secret: string): Promise<CryptoKey> {
-  return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
-    "sign",
-    "verify",
-  ]);
 }

@@ -24,6 +24,7 @@ Within a layer, modules import each other freely, as long as no cycle forms.
   consumer that reads it share the contract without importing each other.
 - **Sending to a queue** is `domain/enqueue.ts`, which the domain, the routes and the jobs all use.
 - **A vendor's error** is `providers/provider-error.ts`, which the domain reads without naming the vendor.
+- **What a domain function works with**, the database, the clock, a provider and the logger, comes as one context object, the request's logger always among them: booking and giving back a hold take `BookingContext` (`domain/booked-hold.ts`). A module takes one when it is next changed; nothing makes its own logger.
 
 ## Providers
 
@@ -52,3 +53,24 @@ A route module sits under the surface that answers it, as `src/app.ts` lists the
 reports its own page's errors) and the local `dev-visits.ts` stay at the top. A schema more than one surface answers
 with goes in `routes/schemas/`, and a helper two routes share goes to the domain or `http/`. `test/node/architecture/route-imports.test.ts`
 holds the routes to that, from a baseline of today's imports that only shrinks.
+
+## A hold's stages
+
+A hold (`slot_holds`) keeps a window while the client pays, and its stage is read from a few columns. Every query
+names a stage through `domain/hold-stages.ts` rather than spelling out the columns, so a new query cannot miss one.
+
+```text
+held, unpaid ──paid, or taken free or on a credit──▶ held, confirmed ──visit written──▶ booked
+   │                                                        │
+   └── its countdown and grace pass, or the app            └── the visit cannot be had: released, and
+       holds the client another: released; a payment          refunded_at once the money is back
+       made after that is given back: refunded_at
+```
+
+| Stage                     | Columns                                                                   | In SQL                      |
+| ------------------------- | ------------------------------------------------------------------------- | --------------------------- |
+| Unpaid, keeping its time  | `state = 'held'`, `confirmed_at` empty, before `expires_at` and its grace | `keepingItsTime(hold, now)` |
+| Unpaid, nothing to pay on | the same, with no Razorpay order and no payment link                      | `ownUnpaid(hold, person)`   |
+| Paid, not yet a visit     | `state = 'held'`, `confirmed_at` set                                      | `paidNotBooked(hold)`       |
+| Booked                    | `state = 'booked'`, `appointment_id` set                                  |                             |
+| Released                  | `state = 'released'`; `refunded_at` once a late payment is given back     |                             |

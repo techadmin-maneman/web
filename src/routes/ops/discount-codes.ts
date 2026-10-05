@@ -225,7 +225,7 @@ function makeRefusal(body: NewCodesBody, today: string): string | null {
   if (terms !== null) return terms;
   if (new Set(body.covers).size !== body.covers.length) return "covers";
   if ((body.expires_on ?? null) !== null && (body.expires_on ?? "") < today) return "expires_on";
-  // A batch is of single-use codes (RULES[3]: "total uses (one, many or unlimited)", one each for a batch's).
+  // A batch is of single-use codes, one use each.
   if (count > 1 && body.max_uses !== 1) return "max_uses";
   return null;
 }

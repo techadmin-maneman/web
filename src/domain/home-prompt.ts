@@ -12,12 +12,14 @@
 
 import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
-import { addDays, indiaDate } from "../lib/india-time.ts";
+import { addDays, indiaDate, monthOf } from "../lib/india-time.ts";
 import { homePromptOf } from "../policy/home-prompt.ts";
 import { lastBookableDay, type NextVisitDays } from "../policy/next-visit.ts";
 import type { NextOffer } from "./next-visit.ts";
 import { serviceToOffer } from "./services.ts";
 import { DAY_MS } from "../lib/durations.ts";
+import { paidNotBooked } from "./hold-stages.ts";
+import { statusIn, VISIT_LIVE } from "../config/statuses.ts";
 
 type HomePrompt =
   | { readonly kind: "address" }
@@ -60,9 +62,9 @@ const PROMPT = `SELECT
   (SELECT MIN(replacement_due_at) FROM pieces
      WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL AND replacement_due_at IS NOT NULL) AS due_on,
   (EXISTS (SELECT 1 FROM appointments r WHERE r.person_id = ?1 AND r.deleted_at IS NULL AND r.type = 'replacement'
-      AND r.status IN ('scheduled', 'dispatched', 'in_progress'))
-    OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = ?1 AND h.type = 'replacement' AND h.state = 'held'
-      AND h.confirmed_at IS NOT NULL)) AS replacement_booked,
+      AND ${statusIn("r.status", VISIT_LIVE)})
+    OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = ?1 AND h.type = 'replacement' AND ${paidNotBooked("h")}))
+    AS replacement_booked,
   invoiced.id AS invoiced_id, invoiced.type AS invoiced_type, invoiced.window_start AS invoiced_start
   FROM (SELECT 1) LEFT JOIN (
     SELECT id, type, window_start FROM appointments
@@ -106,7 +108,7 @@ const nextServiceOf = (offer: NextOffer | null): NextService | null =>
 /** The month the piece in wear falls due, while no replacement is booked and that month may be booked now. */
 function replacementMonthInReach(row: PromptFacts, tomorrow: string, days: NextVisitDays): string | null {
   if (row.due_on === null || row.replacement_booked === 1) return null;
-  const month = row.due_on.slice(0, 7);
+  const month = monthOf(row.due_on);
   return `${month}-01` <= lastBookableDay(tomorrow, days) ? month : null;
 }
 

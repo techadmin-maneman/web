@@ -35,14 +35,17 @@ import { loadSlotSchedule } from "./slot-times.ts";
 import { consentGiven } from "./consents.ts";
 import { serviceToOffer } from "./services.ts";
 import { NO_VISITS_CONSENT, remindersFrom, type Composed } from "./visit-messages.ts";
+import { paidNotBooked } from "./hold-stages.ts";
+import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE } from "../config/statuses.ts";
+import { queueMessage } from "./queued-messages.ts";
 
 /** A visit a next service follows: a first fit, a service or a replacement, done. Migration 0048 indexes these. */
 const DONE = "a.status = 'completed' AND a.type IN ('first_fit', 'service', 'replacement') AND a.deleted_at IS NULL";
 
 /** A visit of the client's still to happen, or one paid for and still to be booked (ADR 0068). */
 const BOOKED = `(EXISTS (SELECT 1 FROM appointments b WHERE b.person_id = ?1 AND b.deleted_at IS NULL
-      AND b.status IN ('scheduled', 'dispatched', 'in_progress'))
-    OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = ?1 AND h.state = 'held' AND h.confirmed_at IS NOT NULL))`;
+      AND ${statusIn("b.status", VISIT_LIVE)})
+    OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = ?1 AND ${paidNotBooked("h")}))`;
 
 /** How many reminders a cron pass writes, well inside its 50 outside calls. */
 const REMINDERS_PER_PASS = 20;
@@ -182,10 +185,9 @@ export async function bookableDays(
  * paid for and still to be booked.
  */
 const BOOKED_SINCE = `(EXISTS (SELECT 1 FROM appointments later WHERE later.person_id = a.person_id
-      AND later.deleted_at IS NULL AND (later.status IN ('scheduled', 'dispatched', 'in_progress')
-        OR (later.window_start > a.window_start AND later.status NOT IN ('cancelled', 'terminated'))))
-    OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = a.person_id AND h.state = 'held'
-      AND h.confirmed_at IS NOT NULL))`;
+      AND later.deleted_at IS NULL AND (${statusIn("later.status", VISIT_LIVE)}
+        OR (later.window_start > a.window_start AND ${statusNotIn("later.status", VISIT_CALLED_OFF)})))
+    OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = a.person_id AND ${paidNotBooked("h")}))`;
 
 /**
  * The visits whose next service is due within `reminder_before_due` days with nothing booked, and not yet reminded
@@ -227,12 +229,13 @@ export async function queueNextServiceReminders(
   if (messages.length > 0) {
     await db.batch(
       messages.map((message) =>
-        db
-          .prepare(
-            `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-             VALUES (?1, ?2, ?3, 'next_service_reminder', 'appointment', ?4, 'queued', ?2)`,
-          )
-          .bind(message.id, at, message.personId, message.visitId),
+        queueMessage(db, {
+          id: message.id,
+          personId: message.personId,
+          kind: "next_service_reminder",
+          subject: { kind: "appointment", id: message.visitId },
+          at,
+        }),
       ),
     );
   }

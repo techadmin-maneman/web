@@ -13,6 +13,7 @@ import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { allServices, serviceOf } from "./services.ts";
 import { freshCode } from "../lib/slug.ts";
+import { insertRow } from "../lib/sql.ts";
 
 export interface Consumable {
   readonly code: string;
@@ -113,12 +114,16 @@ export async function addConsumable(db: D1Database, added: NewConsumable, writte
       },
       written.now,
     ),
-    db
-      .prepare(
-        `INSERT INTO consumables (code, name, unit, unit_cost, reorder_kit, reorder_central, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)`,
-      )
-      .bind(code, added.name, added.unit, added.unitCost, added.reorderKit, added.reorderCentral, at),
+    insertRow(db, "consumables", {
+      code,
+      name: added.name,
+      unit: added.unit,
+      unit_cost: added.unitCost,
+      reorder_kit: added.reorderKit,
+      reorder_central: added.reorderCentral,
+      created_at: at,
+      updated_at: at,
+    }),
   ]);
   const consumable = await consumableCoded(db, code);
   if (consumable === null) throw new Error("the consumable was not written");

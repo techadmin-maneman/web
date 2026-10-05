@@ -5,6 +5,7 @@
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays } from "../lib/india-time.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
+import { statusIn, VISIT_NOT_BEGUN } from "../config/statuses.ts";
 
 /** One period, both ends inclusive, as ops recorded it. */
 interface LeavePeriod {
@@ -52,7 +53,7 @@ async function jobsOnLeave(
     .prepare(
       `SELECT a.id AS appointment_id, a.window_start AS starts_at, a.type, p.name AS client
        FROM appointments a LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
-       WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
+       WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
          AND date(a.window_start, '+330 minutes') BETWEEN ?2 AND ?3
        ORDER BY a.window_start`,
     )
