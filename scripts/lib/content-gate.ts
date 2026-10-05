@@ -9,13 +9,20 @@
 // WhatsApp texts, is gated before a production release of mm-api
 // (scripts/check-copy.ts).
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+
+/** A surface's copy written one file a feature, as the console's is. */
+const featureFiles = (dir: string): string[] =>
+  readdirSync(dir)
+    .filter((name) => name.endsWith(".ts"))
+    .sort()
+    .map((name) => `${dir}/${name}`);
 
 /** The content files each production build is gated on. */
 export const CONTENT_FILES = {
   site: ["site/src/content/referral.ts", "site/src/content/site.ts"],
   app: ["apps/app/src/content.ts"],
-  ops: ["apps/ops/src/content.ts"],
+  ops: ["apps/ops/src/content.ts", ...featureFiles("apps/ops/src/content")],
   tech: ["apps/tech/src/content.ts"],
   api: ["src/config/job-sheet.ts", "src/config/message-templates.ts"],
 } as const;

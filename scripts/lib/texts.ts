@@ -91,6 +91,7 @@ export function copyFiles(root: string): { path: string; source: string }[] {
   const paths = [
     "apps/app/src/content.ts",
     "apps/ops/src/content.ts",
+    ...filesUnder(root, "apps/ops/src/content", [".ts"]),
     "apps/tech/src/content.ts",
     ...filesUnder(root, "site/src/content", [".ts"]),
     ...filesUnder(root, "site/src/components", [".astro"]),

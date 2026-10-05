@@ -39,7 +39,22 @@ describe("the production gate on Phase 2's copy", () => {
     expect(CONTENT_FILES).toEqual({
       site: ["site/src/content/referral.ts", "site/src/content/site.ts"],
       app: ["apps/app/src/content.ts"],
-      ops: ["apps/ops/src/content.ts"],
+      // The console's copy is one file a feature (apps/ops/src/content/).
+      ops: [
+        "apps/ops/src/content.ts",
+        "apps/ops/src/content/areas.ts",
+        "apps/ops/src/content/clients.ts",
+        "apps/ops/src/content/common.ts",
+        "apps/ops/src/content/decisions.ts",
+        "apps/ops/src/content/dispatch.ts",
+        "apps/ops/src/content/no-shows.ts",
+        "apps/ops/src/content/referrals.ts",
+        "apps/ops/src/content/settings.ts",
+        "apps/ops/src/content/shell.ts",
+        "apps/ops/src/content/stock.ts",
+        "apps/ops/src/content/tasks.ts",
+        "apps/ops/src/content/technicians.ts",
+      ],
       tech: ["apps/tech/src/content.ts"],
       api: ["src/config/job-sheet.ts", "src/config/message-templates.ts"],
     });

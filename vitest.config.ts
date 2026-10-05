@@ -18,6 +18,8 @@ export const NODE_PROJECT = {
  * resolve to the repository root's React 18, as apps/app/vite.config.ts says.
  */
 export const DOM_PROJECT = {
+  // The apps' code under test is built for the local environment, as the browser tests' builds are.
+  define: { "import.meta.env.MM_ENV": JSON.stringify("local") },
   resolve: {
     alias: {
       react: `${import.meta.dirname}/apps/app/node_modules/react`,
