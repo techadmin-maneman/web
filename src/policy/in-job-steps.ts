@@ -1,26 +1,10 @@
-// The steps of a job, one screen each (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
-// The rules as the prompt states them, the order the steps run in, and the check that holds a phone to that order
-// (docs/decisions/0038-offline-writes.md). Each step lands in src/domain/job-events.ts, and what it records is
-// written with it (src/domain/job-record.ts).
+// The steps of a job, one screen each, the order they run in, and the check that holds a phone to that order
+// (docs/decisions/0038-offline-writes.md). Each step lands in src/domain/job-events.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 import { takesProfile } from "./hair-profile.ts";
 import { isOneOf } from "../lib/one-of.ts";
-
-export const RULES = [
-  "Five before photographs: front, top, left, right, hair.",
-  "The service checklist. Six items for a service visit. The list is per visit type and lives in config, taken from the FSM job-sheet template.",
-  "Consumables used, with quantities.",
-  "The piece: replacement jobs only. Scan the label code (for example MM-STD-4417-B) or pick from the client's pieces in FSM.",
-  "Five after photographs.",
-  "Outcome: Done, or Partial with a reason.",
-  "The design says ops need the full set because these drive the task queue. Make the reasons an FSM-synced list and flag it in an ADR.",
-  "Duration runs from Start job to the outcome. The technician never types a time.",
-] as const;
-
-/** The owner's ruling on what a consultation photographs. */
-export const CONSULTATION_PHOTOS_RULE = "A consultation takes the five before photographs and no after set.";
 
 /** The five angles of a before or after set, in the order they are taken. */
 export const PHOTO_ANGLES = ["front", "top", "left", "right", "hair"] as const;

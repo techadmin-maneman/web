@@ -16,8 +16,6 @@ describe("decision reasons", () => {
     expect(needsReason("no_show", "waived")).toBe(true);
   });
 
-  // The owner ruled on 27 September 2026 that ops rule a disputed charge Refund or Uphold "with a reason"
-  // (src/policy/no-show.ts, RULES[6]).
   it("asks a reason of either ruling on a disputed charge", () => {
     expect(needsReason("no_show_dispute", "refunded")).toBe(true);
     expect(needsReason("no_show_dispute", "upheld")).toBe(true);

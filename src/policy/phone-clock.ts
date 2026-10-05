@@ -12,32 +12,16 @@
 import { indiaDate } from "../lib/india-time.ts";
 import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
-/** The prompt's rules this module serves (docs/prompts/phase2-backend.md). */
-export const RULES = [
-  "Offline writes from the technician app are queued on the device with a client-generated ID, and sent in order when the phone is back online. The server makes each write idempotent on that ID before passing it to FSM.",
-  "An offline close-out replays correctly once the phone reconnects.",
-] as const;
-
-/** Ours, not the prompt's: the bounds a phone's time is held within. */
-export const BOUNDS = [
-  "A time the phone gives is never later than the moment the server received it.",
-  "Nor earlier than the earliest check-in, nor more than MAX_OFFLINE_HOURS before the server received it: an earlier time is taken as that bound.",
-  "A check-in or a start is refused unless its time falls on the visit's own date in India.",
-  "A check-in or a start that reaches the server before the earliest check-in, the booked start less EARLIEST_BEFORE_START_MIN, is refused with that time.",
-] as const;
-
 /**
  * How long before the booked start a technician may check in. Early
  * enough for one who beats the traffic, too early to back-date a morning's
- * check-in into the night before. The owner kept it on 27 September 2026
- * (docs/open-points.md, item 58).
+ * check-in into the night before.
  */
 export const EARLIEST_BEFORE_START_MIN = 60;
 
 /**
  * How long a phone may hold a write and still have its time believed. The app
- * keeps today's and tomorrow's jobs, so a day covers any genuine replay. The
- * owner kept it on 27 September 2026 (docs/open-points.md, item 58).
+ * keeps today's and tomorrow's jobs, so a day covers any genuine replay.
  */
 export const MAX_OFFLINE_HOURS = 24;
 

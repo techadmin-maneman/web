@@ -1,18 +1,15 @@
-// How far a technician's phone is trusted about time (src/policy/phone-clock.ts):
-// the prompt's rules it serves, and our bounds, each named by its own words.
+// How far a technician's phone is trusted about time (src/policy/phone-clock.ts).
 
 import { describe, expect, it } from "vitest";
 import { uuidv7 } from "../../apps/tech/src/store/uuidv7.ts";
 import { timeOfUuidV7 } from "../../src/lib/uuidv7.ts";
 import {
   boundedPhoneTime,
-  BOUNDS,
   EARLIEST_BEFORE_START_MIN,
   earliestCheckIn,
   MAX_OFFLINE_HOURS,
   onTheVisitsDay,
   PHONE_CLOCK,
-  RULES,
   tooEarlyToArrive,
 } from "../../src/policy/phone-clock.ts";
 
@@ -20,8 +17,8 @@ import {
 const VISIT_START = new Date("2026-09-21T04:30:00Z");
 const minutes = (from: Date, count: number) => new Date(from.getTime() + count * 60_000);
 
-describe("the prompt's offline writes", () => {
-  it(RULES[0], () => {
+describe("a write the phone held offline", () => {
+  it("is sent with an ID that begins with the moment the phone queued it", () => {
     // The ID a write is sent with is the moment the phone queued it.
     const queued = Date.parse("2026-09-21T04:41:07.123Z");
     expect(timeOfUuidV7(uuidv7(queued))).toEqual(new Date(queued));
@@ -29,7 +26,7 @@ describe("the prompt's offline writes", () => {
     expect(timeOfUuidV7(crypto.randomUUID())).toBeNull();
   });
 
-  it(RULES[1], () => {
+  it("keeps the time the phone did the work, when it reaches us later", () => {
     // Closed out in a basement at 11:20 and sent at 11:50: the close keeps 11:20.
     const closed = minutes(VISIT_START, 80);
     expect(boundedPhoneTime(closed, { visitStart: VISIT_START, receivedAt: minutes(VISIT_START, 110) })).toEqual(
@@ -39,7 +36,7 @@ describe("the prompt's offline writes", () => {
 });
 
 describe("the bounds on the phone's clock", () => {
-  it(BOUNDS[0], () => {
+  it("never takes a time later than the moment the write reached us", () => {
     const received = minutes(VISIT_START, 20);
     // A phone whose clock runs ahead, or one set forward by hand.
     expect(boundedPhoneTime(minutes(received, 30), { visitStart: VISIT_START, receivedAt: received })).toEqual(
@@ -47,7 +44,7 @@ describe("the bounds on the phone's clock", () => {
     );
   });
 
-  it(BOUNDS[1], () => {
+  it("takes a time before the earliest check-in, or held longer than a day, as that bound", () => {
     const received = minutes(VISIT_START, 100);
     // Back-dated to well before the visit: no earlier than the booked start less the margin.
     const backDated = minutes(VISIT_START, -6 * 60);
@@ -77,7 +74,7 @@ describe("the bounds on the phone's clock", () => {
     expect(boundedPhoneTime(null, { visitStart: VISIT_START, receivedAt: received })).toEqual(received);
   });
 
-  it(BOUNDS[2], () => {
+  it("refuses a check-in or a start whose time is not on the visit's own date in India", () => {
     // 11:30 pm the same day in India is still the visit's day; 00:30 the next is not.
     expect(onTheVisitsDay(new Date("2026-09-21T18:00:00Z"), VISIT_START)).toBe(true);
     expect(onTheVisitsDay(new Date("2026-09-21T19:00:00Z"), VISIT_START)).toBe(false);
@@ -85,7 +82,7 @@ describe("the bounds on the phone's clock", () => {
     expect(onTheVisitsDay(new Date("2026-09-20T13:30:00Z"), VISIT_START)).toBe(false);
   });
 
-  it(BOUNDS[3], () => {
+  it("refuses a check-in or a start that reaches us more than an hour before the booked start", () => {
     expect(earliestCheckIn(VISIT_START)).toEqual(minutes(VISIT_START, -EARLIEST_BEFORE_START_MIN));
     // An hour before the 10:00 visit is in time; a minute earlier is not.
     expect(tooEarlyToArrive(minutes(VISIT_START, -60), VISIT_START)).toBe(false);

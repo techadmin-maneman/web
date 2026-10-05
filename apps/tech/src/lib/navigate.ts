@@ -1,15 +1,6 @@
-// The way to the door (docs/decisions/0054-address-capture.md), and to the
-// client once there.
-//
-// The card linked `geo:0,0?q=<the typed address>` until the owner ruled open
-// point 27 on 24 September 2026: any phone, including iPhones. Android hands a
-// `geo:` link to a map app; iOS Safari does not register the scheme at all, so
-// on an iPhone the button did nothing and said nothing either.
-//
-// Google's Maps URLs replace it. They need no key, carry no SKU, sit outside
-// the Maps Platform contract, and open on both platforms. `api=1` is required,
-// and the only stated limit is 2,048 characters, which an address in six short
-// parts cannot reach.
+// The way to the door, and to the client once there (docs/decisions/0054-address-capture.md). Navigate opens Google's
+// Maps URLs, which need no key and open on any phone: an iPhone registers no `geo:` link. `api=1` is required, and
+// the one stated limit, 2,048 characters, is beyond an address in six short parts.
 
 // The schema rather than ./api.ts, so the rule can be read and tested in Node
 // without the fetch client coming with it (test/node/tech-navigate.test.ts).
