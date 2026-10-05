@@ -7,7 +7,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { bookUnbookedHolds, confirmBooking } from "../../../src/domain/bookings.ts";
+import { bookUnbookedHolds } from "../../../src/domain/unbooked-holds.ts";
+import { confirmBooking } from "../../../src/domain/bookings.ts";
 import { creditBalance, grantCredits } from "../../../src/domain/credits.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";

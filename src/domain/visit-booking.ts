@@ -1,5 +1,5 @@
 // Booking a visit from the console: every kind, for a client ops are talking to, in a window and with a technician
-// found by the same availability and clash check the app books by (src/domain/scheduling.ts). What is paid at booking
+// found by the same availability and clash check the app books by (src/domain/availability.ts). What is paid at booking
 // decides what follows (src/policy/pay-by-link.ts): a visit nothing is paid for, free, on a credit, or a consultation
 // and fit in one visit, is confirmed and booked at once; a paid visit holds its slot while a Razorpay payment link is
 // open, and is booked once the link is paid (src/routes/hooks/razorpay.ts).
@@ -33,7 +33,9 @@ import type { OpsInputs } from "./ops-settings.ts";
 import { recordPayment, referenceHold } from "./payments.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
-import { graceEnds, holdSlot, liveVisitOf, ONE_AT_A_TIME, type Hold } from "./scheduling.ts";
+import { graceEnds } from "./hold-stages.ts";
+import { holdSlot, type Hold } from "./hold-slot.ts";
+import { liveVisitOf, ONE_AT_A_TIME } from "./availability.ts";
 import { bookableService, offeredProducts, type PricedService } from "./services.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "./visit-changes.ts";

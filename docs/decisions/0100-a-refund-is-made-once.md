@@ -6,7 +6,7 @@
 
 ## Context
 
-Three things refund a client: ops' refund of a booking FSM refused, and any other hold let go with its payment (`refundOnce`, `src/domain/bookings.ts`); a cancellation (`src/domain/visit-changes.ts`); and a no-show's ruling (`src/domain/after-a-ruling.ts`). Each took any failure of `payments.refund` as a refusal, a 10-second timeout included. But a timed-out refund may have been made, with only its answer lost:
+Three things refund a client: ops' refund of a booking FSM refused, and any other hold let go with its payment (`refundOnce`, `src/domain/give-back.ts`); a cancellation (`src/domain/visit-changes.ts`); and a no-show's ruling (`src/domain/after-a-ruling.ts`). Each took any failure of `payments.refund` as a refusal, a 10-second timeout included. But a timed-out refund may have been made, with only its answer lost:
 
 - the held booking cleared its claim and waited, and the console told ops to try again **or refund it in Razorpay's dashboard**;
 - the cancellation and the ruling told ops to "refund it by hand in Razorpay, once".

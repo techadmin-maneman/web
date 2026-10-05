@@ -16,7 +16,7 @@
 //   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
 //               try-on sessions once expired, app sessions 30 days after they ended, and holds nobody is paying for
 
-import { lettingGo } from "../domain/scheduling.ts";
+import { lettingGo } from "../domain/hold-slot.ts";
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";

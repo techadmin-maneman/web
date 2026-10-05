@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { UNITS_PER_DAY, VISIT_BLOCKS, WINDOW_SLOT_MAP } from "../../../src/config/scheduling.ts";
 import { VISIT_TYPES } from "../../../src/config/visit-types.ts";
-import { placement } from "../../../src/domain/scheduling.ts";
+import { placement } from "../../../src/domain/occupancy.ts";
 import { bookedLength, isServiceLength, SERVICE_MINUTES, unitsFor } from "../../../src/policy/visit-length.ts";
 
 const emptyDay = () => ({

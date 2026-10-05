@@ -1,6 +1,6 @@
 // A client's hold, as the app shows it (docs/decisions/0045-self-serve-booking.md): the window held for ten
 // minutes while they pay, the service it is for, what it costs, with the discount code entered on it
-// (docs/decisions/0108-discount-codes.md), and what became of it. Letting one go, and what Checkout is opened with. A hold is made by holdSlot (src/domain/scheduling.ts) and booked by startBooking
+// (docs/decisions/0108-discount-codes.md), and what became of it. Letting one go, and what Checkout is opened with. A hold is made by holdSlot (src/domain/hold-slot.ts) and booked by startBooking
 // (src/domain/bookings.ts).
 
 import { withGst } from "../config/gst.ts";
@@ -19,7 +19,8 @@ import { spendableCredits } from "./credits.ts";
 import { holdDiscount } from "./discount-code-holds.ts";
 import { consentGiven } from "./consents.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
-import { graceEndOf, graceEnds, heldMinutes, visitTimes } from "./scheduling.ts";
+import { graceEndOf, graceEnds } from "./hold-stages.ts";
+import { heldMinutes, visitTimes } from "./visit-times.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { paidNotBooked } from "./hold-stages.ts";
 
@@ -83,7 +84,8 @@ async function lateFeeOf(db: D1Database, row: HoldRow, charge: Charge): Promise<
 const hasLapsed = (row: HoldRow, now: Date) =>
   row.state === "held" && row.confirmed_at === null && row.expires_at <= now.toISOString();
 
-async function holdOf(db: D1Database, row: HoldRow, now: Date) {
+/** A hold row as the app shows it. */
+async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
   const minutes = heldMinutes(row);
   const lateCharge = row.late_change_charge ?? LATE_CHANGE_CHARGES[row.type];
   const price = { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent };
@@ -137,7 +139,7 @@ async function creditOn(db: D1Database, row: HoldRow, now: Date): Promise<{ rema
 /** One of the client's holds as the app shows it; null when there is no such hold of theirs. */
 export async function clientHold(db: D1Database, holdId: string, personId: string, now: Date) {
   const row = await db.prepare(HOLD_QUERY).bind(holdId, personId).first<HoldRow>();
-  return row === null ? null : holdOf(db, row, now);
+  return row === null ? null : asTheAppShows(db, row, now);
 }
 
 /**

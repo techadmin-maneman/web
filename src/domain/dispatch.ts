@@ -55,13 +55,13 @@ import {
   bookedMinutes,
   claimsOf,
   fitsAt,
-  lettingGo,
   loadBlackouts,
   occupancy,
   placement,
-  visitTimes,
   type Day,
-} from "./scheduling.ts";
+} from "./occupancy.ts";
+import { lettingGo } from "./hold-slot.ts";
+import { visitTimes } from "./visit-times.ts";
 import { latestConsentSql } from "./consents.ts";
 import { begunPastArrival, visitBegun } from "./visit-begun.ts";
 import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";

@@ -45,7 +45,7 @@ import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles
 import { evidenceMessage, messageStateOf } from "./no-shows.ts";
 import { decisionAtVisit } from "./one-visit.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
-import { bookedMinutes } from "./scheduling.ts";
+import { bookedMinutes } from "./occupancy.ts";
 import { offeredProducts } from "./services.ts";
 import { firstNameOf } from "../lib/names.ts";
 import { isOneOf } from "../lib/one-of.ts";
