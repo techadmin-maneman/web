@@ -3,18 +3,12 @@
 // every one of them across unchanged. D1 is SQLite: this applies the real
 // migration files to an in-memory SQLite database, before and after.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
+import { apply, databaseThrough } from "./migrations.ts";
 
 function migratedTo(last: string): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name <= last)) db.exec(readFileSync(`migrations/${file}`, "utf8"));
+  const db = databaseThrough(last);
   return db;
 }
 
@@ -68,7 +62,7 @@ describe("migration 0006", () => {
     );
     const before = db.prepare(`SELECT ${PHASE_1_COLUMNS} FROM outbound_messages ORDER BY id`).all();
 
-    db.exec(readFileSync("migrations/0006_outbound_messages_v2.sql", "utf8"));
+    apply(db, "0006_outbound_messages_v2.sql");
 
     expect(db.prepare(`SELECT ${PHASE_1_COLUMNS} FROM outbound_messages ORDER BY id`).all()).toEqual(before);
     expect(db.prepare("SELECT DISTINCT subject_kind, delivered_at, read_at FROM outbound_messages").all()).toEqual([

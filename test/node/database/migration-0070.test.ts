@@ -1,27 +1,18 @@
 // Migration 0070: the schema a visit booked without FSM needs, and Books' own Zoho client, applied to a database
 // that already holds a mirrored visit and the Zoho tokens in use, as staging's does. Every name and number is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.endsWith("_field_record_ours.sql")) ?? "";
+const THIS = migrationNamed("_field_record_ours.sql");
 
 const AT = "2026-10-02T06:30:00.000Z";
 const LATER = "2026-10-02T07:30:00.000Z";
 
 function migrated(): DatabaseSync {
   expect(THIS).not.toBe("");
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) {
-    db.exec("BEGIN");
-    db.exec(readFileSync(`migrations/${file}`, "utf8"));
-    db.exec("COMMIT");
-  }
+  const db = databaseBefore(THIS);
   db.exec(`
     INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', '${AT}', '+919810000001', 'A Client');
     INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p2', '${AT}', '+919810000002', 'Another Client');
@@ -35,9 +26,7 @@ function migrated(): DatabaseSync {
     INSERT INTO zoho_access_tokens (client, access_token, expires_at, refreshing_until, cool_down_until)
       VALUES ('fsm', 'fsm-token', '${LATER}', '${AT}', '${LATER}');
   `);
-  db.exec("BEGIN");
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
-  db.exec("COMMIT");
+  apply(db, THIS);
   return db;
 }
 

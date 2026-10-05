@@ -4,25 +4,15 @@
 // referenced by no_show_cases, so the column is swapped in place, never rebuilt
 // (migration 0031). Every name and number is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
+import { apply, databaseBefore } from "./migrations.ts";
 
 const AT = "2026-09-21T06:30:00.000Z";
 
 /** Every migration before 0035, with a measured and an unmeasured check-in, and a case on the second. */
 function beforeTheSwap(): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < "0035")) {
-    db.exec("BEGIN");
-    db.exec(readFileSync(`migrations/${file}`, "utf8"));
-    db.exec("COMMIT");
-  }
+  const db = databaseBefore("0035");
   db.exec(`
     INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', '${AT}', '+919810000001', 'A Client');
     INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode, lat, lng)
@@ -43,9 +33,7 @@ function beforeTheSwap(): DatabaseSync {
 
 function migrated(): DatabaseSync {
   const db = beforeTheSwap();
-  db.exec("BEGIN");
-  db.exec(readFileSync("migrations/0035_checkin_times_and_distance.sql", "utf8"));
-  db.exec("COMMIT");
+  apply(db, "0035_checkin_times_and_distance.sql");
   return db;
 }
 

@@ -8,14 +8,11 @@
 // The file is found by its name, not its number, which a migration merged first
 // may move on.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.endsWith("_task_owners.sql")) ?? "";
+const THIS = migrationNamed("_task_owners.sql");
 
 const AT = "2026-09-21T06:30:00.000Z";
 
@@ -60,9 +57,7 @@ function firstFitAsked(db: DatabaseSync, id: string, personId: string): void {
  * migration.
  */
 function migrated(): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) db.exec(readFileSync(`migrations/${file}`, "utf8"));
+  const db = databaseBefore(THIS);
   db.exec(`INSERT INTO people (id, created_at, mobile_e164, name) VALUES
     ('p1', '${AT}', '+919810000001', 'A Client'), ('p2', '${AT}', '+919810000002', 'A Lead'),
     ('p3', '${AT}', '+919810000003', 'Another Lead');`);
@@ -72,7 +67,7 @@ function migrated(): DatabaseSync {
   visit(db, "f1", { type: "first_fit", window_start: "2026-09-10T04:30:00.000Z" });
   visit(db, "c2", { person_id: "p2" });
   visit(db, "c3", { person_id: "p3", status: "cancelled", fsm_status: "Cancelled" });
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
+  apply(db, THIS);
   return db;
 }
 
