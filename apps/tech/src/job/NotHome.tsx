@@ -34,6 +34,7 @@ import { keepClosed, keptArrival } from "../store/jobs.ts";
 import { checkInRefusedAsEarly, events, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
 import { CardFrame } from "./CardFrame.tsx";
 import { receiptLine, type ReceiptLine } from "./receipt.ts";
+import frame from "../components/frame.module.css";
 import styles from "./job.module.css";
 import { firstNameOf } from "../../../../src/lib/names.ts";
 
@@ -151,7 +152,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
         <Button
           variant="gold"
           size="action"
-          className={styles.action}
+          className={frame.action}
           disabled={asking}
           busy={asking}
           onClick={() => void start()}
@@ -165,7 +166,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
       <Button
         variant="gold"
         size="action"
-        className={styles.action}
+        className={frame.action}
         disabled={asking || notYet}
         busy={asking}
         onClick={() => void arrive()}

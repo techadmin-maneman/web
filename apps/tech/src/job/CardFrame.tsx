@@ -13,6 +13,7 @@ import { kindName, kindNameLower } from "../lib/kind.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go } from "../route.ts";
+import frame from "../components/frame.module.css";
 import styles from "./job.module.css";
 
 /** The day, written only when it is not today: "Tomorrow", or "Fri 27 Sep". */
@@ -40,8 +41,8 @@ function nameOf(job: Job): string {
 export function CardFrame({ job, foot, children }: { job: Job; foot: ReactNode; children: ReactNode }) {
   const heading = useScreen(nameOf(job));
   return (
-    <main className={styles.screen}>
-      <header className={styles.head}>
+    <main className={frame.screen}>
+      <header className={frame.head}>
         <IconButton
           className={styles.back}
           d={ICONS.back}
@@ -63,7 +64,7 @@ export function CardFrame({ job, foot, children }: { job: Job; foot: ReactNode; 
 
       <div className={styles.body}>{children}</div>
 
-      {foot !== null && <div className={styles.foot}>{foot}</div>}
+      {foot !== null && <div className={frame.foot}>{foot}</div>}
     </main>
   );
 }

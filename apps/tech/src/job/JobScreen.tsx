@@ -11,6 +11,7 @@
 // changed; a started job offers its next step and nothing of the door's; a
 // closed one reads as closed.
 
+import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
@@ -25,6 +26,7 @@ import type { Queued } from "../store/outbox.ts";
 import { CardFrame } from "./CardFrame.tsx";
 import { JobCard } from "./JobCard.tsx";
 import { NotHome } from "./NotHome.tsx";
+import frame from "../components/frame.module.css";
 import styles from "./job.module.css";
 
 /** What ops changed, in the app's words: the new time when the card now carries one, else the field that moved. */
@@ -68,7 +70,7 @@ function footFor(stage: Stage, job: Job, queued: readonly Queued[]): ReactNode {
       <Button
         variant="gold"
         size="action"
-        className={styles.action}
+        className={frame.action}
         onClick={() => {
           go(step === null ? `/jobs/${job.id}/done` : stepPath(job.id, step));
         }}
@@ -82,7 +84,7 @@ function footFor(stage: Stage, job: Job, queued: readonly Queued[]): ReactNode {
       <Button
         variant="outlineOnInk"
         size="control"
-        className={styles.second}
+        className={classes(styles.second, styles.atFoot)}
         onClick={() => {
           go(`/jobs/${job.id}/done`);
         }}
@@ -101,7 +103,7 @@ export function JobScreen({ id }: { id: string }) {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
     return (
-      <main className={styles.screen}>
+      <main className={frame.screen}>
         <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={loaded.requestId} />
       </main>
     );

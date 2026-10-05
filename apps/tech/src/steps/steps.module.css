@@ -4,7 +4,6 @@
  * for gloved use. The screen is the phone's height and its body scrolls.
  */
 
-.screen,
 .sliding {
   display: flex;
   flex: 1;
@@ -29,14 +28,9 @@
   }
 }
 
+/* The frame's head (../components/frame.module.css), closer set: the step's count sits beside its title. */
 .head {
-  display: flex;
-  flex-shrink: 0;
   gap: var(--sp-12);
-  align-items: center;
-  min-height: var(--tech-min);
-  padding: var(--sp-8) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
 }
 
 .back {
@@ -504,16 +498,6 @@
 }
 
 /* ---- The one action, bottom of every screen, clear of an iPhone's home indicator ---- */
-
-.foot {
-  flex-shrink: 0;
-  padding: var(--sp-16) var(--sp-20) calc(var(--sp-22) + env(safe-area-inset-bottom));
-  border-top: var(--hairline) solid var(--ink-rule);
-}
-
-.action {
-  width: 100%;
-}
 
 .back:focus-visible,
 .step:focus-visible,

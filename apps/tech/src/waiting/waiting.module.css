@@ -8,16 +8,6 @@
   background: var(--ink-deep);
 }
 
-.head {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--sp-16);
-  align-items: center;
-  min-height: var(--tech-min);
-  padding: var(--sp-8) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
 .back {
   --icon-button-size: var(--tech-min);
 

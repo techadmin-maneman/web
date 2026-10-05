@@ -28,6 +28,7 @@ import { useSession } from "../session.ts";
 import { account, forget, replay, type EventKind, type JobAccount } from "../store/outbox.ts";
 import { Progress } from "./Progress.tsx";
 import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "./sets.ts";
+import frame from "../components/frame.module.css";
 import styles from "./waiting.module.css";
 
 const PHOTO_STEPS: ReadonlySet<InJobStep> = new Set(["before_photos", "after_photos"]);
@@ -89,7 +90,7 @@ export function WaitingScreen() {
 
   return (
     <main className={styles.screen}>
-      <header className={styles.head}>
+      <header className={frame.head}>
         <IconButton
           className={styles.back}
           d={ICONS.back}

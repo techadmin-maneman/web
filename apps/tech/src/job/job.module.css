@@ -4,24 +4,6 @@
  * foot, and the card scrolling between them.
  */
 
-.screen {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--ink-deep);
-}
-
-.head {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--sp-16);
-  align-items: center;
-  min-height: var(--tech-min);
-  padding: var(--sp-8) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
 .back {
   --icon-button-size: var(--tech-min);
 
@@ -261,16 +243,6 @@
 }
 
 /* Gloved use: the one action, same place on every screen, 64 px and full width, clear of an iPhone's home indicator. */
-.foot {
-  flex-shrink: 0;
-  padding: var(--sp-16) var(--sp-20) calc(var(--sp-22) + env(safe-area-inset-bottom));
-  border-top: var(--hairline) solid var(--ink-rule);
-}
-
-.action {
-  width: 100%;
-}
-
 /* ---- Board B5: the evidence chain, one card per stage ---------------------- */
 
 .stage,
@@ -365,7 +337,8 @@
   margin-top: var(--sp-18);
 }
 
-.foot .second {
+/* The way to a closed job's close-out, the foot's one action: as tall as the gold one it stands in for. */
+.atFoot {
   height: var(--tech-primary);
   margin-top: 0;
 }

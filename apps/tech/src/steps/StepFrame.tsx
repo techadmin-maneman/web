@@ -14,6 +14,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { steps as copy } from "../content.ts";
 import { STROKE } from "../icons.ts";
 import { useScreen } from "../lib/useScreen.ts";
+import frame from "../components/frame.module.css";
+import { classes } from "@maneman/ui/classes";
 import styles from "./steps.module.css";
 
 /** The slide's 300 ms and a little: a second tap of a gloved double tap lands inside it. */
@@ -74,8 +76,8 @@ export function StepFrame({
   const settled = useSettled();
 
   return (
-    <main className={still ? styles.screen : styles.sliding}>
-      <header className={styles.head}>
+    <main className={still ? frame.screen : styles.sliding}>
+      <header className={classes(frame.head, styles.head)}>
         <IconButton
           className={styles.back}
           d={ICONS.back}
@@ -103,12 +105,12 @@ export function StepFrame({
         {children}
       </div>
 
-      <div className={styles.foot}>
+      <div className={frame.foot}>
         {foot ?? (
           <Button
             variant="gold"
             size="action"
-            className={styles.action}
+            className={frame.action}
             disabled={!ready}
             aria-disabled={!settled}
             onClick={() => {
