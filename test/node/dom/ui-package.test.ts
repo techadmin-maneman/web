@@ -71,7 +71,7 @@ describe.each(APPS)("%s", (app) => {
 
   // P3-35 (UX-15): an icon from the set is drawn by the shared Icon, at the set's stroke or the one it is given.
   it("draws no icon from the set by hand", () => {
-    const own = code.filter((path) => /<path d=\{ICONS\./.test(read(path)));
+    const own = code.filter((path) => read(path).includes("<path d={ICONS."));
     expect(own).toEqual([]);
   });
 
