@@ -296,7 +296,7 @@ export const TASKS_READ_ON = new Date("2027-09-22T05:00:00.000Z");
  * Read against 22 September 2027 in India, as board D2's tasks are, so the days
  * left read the same on every run: the first grievance is within the 30 days the
  * app promises and the second is past them; of the deletion requests the first
- * is within its 7 days, the second is past them and the third falls due today.
+ * is within its 30 days, the second is past them and the third falls due today.
  * The numbers are made up, as everywhere else here, and the words are nobody's.
  */
 export const GRIEVANCES = {
@@ -329,7 +329,7 @@ export const DELETION_REQUESTS = {
       person_id: CLIENT.id,
       name: CLIENT.name,
       mobile: CLIENT.mobile,
-      requested_at: "2027-09-20T06:00:00.000Z",
+      requested_at: "2027-08-28T06:00:00.000Z",
       due: "2027-09-27T06:00:00.000Z",
     },
     {
@@ -337,7 +337,7 @@ export const DELETION_REQUESTS = {
       person_id: "22000000-0000-4000-8000-000000000008",
       name: "Ashish Gill",
       mobile: "+919810004419",
-      requested_at: "2027-09-10T06:00:00.000Z",
+      requested_at: "2027-08-18T06:00:00.000Z",
       due: "2027-09-17T06:00:00.000Z",
     },
     {
@@ -345,7 +345,7 @@ export const DELETION_REQUESTS = {
       person_id: "22000000-0000-4000-8000-000000000009",
       name: "Karan Bose",
       mobile: "+919810004420",
-      requested_at: "2027-09-15T06:00:00.000Z",
+      requested_at: "2027-08-23T06:00:00.000Z",
       due: "2027-09-22T06:00:00.000Z",
     },
   ],

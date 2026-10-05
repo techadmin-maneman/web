@@ -12,10 +12,10 @@ import {
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 
 describe("account deletion", () => {
-  it("decides a deletion within 7 days, the task due then, and alerts before it is", () => {
-    // The 7 days run from the client's request to ops' decision (docs/decisions/0049-dpdp.md), and the erasure
+  it("decides a deletion within 30 days, the task due then, and alerts before it is", () => {
+    // The 30 days run from the client's request to ops' decision (docs/decisions/0049-dpdp.md), and the erasure
     // that decision makes deletes the photographs at once.
-    expect(DELETION_DECIDED_WITHIN_DAYS).toBe(7);
+    expect(DELETION_DECIDED_WITHIN_DAYS).toBe(30);
     expect(TASK_SLA_HOURS.erasure_request).toBe(DELETION_DECIDED_WITHIN_DAYS * 24);
     expect(DELETION_ALERT_AFTER_MS).toBeLessThan(DELETION_DECIDED_WITHIN_DAYS * DAY_MS);
   });

@@ -6,7 +6,7 @@
 import { VISIT_LIVE } from "../config/statuses.ts";
 
 /** A request to delete an account is decided within this many days of it (docs/decisions/0049-dpdp.md). */
-export const DELETION_DECIDED_WITHIN_DAYS = 7;
+export const DELETION_DECIDED_WITHIN_DAYS = 30;
 
 /**
  * Ours, not the prompt's (docs/decisions/0066-erasure-all-or-nothing.md): an
