@@ -4,7 +4,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { events, frames, onChange, type Frame, type Queued } from "../store/outbox.ts";
 
-export interface Waiting {
+interface Waiting {
   readonly events: readonly Queued[];
   /** Photograph frames still on the phone, one per angle, grouped by job on the waiting screen. */
   readonly frames: readonly Frame[];

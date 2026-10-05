@@ -31,7 +31,7 @@ export interface ConsentAnswer {
 }
 
 /** A consent's write, to run in a batch. It returns the row's created_at only when it adds the row `id`. */
-export interface ConsentWrite {
+interface ConsentWrite {
   readonly id: string;
   readonly statement: D1PreparedStatement;
 }

@@ -26,7 +26,7 @@ import { LOOK_PER_NUMBER_DAYS, tryOnRuns } from "../../policy/tryon-delivery.ts"
 import { enqueue } from "../../domain/enqueue.ts";
 import type { RenderMessage } from "../../queues/render.ts";
 
-export const GenerateRequestSchema = z
+const GenerateRequestSchema = z
   .object({
     job_id: z.uuid(),
     preset: z.enum(PRESET_IDS),
@@ -37,7 +37,7 @@ export const GenerateRequestSchema = z
   .strict()
   .openapi("GenerateRequest", { description: "The look, for the stage the gate's claim gave the try-on." });
 
-export const JobStatusSchema = z
+const JobStatusSchema = z
   .object({
     job_id: z.uuid(),
     state: z.enum(JOB_STATES),
@@ -46,7 +46,7 @@ export const JobStatusSchema = z
   .strict()
   .openapi("JobStatus");
 
-export const generateRoute = createRoute({
+const generateRoute = createRoute({
   method: "post",
   path: "/api/tryon/generate",
   summary: "Render the look for an uploaded photo the gate has claimed: one look per visitor",
@@ -70,7 +70,7 @@ export const generateRoute = createRoute({
   },
 });
 
-export const statusRoute = createRoute({
+const statusRoute = createRoute({
   method: "get",
   path: "/api/tryon/status/{job_id}",
   summary: "Where a job stands",

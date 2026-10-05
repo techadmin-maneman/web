@@ -22,7 +22,7 @@ import { ANGLES, type Angle, type Phase } from "./visit-photos.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 
 /** The three windows the client app offers (docs/prompts/phase2-frontend.md), by the hour a visit starts in India. */
-export type VisitWindowLabel = "morning" | "afternoon" | "evening";
+type VisitWindowLabel = "morning" | "afternoon" | "evening";
 
 /** A photograph's link lasts this long; the app asks again for a fresh one. */
 export const PHOTO_LINK_MS = 15 * MINUTE_MS;
@@ -33,9 +33,9 @@ export const PHOTO_LINK_MS = 15 * MINUTE_MS;
  * to be closed. A visit stays the client's until it is closed, so it
  * never drops out of both lists.
  */
-export type VisitStage = "booked" | "in_progress" | "done" | "closing";
+type VisitStage = "booked" | "in_progress" | "done" | "closing";
 
-export interface VisitSummary {
+interface VisitSummary {
   readonly id: string;
   /** India's calendar date, YYYY-MM-DD. */
   readonly date: string;
@@ -185,7 +185,7 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
 
 /** The three states the apps show a client in. */
 export const CLIENT_STATES = ["fitted", "lead", "nothing_booked"] as const;
-export type ClientState = (typeof CLIENT_STATES)[number];
+type ClientState = (typeof CLIENT_STATES)[number];
 
 /**
  * A client is fitted once a fit or a later visit is done, a lead while
@@ -234,7 +234,7 @@ export async function listVisits(
   };
 }
 
-export interface PhotoLink {
+interface PhotoLink {
   readonly angle: Angle;
   /** A link to the photograph that lasts 15 minutes, for the signed-in client only. */
   readonly url: string;
@@ -244,12 +244,12 @@ export interface PhotoLink {
   readonly height: number | null;
 }
 
-export interface PhotoSet {
+interface PhotoSet {
   readonly before: PhotoLink[];
   readonly after: PhotoLink[];
 }
 
-export interface VisitDetail extends VisitSummary {
+interface VisitDetail extends VisitSummary {
   /** From the visit's actual start to end; null until it is done. */
   readonly duration_minutes: number | null;
   readonly outcome: VisitOutcome | null;
@@ -274,7 +274,7 @@ export interface VisitDetail extends VisitSummary {
   readonly no_show: NoShowNote | null;
 }
 
-export type InvoiceHeld = "credit" | "checking";
+type InvoiceHeld = "credit" | "checking";
 
 /**
  * A visit is billed when the price book charges for its service on the day it

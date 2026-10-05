@@ -6,7 +6,7 @@ import { isPieceCode } from "../config/pieces.ts";
 type OldPiece = { readonly piece_code: string; readonly failure_reason: string };
 
 /** A piece step as the phone sends it: the piece, its base and lot, and on a replacement the one that came off. */
-export type PieceSent = {
+type PieceSent = {
   readonly piece_code: string;
   readonly base?: string | null;
   readonly supplier_lot?: string | null;
@@ -15,7 +15,7 @@ export type PieceSent = {
 };
 
 /** What the step records: every field, null where the phone sent none. */
-export type PieceRecorded = {
+type PieceRecorded = {
   readonly piece_code: string;
   readonly base: string | null;
   readonly supplier_lot: string | null;

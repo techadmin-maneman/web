@@ -80,7 +80,7 @@ const grantsOf = (rows: readonly GrantRow[]): Grant[] =>
   rows.map(grantOf).filter((grant): grant is Grant => grant !== null);
 
 /** "finance:manage:city:Delhi", or "admin:view:national": a grant in the audit log's words. */
-export function grantCode(grant: Grant): string {
+function grantCode(grant: Grant): string {
   const place = grant.place.geography === "national" ? "national" : `${grant.place.geography}:${grant.place.name}`;
   return `${grant.department}:${grant.level}:${place}`;
 }

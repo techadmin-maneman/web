@@ -36,9 +36,9 @@ export const HealthSchema = z
   })
   .strict()
   .openapi("Health");
-export type Health = z.infer<typeof HealthSchema>;
+type Health = z.infer<typeof HealthSchema>;
 
-export const healthRoute = createRoute({
+const healthRoute = createRoute({
   method: "get",
   path: "/api/health",
   summary: "Environment, version and database reachability",

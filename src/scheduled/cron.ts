@@ -72,7 +72,7 @@ export interface CronContext {
 }
 
 /** What a run is given; the budget and the figures ops set are the run's own, shared by its jobs. */
-export type CronRun = Omit<CronContext, "budget" | "inputs"> & {
+type CronRun = Omit<CronContext, "budget" | "inputs"> & {
   /**
    * The meter env.DB already reads through, which the run's dependencies were made with too. Without one the run
    * meters env.DB itself, and what its dependencies read (an alert raised or closed) goes uncounted.
@@ -98,7 +98,7 @@ export interface CronJob extends Timing {
   readonly run: (context: CronContext) => Promise<unknown>;
 }
 
-export interface CronOutcome {
+interface CronOutcome {
   readonly job: string;
   readonly ok: boolean;
 }

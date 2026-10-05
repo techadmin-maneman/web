@@ -51,7 +51,7 @@ export function pieceSent(refused: Queued | null): PieceSent | null {
 
 type PartialOutcome = Extract<OutcomeRequest, { outcome: "partial" }>;
 
-export interface OutcomeSent {
+interface OutcomeSent {
   readonly choice: OutcomeRequest["outcome"];
   /** A partial's reason, when the card still offers it. */
   readonly reason: string | null;

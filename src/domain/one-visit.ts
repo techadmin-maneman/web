@@ -17,7 +17,7 @@ import { eventsOf } from "./job-events.ts";
 import { sendPaymentLink, type LinkDeps, type LinkSent } from "./payment-links.ts";
 
 /** The client's decision, from the piece step's body; null for a body that records neither. */
-export function decisionOf(body: unknown): Decision | null {
+function decisionOf(body: unknown): Decision | null {
   const piece = pieceBodyOf(body);
   if (piece === null) return null;
   if ("declined" in piece) return { declined: true };
@@ -31,7 +31,7 @@ export async function decisionAtVisit(db: D1Database, appointmentId: string): Pr
 }
 
 /** The job being closed: which visit, whose, and when. */
-export interface ClosingJob {
+interface ClosingJob {
   readonly id: string;
   readonly personId: string | null;
   readonly windowStart: Date;

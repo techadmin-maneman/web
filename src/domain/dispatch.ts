@@ -76,7 +76,7 @@ export const BOARD_DAYS = 7;
  * The client of a visit, as ops need him to reach him (board A3's WhatsApp and
  * Open client). None for a visit with no client on our records, or one erased.
  */
-export interface BoardClient {
+interface BoardClient {
   readonly id: string;
   readonly name: string;
   readonly mobile: string;
@@ -105,7 +105,7 @@ interface Visit {
   readonly client_note: string | null;
 }
 
-export interface Block extends Visit {
+interface Block extends Visit {
   readonly starts_at: string;
   readonly window: BookingWindow;
   readonly status: AppointmentStatus;
@@ -117,12 +117,12 @@ export interface Block extends Visit {
   readonly begun: Begun | null;
 }
 
-export interface BoardDay {
+interface BoardDay {
   readonly date: string;
   readonly blocks: Block[];
 }
 
-export interface BoardRow {
+interface BoardRow {
   readonly technician_id: string;
   readonly name: string;
   readonly initials: string;
@@ -130,7 +130,7 @@ export interface BoardRow {
   readonly days: BoardDay[];
 }
 
-export interface UnassignedJob extends Visit {
+interface UnassignedJob extends Visit {
   readonly starts_at: string;
   readonly asked_window: BookingWindow | null;
   readonly offered_window: BookingWindow | null;
@@ -139,7 +139,7 @@ export interface UnassignedJob extends Visit {
   readonly was_technician: { readonly id: string; readonly name: string } | null;
 }
 
-export interface Board {
+interface Board {
   /** The board's version when this was read: it goes up whenever something the board draws changes. */
   readonly version: number;
   readonly from: string;
@@ -468,7 +468,7 @@ const isAway = (leave: Board["leave"], technicianId: string, date: string): bool
  * its city's jobs; the technicians only to the caller's cities, since any may be
  * sent anywhere (docs/decisions/0069-dispatch-under-concurrency.md).
  */
-export function utilisationOf(
+function utilisationOf(
   rows: readonly BoardRow[],
   dates: readonly string[],
   leave: Board["leave"],
@@ -508,9 +508,9 @@ export interface MoveInput {
  * What changed under a board since it was loaded: the job's technician, its
  * time, or another move of it still being written.
  */
-export type Change = "technician" | "time" | "moving";
+type Change = "technician" | "time" | "moving";
 
-export type MoveOutcome =
+type MoveOutcome =
   | { readonly kind: "moved"; readonly moveId: string; readonly clientNotice: ClientNotice }
   | { readonly kind: "refused"; readonly reason: MoveRefusal }
   | { readonly kind: "not_found" }
@@ -568,7 +568,7 @@ function timesAt(target: Target, startUnit: number, job: Placing, schedule: Slot
   return { start: job.start, end: new Date(job.start.getTime() + job.minutes * MINUTE_MS) };
 }
 
-export interface MoveDeps {
+interface MoveDeps {
   /** Queues the client's "your visit is now …" message. */
   readonly notify?: (messageId: string) => Promise<unknown>;
 }
@@ -892,12 +892,12 @@ const releasingClaims = (db: D1Database, moveId: string): D1PreparedStatement =>
   db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId);
 
 /** A window the job would land in, and when it would start there. */
-export interface RoomStart {
+interface RoomStart {
   readonly window: BookingWindow;
   readonly starts_at: string;
 }
 
-export interface Room {
+interface Room {
   readonly technician_id: string;
   readonly date: string;
   /** The windows the job would land in, by the check a move runs. */
@@ -905,7 +905,7 @@ export interface Room {
   readonly starts: RoomStart[];
 }
 
-export interface Rooms {
+interface Rooms {
   readonly rooms: Room[];
   /** The days of the week ops blacked out, other than the job's own: a move onto one needs a reason. */
   readonly blackouts: string[];

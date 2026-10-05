@@ -57,7 +57,7 @@ function sizeOf(block: Block): string | undefined {
 }
 
 /** Leave covers whole days, both ends included, and the route clips it to this week. */
-export const isAway = (leave: Board["leave"], technicianId: string, date: string) =>
+const isAway = (leave: Board["leave"], technicianId: string, date: string) =>
   leave.some((period) => period.technician_id === technicianId && period.from <= date && date <= period.to);
 
 /** Takes a job up to move it; null when the person's access does not let them move one. */

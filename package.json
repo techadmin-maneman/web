@@ -33,7 +33,7 @@
     "check:config": "node scripts/check-wrangler-config.ts",
     "check:migrations": "node scripts/check-migrations.ts",
     "check:open-points": "node scripts/check-open-points.ts",
-    "check:dead": "knip --workspace . --no-progress",
+    "check:dead": "knip --no-progress",
     "check:types": "wrangler types src/worker-configuration.d.ts --include-runtime=false --env-file .dev.vars.example --check",
     "types": "wrangler types src/worker-configuration.d.ts --include-runtime=false --env-file .dev.vars.example",
     "build": "node scripts/build.ts",

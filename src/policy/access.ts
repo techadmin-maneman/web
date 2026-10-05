@@ -48,7 +48,7 @@ export interface StaffEntry {
   readonly grants: readonly Grant[];
 }
 
-export function reaches(level: Level, needed: Level): boolean {
+function reaches(level: Level, needed: Level): boolean {
   return LEVELS.indexOf(level) >= LEVELS.indexOf(needed);
 }
 

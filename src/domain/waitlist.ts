@@ -15,7 +15,7 @@ import { joinPacedLine } from "./paced-line.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import { firstNameOf } from "../lib/names.ts";
 
-export interface WaitlistArea {
+interface WaitlistArea {
   readonly pincode: string;
   /** Null until ops have named the area, and for a pincode we do not know. */
   readonly area: string | null;

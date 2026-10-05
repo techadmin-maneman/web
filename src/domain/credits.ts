@@ -6,7 +6,7 @@
 import { creditExpiry } from "../policy/referral-reward.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 
-export type CreditSource = "referral" | "appointment" | "ops" | "import";
+type CreditSource = "referral" | "appointment" | "ops" | "import";
 
 export interface Balance {
   /** Unexpired service visits left. */

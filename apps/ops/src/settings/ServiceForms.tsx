@@ -36,7 +36,7 @@ export const priceWords = (price: { amount_ex_gst: number; gst_percent: number }
   copy.price(rupees(price.amount_ex_gst), price.gst_percent);
 
 /** A refusal, said of the box it names where it names one. */
-export function refusalOf(
+function refusalOf(
   failure: { readonly code: string; readonly fields: readonly string[] },
   errors: Readonly<Record<string, string>> = copy.errors,
 ): string {
@@ -49,7 +49,7 @@ export function refusalOf(
  * The check before anything is sent: a group named by its title, which takes focus as it opens, so it is read at
  * once and never opens out of sight.
  */
-export function Check(props: {
+function Check(props: {
   readonly id: string;
   readonly title?: string;
   readonly children: ReactNode;

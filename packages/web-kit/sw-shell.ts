@@ -4,7 +4,7 @@
 // nothing is split into a chunk a classic service worker could not load.
 
 /** Marks an answer served from a kept copy, so the app knows it is working offline (each app's api.ts reads it). */
-export const SERVED_FROM = "Mm-Served-From";
+const SERVED_FROM = "Mm-Served-From";
 
 /** `kept`, marked as served from the cache. */
 export function marked(kept: Response): Response {

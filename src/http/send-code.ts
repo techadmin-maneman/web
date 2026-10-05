@@ -31,13 +31,13 @@ import { afterResponse } from "./after-response.ts";
 const FAILURES_PER_HOUR_TO_ALERT = 3;
 
 /** Where a code is asked for: the client app's login, the technician app's, or a form on the site. */
-export type CodeSurface = "login" | "tech" | "form";
+type CodeSurface = "login" | "tech" | "form";
 
 /** How a request for a code is answered: open, or refused because the address, the number or the day is spent. */
 export type CodeGate = "open" | "address_spent" | "number_spent" | "busy";
 
 /** The day's ceiling a code counts against: each surface has its own. */
-export type CodeCeiling = Extract<Ceiling, "login_code" | "tech_code" | "form_code">;
+type CodeCeiling = Extract<Ceiling, "login_code" | "tech_code" | "form_code">;
 
 const CEILING_OF: Readonly<Record<CodeSurface, CodeCeiling>> = {
   login: "login_code",

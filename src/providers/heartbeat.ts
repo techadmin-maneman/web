@@ -8,7 +8,7 @@ import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
 
 const TIMEOUT_MS = 5_000;
 
-export interface HeartbeatOptions {
+interface HeartbeatOptions {
   /** HEARTBEAT_URL; none sends nothing. */
   readonly url: string | null;
   readonly fetch: typeof fetch;

@@ -16,7 +16,7 @@
 // cannot import a node script.
 
 /** A row of a simple CSV: commas between fields, a field in double quotes may hold commas. */
-export function fields(line: string): string[] {
+function fields(line: string): string[] {
   const out: string[] = [];
   let field = "";
   let quoted = false;

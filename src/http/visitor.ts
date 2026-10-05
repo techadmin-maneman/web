@@ -8,7 +8,7 @@ import { countOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { TURNSTILE_TEST_TOKEN, verifyTurnstile, type TurnstileResult } from "../providers/turnstile.ts";
 
-export interface Visitor {
+interface Visitor {
   /** For Turnstile only; never stored or logged. */
   readonly ip: string | null;
   readonly ipHash: string;

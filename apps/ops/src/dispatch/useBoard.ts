@@ -15,7 +15,7 @@ export const FULL_READ_MS = 10 * 60_000;
 /** A look this soon after the last one is skipped, so switching tabs back and forth reads nothing more. */
 export const LOOK_GAP_MS = 30_000;
 
-export interface BoardData {
+interface BoardData {
   readonly loaded: Loaded<Board>;
   /** The last board that loaded, kept while the next week or city loads, so the controls stay in reach. */
   readonly last: Board | null;

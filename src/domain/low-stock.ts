@@ -8,7 +8,7 @@ import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import type { Place } from "./stock.ts";
 
 /** One consumable a place holds at or below its level. */
-export interface Low {
+interface Low {
   readonly code: string;
   readonly name: string;
   readonly unit: string;
@@ -17,7 +17,7 @@ export interface Low {
 }
 
 /** What a place holds at or below its level, of every consumable still offered that has one. */
-export async function lowAt(db: D1Database, place: Place, today: string): Promise<Low[]> {
+async function lowAt(db: D1Database, place: Place, today: string): Promise<Low[]> {
   const { results } = await db
     .prepare(
       `SELECT c.code, c.name, c.unit, CASE WHEN ?1 IS NULL THEN c.reorder_central ELSE c.reorder_kit END AS level,
@@ -34,7 +34,7 @@ export async function lowAt(db: D1Database, place: Place, today: string): Promis
   );
 }
 
-export const lowStockKey = (place: Place) => (place === null ? "low_stock:central" : `low_stock:kit:${place}`);
+const lowStockKey = (place: Place) => (place === null ? "low_stock:central" : `low_stock:kit:${place}`);
 
 /**
  * After a movement: one alert for a place that went down and is low, naming

@@ -23,7 +23,7 @@ const TYPING_PAUSE_MS = 300;
 /** Below this, a search returns the whole city and costs a request to say so. */
 const SHORTEST_QUERY = 3;
 
-export interface ChosenBuilding {
+interface ChosenBuilding {
   readonly placeId: string;
   readonly building: string;
 }

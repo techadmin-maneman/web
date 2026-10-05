@@ -99,7 +99,7 @@ export const offeredWindow = (type: NextVisitType, followedWindow: BookingWindow
   windowsFor(type).includes(followedWindow) ? followedWindow : null;
 
 /** A fitted client's next visit: what it is, the day it fell or falls due, and the day the app offers it on. */
-export interface NextVisitDue {
+interface NextVisitDue {
   readonly type: "service" | "replacement";
   readonly dueOn: string;
   readonly offeredOn: string;

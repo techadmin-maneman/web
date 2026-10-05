@@ -6,7 +6,7 @@ import { SECOND_MS } from "../lib/durations.ts";
 import { PACED_GAP_SECONDS, pacedDelaySeconds } from "../policy/message-pacing.ts";
 
 /** A place in the line: the seconds the queue holds the message back, and the instant it leaves. */
-export interface PacedSlot {
+interface PacedSlot {
   readonly delaySeconds: number;
   readonly dueAt: string;
 }

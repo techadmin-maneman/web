@@ -11,7 +11,7 @@ import { recordConsent } from "./consents.ts";
 import { consentRecordsOf } from "./profile.ts";
 import { graceEnds } from "./scheduling.ts";
 
-export interface BookingTap {
+interface BookingTap {
   readonly personId: string;
   readonly holdId: string;
   /** The purposes the pay step showed the lines for. */
@@ -19,7 +19,7 @@ export interface BookingTap {
   readonly ipHash: string;
 }
 
-export interface Confirmation {
+interface Confirmation {
   readonly holdId: string;
   /** The request that confirmed it: the tap for a free visit, Razorpay's webhook for a paid one. */
   readonly requestId: string;

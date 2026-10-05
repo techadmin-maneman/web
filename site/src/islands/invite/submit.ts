@@ -11,7 +11,7 @@ import { readAttribution } from "../../lib/visit.ts";
 import { codeInPath } from "./page.ts";
 
 /** Which door the form is on, and what it holds that only one door sends. */
-export interface Door {
+interface Door {
   /** On an invite's page, /r/:code; else the site's own /book. */
   readonly invited: boolean;
   /** The invite earns credits, so the form told the friend who hears of the fit. */

@@ -92,7 +92,7 @@ export const APP_SWITCH_SOURCES = [
   "app_booking",
   "app_share_sheet",
 ] as const satisfies readonly ConsentSource[];
-export type AppSwitchSource = (typeof APP_SWITCH_SOURCES)[number];
+type AppSwitchSource = (typeof APP_SWITCH_SOURCES)[number];
 
 /** What each screen asks for: the profile any purpose, the booking sheet its reminder, the share sheet its card. */
 const ASKED_ON: Readonly<Record<AppSwitchSource, readonly ConsentPurpose[]>> = {

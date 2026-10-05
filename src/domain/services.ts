@@ -24,7 +24,7 @@ import { auditStatement, type AuditActor } from "./audit.ts";
 import type { Price } from "./price-book.ts";
 
 /** A service, as the services table holds it. */
-export interface Service {
+interface Service {
   readonly kind: VisitType;
   /** The code the price book prices it under; never changed. */
   readonly tier: string;
@@ -186,7 +186,7 @@ export type ServiceRefusal =
   | { readonly refused: "not_found" };
 
 /** Who made a change, for the audit entry written with it. */
-export interface ServiceWrite {
+interface ServiceWrite {
   readonly actor: AuditActor;
   readonly requestId: string;
   readonly now: Date;

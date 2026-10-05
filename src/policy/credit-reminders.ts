@@ -4,10 +4,9 @@
 
 import { addDays } from "../lib/india-time.ts";
 
-export const RULES = [
-  "credit-expiry reminders at 30 and 7 days",
-  "a booking made before expiry keeps the credit",
-] as const;
+// Its rules, as the brief states them:
+// - credit-expiry reminders at 30 and 7 days
+// - a booking made before expiry keeps the credit
 
 /** How many days before their last day a client is reminded of free service visits, earliest first. */
 export const CREDIT_REMINDER_DAYS = [30, 7] as const;

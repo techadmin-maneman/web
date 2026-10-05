@@ -115,7 +115,7 @@ const ErasedSchema = z
   .strict()
   .openapi("Erased");
 
-export const erasureRoute = createRoute({
+const erasureRoute = createRoute({
   method: "post",
   path: "/api/clients/{id}/erasure",
   summary: "Erase a client now: their photographs and details. The CRM and Books follow within minutes",

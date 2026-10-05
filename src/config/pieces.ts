@@ -28,6 +28,6 @@ export const cycleDaysFor = (base: string | null, cycles: Cycles = PIECE_CYCLE_D
  * and ruled out a barcode and a QR code with it (docs/open-points.md, "Piece
  * labels"), so the code is always typed by hand and matched here.
  */
-export const PIECE_CODE_PATTERN = /^MM-[A-Z0-9]{2,6}-\d{2,8}-[A-Z]$/;
+const PIECE_CODE_PATTERN = /^MM-[A-Z0-9]{2,6}-\d{2,8}-[A-Z]$/;
 
 export const isPieceCode = (code: string): boolean => PIECE_CODE_PATTERN.test(code);

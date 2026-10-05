@@ -238,7 +238,7 @@ export interface ConsentState {
   readonly since: string | null;
 }
 
-export interface ConsentRecord extends ConsentState {
+interface ConsentRecord extends ConsentState {
   /** The notice the client saw when they last switched it; null if they never have. */
   readonly noticeVersion: string | null;
   /**

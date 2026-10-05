@@ -24,9 +24,9 @@ import { DAY_MS } from "../lib/durations.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
 
-export type DeletionState = "requested" | "done" | "rejected";
+type DeletionState = "requested" | "done" | "rejected";
 
-export interface DeletionRequest {
+interface DeletionRequest {
   readonly id: string;
   readonly personId: string;
   readonly state: DeletionState;
@@ -100,7 +100,7 @@ export interface ErasedContact {
   readonly testRecord: boolean;
 }
 
-export type DeletionOutcome =
+type DeletionOutcome =
   | { readonly kind: "rejected"; readonly personId: string; readonly messageId: string }
   /** `told` is who to tell, or null when someone erased them first and their number is gone. */
   | { readonly kind: "deleted"; readonly personId: string; readonly told: ErasedContact | null }
@@ -215,7 +215,7 @@ export function deletionDoneMessage(contact: ErasedContact): OutboundMessage {
   return { to: contact.mobileE164, template: "deletion_done_v1", params: [firstNameOf(contact.name)] };
 }
 
-export interface RejectedDeletion {
+interface RejectedDeletion {
   readonly decidedAt: string;
   /** Ops' reason, which the client is shown. */
   readonly reason: string | null;

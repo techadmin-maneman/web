@@ -77,7 +77,7 @@ export interface Sale {
 }
 
 /** Why a booking was refused, as the route answers it. */
-export type Refusal =
+type Refusal =
   | { readonly status: 400; readonly code: "invalid_request"; readonly fields: readonly string[] }
   | { readonly status: 404; readonly code: "not_found" }
   | { readonly status: 409; readonly code: "already_booked" }
@@ -211,7 +211,7 @@ export async function linkClosesAt(db: D1Database, asked: VisitAsked, now: Date)
 }
 
 /** Who booked it, and the request, for the audit entry written with the hold. */
-export interface BookedBy {
+interface BookedBy {
   readonly actor: AuditActor;
   readonly requestId: string;
 }

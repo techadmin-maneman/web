@@ -319,7 +319,7 @@ export function allowed(setting: NumberSetting, key?: string): string {
 }
 
 /** Why a value was refused: the field it was in, and what that field will take. */
-export interface Refusal {
+interface Refusal {
   readonly field: string;
   readonly says: string;
 }
@@ -341,7 +341,7 @@ const choiceRefusal = (setting: ChoiceSetting, key: string, value: unknown): Ref
   return { field: `${setting.name}.${key}`, says: `${setting.title} takes one of ${choices.join(", ")} for ${key}.` };
 };
 
-export type Checked =
+type Checked =
   { readonly ok: true; readonly value: SettingValue } | { readonly ok: false; readonly refusals: readonly Refusal[] };
 
 const isKeyed = (value: unknown): value is Readonly<Record<string, unknown>> =>

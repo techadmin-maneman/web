@@ -19,7 +19,7 @@ const EARLIER_SHOWN = 10;
 
 const VIEWS_OF = "action = 'photo.view' AND subject_kind = 'person' AND subject_id = ?1";
 
-export interface PhotoView {
+interface PhotoView {
   /** The member of staff, by their Access e-mail, or a service token by its ID. */
   readonly by: string;
   readonly at: string;

@@ -59,13 +59,13 @@ export async function pieceWithOwner(
 }
 
 /** What a piece step says of the pieces: the one fitted, and each that failed with its reason. */
-export interface PieceStep {
+interface PieceStep {
   readonly fitted: { readonly code: string; readonly base: string | null; readonly supplierLot: string | null } | null;
   readonly failed: readonly PieceFailure[];
 }
 
 /** A piece that failed, and the field of the step its label came in. */
-export interface PieceFailure {
+interface PieceFailure {
   readonly code: string;
   readonly reason: string;
   readonly field: PieceField;

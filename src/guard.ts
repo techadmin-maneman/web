@@ -75,7 +75,7 @@ export type DatabaseIdentity =
   | { readonly state: "unreachable"; readonly error: unknown };
 
 /** Reads the database's identity row and compares it with the environment's database. */
-export async function verifyDatabaseIdentity(db: D1Database, environment: EnvironmentName): Promise<DatabaseIdentity> {
+async function verifyDatabaseIdentity(db: D1Database, environment: EnvironmentName): Promise<DatabaseIdentity> {
   const expected = EXPECTED_DATABASE_NAME[environment];
 
   let row: { database_name: string } | null;

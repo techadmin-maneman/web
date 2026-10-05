@@ -15,11 +15,8 @@ export const WAITLIST_AFTER_LAUNCH_MONTHS = 12;
  */
 export const CHECKIN_COORDINATES_GRACE_DAYS = 7;
 
-/**
- * The audit log, kept this long. Nothing in it is that old yet: its triggers keep every row, and the job that deletes
- * the oldest is owed before the first rows reach two years, in September 2028.
- */
-export const AUDIT_LOG_YEARS = 2;
+// The audit log is kept two years. Nothing in it is that old yet: its triggers keep every row, and the job that
+// deletes the oldest is owed before the first rows reach two years, in September 2028.
 
 /** How many dormant people one run erases at most: each is a batch and a CRM message. */
 export const ERASED_PER_RUN = 5;

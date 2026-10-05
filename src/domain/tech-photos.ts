@@ -23,7 +23,7 @@ import type { Angle, Phase } from "./visit-photos.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
 /** How long an upload link lasts. */
-export const PHOTO_UPLOAD_LINK_TTL_MS = 15 * MINUTE_MS;
+const PHOTO_UPLOAD_LINK_TTL_MS = 15 * MINUTE_MS;
 /**
  * A photograph from the technician's phone, at most. The app sends about 250 KB, and when a frame will not come down
  * to that it sends the smallest it tried, 900 px on its long side at its lowest quality, well under 1 MB even from a
@@ -65,7 +65,7 @@ export async function slotOfLink(secret: string, token: string, now: Date): Prom
   return { appointmentId, phase: phase as Phase, angle: angle as Angle };
 }
 
-export type Stored =
+type Stored =
   | {
       readonly kind: "stored";
       readonly photoId: string;
@@ -143,7 +143,7 @@ function isThumbnail(bytes: Uint8Array): boolean {
   return Math.max(info.width, info.height) <= THUMBNAIL_MAX_SIDE_PX;
 }
 
-export type StoredThumbnail = "stored" | "held_already" | "no_photograph" | "not_a_thumbnail";
+type StoredThumbnail = "stored" | "held_already" | "no_photograph" | "not_a_thumbnail";
 
 /**
  * Keeps a take's small copy beside it. The take must still be the slot's photograph: a small copy is never held

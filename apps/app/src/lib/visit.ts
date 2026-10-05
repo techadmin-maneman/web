@@ -36,7 +36,7 @@ export const technicianOf = (visit: VisitSummary): string[] =>
 /** A day after the visit, "usually ready within the hour" is no longer true of its invoice. */
 const INVOICE_LATE_MS = 24 * 60 * 60 * 1000;
 
-export type InvoiceState = "open" | "free" | "credit" | "checking" | "generating" | "late" | "none";
+type InvoiceState = "open" | "free" | "credit" | "checking" | "generating" | "late" | "none";
 
 /**
  * What a finished visit can say of its invoice (ADR 0056): here to open, never coming because the visit was free,

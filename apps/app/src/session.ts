@@ -5,7 +5,7 @@
 import { createContext, useContext } from "react";
 import type { Me } from "./api.ts";
 
-export interface Session {
+interface Session {
   readonly me: Me;
   readonly offline: boolean;
   readonly refresh: () => void;

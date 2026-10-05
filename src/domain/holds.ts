@@ -208,7 +208,7 @@ export async function bookingUnderWay(db: D1Database, personId: string): Promise
 }
 
 /** What Checkout names a hold's payment with, and prefills. */
-export interface CheckoutHold {
+interface CheckoutHold {
   readonly type: VisitType;
   /** The hold's service, by its name as it is now; null only where no service is the hold's kind and tier. */
   readonly service_name: string | null;

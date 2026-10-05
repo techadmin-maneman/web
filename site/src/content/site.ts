@@ -32,7 +32,7 @@ import { KEEPING_NOTICES } from "../../../src/policy/kept-try-ons.ts";
 import type { ErrorKind } from "../lib/tryon-errors.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
 
-export interface Picture {
+interface Picture {
   readonly file: string;
   readonly alt: string;
 }
@@ -632,14 +632,14 @@ export const range = {
   ],
 };
 
-export interface MaterialItem {
+interface MaterialItem {
   readonly name: string;
   readonly text: string;
   /** One word for each of its group's `rated` labels, in their order. */
   readonly ratings?: readonly string[];
 }
 
-export interface MaterialGroup {
+interface MaterialGroup {
   readonly title: string;
   readonly lead?: string;
   readonly rated?: readonly string[];
@@ -951,15 +951,6 @@ export const tryOn = {
     gate: "Step four of four",
     sent: "Sent to WhatsApp",
     error: "Cannot use this photograph",
-  },
-  progress: {
-    upload: "14%",
-    consent: "28%",
-    stage: "44%",
-    looks: "60%",
-    gate: "90%",
-    sent: "100%",
-    error: "28%",
   },
   upload: {
     title: "One photo, taken straight on.",

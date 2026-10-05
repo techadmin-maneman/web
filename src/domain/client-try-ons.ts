@@ -16,7 +16,7 @@ import { PHOTO_LINK_MS } from "./client-visits.ts";
 import { firstFitPhotographed, hasBooked, heldTryOn } from "./kept-try-ons.ts";
 
 export const TRY_ON_IMAGES = ["photo", "look"] as const;
-export type TryOnImage = (typeof TRY_ON_IMAGES)[number];
+type TryOnImage = (typeof TRY_ON_IMAGES)[number];
 
 /** Each image's links are signed for their own purpose, so a photograph's link cannot open a look. */
 export const TRY_ON_TOKEN_PURPOSES = { photo: "tryon_photo", look: "tryon_look" } as const satisfies Record<
@@ -24,14 +24,14 @@ export const TRY_ON_TOKEN_PURPOSES = { photo: "tryon_photo", look: "tryon_look" 
   TokenPurpose
 >;
 
-export interface TryOnLink {
+interface TryOnLink {
   /** Lasts 15 minutes; only the signed-in client can open it. */
   readonly url: string;
   /** When the retention rule lets it go, and the sweeper deletes it soon after; null while it is kept. */
   readonly kept_until: string | null;
 }
 
-export interface ClientTryOn {
+interface ClientTryOn {
   readonly id: string;
   /** India's date the look was asked for. */
   readonly made_on: string;
@@ -42,7 +42,7 @@ export interface ClientTryOn {
 }
 
 /** The buckets a try-on image may be held in. */
-export type TryOnBucket = "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS";
+type TryOnBucket = "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS";
 
 interface Held {
   readonly bucket: TryOnBucket;

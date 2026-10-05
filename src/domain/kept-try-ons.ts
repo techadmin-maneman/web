@@ -11,7 +11,7 @@ import { fileExtension, type ImageType } from "../lib/image-bytes.ts";
 import type { JobState } from "../config/tryon.ts";
 import { deleteCounted, putCounted } from "./storage-meter.ts";
 
-export type KeepEnv = Pick<Env, "DB" | "RESULTS" | "CLIENT_PHOTOS">;
+type KeepEnv = Pick<Env, "DB" | "RESULTS" | "CLIENT_PHOTOS">;
 
 /** Where a try-on's small copy is kept in the client-photos bucket. */
 export const copyKey = (jobId: string) => `tryons/${jobId}/before.jpg`;
@@ -48,7 +48,7 @@ export async function firstFitPhotographed(db: D1Database, personId: string): Pr
   return row !== null;
 }
 
-export interface TryOnFacts {
+interface TryOnFacts {
   readonly id: string;
   readonly created_at: string;
   readonly photo_consent_version: string;

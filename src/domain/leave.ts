@@ -14,7 +14,7 @@ import { addDays } from "../lib/india-time.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 
 /** One period, both ends inclusive, as ops recorded it. */
-export interface LeavePeriod {
+interface LeavePeriod {
   readonly id: string;
   readonly technician_id: string;
   readonly from: string;
@@ -25,7 +25,7 @@ export interface LeavePeriod {
 /** How far ahead leave may be recorded, so a typed year cannot empty the board. */
 export const LEAVE_MAX_DAYS = 365;
 
-export interface NewLeave {
+interface NewLeave {
   readonly technicianId: string;
   readonly from: string;
   readonly to: string;
@@ -35,7 +35,7 @@ export interface NewLeave {
 }
 
 /** A job still booked for a technician on a day he is now away: ops move it (OPS-07). */
-export interface JobOnLeave {
+interface JobOnLeave {
   readonly appointment_id: string;
   readonly starts_at: string;
   readonly type: VisitType | null;
@@ -51,7 +51,7 @@ export const LEAVE_ON_THE_DAY = `l.technician_id = a.technician_id AND l.cancell
   AND l.from_date <= date(a.window_start, '+330 minutes') AND l.to_date >= date(a.window_start, '+330 minutes')`;
 
 /** The technician's jobs still booked on the days from `from` to `to`, soonest first. */
-export async function jobsOnLeave(
+async function jobsOnLeave(
   db: D1Database,
   input: { technicianId: string; from: string; to: string },
 ): Promise<JobOnLeave[]> {
@@ -68,7 +68,7 @@ export async function jobsOnLeave(
   return results;
 }
 
-export type LeaveOutcome =
+type LeaveOutcome =
   | {
       readonly kind: "recorded";
       readonly id: string;
@@ -106,7 +106,7 @@ export async function leaveFrom(db: D1Database, from: string): Promise<LeavePeri
 }
 
 /** A period that has not ended, with the jobs still booked on its days. */
-export interface StandingLeave extends LeavePeriod {
+interface StandingLeave extends LeavePeriod {
   readonly jobs: JobOnLeave[];
 }
 

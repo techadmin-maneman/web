@@ -17,7 +17,7 @@ export interface CallBudget {
 }
 
 /** A time after which no call is granted, read from the given clock in milliseconds. */
-export interface CallDeadline {
+interface CallDeadline {
   readonly until: number;
   readonly now: () => number;
 }

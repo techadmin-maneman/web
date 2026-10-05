@@ -12,12 +12,12 @@ import { replay } from "../store/outbox.ts";
 import { askToKeep, type Keeping } from "../store/persist.ts";
 import { leaveSignedOut, settleSetAside } from "../store/set-aside.ts";
 
-export type SessionState =
+type SessionState =
   | { readonly kind: "checking" }
   | { readonly kind: "out"; readonly why: Out }
   | { readonly kind: "in"; readonly me: Me; readonly offline: boolean };
 
-export interface Lifecycle {
+interface Lifecycle {
   readonly state: SessionState;
   /** Whether the phone promised to keep what it holds (../store/persist.ts). */
   readonly keeping: Keeping;

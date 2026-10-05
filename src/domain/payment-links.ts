@@ -67,10 +67,10 @@ interface LinkRow {
 }
 
 /** How many unsent links one cron run asks Razorpay for at most. */
-export const LINKS_PER_PASS = 5;
+const LINKS_PER_PASS = 5;
 
 /** Outside calls one link may cost: its making, and the look for one Razorpay says it already made. */
-export const CALLS_PER_LINK = 2;
+const CALLS_PER_LINK = 2;
 
 /** A failure other than a refusal is told once it has happened this many times, five minutes apart. */
 const FAILURES_BEFORE_ALERT = 3;
@@ -251,7 +251,7 @@ function fittedVisitOf(row: UnsentRow, personId: string): FittedVisit {
 }
 
 /** What ops sending a client's link again came to: texted again, made now, or why it was not sent. */
-export type Resent = "resent" | "sent" | "not_texted" | "paid" | "refused" | "unavailable" | "not_found";
+type Resent = "resent" | "sent" | "not_texted" | "paid" | "refused" | "unavailable" | "not_found";
 
 interface ResendRow extends UnsentRow {
   person_id: string;

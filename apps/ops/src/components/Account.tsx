@@ -9,7 +9,7 @@ import { whoWords } from "../lib/who.ts";
 import styles from "./shell.module.css";
 
 /** "aditya.kumar@maneman.in" reads "AK", and "ops@maneman.in" "OP", as the board's box holds two letters. */
-export function initialsOf(who: string): string {
+function initialsOf(who: string): string {
   const name = who.split("@")[0] ?? who;
   const [first = "", second = ""] = name.split(/[._-]+/).filter((part) => part !== "");
   const letters = second === "" ? first.slice(0, 2) : `${first.slice(0, 1)}${second.slice(0, 1)}`;

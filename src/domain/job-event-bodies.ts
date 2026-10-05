@@ -13,7 +13,7 @@ export const ChecklistRequestSchema = z
   .strict()
   .openapi("ChecklistRequest");
 
-export const PieceFittedSchema = z
+const PieceFittedSchema = z
   .object({
     piece_code: z.string().min(3).max(40),
     base: z.string().min(1).max(60).nullable().optional(),
@@ -36,7 +36,7 @@ export const PieceFittedSchema = z
       "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing.",
   });
 
-export const PieceDeclinedSchema = z
+const PieceDeclinedSchema = z
   .object({ declined: z.literal(true) })
   .strict()
   .openapi("PieceDeclined", {
@@ -47,7 +47,7 @@ export const PieceDeclinedSchema = z
 
 export const PieceRequestSchema = z.union([PieceFittedSchema, PieceDeclinedSchema]).openapi("PieceRequest");
 
-export type PieceBody = z.infer<typeof PieceRequestSchema>;
+type PieceBody = z.infer<typeof PieceRequestSchema>;
 
 export const ConsumablesRequestSchema = z
   .object({
@@ -91,7 +91,7 @@ export const OutcomeRequestSchema = z
 
 /** An outcome as it is stored: what the phone sent, or the no-show the route writes itself. */
 const StoredOutcomeSchema = z.union([OutcomeRequestSchema, z.object({ outcome: z.literal("no_show") }).strict()]);
-export type StoredOutcome = z.infer<typeof StoredOutcomeSchema>;
+type StoredOutcome = z.infer<typeof StoredOutcomeSchema>;
 
 /** The checklist's items a stored checklist step ticked; none for a body that is not one. */
 export function tickedItemsOf(body: unknown): string[] {

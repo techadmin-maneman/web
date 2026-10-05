@@ -18,7 +18,7 @@ import { maySendAgain } from "../../policy/alerts.ts";
 import { alertNeed, markDoneNeed, meetsNeed } from "../../policy/console-routes.ts";
 
 /** The alerts the list shows, the longest open; its count is all of them. */
-export const ALERTS_SHOWN = 50;
+const ALERTS_SHOWN = 50;
 
 const AlertSchema = z
   .object({

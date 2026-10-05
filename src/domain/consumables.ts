@@ -85,8 +85,7 @@ interface Written {
   readonly now: Date;
 }
 
-export type Saved =
-  { readonly ok: true; readonly consumable: Consumable } | { readonly ok: false; readonly fields: string[] };
+type Saved = { readonly ok: true; readonly consumable: Consumable } | { readonly ok: false; readonly fields: string[] };
 
 /** The other consumable already called this, whatever the case; null when the name is free. */
 async function namedAlready(db: D1Database, name: string, except: string | null): Promise<string | null> {
@@ -97,7 +96,7 @@ async function namedAlready(db: D1Database, name: string, except: string | null)
   return row?.code ?? null;
 }
 
-export interface NewConsumable {
+interface NewConsumable {
   readonly name: string;
   readonly unit: string;
   readonly unitCost: number;
@@ -137,7 +136,7 @@ export async function addConsumable(db: D1Database, added: NewConsumable, writte
 }
 
 /** A change ops make: only the fields named change. */
-export interface ConsumableChange {
+interface ConsumableChange {
   readonly name?: string | undefined;
   readonly unit?: string | undefined;
   readonly unitCost?: number | undefined;
@@ -245,13 +244,13 @@ export async function retireConsumable(
 }
 
 /** A service, as the console keeps it: a kind of visit at a tier (docs/decisions/0085-services-ops-can-edit.md). */
-export interface Service {
+interface Service {
   readonly visitType: VisitType;
   readonly tier: string;
 }
 
 /** A service whose expected use ops set: with its name, and the day it is retired from, where it is. */
-export interface UsageService extends Service {
+interface UsageService extends Service {
   readonly name: string;
   readonly retiredDate: string | null;
 }
@@ -287,7 +286,7 @@ export async function serviceOfJob(
 }
 
 /** One consumable a service is expected to use, and how many of its unit. */
-export interface Expected {
+interface Expected {
   readonly visitType: VisitType;
   readonly tier: string;
   readonly code: string;
@@ -370,7 +369,7 @@ export async function setExpectedUse(
 }
 
 /** A consumable as the technician's step offers it: its words, its unit, and what this job's service expects. */
-export interface Offered {
+interface Offered {
   readonly code: string;
   readonly name: string;
   readonly unit: string;

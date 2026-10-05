@@ -33,7 +33,7 @@ const WHAT_STOPS: Readonly<Record<Allowance, string>> = {
   d1RowsWritten: "D1 refuses every write, and nothing can be booked, paid for or changed",
 };
 
-export interface AllowanceCheck {
+interface AllowanceCheck {
   readonly db: D1Database;
   readonly deps: Pick<Dependencies, "fetch" | "now" | "alertOnce" | "resolveAlert">;
   /** CLOUDFLARE_ANALYTICS_TOKEN. */

@@ -1,4 +1,4 @@
-// Logging in to the technician app (src/policy/technician-login.ts):
+// Logging in to the technician app (src/domain/technicians.ts):
 //   POST /api/tech/auth/otp     a code on WhatsApp to a technician's number
 //   POST /api/tech/auth/verify  the code and the phone, for a session bound to it
 //   POST /api/tech/auth/logout

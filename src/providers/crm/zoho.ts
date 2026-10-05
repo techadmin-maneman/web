@@ -125,7 +125,7 @@ export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): C
 }
 
 /** What an erased person's record keeps: the lead history, without who it was. */
-export const ERASED_RECORD: Readonly<Record<string, unknown>> = {
+const ERASED_RECORD: Readonly<Record<string, unknown>> = {
   Last_Name: "Erased",
   Mobile: null,
   Email: null,
@@ -152,7 +152,7 @@ function sourceOf(lead: CrmLead, fields: OrgFields): string {
 }
 
 /** Which of the fields the org may not have yet it does have (src/config/crm.ts). */
-export interface OrgFields {
+interface OrgFields {
   readonly referral: boolean;
 }
 
@@ -161,7 +161,7 @@ export interface OrgFields {
  * record while the referral fields do not exist, as a new lead's does (noteFor). No code and no name: an erasure
  * keeps a record's notes.
  */
-export const INVITE_ATTACHED_NOTE = {
+const INVITE_ATTACHED_NOTE = {
   title: "Invite attached",
   content: "Came through a friend's invite, which ops attached by hand.",
 } as const;

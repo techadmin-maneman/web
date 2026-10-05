@@ -2,7 +2,7 @@
 // and iOS Safari plays a video only from a server that gives parts.
 
 /** One run of bytes, both ends included. */
-export interface ByteRange {
+interface ByteRange {
   readonly start: number;
   readonly end: number;
 }

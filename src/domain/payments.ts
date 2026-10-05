@@ -12,7 +12,7 @@ import { toE164 } from "../lib/mobile.ts";
 import type { RazorpayPayment, RazorpayRefund } from "../providers/payments/razorpay.ts";
 import { confirmPaidHold } from "./bookings.ts";
 
-export type PaymentStatus = "authorized" | "captured" | "failed" | "refunded" | "partially_refunded";
+type PaymentStatus = "authorized" | "captured" | "failed" | "refunded" | "partially_refunded";
 
 /** How far along each state is. A later event with an earlier state changes nothing. recordPayment's SQL repeats it. */
 const RANK: Readonly<Record<PaymentStatus, number>> = {
@@ -281,7 +281,7 @@ export async function recordRefund(db: D1Database, refund: RazorpayRefund, now: 
 }
 
 /** A refund as we keep it, after its latest event: what ops are told of one that failed. */
-export interface KeptRefund {
+interface KeptRefund {
   readonly status: "created" | "processed" | "failed";
   readonly amount: number;
   readonly paymentId: string;

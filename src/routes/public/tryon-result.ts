@@ -17,7 +17,7 @@ import { verifyToken } from "../../lib/signed-token.ts";
 import { tryOnRuns } from "../../policy/tryon-delivery.ts";
 import { statusOf } from "./tryon-generate.ts";
 
-export const AvailabilitySchema = z
+const AvailabilitySchema = z
   .object({
     available: z.boolean().openapi({
       description: "False while WhatsApp cannot send a look: the try-on does not run, and the page says so.",
@@ -28,7 +28,7 @@ export const AvailabilitySchema = z
 
 // Only whether the browser has had its look, and whether it failed: never the image, nor what was asked of it, which
 // outlives an erasure on an expired job's row (src/domain/erasure.ts).
-export const LookSchema = z
+const LookSchema = z
   .object({
     job_id: z.uuid(),
     state: z.enum(JOB_STATES),
@@ -37,7 +37,7 @@ export const LookSchema = z
   .strict()
   .openapi("Look", { description: "The look this browser has had: its state alone. The look goes to WhatsApp only." });
 
-export const availabilityRoute = createRoute({
+const availabilityRoute = createRoute({
   method: "get",
   path: "/api/tryon/availability",
   summary: "Whether the try-on can run: its look is sent on WhatsApp, so not while WhatsApp cannot send it",
@@ -46,7 +46,7 @@ export const availabilityRoute = createRoute({
   },
 });
 
-export const lookRoute = createRoute({
+const lookRoute = createRoute({
   method: "get",
   path: "/api/tryon/look",
   summary: "Whether this browser has had its look, from its mm_look cookie",
@@ -56,7 +56,7 @@ export const lookRoute = createRoute({
   },
 });
 
-export const resultImageRoute = createRoute({
+const resultImageRoute = createRoute({
   method: "get",
   path: "/api/result/{token}",
   summary: "A result image, behind the signed link a WhatsApp message carries, which expires",

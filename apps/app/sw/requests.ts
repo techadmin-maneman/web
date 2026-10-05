@@ -7,7 +7,7 @@ import { answerFor as answerOf, type Answer as Answered } from "../../../package
 export const HOME_PATH = "/api/me";
 
 /** `home`: Home's data; otherwise the shell, a file, or nothing (the shared rule). */
-export type Answer = Answered<"home">;
+type Answer = Answered<"home">;
 
 export const answerFor = (request: { method: string; mode: string; url: string }, origin: string): Answer =>
   answerOf(request, origin, { path: HOME_PATH, answer: "home" });

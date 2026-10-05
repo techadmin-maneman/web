@@ -11,17 +11,16 @@ import { heardFromApi } from "./lib/clock.ts";
 
 type Schemas = components["schemas"];
 export type LoginChallenge = Schemas["LoginChallenge"];
-export type LoginVerify = Schemas["LoginVerify"];
 export type Me = Schemas["Me"];
 export type Profile = Schemas["Profile"];
 export type Address = Schemas["Address"];
-export type AddressSave = Schemas["AddressSave"];
+type AddressSave = Schemas["AddressSave"];
 export type Suggestion = Schemas["AddressSuggestions"]["suggestions"][number];
 export type NumberChange = Schemas["NumberChange"];
 export type SignedIn = Schemas["SignedIn"];
 export type ConsentPurpose = Profile["consents"][number]["purpose"];
 /** The screen a consent is switched on, which the consent keeps (docs/decisions/0094-where-a-consent-was-given.md). */
-export type ConsentScreen = NonNullable<Schemas["ConsentSwitch"]["source"]>;
+type ConsentScreen = NonNullable<Schemas["ConsentSwitch"]["source"]>;
 export type VisitSummary = Schemas["VisitSummary"];
 export type Visits = Schemas["Visits"];
 export type VisitDetail = Schemas["VisitDetail"];
@@ -46,8 +45,6 @@ export type Refer = Schemas["Refer"];
 export type BookableType = Me["booking"]["types"][number];
 export type OfferedService = Me["booking"]["services"][number];
 export type BookingWindow = Hold["window"];
-/** What the app offers next, which the booking sheet opens pre-filled with (ADR 0086). */
-export type NextOffer = NonNullable<Me["booking"]["next"]>;
 
 /**
  * The service a booking is for: its kind, and its code within the kind. Without a code, the API books the kind's

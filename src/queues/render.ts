@@ -40,7 +40,7 @@ const DOWNLOAD_RETRY_DELAY_SECONDS = 60;
 
 export type RenderEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "MESSAGE_QUEUE">;
 
-export interface RenderOptions {
+interface RenderOptions {
   /** Days a result is kept once ready (RESULT_RETENTION_DAYS). */
   readonly resultRetentionDays: number;
 }

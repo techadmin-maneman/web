@@ -27,7 +27,7 @@ const KEYS_TIMEOUT_MS = 5_000;
 export type AccessIdentity =
   { readonly kind: "staff"; readonly email: string } | { readonly kind: "service"; readonly clientId: string };
 
-export type AccessRefusal =
+type AccessRefusal =
   | "missing"
   | "malformed"
   | "wrong_algorithm"

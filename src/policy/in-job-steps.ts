@@ -32,8 +32,8 @@ export type PhotoAngle = (typeof PHOTO_ANGLES)[number];
  * the one ahead of it: the server checks the order so a job sheet cannot be
  * closed out of an empty screen.
  */
-export const JOB_STEPS = ["before_photos", "checklist", "consumables", "piece", "after_photos", "outcome"] as const;
-export type JobStep = (typeof JOB_STEPS)[number];
+const JOB_STEPS = ["before_photos", "checklist", "consumables", "piece", "after_photos", "outcome"] as const;
+type JobStep = (typeof JOB_STEPS)[number];
 
 /** Every kind of event the phone's outbox can carry, in the order they happen. */
 export const JOB_EVENT_KINDS = ["check_in", "start", ...JOB_STEPS] as const;
@@ -43,7 +43,7 @@ export type JobEventKind = (typeof JOB_EVENT_KINDS)[number];
  * "The piece: replacement jobs only." A first fit takes the step as well, since it fits the client's first piece
  * (docs/decisions/0038-offline-writes.md).
  */
-export const PIECE_STEP_TYPES = ["replacement", "first_fit"] as const;
+const PIECE_STEP_TYPES = ["replacement", "first_fit"] as const;
 
 /**
  * A consultation and fit in one visit runs every step, however it closed. Its piece step records the product the

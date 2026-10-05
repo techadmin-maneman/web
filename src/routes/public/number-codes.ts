@@ -38,7 +38,7 @@ const VerifyRequestSchema = z
   .strict()
   .openapi("NumberCodeVerifyRequest");
 
-export const NumberCodeVerifySchema = z
+const NumberCodeVerifySchema = z
   .discriminatedUnion("verified", [
     z.object({ verified: z.literal(true) }).strict(),
     z

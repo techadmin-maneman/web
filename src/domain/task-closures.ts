@@ -7,7 +7,7 @@
 import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 import type { TaskKey } from "./task-owners.ts";
 
-export interface Closing {
+interface Closing {
   readonly by: string;
   readonly at: string;
   /** Null once the client is erased: ops' words about them go with the rest (src/domain/erasure.ts). */

@@ -88,11 +88,6 @@ export async function forgetMarks(jobId: string): Promise<void> {
   await remove("closures", jobId);
 }
 
-/** Every day the phone holds, for the screens that say what it is working from. */
-export async function keptDays(): Promise<string[]> {
-  return (await all("days")).map((day) => day.date);
-}
-
 /** Each job whose card the phone holds, by its client's name: what the close-out reads. */
 export async function keptNames(): Promise<Map<string, string>> {
   const names = new Map<string, string>();

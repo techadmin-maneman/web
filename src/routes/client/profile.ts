@@ -119,7 +119,7 @@ const NumberChangeSchema = z
   .strict()
   .openapi("NumberChange");
 
-export const ProfileSchema = z
+const ProfileSchema = z
   .object({
     name: z.string(),
     mobile: z.string().openapi({ description: "Masked: +91 98xxx x4417." }),
@@ -215,7 +215,7 @@ export function addressOf(body: z.infer<typeof AddressSchema>): Address {
 
 const signedIn = { 401: errorResponse("session_required") };
 
-export const profileRoute = clientRoute({
+const profileRoute = clientRoute({
   method: "get",
   path: "/api/profile",
   summary:
@@ -225,7 +225,7 @@ export const profileRoute = clientRoute({
 
 // A POST, not a GET: each answer spends from Google's budget, and a GET goes with the cookie from any
 // page that links to it. A POST is held to the app's own Origin, as every write is.
-export const addressSuggestionsRoute = clientRoute({
+const addressSuggestionsRoute = clientRoute({
   method: "post",
   path: "/api/address/suggestions",
   summary: "Buildings matching what the client has typed, for the address form",
@@ -256,7 +256,7 @@ export const addressSuggestionsRoute = clientRoute({
   },
 });
 
-export const addressRoute = clientRoute({
+const addressRoute = clientRoute({
   method: "patch",
   path: "/api/profile/address",
   summary: "Replace the address visits go to, with its access notes",
@@ -281,7 +281,7 @@ const ConsentSwitchSchema = z
   .strict()
   .openapi("ConsentSwitch");
 
-export const consentRoute = clientRoute({
+const consentRoute = clientRoute({
   method: "patch",
   path: "/api/consents/{purpose}",
   summary: "Switch one consent on or off. Each switch is kept, with its date; a repeat is not a switch",
@@ -299,7 +299,7 @@ export const consentRoute = clientRoute({
   },
 });
 
-export const numberChangeRoute = clientRoute({
+const numberChangeRoute = clientRoute({
   method: "post",
   path: "/api/number-change",
   summary: "Start a number change: a code goes to both numbers. Starting again withdraws the last one",
@@ -326,14 +326,14 @@ export const numberChangeRoute = clientRoute({
   },
 });
 
-export const numberChangeWithdrawRoute = clientRoute({
+const numberChangeWithdrawRoute = clientRoute({
   method: "delete",
   path: "/api/number-change",
   summary: "Withdraw the number change under way, before ops decide it. With none under way, nothing happens",
   responses: { 204: { description: "Withdrawn, or there was none" }, ...signedIn },
 });
 
-export const numberChangeVerifyRoute = clientRoute({
+const numberChangeVerifyRoute = clientRoute({
   method: "post",
   path: "/api/number-change/verify",
   summary: "One number's code. With both numbers proven, the change waits for ops to confirm",
@@ -358,7 +358,7 @@ export const numberChangeVerifyRoute = clientRoute({
   },
 });
 
-export const deletionRoute = clientRoute({
+const deletionRoute = clientRoute({
   method: "post",
   path: "/api/deletion-request",
   summary: "Ask for the account to be deleted. Ops process it; asking twice makes one request",

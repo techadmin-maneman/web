@@ -11,7 +11,7 @@ import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "./invites.ts";
 /** The window a count runs in: India's day, or India's hour. */
 export type Period = "day" | "hour";
 
-export interface RateLimit {
+interface RateLimit {
   readonly per: Period;
   /** How many uses a window allows: a figure, or the setting that holds it. */
   readonly limit: number | ((settings: Settings) => number);

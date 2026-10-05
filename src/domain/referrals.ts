@@ -102,7 +102,7 @@ export async function inviteOf(db: D1Database, code: string, nameOnInvite: boole
 }
 
 /** The invite a client came with, while its free service visits still wait on their first fit. */
-export interface PendingInvite {
+interface PendingInvite {
   /** As the invite's landing names them: null where it does not. */
   readonly referrerFirstName: string | null;
 }
@@ -140,7 +140,7 @@ export type InviteState = "valid" | "expired" | "unknown";
 export type Via = "consultation" | "waitlist";
 
 /** Who attached an invite by hand, and why, with the audit entry written in the same batch as the attribution. */
-export interface AttachedBy {
+interface AttachedBy {
   readonly by: string;
   readonly reason: string;
   readonly audit: AuditEntry;
@@ -150,7 +150,7 @@ export interface AttachedBy {
  * What attributing a person to an invite came to. Refused, when the invite is their own or they are fitted already;
  * otherwise the invite they carry, attributed by this call or before it: this one, or another they came with first.
  */
-export type AttributionOutcome =
+type AttributionOutcome =
   | { readonly outcome: "own_invite" }
   | { readonly outcome: "fitted" }
   | {
@@ -289,10 +289,10 @@ export async function howTheyCame(db: D1Database, personId: string): Promise<{ v
 
 /** Where a referral's grant stands (migration 0021). */
 export const GRANT_STATES = ["pending", "held", "approved", "rejected", "granted", "expired", "clawed_back"] as const;
-export type GrantState = (typeof GRANT_STATES)[number];
+type GrantState = (typeof GRANT_STATES)[number];
 
 /** The invite a client came with, as ops read it on the client's page. */
-export interface ClientInvite {
+interface ClientInvite {
   readonly code: string;
   /** Null once the referrer has been erased. */
   readonly referrer: { readonly id: string; readonly name: string } | null;

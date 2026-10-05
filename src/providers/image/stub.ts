@@ -14,7 +14,7 @@ import { MINUTE_MS } from "../../lib/durations.ts";
 import { isOneOf } from "../../lib/one-of.ts";
 
 export const STUB_API_KEY = "stub-ailab-key";
-export const STUB_RESULT_HOST = "https://ailab-outputs.oss-accelerate.aliyuncs.com";
+const STUB_RESULT_HOST = "https://ailab-outputs.oss-accelerate.aliyuncs.com";
 
 /** How long a stub render takes: Pro renders faster than Premium, as measured (7.6), but shortened. */
 export const STUB_RENDER_MS = { pro: 6_000, premium: 12_000 } as const;

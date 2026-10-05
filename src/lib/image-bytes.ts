@@ -5,7 +5,7 @@
 
 export type ImageType = "image/jpeg" | "image/png";
 
-export interface ImageInfo {
+interface ImageInfo {
   readonly type: ImageType;
   /** Null when the header is damaged. */
   readonly width: number | null;

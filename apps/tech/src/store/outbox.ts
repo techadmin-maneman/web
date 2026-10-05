@@ -36,11 +36,11 @@ export type { EventKind, Frame, JobAccount, Queued };
 export { account, checkInRefusedAsEarly, refusedAsEarly } from "./replay.ts";
 
 /** Why a replay stopped short, so the screen can say it plainly. */
-export type Stopped = "offline" | "signed-out" | null;
+type Stopped = "offline" | "signed-out" | null;
 
 type Refusal = Extract<Verdict, { readonly kind: "refused" }>;
 
-export interface Replayed {
+interface Replayed {
   readonly sent: number;
   readonly superseded: number;
   readonly refused: number;

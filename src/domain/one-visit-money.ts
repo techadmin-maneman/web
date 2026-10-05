@@ -92,7 +92,7 @@ export async function requestedOneVisitPrice(
 }
 
 /** A one visit's payment the client still owes, once fitted. */
-export interface OwedPayment {
+interface OwedPayment {
   readonly visit_id: string;
   /** India's date of the visit. */
   readonly date: string;

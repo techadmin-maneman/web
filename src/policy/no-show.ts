@@ -64,7 +64,7 @@ export const waitEndsAt = (startedAt: Date, type: VisitType, wait: Waits = NO_SH
   new Date(startedAt.getTime() + wait[type] * MINUTE_MS);
 
 /** A check-in's two times: the phone's, held within bounds (src/policy/phone-clock.ts), and the server's. */
-export interface CheckInTimes {
+interface CheckInTimes {
   readonly at: Date;
   readonly receivedAt: Date;
 }
@@ -138,7 +138,7 @@ export type DisputeState = "open" | DisputeRuling;
 export const DISPUTE_REASON_MAX_CHARS = 300;
 
 /** What a charge took from the client, as recorded on the ruling. */
-export interface ChargeTaken {
+interface ChargeTaken {
   /** In paise, kept of the visit's payment. */
   readonly kept: number;
   readonly creditSpent: boolean;
@@ -147,9 +147,8 @@ export interface ChargeTaken {
 /** Whether a charge can be disputed: one that took something, money or a credit. One a charge, at most. */
 export const isDisputable = (taken: ChargeTaken): boolean => taken.kept > 0 || taken.creditSpent;
 
-/** The owner's ruling of 30 September 2026 (docs/open-points.md, item 60; ADR 0025, item 85). */
-export const DISPUTE_WINDOW_RULE =
-  "A client may dispute a no-show's charge for 30 days after it; ops may change the days in the console." as const;
+// The owner's ruling of 30 September 2026 (docs/open-points.md, item 60; ADR 0025, item 85): "A client may dispute a
+// no-show's charge for 30 days after it; ops may change the days in the console."
 
 /** Days a client may dispute a charge after it, until ops set another figure (Settings · Rules). */
 export const DISPUTE_WINDOW_DAYS = 30;

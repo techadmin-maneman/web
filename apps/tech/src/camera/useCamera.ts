@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { cameraAvailable, closeCamera, openCamera } from "./capture.ts";
 
-export type Camera =
+type Camera =
   | { readonly state: "opening" }
   | { readonly state: "open"; readonly stream: MediaStream }
   | { readonly state: "refused" };

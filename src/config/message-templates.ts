@@ -197,7 +197,7 @@ export const RESULT_TEMPLATE: TemplateName = "tryon_result_v1";
  * job, or a message to someone other than the one who acted. On staging an answering kind reaches any number; an
  * automatic kind still checks `onAllowlist` (src/config/settings.ts). Production's allowlist is empty.
  */
-export type MessageClass = "answering" | "automatic";
+type MessageClass = "answering" | "automatic";
 
 /**
  * Every kind, classed once. `reschedule_confirmation` and `visit_moved` render the same template

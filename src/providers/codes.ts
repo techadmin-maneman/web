@@ -8,7 +8,7 @@ import type { MessagingProvider, SendResult } from "./messaging/index.ts";
 
 export type CodeChannel = "whatsapp" | "sms";
 
-export const LOGIN_CODE_TEMPLATE = "login_code_v1";
+const LOGIN_CODE_TEMPLATE = "login_code_v1";
 
 export interface CodeSender {
   /** Whether a code can go by SMS at all. */

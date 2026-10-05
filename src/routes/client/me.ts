@@ -51,7 +51,7 @@ import { creditsBody, CreditsSchema } from "./refer.ts";
 import { OneVisitPriceSchema, VisitSummarySchema } from "./visits.ts";
 import { ReferralRewardSchema } from "../public/referral-reward.ts";
 
-export const MeSchema = z
+const MeSchema = z
   .object({
     state: z.enum(CLIENT_STATES),
     name: z.string(),
@@ -316,7 +316,7 @@ async function beingBookedBody(db: D1Database, underWay: BookingUnderWay | null)
   return { ...booking, one_visit: oneVisit ? await heldOneVisitPrice(db, holdId, booking.date) : null };
 }
 
-export const meRoute = clientRoute({
+const meRoute = clientRoute({
   method: "get",
   path: "/api/me",
   summary: "The Home card: who the client is and what is booked",

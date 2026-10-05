@@ -102,7 +102,7 @@ const RECORD_PLACES = {
 export type PlacedRecord = keyof typeof RECORD_PLACES;
 
 /** A record's city, as an SQL expression over the alias of its row, as `record` in `FROM grievances record`. */
-export function cityOfRow(kind: PlacedRecord, row: string): string {
+function cityOfRow(kind: PlacedRecord, row: string): string {
   return RECORD_PLACES[kind].city(row);
 }
 

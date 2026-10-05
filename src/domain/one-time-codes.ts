@@ -110,7 +110,7 @@ export async function createChallenge(
   return challengeOf(row);
 }
 
-export type CodeCheck =
+type CodeCheck =
   | { readonly outcome: "verified"; readonly holderId: string }
   | { readonly outcome: "mismatch"; readonly attemptsLeft: number }
   | { readonly outcome: "closed" };

@@ -35,7 +35,7 @@ const DueSchema = z.iso.datetime().openapi({
   description: "When ops should have decided: the Tasks board's allowance for this queue, which ops set.",
 });
 
-export const numberChangesRoute = createRoute({
+const numberChangesRoute = createRoute({
   method: "get",
   path: "/api/number-changes",
   summary: "Number changes waiting for ops in the caller's cities: both numbers proven by code",
@@ -65,7 +65,7 @@ export const numberChangesRoute = createRoute({
   },
 });
 
-export const numberChangeDecisionRoute = createRoute({
+const numberChangeDecisionRoute = createRoute({
   method: "post",
   path: "/api/number-changes/{id}/decision",
   summary: "Confirm a number change, which then takes effect, or reject it",
@@ -89,7 +89,7 @@ export const numberChangeDecisionRoute = createRoute({
   },
 });
 
-export const deletionRequestsRoute = createRoute({
+const deletionRequestsRoute = createRoute({
   method: "get",
   path: "/api/deletion-requests",
   summary: "Deletion requests waiting for ops in the caller's cities",
@@ -118,7 +118,7 @@ export const deletionRequestsRoute = createRoute({
   },
 });
 
-export const deletionDecisionRoute = createRoute({
+const deletionDecisionRoute = createRoute({
   method: "post",
   path: "/api/deletion-requests/{id}/decision",
   summary: "Delete the account now (photographs, results and details), or reject the request",

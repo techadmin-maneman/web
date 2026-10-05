@@ -109,11 +109,11 @@ export const knownCodes = (list: JobSheetList): Set<string> =>
   new Set([...list.items, ...list.retired].map((item) => item.id));
 
 /** Each code a list has ever offered, with its words. */
-export const labelsOf = (list: JobSheetList): Map<string, string> =>
+const labelsOf = (list: JobSheetList): Map<string, string> =>
   new Map([...list.retired, ...list.items].map((item) => [item.id, item.label]));
 
 /** One item ops send: one already on the list by its code, or a new one by its words alone. */
-export interface ItemSent {
+interface ItemSent {
   readonly code?: string | undefined;
   readonly label: string;
 }
@@ -122,8 +122,7 @@ export interface ItemSent {
 export type ListName =
   { readonly list: "checklist"; readonly visitType: VisitType } | { readonly list: "partial_reason" };
 
-export type ListSaved =
-  { readonly ok: true; readonly list: JobSheetList } | { readonly ok: false; readonly fields: string[] };
+type ListSaved = { readonly ok: true; readonly list: JobSheetList } | { readonly ok: false; readonly fields: string[] };
 
 /**
  * A new item's code, from its words: "Scalp checked" is scalp_checked, and a

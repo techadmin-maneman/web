@@ -24,7 +24,7 @@ interface ChargedCase {
   dispute_until: string | null;
 }
 
-export type Raised =
+type Raised =
   | { readonly kind: "raised"; readonly id: string }
   | { readonly kind: "not_found" }
   | { readonly kind: "not_disputable" }
@@ -78,7 +78,7 @@ export async function raiseDispute(
 }
 
 /** A dispute ops have still to rule on, with the evidence of its case. */
-export interface OpenDispute {
+interface OpenDispute {
   readonly id: string;
   readonly case_id: string;
   readonly appointment_id: string;

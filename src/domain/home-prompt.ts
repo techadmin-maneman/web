@@ -19,7 +19,7 @@ import type { NextOffer } from "./next-visit.ts";
 import { serviceToOffer } from "./services.ts";
 import { DAY_MS } from "../lib/durations.ts";
 
-export type HomePrompt =
+type HomePrompt =
   | { readonly kind: "address" }
   | {
       readonly kind: "next_visit";
@@ -42,14 +42,14 @@ export type HomePrompt =
     };
 
 /** An invoice issued in the last `invoice_prompt` days, which Home offers to open. */
-export interface InvoiceReady {
+interface InvoiceReady {
   readonly visit_id: string;
   /** India's date of the visit. */
   readonly date: string;
   readonly type: VisitType | null;
 }
 
-export interface HomePrompts {
+interface HomePrompts {
   readonly prompt: HomePrompt | null;
   /** The line beneath the prompt, or the only line where none applies. */
   readonly invoice: InvoiceReady | null;
@@ -71,7 +71,7 @@ const PROMPT = `SELECT
   ) invoiced ON TRUE`;
 
 /** What the prompt turns on beyond the client's standing. */
-export interface PromptFacts {
+interface PromptFacts {
   readonly has_address: number;
   readonly due_on: string | null;
   readonly replacement_booked: number;
@@ -92,7 +92,7 @@ export function promptFacts(
 }
 
 /** What the client has now: whether anything is booked, and what the app offers them next. */
-export interface ClientStanding {
+interface ClientStanding {
   readonly booked: boolean;
   readonly offer: NextOffer | null;
 }

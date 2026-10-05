@@ -3,7 +3,7 @@
 // what erasing them does to it. test/node/personal-data.test.ts runs the export and the erasure against the migrated
 // schema and fails on a table or a column added without an answer here, or an answer the code does not keep.
 
-export interface PersonalTable {
+interface PersonalTable {
   /** The columns the client's data export leaves out. Every other column of the table is in it. */
   readonly leftOut: readonly string[];
   /** Why they are left out; empty when nothing is. */
@@ -11,7 +11,7 @@ export interface PersonalTable {
   readonly erasure: Erasure;
 }
 
-export interface Erasure {
+interface Erasure {
   /** The erasure deletes the person's rows, or some of them. */
   readonly deletes?: true;
   /** The columns it blanks in the rows it keeps. */

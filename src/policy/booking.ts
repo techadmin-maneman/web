@@ -12,7 +12,7 @@ export const RULES = [
 ] as const;
 
 /** The parts an address is not one without, as the app's address form asks for them. */
-export interface AddressParts {
+interface AddressParts {
   readonly line1: string;
   readonly locality: string;
   readonly city: string;
