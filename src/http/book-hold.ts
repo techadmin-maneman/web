@@ -3,7 +3,8 @@
 import { rupees } from "@maneman/web-kit/money";
 import type { Context } from "hono";
 import { paymentsTab } from "../domain/alerts.ts";
-import { confirmBooking, RefundRefused, RefundUnanswered } from "../domain/bookings.ts";
+import { confirmBooking } from "../domain/bookings.ts";
+import { RefundRefused, RefundUnanswered } from "../domain/give-back.ts";
 import { failureReason } from "../log.ts";
 import type { AppEnv } from "./context.ts";
 import { queueMessage } from "./queue-message.ts";
@@ -16,11 +17,17 @@ import { queueMessage } from "./queue-message.ts";
 export async function bookHold(c: Context<AppEnv>, holdId: string): Promise<void> {
   const { deps, log } = c.var;
   try {
-    const outcome = await confirmBooking(c.env.DB, deps.payments, holdId, deps.now(), {
-      notify: (messageId) => queueMessage(c, messageId),
-      alertOnce: deps.alertOnce,
-      log,
-    });
+    const outcome = await confirmBooking(
+      {
+        db: c.env.DB,
+        payments: deps.payments,
+        now: deps.now(),
+        notify: (messageId) => queueMessage(c, messageId),
+        alertOnce: deps.alertOnce,
+        log,
+      },
+      holdId,
+    );
     log.info("booking", { hold_id: holdId, outcome });
   } catch (error) {
     log.warn("booking_failed", { hold_id: holdId, reason: failureReason(error) });

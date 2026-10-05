@@ -45,11 +45,12 @@ import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles
 import { evidenceMessage, messageStateOf } from "./no-shows.ts";
 import { decisionAtVisit } from "./one-visit.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
-import { bookedMinutes } from "./scheduling.ts";
+import { bookedMinutes } from "./occupancy.ts";
 import { offeredProducts } from "./services.ts";
 import { firstNameOf } from "../lib/names.ts";
 import { isOneOf } from "../lib/one-of.ts";
 import { storedOutcomeOf } from "./job-event-bodies.ts";
+import { creditSpentOn } from "./visit-facts.ts";
 
 /** The statuses of a job in the list: still live, or closed today so the technician can see what he did. */
 const SHOWN = ["scheduled", "dispatched", "in_progress", "completed", "terminated"] as const;
@@ -246,8 +247,7 @@ const SELECT_JOB = `
     sp.area AS pincode_area,
     p.name AS client_name, p.mobile_e164 AS client_mobile,
     d.line1, d.line2, d.building, d.tower, d.floor, d.flat, d.landmark, d.locality, d.city, d.pincode,
-    d.access_notes, d.lat, d.lng,
-    EXISTS (SELECT 1 FROM credit_ledger l WHERE l.kind = 'redeem' AND l.source_id = a.id) AS on_credit,
+    d.access_notes, d.lat, d.lng, ${creditSpentOn("a.id")} AS on_credit,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
               WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
                 AND b.valid_from <= date(a.window_start, '+330 minutes')

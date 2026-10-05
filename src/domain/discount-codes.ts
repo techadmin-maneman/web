@@ -19,7 +19,7 @@ import {
   type DiscountTerms,
 } from "../policy/discount-codes.ts";
 import { auditStatement, auditStatementIfStamped, type AuditActor, type AuditEntry } from "./audit.ts";
-import { graceEnds } from "./scheduling.ts";
+import { keepingItsTime } from "./hold-stages.ts";
 
 /** A code's row. */
 export interface CodeRow {
@@ -62,7 +62,7 @@ export const termsOf = (row: { kind: DiscountKind; value: number; cap: number | 
 export const standing = (use: string, now: string): string =>
   `${use}.removed_at IS NULL AND (${use}.hold_id IS NULL OR EXISTS (
      SELECT 1 FROM slot_holds held WHERE held.id = ${use}.hold_id AND (held.state = 'booked'
-       OR (held.state = 'held' AND (held.confirmed_at IS NOT NULL OR ${graceEnds("held")} > ${now})))))
+       OR (${keepingItsTime("held", now)}))))
    AND NOT EXISTS (SELECT 1 FROM appointments gone
      WHERE gone.id IN (${use}.appointment_id, (SELECT booked.appointment_id FROM slot_holds booked WHERE booked.id = ${use}.hold_id))
        AND (gone.status = 'cancelled' OR gone.deleted_at IS NOT NULL))`;

@@ -4,20 +4,14 @@
 // does. D1 is SQLite, so this applies the real migration files to an in-memory
 // SQLite database. Every name and number is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it } from "vitest";
-
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
+import { databaseThrough } from "./migrations.ts";
 
 const AT = "2026-09-21T06:30:00.000Z";
 
 function seeded(): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS) db.exec(readFileSync(`migrations/${file}`, "utf8"));
+  const db = databaseThrough();
   db.exec(`INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', '${AT}', '+919810000001', 'A Client')`);
   db.exec(
     `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)

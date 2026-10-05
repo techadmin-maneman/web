@@ -46,11 +46,12 @@ import { refundAtOnce, type Canceller, type OwedRefund, type RefundDeps } from "
 import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { lateFeeOn, priceOf, type Price } from "./price-book.ts";
-import { bookedMinutes } from "./scheduling.ts";
+import { bookedMinutes } from "./occupancy.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { visitBegun } from "./visit-begun.ts";
 import { visitMessageOnChange } from "./visit-messages.ts";
 import { STEPS } from "./visit-status.ts";
+import { PAYMENT_HELD, statusIn, VISIT_NOT_BEGUN } from "../config/statuses.ts";
 
 export interface ChangeableVisit {
   readonly id: string;
@@ -80,7 +81,7 @@ export async function changeableVisit(
       `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.window_end, a.start_before_move, a.technician_id,
          s.minutes AS service_minutes
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
-       WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
+       WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
          AND a.type IS NOT NULL AND a.window_start > ?3 AND NOT ${visitBegun("a")}`,
     )
     .bind(visitId, personId, now.toISOString())
@@ -138,8 +139,7 @@ export async function visitPayment(db: D1Database, visitId: string): Promise<Vis
   const row = await db
     .prepare(
       `SELECT id, razorpay_payment_id, amount - refunded_amount AS paid, method FROM payments
-       WHERE appointment_id = ?1 AND kind = 'visit' AND status IN ('captured', 'partially_refunded')
-       ORDER BY captured_at LIMIT 1`,
+       WHERE appointment_id = ?1 AND kind = 'visit' AND ${statusIn("status", PAYMENT_HELD)} ORDER BY captured_at LIMIT 1`,
     )
     .bind(visitId)
     .first<{ id: string; razorpay_payment_id: string; paid: number; method: string | null }>();

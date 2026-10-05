@@ -4,8 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, fakeTurnstile, test, visit } from "./support.ts";
-
-const WCAG_22_AA = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+import { WCAG_22_AA } from "./a11y.ts";
 
 const PAGES = [
   "/",

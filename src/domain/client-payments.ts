@@ -254,7 +254,7 @@ function creditEventOf(row: CreditRow, noShow: NoShowNote | null): CreditEvent {
   return lost && row.restored === 0 ? "lost" : "used";
 }
 
-/** Every change to the person's credits, newest first (LIFE-14): the app lists them among the payments. */
+/** Every change to the person's credits, newest first: the app lists them among the payments. */
 export async function creditLines(db: D1Database, personId: string, now: Date) {
   const { results } = await db.prepare(CREDIT_QUERY).bind(personId).all<CreditRow>();
   const noShows = await noShowNotes(

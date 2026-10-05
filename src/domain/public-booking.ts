@@ -72,7 +72,8 @@ import { currentAddress, firstAddressStatement, type Address } from "./profile.t
 import { formPerson, personWithMobile } from "./form-person.ts";
 import { checkForOneVisit, codeOnHold, useOnNewHold, type OneVisitCode } from "./discount-code-holds.ts";
 import { attribute, hasAskedForAVisit, type Invite, type InviteState, type Via } from "./referrals.ts";
-import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } from "./scheduling.ts";
+import { availability, bookableTypes, liveVisitOf } from "./availability.ts";
+import { holdSlot, type HeldService } from "./hold-slot.ts";
 import { saveBookingLead, type LeadAttribution } from "./leads.ts";
 import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
@@ -702,8 +703,7 @@ export async function joinTheWaitlist(
     db
       .prepare(
         `INSERT INTO waitlist_entries (id, pincode, person_id, referral_code, contact_consent_at, launch_alert,
-           created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
+           created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
          ON CONFLICT (pincode, person_id) DO UPDATE SET launch_alert = MAX(launch_alert, excluded.launch_alert)`,
       )
       .bind(crypto.randomUUID(), request.pincode, personId, invite?.code ?? null, at, request.launchAlert ? 1 : 0),

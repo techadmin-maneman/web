@@ -5,12 +5,12 @@
 
 import type { Page } from "@playwright/test";
 import { LOCAL_LOGIN_CODE, PORTS } from "../../scripts/lib/local-stack.ts";
+import { addDays, indiaDate } from "../../src/lib/india-time.ts";
 import { expect, test } from "../support.ts";
 import { AT_THE_DOOR, liveDay } from "./day.ts";
 
 const day = liveDay();
 const OPS = `http://ops.localhost:${String(PORTS.ops)}`;
-const INDIA_OFFSET = 330 * 60 * 1000;
 
 /** Signs in through the app, as a technician does, with the code the local API sends every number. */
 async function signIn(page: Page): Promise<void> {
@@ -109,7 +109,7 @@ test("a job ops moved while the phone held it is refused, and the card says it m
   // Ops move it to a morning a week out, through the console's own API, while the card stays open on the phone.
   const desk = await context.newPage();
   await desk.goto(OPS);
-  const date = new Date(Date.now() + INDIA_OFFSET + 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const date = addDays(indiaDate(new Date()), 6);
   const move = await desk.evaluate(
     async (body) => {
       const answer = await fetch("/api/dispatch/move", {

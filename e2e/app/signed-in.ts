@@ -2,10 +2,11 @@
 // code (OTP_FIXED_CODE in playwright.config.ts), on Home.
 
 import type { Page } from "@playwright/test";
+import { LOCAL_LOGIN_CODE } from "../../scripts/lib/local-stack.ts";
 import { expect } from "../support.ts";
 import { bookedNumber } from "./booked-numbers.ts";
 
-export const CODE = "246810";
+export const CODE = LOCAL_LOGIN_CODE;
 
 /** Logs in with a number of its own that has a consultation to come, and returns the number. */
 export async function signIn(page: Page): Promise<string> {

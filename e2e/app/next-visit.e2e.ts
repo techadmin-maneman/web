@@ -4,18 +4,16 @@
 // WhatsApp hand-off. Against the local mm-api, with the clients of e2e/app/next-visit.ts, who only read: nothing
 // is held for them here.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { listMonth, shortDate, weekdayDate } from "../../packages/web-kit/dates.ts";
+import { indiaDate } from "../../src/lib/india-time.ts";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { firstFitDay, nextVisitClients } from "./next-visit.ts";
 import { logIn } from "./signed-in.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
-
 async function accessible(page: Page): Promise<void> {
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 }
 
 /** India's day `days` after `date`, both YYYY-MM-DD; before it where `days` is below nought. */
@@ -26,7 +24,7 @@ const daysAfter = (date: string, days: number) =>
 const SERVICE = { tier: "standard", name: "Service visit", minutes: 90 };
 
 /** India's day tomorrow. */
-const tomorrow = () => daysAfter(new Date(Date.now() + 330 * 60 * 1000).toISOString().slice(0, 10), 1);
+const tomorrow = () => daysAfter(indiaDate(new Date()), 1);
 
 /**
  * The sheet's days, a fortnight from the day asked for and never before tomorrow, as the API gives them, with every

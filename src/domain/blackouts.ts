@@ -2,7 +2,7 @@
 // (visit_blackouts; docs/decisions/0088-every-policy-in-the-console.md).
 //
 // A day blacked out is offered to nobody and held for nobody, in the app or from
-// the site (loadBlackouts, src/domain/scheduling.ts; docs/decisions/0068-a-paid-hold-is-kept.md).
+// the site (loadBlackouts, src/domain/occupancy.ts; docs/decisions/0068-a-paid-hold-is-kept.md).
 // It moves no visit already booked on it: ops are told how many there are, and
 // move them on the dispatch board. Each change is written in one batch with its
 // audit entry (ADR 0031), which keeps the days, and each day the change replaced
@@ -12,6 +12,7 @@
 
 import { addDays } from "../lib/india-time.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
+import { statusIn, VISIT_NOT_BEGUN } from "../config/statuses.ts";
 
 /** The most days one press blacks out: a month, so a typed year cannot close the diary. */
 export const BLACKOUT_MAX_DAYS = 31;
@@ -35,7 +36,7 @@ export async function blackoutsFrom(db: D1Database, today: string): Promise<Blac
     .prepare(
       `SELECT b.date, b.reason, b.set_by, b.set_at,
          (SELECT COUNT(*) FROM appointments a
-          WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
+          WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
             AND a.window_start >= strftime('%Y-%m-%dT%H:%M:%fZ', b.date, '-330 minutes')
             AND a.window_start < strftime('%Y-%m-%dT%H:%M:%fZ', b.date, '+1 day', '-330 minutes')) AS booked
        FROM visit_blackouts b WHERE b.date >= ?1 ORDER BY b.date`,

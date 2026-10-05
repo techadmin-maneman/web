@@ -16,7 +16,7 @@
 import { BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
-import { bookUnbookedHolds } from "../domain/bookings.ts";
+import { bookUnbookedHolds } from "../domain/unbooked-holds.ts";
 import { eraseBooksCustomers } from "../domain/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books-invoices.ts";
 import { checkBooksItems } from "../domain/books-items.ts";

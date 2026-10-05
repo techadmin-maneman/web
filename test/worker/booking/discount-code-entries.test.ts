@@ -14,7 +14,6 @@ import { priceAfterCode, removeFromVisit } from "../../../src/domain/discount-co
 import { composeVisitMessage } from "../../../src/domain/visit-messages.ts";
 import { listCodes, makeCodes, type NewCodes } from "../../../src/domain/discount-codes.ts";
 import { offeredProducts } from "../../../src/domain/services.ts";
-import { openSession } from "../../../src/domain/sessions.ts";
 import { outstandingTasks } from "../../../src/domain/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
@@ -28,9 +27,10 @@ import {
   NOW,
   provedNumberCode,
   request,
-  savedAddress,
 } from "../helpers.ts";
+import { asClient, client, fittedInAugust, signedIn, technician, type Call } from "../clients.ts";
 import { JOB, working } from "../job-fixtures.ts";
+import { createLogger } from "../../../src/log.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const OTHER = "55555555-5555-4555-8555-555555555555";
@@ -61,33 +61,13 @@ const cookies = new Map<string, string>();
 
 /** A fitted client, with an address and a session in the app. */
 async function fittedClient(id: string, mobile: string) {
-  await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'Rohit Malhotra')")
-    .bind(id, NOW.toISOString(), mobile)
-    .run();
-  await savedAddress(id);
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
-     VALUES (?1, ?1, ?2, 'first_fit', 'completed', '2026-08-01T03:30:00.000Z', '2026-08-01T06:30:00.000Z', 't1', ?3)`,
-  )
-    .bind(`fit-${id}`, id, NOW.toISOString())
-    .run();
-  cookies.set(
-    id,
-    `mm_app=${await openSession(env.DB, { kind: "client", subjectId: id, deviceLabel: null, now: NOW })}`,
-  );
+  await client(id, mobile);
+  await fittedInAugust(id, `fit-${id}`);
+  cookies.set(id, await signedIn(id));
 }
 
-function call(personId: string, path: string, init: { method?: string; body?: object } = {}, now = NOW) {
-  return request(appFor("local", fakeDependencies({ now: () => now }), {}, "client"), path, {
-    method: init.method ?? "GET",
-    headers: {
-      Cookie: cookies.get(personId) ?? "",
-      "Content-Type": "application/json",
-      Origin: "https://maneman.test",
-    },
-    ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
-  });
-}
+const call = (personId: string, path: string, init: Call = {}, now = NOW) =>
+  asClient(cookies.get(personId) ?? "", path, init, { now });
 
 interface HoldAnswer {
   id: string;
@@ -120,15 +100,6 @@ async function clientRecord(personId: string) {
   const answer = await request(appFor("local", fakeDependencies(), {}, "ops"), `/api/clients/${personId}`);
   expect(answer.status).toBe(200);
   return answer.json<{ visits: { upcoming: unknown[] } }>();
-}
-
-/** The technician the app and the site book, where the technician's own tests bring theirs. */
-async function technician() {
-  await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
-  )
-    .bind(NOW.toISOString())
-    .run();
 }
 
 beforeEach(async () => {
@@ -405,7 +376,7 @@ describe("the client, at the app's pay step", () => {
         return made;
       },
     };
-    const started = await startBooking(env.DB, racing, hold.id, PERSON, NOW);
+    const started = await startBooking({ db: env.DB, payments: racing, now: NOW }, hold.id, PERSON);
     expect(stub.made.orders.map((order) => order.amount)).toEqual([180_000, 200_000]);
     const kept = await env.DB.prepare("SELECT amount, razorpay_order_id FROM slot_holds WHERE id = ?1")
       .bind(hold.id)
@@ -487,7 +458,9 @@ describe("the client, at the app's pay step", () => {
       .bind(hold.id, at(20).toISOString())
       .run();
     const payments = createStubPayments();
-    expect(await confirmBooking(env.DB, payments, hold.id, at(20))).toBe("refunded");
+    expect(await confirmBooking({ db: env.DB, payments: payments, now: at(20), log: createLogger() }, hold.id)).toBe(
+      "refunded",
+    );
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 180_000 }]);
   });
 
@@ -508,7 +481,9 @@ describe("the client, at the app's pay step", () => {
       ).bind(PERSON, checkout.order_id, checkout.amount, NOW.toISOString()),
       env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1").bind(hold.id, NOW.toISOString()),
     ]);
-    expect(await confirmBooking(env.DB, createStubPayments(), hold.id, NOW)).toBe("booked");
+    expect(
+      await confirmBooking({ db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger() }, hold.id),
+    ).toBe("booked");
     const theirs = await heldService(OTHER, NOW, "morning");
     expect((await enter(OTHER, theirs.id, "UNQ5")).status).toBe(422);
 
@@ -657,10 +632,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
   /** GET /api/me as the person the site's booking made. */
   async function homeOfBooker() {
     const person = await env.DB.prepare("SELECT id FROM people").first<string>("id");
-    const session = await openSession(env.DB, { kind: "client", subjectId: person ?? "", deviceLabel: null, now: NOW });
-    const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me", {
-      headers: { Cookie: `mm_app=${session}` },
-    });
+    const answer = await asClient(await signedIn(person ?? ""), "/api/me");
     return answer.json<{
       consultation: { one_visit: unknown } | null;
       being_booked: { one_visit: unknown } | null;

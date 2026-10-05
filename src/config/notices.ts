@@ -1,7 +1,7 @@
 // The consent notices, word for word from the design (Mane Man Site v2). A
 // consent row records which version the person saw, so a published version is
 // never edited: change the wording by adding a new version and pointing
-// CURRENT_NOTICE at it. test/worker/notices.test.ts fails if a published text
+// CURRENT_NOTICE at it. test/worker/privacy/notices.test.ts fails if a published text
 // changes.
 
 import type { ConsentPurpose, ConsentSource } from "../policy/consents.ts";
@@ -229,7 +229,7 @@ export const NOTICES = [
   },
   {
     // The booking sheet's reminder box, until 4 October 2026: it named the reminder alone, though the yes covers every
-    // message about a visit (the 2 Oct audit, CP-08).
+    // message about a visit.
     version: "whatsapp-visits-booking-v1",
     purpose: "whatsapp_visits",
     text: ["Remind me on WhatsApp the day before"],
@@ -283,7 +283,7 @@ export const CONSULTATION_NOTICES = {
 /**
  * The line beside an invite that tells the friend their referrer hears of their fit, by the page that shows it: the
  * invite's own page, or /book with the invite this browser remembers. An attribution records the one the friend saw,
- * so new words take a new version (test/node/site-referral-reward.test.ts holds each version's words).
+ * so new words take a new version (test/node/site/site-referral-reward.test.ts holds each version's words).
  */
 export const TOLD_NOTICES = { landing: "invite-told-landing-v1", book: "invite-told-book-v1" } as const;
 export type ToldNotice = (typeof TOLD_NOTICES)[keyof typeof TOLD_NOTICES];

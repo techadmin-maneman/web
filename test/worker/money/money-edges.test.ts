@@ -5,12 +5,14 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { confirmBooking, giveBack } from "../../../src/domain/bookings.ts";
+import { confirmBooking } from "../../../src/domain/bookings.ts";
+import { giveBack } from "../../../src/domain/give-back.ts";
 import { clawBack } from "../../../src/domain/credits.ts";
 import { enterOnHold, removeFromHold } from "../../../src/domain/discount-code-holds.ts";
 import { clientHold } from "../../../src/domain/holds.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { captureLogs, markDatabase, NOW } from "../helpers.ts";
+import { createLogger } from "../../../src/log.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const HOLD = "33333333-3333-4333-8333-333333333333";
@@ -106,14 +108,18 @@ describe("a hold booked or given back", () => {
   const payments = createStubPayments();
 
   it("is refused for a hold that is not there", async () => {
-    await expect(confirmBooking(env.DB, payments, HOLD, NOW)).rejects.toThrow("no such hold to book");
-    await expect(giveBack(env.DB, payments, HOLD, NOW, "test")).rejects.toThrow("no such hold to give back");
+    await expect(
+      confirmBooking({ db: env.DB, payments: payments, now: NOW, log: createLogger() }, HOLD),
+    ).rejects.toThrow("no such hold to book");
+    await expect(giveBack({ db: env.DB, payments: payments, now: NOW }, HOLD, "test")).rejects.toThrow(
+      "no such hold to give back",
+    );
   });
 
   it("is not given back once booked, and refunds nothing", async () => {
     await hold({ state: "booked", confirmedAt: NOW.toISOString() });
 
-    expect(await giveBack(env.DB, payments, HOLD, NOW, "test")).toEqual({ kind: "booked" });
+    expect(await giveBack({ db: env.DB, payments: payments, now: NOW }, HOLD, "test")).toEqual({ kind: "booked" });
     expect(payments.made.refunds).toEqual([]);
   });
 });

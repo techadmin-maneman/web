@@ -1,23 +1,14 @@
 // Migration 0092: each service may carry one line clients read under its name, empty until ops write one.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { databaseThrough, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.endsWith("_service_description.sql")) ?? "";
+const THIS = migrationNamed("_service_description.sql");
 
 function throughThis(): DatabaseSync {
   expect(THIS).not.toBe("");
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name <= THIS)) {
-    db.exec("BEGIN");
-    db.exec(readFileSync(`migrations/${file}`, "utf8"));
-    db.exec("COMMIT");
-  }
+  const db = databaseThrough(THIS);
   return db;
 }
 

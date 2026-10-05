@@ -1,12 +1,11 @@
 // Admin · Staff: who may use the console and for what, the switch that enforces it, and the service tokens let
 // in. As every panel of Settings does, it shows a change before it is sent, and says why one was refused.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { answer, fails, json, type Answers, type OpsReply } from "./fixtures.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const AT = "2026-09-24T07:03:54.415Z";
 
 const BOOK: OpsReply<"/api/staff"> = {
@@ -139,6 +138,5 @@ test("offers the switch and the service tokens to nobody without Admin · Manage
 test("meets WCAG 2.2 AA", async ({ page }) => {
   await open(page);
   await page.getByRole("button", { name: "Add a person" }).click();
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

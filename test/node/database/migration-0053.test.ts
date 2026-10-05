@@ -5,14 +5,11 @@
 // deployed before it writes, which knows nothing of either. Every name and
 // number is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { apply, databaseBefore, migrationNamed } from "./migrations.ts";
 
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0053_")) ?? "";
+const THIS = migrationNamed("0053_");
 
 const AT = "2026-09-21T06:30:00.000Z";
 
@@ -59,9 +56,7 @@ function visit(db: DatabaseSync, id: string, fields: Record<string, string | nul
 
 /** The database before this migration, with a ledger and visits; then this migration. */
 function migrated(): DatabaseSync {
-  const db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  for (const file of MIGRATIONS.filter((name) => name < THIS)) db.exec(readFileSync(`migrations/${file}`, "utf8"));
+  const db = databaseBefore(THIS);
   db.exec(`
     INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'r1', 'Imran', 'IQ', 1, '${AT}');
     INSERT INTO people (id, created_at, mobile_e164, name) VALUES
@@ -78,7 +73,7 @@ function migrated(): DatabaseSync {
   visit(db, "a2", { window_start: "2026-07-01T04:30:00.000Z" });
   visit(db, "a3", { window_start: "2026-08-01T04:30:00.000Z", status: "cancelled", fsm_status: "Cancelled" });
   visit(db, "c2", { person_id: "p2", type: "consultation", window_start: "2026-09-01T04:30:00.000Z" });
-  db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
+  apply(db, THIS);
   return db;
 }
 

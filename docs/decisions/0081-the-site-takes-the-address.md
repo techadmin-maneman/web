@@ -10,7 +10,7 @@ The owner tried the client app on staging and ruled: "Address should be asked be
 
 ADR 0051 had said the opposite: "It does not ask for an address. The pincode is enough to know whether we come; the technician takes the rest on WhatsApp, as before." So a consultation booked on the site reached FSM with a city and a pincode, the client app said "No address yet" until the client typed one, and Home and the Tasks board asked for it afterwards (ADR 0025, item 44; ADR 0074).
 
-One thing ADR 0051 said was not so. It described the landing's slot as "held for ten minutes while the form is filled in". Nothing is held while the form is filled in: the slot is held when the form is sent, and confirmed as it is held (`holdSlot`, `from: "site"`, in `src/domain/scheduling.ts`).
+One thing ADR 0051 said was not so. It described the landing's slot as "held for ten minutes while the form is filled in". Nothing is held while the form is filled in: the slot is held when the form is sent, and confirmed as it is held (`holdSlot`, `from: "site"`, in `src/domain/hold-slot.ts`).
 
 ## Decision
 

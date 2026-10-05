@@ -10,13 +10,9 @@
 // and Phase 2's fitted client, visit, payment, invite and technician, so every
 // later migration meets both. Every name is made up.
 
-import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-
-const MIGRATIONS = readdirSync("migrations")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
+import { apply, MIGRATIONS } from "./migrations.ts";
 
 const AT = "2026-09-21T06:30:00.000Z";
 
@@ -106,9 +102,7 @@ function migrate(): DatabaseSync {
   for (const file of MIGRATIONS) {
     // D1 applies each migration in one transaction: that is why the failed one rolled
     // back on staging, and it is what lets a rebuild defer its foreign key checks.
-    db.exec("BEGIN");
-    db.exec(readFileSync(`migrations/${file}`, "utf8"));
-    db.exec("COMMIT");
+    apply(db, file);
     const seed = SEEDS.find((candidate) => file.startsWith(candidate.after));
     for (const statement of seed?.rows ?? []) db.exec(statement);
   }

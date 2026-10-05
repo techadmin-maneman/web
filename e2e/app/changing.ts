@@ -9,6 +9,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { indiaDate } from "../../src/lib/india-time.ts";
 import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
 import { wrangler } from "./fitted.ts";
@@ -53,11 +54,11 @@ export async function seedChanging(): Promise<void> {
       `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode) VALUES
          ${sqlRow(crypto.randomUUID(), person, at, "House 4417, Tower C", "Sector 65", "Gurgaon", "122018")};`,
     );
-    const date = new Date(starts.getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
+    const date = indiaDate(starts);
     return { mobile, visitId: visit, date };
   };
   // Five days out at noon in India: its afternoon window, free to change until four days out.
-  const fiveDays = new Date(now.getTime() + 330 * 60 * 1000 + 5 * 24 * HOUR).toISOString().slice(0, 10);
+  const fiveDays = indiaDate(new Date(now.getTime() + 5 * 24 * HOUR));
   const free = client(new Date(`${fiveDays}T06:30:00.000Z`));
   // Three hours from now, whatever the time of day: always ahead, and always inside 24 hours of its window.
   const late = client(new Date(Math.ceil((now.getTime() + 3 * HOUR) / 60_000) * 60_000));

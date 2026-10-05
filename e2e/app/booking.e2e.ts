@@ -5,10 +5,11 @@
 // service booked: picked first where its kind offers more than one, the one
 // the app offers chosen (ADR 0085, ADR 0086).
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
+import { addDays, indiaDate } from "../../src/lib/india-time.ts";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { bookerClient } from "./booker.ts";
 import {
   checkoutLeftOpen,
@@ -25,8 +26,9 @@ import { fittedClient } from "./fitted.ts";
 import { continueToPayment, TAKEN } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 
-// One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another.
-test.describe.configure({ mode: "serial" });
+// One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
+// order. One failing leaves the rest to run.
+test.describe.configure({ mode: "default" });
 
 test.beforeEach(async ({ page }) => {
   await noRealCheckout(page);
@@ -67,7 +69,7 @@ interface Booking {
 }
 
 /** India's date `days` from today. */
-const indiaDay = (days: number) => new Date(Date.now() + 330 * 60_000 + days * 86_400_000).toISOString().slice(0, 10);
+const indiaDay = (days: number) => addDays(indiaDate(new Date()), days);
 
 /**
  * Passes one of the local mm-api's answers through, changed by `change`; `ask` changes the question first, where the
@@ -1210,10 +1212,7 @@ async function bottomOf(element: Locator): Promise<number> {
 
 /** axe on the page as it stands, against WCAG 2.2 AA. */
 async function scanOf(page: Page): Promise<void> {
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 }
 
 // Axe read C2 to C4 only; board C6's states, where a client is told something went wrong, went unread.

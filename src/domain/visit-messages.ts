@@ -28,6 +28,9 @@ import { consentGiven } from "./consents.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 import { firstNameOf } from "../lib/names.ts";
+import { PAYMENT_HELD, statusIn, VISIT_NOT_BEGUN } from "../config/statuses.ts";
+import { creditSpentOn } from "./visit-facts.ts";
+import { queueMessage } from "./queued-messages.ts";
 
 export const VISIT_MESSAGE_KINDS = [
   "consultation_confirmation",
@@ -115,12 +118,13 @@ export function visitMessage(
 ): { id: string; statement: D1PreparedStatement } {
   const id = crypto.randomUUID();
   const at = input.now.toISOString();
-  const statement = db
-    .prepare(
-      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-       VALUES (?1, ?2, ?3, ?4, 'appointment', ?5, 'queued', ?2)`,
-    )
-    .bind(id, at, input.personId, input.kind, input.appointmentId);
+  const statement = queueMessage(db, {
+    id,
+    personId: input.personId,
+    kind: input.kind,
+    subject: { kind: "appointment", id: input.appointmentId },
+    at,
+  });
   return { id, statement };
 }
 
@@ -155,8 +159,7 @@ export async function arrivalNotice(
   const written = await db
     .prepare(
       `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at,
-         last_error)
-       VALUES (?1, ?2, ?3, 'arrival_notice', 'appointment', ?4, ?5, ?6, ?7)
+         last_error) VALUES (?1, ?2, ?3, 'arrival_notice', 'appointment', ?4, ?5, ?6, ?7)
        ON CONFLICT DO NOTHING`,
     )
     .bind(
@@ -425,7 +428,7 @@ async function paidAhead(db: D1Database, appointmentId: string): Promise<PaidAhe
   const payment = await db
     .prepare(
       `SELECT amount - refunded_amount AS amount, method FROM payments
-       WHERE appointment_id = ?1 AND kind = 'visit' AND status IN ('captured', 'partially_refunded')
+       WHERE appointment_id = ?1 AND kind = 'visit' AND ${statusIn("status", PAYMENT_HELD)}
        ORDER BY captured_at LIMIT 1`,
     )
     .bind(appointmentId)
@@ -458,10 +461,10 @@ async function bookedWithNothingPaid(db: D1Database, appointmentId: string, para
 
 async function paidWithCredit(db: D1Database, appointmentId: string): Promise<boolean> {
   const credit = await db
-    .prepare("SELECT 1 FROM credit_ledger WHERE kind = 'redeem' AND source_id = ?1")
+    .prepare(`SELECT ${creditSpentOn("?1")} AS spent`)
     .bind(appointmentId)
-    .first();
-  return credit !== null;
+    .first<{ spent: number }>();
+  return credit?.spent === 1;
 }
 
 /** A charge as its ruling recorded it, in paise: what it kept of the payment, and what goes back. */
@@ -611,12 +614,10 @@ export async function queueReminders(
   const { results } = await db
     .prepare(
       `SELECT a.id, a.person_id FROM appointments a
-       WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
+       WHERE a.window_start >= ?1 AND a.window_start < ?2 AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
          AND a.deleted_at IS NULL AND a.person_id IS NOT NULL AND a.type IS NOT NULL
-         AND NOT EXISTS (
-           SELECT 1 FROM outbound_messages m
-           WHERE m.subject_id = a.id AND m.kind = 'visit_reminder' AND m.created_at >= ?3
-         )
+         AND NOT EXISTS (SELECT 1 FROM outbound_messages m
+           WHERE m.subject_id = a.id AND m.kind = 'visit_reminder' AND m.created_at >= ?3)
        ORDER BY a.window_start LIMIT ?4`,
     )
     .bind(

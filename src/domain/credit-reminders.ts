@@ -12,6 +12,7 @@ import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import { GRANT_REMAINING } from "./credits.ts";
 import { consentGiven } from "./consents.ts";
 import { NO_VISITS_CONSENT, remindersFrom, type Composed } from "./visit-messages.ts";
+import { queueMessage } from "./queued-messages.ts";
 
 /** How many reminders a cron pass queues. */
 const REMINDERS_PER_PASS = 20;
@@ -69,12 +70,13 @@ export async function queueCreditReminders(
   }));
   await db.batch(
     messages.map((message) =>
-      db
-        .prepare(
-          `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-           VALUES (?1, ?2, ?3, 'credits_expiring', 'credit_ledger', ?4, 'queued', ?2)`,
-        )
-        .bind(message.id, at, message.personId, message.grantId),
+      queueMessage(db, {
+        id: message.id,
+        personId: message.personId,
+        kind: "credits_expiring",
+        subject: { kind: "credit_ledger", id: message.grantId },
+        at,
+      }),
     ),
   );
   return messages.map((message) => message.id);

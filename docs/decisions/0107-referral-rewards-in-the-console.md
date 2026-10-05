@@ -22,7 +22,7 @@ On 1 October 2026 the owner asked: "how are referrals configured? Is it a hard c
 | `friend_visits`   | 3                                              | 0 to 12 visits   | The friend they invited        |
 | `valid_days`      | 365 days (`CREDIT_TTL_DAYS`, ADR 0025 item 24) | 30 to 1,095 days | The credits last               |
 
-- **The defaults are the committed figures**, so nothing changes until ops save. The figures stay in `src/policy/referral-reward.ts` beside the rule, as every input's do (ADR 0088), and its `RULES` keep the prompt's words and add the owner's.
+- **The defaults are the committed figures**, so nothing changes until ops save. The figures stay in `src/policy/referral-reward.ts` beside the rule, as every input's do (ADR 0088).
 - **Either side may be 0**, for none. Twelve visits is a year of monthly service visits, as many as ops may give or take by hand in one change; a month is the shortest life worth a credit, since a service visit falls due monthly, and three years is the longest replacement cycle ops may set (`piece_cycle_days`).
 - **The console's usual check** shows each figure that moves, the old beside the new, before the second press sends it (ADR 0071); the rule's note says whom it reaches: every friend fitted after the change, while credits already given keep theirs.
 

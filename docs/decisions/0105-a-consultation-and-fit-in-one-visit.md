@@ -20,7 +20,7 @@ The owner ruled on 1 October 2026 (D2): "Clients can choose one vs. two visits. 
 - `appointments.one_visit`, null for any other visit, else `booked` until the technician closes it, then `fitted` or `declined`. The booking writes `booked` from its hold, as it writes the hold's tier.
 - `consultation_requests.one_visit`, for one asked for while self-serve booking is off.
 
-A one visit still to happen is the client's consultation still to happen as well as their first fit (`liveVisitOf`, `src/domain/scheduling.ts`), so neither form books a second consultation beside it, and the app offers none.
+A one visit still to happen is the client's consultation still to happen as well as their first fit (`liveVisitOf`, `src/domain/availability.ts`), so neither form books a second consultation beside it, and the app offers none.
 
 ### The booking
 

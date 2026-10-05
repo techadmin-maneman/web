@@ -2,12 +2,11 @@
 // press: choosing a pincode only asks the API what a launch would send, and
 // the panel shows both counts so the gap between them is visible.
 
-import AxeBuilder from "@axe-core/playwright";
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
 import { answer, AREAS, fails, json, LAUNCHED, PREVIEW, type Call } from "./fixtures.ts";
 
-const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const LAUNCH = "/api/pincodes/400050/launch";
 const LAUNCH_IT: Call = `POST ${LAUNCH}`;
 
@@ -109,11 +108,9 @@ test("says nobody is waiting when the list is empty", async ({ page }) => {
 
 test("meets WCAG 2.2 AA with the list, and with the launch panel open", async ({ page }) => {
   await open(page);
-  const list = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(list.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   await expect(page.getByText("This messages 84 people")).toBeVisible();
-  const panel = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  expect(panel.violations.map((violation) => violation.id)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });

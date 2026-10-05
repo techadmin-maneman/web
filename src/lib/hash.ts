@@ -14,10 +14,15 @@ export async function sha256Hex(value: string): Promise<string> {
  * the salt.
  */
 export async function saltedHash(salt: string, value: string): Promise<string> {
-  const key = await crypto.subtle.importKey("raw", encoder.encode(salt), { name: "HMAC", hash: "SHA-256" }, false, [
+  return toHex(await crypto.subtle.sign("HMAC", await hmacKey(salt), encoder.encode(value)));
+}
+
+/** A secret as an HMAC-SHA256 key, to sign with and verify by. */
+export function hmacKey(secret: string): Promise<CryptoKey> {
+  return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
     "sign",
+    "verify",
   ]);
-  return toHex(await crypto.subtle.sign("HMAC", key, encoder.encode(value)));
 }
 
 /**

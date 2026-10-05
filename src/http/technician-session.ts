@@ -1,25 +1,20 @@
-// The technician app's session cookie, mm_tech (docs/decisions/0029-sessions.md):
-// host-only, HttpOnly, Secure, SameSite=Lax, 90 days from last use, and bound
-// to the phone it was opened on (docs/decisions/0052-technician-sessions.md).
+// The technician app's session, from its cookie, mm_tech (src/http/session-cookie.ts), bound to the phone it was
+// opened on (docs/decisions/0052-technician-sessions.md).
 //
 // "His sessions are bound to a device and can be revoked by ops. Revoking also
 // wipes the device's cached jobs on its next contact": a call from a revoked
 // phone is answered `device_revoked`, and the app drops what it cached.
 
 import type { Context } from "hono";
-import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "./context.ts";
-import { findSession, revokeSession, SESSION_TOUCH_MS, SESSION_TTL_MS, touchSession } from "../domain/sessions.ts";
+import { findSession, revokeSession, SESSION_TOUCH_MS, touchSession } from "../domain/sessions.ts";
 import { deviceOfSession, markWiped, touchDevice } from "../domain/technicians.ts";
 import { sha256Hex } from "../lib/hash.ts";
 import { refuse } from "./errors.ts";
+import { sessionCookie } from "./session-cookie.ts";
 
-/** __Host-: the browser holds it to this host, over HTTPS, at path /, whatever a page sets. */
-const TECHNICIAN_COOKIE = "__Host-mm_tech";
-
-/** Its name until October 2026, still read until every session it names has lapsed (90 days from last use). */
-const OLD_TECHNICIAN_COOKIE = "mm_tech";
+const TECHNICIAN = sessionCookie("__Host-mm_tech", "mm_tech");
 
 /** The technician this request is from, and the phone he is on. */
 export interface TechnicianSession {
@@ -30,32 +25,17 @@ export interface TechnicianSession {
   readonly deviceId: string;
 }
 
-/** No Domain attribute: the cookie stays on the technician app's own host. */
-export function setTechnicianCookie(c: Context<AppEnv>, token: string): void {
-  setCookie(c, TECHNICIAN_COOKIE, token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "Lax",
-    path: "/",
-    maxAge: SESSION_TTL_MS / 1000,
-  });
-}
-
-export function clearTechnicianCookie(c: Context<AppEnv>): void {
-  deleteCookie(c, TECHNICIAN_COOKIE, { path: "/", secure: true });
-  deleteCookie(c, OLD_TECHNICIAN_COOKIE, { path: "/", secure: true });
-}
+export const setTechnicianCookie = TECHNICIAN.set;
+export const clearTechnicianCookie = TECHNICIAN.clear;
 
 /**
  * Refuses a request without a live session on an enrolled phone, and moves the
  * session's expiry on (at most hourly). Sets c.var.technicianSession.
  */
 export const requireTechnicianSession = createMiddleware<AppEnv>(async (c, next) => {
-  const token = getCookie(c, TECHNICIAN_COOKIE) ?? getCookie(c, OLD_TECHNICIAN_COOKIE);
+  const token = TECHNICIAN.tokenOf(c);
   const now = c.var.deps.now();
-  if (token === undefined || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
-    return refuse(c, "session_required");
-  }
+  if (token === null) return refuse(c, "session_required");
 
   // The device is read first: revoking one, or switching its technician off, ends its session too, and the phone
   // must hear which, not just that it is logged out.

@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { startBooking } from "../../../src/domain/bookings.ts";
 import { creditBalance, grantCredits } from "../../../src/domain/credits.ts";
 import { makeCodes, type NewCodes } from "../../../src/domain/discount-codes.ts";
-import { holdSlot } from "../../../src/domain/scheduling.ts";
+import { holdSlot } from "../../../src/domain/hold-slot.ts";
 import { outstandingTasks } from "../../../src/domain/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
@@ -409,7 +409,7 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     await rohit("fitted");
     const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" });
     const { hold_id: holdId } = await answer.json<{ hold_id: string }>();
-    expect(await startBooking(env.DB, payments, holdId, ROHIT, NOW)).toBeNull();
+    expect(await startBooking({ db: env.DB, payments: payments, now: NOW }, holdId, ROHIT)).toBeNull();
     expect(payments.made.orders).toEqual([]);
     expect(await holdOf(holdId)).toMatchObject({ state: "held", razorpay_order_id: null });
   });

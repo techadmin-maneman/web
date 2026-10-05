@@ -16,6 +16,9 @@ export function indiaHour(instant: Date): string {
   return new Date(instant.getTime() + IST_OFFSET_MS).toISOString().slice(0, 13);
 }
 
+/** A date's month, "YYYY-MM". */
+export const monthOf = (date: string): string => date.slice(0, 7);
+
 export function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }

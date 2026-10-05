@@ -10,6 +10,7 @@ import { signToken, verifyToken } from "../lib/signed-token.ts";
 import { isMessagePurpose, MESSAGE_PURPOSES, type ConsentSource, type MessagePurpose } from "../policy/consents.ts";
 import { auditStatementIfWritten } from "./audit.ts";
 import { recordConsent } from "./consents.ts";
+import { queueMessage } from "./queued-messages.ts";
 
 /** How long a stop link works: a reminder may be read, and acted on, long after it came. */
 const STOP_LINK_LIFETIME_MS = 365 * DAY_MS;
@@ -118,13 +119,13 @@ export async function stopByReply(
 
   const messageId = crypto.randomUUID();
   const at = input.now.toISOString();
-  await db
-    .prepare(
-      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-       VALUES (?1, ?2, ?3, 'messages_stopped', 'consent', ?4, 'queued', ?2)`,
-    )
-    .bind(messageId, at, person.id, firstWithdrawal)
-    .run();
+  await queueMessage(db, {
+    id: messageId,
+    personId: person.id,
+    kind: "messages_stopped",
+    subject: { kind: "consent", id: firstWithdrawal },
+    at,
+  }).run();
   return messageId;
 }
 

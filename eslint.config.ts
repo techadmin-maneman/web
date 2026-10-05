@@ -25,7 +25,6 @@ const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
 const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
   "src/routes/ops/clients.ts": { lines: 735, fn: 198 },
   "src/domain/dispatch.ts": { lines: 726 },
-  "src/domain/bookings.ts": { lines: 685 },
   "src/routes/client/booking.ts": { lines: 560, fn: 146 },
   "src/routes/client/profile.ts": { lines: 556, fn: 223 },
   "src/domain/public-booking.ts": { lines: 518, fn: 130 },
@@ -33,7 +32,7 @@ const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: n
   "src/routes/ops/settings.ts": { lines: 513, fn: 134 },
   "src/domain/tech-jobs.ts": { lines: 505 },
   "src/domain/erasure.ts": { lines: 507, fn: 89 },
-  "src/domain/scheduling.ts": { lines: 498, fn: 107 },
+  "src/domain/hold-slot.ts": { fn: 104 },
   "src/domain/visit-messages.ts": { lines: 480 },
   "src/domain/books-sync.ts": { lines: 482 },
   "src/routes/client/visits.ts": { lines: 465, fn: 94 },
@@ -180,7 +179,7 @@ export default defineConfig(
   },
   {
     // An error's message is read in one place, src/lib/d1-errors.ts: matching its words anywhere else read every
-    // UNIQUE failure as a lost window (CQ-31).
+    // UNIQUE failure as a lost window.
     files: ["src/**/*.ts"],
     ignores: ["src/lib/d1-errors.ts"],
     rules: {
@@ -207,6 +206,19 @@ export default defineConfig(
     // A test file past 500 lines is warned of: one that long is several, each easier to find a failure in.
     files: ["test/**/*.ts", "e2e/**/*.ts"],
     rules: { "no-console": "off", "max-lines": sized("warn", TEST_LINES) },
+  },
+  {
+    // A cast hid a consumer's changed signature from the compiler.
+    files: ["test/worker/**/*.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "TSAsExpression[typeAnnotation.typeName.name='MessageBatch']",
+          message: "Build a queue's batch with fakeBatch (test/worker/batches.ts).",
+        },
+      ],
+    },
   },
   {
     // A screen that picks between three things says so in a function that returns early.
