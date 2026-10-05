@@ -14,6 +14,7 @@ One page on getting a change from your laptop to staging. `README.md` says what 
    - for a screen you changed, its browser tests, after building it: `npm run build:app -- --env local && npx playwright test e2e/app/booking.e2e.ts`;
    - after changing a route's schema, a migration, a binding or an ADR's status, `npm run gen`. CI fails until the generated files match.
 6. **Mark it ready.** CI runs every check on each push. A ready pull request from this repository merges itself once CI passes, and its merge deploys to staging.
+7. **Clear up after the merge.** GitHub deletes the pull request's branch. Delete your copy before pruning, while git can still see it was pushed: `git switch main && git pull --ff-only && git branch -d booking-ten-minute-hold && git fetch --prune`. A worktree made for it goes first: `git worktree remove <its folder>`.
 
 ## Where a test goes
 
