@@ -29,7 +29,7 @@ import { spendableCredits } from "../../domain/credits.ts";
 import { homePrompts, promptFacts } from "../../domain/home-prompt.ts";
 import { nextVisitFacts } from "../../domain/next-visit.ts";
 import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/one-visit-money.ts";
-import { bookableTypes } from "../../domain/scheduling.ts";
+import { bookableTypes } from "../../domain/availability.ts";
 import { offeredAmong, servicesOnDay } from "../../domain/services.ts";
 import { currentAddress, liveContact } from "../../domain/profile.ts";
 import {

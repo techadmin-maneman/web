@@ -23,14 +23,9 @@ import { lateFeeOn, priceOf, type Price } from "../../domain/price-book.ts";
 import { checkoutHold, clientHold, releaseHold } from "../../domain/holds.ts";
 import { currentAddress } from "../../domain/profile.ts";
 import { isServed } from "../../domain/service-area.ts";
-import {
-  activeTechnicians,
-  availability,
-  bookableTypes,
-  holdSlot,
-  regularTechnician,
-  type Moving,
-} from "../../domain/scheduling.ts";
+import { activeTechnicians, regularTechnician, type Moving } from "../../domain/occupancy.ts";
+import { availability, bookableTypes } from "../../domain/availability.ts";
+import { holdSlot } from "../../domain/hold-slot.ts";
 import { bookableService, offeredProducts, serviceOf, type PricedService } from "../../domain/services.ts";
 import { loadSlotSchedule } from "../../domain/slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
