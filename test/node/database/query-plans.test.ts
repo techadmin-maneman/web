@@ -17,7 +17,9 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import * as STATUSES from "../../../src/config/statuses.ts";
 import { graceEnds, keepingItsTime, ownUnpaid, paidNotBooked } from "../../../src/domain/hold-stages.ts";
+import { creditSpentOn } from "../../../src/domain/visit-facts.ts";
 
 /**
  * Each module the entry imports, and each one those import in turn: every statement the entry could run is in one of
@@ -165,13 +167,19 @@ interface Statement {
 
 const collapsed = (text: string): string => text.replace(/\s+/g, " ");
 
-/** The SQL fragments the queries about holds share, written out as each call site's arguments ask. */
-const FRAGMENTS: Readonly<Record<string, (...names: string[]) => string>> = {
+/** The SQL fragments the queries share, written out as each call site's arguments ask. */
+const FRAGMENTS: Readonly<Record<string, (...names: never[]) => string>> = {
+  creditSpentOn,
   graceEnds,
   keepingItsTime,
   ownUnpaid,
   paidNotBooked,
+  statusIn: STATUSES.statusIn,
+  statusNotIn: STATUSES.statusNotIn,
 };
+
+/** A status set a fragment is handed, by its name in src/config/statuses.ts. */
+const STATUS_SETS = new Map<string, unknown>(Object.entries(STATUSES));
 
 /** The SQL of every .prepare() in a file, with `${…}` filled from the file's own constants where it can be. */
 function statementsIn(file: string): Statement[] {
@@ -186,7 +194,9 @@ function statementsIn(file: string): Statement[] {
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
       const fragment = FRAGMENTS[node.expression.text];
       // A name passed at run time, as `now`, plans the same as a parameter.
-      if (fragment !== undefined) return fragment(...node.arguments.map((argument) => textOf(argument) ?? "?"));
+      const argumentOf = (argument: ts.Expression) =>
+        (ts.isIdentifier(argument) ? STATUS_SETS.get(argument.text) : undefined) ?? textOf(argument) ?? "?";
+      if (fragment !== undefined) return fragment(...(node.arguments.map(argumentOf) as never[]));
     }
     if (!ts.isTemplateExpression(node)) return null;
     // A list of placeholders built at run time plans the same as a single NULL.

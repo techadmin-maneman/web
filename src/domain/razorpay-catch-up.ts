@@ -24,6 +24,7 @@ import { recordPayment } from "./payments.ts";
 import { ASKS } from "./refunds.ts";
 import { graceEnds } from "./hold-stages.ts";
 import { recordHoldLinkPaid } from "./visit-booking.ts";
+import { PAYMENT_TAKEN, statusIn } from "../config/statuses.ts";
 
 /** Holds asked about in one run at most, and one visit's links the same. */
 const CHECKS_PER_PASS = 5;
@@ -292,7 +293,7 @@ async function heardCaptured(db: D1Database, razorpayPaymentId: string): Promise
   const row = await db
     .prepare(
       `SELECT 1 FROM payments
-       WHERE razorpay_payment_id = ?1 AND status IN ('captured', 'partially_refunded', 'refunded')`,
+       WHERE razorpay_payment_id = ?1 AND ${statusIn("status", PAYMENT_TAKEN)}`,
     )
     .bind(razorpayPaymentId)
     .first();

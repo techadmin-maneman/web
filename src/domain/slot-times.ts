@@ -12,6 +12,7 @@ import {
   type SlotTimes,
 } from "../policy/slot-times.ts";
 import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
+import { statusIn, VISIT_LIVE } from "../config/statuses.ts";
 
 /** A change of times, from the day it applies. */
 export interface SlotTimesChange extends SlotTimes {
@@ -74,7 +75,7 @@ async function lastBookedDate(db: D1Database): Promise<string | null> {
   const [visit, hold] = await db.batch<{ last: string | null }>([
     db.prepare(
       `SELECT MAX(window_start) AS last FROM appointments
-       WHERE deleted_at IS NULL AND status IN ('scheduled', 'dispatched', 'in_progress')`,
+       WHERE deleted_at IS NULL AND ${statusIn("status", VISIT_LIVE)}`,
     ),
     db.prepare("SELECT MAX(date) AS last FROM slot_holds WHERE state = 'held'"),
   ]);
@@ -133,7 +134,7 @@ export async function setSlotTimes(
            AND NOT EXISTS (SELECT 1 FROM slot_holds WHERE state = 'held' AND date >= ?2)
            AND NOT EXISTS (
              SELECT 1 FROM appointments WHERE deleted_at IS NULL
-               AND status IN ('scheduled', 'dispatched', 'in_progress') AND window_start >= ?7)`,
+               AND ${statusIn("status", VISIT_LIVE)} AND window_start >= ?7)`,
       )
       .bind(
         id,

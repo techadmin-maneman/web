@@ -9,6 +9,7 @@ import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
 import { heldVisitTimes } from "./visit-times.ts";
 import { DESTINATIONS, underVisitsConsent, type Composed } from "./visit-messages.ts";
+import { PAYMENT_TAKEN, statusIn } from "../config/statuses.ts";
 
 /** Why a booking refunded its hold by itself. */
 export const AUTO_REFUND_REASONS = ["lapsed", "not_movable"] as const;
@@ -43,7 +44,7 @@ export async function autoRefundsOf(db: D1Database, personId: string): Promise<A
     .prepare(
       `SELECT h.id, h.type, s.name AS service_name, h.date, h.auto_refund_reason, h.refunded_at,
               (SELECT p.amount FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id
-                 AND p.status IN ('captured', 'refunded', 'partially_refunded') ORDER BY p.created_at LIMIT 1) AS amount
+                 AND ${statusIn("p.status", PAYMENT_TAKEN)} ORDER BY p.created_at LIMIT 1) AS amount
        FROM slot_holds h LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
        WHERE h.person_id = ?1 AND h.auto_refund_reason IS NOT NULL AND h.refunded_at IS NOT NULL
        ORDER BY h.refunded_at DESC`,
@@ -99,7 +100,7 @@ async function composeGivenBack(db: D1Database, holdId: string, personId: string
     .prepare(
       `SELECT h.type, h.minutes, h.date, h.start_unit, h.move_kind, h.use_credit, p.name,
               (SELECT pay.amount FROM payments pay WHERE pay.razorpay_order_id = h.razorpay_order_id
-                 AND pay.status IN ('captured', 'refunded', 'partially_refunded') ORDER BY pay.created_at LIMIT 1) AS paid,
+                 AND ${statusIn("pay.status", PAYMENT_TAKEN)} ORDER BY pay.created_at LIMIT 1) AS paid,
               (SELECT pay.method FROM payments pay WHERE pay.razorpay_order_id = h.razorpay_order_id
                  ORDER BY pay.created_at LIMIT 1) AS method
        FROM slot_holds h JOIN people p ON p.id = h.person_id

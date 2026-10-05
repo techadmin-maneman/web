@@ -11,6 +11,7 @@ import { visitMessage } from "./visit-messages.ts";
 import { moveVisit } from "./visit-status.ts";
 import { type ConfirmOptions, type HoldRow, type Confirmed } from "./booked-hold.ts";
 import { giveBack, AUTO_REFUND_NOTES, autoRefundMarked, giveBackUnkept } from "./give-back.ts";
+import { statusIn, VISIT_NOT_BEGUN } from "../config/statuses.ts";
 
 interface VisitToMove {
   id: string;
@@ -29,7 +30,7 @@ export async function moveInPlace(
   const visit = await db
     .prepare(
       `SELECT a.id, a.window_start, a.technician_id FROM appointments a
-       WHERE a.id = ?1 AND a.status IN ('scheduled', 'dispatched') AND a.deleted_at IS NULL AND NOT ${visitBegun("a")}`,
+       WHERE a.id = ?1 AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.deleted_at IS NULL AND NOT ${visitBegun("a")}`,
     )
     .bind(hold.moves_appointment_id)
     .first<VisitToMove>();
@@ -148,7 +149,7 @@ export async function retireReplaced(db: D1Database, hold: HoldRow, now: Date, o
   const old = await db
     .prepare(
       `SELECT a.id, a.window_start, ${visitBegun("a")} AS begun FROM appointments a
-       WHERE a.id = ?1 AND a.status IN ('scheduled', 'dispatched') AND a.deleted_at IS NULL
+       WHERE a.id = ?1 AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.deleted_at IS NULL
          AND NOT EXISTS (SELECT 1 FROM visit_changes c WHERE c.appointment_id = a.id AND c.kind IN ('replaced', 'cancelled'))`,
     )
     .bind(hold.moves_appointment_id)

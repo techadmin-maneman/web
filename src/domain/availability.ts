@@ -16,9 +16,10 @@ import {
   type Moving,
   type Technician,
 } from "./occupancy.ts";
+import { statusIn, VISIT_LIVE } from "../config/statuses.ts";
 
 /** A visit booked and still to happen. */
-const STILL_TO_HAPPEN = "deleted_at IS NULL AND status IN ('scheduled', 'dispatched', 'in_progress')";
+const STILL_TO_HAPPEN = `deleted_at IS NULL AND ${statusIn("status", VISIT_LIVE)}`;
 
 const PAID_HOLD = paidNotBooked("slot_holds");
 

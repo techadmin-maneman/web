@@ -12,6 +12,7 @@ import type { VisitType } from "../config/visit-types.ts";
 import { initialsOf } from "../lib/names.ts";
 import { auditStatement, auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 import { visitBegun } from "./visit-begun.ts";
+import { statusIn, VISIT_NOT_BEGUN } from "../config/statuses.ts";
 
 /** A technician as the console lists him. */
 export interface RosterTechnician {
@@ -152,7 +153,7 @@ interface ReturnedVisit {
 }
 
 /** His visits still to come: live, not begun, and starting from now. A visit already under way stays his. */
-const STILL_TO_COME = `a.technician_id = ?1 AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
+const STILL_TO_COME = `a.technician_id = ?1 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
   AND a.window_start >= ?2 AND NOT ${visitBegun("a")}`;
 
 /**
