@@ -45,16 +45,16 @@ On Workers Free every product except R2 fails closed, which is an outage rather 
 ## Update, 21 September 2026 (M3)
 
 - **Presigned uploads replaced.** The prompt's presigned R2 upload link could be replayed until it expired, each replay a billed write that no ceiling could count. Photos now come through the API, which writes each once (docs/decisions/0014-try-on-api.md).
-- **The arithmetic, and the test that enforces it.** Both are in docs/decisions/0015-render-pipeline.md; `test/node/free-tier-budget.test.ts` enforces them. R2 storage is the binding limit: it holds production to 40 renders a day while results are kept 30 days at up to 6 MB each.
+- **The arithmetic, and the test that enforces it.** Both are in docs/decisions/0015-render-pipeline.md; `test/node/tooling/free-tier-budget.test.ts` enforces them. R2 storage is the binding limit: it holds production to 40 renders a day while results are kept 30 days at up to 6 MB each.
 
 ## Update, 25 September 2026: D1's reads
 
 D1's 5 million rows read a day had no budget, and the five-minute cron read whole tables that only grow. The sweep's photograph check alone read every try-on job ever made on each run: at production's ceiling, about 29,000 a year, or some 8 million rows a day within the year, past the allowance.
 
 - **Migration 0037** gives each lookup on the cron's path, and the lookups made while a client pays, an index. Most are partial: they hold only the rows still waiting, so they stay small however much history gathers.
-- **`test/node/query-plans.test.ts`** plans each statement on those paths against every migration, and fails when one reads a growing table from end to end.
-- **`test/worker/cron-reads.test.ts`** runs every cron job over a finished history and again over twice that history, and fails when a run reads more for it. A quiet run reads about 70 rows, and 100 in the evening (`CRON_ROWS_READ_PER_QUIET_RUN`, `scripts/lib/free-tier-budget.ts`).
-- **`scripts/lib/free-tier-budget.ts`** models the cron's reads: production busy on every run (5,000 rows) and staging at rest, about 1.5 million a day. `test/node/free-tier-budget.test.ts` holds that under 40% of the allowance, which leaves requests the rest of the 80%.
+- **`test/node/database/query-plans.test.ts`** plans each statement on those paths against every migration, and fails when one reads a growing table from end to end.
+- **`test/worker/jobs/cron-reads.test.ts`** runs every cron job over a finished history and again over twice that history, and fails when a run reads more for it. A quiet run reads about 70 rows, and 100 in the evening (`CRON_ROWS_READ_PER_QUIET_RUN`, `scripts/lib/free-tier-budget.ts`).
+- **`scripts/lib/free-tier-budget.ts`** models the cron's reads: production busy on every run (5,000 rows) and staging at rest, about 1.5 million a day. `test/node/tooling/free-tier-budget.test.ts` holds that under 40% of the allowance, which leaves requests the rest of the 80%.
 - **The dispatch board** (4 October 2026). Read in full every minute by each open console, about 70 rows and 18 for each visit in its week, it alone would pass the requests' share at about 40 visits a week. It now asks every minute for a one-row version that triggers raise when anything it draws changes, and reads itself again only then, and in full every ten minutes (ADR 0069). `boardRowsReadPerDay` models it at five changes a visit, each read by every open board: room for about 160 visits a week. That is still short of 2,000 clients (about 470 a week), since each read grows with the week; reading only the visits changed since the last version is the next step.
 
 ## Update, 2 October 2026: D1's size
@@ -85,7 +85,7 @@ On 3 October 2026 Cloudflare began holding the five-minute cron to the free plan
 
 **Decision.**
 
-- The trigger fires every minute (`* * * * *`), still one of the account's five cron triggers for each environment, and each run takes only the jobs due in its minute. Each job has `every` (5, 15 or 60 minutes) and `at` (its minute in that period), so no minute holds more than four jobs or sends more than 16 statements (`CRON_STATEMENTS_PER_RUN`, held by `test/worker/cron-reads.test.ts`). The FSM reconciliation has its minute alone. The sweeper's eleven steps are jobs of their own, and the hourly checks that once read the clock's minute (the storage meter, the daily allowances, the AILabTools balance, FSM's catalogue, Books' items) run by the table.
+- The trigger fires every minute (`* * * * *`), still one of the account's five cron triggers for each environment, and each run takes only the jobs due in its minute. Each job has `every` (5, 15 or 60 minutes) and `at` (its minute in that period), so no minute holds more than four jobs or sends more than 16 statements (`CRON_STATEMENTS_PER_RUN`, held by `test/worker/jobs/cron-reads.test.ts`). The FSM reconciliation has its minute alone. The sweeper's eleven steps are jobs of their own, and the hourly checks that once read the clock's minute (the storage meter, the daily allowances, the AILabTools balance, FSM's catalogue, Books' items) run by the table.
 - A run reads its record and its failing jobs in one round trip, makes each provider only when a job first uses it, and starts no outside call after 30 seconds, so it ends before the next minute's.
 - Measured as above, a typical minute costs 2.6 ms the first time and 0.15 ms after, with 5 to 11 statements; the heaviest are FSM's reconciliation and catalogue, 6 to 8 ms, which go when FSM is switched off.
 - A run on any other schedule runs every job, as before: `npm run tick`, and the five-minute trigger until an operator attaches the new one (ADR 0010).

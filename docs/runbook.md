@@ -649,7 +649,7 @@ Production runs 268eaa4, of 21 September 2026. The next release carries every mi
 
 ## The CI runner
 
-**Every job runs on GitHub's own runners**, `runs-on: ubuntu-latest` in each job of every workflow; since 4 October 2026 no variable can move them (`test/node/ci-workflow.test.ts` holds every workflow to it). The repository is public, so the minutes are free and the jobs run side by side, each on a runner of four cores: the unit tests take four workers, the browser tests three (`vitest.config.ts`, `playwright.config.ts`). Every push to a pull request runs the full suite: the static checks, the unit and contract tests with coverage, the build, every browser-test project and Lighthouse, the deployed code on new migrations and the local smoke. A check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated"), and adding a label starts no run. The last two jobs, "full suite" and "checks", pass only when every job they wait on passed or was skipped (`scripts/ci/ci-gate.ts`).
+**Every job runs on GitHub's own runners**, `runs-on: ubuntu-latest` in each job of every workflow; since 4 October 2026 no variable can move them (`test/node/tooling/ci-workflow.test.ts` holds every workflow to it). The repository is public, so the minutes are free and the jobs run side by side, each on a runner of four cores: the unit tests take four workers, the browser tests three (`vitest.config.ts`, `playwright.config.ts`). Every push to a pull request runs the full suite: the static checks, the unit and contract tests with coverage, the build, every browser-test project and Lighthouse, the deployed code on new migrations and the local smoke. A check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated"), and adding a label starts no run. The last two jobs, "full suite" and "checks", pass only when every job they wait on passed or was skipped (`scripts/ci/ci-gate.ts`).
 
 **The owner's machine is retired.** Its runner, `maneman-runner` (`maneman-pc`, built from `ops/runner/`), was shut down on 2 October 2026, and must not come back while the repository is public: a fork's pull request would run its own code on that machine. On a private repository only, it could: the machine on, with Docker Desktop running, the image built and registered once with a token (it lasts an hour), and started again without it, so the token is not left in the container's settings:
 
@@ -678,7 +678,7 @@ Once, in the Cloudflare dashboard:
 
 Cloudflare is not the only card now. The owner's own card is on Google Maps Platform for the address search, and Google bills past its free allowance rather than stopping. Its quotas and its kill switch are section 13, and its ceiling is `GEOCODE_DAILY_CEILING`.
 
-If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RESULT_READ_DAILY_CEILING` to `"0"` in `wrangler.jsonc` and deploy. New uploads, renders and result reads then answer `busy`. Find the cause before raising them again. `test/node/free-tier-budget.test.ts` refuses any ceiling that could take R2 or Queues past 80% of the free allowance, counting the share set aside for Phase 2 (`docs/decisions/0015-render-pipeline.md`, `docs/decisions/0039-phase-2-budget.md`).
+If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RESULT_READ_DAILY_CEILING` to `"0"` in `wrangler.jsonc` and deploy. New uploads, renders and result reads then answer `busy`. Find the cause before raising them again. `test/node/tooling/free-tier-budget.test.ts` refuses any ceiling that could take R2 or Queues past 80% of the free allowance, counting the share set aside for Phase 2 (`docs/decisions/0015-render-pipeline.md`, `docs/decisions/0039-phase-2-budget.md`).
 
 ### The daily allowances
 
@@ -1458,7 +1458,7 @@ node scripts/release/mark-database.ts <env> --check
 - a table triggers write to, such as `last_visits` or `stock_balances`, is written last, as the export had it;
 - `d1_migrations`, `deployment_identity` and the maintenance switch are never touched.
 
-`test/worker/restore-carry.test.ts` runs the same steps on a row in every table, so a migration the carry-back cannot pass fails its pull request.
+`test/worker/platform/restore-carry.test.ts` runs the same steps on a row in every table, so a migration the carry-back cannot pass fails its pull request.
 
 A table dropped since `<T>` is not in `now.sql`, so it stays as it was at `<T>`, named or not. The file runs whole or not at all. It fails, and changes nothing, when a migration ran after `<T>`, as its rows then name tables or columns the restored database lacks (leave out the tables that migration changed), or when a table left at `<T>` points at a row a carried table no longer has (carry it too, or leave out the one it points at). Anything written between the restore and the carry-back is lost.
 

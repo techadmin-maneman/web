@@ -61,4 +61,4 @@ Each read takes from the day's result-read ceiling, as the site's result link do
 
 - **The data export** (`GET /api/me/export`) already lists the client's try-ons; it is unchanged.
 - **A look read in the app counts against the site's result-read ceiling.** Past it, the app's try-on images answer `busy` as the site's links do, until midnight in India, and ops are told once.
-- **Tests:** `test/worker/client-try-ons.test.ts`; `e2e/app/try-on.e2e.ts`, against a claimed try-on the global setup seeds (`e2e/app/try-on.ts`); every client-app fidelity pair is unchanged.
+- **Tests:** `test/worker/app/client-try-ons.test.ts`; `e2e/app/try-on.e2e.ts`, against a claimed try-on the global setup seeds (`e2e/app/try-on.ts`); every client-app fidelity pair is unchanged.

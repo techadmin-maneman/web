@@ -37,4 +37,4 @@ A held booking keeps its half-slot's place in the day (`slot_holds.start_unit`),
 
 - Ops can change the day's times without a release, from a day well ahead. A client never sees a visit move under them.
 - Changes accumulate. The table is read whole, so a change or two a year costs nothing.
-- Tests: `test/node/policy-slot-times.test.ts`, `test/worker/slot-times.test.ts` and `test/worker/ops-slot-times.test.ts`. The booking, dispatch, message and window tests now read the day's times.
+- Tests: `test/node/policy/policy-slot-times.test.ts`, `test/worker/booking/slot-times.test.ts` and `test/worker/ops/ops-slot-times.test.ts`. The booking, dispatch, message and window tests now read the day's times.

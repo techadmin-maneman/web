@@ -32,7 +32,7 @@ Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` se
 | `packages/ui`      | The React components and hooks the apps draw alike: buttons, sheets, dialogs, fields, tables, tabs, page states, the router, `useLoad`, `useOneAtATime` (`packages/ui/README.md`, ADR 0076) | The three apps                                         |
 | `packages/web-kit` | The API client, the apps' security headers, India's dates, rupees, a mobile number as typed, and WhatsApp's number and links                                                                | The three apps, and the site's dates, rupees and links |
 
-- **Tokens only.** No stylesheet writes a colour, length, duration, curve, weight or leading of its own; `test/node/site-tokens.test.ts` and `test/node/app-tokens.test.ts` fail on one.
+- **Tokens only.** No stylesheet writes a colour, length, duration, curve, weight or leading of its own; `test/node/site/site-tokens.test.ts` and `test/node/apps/app/app-tokens.test.ts` fail on one.
 - **No copies.** An app that keeps its own icon, mark, router, loader, tap guard or error boundary, hides words its own way, formats rupees or adds India's offset fails a test. What is shared is written once, so a fix reaches every app.
 - **Each app brings its own React.** `packages/ui` imports React without installing it, and each app's `vite.config.ts` dedupes it: the repository's own React 18 is there for the fidelity runs.
 

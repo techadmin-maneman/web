@@ -1,6 +1,6 @@
 // Every table that holds rows about a client: the person themselves, and each table with a person_id, subject_id or
 // referred_person_id column. For each, what their data export leaves out and why (every other column is in it), and
-// what erasing them does to it. test/node/personal-data.test.ts runs the export and the erasure against the migrated
+// what erasing them does to it. test/node/database/personal-data.test.ts runs the export and the erasure against the migrated
 // schema and fails on a table or a column added without an answer here, or an answer the code does not keep.
 
 interface PersonalTable {

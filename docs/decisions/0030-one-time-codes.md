@@ -74,7 +74,7 @@ The app's second screen then says a code is on its way if the number has a booki
 - **Evolution's ban risk now covers logins.** If the number is banned, no one can log in until SMS exists. That makes the DLT registration more urgent.
 - **New secret:** `OTP_PEPPER`, at least 32 characters, required wherever the client surface is switched on (staging now). It is set with `W secret put OTP_PEPPER --env <env>`.
 - **Clean-up:** the sweeper deletes challenges a day after they expire. Erasure voids a person's open challenges.
-- **Tests** (`test/worker/client-auth.test.ts`) cover:
+- **Tests** (`test/worker/app/client-auth.test.ts`) cover:
   - the same answer, and nothing sent, for unbooked, try-on-only and erased numbers;
   - a code sent to a number off staging's allowlist, since ADR 0097 a code answers whoever asked for it;
   - each rule, named by its words in `src/policy/one-time-code.ts`;
@@ -82,4 +82,4 @@ The app's second screen then says a code is on its way if the number has a booki
   - the Origin check;
   - no code or number in the logs.
 
-  `test/node/policy-one-time-code.test.ts` covers the rules' own functions.
+  `test/node/policy/policy-one-time-code.test.ts` covers the rules' own functions.

@@ -3,7 +3,7 @@
 // the one stated limit, 2,048 characters, is beyond an address in six short parts.
 
 // The schema rather than ./api.ts, so the rule can be read and tested in Node
-// without the fetch client coming with it (test/node/tech-navigate.test.ts).
+// without the fetch client coming with it (test/node/apps/tech/tech-navigate.test.ts).
 import { given } from "@maneman/web-kit/address";
 import type { components } from "../api-schema.ts";
 

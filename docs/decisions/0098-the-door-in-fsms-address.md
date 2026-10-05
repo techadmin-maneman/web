@@ -28,4 +28,4 @@ The floor, tower and landmark are named, unless the client already wrote the nam
 - A work order in FSM names the flat, floor and tower, and a new client's first booking cannot fail on a street FSM refuses.
 - An old client, such as an app left open since before this change, that saves an address without the flat is refused, and the form says it could not save; saved again from the current app, it goes through.
 - The labels "Floor", "Tower" and "Landmark:" are ours, in FSM only; no client sees them.
-- Tests: `test/node/fsm-street.test.ts`; additions to the client-profile, consultations, referrals and ops-client-address tests and to `test/node/site-booking.test.ts`; the app's, the site's and the console's address specs.
+- Tests: `test/node/fsm-street.test.ts`; additions to the client-profile, consultations, referrals and ops-client-address tests and to `test/node/site/site-booking.test.ts`; the app's, the site's and the console's address specs.

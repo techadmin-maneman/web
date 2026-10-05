@@ -30,7 +30,7 @@ SQLite cannot change a CHECK constraint in place, so the table has to be rebuilt
 - **An index on `provider_message_id`**, the ID a receipt uses to name the message.
 - **Nothing else changes:** `state` keeps its CHECK, and every other column is as it was.
 
-**The rebuild is safe for the code already deployed.** The staging and production deploys migrate before they upload the new code. The Phase 1 code names none of the new columns, and its inserts get the right `subject_kind` by default. Every row is copied across unchanged, which `test/node/migration-0006.test.ts` proves. That test applies the real migration files to SQLite, before and after.
+**The rebuild is safe for the code already deployed.** The staging and production deploys migrate before they upload the new code. The Phase 1 code names none of the new columns, and its inserts get the right `subject_kind` by default. Every row is copied across unchanged, which `test/node/database/migration-0006.test.ts` proves. That test applies the real migration files to SQLite, before and after.
 
 **The send port takes one message:** `send({ to, template, params, mediaUrl? })` replaces `sendTemplate(to, template, params, mediaUrl)`. Phase 2's templates take different parameters, and named fields read better at every call site. Behaviour is unchanged.
 

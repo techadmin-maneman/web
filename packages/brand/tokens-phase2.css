@@ -1,7 +1,7 @@
 /*
  * The colours and sizes the Phase 2 surfaces add to tokens.css, which they load first.
  * This layer only adds names; it never redefines one of tokens.css's
- * (test/node/brand-package.test.ts). Each value is drawn in a Phase 2 spec
+ * (test/node/packages/brand-package.test.ts). Each value is drawn in a Phase 2 spec
  * board (design/phase2), not only in the Prototype, whose colours the boards
  * overrule.
  */

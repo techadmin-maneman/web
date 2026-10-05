@@ -18,7 +18,7 @@ ADR 0061 built the register and moved six rules into it. What was still a figure
 
 ADR 0061's three safe defaults stand: a store that cannot be read gives the last good read or the committed defaults, never a nought; a figure the register would no longer accept, in a row or in the snapshot, gives way to its committed default; the console holds every draft as text.
 
-**What it costs.** The free plan stops the day at 100,000 requests, and a request reads the store at most once, so the ceiling is 100,000 rows a day however the cache behaves: a fiftieth of D1's 5,000,000 (`test/worker/ops-settings.test.ts` measures one row a read). The register's length now costs the snapshot's size, which every miss parses: `MAX_SNAPSHOT_BYTES` bounds it at 16 KiB with every input at its widest, and `test/node/ops-settings.test.ts` fails past it. The register holds fourteen inputs (fifteen since ADR 0095); the widest snapshot they can make is under 4 KiB.
+**What it costs.** The free plan stops the day at 100,000 requests, and a request reads the store at most once, so the ceiling is 100,000 rows a day however the cache behaves: a fiftieth of D1's 5,000,000 (`test/worker/ops/ops-settings.test.ts` measures one row a read). The register's length now costs the snapshot's size, which every miss parses: `MAX_SNAPSHOT_BYTES` bounds it at 16 KiB with every input at its widest, and `test/node/apps/ops/ops-settings.test.ts` fails past it. The register holds fourteen inputs (fifteen since ADR 0095); the widest snapshot they can make is under 4 KiB.
 
 ### Numbers and choices
 
