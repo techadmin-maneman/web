@@ -1,5 +1,5 @@
 // The index of docs/decisions/, written from each record's own header so it
-// cannot fall behind them (npm run adr-index; test/node/adr-index.test.ts).
+// cannot fall behind them (npm run adr-index; test/node/tooling/adr-index.test.ts).
 //
 // A record says what it changes in its header, "- Amends [0036](…)", or in its
 // status, "Amends ADR 0019 …", and a record that was changed may say so in its
@@ -122,7 +122,7 @@ export function adrIndex(files: readonly DecisionFile[], others: readonly Decisi
     "",
     "Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.",
     "",
-    `This file is written by \`npm run adr-index\` from the records' own headers, and \`test/node/adr-index.test.ts\` fails until it is run after a record is added or its status changes. The next free number is ${next}.`,
+    `This file is written by \`npm run adr-index\` from the records' own headers, and \`test/node/tooling/adr-index.test.ts\` fails until it is run after a record is added or its status changes. The next free number is ${next}.`,
     "",
     "| ADR | Decision | Date | Status | Changed by |",
     "| --- | --- | --- | --- | --- |",

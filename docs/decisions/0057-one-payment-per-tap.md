@@ -9,7 +9,7 @@ Board C6 is the screen a client reaches **after a payment has already failed onc
 
 So a client who taps twice inside that round trip — which is what an anxious person does on the screen that has just told them their payment failed — started two payments for one hold. Reproduced in the browser (`e2e/app/booking.e2e.ts`): the two taps made **two `POST /api/bookings`** against one hold, with both buttons live throughout.
 
-**What the second request did on the server was worse than a second request.** `startBooking` already meant to make one order per hold, and read `slot_holds.razorpay_order_id` to decide. Two requests that arrive together both read it as null, both call Razorpay, and both write — so the hold ends up naming one order and the other is orphaned. Reproduced at true concurrency in `test/worker/bookings.test.ts`:
+**What the second request did on the server was worse than a second request.** `startBooking` already meant to make one order per hold, and read `slot_holds.razorpay_order_id` to decide. Two requests that arrive together both read it as null, both call Razorpay, and both write — so the hold ends up naming one order and the other is orphaned. Reproduced at true concurrency in `test/worker/booking/bookings.test.ts`:
 
 | Two `POST /api/bookings` for one hold, at the same moment                | Before                                                        |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------- |

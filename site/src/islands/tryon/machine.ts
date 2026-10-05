@@ -1,6 +1,6 @@
 // The try-on's screens and what moves between them: one function of the state
 // and what just happened, with no fetching and no timers, so a test can walk it
-// (test/node/site-tryon-machine.test.ts). TryOn.tsx sends it events and does
+// (test/node/site/site-tryon-machine.test.ts). TryOn.tsx sends it events and does
 // the work around them: the upload, the gate, the render and its watch.
 //
 // The look goes to WhatsApp only, never to the site

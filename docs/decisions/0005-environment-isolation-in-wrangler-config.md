@@ -25,5 +25,5 @@ The top level of each `wrangler.jsonc` is the local environment only. `npm run c
 
 ## Consequences
 
-- The check is proved in both directions: tests break the real config one rule at a time (`test/node/wrangler-config-check.test.ts`), and CI requires the committed broken fixture to be rejected.
+- The check is proved in both directions: tests break the real config one rule at a time (`test/node/tooling/wrangler-config-check.test.ts`), and CI requires the committed broken fixture to be rejected.
 - Adding a binding means adding it at the top level and in both environments, named for each; the check says which one is missing.

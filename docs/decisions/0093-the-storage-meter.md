@@ -99,16 +99,16 @@ Past the runway, R2 bills on the owner's ruling; the runway is now when ops are 
 - **Each mark is told once for good.** A figure that falls back below a mark, after an erasure or a correction, and passes it again is not told again. Resetting `told_percent` on the row makes the meter tell again.
 - **A thumbnail is one more R2 write for each photograph,** and an erasure one list for each visit. Both fit well inside Phase 2's operations shares (ADR 0039).
 - **Tests.**
-  - `test/node/policy-storage-share.test.ts`: the marks and the ceiling.
-  - `test/node/migration-0055.test.ts`: the backfill.
-  - `test/worker/storage-meter.test.ts`: the counting, a rewrite and two deletes at once counted once, and the alerts.
-  - `test/worker/kept-try-ons.test.ts`, `test/worker/referral-cards.test.ts`: each store and delete of a copy, a look and a card counted, and a look kept once however often its sweep runs.
-  - `test/worker/field-photos.test.ts`: the upload limit, the ceiling, and the thumbnail's upload, claimed on its own take.
-  - `test/worker/client-visits.test.ts`: the thumbnail's link and its fallback.
-  - `test/worker/erasure.test.ts`: retakes and thumbnails erased.
+  - `test/node/policy/policy-storage-share.test.ts`: the marks and the ceiling.
+  - `test/node/database/migration-0055.test.ts`: the backfill.
+  - `test/worker/jobs/storage-meter.test.ts`: the counting, a rewrite and two deletes at once counted once, and the alerts.
+  - `test/worker/app/kept-try-ons.test.ts`, `test/worker/referrals/referral-cards.test.ts`: each store and delete of a copy, a look and a card counted, and a look kept once however often its sweep runs.
+  - `test/worker/field/field-photos.test.ts`: the upload limit, the ceiling, and the thumbnail's upload, claimed on its own take.
+  - `test/worker/app/client-visits.test.ts`: the thumbnail's link and its fallback.
+  - `test/worker/privacy/erasure.test.ts`: retakes and thumbnails erased.
   - `test/worker/visit-photos.test.ts`: FSM's size, and a retake from FSM.
-  - `test/worker/ops-storage.test.ts`: the console's figure.
-  - `test/worker/cron.test.ts`: the job.
+  - `test/worker/ops/ops-storage.test.ts`: the console's figure.
+  - `test/worker/jobs/cron.test.ts`: the job.
   - `test/node/dom/tech-outbox-replay.test.ts`: the pair in the outbox.
   - `e2e/tech/camera.e2e.ts`: the capture and the upload of both.
   - `e2e/app/fitted.e2e.ts`: a row's thumbnail and its fallback.

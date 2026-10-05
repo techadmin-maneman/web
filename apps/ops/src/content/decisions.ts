@@ -9,7 +9,7 @@ export const grievances = {
     /**
      * The days the app promises the client an answer within, which counsel has
      * still to confirm (docs/open-points.md, item 51).
-     * test/node/ops-content.test.ts holds this to the app's own words.
+     * test/node/apps/ops/ops-content.test.ts holds this to the app's own words.
      */
     answerDays: 30,
     /** Beneath the name: the number to answer on, and the day it was raised. */

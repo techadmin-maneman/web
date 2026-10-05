@@ -1,6 +1,6 @@
 // Every route the technician app calls, named once, apart from the browser so
 // a Node test can put the list beside the API's own document
-// (`docs/openapi-tech.json`, `test/node/tech-routes.test.ts`).
+// (`docs/openapi-tech.json`, `test/node/apps/tech/tech-routes.test.ts`).
 //
 // The shapes are no longer read off the boards: `npm run openapi` writes
 // `apps/tech/src/api-schema.ts` from the same schemas that serve the routes, so

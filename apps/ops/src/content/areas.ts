@@ -29,7 +29,7 @@ export const areas = {
      * What each of them gets. The words are launch_alert_v1's in
      * src/config/message-templates.ts, which is what the queue actually sends;
      * the first name is theirs, so the preview shows the placeholder.
-     * test/node/ops-content.test.ts holds the two together.
+     * test/node/apps/ops/ops-content.test.ts holds the two together.
      */
     message: (area: string, bookingUrl: string) =>
       `Hi {first name}, Mane Man now comes to ${area}. Book your free consultation: ${bookingUrl}`,

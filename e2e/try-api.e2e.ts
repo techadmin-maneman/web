@@ -60,7 +60,7 @@ test("the browser that has had its look is told it was sent, not asked for a pho
   expect((await generated).status()).toBe(202);
 
   // The render set the mm_look cookie, so the page asks on arrival and says the look was sent before a photograph is
-  // chosen. The API's refusal of a second photograph is test/worker/tryon-api.test.ts's.
+  // chosen. The API's refusal of a second photograph is test/worker/site/tryon-api.test.ts's.
   const uploads: string[] = [];
   page.on("request", (request) => {
     if (request.url().includes("/api/tryon/upload-url")) uploads.push(request.url());

@@ -1,7 +1,7 @@
 // The carry-back file of a whole-database restore. Given the export taken just before going back to <T>, it writes
 // the SQL that, run on the database as it was at <T>, makes each table as the export had it again, except the tables
 // named to be left at <T>. What each table needs is read from the export's own schema, so a migration that adds a
-// table or a trigger needs nothing here; test/worker/restore-carry.test.ts runs it on a row in every table.
+// table or a trigger needs nothing here; test/worker/platform/restore-carry.test.ts runs it on a row in every table.
 //
 // - A table with a BEFORE DELETE trigger that raises is only ever added to. None of its rows is deleted: each of the
 //   export's is added, or, where the row is there already and has changed since, changed to match.

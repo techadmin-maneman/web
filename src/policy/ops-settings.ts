@@ -307,7 +307,7 @@ export const MAX_OPEN_KEYS = 32;
 /**
  * The largest the store's snapshot may grow, with every input at its widest:
  * the one row a request reads and parses (docs/decisions/0088-every-policy-in-the-console.md).
- * test/node/ops-settings.test.ts holds the register to it.
+ * test/node/apps/ops/ops-settings.test.ts holds the register to it.
  */
 export const MAX_SNAPSHOT_BYTES = 16 * 1024;
 /** A base names itself; this is long enough for any base's name. */
