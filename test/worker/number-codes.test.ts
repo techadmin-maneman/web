@@ -1,5 +1,5 @@
 // A WhatsApp code that proves a number typed into the site, before /book's one visit or /try's gate acts on it
-// (src/policy/number-proof.ts, src/routes/number-codes.ts). Every number here is made up.
+// (src/policy/number-proof.ts, src/routes/public/number-codes.ts). Every number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";

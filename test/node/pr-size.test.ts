@@ -19,7 +19,7 @@ describe("the lines a pull request changes by hand", () => {
       "50\t0\tsite/src/lib/api-schema.ts",
       "20\t0\tsrc/worker-configuration.d.ts",
       "500\t300\tpackage-lock.json",
-      "33\t0\tsrc/routes/client-booking.ts",
+      "33\t0\tsrc/routes/client/booking.ts",
     ].join("\n");
     expect(handWrittenLines(numstat)).toBe(33);
   });

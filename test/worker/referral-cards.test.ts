@@ -10,7 +10,7 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { readMeter } from "../../src/domain/storage-meter.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
 import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "../../src/policy/invites.ts";
-import { REFERRERS_PAGE, WAITLIST_AREAS } from "../../src/routes/ops-waitlist.ts";
+import { REFERRERS_PAGE, WAITLIST_AREAS } from "../../src/routes/ops/waitlist.ts";
 import {
   appFor,
   captureLogs,

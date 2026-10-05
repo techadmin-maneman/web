@@ -1,4 +1,4 @@
-// What each technician has done, on the ops surface (src/routes/ops-technicians.ts),
+// What each technician has done, on the ops surface (src/routes/ops/technicians.ts),
 // Ops Console D3. NOW is Monday 21 September 2026, 12 noon in India. Nothing
 // here is a real person or number.
 //

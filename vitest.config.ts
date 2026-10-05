@@ -39,7 +39,7 @@ export default defineConfig({
           { lines: 90, branches: 90 },
         // Its one branch untaken is a hold with no client, which every hold has.
         "src/http/book-hold.ts": { lines: 90, branches: 85 },
-        "src/routes/razorpay-hook.ts": { lines: 90, branches: 90 },
+        "src/routes/hooks/razorpay.ts": { lines: 90, branches: 90 },
         // What the deploy and check scripts share. A release's recovery from a lost reply first runs in an incident.
         "scripts/lib/**": { lines: 85, branches: 70 },
         "scripts/lib/release.ts": { lines: 95, branches: 90 },

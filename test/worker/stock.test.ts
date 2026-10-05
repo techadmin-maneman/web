@@ -1,5 +1,5 @@
 // Stock of consumables in each technician's kit and the central store, and a job's
-// use of them (src/routes/ops-stock.ts, src/domain/job-use.ts;
+// use of them (src/routes/ops/stock.ts, src/domain/job-use.ts;
 // docs/decisions/0087-consumables-and-stock.md). NOW is Monday 21 September 2026,
 // 12 noon in India.
 //

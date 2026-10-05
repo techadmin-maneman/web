@@ -1,0 +1,590 @@
+// What ops do about field work, behind Access (src/policy/no-show.ts,
+// technician-login.ts):
+//   GET  /api/no-shows                                   the cases, with their evidence
+//   POST /api/no-shows/:id/decision                      charge or waive, from the evidence
+//   GET  /api/clients/:id/pieces                         the pieces tab
+//   GET  /api/technicians                                who works, their phones and leave, and who is switched off
+//   POST /api/technicians/:id/devices/:device/revoke     revoke a phone; it drops its cached jobs, and he is stopped signing in
+//   POST /api/technicians/:id/allow-sign-in              let him sign in again after a revoke
+//   GET  /api/technicians/:id/leave                      his leave still to end, each with the jobs booked on it
+//   POST /api/technicians/:id/leave                      record leave; the board and booking both refuse those days
+//   POST /api/technicians/:id/leave/:leave/cancel        take it back
+//
+// "A no-show is charged under the 24-hour policy. The charge is applied by ops
+// from the evidence, never automatically": nothing here charges anybody until
+// ops rule. A charge costs what the booking was sold to cost a no-show
+// (no_show_charge, ADR 0088): a first fit or a replacement keeps its late fee and
+// refunds the rest, a paid service visit is kept, a credit is lost, as a late
+// cancel of the same visit would, and the ruling records what it kept
+// (src/policy/no-show.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+// A waiver gives back what ops set it to (no_show_waiver): the payment refunded
+// and the credit returned, as the owner ruled on 27 September 2026, and the
+// ruling keeps what it gave. Either way the client is told on WhatsApp, with
+// their consent to messages about visits.
+
+import { createRoute, z } from "@hono/zod-openapi";
+import { actorOf } from "../../http/audit.ts";
+import type { App } from "../../http/context.ts";
+import { VISIT_TYPES } from "../../config/visit-types.ts";
+import { listCities } from "../../domain/cities.ts";
+import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave, standingLeave } from "../../domain/leave.ts";
+import { afterRuling } from "../../domain/after-a-ruling.ts";
+import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../../domain/no-shows.ts";
+import { piecesOf } from "../../domain/pieces.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
+import { queueMessage } from "../../http/queue-message.ts";
+import { permitsOn, reachOf, routeReach, withinRouteReach } from "../../http/staff-access.ts";
+import { reachesCity } from "../../policy/access.ts";
+import { WAIVING_A_NO_SHOW } from "../../policy/console-routes.ts";
+import { allowSignIn, devicesByTechnician, revokeDevice } from "../../domain/technicians.ts";
+import { roster, rosterTechnician, type RosterTechnician } from "../../domain/technician-roster.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
+import { json } from "../../http/openapi.ts";
+import { indiaDate } from "../../lib/india-time.ts";
+import { needsReason, REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
+import { NO_SHOW_DECISIONS } from "../../policy/no-show.ts";
+import { dueAt } from "../../policy/tasks.ts";
+import { PieceSchema } from "../tech/pieces.ts";
+
+const NoShowCaseSchema = z
+  .object({
+    id: z.uuid(),
+    appointment_id: z.uuid(),
+    person: z.union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()]).openapi({
+      description: "Whose visit it was, so ops can open their page and call them; null once they have been erased.",
+    }),
+    visit_date: z.union([z.string(), z.null()]),
+    technician: z.union([z.string(), z.null()]),
+    checked_in_at: z.iso.datetime().openapi({
+      description:
+        "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here, or from " +
+        "the booked start for an arrival before it.",
+    }),
+    phone_checked_in_at: z.union([z.iso.datetime(), z.null()]).openapi({
+      description: "What the phone itself said, before the bounds; null when it said nothing.",
+    }),
+    received_at: z.iso.datetime().openapi({
+      description: "When the check-in reached us: long after the phone's time means no signal, or a clock set back.",
+    }),
+    window_start: z.union([z.iso.datetime(), z.null()]).openapi({ description: "The visit's booked window." }),
+    window_end: z.union([z.iso.datetime(), z.null()]),
+    minutes_late: z.union([z.number().int(), z.null()]).openapi({
+      description: "Minutes from the booked start to the check-in; negative when he was early.",
+    }),
+    distance_m: z.union([z.number().int(), z.null()]).openapi({
+      description:
+        "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured.",
+    }),
+    let_in: z
+      .union([z.object({ by: z.string(), reason: z.union([z.string(), z.null()]) }).strict(), z.null()])
+      .openapi({
+        description:
+          "Ops let him check in past the geofence for this visit: who, and why. Null when his check-in passed on its own.",
+      }),
+    radius_m: z.number().int().openapi({
+      description:
+        "The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since.",
+    }),
+    message_state: z.enum(MESSAGE_STATES).openapi({
+      description:
+        "Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.",
+    }),
+    message_delivered_at: z
+      .union([z.iso.datetime(), z.null()])
+      .openapi({ description: "When WhatsApp reported it delivered; null if it never did." }),
+    wait_ends_at: z.iso.datetime(),
+    closed_early: z.boolean().openapi({
+      description:
+        "The wait ran from a check-in before the booked start, so the case closed before the client's own wait had " +
+        "run: waive it, or give the reason to charge.",
+    }),
+    closed_at: z.union([z.iso.datetime(), z.null()]),
+    opened_at: z.iso.datetime().openapi({ description: "When the case opened, and started waiting for ops." }),
+    due: z.iso.datetime().openapi({
+      description: "When ops should have ruled: the Tasks board's allowance for a no-show, from opened_at.",
+    }),
+    decision: z.enum(NO_SHOW_DECISIONS),
+    decided_at: z.union([z.iso.datetime(), z.null()]),
+  })
+  .strict()
+  .openapi("NoShowCase", { description: "The three facts ops rule on, and nothing else." });
+
+const NoShowsSchema = z
+  .object({
+    cases: z.array(NoShowCaseSchema),
+    waiver: z
+      .object({ payment: z.enum(["refunded", "kept"]), credit: z.enum(["returned", "spent"]) })
+      .strict()
+      .openapi({ description: "What waiving a case gives back now, as ops set it in Settings (no_show_waiver)." }),
+  })
+  .strict()
+  .openapi("NoShowCases");
+
+const DecisionRequestSchema = z
+  .object({
+    decision: z.enum(["charged", "waived"]),
+    reason: z.string().trim().max(REASON_MAX_CHARS).nullable().openapi({
+      description: "Required either way, and kept with the ruling (src/policy/decision-reasons.ts).",
+    }),
+  })
+  .strict()
+  .openapi("NoShowDecisionRequest");
+
+const ClientPiecesSchema = z
+  .object({ pieces: z.array(PieceSchema) })
+  .strict()
+  .openapi("ClientPieces");
+
+const LeaveSchema = z
+  .object({
+    id: z.uuid(),
+    from: z.iso.date(),
+    to: z.iso.date().openapi({ description: "Inclusive: a single day's leave has the same date twice." }),
+    note: z.union([z.string(), z.null()]),
+  })
+  .strict()
+  .openapi("TechnicianLeave");
+
+const MOBILE = z
+  .union([z.string(), z.null()])
+  .openapi({ description: "The number he signs in with, +91 and ten digits; null where none is recorded." });
+const CITY = z
+  .union([z.string(), z.null()])
+  .openapi({ description: "The city he works in, which staff access by place reads; null for none." });
+
+const TechniciansSchema = z
+  .object({
+    technicians: z.array(
+      z
+        .object({
+          id: z.uuid(),
+          name: z.string(),
+          initials: z.string(),
+          zone: z.union([z.string(), z.null()]),
+          city: CITY,
+          mobile: MOBILE,
+          sign_in_stopped_at: z.union([z.iso.datetime(), z.null()]).openapi({
+            description: "When revoking a phone of his stopped him signing in; null while he may. Ops let him again.",
+          }),
+          devices: z.array(
+            z
+              .object({
+                device_id: z.string(),
+                label: z.union([z.string(), z.null()]),
+                last_seen_at: z.iso.datetime(),
+                revoked_at: z.union([z.iso.datetime(), z.null()]),
+                signed_in: z.boolean().openapi({
+                  description:
+                    "Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it.",
+                }),
+              })
+              .strict(),
+          ),
+          leave: z
+            .array(LeaveSchema)
+            .openapi({ description: "Leave that has not ended yet, soonest first (ADR 0062)." }),
+        })
+        .strict(),
+    ),
+    switched_off: z
+      .array(
+        z
+          .object({
+            id: z.uuid(),
+            name: z.string(),
+            zone: z.union([z.string(), z.null()]),
+            city: CITY,
+            mobile: MOBILE,
+          })
+          .strict(),
+      )
+      .openapi({
+        description: "Technicians switched off, by name: they cannot sign in, and nothing is booked on them.",
+      }),
+    cities: z.array(z.string()).openapi({
+      description:
+        "The cities the caller may give a technician, those their Operations MANAGE reaches, in display order.",
+    }),
+  })
+  .strict()
+  .openapi("Technicians");
+
+const LeaveRequestSchema = z
+  .object({
+    from: z.iso.date(),
+    to: z.iso.date(),
+    note: z.string().min(1).max(200).optional().openapi({ description: "Why, in ops' words. Never a medical detail." }),
+  })
+  .strict()
+  .openapi("TechnicianLeaveRequest");
+
+const JobOnLeaveSchema = z
+  .object({
+    appointment_id: z.uuid(),
+    starts_at: z.iso.datetime(),
+    type: z.union([z.enum(VISIT_TYPES), z.null()]),
+    client: z.union([z.string(), z.null()]),
+  })
+  .strict()
+  .openapi("TechnicianJobOnLeave", {
+    description:
+      "A job booked on a day the technician is away, which the leave moves nowhere: ops move it on the dispatch " +
+      "board, and it waits on the Tasks board until they do.",
+  });
+
+const LeaveRecordedSchema = z
+  .object({
+    id: z.uuid(),
+    jobs: z.array(JobOnLeaveSchema).openapi({ description: "The jobs already booked on those days, soonest first." }),
+  })
+  .strict()
+  .openapi("TechnicianLeaveRecorded");
+
+const StandingLeaveSchema = z
+  .object({
+    leave: z
+      .array(
+        z
+          .object({
+            id: z.uuid(),
+            from: z.iso.date(),
+            to: z.iso.date().openapi({ description: "Inclusive: a single day's leave has the same date twice." }),
+            note: z.union([z.string(), z.null()]),
+            jobs: z
+              .array(JobOnLeaveSchema)
+              .openapi({ description: "The jobs still booked on its days from today on, soonest first." }),
+          })
+          .strict(),
+      )
+      .openapi({ description: "His leave that has not ended yet, soonest first." }),
+  })
+  .strict()
+  .openapi("TechnicianStandingLeave");
+
+const noShowsRoute = createRoute({
+  method: "get",
+  path: "/api/no-shows",
+  summary: "No-show cases in the caller's cities: undecided first, each with its three facts",
+  request: { query: z.object({ decision: z.enum([...NO_SHOW_DECISIONS, "all"]).default("undecided") }) },
+  responses: { 200: { description: "The cases", ...json(NoShowsSchema) }, 403: errorResponse("access_required") },
+});
+
+const decisionRoute = createRoute({
+  method: "post",
+  path: "/api/no-shows/{id}/decision",
+  summary: "Charge or waive a no-show, from the evidence",
+  request: { params: z.object({ id: z.uuid() }), body: { required: true, ...json(DecisionRequestSchema) } },
+  responses: {
+    200: { description: "Recorded", ...json(z.object({ decided: z.boolean() }).strict()) },
+    400: errorResponse("invalid_request: a ruling needs a reason"),
+    403: errorResponse("access_required, or not_permitted: waiving asks Finance MANAGE in the case's city"),
+    404: errorResponse("not_found: no such case in the caller's cities, or it was ruled on already"),
+  },
+});
+
+const piecesRoute = createRoute({
+  method: "get",
+  path: "/api/clients/{id}/pieces",
+  summary: "A client's pieces: code, base, fitted date, supplier lot, replacement due and any failure",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "The pieces, newest fit first", ...json(ClientPiecesSchema) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such client, or the client is outside the caller's cities"),
+  },
+});
+
+const techniciansRoute = createRoute({
+  method: "get",
+  path: "/api/technicians",
+  summary:
+    "Active technicians in the caller's cities, the phones they have logged in on and their leave, and those switched off",
+  responses: {
+    200: { description: "The technicians", ...json(TechniciansSchema) },
+    403: errorResponse("access_required"),
+  },
+});
+
+const standingLeaveRoute = createRoute({
+  method: "get",
+  path: "/api/technicians/{id}/leave",
+  summary: "A technician's leave that has not ended, each with the jobs still booked on its days",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "The leave", ...json(StandingLeaveSchema) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such technician, or he is outside the caller's cities"),
+  },
+});
+
+const leaveRoute = createRoute({
+  method: "post",
+  path: "/api/technicians/{id}/leave",
+  summary: "Record leave. Those days are then refused to booking and to the dispatch board alike",
+  request: { params: z.object({ id: z.uuid() }), body: { required: true, ...json(LeaveRequestSchema) } },
+  responses: {
+    200: { description: "Recorded", ...json(LeaveRecordedSchema) },
+    400: errorResponse(`invalid_request: to is before from, or more than ${String(LEAVE_MAX_DAYS)} days ahead`),
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such active technician in the caller's cities"),
+  },
+});
+
+const cancelLeaveRoute = createRoute({
+  method: "post",
+  path: "/api/technicians/{id}/leave/{leave}/cancel",
+  summary: "Take leave back, so those days can be worked again",
+  request: { params: z.object({ id: z.uuid(), leave: z.uuid() }) },
+  responses: {
+    200: { description: "Cancelled", ...json(z.object({ cancelled: z.boolean() }).strict()) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such leave of that technician's, or he is not in the caller's cities"),
+  },
+});
+
+const revokeRoute = createRoute({
+  method: "post",
+  path: "/api/technicians/{id}/devices/{device}/revoke",
+  summary: "Revoke a phone. Its session ends, and it drops its cached jobs on its next contact",
+  request: { params: z.object({ id: z.uuid(), device: z.string().min(1).max(64) }) },
+  responses: {
+    200: { description: "Revoked", ...json(z.object({ revoked_at: z.iso.datetime() }).strict()) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such phone of that technician's, or he is not in the caller's cities"),
+  },
+});
+
+const allowSignInRoute = createRoute({
+  method: "post",
+  path: "/api/technicians/{id}/allow-sign-in",
+  summary: "Let a technician sign in again, on any phone, after ops revoked one of his",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "He may sign in again", ...json(z.object({ allowed: z.literal(true) }).strict()) },
+    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such technician stopped signing in, or he is not in the caller's cities"),
+  },
+});
+
+export function registerOpsField(app: App): void {
+  app.openapi(noShowsRoute, async (c) => {
+    const { decision } = c.req.valid("query");
+    const reached = await routeReach(c);
+    const [cases, inputs] = await Promise.all([listNoShowCases(c.env.DB, decision, 200, reached), opsInputs(c)]);
+    const due = (openedAt: string) => dueAt(new Date(openedAt), "no_show_decision", inputs.taskSlaHours).toISOString();
+    return c.json(
+      { cases: cases.map((each) => ({ ...each, due: due(each.opened_at) })), waiver: inputs.noShowWaiver },
+      200,
+    );
+  });
+
+  app.openapi(decisionRoute, async (c) => {
+    const staff = actorOf(c);
+    const { id } = c.req.valid("param");
+    const { decision, reason } = c.req.valid("json");
+    if (needsReason("no_show", decision) && (reason ?? "") === "") {
+      return refuse(c, "invalid_request", ["reason"]);
+    }
+    if (!(await withinRouteReach(c, "no_show", id))) return refuse(c, "not_found");
+    if (decision === "waived" && !(await permitsOn(c, WAIVING_A_NO_SHOW, "no_show", id))) {
+      return refuse(c, "not_permitted");
+    }
+    const now = c.var.deps.now();
+    const inputs = await opsInputs(c);
+
+    const ruled = await decideNoShow(c.env.DB, {
+      caseId: id,
+      decision,
+      reason,
+      actor: staff.id,
+      audit: {
+        surface: "ops",
+        actor: staff,
+        action: "no_show.decide",
+        subject: { kind: "no_show_case", id },
+        requestId: c.var.requestId,
+        detail: { decision },
+      },
+      now,
+      waiver: inputs.noShowWaiver,
+      terms: inputs,
+      disputeWindowDays: inputs.disputeWindowDays,
+    });
+    if (ruled === null) return refuse(c, "not_found");
+    const notify = (messageId: string) => queueMessage(c, messageId);
+    await afterRuling(c.env.DB, { ...c.var.deps, notify }, ruled);
+    return c.json({ decided: true }, 200);
+  });
+
+  app.openapi(piecesRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const client = await c.env.DB.prepare("SELECT id FROM people WHERE id = ?1 AND erased_at IS NULL")
+      .bind(id)
+      .first<{ id: string }>();
+    if (client === null || !(await withinRouteReach(c, "client", id))) {
+      return refuse(c, "not_found");
+    }
+    const pieces = await piecesOf(c.env.DB, id);
+    return c.json(
+      {
+        pieces: pieces.map((piece) => ({
+          piece_code: piece.piece_code,
+          base: piece.base,
+          supplier_lot: piece.supplier_lot,
+          fitted_at: piece.fitted_at === null ? null : piece.fitted_at.slice(0, 10),
+          replacement_due_at: piece.replacement_due_at === null ? null : piece.replacement_due_at.slice(0, 10),
+          failed_at: piece.failed_at,
+          failure_reason: piece.failure_reason,
+        })),
+      },
+      200,
+    );
+  });
+
+  app.openapi(techniciansRoute, async (c) => {
+    // The phones and the leave are one read each for the whole roster, not one per technician.
+    const [roll, devices, leave, cities, reach, managed] = await Promise.all([
+      roster(c.env.DB),
+      devicesByTechnician(c.env.DB, c.var.deps.now()),
+      leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
+      listCities(c.env.DB),
+      routeReach(c),
+      reachOf(c, "operations", "manage"),
+    ]);
+    const everyone = roll.filter((technician) => reachesCity(reach, technician.city));
+    const given = cities.map((city) => city.name).filter((city) => reachesCity(managed, city));
+    const summaryOf = (technician: RosterTechnician) => ({
+      id: technician.id,
+      name: technician.name,
+      zone: technician.zone,
+      city: technician.city,
+      mobile: technician.mobile,
+    });
+    const technicians = everyone
+      .filter((technician) => technician.active)
+      .map((technician) => ({
+        ...summaryOf(technician),
+        initials: technician.initials,
+        sign_in_stopped_at: technician.signInStoppedAt,
+        devices: devices.get(technician.id) ?? [],
+        leave: leave
+          .filter((period) => period.technician_id === technician.id)
+          .map(({ id, from, to, note }) => ({ id, from, to, note })),
+      }));
+    const switchedOff = everyone.filter((technician) => !technician.active).map(summaryOf);
+    return c.json({ technicians, switched_off: switchedOff, cities: given }, 200);
+  });
+
+  app.openapi(standingLeaveRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const technician = await rosterTechnician(c.env.DB, id);
+    if (technician === null || !(await withinRouteReach(c, "technician", id))) {
+      return refuse(c, "not_found");
+    }
+    const periods = await standingLeave(c.env.DB, id, indiaDate(c.var.deps.now()));
+    const leave = periods.map((period) => ({
+      id: period.id,
+      from: period.from,
+      to: period.to,
+      note: period.note,
+      jobs: period.jobs,
+    }));
+    return c.json({ leave }, 200);
+  });
+
+  app.openapi(leaveRoute, async (c) => {
+    const staff = actorOf(c);
+    const { id } = c.req.valid("param");
+    const { from, to, note } = c.req.valid("json");
+    const now = c.var.deps.now();
+    if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
+
+    const outcome = await recordLeave(
+      c.env.DB,
+      { technicianId: id, from, to, note: note ?? null, actor: staff.id },
+      indiaDate(now),
+      now,
+      {
+        surface: "ops",
+        actor: staff,
+        action: "technician.leave",
+        subject: { kind: "technician", id },
+        requestId: c.var.requestId,
+        detail: { from, to },
+      },
+    );
+    if (outcome.kind === "no_such_technician") return refuse(c, "not_found");
+    if (outcome.kind === "bad_dates") return refuse(c, "invalid_request", ["to"]);
+    return c.json({ id: outcome.id, jobs: outcome.jobs }, 200);
+  });
+
+  app.openapi(cancelLeaveRoute, async (c) => {
+    const staff = actorOf(c);
+    const { id, leave } = c.req.valid("param");
+    const now = c.var.deps.now();
+    if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
+
+    const cancelled = await cancelLeave(
+      c.env.DB,
+      {
+        technicianId: id,
+        leaveId: leave,
+        actor: staff.id,
+        audit: {
+          surface: "ops",
+          actor: staff,
+          action: "technician.leave_cancelled",
+          subject: { kind: "technician", id },
+          requestId: c.var.requestId,
+          detail: { leave_id: leave },
+        },
+      },
+      now,
+    );
+    if (!cancelled) return refuse(c, "not_found");
+    return c.json({ cancelled: true }, 200);
+  });
+
+  app.openapi(revokeRoute, async (c) => {
+    const staff = actorOf(c);
+    const { id, device } = c.req.valid("param");
+    const now = c.var.deps.now();
+    if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
+
+    const revoked = await revokeDevice(c.env.DB, {
+      technicianId: id,
+      deviceId: device,
+      actor: staff.id,
+      audit: {
+        surface: "ops",
+        actor: staff,
+        action: "technician_device.revoke",
+        subject: { kind: "technician", id },
+        requestId: c.var.requestId,
+        detail: { device_id: device },
+      },
+      now,
+    });
+    const revokedAt = revoked?.revokedAt ?? null;
+    if (revokedAt === null) return refuse(c, "not_found");
+    c.var.log.info("technician_device_revoked", { technician_id: id, device_id: device });
+    return c.json({ revoked_at: revokedAt }, 200);
+  });
+
+  app.openapi(allowSignInRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
+    const audit = {
+      surface: "ops",
+      actor: actorOf(c),
+      action: "technician.allow_sign_in",
+      subject: { kind: "technician", id },
+      requestId: c.var.requestId,
+    } as const;
+    if (!(await allowSignIn(c.env.DB, id, audit, c.var.deps.now()))) {
+      return refuse(c, "not_found");
+    }
+    c.var.log.info("technician_sign_in_allowed", { technician_id: id });
+    return c.json({ allowed: true as const }, 200);
+  });
+}

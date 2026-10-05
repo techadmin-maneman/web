@@ -1,4 +1,4 @@
-// A day's money, on the ops surface (src/routes/ops-payments.ts), Ops Console
+// A day's money, on the ops surface (src/routes/ops/payments.ts), Ops Console
 // D1. NOW is Monday 21 September 2026, 12 noon in India, and a day runs from
 // midnight to midnight there. Nothing here is a real person or number, and no
 // amount is anything but paise.

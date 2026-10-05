@@ -1,4 +1,4 @@
-// What the console shows of the storage meter (src/routes/ops-storage.ts; docs/decisions/0093-the-storage-meter.md).
+// What the console shows of the storage meter (src/routes/ops/storage.ts; docs/decisions/0093-the-storage-meter.md).
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";

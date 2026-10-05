@@ -1,4 +1,4 @@
-// Booking a visit from the console (src/routes/ops-visits.ts): every kind, for a client ops are talking to. A paid
+// Booking a visit from the console (src/routes/ops/visits.ts): every kind, for a client ops are talking to. A paid
 // visit holds its slot while a Razorpay payment link is open and is booked once the link is paid; a free one, one a
 // credit pays for, and a consultation and fit in one visit are booked at once. NOW is Monday 21 September 2026,
 // 12 noon in India, so the first bookable day is Tuesday the 22nd. Every name, number and price is made up.

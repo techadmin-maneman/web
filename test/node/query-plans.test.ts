@@ -60,7 +60,7 @@ const PAYMENT_PATH = [
   "src/domain/visit-changes.ts",
   "src/domain/scheduling.ts",
   "src/domain/services.ts",
-  "src/routes/client-payments.ts",
+  "src/routes/client/payments.ts",
 ];
 
 /** Tables that grow with the team or the reference data, not with each client or visit. */

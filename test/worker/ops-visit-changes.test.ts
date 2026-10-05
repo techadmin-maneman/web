@@ -1,5 +1,5 @@
 // Ops cancelling a visit from the console, and closing one by hand whose technician's phone was lost
-// (src/routes/ops-visit-changes.ts). A cancel is free to the client unless ops apply the client's own late terms, with a
+// (src/routes/ops/visit-changes.ts). A cancel is free to the client unless ops apply the client's own late terms, with a
 // reason. NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";

@@ -436,7 +436,7 @@ export async function deliverRazorpay(event: object | string, delivery: Razorpay
 
 /**
  * A first fit of the client's, done and photographed a month before NOW: what Refer opens on, and what their own
- * card is made from (src/routes/client-refer.ts). Its ID.
+ * card is made from (src/routes/client/refer.ts). Its ID.
  */
 export async function fittedAndPhotographed(personId: string): Promise<string> {
   const id = crypto.randomUUID();

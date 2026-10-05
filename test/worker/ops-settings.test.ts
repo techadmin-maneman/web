@@ -1,5 +1,5 @@
 // The business inputs ops set for themselves, on the ops surface
-// (src/routes/ops-settings.ts, docs/decisions/0061-ops-editable-inputs.md). NOW
+// (src/routes/ops/settings.ts, docs/decisions/0061-ops-editable-inputs.md). NOW
 // is Monday 21 September 2026, 12 noon in India. Every pincode here is real
 // only as a number; nothing is a person, a mobile or an address.
 //

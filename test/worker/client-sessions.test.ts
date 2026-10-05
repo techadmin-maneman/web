@@ -1,4 +1,4 @@
-// Where a client is signed in, and ending it (src/routes/client-sessions.ts; docs/decisions/0029-sessions.md).
+// Where a client is signed in, and ending it (src/routes/client/sessions.ts; docs/decisions/0029-sessions.md).
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";

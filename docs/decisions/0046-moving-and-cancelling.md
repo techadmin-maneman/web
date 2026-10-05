@@ -33,7 +33,7 @@ FSM, tried on the real org on 22 September 2026 (`docs/archive/fsm-trial.md`):
 
 The late fees are the price book's `late_fee_first_fit` and `late_fee_replacement`, as they stood when the visit was booked: the hold that booked it keeps its late fee (ADR 0068). When ops move a visit, the client is never charged (`moveCost(..., "ops")`, for dispatch in P2-M4). A visit paid with a credit gets it back when changed more than 24 hours out and loses it inside them (`creditOnChange`); a grant clawed back or expired takes nothing back (ADR 0068).
 
-**The routes** (`src/routes/client-changes.ts`):
+**The routes** (`src/routes/client/changes.ts`):
 
 - `GET /api/appointments/{id}/reschedule` answers the terms (until 5 October 2026 a `POST` with `{}`, which made one call answer two shapes):
   - the notice;

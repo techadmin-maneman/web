@@ -1,4 +1,4 @@
-// One client's record on the ops surface (src/routes/ops-clients.ts): the client
+// One client's record on the ops surface (src/routes/ops/clients.ts): the client
 // page, its photographs and its consents, Ops Console B1 to B3. NOW is Monday
 // 21 September 2026, 12 noon in India. Every name, number and photograph is made up.
 
@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
 import { PHOTO_VIEW_MINUTES } from "../../src/domain/photo-views.ts";
-import { CLIENTS_FOUND } from "../../src/routes/ops-clients.ts";
+import { CLIENTS_FOUND } from "../../src/routes/ops/clients.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";

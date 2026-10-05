@@ -1,6 +1,6 @@
 // A client's payments, refunds and credits, as the app lists them (docs/decisions/0044-payments-mirror.md), from
 // the payments mirror and the credit ledger. Ops read the same list on the client's page. The routes are
-// src/routes/client-payments.ts; what an amount means is said there.
+// src/routes/client/payments.ts; what an amount means is said there.
 
 import { exGst } from "../config/gst.ts";
 import type { VISIT_TYPES } from "../config/visit-types.ts";

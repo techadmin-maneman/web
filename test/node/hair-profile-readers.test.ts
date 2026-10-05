@@ -27,13 +27,13 @@ describe("the hair profile's table", () => {
   });
 
   it("is reached through it by the routes, the card, the erasure and the export, and by no queue or provider", () => {
-    const users = naming(/from "\.\.?\/(?:domain\/)?hair-profiles\.ts"/).sort();
+    const users = naming(/from "(?:\.\.?\/)+(?:domain\/)?hair-profiles\.ts"/).sort();
     expect(users).toEqual([
       "src/domain/data-export.ts",
       "src/domain/erasure.ts",
       "src/domain/tech-jobs.ts",
-      "src/routes/ops-hair-profile.ts",
-      "src/routes/tech-jobs.steps.ts",
+      "src/routes/ops/hair-profile.ts",
+      "src/routes/tech/jobs.steps.ts",
     ]);
   });
 });

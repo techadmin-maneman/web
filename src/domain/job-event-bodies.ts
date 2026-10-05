@@ -1,6 +1,6 @@
 // The bodies of the technician's steps that are read again after they land: what was ticked, what was used, the
 // piece, and how the job closed.
-// The route checks a step against these on the way in (src/routes/tech-jobs.ts) and stores it as it came, and the
+// The route checks a step against these on the way in (src/routes/tech/jobs.ts) and stores it as it came, and the
 // domain reads the stored body back through the same schema, so the two cannot drift apart.
 
 import { z } from "@hono/zod-openapi";

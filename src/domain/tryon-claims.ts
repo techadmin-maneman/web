@@ -1,6 +1,6 @@
 // A try-on claimed at the gate (docs/decisions/0014-try-on-api.md): the person, their two consents, the lead and the
 // result message, written together; or, for a job its number claimed before, that claim's lead again.
-// POST /api/tryon/claim (src/routes/tryon-claim.ts) checks the request and the limits first, and queues the lead and
+// POST /api/tryon/claim (src/routes/public/tryon-claim.ts) checks the request and the limits first, and queues the lead and
 // the message after.
 //
 // The claim comes before the render, since the look goes to WhatsApp only and the number is where it goes
@@ -28,7 +28,7 @@ export async function reserveJob(db: D1Database, jobId: string, now: Date): Prom
 
 /**
  * Whether this number had a look made, or being made, since `since`: a render asked for that did not fail. A job
- * claimed but never asked for does not count, and the render's start checks again (src/routes/tryon-generate.ts), so
+ * claimed but never asked for does not count, and the render's start checks again (src/routes/public/tryon-generate.ts), so
  * several jobs claimed at once still make one look.
  */
 export async function hadLookSince(db: D1Database, mobileE164: string, since: Date): Promise<boolean> {
@@ -122,7 +122,7 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
           attribution.landing_path ?? null,
           claim.requestId,
         ),
-      // The render is made for the stage the lead records (src/routes/tryon-generate.ts). Every claim comes with
+      // The render is made for the stage the lead records (src/routes/public/tryon-generate.ts). Every claim comes with
       // its number proved by a code, so the try-on may show in its client's app.
       db
         .prepare(

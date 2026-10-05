@@ -1,5 +1,5 @@
 // The job sheet ops set in the console, and the technician app reads with the job
-// (src/routes/ops-job-sheet.ts, docs/decisions/0087-consumables-and-stock.md;
+// (src/routes/ops/job-sheet.ts, docs/decisions/0087-consumables-and-stock.md;
 // docs/open-points.md, item 28). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: until ops save a list the committed one stands; a saved

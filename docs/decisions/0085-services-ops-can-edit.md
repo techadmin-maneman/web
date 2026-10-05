@@ -37,7 +37,7 @@ and ruled the same day (`docs/archive/owner-answers-2026-09-27.md`):
 
 ### Ops add, rename, time, price, order, retire and restore, audited, and nothing already sold moves
 
-`/api/services` on the ops surface (`src/routes/ops-services.ts`):
+`/api/services` on the ops surface (`src/routes/ops/services.ts`):
 
 | Call                                       | Does                                                                                                     |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------- |

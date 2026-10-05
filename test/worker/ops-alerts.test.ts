@@ -1,4 +1,4 @@
-// Tasks' "Needs a hand" (src/routes/ops-alerts.ts): the alerts ops were told of, each until it is put right, marked
+// Tasks' "Needs a hand" (src/routes/ops/alerts.ts): the alerts ops were told of, each until it is put right, marked
 // done, or its work sent again. NOW is Monday 21 September 2026, 12 noon in India. Nothing here is a real person.
 
 import { env } from "cloudflare:workers";

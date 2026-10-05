@@ -1,4 +1,4 @@
-// Who is signed in to the ops console (src/routes/ops-whoami.ts). The console
+// Who is signed in to the ops console (src/routes/ops/whoami.ts). The console
 // holds no session of its own: Cloudflare Access does, and this names the
 // identity behind it so the console can say who is working, how to leave, and
 // what the Staff list lets them do.

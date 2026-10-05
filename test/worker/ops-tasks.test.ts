@@ -1,4 +1,4 @@
-// What ops still have to do, on the ops surface (src/routes/ops-tasks.ts), Ops
+// What ops still have to do, on the ops surface (src/routes/ops/tasks.ts), Ops
 // Console D2. NOW is Monday 21 September 2026, 12 noon in India. Nothing here
 // is a real person, number or piece.
 //
@@ -10,7 +10,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
-import { TASKS_SHOWN } from "../../src/routes/ops-tasks.ts";
+import { TASKS_SHOWN } from "../../src/routes/ops/tasks.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 import { enforce, listStaff, opsAs, person as staffPerson } from "./staff-fixtures.ts";
 

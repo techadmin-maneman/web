@@ -1,4 +1,4 @@
-// A client moving or cancelling a visit (src/routes/client-changes.ts, src/domain/visit-changes.ts, and the move
+// A client moving or cancelling a visit (src/routes/client/changes.ts, src/domain/visit-changes.ts, and the move
 // in confirmBooking). NOW is Monday 21 September 2026, 12 noon in India; the price book is at 0% from 22 September.
 // Every name and number here is made up.
 

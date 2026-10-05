@@ -1,6 +1,6 @@
 // What a client consents to (docs/prompts/phase2-backend.md, "Business rules, decided").
 // The rules as the prompt states them, and the purposes they name. A client switches each in src/domain/profile.ts;
-// ops read them in the console (src/routes/ops-clients.ts) and never write one. Each consent also records where it
+// ops read them in the console (src/routes/ops/clients.ts) and never write one. Each consent also records where it
 // was given, as the owner ruled on 27 September 2026 (docs/decisions/0094-where-a-consent-was-given.md).
 
 export const RULES = [

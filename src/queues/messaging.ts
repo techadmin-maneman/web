@@ -2,7 +2,7 @@
 // a login code, which src/http/send-code.ts hands to the provider itself once
 // the response has gone, never through this queue (ADR 0030), and the word that
 // an account is deleted, which goes the same way to a number the erasure has
-// just blanked (src/routes/ops-profile.ts). It sends a person the result they
+// just blanked (src/routes/ops/profile.ts). It sends a person the result they
 // asked for at the gate, as the result template with a signed result link that
 // expires an hour after sending; a client's messages about their visits
 // (src/domain/visit-messages.ts) and the reminder of their next one
