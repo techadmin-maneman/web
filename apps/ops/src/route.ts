@@ -14,7 +14,7 @@
 // person who may not open Tasks, the first section they may.
 
 import { areas, clients, settings, shell, technicians } from "./content.ts";
-import type { Department } from "./settings/grants.ts";
+import type { Department } from "./lib/grants.ts";
 
 /** The router the apps share (packages/ui/router.tsx): the console's pages take it from here. */
 export { followsHere, redirect, usePath } from "@maneman/ui/router";

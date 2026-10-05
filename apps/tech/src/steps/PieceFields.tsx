@@ -7,7 +7,7 @@ import { Icon } from "@maneman/ui/Icon";
 import type { Job, PieceLookup } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { STROKE, TAG } from "../icons.ts";
-import { paidFor, profileNamesAnother } from "../job/paid-for.ts";
+import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { asLabel, isLabel } from "./label.ts";
 import { DECLINED, given, type Choice, type ClientPiece } from "./piece-form.ts";

@@ -1,9 +1,8 @@
 // A visit on the board cancelled, closed by hand, or its technician let in past the geofence, each in its own panel
 // (./DispatchScreen.tsx), and what the board says once it has.
 
+import { CancelVisit, CloseVisit } from "../clients/index.ts";
 import type { Access } from "../lib/access.ts";
-import { CancelVisit } from "../clients/CancelVisit.tsx";
-import { CloseVisit } from "../clients/CloseVisit.tsx";
 import { dispatch } from "../content.ts";
 import { changeOf, idOf, nameOf, type BlockJob, type VisitChange } from "./job.ts";
 import type { Notice } from "./landing.ts";

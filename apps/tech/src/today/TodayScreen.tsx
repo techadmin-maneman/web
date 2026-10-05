@@ -34,7 +34,7 @@ import { useSession } from "../session.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { keptStates } from "../store/jobs.ts";
 import { replay, type Queued } from "../store/outbox.ts";
-import { photoSets } from "../waiting/sets.ts";
+import { photoSets } from "../lib/sets.ts";
 import { JobRow } from "./JobRow.tsx";
 import styles from "./today.module.css";
 

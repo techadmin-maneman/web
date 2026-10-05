@@ -14,8 +14,8 @@ import { useState } from "react";
 import { api, type Consumables, type ServiceUse } from "../api.ts";
 import { dispatch, settings } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { CheckPanel } from "./CheckPanel.tsx";
-import styles from "./settings.module.css";
+import { CheckPanel } from "../components/CheckPanel.tsx";
+import styles from "../components/forms.module.css";
 import own from "./consumables.module.css";
 
 const copy = settings.consumables;

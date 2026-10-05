@@ -6,6 +6,9 @@
 // next visit (board B1), with Reschedule and Add a note until it begins. A
 // visit that is not the client's says so, rather than offering to try again.
 
+import { DisputeSheet } from "../booking/index.ts";
+import { VisitCard } from "../home/index.ts";
+import { PhotoRow, type OpenPhoto, PhotoSheet } from "../photos/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -16,15 +19,11 @@ import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
-import { DisputeSheet } from "../booking/DisputeSheet.tsx";
 import { messages, visits } from "../content.ts";
-import { Shell } from "../home/Shell.tsx";
-import { VisitCard } from "../home/VisitCard.tsx";
+import { Shell } from "../components/Shell.tsx";
 import { apiNow } from "../lib/clock.ts";
 import { duration, invoiceState, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
-import { PhotoRow, type OpenPhoto } from "../photos/PhotoRow.tsx";
-import { PhotoSheet } from "../photos/PhotoSheet.tsx";
 import { Loading } from "../states/Loading.tsx";
 import { NotFound } from "../states/NotFound.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";

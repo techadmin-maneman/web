@@ -4,7 +4,7 @@
 import { TASK_DEPARTMENTS } from "../../../../src/policy/console-routes.ts";
 import type { TaskGroup } from "../api.ts";
 import { daysUntil } from "../lib/due.ts";
-import { DEPARTMENTS, type Department } from "../settings/grants.ts";
+import { DEPARTMENTS, type Department } from "../lib/grants.ts";
 
 /** The rows a group shows until ops ask for the rest, so one long group cannot push the others out of sight. */
 export const ROWS_FOLDED = 5;

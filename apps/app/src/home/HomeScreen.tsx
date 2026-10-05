@@ -10,6 +10,7 @@
 // beneath that (src/domain/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
+import { BookButton, BookNext, type ChangingVisit } from "../booking/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -17,13 +18,10 @@ import { indiaDate, listDate, monthInIndia, shortDate } from "@maneman/web-kit/d
 import { rupees } from "@maneman/web-kit/money";
 import { documentUrl, type Me, type OneVisitPrice } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
-import { BookButton } from "../booking/BookButton.tsx";
-import { BookNext } from "../booking/BookNext.tsx";
-import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { apiNow } from "../lib/clock.ts";
 import { bookingName, oneVisitOf, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
-import { AppLink, Shell } from "./Shell.tsx";
+import { AppLink, Shell } from "../components/Shell.tsx";
 import { nextVisitWords, replacementLine } from "./next-visit-words.ts";
 import {
   Actions,

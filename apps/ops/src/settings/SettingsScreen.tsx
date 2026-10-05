@@ -13,7 +13,7 @@ import { Blackouts } from "./Blackouts.tsx";
 import { Consumables } from "./Consumables.tsx";
 import { JobSheet } from "./JobSheet.tsx";
 import { Rules } from "./Rules.tsx";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 function Panel({ tab }: { tab: SettingsTab }) {
   if (tab === "blackouts") return <Blackouts />;

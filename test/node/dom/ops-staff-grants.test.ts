@@ -1,8 +1,8 @@
-// The Staff page's grants as the console says them and as its boxes hold them (apps/ops/src/settings/grants.ts).
+// The Staff page's grants as the console says them and as its boxes hold them (apps/ops/src/lib/grants.ts).
 
 import { describe, expect, it } from "vitest";
 import type { StaffPerson } from "../../../apps/ops/src/api.ts";
-import { alreadyListed, grantWords, whereOf, whereValue } from "../../../apps/ops/src/settings/grants.ts";
+import { alreadyListed, grantWords, whereOf, whereValue } from "../../../apps/ops/src/lib/grants.ts";
 
 const LEAD: StaffPerson = {
   email: "noida.lead@maneman.in",

@@ -1,10 +1,10 @@
-// What the technician's card and piece step say the client paid for (apps/tech/src/job/paid-for.ts). MON-10 and
+// What the technician's card and piece step say the client paid for (apps/tech/src/lib/paid-for.ts). MON-10 and
 // FLD-14: a client paid for Mane Man Essential and the card said only "First fit", with nothing to warn him when the
 // hair profile named another product.
 
 import { describe, expect, it } from "vitest";
 import type { HairProfile, Job } from "../../../apps/tech/src/api.ts";
-import { paidFor, profileNamesAnother } from "../../../apps/tech/src/job/paid-for.ts";
+import { paidFor, profileNamesAnother } from "../../../apps/tech/src/lib/paid-for.ts";
 
 const ESSENTIAL = { tier: "essential", name: "Mane Man Essential" };
 

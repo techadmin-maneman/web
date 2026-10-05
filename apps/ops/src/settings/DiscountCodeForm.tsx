@@ -15,7 +15,7 @@ import { useState } from "react";
 import { CODE_LENGTH } from "../../../../src/policy/discount-codes.ts";
 import { api, type DiscountCodesNew } from "../api.ts";
 import { settings } from "../content.ts";
-import { CheckPanel } from "./CheckPanel.tsx";
+import { CheckPanel } from "../components/CheckPanel.tsx";
 import {
   checkLines,
   codeError,
@@ -27,7 +27,7 @@ import {
   type Covered,
   type Draft,
 } from "./discount-draft.ts";
-import styles from "./settings.module.css";
+import styles from "../components/forms.module.css";
 
 const copy = settings.discountCodes;
 

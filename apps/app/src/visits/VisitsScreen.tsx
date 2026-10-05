@@ -11,6 +11,8 @@
 // often they have been served, what they have bought, what they have paid, and
 // the month their piece falls due (docs/fidelity-method.md).
 
+import { BookNext } from "../booking/index.ts";
+import { hasBegun, stageText } from "../home/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
@@ -19,10 +21,8 @@ import { fullDate, listMonth, monthInIndia, shortDate, yearInIndia } from "@mane
 import { apiNow } from "../lib/clock.ts";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
-import { BookNext } from "../booking/BookNext.tsx";
 import { home, ONE_VISIT, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
-import { AppLink, Shell } from "../home/Shell.tsx";
-import { hasBegun, stageText } from "../home/VisitCard.tsx";
+import { AppLink, Shell } from "../components/Shell.tsx";
 import { CHEVRON } from "../icons.ts";
 import { bookingName, oneVisitOf, technicianOf, visitTitle } from "../lib/visit.ts";
 import { useSession } from "../session.ts";

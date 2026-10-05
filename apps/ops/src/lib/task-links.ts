@@ -3,9 +3,9 @@
 
 import { indiaDate } from "@maneman/web-kit/dates";
 import type { Task, TaskGroup } from "../api.ts";
-import { rowPath } from "../lib/target.ts";
+import { rowPath } from "./target.ts";
 import { clientPath, dispatchPath, type ClientTab } from "../route.ts";
-import { DECIDED_IN } from "./decided.ts";
+import { DECIDED_IN } from "../tasks/decided.ts";
 
 type Group = TaskGroup["group"];
 

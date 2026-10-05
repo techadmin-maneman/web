@@ -2,10 +2,10 @@
 // (src/policy/tasks.ts). The row opens the panel the client's page books from, started from what the task holds; the
 // task leaves the board once the visit is booked, and stays while a payment link for it waits to be paid.
 
+import { BookVisit, type Prefill } from "../clients/index.ts";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useRef, useState } from "react";
 import type { BookingWindow, Task, TaskGroup } from "../api.ts";
-import { BookVisit, type Prefill } from "../clients/BookVisit.tsx";
 import { tasks } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./tasks.module.css";

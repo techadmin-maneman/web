@@ -3,7 +3,7 @@
 
 import { capsLook } from "@maneman/ui/Caps";
 import { deletions } from "../content.ts";
-import styles from "./deletions.module.css";
+import styles from "./erasure.module.css";
 
 function What({ title, items }: { title: string; items: readonly string[] }) {
   return (

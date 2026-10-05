@@ -1,10 +1,10 @@
 // Board C2's address before the date, for a client who has given none (ADR 0079), and the answer for an address
 // in a pincode we do not come to.
 
+import { AddressForm } from "../../profile/index.ts";
 import { ButtonLink } from "@maneman/ui/Button";
 import type { Address } from "../../api.ts";
 import { booking, BOOKING_URL, profile } from "../../content.ts";
-import { AddressForm } from "../../profile/AddressForm.tsx";
 import styles from "../booking.module.css";
 import { Heading } from "./shared.tsx";
 

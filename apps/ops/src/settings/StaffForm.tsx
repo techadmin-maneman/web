@@ -7,7 +7,7 @@ import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type StaffBook, type StaffGrant, type StaffPerson, type StaffSave } from "../api.ts";
 import { settings } from "../content.ts";
-import { CheckPanel } from "./CheckPanel.tsx";
+import { CheckPanel } from "../components/CheckPanel.tsx";
 import {
   alreadyListed,
   departmentOf,
@@ -18,8 +18,8 @@ import {
   sameGrant,
   whereOf,
   whereValue,
-} from "./grants.ts";
-import styles from "./settings.module.css";
+} from "../lib/grants.ts";
+import styles from "../components/forms.module.css";
 import staffStyles from "./staff.module.css";
 
 const copy = settings.staff;

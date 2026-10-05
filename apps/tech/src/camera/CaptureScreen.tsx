@@ -25,16 +25,15 @@
 // A set the API refused opens here again with the photographs that reached us
 // counted, and only the refused angles to take.
 
+import { StepFrame, useSettled, useStep } from "../steps/index.ts";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
 import { capture as copy, job as jobCopy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
-import { StepFrame, useSettled } from "../steps/StepFrame.tsx";
-import { useStep } from "../steps/useStep.ts";
 import { dropFrame, events as queuedEvents, frames as keptFrames, keepFrame } from "../store/outbox.ts";
-import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../waiting/sets.ts";
+import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
 import { captureFrame } from "./capture.ts";
 import { useCamera } from "./useCamera.ts";
 import styles from "./capture.module.css";

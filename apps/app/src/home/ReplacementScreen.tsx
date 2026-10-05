@@ -3,10 +3,10 @@
 // the app like any other visit, so a fitted client books it from here. No board draws the page, and every word on it
 // is a placeholder.
 
+import { BookButton } from "../booking/index.ts";
 import { replacement, messages } from "../content.ts";
-import { BookButton } from "../booking/BookButton.tsx";
 import { useSession } from "../session.ts";
-import { Shell } from "./Shell.tsx";
+import { Shell } from "../components/Shell.tsx";
 import styles from "./home.module.css";
 
 export function ReplacementScreen() {

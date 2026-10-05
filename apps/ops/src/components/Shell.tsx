@@ -15,7 +15,7 @@ import { useMayCall, whoami } from "../lib/access.ts";
 import { useLapsed } from "../lib/session.ts";
 import { useTaskBoard } from "../lib/waiting.ts";
 import { mayOpen, SECTION_NAMES, SECTIONS, type MayCall, type Section, type SectionPath } from "../route.ts";
-import { DEPARTMENTS, type Department } from "../settings/grants.ts";
+import { DEPARTMENTS, type Department } from "../lib/grants.ts";
 import { waitingIn, type Waiting } from "../tasks/decided.ts";
 import { Account } from "./Account.tsx";
 import { ClientFinder } from "./ClientFinder.tsx";
