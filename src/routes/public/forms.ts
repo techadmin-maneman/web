@@ -7,12 +7,11 @@ import type { Context } from "hono";
 import type { AppEnv } from "../../http/context.ts";
 import {
   bookConsultation,
-  joinTheWaitlist,
   type Booked,
   type ConsultationRequest,
   type StandingCode,
-  type WaitlistRequest,
-} from "../../domain/booking/public-booking.ts";
+} from "../../domain/booking/public-consultation.ts";
+import { joinTheWaitlist, type WaitlistRequest } from "../../domain/booking/public-waitlist.ts";
 import { answerKeyed, onceForKey } from "../../http/idempotency.ts";
 import { formRequest } from "../../http/public-form.ts";
 
