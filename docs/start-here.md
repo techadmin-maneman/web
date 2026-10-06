@@ -51,8 +51,8 @@ this map, or when the map names something that no longer exists.
 
 ### A visit, and changing it
 
-- **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-facts`, `visit-begun`,
-  `client-visits`, `client-history`, `check-ins`, `next-visit`, `one-visit`, `hand-close`
+- **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-cancel`, `visit-facts`,
+  `visit-begun`, `client-visits`, `client-history`, `check-ins`, `next-visit`, `one-visit`, `hand-close`
 - **Rules** (`src/policy/`): `check-in`, `next-visit`, `one-visit`
 - **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`
 - **Screens:** `apps/app/src/visits/`, `apps/ops/src/clients/`
